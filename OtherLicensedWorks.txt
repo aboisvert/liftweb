@@ -1,0 +1,10 @@
+Lift is distributed under an Apache License V2.0 (See LICENSE.txt)
+
+*** Tomcat Servlet JAR file (lib/servlet-api.jar) ***
+*** Apache Commons Codec (lib/commons-codec-1.3.jar) ***
+Licensed under the Apache License v2.0
+
+*** Scala Actors Library (lib/scala-actors.jar) ***
+Copyright EPFL and licensed under a BSD-style license
+http://www.scala-lang.org/downloads/license.html
+
