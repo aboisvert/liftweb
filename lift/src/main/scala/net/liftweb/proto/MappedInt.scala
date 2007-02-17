@@ -21,6 +21,8 @@ class MappedIntIndex[T](owner : Mapper[T]) extends MappedInt[T](owner) with Inde
   
   override def defaultValue = -1
   
+  def defined_? = i_get_! != defaultValue
+  
   override def db_index_field_indicates_saved_? = {i_get_! != defaultValue}
   
   def makeKeyJDBCFriendly(in : int) = new Integer(in)
@@ -38,8 +40,15 @@ class MappedIntIndex[T](owner : Mapper[T]) extends MappedInt[T](owner) with Inde
   override def db_display_? = false
   
   def convertKey(in : int) : Option[int] = {
-    Some(in)
+    if (in < 0) None
+    else Some(in)
   }
+  
+  def convertKey(in : long) : Option[int] = {
+    if (in < 0 || in > Integer.MAX_VALUE) None
+    else Some(in.asInstanceOf[int])
+  }
+  
   def convertKey(in : AnyRef) : Option[int] = {
     if ((in eq null) || (in eq None)) None
     try {

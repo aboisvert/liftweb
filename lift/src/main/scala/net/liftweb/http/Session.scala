@@ -150,7 +150,7 @@ class Session extends Actor with HttpSessionBindingListener {
   
   def fixResponse(resp: Response, state: RequestState): Response = {
     val newHeaders = fixHeaders(resp.headers, state)
-    val newXml = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) fixHtml(resp.out, state.contextPath) else resp.out
+    val newXml = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) state.fixHtml(resp.out) else resp.out
     Response(resp.out, newHeaders, resp.code)
   }
   
@@ -169,34 +169,7 @@ class Session extends Actor with HttpSessionBindingListener {
     }
   }
   
-  def fixHtml(in : NodeSeq, path: String) : NodeSeq = {
-    def fixHref(v : Seq[Node]) : String = {
-      val hv = v.elements.next.text
-      if (hv.startsWith("/")) "/"+path+hv
-      else hv
-    }
-    
-    def fixAttrs(toFix : String, attrs : MetaData) : MetaData = {
-      if (attrs == Null) Null else
-        if (attrs.key == toFix) new UnprefixedAttribute(toFix,fixHref(attrs.value),fixAttrs(toFix, attrs.next))
-        else attrs.copy(fixAttrs(toFix, attrs.next))
-    }
-    in.map{
-      v => 
-        v match {
-          case <form>{ _* }</form> => {Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(v.child, path) : _* )}
-          case <a>{ _* }</a> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child, path) : _* );}
-          case <link/> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child, path) : _* )}
-          /*
-          case <input>{ _* }</input> | <textarea>{ _* }</textarea> => 
-             {v.attribute("name") match {case null => {} ; case s @ _ => {inputNames += s.elements.next.text}}; Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(v.child) : _*)}
-             */
-          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(v.child, path) : _*)}
-          case _ => {v}
-        }
-    }
-  }
-  
+
   /*
   private def processTemplate(xml : NodeSeq, session: RequestState) : Option[Response] = {
     val surrounded = processSurroundAndInclude(xml, session)

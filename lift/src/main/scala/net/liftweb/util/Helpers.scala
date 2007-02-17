@@ -14,6 +14,7 @@ import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import java.util.Date
 import java.text.SimpleDateFormat
+import java.lang.reflect.Modifier
 
 /**
   *  A bunch of helper functions
@@ -326,4 +327,60 @@ def callableMethod_?(meth : Method) = {
      */ 
     def clean(in : String) =  if (in == null) "" else in.replaceAll("[^a-zA-Z0-9_]", "")
     
+    /**
+      * Convert a 
+      */
+    def toBoolean(in: Any): boolean = {
+      in match {
+        case null => false
+        case b : boolean => b
+        case n : Number => n.intValue != 0
+        case s : String => {
+     	  var sl = s.toLowerCase
+          if (sl.length == 0) false
+          else {
+            if (sl.charAt(0) == 't') true
+            else tryn {Integer.parseInt(sl) != 0}
+          }
+      }
+        case o => toBoolean(o.toString)
+    }
+    }
+  
+  def toDate(in: String): Date = {
+    new Date(in)
+  }
+  
+  def toDate(in: Any): Date = {
+    in match {
+      case null => null
+      case d : Date => d
+      case d : java.sql.Date => new Date(d.getTime)
+      case lng : java.lang.Long => new Date(lng.longValue)
+      case lng : long => new Date(lng)
+      case s : String => toDate(s)
+      case o => toDate(o.toString)
+    }
+  }
+  
+  def createInvoker(name: String, on: AnyRef): Option[() => Option[Any]] = {
+    on match {
+      case null => None
+      case o => {
+        o.getClass.getDeclaredMethods.filter{m => m.getName == name && 
+          Modifier.isPublic(m.getModifiers) &&
+          m.getParameterTypes.length == 0}.toList match {
+            case Nil => None
+            case x :: xs => Some(() => {
+              try {
+              Some(x.invoke(o, null))
+              } catch {
+                case e : InvocationTargetException => throw e.getCause
+              }
+            }
+            )
+          }
+      }
+    }
+  }
 }

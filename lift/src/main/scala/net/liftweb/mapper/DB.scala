@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
- (c) 2006 WorldWide Conferencing, LLC
+ (c) 2006-2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+\*                                                 */
 
 import java.sql.{Connection, ResultSet, Statement, PreparedStatement}
 import javax.sql.{ DataSource}
@@ -15,6 +15,8 @@ object DB {
   private val threadStore = new ThreadLocal
   private val envContext = (new InitialContext).lookup("java:/comp/env").asInstanceOf[Context];
   
+  var connectionManager: Option[ConnectionManager] = None
+  
   private def info : HashMap[String, Pair[Connection, int]] = {
     threadStore.get.asInstanceOf[HashMap[String, Pair[Connection, int]]] match {
       case null => {
@@ -22,13 +24,15 @@ object DB {
       threadStore.set(tinfo)
       tinfo
     }
-      case v @ _ => {v}
+      case v => {v}
     }
   }
   
-  private def whichName(name : String) = if (name == null || name.length == 0) "scalawithsails" else name
+  private def whichName(name : String) = if (name == null || name.length == 0) "lift" else name
   
-  private def newConnection(name : String) : Connection = envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection
+  private def newConnection(name : String) : Connection = 
+    connectionManager.flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection}
+    
   
   private def releaseConnection(conn : Connection) : unit = conn.close
   
@@ -44,7 +48,7 @@ object DB {
   def releaseConnectionNamed(name : String) {
     info.get(name) match {
       case None => {}
-      case c  => {c.get match {
+      case Some(c)  => {c match {
 	case Pair(c , 1) => {releaseConnection(c); info -= name}
 	case Pair(c, cnt) => {info(name) = Pair(c,cnt - 1)}
       }

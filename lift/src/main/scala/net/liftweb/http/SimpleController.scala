@@ -7,13 +7,15 @@ package net.liftweb.http
 \*                                                 */
   
 import scala.collection.immutable.TreeMap
-  
+import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+
 /**
   * The base trait of Controllers that handle pre-view requests
   */
-trait ProtoController {
+trait SimpleController {
   var request: RequestState = _
-  var session = TreeMap.empty[String, Any]
+  // private var session: TreeMap[String, Any] = _
+  var httpRequest: HttpServletRequest = _
                           
   def params(name: String): Option[String] = {
     request.params.get(name) match {
@@ -33,17 +35,23 @@ trait ProtoController {
   }*/
   
   def apply[T](name: String): Option[T] = {
-    session.get(name) match {
-      case None => None
-      case Some(n) => {
+    if (httpRequest == null) None
+    else {
+      httpRequest.getSession.getAttribute(name) match {
+      case null => None
+      case n => {
+        Console.println("Got n "+n)
         if (n.isInstanceOf[T]) Some(n.asInstanceOf[T])
         else None
       }
     }
+    }
   }
   
   def update(name: String, value: Any) {
-    session = (session(name) = value)
-    // FIXME send the change to the actual session
+    value match {
+      case null => httpRequest.getSession.removeAttribute(name)
+      case _ => {Console.println("Setting attribute "+name+" "+value);  httpRequest.getSession.setAttribute(name, value)}
+    }
   }
 }

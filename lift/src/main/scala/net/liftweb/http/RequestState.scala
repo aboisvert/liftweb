@@ -12,10 +12,11 @@ import scala.collection.Map
 import scala.collection.immutable.TreeMap
 import net.liftweb.util.Helpers._
 import java.io.InputStream
+import scala.xml._
 
 object RequestState {
   def apply(request: HttpServletRequest, resourceFinder: (String) =>  InputStream): RequestState = {
-    val session = request.getSession
+    // val session = request.getSession
 
     val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     val tmp = paramNames.map{n => {n, request.getParameterValues(n).toList}}
@@ -50,4 +51,33 @@ class RequestState(val paramNames: List[String],val params: Map[String, List[Str
   def get_? = requestType.get_?
   def put_? = requestType.put_?
   def ajax_? = requestType.ajax_?
+      
+      def fixHtml(in : NodeSeq) : NodeSeq = {
+    def fixHref(v : Seq[Node]) : String = {
+      val hv = v.elements.next.text
+      if (hv.startsWith("/")) "/"+contextPath+hv
+      else hv
+    }
+    
+    def fixAttrs(toFix : String, attrs : MetaData) : MetaData = {
+      if (attrs == Null) Null else
+        if (attrs.key == toFix) new UnprefixedAttribute(toFix,fixHref(attrs.value),fixAttrs(toFix, attrs.next))
+        else attrs.copy(fixAttrs(toFix, attrs.next))
+    }
+    in.map{
+      v => 
+        v match {
+          case <form>{ _* }</form> => {Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(v.child) : _* )}
+          case <a>{ _* }</a> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child) : _* );}
+          case <link/> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child) : _* )}
+          /*
+          case <input>{ _* }</input> | <textarea>{ _* }</textarea> => 
+             {v.attribute("name") match {case null => {} ; case s @ _ => {inputNames += s.elements.next.text}}; Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(v.child) : _*)}
+             */
+          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(v.child) : _*)}
+          case _ => {v}
+        }
+    }
+  }
+  
 }

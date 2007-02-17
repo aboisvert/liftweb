@@ -22,11 +22,37 @@ trait MetaMapper[A] extends Mapper[A] {
 	  }
   }
   
-  def count : int = {
+  def findAll(by: QueryParam): List[A] = findAll(List(by))
+  
+  def findBySql(query: String): List[A] = {
+    DB.prepareStatement(query) {
+      st =>
+      DB.exec(st) {
+        rs =>
+        createInstances(rs)
+      }
+    }
+  }
+  
+  def findAll(by: List[QueryParam]): List[A] = {
+    
+    val query = addFields("SELECT * FROM "+tableName_$+" WHERE TRUE ", by)
+              DB.prepareStatement(query) {
+            st =>
+              setStatementFields(st, by, 1)
+            DB.exec(st) {
+              rs =>
+                createInstances(rs)
+            }
+ 
+  }
+  }
+  
+  def count : long = {
     DB.use {db =>
       DB.exec(db, "SELECT COUNT(*) FROM "+tableName_$) {
         rs =>
-        if (rs.next) rs.getInt(1)
+        if (rs.next) rs.getLong(1)
         else 0
       }
     }
@@ -39,9 +65,9 @@ trait MetaMapper[A] extends Mapper[A] {
         var updatedWhat = what        
         x match {
           case ByField(field, _) => 
-        (0 to field.db_column_count).foreach {
+        (1 to field.db_column_count).foreach {
           cn =>
-          updatedWhat = updatedWhat + " AND "+field.db_column_names(field.name)(0)+" = ? "
+          updatedWhat = updatedWhat + " AND "+field.db_column_names(field.name)(cn - 1)+" = ? "
         }
             case _ => {}
         }
@@ -54,7 +80,7 @@ trait MetaMapper[A] extends Mapper[A] {
     by match {
       case Nil => {}
       case ByField(field, value) :: xs => {
-        st.setObject(1, field.convertToJDBCFriendly(value), field.getTargetSQLType(field.db_column_names(field.name)(0)))
+        st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType(field.db_column_names(field.name)(0)))
         setStatementFields(st, xs, curPos + 1)
       }
       case _ :: xs => {
@@ -62,11 +88,12 @@ trait MetaMapper[A] extends Mapper[A] {
       }
     }
   }
+ 
+  def find(by: QueryParam): Option[A] = find(List(by))
   
   def find(by: List[QueryParam]): Option[A] = {
     
     val query = addFields("SELECT * FROM "+tableName_$+" WHERE TRUE ", by)
-
               DB.prepareStatement(query) {
             st =>
               setStatementFields(st, by, 1)
@@ -75,10 +102,8 @@ trait MetaMapper[A] extends Mapper[A] {
                 if (rs.next) createInstance(rs)
                 else None
             }
-          }
-
-    
-    None // FIXME -- find by
+ 
+  }
   }
   
   def delete_!(toDelete : Mapper[A]) : boolean = {
@@ -95,6 +120,7 @@ trait MetaMapper[A] extends Mapper[A] {
   def find(key: Any) : Option[A] = {
     key match {
       case null => None
+      case Some(n) => find(n)
       case v => find(v.toString)
     }
   }
@@ -242,10 +268,11 @@ trait MetaMapper[A] extends Mapper[A] {
     ret.asInstanceOf[Mapper[A]].runSafe {
       var cnt = meta.getColumnCount
       while (cnt > 0) {
-        findApplier(meta.getColumnName(cnt), rs.getObject(cnt)) match
+        val obj = rs.getObject(cnt)
+        findApplier(meta.getColumnName(cnt), obj) match
         {
-          case None => {null}
-          case ap @ Some(_) => {ap.get.apply(ret.asInstanceOf[Mapper[A]], rs.getObject(cnt))}
+          case Some(ap) if (ap != null) => ap(ret.asInstanceOf[Mapper[A]], obj)
+          case _ => 
         }
         cnt = cnt - 1
       }
@@ -272,7 +299,7 @@ trait MetaMapper[A] extends Mapper[A] {
 
   private def createApplier(name : String, inst : AnyRef, clz : Class) : (Mapper[A], AnyRef) => unit = {
     val accessor = mappedColumns.get(name)
-    if (accessor == null || accessor == None) null else {
+    if (accessor == null || accessor == None) {null} else {
       (accessor.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
     }
   }

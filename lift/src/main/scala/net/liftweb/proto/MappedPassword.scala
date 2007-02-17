@@ -50,6 +50,7 @@ class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
   override def ::=(f : Any) : String = {
     f match {
       case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this := a(0)}
+      case l : List[String] if (l.length == 2 && l(0) == l(1)) => {this := l(0)}
       case _ => {invalidPw = true; invalidMsg = "Passwords do not match"}
     }
     get

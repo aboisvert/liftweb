@@ -25,6 +25,7 @@ package net.liftweb.http;
   */
  class Servlet extends HttpServlet {
    private val actorNameConst = "the_actor"
+   
      
    /**
     * Forward the GET request to the POST handler
@@ -82,7 +83,6 @@ package net.liftweb.http;
    }
    
    override def service(req: HttpServletRequest,resp: HttpServletResponse) {
-     Console.println("Servicing...")
      req.getMethod.toUpperCase match {
        case "GET" => doGet(req, resp)
        case _ => doService(req, resp, RequestType(req))
@@ -94,9 +94,18 @@ package net.liftweb.http;
      */ 
    def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
      val session = RequestState(request, getServletContext.getResourceAsStream)
+
+     val toMatch = {session, session.path}
+     
+     val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
+       val f = Servlet.dispatchTable(toMatch)
+       f(request) match {
+         case None => session.createNotFound
+         case Some(v) => Servlet.convertResponse(v, session)
+       }
+     } else {
      
      val sessionActor = getActor(request.getSession)
-     Console.println("Sending request")
      
      if (false) {
      val he = request.getHeaderNames
@@ -113,7 +122,7 @@ package net.liftweb.http;
      // FIXME -- in Jetty, use continuations 
      sessionActor ! session
      
-     val resp = receiveWithin(10000l) {
+     receiveWithin(10000l) {
        case r @ Response(_,_,_) => Some(r)
        case Some(r : Response) => Some(r)
        case TIMEOUT => None
@@ -121,6 +130,7 @@ package net.liftweb.http;
        case Some(r: Response) => r
        case _ => {Console.println("Got a None back"); session.createNotFound}
      }
+   }
      
      val bytes = resp.out.toString.getBytes("UTF-8")
      val len = bytes.length
@@ -135,5 +145,50 @@ package net.liftweb.http;
      response.getOutputStream.write(bytes)
    }
  }
+ 
+object Servlet {
+  private case class Never
+  def dispatchTable = {
+    test_boot
+    dispatchTable_i
+  }
+
   
+  private var dispatchTable_i : PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]] = {
+    case {null, Nil} => {null}
+  }
+  
+  private val test_boot = {
+    try {
+      val c = Class.forName("bootstrap.liftweb.Boot")
+      val i = c.newInstance
+      val f = createInvoker("boot", i)
+      f.map{f => f()}
+      
+    } catch {
+      case e: Exception => None
+    }
+  }
+
+  
+  def addBefore(pf: PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]]) = {
+    dispatchTable_i = pf orElse dispatchTable_i
+    dispatchTable_i
+  }
+  
+  def addAfter(pf: PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]]) = {
+    dispatchTable_i = dispatchTable_i orElse pf
+    dispatchTable_i
+  }
+  
+  def convertResponse(r: Any, session: RequestState): Response = {
+    r match {
+      case r: Response => r
+      case Some(r: Response) => r
+      case ns: NodeSeq => Response(session.fixHtml(ns), null, 200)
+      case xml: XmlResponse => Response(xml.xml, Map("Content-Type" -> "text/xml"), 200)
+      case _ => session.createNotFound
+    }
+  }
+}
 

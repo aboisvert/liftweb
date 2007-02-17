@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
- (c) 2006 WorldWide Conferencing, LLC
+ (c) 2006-2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+\*                                                 */
 
 import scala.collection.mutable._
 import java.lang.reflect.Method
@@ -137,8 +137,13 @@ case class ValidationIssues[T,O](field : MappedField[T,O], msg : String)
 trait IndexedField[O] {
   def convertKey(in : String) : Option[O]
   def convertKey(in : int) : Option[O]
+  def convertKey(in: long): Option[O]
   def convertKey(in : AnyRef) : Option[O];
   def makeKeyJDBCFriendly(in : O) : AnyRef
   def db_display_? = false
+}
+
+trait ForeignKey[O] {
+  def defined_? : boolean
 }
 
