@@ -50,5 +50,5 @@ class Lazy[T](f:() => T) {
 
 object Lazy {
   implicit def fromLazy[T](in: Lazy[T]): T = in.get
-  def apply[T](f: () => T) = new Lazy(f)
+  def apply[T](f: => T) = new Lazy({() => f})
 }

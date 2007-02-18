@@ -15,7 +15,7 @@ import net.liftweb.util.Lazy._
 
 object DB {
   private val threadStore = new ThreadLocal
-  private val envContext = Lazy{() => (new InitialContext).lookup("java:/comp/env").asInstanceOf[Context]}
+  private val envContext = Lazy{(new InitialContext).lookup("java:/comp/env").asInstanceOf[Context]}
   
   var connectionManager: Option[ConnectionManager] = None
   
