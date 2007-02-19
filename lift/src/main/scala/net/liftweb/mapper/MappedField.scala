@@ -46,6 +46,18 @@ trait MappedField[T <: Any,O] {
     v
   }
   
+  /**
+    * Assignment from the underlying type.  It's ugly, but:<br />
+    * field() = new_value <br />
+    * field := new_value <br />
+    * field set new_value <br />
+    * field.set(new_value) <br />
+    * are all the same
+    */
+  def update(v: T) {
+    this := v
+  }
+  
   private var _name : String = null
   
   final def i_name_! = {_name}

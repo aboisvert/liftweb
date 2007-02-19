@@ -45,10 +45,16 @@ class Lazy[T](f:() => T) {
     */
   def :=(v: T): T = set(v)
   
+  /**
+    * and the lazy() = foo style of assignment
+    */
+  def update(v: T): Unit = set(v)
+  
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
 }
 
 object Lazy {
   implicit def fromLazy[T](in: Lazy[T]): T = in.get
   def apply[T](f: => T) = new Lazy({() => f})
+  
 }
