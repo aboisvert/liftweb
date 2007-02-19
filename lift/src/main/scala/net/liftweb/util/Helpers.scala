@@ -310,10 +310,17 @@ def callableMethod_?(meth : Method) = {
   val random = new java.security.SecureRandom
   
   def randomString(size: int) : String = {
-    List.range(0, size).map{i => val n = random.nextInt(32)
-      if (n < 26) ('A' + n).asInstanceOf[char]
-      else ('0' + (n - 26)).asInstanceOf[char]
-      }.mkString("","","")
+    var pos = 0
+    val sb = new StringBuilder(size)
+    var lastRand = 0
+    while (pos < size) {
+      if ((pos % 6) == 0) lastRand = random.nextInt
+      val n = lastRand & 0x1f
+      lastRand = lastRand >> 5
+      sb.append(if (n < 26) ('A' + n).asInstanceOf[char] else ('0' + (n - 26)).asInstanceOf[char])
+      pos = pos + 1
+    }
+    sb.toString
   }
   
   val hourFormat = new SimpleDateFormat("HH:mm:ss")
@@ -361,6 +368,21 @@ def callableMethod_?(meth : Method) = {
       case s : String => toDate(s)
       case o => toDate(o.toString)
     }
+  }
+  
+  def printTime[T](msg: String)(f: => T): T = {
+    val start = System.currentTimeMillis
+    try {
+    f
+    } finally {
+      Console.println(msg+" took "+(System.currentTimeMillis - start)+" Milliseconds")
+    }
+  }
+  
+  def calcTime(f: => Any): long = {
+    val start = System.currentTimeMillis
+    f
+    System.currentTimeMillis - start
   }
   
   def createInvoker(name: String, on: AnyRef): Option[() => Option[Any]] = {

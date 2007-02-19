@@ -8,10 +8,11 @@ package net.liftweb.proto
   
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
+import net.liftweb.util.Lazy
+import net.liftweb.util.Lazy._
 
 class MappedUniqueId[T](owner : Mapper[T]) extends MappedString[T](owner) {
   override def write_permission_? = false
-  override def defaultValue : String = defaultValue_i
-  
-  private val defaultValue_i = randomString(maxLen)
+  private val dv = Lazy{randomString(maxLen)}
+  override def defaultValue = dv.get
 }
