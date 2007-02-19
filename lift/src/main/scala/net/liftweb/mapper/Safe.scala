@@ -8,6 +8,7 @@ package net.liftweb.mapper
 
 import java.security.{SecureRandom, MessageDigest}
 import org.apache.commons.codec.binary.Base64
+import net.liftweb.util.Helpers
 
 /**
  * Manage the current "safety" state of the stack
@@ -41,6 +42,9 @@ object Safe {
     }
   }
   
+  def randomString(len: int) = Helpers.randomString(len)
+
+  /*
   def randomString(len : int) : String = {
     len match {
       case 0 => ""
@@ -55,7 +59,7 @@ object Safe {
     case s @ _  => {('0' + (s - 52)).asInstanceOf[char].toString}      
     }
   }
- 
+ */
   /*
   def generateUniqueName = {
     S.nc+"_inp_"+randomString(15)+"_$"
