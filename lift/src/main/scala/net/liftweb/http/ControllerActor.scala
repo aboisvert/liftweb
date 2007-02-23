@@ -9,8 +9,9 @@ package net.liftweb.http
 import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
-import scala.xml.{NodeSeq, Text}
+import scala.xml.{NodeSeq, Text, Elem}
 import scala.collection.immutable.TreeMap
+import scala.collection.mutable.HashSet
 
 trait ControllerActor extends Actor {
   private object Never
@@ -19,7 +20,7 @@ trait ControllerActor extends Actor {
   
   private var globalState: Map[String, Any] = _
   
-  private var owner_i: Page = _
+  private var owner_i = new HashSet[Page]
   private var defaultXml_i: NodeSeq = _
   private var localFunctionMap: Map[String, (List[String]) => boolean] = _
   
@@ -42,15 +43,14 @@ trait ControllerActor extends Actor {
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
-    case SetupController(owner, defaultXml) => {
-      owner_i = owner
+    case PerformSetupController(owner, defaultXml) => {
+      owner.foreach{o => owner_i += o}
       defaultXml_i = defaultXml
-      Console.println("Hey... I'm in the setup")
       localSetup
       loop
     }
     
-    case r @ Render(state) => {
+    case r @ AskRender(state) => {
       if (askingWho != null) {
       	askingWho forward r
       } else {
@@ -84,13 +84,13 @@ trait ControllerActor extends Actor {
       loop
     }
     
-    case Ask(what, who) => {
+    case AskQuestion(what, who) => {
       startQuestion(what)
       whosAsking = who
       loop
     }
     
-    case Answer(what) => {
+    case AnswerQuestion(what) => {
       askingWho.unlink(self)
       askingWho ! Exit(self, "bye")
       askingWho = null
@@ -106,7 +106,8 @@ trait ControllerActor extends Actor {
   def compute: Map[String, Any] = Map.empty[String, Any]
                    
   def reRender = {
-    if (owner != null) owner ! buildRendered(render)
+    val rendered = buildRendered(render)
+    owner.foreach{o => o ! rendered}
   }
   
   def startQuestion(what: Any) {}
@@ -125,23 +126,48 @@ trait ControllerActor extends Actor {
   def owner = owner_i
   def defaultXml = defaultXml_i
   
-  private def buildRendered(in: XmlAndMap): Rendered = {
+  def bind(vals: Map[String, NodeSeq]): NodeSeq = {
+    def _bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
+      xml.flatMap {
+        node =>
+        node match {
+          case Elem("lift", "bind", attr, foo, kids) => {
+            attr.get("name") match {
+              case None => _bind(vals, kids)
+              case Some(ns) => {
+                vals.get(ns.text) match {
+                  case None => _bind(vals, kids)
+                  case Some(nodes) => nodes
+                }
+              }
+            }
+          }
+          case Elem(ns, tag, attr, foo, kids) => Elem(ns, tag, attr,foo, _bind(vals, kids) : _*)
+          case n => node
+        }
+      }
+    }
+    
+    _bind(vals, defaultXml)
+  }
+  
+  private def buildRendered(in: XmlAndMap): AnswerRender = {
     localFunctionMap = in.map
     val newMap = TreeMap.Empty[String, ActionMessage] ++ in.map.keys.map{key => {key, ActionMessage(key, Nil, self, None)}}
-    Rendered(in.xml, newMap)
+    AnswerRender(in.xml, newMap, this)
   }
   
   def ask(who: ControllerActor, what: Any)(answerWith: (Any) => boolean) {
     who.start
     who.link(self)
-    who ! SetupController(owner, Text(""))
+    who ! PerformSetupController(owner.toList, Text(""))
     askingWho = who
     this.answerWith = answerWith
-    who ! Ask(what, self)
+    who ! AskQuestion(what, self)
   }
   
   def answer(answer: Any) {
-    whosAsking !? Answer(answer)
+    whosAsking !? AnswerQuestion(answer)
     whosAsking = null
     reRender
   }
@@ -150,13 +176,13 @@ trait ControllerActor extends Actor {
 
 sealed abstract class ControllerMessage
 
-case class Render(state: Map[String, Any]) extends ControllerMessage
+case class AskRender(state: Map[String, Any]) extends ControllerMessage
 case class ActionMessage(name: String, value: List[String], target: Actor, sender: Option[Page]) extends ControllerMessage
-case class Rendered(xml : NodeSeq, messages: Map[String, ActionMessage] ) extends ControllerMessage
-case class SetupController(owner: Page, defaultXml: NodeSeq) extends ControllerMessage
+case class AnswerRender(xml : NodeSeq, messages: Map[String, ActionMessage], by: ControllerActor ) extends ControllerMessage
+case class PerformSetupController(owner: List[Page], defaultXml: NodeSeq) extends ControllerMessage
 case class XmlAndMap(xml: NodeSeq, map: Map[String, Function1[List[String], boolean]]) extends ControllerMessage
-case class Ask(what: Any, who: Actor) extends ControllerMessage
-case class Answer(what: Any) extends ControllerMessage
+case class AskQuestion(what: Any, who: Actor) extends ControllerMessage
+case class AnswerQuestion(what: Any) extends ControllerMessage
 case class StartedUpdate(id: String) extends ControllerMessage
 case class FinishedUpdate(id: String) extends ControllerMessage
 

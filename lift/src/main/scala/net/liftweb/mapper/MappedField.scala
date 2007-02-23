@@ -10,7 +10,7 @@ import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Text, Node, NodeSeq}
-
+import java.util.Date
 
 trait MappedField[T <: Any,O] {
   def ignoreField = false
@@ -100,6 +100,10 @@ trait MappedField[T <: Any,O] {
   protected def i_set_!(value : T) : T
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[O], AnyRef) => unit 
+  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[O], long, boolean) => unit 
+  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[O], String) => unit 
+  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[O], Date) => unit 
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[O], boolean, boolean) => unit 
   protected def getField(inst : Mapper[O], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[T,O]];
   
   def get : T = {

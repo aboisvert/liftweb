@@ -9,7 +9,7 @@ package net.liftweb.mapper
 import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
-import scala.xml.{Elem, Node}
+import scala.xml.{Elem, Node, NodeSeq}
 
 trait Mapper[A] {
   private val secure_# = Safe.next
@@ -87,6 +87,10 @@ trait Mapper[A] {
     ret.append("}")
     
     ret.toString
+  }
+  
+  def toXml: NodeSeq = {
+    getSingleton.toXml(this)
   }
   
   def checkNames : unit = {

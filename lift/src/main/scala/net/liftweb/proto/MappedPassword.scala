@@ -8,9 +8,12 @@ package net.liftweb.proto
 
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
+import net.liftweb.util.Lazy
+import net.liftweb.util.Lazy._
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import scala.xml.{Node, Text, Elem}
+import java.util.Date
 
 class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
 
@@ -30,17 +33,16 @@ class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
   
   override def asHtml : Node = Text(asString)
   
-  private var password : String = defaultValue
-  private var salt_i : String = Safe.randomString(16)
+  private var password = Lazy{defaultValue}
+  private val salt_i = Lazy{Safe.randomString(16)}
   private var invalidPw = false
   private var invalidMsg = ""
     
   protected def i_set_!(value : String) : String = {
-    Console.println("in pw value "+value)
-    password = value match {
-      case "*" | null | "*******" if (password.length < 3) => {invalidPw = true ; invalidMsg = "Password to short" ; "*"}
+    password() = value match {
+      case "*" | null | "*******" if (password.get.length < 3) => {invalidPw = true ; invalidMsg = "Password to short" ; "*"}
       case "*******" => {return "*"}
-      case _ if (value.length > 4) => {invalidPw = false; Safe.hash("{"+value+"} salt={"+salt_i+"}")}
+      case _ if (value.length > 4) => {invalidPw = false; Safe.hash("{"+value+"} salt={"+salt_i.get+"}")}
       case _ => {invalidPw = true ; invalidMsg = "Password to short"; "*"}
     }
       this.dirty_?( true)
@@ -58,16 +60,16 @@ class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
 
   
   def match_?(toMatch : String) = {
-    Safe.hash("{"+toMatch+"} salt={"+salt_i+"}") == password
+    Safe.hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
   }
   
   override def sws_validate : List[ValidationIssues[String, T]] = {
-    if (!invalidPw && password != "*") Nil
+    if (!invalidPw && password.get != "*") Nil
     else if (invalidPw) List(ValidationIssues(this, invalidMsg))
     else List(ValidationIssues(this, "Password must be set"))
   }
   
-  def convertToJDBCFriendly(value: String): Object = Safe.hash("{"+value+"} salt={"+salt_i+"}")
+  def convertToJDBCFriendly(value: String): Object = Safe.hash("{"+value+"} salt={"+salt_i.get+"}")
   
   /**
   * Get the JDBC SQL Type for this field
@@ -86,26 +88,49 @@ class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
   
   def getJDBCFriendly(columnName : String) = {
     if (columnName.endsWith("_slt")) {
-      salt_i
+      salt_i.get
     } else if (columnName.endsWith("_pw")) {
-      password
+      password.get
     } else {
       null
     }
   }
   
-  
+  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
+    if (columnName.endsWith("_slt")) {
+      {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = if (isNull) null else v.toString}}
+    } else if (columnName.endsWith("_pw")) {
+      {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = if (isNull) null else v.toString}}      
+    } else {
+      null
+    }
+  }
+  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
+    if (columnName.endsWith("_slt")) {
+      {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = v}}
+    } else if (columnName.endsWith("_pw")) {
+      {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = v}}      
+    } else {
+      null
+    }
+  }
+  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
+    null
+  }
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
+      null
+  }
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
     if (columnName.endsWith("_slt")) {
       inst match {
       case null => {(inst : Mapper[T], v : AnyRef) => {}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i = (if (v == null) null else v.toString); tv.resetDirty}}
+      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
     } else if (columnName.endsWith("_pw")) {
       inst match {
       case null => {(inst : Mapper[T], v : AnyRef) => {}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password = (if (v == null) null else v.toString); tv.resetDirty}}
+      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
       
     } else {

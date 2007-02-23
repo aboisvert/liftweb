@@ -15,7 +15,7 @@ package net.liftweb.http;
  import scala.actors._
  import scala.actors.Actor._
  import net.liftweb.util.Helpers._
-
+import java.io.InputStream
 
  /**
   * An implementation of HttpServlet.  Just drop this puppy into 
@@ -93,15 +93,21 @@ package net.liftweb.http;
      * Service the HTTP request
      */ 
    def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
-     val session = RequestState(request, getServletContext.getResourceAsStream)
+     val session = RequestState(request)
+     
+     // Console.println("Servicing "+session.requestType+" ajax "+session.ajax_? +" params "+session.params+" path "+session.path)
+     
+     val finder = &getServletContext.getResourceAsStream
 
-     val toMatch = {session, session.path}
+     val toMatch = {session, session.path, finder}
      
      val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
+       S.init(session) {
        val f = Servlet.dispatchTable(toMatch)
        f(request) match {
          case None => session.createNotFound
          case Some(v) => Servlet.convertResponse(v, session)
+       }
        }
      } else {
      
@@ -119,18 +125,14 @@ package net.liftweb.http;
      }
      }
      
-     // FIXME -- in Jetty, use continuations 
-     sessionActor ! session
+     val timeout = (if (session.ajax_?) 120 else 10) * 1000L
      
-     receiveWithin(10000l) {
-       case r @ Response(_,_,_) => Some(r)
-       case Some(r : Response) => Some(r)
-       case TIMEOUT => None
-     } match {
+     sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
        case Some(r: Response) => r
-       case _ => {Console.println("Got a None back"); session.createNotFound}
+       case _ => {session.createNotFound}
      }
-   }
+     }
+   
      
      val bytes = resp.out.toString.getBytes("UTF-8")
      val len = bytes.length
@@ -144,7 +146,7 @@ package net.liftweb.http;
      response setStatus resp.code
      response.getOutputStream.write(bytes)
    }
- }
+  }
  
 object Servlet {
   private case class Never
@@ -154,8 +156,8 @@ object Servlet {
   }
 
   
-  private var dispatchTable_i : PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]] = {
-    case {null, Nil} => {null}
+  private var dispatchTable_i : PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]] = {
+    case {null, Nil, null} => {null}
   }
   
   private val test_boot = {
@@ -171,12 +173,12 @@ object Servlet {
   }
 
   
-  def addBefore(pf: PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]]) = {
+  def addBefore(pf: PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]]) = {
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }
   
-  def addAfter(pf: PartialFunction[{RequestState, List[String]}, (HttpServletRequest) => Option[Any]]) = {
+  def addAfter(pf: PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]]) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }

@@ -13,10 +13,12 @@ import scala.collection.Map
 import scala.collection.mutable.{HashMap}
 import scala.collection.immutable.{TreeMap}
 import scala.xml.{NodeSeq}
+import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.collection.immutable.{ListMap}
-import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
+import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment}
+import java.io.InputStream
 
 class Session extends Actor with HttpSessionBindingListener {
   private val pages = new HashMap[String, Page]
@@ -57,11 +59,11 @@ class Session extends Actor with HttpSessionBindingListener {
     case "shutdown" => self.exit("shutdown")
     loop
     
-    case r : RequestState => 
-      processRequest(r)
+    case AskSessionToRender(request,finder,timeout) => 
+      processRequest(request, finder)
       loop
       
-    case RenderedPage(state: RequestState, thePage: Response, sender: Actor) =>
+    case AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) =>
       val updatedPage = fixResponse(thePage, state)
       sender ! Some(updatedPage)
       loop
@@ -71,11 +73,14 @@ class Session extends Actor with HttpSessionBindingListener {
     case _ => loop
   }
   
-  private def processRequest(state: RequestState) = {
+  private def processRequest(state: RequestState, finder: (String) => InputStream) = {
+    S.init(state) {
+    try {
+    val page = 
+      pages.get(state.uri) match {
     
-    val page = pages.get(state.uri) match {
       case None => {
-        createPage(state) match {
+        createPage(state, finder) match {
           case None => None
           case s @ Some(p: Page) =>
             pages(state.uri) = p
@@ -83,8 +88,8 @@ class Session extends Actor with HttpSessionBindingListener {
         }
       }
       case Some(p : Page) => {
-        findVisibleTemplate(state.uri, state) match {
-          case Some(xml: NodeSeq) => p ! SetupPage(processSurroundAndInclude(xml, state), this) // FIXME reloads the page... maybe we don't always want to do this
+        findVisibleTemplate(state.uri, state, finder) match {
+          case Some(xml: NodeSeq) => p ! PerformSetupPage(processSurroundAndInclude(xml, state, finder), this) // FIXME reloads the page... maybe we don't always want to do this
           case _ => {}
         }
         Some(p)
@@ -92,46 +97,56 @@ class Session extends Actor with HttpSessionBindingListener {
     }
     
     page match {
-      case Some(p) => p ! RenderPage(state, sessionState, sender)
-      case _ => sender ! Some(state.createNotFound)
+      case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr))
+      case _ => reply(state.createNotFound)
     }
+    } catch {
+    case e  => {reply(state.showException(e))}
+  }
+    }
+  }
+  
+  private val controllerMgr = {
+    val ret = new ControllerManager
+    ret.start
+    ret.link(self)
+    ret
   }
 
   /**
     * Create a page based on the uri
     */
-  private def createPage(state: RequestState): Option[Page] = {
-    findVisibleTemplate(state.uri, state) match {
+  private def createPage(state: RequestState, finder: (String) => InputStream): Option[Page] = {
+    findVisibleTemplate(state.uri, state, finder) match {
       case None => None
       case Some(xml: NodeSeq) => {
         val ret = new Page // FIXME we really want a Page factory here so we can build other Page types
         ret.link(self)
         ret.start
-        val realXml : NodeSeq = processSurroundAndInclude(xml, state)
-        ret ! SetupPage(realXml, this)
+        val realXml : NodeSeq = processSurroundAndInclude(xml, state, finder)
+        ret ! PerformSetupPage(realXml, this)
         Some(ret)
       }
     }
   }
   
-  private def findVisibleTemplate(name : String, session : RequestState) : Option[NodeSeq] = {
-    val splits = name.split("/").toList.drop(1) match {
-      case s @ _ if (!s.isEmpty) => s.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("template") == -1}
+  private def findVisibleTemplate(name : String, session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
+    val splits = name.split("/").toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1}.drop(1) match {
+      case s @ _ if (!s.isEmpty) => s
       case _ => List("index")
     }
-    
-    findAnyTemplate(splits, session)
+    findAnyTemplate(splits, session, finder)
   }
   
-  private def findTemplate(name : String, session : RequestState) : Option[NodeSeq] = {
+  private def findTemplate(name : String, session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
       case s @ _ if (!s.isEmpty) => s
       case _ => List("index")
     }
     
-    findAnyTemplate(splits, session) match {
+    findAnyTemplate(splits, session, finder) match {
       case s @ Some(_) => s
-      case None => findAnyTemplate("template" :: splits, session)
+      case None => findAnyTemplate("templates-hidden" :: splits, session, finder)
     }
     
   }
@@ -178,40 +193,109 @@ class Session extends Actor with HttpSessionBindingListener {
     Some(Response(withController, ListMap.Empty, 200))
   }*/
   
-  private def findAndImbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
+  private def findAndImbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
     templateName match {
       case None => Comment("FIX"+"ME No named specified for embedding") concat kids
       case Some(s) => {
-        findTemplate(s.text, session) match {
+        findTemplate(s.text, session, finder) match {
           case None => Comment("FIX"+"ME Unable to find template named "+s.text) concat kids
-          case Some(s) => processSurroundAndInclude(s, session)
+          case Some(s) => processSurroundAndInclude(s, session, finder)
+        }
+      }
+    }
+  }
+  
+  
+  private def findControllerByType(contType: Option[Seq[Node]]): Option[ControllerActor] = {
+    if (contType == None) None
+    else {
+      findClass(contType.get.text, buildPackage("controller") ::: ("lift.app.controller" :: Nil), {c : Class => classOf[ControllerActor].isAssignableFrom(c)}) match {
+        case None => None
+        case Some(cls) => {
+          try {
+            val ret = Some(cls.newInstance.asInstanceOf[ControllerActor])
+            ret
+          } catch {
+            case _ => None
+          }
+        }
+      }
+    }
+  }
+  
+  private def findSnippetClass(name: String): Option[Class] = {
+    if (name == null) None
+    else findClass(name, buildPackage("snippet") ::: ("net.liftweb.builtin.snippet" :: Nil))
+  }
+  
+  private def findAttributeSnippet(name: String, request: RequestState, finder: (String) => InputStream, rest: MetaData): MetaData = {
+    val {cls, method} = splitColonPair(name, null, "render")
+    findSnippetClass(cls) match {
+      case None => rest
+      case Some(clz) => {
+        invokeMethod(clz, method) match {
+          case Some(md: MetaData) => md.copy(rest)
+          case _ => rest
         }
       }
     }
   }
 
+  private def processAttributes(in: MetaData, request: RequestState, finder: (String) => InputStream) : MetaData = {
+    in match {
+      case Null => Null
+      case mine: PrefixedAttribute if (mine.pre == "lift") => {
+        mine.key match {
+          case "snippet" => findAttributeSnippet(mine.value.text, request, finder, processAttributes(in.next, request, finder))
+          case _ => processAttributes(in.next, request, finder)
+        }
+      }
+      case notMine => notMine.copy(processAttributes(in.next, request, finder))
+    }
+  }
   
-  private def processSurroundAndInclude(in : NodeSeq, session : RequestState) : NodeSeq = {
+  private def findSnippet(snippetName: Option[Seq[Node]], kids: NodeSeq, request: RequestState, finder: (String) => InputStream) : NodeSeq = {
+    snippetName match {
+      case None => kids
+      case Some(ns) => {
+        val {cls, method} = splitColonPair(ns.text, null, "render")
+        findSnippetClass(cls) match {
+      case None => kids
+      case Some(clz) => {
+        invokeMethod(clz, method) match {
+          case Some(md: NodeSeq) => md
+          case _ => kids
+        }
+      }
+
+          
+        }
+      }
+    }
+  }
+  
+  private def processSurroundAndInclude(in : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
     in.flatMap{
       v => 
         v match {
-          case Elem("mondo", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session), session)}
-          case Elem("mondo", "embed", attr @ _, _, kids @ _*) => {findAndImbed(attr.get("what"), processSurroundAndInclude(kids, session), session)}
-          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processSurroundAndInclude(v.child, session) : _*)}
+          case Elem("lift", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)}
+          case Elem("lift", "embed", attr @ _, _, kids @ _*) => {findAndImbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)}
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) => {findSnippet(attr.get("type"), processSurroundAndInclude(kids, session, finder), session, finder)}
+          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)}
           case _ => {v}
         }
     }
   }
   
-  def findAndMerge(templateName : Option[Seq[Node]], at : Option[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
+  def findAndMerge(templateName : Option[Seq[Node]], at : Option[Seq[Node]], kids : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
     val name : String = templateName match {
-      case None => "/template/Default"
+      case None => "/templates-hiddend/Default"
       case Some(s) => if (s.text.startsWith("/")) s.text else "/"+ s.text
     }
     
-    findTemplate(name, session) match {
+    findTemplate(name, session, finder) match {
       case None => kids
-      case Some(s) => processBind(processSurroundAndInclude(s, session), at match {case None => "main"; case _ => at.get.text}, kids)
+      case Some(s) => processBind(processSurroundAndInclude(s, session, finder), at match {case None => "main"; case _ => at.get.text}, kids)
     }
   }
 
@@ -244,7 +328,7 @@ class Session extends Actor with HttpSessionBindingListener {
 
   private val suffixes = List("xhtml", "htm", "_html", "xml", "html", "")
   
-  def findAnyTemplate(places : List[String], session : RequestState) : Option[NodeSeq] = {
+  def findAnyTemplate(places : List[String], session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
     val toTry = (List.range(0, places.length).map {
       i =>
         places.take(i + 1).mkString("/","/","")
@@ -254,29 +338,35 @@ class Session extends Actor with HttpSessionBindingListener {
           s =>
             i + (if (s.length > 0) "." + s else "")
         }
-    }
+    }.reverse
     
     first(toTry) {
       s => 
-        session.resourceFinder(s) match {
+        finder(s) match {
           case null => None
-          case s @ _ => Some(s)
+          case found => PCDataXmlParser(found)
         }
-    } match {
-      case None => lookForClasses(places)
-      case Some(s) => Some(XML.load(s))
-    }
+    } orElse {lookForClasses(places)}
   }
   
   def lookForClasses(places : List[String]) : Option[NodeSeq] = {
-    val toTry = List.range(0, places.length).map {
+    val trans = List({(n:String) => n}, {(n:String) => smartCaps(n)})
+    val toTry = List.range(0, places.length).flatMap {
       i =>
-	"mondo.app.view."+ (places.take(i + 1).mkString("", ".", ""))
+      trans.flatMap{
+        f =>
+        val what = places.take(i + 1).map{st => f(st)}.mkString("", ".", "")
+      (buildPackage("view") ::: ("lift.app.view" :: Nil)).map{pkg => pkg + "."+what}
+      }
     }
+
     first(toTry) {
       clsName => 
 	try {
-          Class.forName(clsName) match {
+                tryn(List(classOf[ClassNotFoundException])) {
+
+                  Class.forName(clsName)
+                } match {
             case null => None
             case c @ _ => {
               val inst = c.newInstance
@@ -340,7 +430,7 @@ class Session extends Actor with HttpSessionBindingListener {
   */
   private def invokeController(controller : String, page : String, session: RequestState) : Any = {
     // find the controller
-    findClass(controller, "mondo.app.controller" :: "base.app.controller" :: "app.controller" :: Nil) match {
+    findClass(controller, "lift.app.controller" :: "base.app.controller" :: "app.controller" :: Nil) match {
       case None => {null}
       case Some(clz) => {
         if (classHasControllerMethod(clz, page)) {
@@ -362,7 +452,7 @@ class Session extends Actor with HttpSessionBindingListener {
   /*
   // invoke the "render" method on the named view
   private def invokeView(controller : String, page : String, session: RequestState ) : Option[Response] = {
-    findClass(page, "app.view."+controller :: "base.app.view."+controller :: "mondo.app.view."+controller :: Nil) match { 
+    findClass(page, "app.view."+controller :: "base.app.view."+controller :: "lift.app.view."+controller :: Nil) match { 
       case None => None
       case Some(v) => invokeRenderMethod(v)
     }
@@ -393,12 +483,14 @@ case class UnsetGlobal(name: String) extends SessionMessage
   * Sent from a session to a Page to tell the page to render itself and includes the sender that
   * the rendered response should be sent to
   */
-case class RenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor) extends SessionMessage
+case class AskRenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager) extends SessionMessage
 
 /**
   * The response from a page saying that it's been rendered
   */
-case class RenderedPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
+case class AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
+case class AskSessionToRender(request: RequestState,finder: (String) => InputStream,timeout: long)
+
 /*
 case class RequestPending(url: String,
 			  pathPrefix: String,
@@ -411,3 +503,5 @@ case class TheRendering(content: Array[byte],
 			headers: List[{String, String}],
 			response: int) extends SessionMessage
 */
+  
+

@@ -94,6 +94,18 @@ object DB {
     }
   }
   
+  def prepareStatement[T](statement : String,keys: int)(f : (PreparedStatement) => T) : T = {
+    use {
+      conn =>
+        val st = conn.prepareStatement(statement, keys)
+      try {
+        f(st)
+      } finally {
+        st.close
+      }
+    }
+  }
+  
   def use[T](f : (Connection) => T) : T = {
     this.use("")(f)
   }

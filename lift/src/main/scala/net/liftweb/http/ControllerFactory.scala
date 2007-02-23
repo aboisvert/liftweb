@@ -12,5 +12,5 @@ import scala.xml.Node
   * Constructs controllers
   */
 trait ControllerFactory {
-  def construct(contType: Option[Seq[Node]]): Option[ControllerActor]
+  def construct(contType: String): Option[ControllerActor]
 }

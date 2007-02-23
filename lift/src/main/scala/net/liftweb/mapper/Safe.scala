@@ -42,6 +42,7 @@ object Safe {
     }
   }
   
+
   def randomString(len: int) = Helpers.randomString(len)
 
   /*
@@ -58,8 +59,8 @@ object Safe {
     case s @ _ if (s < 52) => {('a' + (s - 26)).asInstanceOf[char].toString}      
     case s @ _  => {('0' + (s - 52)).asInstanceOf[char].toString}      
     }
-  }
- */
+  }*/
+ 
   /*
   def generateUniqueName = {
     S.nc+"_inp_"+randomString(15)+"_$"
