@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+ xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+ <modelVersion>4.0.0</modelVersion>
+
+ <!-- 
+  mvn install (in the root folder)
+  mvn scala:compile install (in the scalawithsails-core folder)
+  mvn scala:compile install jetty:run  (in the scalawithsails-example folder)
+  then open http://localhost:8888/
+ -->
+
+ <groupId>net.liftweb</groupId>
+ <artifactId>lift</artifactId>
+ <packaging>pom</packaging>
+ <name>Lift</name>
+ <version>0.1.0</version>
+ <url>http://liftweb.net</url>
+ <inceptionYear>2007</inceptionYear>
+
+ <modules>
+  <module>lift</module>
+  <module>example</module>
+ </modules>
+
+ <properties>
+  <final-name>${artifactId}-${version}</final-name>
+ </properties>
+
+ <pluginRepositories>
+  <pluginRepository>
+   <id>maven2.iodp.usio</id>
+   <name>IODP Maven2 Repository</name>
+   <url>http://millstone.iodp.tamu.edu/maven2</url>
+   <layout>default</layout>
+  </pluginRepository>
+  <pluginRepository>
+   <id>maven.liftweb.net</id>
+   <name>Lift Maven2 Repository</name>
+   <url>http://maven.scalawithsails.com/</url>
+   <layout>default</layout>
+  </pluginRepository>
+ </pluginRepositories>
+
+ <repositories>
+  <repository>
+   <id>maven.liftweb.net</id>
+   <name>Lift Maven2 Repository</name>
+   <url>http://maven.scalawithsails.com/</url>
+  </repository>
+
+  <repository>
+   <id>maven2.iodp.usio</id>
+   <name>ODP Maven2 Repository</name>
+   <url>http://millstone.iodp.tamu.edu/maven2</url>
+  </repository>
+
+ </repositories>
+
+ <dependencyManagement>
+  <dependencies>
+   <dependency>
+    <groupId>scala</groupId>
+    <artifactId>scala-compiler</artifactId>
+    <version>2.3.3</version>
+   </dependency>
+   <dependency>
+    <groupId>scala</groupId>
+    <artifactId>scala-library</artifactId>
+    <version>2.3.3</version>
+   </dependency>
+   <dependency>
+    <groupId>scala</groupId>
+    <artifactId>scala-actors</artifactId>
+    <version>2.3.3</version>
+   </dependency>
+  </dependencies>
+ </dependencyManagement>
+
+</project>
