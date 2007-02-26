@@ -13,7 +13,6 @@ import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute
 import net.liftweb.util.Helpers._
 
 trait MetaMapper[A] extends Mapper[A] {
-
   def findAll() : List[A] = {
     val ret: List[A] = DB.use {db => 
 
@@ -357,7 +356,7 @@ trait MetaMapper[A] extends Mapper[A] {
       case null => null
       case _ => inst.getClass
     }
-    val look = Pair(name.toLowerCase, if (clz != null) Some(clz) else None)
+    val look = {name.toLowerCase, if (clz != null) Some(clz) else None}
     mappedAppliers.get(look) match {
       case s @ Some(_) => s
       case None => {
@@ -410,10 +409,10 @@ trait MetaMapper[A] extends Mapper[A] {
   
   protected val rootClass = this.getClass.getSuperclass
   
-  private val mappedAppliers = new HashMap[Pair[String, Option[Class]], (Mapper[A], AnyRef) => unit];
+  private val mappedAppliers = new HashMap[{String, Option[Class]}, (Mapper[A], AnyRef) => unit];
   
   // private val mappedFields  = new HashMap[String, Method];
-  private var mappedFieldArray : Array[Triple[String, Method, MappedField[AnyRef,A]]] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
+  private var mappedFieldArray : Array[{String, Method, MappedField[AnyRef,A]}] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
   private val mappedColumns = new HashMap[String, Method];
   
@@ -427,13 +426,13 @@ trait MetaMapper[A] extends Mapper[A] {
   {
     
     this.runSafe {
-  val tArray = new ArrayBuffer[Triple[String, Method, MappedField[AnyRef,A]]]
+  val tArray = new ArrayBuffer[{String, Method, MappedField[AnyRef,A]}]
   for (val v <- this.getClass.getSuperclass.getMethods) {
     if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0) {
       val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
       if (mf != null && !mf.ignoreField) {
         mf.setName_!(v.getName)
-        val trp = Triple(mf.name, v, mf)
+        val trp = {mf.name, v, mf}
         tArray += trp
         for (val colName <- mf.db_column_names(v.getName)) {
           mappedColumnInfo(colName) = mf
@@ -450,7 +449,7 @@ trait MetaMapper[A] extends Mapper[A] {
     None
   }
   
-  val resArray = new ArrayBuffer[Triple[String, Method, MappedField[AnyRef,A]]];
+  val resArray = new ArrayBuffer[{String, Method, MappedField[AnyRef,A]}];
   
   sws_fieldOrder.foreach {
     f => 

@@ -36,7 +36,7 @@ class Page extends Actor {
       loop
     }
     
-    case AskRenderPage(state, sessionState, sender, controllerMgr) =>
+    case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) =>
       this.globalState = sessionState
     this.request = state
     try {
@@ -44,7 +44,7 @@ class Page extends Actor {
       
       val resp : Response = if (state.ajax_?) {
         // wait for redraws
-        val endAt = System.currentTimeMillis + 110000L
+        val endAt = System.currentTimeMillis + (timeout - 1000L)
         
           while (updates.isEmpty && endAt > System.currentTimeMillis) {
             receiveWithin(endAt - System.currentTimeMillis) {
@@ -54,7 +54,7 @@ class Page extends Actor {
 		this.theSession = session
               }
               
-              case AskRenderPage(state, sessionState, sender, controllerMgr) => {
+              case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) => {
 		processParameters(state)
 		val resp: Response = if (state.ajax_?) {
 		  Response(Unparsed(""),Map("Content-Type" -> "text/javascript"), 200)

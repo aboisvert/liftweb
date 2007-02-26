@@ -19,16 +19,37 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.collection.immutable.{ListMap}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment}
 import java.io.InputStream
+import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
-class Session extends Actor with HttpSessionBindingListener {
+
+class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
   private var sessionState: TreeMap[String, Any] = TreeMap.empty
   private var running_? = false
         
+      def sessionDidActivate(se: HttpSessionEvent) = {
+    // Console.println("session Did activate")
+  }
+def sessionWillPassivate(se: HttpSessionEvent) = {
+  /*
+  val session = se.getSession
+  val atNames = session.getAttributeNames
+  while (atNames.hasMoreElements) {
+    atNames.nextElement match {
+      
+      case s: String => Console.println("Removed "+s); session.removeAttribute(s)
+      case o => Console.println("Didn't remove "+o)
+    }
+  }
+  Console.println("session Did passivate real good!")
+  */
+}
   /**
     * What happens when this controller is bound to the HTTP session?
     */ 
   def valueBound(event: HttpSessionBindingEvent) {
+    //Console.println("bound ")
+    //this.start
     // ignore this event  
   }
 
@@ -36,7 +57,6 @@ class Session extends Actor with HttpSessionBindingListener {
     * When the session is unbound the the HTTP controller, stop us
     */
   def valueUnbound(event: HttpSessionBindingEvent) {
-    // stop running
     if (running_?) this ! "shutdown"
   }
   
@@ -60,7 +80,7 @@ class Session extends Actor with HttpSessionBindingListener {
     loop
     
     case AskSessionToRender(request,finder,timeout) => 
-      processRequest(request, finder)
+      processRequest(request, finder, timeout)
       loop
       
     case AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) =>
@@ -73,7 +93,7 @@ class Session extends Actor with HttpSessionBindingListener {
     case _ => loop
   }
   
-  private def processRequest(state: RequestState, finder: (String) => InputStream) = {
+  private def processRequest(state: RequestState, finder: (String) => InputStream, timeout: long) = {
     S.init(state) {
     try {
     val page = 
@@ -97,7 +117,7 @@ class Session extends Actor with HttpSessionBindingListener {
     }
     
     page match {
-      case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr))
+      case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr, timeout))
       case _ => reply(state.createNotFound)
     }
     } catch {
@@ -420,6 +440,8 @@ class Session extends Actor with HttpSessionBindingListener {
       case s: Map[_, _] => invokeView(controller, page, session) // run a view associated with the controller
       case _ => None
     }
+    
+
   }
   
 
@@ -483,7 +505,7 @@ case class UnsetGlobal(name: String) extends SessionMessage
   * Sent from a session to a Page to tell the page to render itself and includes the sender that
   * the rendered response should be sent to
   */
-case class AskRenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager) extends SessionMessage
+case class AskRenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
 
 /**
   * The response from a page saying that it's been rendered

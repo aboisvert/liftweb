@@ -27,8 +27,8 @@ val toCount = param("country") getOrElse {"US"}
 </pre></p>
 <p>The count for {toCount} nodes is {countryCount(toCount, addresses)}</p>
 
-<p><a href='/xml_fun'>Count US addresses</a></p>
-<p><a href='/xml_fun?country=GB'>Count GB addresses</a></p>
+<p><a href='/xml_fun'>Count US addresses.</a></p>
+<p><a href='/xml_fun?country=GB'>Count GB addresses.</a></p>
     
     </lift:surround>
   }

@@ -12,8 +12,10 @@ import net.liftweb.util.Helpers._
 import scala.xml.{NodeSeq, Text, Elem}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.HashSet
+import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
-trait ControllerActor extends Actor {
+
+trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
   
   val uniqueId = randomString(20)
@@ -171,6 +173,24 @@ trait ControllerActor extends Actor {
     whosAsking = null
     reRender
   }
+  
+  /*
+  def sessionDidActivate(se: HttpSessionEvent) = {
+    Console.println("Did activate")
+  }
+def sessionWillPassivate(se: HttpSessionEvent) = {
+  val session = se.getSession
+  val atNames = session.getAttributeNames
+  while (atNames.hasMoreElements) {
+    atNames.nextElement match {
+      
+      case s: String => Console.println("Removed "+s); session.removeAttribute(s)
+      case o => Console.println("Didn't remove "+o)
+    }
+  }
+  Console.println("Did passivate real good")
+}
+*/
 
 }
 

@@ -31,7 +31,7 @@ class Chat extends ControllerActor {
   
   def render = {
     val inputName = this.uniqueId+"_msg"
-    val ret = <span>Hello {userName}<ul>{
+    val ret = <span>Hello "{userName}"<ul>{
       currentData.reverse.map{
         cl =>
         <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>

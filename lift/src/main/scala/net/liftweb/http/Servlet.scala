@@ -26,6 +26,17 @@ import java.io.InputStream
  class Servlet extends HttpServlet {
    private val actorNameConst = "the_actor"
    
+    
+     override def destroy = {
+     // Console.println("************* ** destroying **********************")
+     Scheduler.shutdown // kill the scheduler so we don't have threading issues
+     super.destroy
+   }
+   
+   override def init = {
+     // Console.println("***********init******************") 
+     super.init
+   }
      
    /**
     * Forward the GET request to the POST handler
@@ -125,7 +136,7 @@ import java.io.InputStream
      }
      }
      
-     val timeout = (if (session.ajax_?) 120 else 10) * 1000L
+     val timeout = (if (session.ajax_?) 4 else 10) * 1000L
      
      sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
        case Some(r: Response) => r
