@@ -10,6 +10,8 @@ import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
+import net.liftweb.http.S
+import S._
 
 trait Mapper[A] {
   private val secure_# = Safe.next
@@ -41,15 +43,17 @@ trait Mapper[A] {
     getSingleton.asHtml(this)
   }
   
-  def sws_validate : List[ValidationIssues[AnyRef, A]] = {
+  def validate : List[ValidationIssues[AnyRef, A]] = {
     runSafe {
-    getSingleton.sws_validate(this)
+      getSingleton.validate(this)
     }
   }
   
-  def generateInputTable : Seq[Node] = {
-    getSingleton.generateInputTable(this)
-  }
+  /*
+   def toForm : NodeSeq = {
+   getSingleton.toForm(this)
+   }
+   */
   
   def delete_! : boolean = {
     if (!db_can_delete_?) false else
@@ -57,6 +61,10 @@ trait Mapper[A] {
 	was_deleted_? = getSingleton.delete_!(this)
 	was_deleted_?
       }
+  }
+  
+  def toForm(f : (List[String]) => boolean): NodeSeq = {
+    getSingleton.toForm(this) concat <input type='hidden' name={S.mapFunction("submit", f)} value="n/a" />
   }
   
   def db_can_delete_? : boolean = {

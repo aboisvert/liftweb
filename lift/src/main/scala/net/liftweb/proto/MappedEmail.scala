@@ -1,11 +1,11 @@
 package net.liftweb.proto
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
-  
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
+
 import net.liftweb.mapper._
 import java.util.regex._
 
@@ -22,7 +22,7 @@ class MappedEmail[T](owner : Mapper[T]) extends MappedString[T](owner) {
     })
   }
   
-  override def sws_validate : List[ValidationIssues[String, T]] = {
+  override def validate : List[ValidationIssues[String, T]] = {
     MappedEmail.emailPattern.matcher(i_get_!).matches match {
       case true => Nil
       case false => List(ValidationIssues(this, "Invalid Email Address"))

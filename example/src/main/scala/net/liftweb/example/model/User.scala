@@ -18,7 +18,7 @@ object User extends User with MetaMapper[User] {
   protected override def internalTableName_$ = "users" // define the DB table name
   
   // define the order fields will appear in forms and output
-  override def sws_fieldOrder = id :: firstName :: lastName :: email :: 
+  override def fieldOrder = id :: firstName :: lastName :: email :: 
   password :: textArea :: Nil
 }
 
@@ -37,8 +37,8 @@ class User extends ProtoUser[User] {
 }
 
 /**
-* Fix the database
-*/
+ * Fix the database
+ */
 object FixUp {
   def insureWeHaveATable {
     DB.use {

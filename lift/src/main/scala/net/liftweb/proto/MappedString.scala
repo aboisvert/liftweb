@@ -31,7 +31,8 @@ class MappedString[T](val owner : Mapper[T]) extends MappedField[String, T] {
   
   def defaultValue = ""
   def maxLen = 32
-  override def write_permission_? = true
+  override def writePermission_? = true
+  override def readPermission_? = true
 
   protected def i_get_! = data.get
 
@@ -39,11 +40,18 @@ class MappedString[T](val owner : Mapper[T]) extends MappedField[String, T] {
     ""
   }
   
-  def ::=(f : Any) : String = {
-    this := (if (f != null) f.toString else null)
+  def ::=(in : Any) : String = {
+    in match {
+      case (s: String) :: _ => this := s
+      case null => this := null
+      case s: String => this := s
+      case Some(s: String) => this := s
+      case None => this := null
+      case o => this := o.toString
+    }
+//     this := (if (f != null) f.toString else null)
   }
   
-  override def read_permission_? = true
   
   def getJDBCFriendly(field : String) : Object = get
   

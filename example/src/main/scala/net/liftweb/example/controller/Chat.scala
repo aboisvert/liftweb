@@ -22,36 +22,37 @@ class Chat extends ControllerActor {
   
 
   override def lowPriority : PartialFunction[Any, Unit] = {
-      case ChatServerUpdate(value) => {
-        currentData = value
-        reRender
-        loop
-      }
-    } 
+    case ChatServerUpdate(value) => {
+      currentData = value
+      reRender
+      loop
+    }
+  } 
   
   def render = {
     val inputName = this.uniqueId+"_msg"
-    val ret = <span>Hello "{userName}"<ul>{
+    
+    S.addFunctionMap(inputName, sendMessage)
+    
+    <span>Hello "{userName}"<ul>{
       currentData.reverse.map{
         cl =>
-        <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>
+          <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>
       }.toList
     }</ul><lift:form method="POST">
     <input name={inputName} type="text" value=""/><input value="Send" type="submit"/>
     </lift:form></span>
-
-    XmlAndMap(ret, TreeMap(inputName -> sendMessage))
   }
   
   override def localSetup {
     if (userName.length == 0) {
-    ask(new AskName, "what's your username") {
-      answer =>
-      answer match {
-        case s : String if (s.length > 2) => userName = s; true
-        case _ => localSetup; false
+      ask(new AskName, "what's your username") {
+	answer =>
+	  answer match {
+            case s : String if (s.length > 2) => userName = s; true
+            case _ => localSetup; true
+	  }
       }
-    }
     }
   }
   
@@ -63,10 +64,10 @@ class Chat extends ControllerActor {
   }
   
   def sendMessage(in: List[String]) = {
-      server ! ChatServerMsg(userName, in.head)
-      waitForUpdate match {
-        case Some(l : List[ChatLine]) => currentData = l ; true
-        case _ => false
-      }
+    server ! ChatServerMsg(userName, in.head)
+    waitForUpdate match {
+      case Some(l : List[ChatLine]) => currentData = l ; true
+      case _ => true
     }
+  }
 }

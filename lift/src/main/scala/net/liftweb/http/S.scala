@@ -1,7 +1,7 @@
 package net.liftweb.http
 
 /*                                                *\
- (c) 2006 WorldWide Conferencing, LLC
+ (c) 2006-2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
 
@@ -24,6 +24,7 @@ object S {
    * The current session
    */
   private val _request = new ThreadGlobal[RequestState];
+  private val functionMap = new ThreadGlobal[HashMap[String, (List[String]) => boolean]]
   
   /**
    * Get the current HttpServletSession
@@ -48,13 +49,17 @@ object S {
   }
   
   /**
-  * Initialize the current "State" session
-  */
-  def init[B](request : RequestState)(f : => B) : B = {
+   * Initialize the current "State" session
+   */
+  def init[B](request : RequestState)(f : => B) : B = {    
+    functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
       this._request.doWith(request) {
-            this.currCnt.doWith(0)(f)
-	}
+        this.currCnt.doWith(0)(f)
       }
+    }
+  }
+  
+  def getFunctionMap: Map[String, (List[String]) => boolean] = functionMap.value
 
   /*
   /**
@@ -82,18 +87,18 @@ object S {
   */
   def update(n : String, v : Any) : Any = {
     if (variables.value != null) {
-	v match {
-	  case ev @Some(_) => {variables.value += n.toLowerCase -> ev.get}
-	  case _ => {variables.value += n.toLowerCase -> v}
-	}
+      v match {
+	case ev @Some(_) => {variables.value += n.toLowerCase -> ev.get}
+	case _ => {variables.value += n.toLowerCase -> v}
+      }
     }
     v
   }
 
   /**
-  * "Push" the current variable state.  The current variables are snapshotted and preserved.  When
-  * the closure is done executing, the "snapshotted" variables are restored.
-  */
+   * "Push" the current variable state.  The current variables are snapshotted and preserved.  When
+   * the closure is done executing, the "snapshotted" variables are restored.
+   */
   def push[B](f : => B) : B = {
     variables.doWith(variables.value.clone)(f)
   }
@@ -108,7 +113,16 @@ object S {
     if (v == None || v == null) "" else v.asInstanceOf[Some[Any]].get.toString
   }
   */
-    
-    def params(n: String) = request.params(n)
-    def param(n: String): Option[String] = request.param(n)
+  
+  def addFunctionMap(name: String, value: (List[String]) => boolean) {
+    functionMap.value += (name -> value)
+  }
+  def mapFunction(name: String, f: (List[String]) => boolean): String = {
+    val ret = ""+nc+"_"+name+"_"+randomString(5)
+    functionMap.value += (ret -> f)
+    ret
+  }
+  
+  def params(n: String) = request.params(n)
+  def param(n: String): Option[String] = request.param(n)
 }

@@ -29,7 +29,8 @@ class MappedBinary[T](val owner : Mapper[T]) extends MappedField[Array[byte], T]
   
   def defaultValue = null
   def maxLen = 1024
-  override def write_permission_? = true
+  override def writePermission_? = true
+  override def readPermission_? = true
 
   protected def i_get_! = data.get
 
@@ -43,7 +44,6 @@ class MappedBinary[T](val owner : Mapper[T]) extends MappedField[Array[byte], T]
     else f.toString.getBytes("UTF-8"))
   }
   
-  override def read_permission_? = true
   
   def getJDBCFriendly(field : String) : Object = get
   

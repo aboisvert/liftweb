@@ -407,12 +407,30 @@ object Helpers {
       case o => toBoolean(o.toString)
     }
   }
+  
   def toInt(in: Any): int = {
     in match {
       case null => 0
+      case n: int => n
       case n : Number => n.intValue
+      case (n: Number) :: _ => n.intValue
+      case Some(n: Number) => n.intValue
+      case None => 0
       case s : String => tryn {Integer.parseInt(s)}
       case o => toInt(o.toString)
+    }
+  }
+  
+  def toLong(in: Any): long = {
+    in match {
+      case null => 0L
+      case n: long => n
+      case n : Number => n.longValue
+      case (n: Number) :: _ => n.longValue
+      case Some(n: Number) => n.longValue
+      case None => 0L
+      case s : String => tryn {java.lang.Long.parseLong(s)}
+      case o => toLong(o.toString)
     }
   }
   

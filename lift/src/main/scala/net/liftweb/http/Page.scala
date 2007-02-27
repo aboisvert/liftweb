@@ -164,7 +164,7 @@ class Page extends Actor {
 	// set up the controller
 	controller ! PerformSetupController(List(this), kids)
       <span id={controller.uniqueId}>{
-        (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => {k, localState(k)}}))) match {
+        (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => {k, localState(k)}}, request))) match {
           case Some(view: AnswerRender) => updateCallbacks(view, request) 
           case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
         }
@@ -202,7 +202,7 @@ class Page extends Actor {
     r.paramNames.filter{n => messageCallback.contains(n)}.foreach{
       n => 
     	val v = messageCallback(n)
-      v.target !? (100l, ActionMessage(v.name, r.params(n), self, Some(this)))
+      v.target !? (100l, ActionMessage(v.name, r.params(n), self, Some(this), r))
     }
     // messageCallback = TreeMap.Empty[String, ActionMessage]
   }

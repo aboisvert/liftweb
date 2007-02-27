@@ -33,7 +33,8 @@ class MappedDateTime[T](val owner : Mapper[T]) extends MappedField[Date, T] {
   def defaultValue = null
   // private val defaultValue_i = new Date
 
-  override def write_permission_? = true
+  override def writePermission_? = true
+  override def readPermission_? = true
 
   protected def i_get_! = data.get
 
@@ -45,7 +46,6 @@ class MappedDateTime[T](val owner : Mapper[T]) extends MappedField[Date, T] {
     this := toDate(f)
   }
   
-  override def read_permission_? = true
   
   def getJDBCFriendly(field : String) : Object = get match {
     case null => null

@@ -26,27 +26,27 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private val pages = new HashMap[String, Page]
   private var sessionState: TreeMap[String, Any] = TreeMap.empty
   private var running_? = false
-        
-      def sessionDidActivate(se: HttpSessionEvent) = {
+  
+  def sessionDidActivate(se: HttpSessionEvent) = {
     // Console.println("session Did activate")
   }
-def sessionWillPassivate(se: HttpSessionEvent) = {
-  /*
-  val session = se.getSession
-  val atNames = session.getAttributeNames
-  while (atNames.hasMoreElements) {
-    atNames.nextElement match {
-      
-      case s: String => Console.println("Removed "+s); session.removeAttribute(s)
-      case o => Console.println("Didn't remove "+o)
-    }
+  def sessionWillPassivate(se: HttpSessionEvent) = {
+    /*
+     val session = se.getSession
+     val atNames = session.getAttributeNames
+     while (atNames.hasMoreElements) {
+     atNames.nextElement match {
+     
+     case s: String => Console.println("Removed "+s); session.removeAttribute(s)
+     case o => Console.println("Didn't remove "+o)
+     }
+     }
+    Console.println("session Did passivate real good!")
+    */
   }
-  Console.println("session Did passivate real good!")
-  */
-}
   /**
-    * What happens when this controller is bound to the HTTP session?
-    */ 
+  * What happens when this controller is bound to the HTTP session?
+  */ 
   def valueBound(event: HttpSessionBindingEvent) {
     //Console.println("bound ")
     //this.start
@@ -54,23 +54,23 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   }
 
   /**
-    * When the session is unbound the the HTTP controller, stop us
-    */
+  * When the session is unbound the the HTTP controller, stop us
+  */
   def valueUnbound(event: HttpSessionBindingEvent) {
     if (running_?) this ! "shutdown"
   }
   
   /**
-    * called when the Actor is started
-    */
+  * called when the Actor is started
+  */
   def act = {
     running_? = true
     loop
   }
   
   /**
-    * The loop for the actor.  Dispatches messages using Scala's event-based Actors
-    */
+  * The loop for the actor.  Dispatches messages using Scala's event-based Actors
+  */
   final def loop {
     react(dispatcher)
   }
@@ -81,12 +81,12 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
     
     case AskSessionToRender(request,finder,timeout) => 
       processRequest(request, finder, timeout)
-      loop
-      
+    loop
+    
     case AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) =>
       val updatedPage = fixResponse(thePage, state)
-      sender ! Some(updatedPage)
-      loop
+    sender ! Some(updatedPage)
+    loop
 
     case SetGlobal(name, value) => sessionState = (sessionState(name) = value); loop
     case UnsetGlobal(name) => sessionState = (sessionState - name); loop
@@ -95,34 +95,34 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   
   private def processRequest(state: RequestState, finder: (String) => InputStream, timeout: long) = {
     S.init(state) {
-    try {
-    val page = 
-      pages.get(state.uri) match {
-    
-      case None => {
-        createPage(state, finder) match {
-          case None => None
-          case s @ Some(p: Page) =>
-            pages(state.uri) = p
-            s
-        }
+      try {
+	val page = 
+	  pages.get(state.uri) match {
+	    
+	    case None => {
+              createPage(state, finder) match {
+		case None => None
+		case s @ Some(p: Page) =>
+		  pages(state.uri) = p
+		s
+              }
+	    }
+	    case Some(p : Page) => {
+              findVisibleTemplate(state.uri, state, finder) match {
+		case Some(xml: NodeSeq) => p ! PerformSetupPage(processSurroundAndInclude(xml, state, finder), this) // FIXME reloads the page... maybe we don't always want to do this
+		case _ => {}
+              }
+              Some(p)
+	    }
+	  }
+	
+	page match {
+	  case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr, timeout))
+	  case _ => reply(state.createNotFound)
+	}
+      } catch {
+	case e  => {reply(state.showException(e))}
       }
-      case Some(p : Page) => {
-        findVisibleTemplate(state.uri, state, finder) match {
-          case Some(xml: NodeSeq) => p ! PerformSetupPage(processSurroundAndInclude(xml, state, finder), this) // FIXME reloads the page... maybe we don't always want to do this
-          case _ => {}
-        }
-        Some(p)
-      }
-    }
-    
-    page match {
-      case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr, timeout))
-      case _ => reply(state.createNotFound)
-    }
-    } catch {
-    case e  => {reply(state.showException(e))}
-  }
     }
   }
   
@@ -134,8 +134,8 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   }
 
   /**
-    * Create a page based on the uri
-    */
+  * Create a page based on the uri
+  */
   private def createPage(state: RequestState, finder: (String) => InputStream): Option[Page] = {
     findVisibleTemplate(state.uri, state, finder) match {
       case None => None
@@ -175,12 +175,12 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
     in match {
       case null => true
       case _ => {
-    in.get("Content-Type") match {
-      case s @ Some(_) => {s.get.toLowerCase == "text/html"}
-      case None | null => true
-    }
+	in.get("Content-Type") match {
+	  case s @ Some(_) => {s.get.toLowerCase == "text/html"}
+	  case None | null => true
+	}
       }
-  }
+    }
   }
   
   def fixResponse(resp: Response, state: RequestState): Response = {
@@ -190,8 +190,8 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   }
   
   /**
-    * Update any "Location" headers to add the Context path
-    */
+  * Update any "Location" headers to add the Context path
+  */
   def fixHeaders(h: Map[String, String], state: RequestState) = {
     h match {
       case null => Map.empty[String, String]
@@ -200,7 +200,7 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
           case {"Location", v} if (v != null && v.startsWith("/")) => {"Location", "/"+state.contextPath+v}
           case _ => p
         }
-      }
+						 }
     }
   }
   
@@ -208,9 +208,9 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   /*
   private def processTemplate(xml : NodeSeq, session: RequestState) : Option[Response] = {
     val surrounded = processSurroundAndInclude(xml, session)
-    val withController = processControllers(surrounded)
-    
-    Some(Response(withController, ListMap.Empty, 200))
+  val withController = processControllers(surrounded)
+  
+  Some(Response(withController, ListMap.Empty, 200))
   }*/
   
   private def findAndImbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
@@ -280,13 +280,13 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
       case Some(ns) => {
         val {cls, method} = splitColonPair(ns.text, null, "render")
         findSnippetClass(cls) match {
-      case None => kids
-      case Some(clz) => {
-        invokeMethod(clz, method) match {
-          case Some(md: NodeSeq) => md
-          case _ => kids
-        }
-      }
+	  case None => kids
+	  case Some(clz) => {
+            invokeMethod(clz, method) match {
+              case Some(md: NodeSeq) => md
+              case _ => kids
+            }
+	  }
 
           
         }
@@ -324,22 +324,22 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   private def serviceRequestWithTemplate(session: RequestState) : Option[Response] = {
     findVisibleTemplate(session.uri, session) match {
       case None => None
-      case Some(s) => {
-	processTemplate(s, session) match {
-          case None => None
-          case s @ Some(_) => s
-	}
-      }
+  case Some(s) => {
+    processTemplate(s, session) match {
+      case None => None
+  case s @ Some(_) => s
+    }
+  }
     }
   }
   
   private def serviceRequest(session: RequestState) : Response = {
     serviceRequestWithTemplate(session) match {
       case Some(s) => s
-      case None => doRailsStyleDispatch(session) match {
-        case None => session.createNotFound
-        case Some(s) => s
-      }
+  case None => doRailsStyleDispatch(session) match {
+    case None => session.createNotFound
+  case Some(s) => s
+  }
     }
   }*/
   
@@ -373,20 +373,20 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
     val trans = List({(n:String) => n}, {(n:String) => smartCaps(n)})
     val toTry = List.range(0, places.length).flatMap {
       i =>
-      trans.flatMap{
-        f =>
-        val what = places.take(i + 1).map{st => f(st)}.mkString("", ".", "")
-      (buildPackage("view") ::: ("lift.app.view" :: Nil)).map{pkg => pkg + "."+what}
-      }
+	trans.flatMap{
+          f =>
+            val what = places.take(i + 1).map{st => f(st)}.mkString("", ".", "")
+	  (buildPackage("view") ::: ("lift.app.view" :: Nil)).map{pkg => pkg + "."+what}
     }
+				     }
 
     first(toTry) {
       clsName => 
 	try {
-                tryn(List(classOf[ClassNotFoundException])) {
+          tryn(List(classOf[ClassNotFoundException])) {
 
-                  Class.forName(clsName)
-                } match {
+            Class.forName(clsName)
+          } match {
             case null => None
             case c @ _ => {
               val inst = c.newInstance
@@ -413,18 +413,18 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   * Look for a class that matches the URL pattern and
   * calls that class
   */
-    /*
+  /*
   private def doRailsStyleDispatch(session : RequestState) : Option[Response] = {
     // get the first element (the controller)
     val controller = session.controller
-    // get the second element (the view, and put in 'index' if it doesn't exist)
-    val page = session.view
+  // get the second element (the view, and put in 'index' if it doesn't exist)
+  val page = session.view
 
-    // invoke the named controller and view
-    invokeControllerAndView(controller, page, session)
+  // invoke the named controller and view
+  invokeControllerAndView(controller, page, session)
   }*/
   
-    /*
+  /*
   /**
   * Invoke the named controller and optionally its view
   */
@@ -476,7 +476,7 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
   private def invokeView(controller : String, page : String, session: RequestState ) : Option[Response] = {
     findClass(page, "app.view."+controller :: "base.app.view."+controller :: "lift.app.view."+controller :: Nil) match { 
       case None => None
-      case Some(v) => invokeRenderMethod(v)
+  case Some(v) => invokeRenderMethod(v)
     }
   }*/
   
@@ -485,9 +485,9 @@ def sessionWillPassivate(se: HttpSessionEvent) = {
     if (clz == null)  null else {
       try {
         val meth = clz.getMethod("render", null)
-        if (!callableMethod_?(meth) ) null else {
-          dealWithViewRet(meth.invoke(clz.newInstance, null))
-        }
+  if (!callableMethod_?(meth) ) null else {
+    dealWithViewRet(meth.invoke(clz.newInstance, null))
+  }
       } catch {
         case c : InvocationTargetException => {def findRoot(e : Throwable) : Option[Response] = {if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause)}; findRoot(c)}
       }
@@ -502,28 +502,28 @@ case class Setup(page: NodeSeq, http: Actor) extends SessionMessage
 case class SetGlobal(name: String, value: Any) extends SessionMessage
 case class UnsetGlobal(name: String) extends SessionMessage
 /**
-  * Sent from a session to a Page to tell the page to render itself and includes the sender that
-  * the rendered response should be sent to
-  */
+ * Sent from a session to a Page to tell the page to render itself and includes the sender that
+ * the rendered response should be sent to
+ */
 case class AskRenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
 
 /**
-  * The response from a page saying that it's been rendered
-  */
+ * The response from a page saying that it's been rendered
+ */
 case class AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
 case class AskSessionToRender(request: RequestState,finder: (String) => InputStream,timeout: long)
 
 /*
-case class RequestPending(url: String,
-			  pathPrefix: String,
-			  attributes: Map[String, List[String]],
-			  parameters: Map[String, List[String]],
-			  headers: Map[String, List[String]],
-			  method: String) extends SessionMessage
-case class RequestUnpending extends SessionMessage
-case class TheRendering(content: Array[byte],
-			headers: List[{String, String}],
-			response: int) extends SessionMessage
-*/
-  
+ case class RequestPending(url: String,
+ pathPrefix: String,
+ attributes: Map[String, List[String]],
+ parameters: Map[String, List[String]],
+ headers: Map[String, List[String]],
+ method: String) extends SessionMessage
+ case class RequestUnpending extends SessionMessage
+ case class TheRendering(content: Array[byte],
+ headers: List[{String, String}],
+ response: int) extends SessionMessage
+ */
+
 

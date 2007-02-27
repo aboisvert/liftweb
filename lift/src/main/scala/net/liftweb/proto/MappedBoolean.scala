@@ -31,17 +31,27 @@ class MappedBoolean[T](val owner : Mapper[T]) extends MappedField[boolean, T] {
     }
     value
   }
-  override def read_permission_? = true
-  override def write_permission_? = true
+  override def readPermission_? = true
+  override def writePermission_? = true
   
   def convertToJDBCFriendly(value: boolean): Object = new Boolean(value)
       
       
   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new Boolean(get)}
 
-  def ::=(f : Any) : boolean = {
-    this := toBoolean(f)
+  def ::=(in : Any) : boolean = {
+    in match {
+      case b: boolean => this := b
+      case (b: boolean) :: _ => this := b
+      case Some(b: boolean) => this := b
+      case None => this := false
+      case (s: String) :: _ => this := toBoolean(s)
+      case null => this := false
+      case s: String => this := toBoolean(s)
+      case o => this := toBoolean(o)
+    }
   }
+
   protected def i_obscure_!(in : boolean) = false
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {

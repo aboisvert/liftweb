@@ -14,10 +14,7 @@ class Clock extends ControllerActor {
   case class Tick
   ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
   
-  def render = {
-    val myXhtml = bind(Map("time" -> Text((new java.util.Date).toString)))
-    XmlAndMap(myXhtml, Map.empty)
-  }
+  def render = bind(Map("time" -> Text((new java.util.Date).toString)))
   
   override def lowPriority : PartialFunction[Any, Unit] = {
     case Tick() => 
