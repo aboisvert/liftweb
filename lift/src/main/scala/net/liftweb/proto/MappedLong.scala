@@ -13,7 +13,7 @@ import net.liftweb.util.Helpers._
 import java.lang.Long
 import java.util.Date
 
-class MappedLongForeignKey[T,O](owner: Mapper[T], foreign: MetaMapper[O]) extends MappedLong[T](owner) with ForeignKey[long, O] {
+class MappedLongForeignKey[T<:Mapper[T],O<:Mapper[O]](owner: Mapper[T], foreign: MetaMapper[O]) extends MappedLong[T](owner) with ForeignKey[long, O] {
   def defined_? = i_get_! != defaultValue
       
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
@@ -21,7 +21,7 @@ class MappedLongForeignKey[T,O](owner: Mapper[T], foreign: MetaMapper[O]) extend
   def obj = if(defined_?) foreign.find(i_get_!) else None
 }
 
-class MappedLongIndex[T](owner : Mapper[T]) extends MappedLong[T](owner) with IndexedField[long] {
+class MappedLongIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedLong[T](owner) with IndexedField[long] {
 
   override def writePermission_? = false // not writable
   
@@ -70,7 +70,7 @@ class MappedLongIndex[T](owner : Mapper[T]) extends MappedLong[T](owner) with In
 }
 
 
-class MappedLong[T](val owner : Mapper[T]) extends MappedField[long, T] {
+class MappedLong[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[long, T] {
   private var data : long = defaultValue
   def defaultValue = 0L
 

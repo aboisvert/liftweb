@@ -13,7 +13,7 @@ import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.util.Date
 
-class MappedString[T](val owner : Mapper[T]) extends MappedField[String, T] {
+class MappedString[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy{defaultValue} // defaultValue
   
   protected def i_set_!(value : String) : String = {

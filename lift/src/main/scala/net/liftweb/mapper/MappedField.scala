@@ -13,11 +13,12 @@ import scala.xml.{Elem, Text, Node, NodeSeq}
 import java.util.Date
 import net.liftweb.http.S
 
-trait MappedField[T <: Any,O] {
+trait MappedField[T <: Any,O<:Mapper[O]] {
   def ignoreField = false
   def defaultValue : T
   
 
+  def getActualField(owner: O): MappedField[T, O] = null
 
   
   private var _dirty_? = false
@@ -156,11 +157,11 @@ trait MappedField[T <: Any,O] {
 }
 
 object MappedField {
-  implicit def mapToType[T, A](in : MappedField[T, A]) : T = in.get
-  implicit def mapFromOption[T, A](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
+  implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]) : T = in.get
+  implicit def mapFromOption[T, A<:Mapper[A]](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
 }
 
-case class ValidationIssues[T,O](field : MappedField[T,O], msg : String)
+case class ValidationIssues[T,O<:Mapper[O]](field : MappedField[T,O], msg : String)
 
 trait IndexedField[O] {
   def convertKey(in : String) : Option[O]
@@ -174,7 +175,7 @@ trait IndexedField[O] {
 /**
   * A trait that defines foreign key references
   */
-trait ForeignKey[T,MT] {
+trait ForeignKey[T,MT<:Mapper[MT]] {
   /**
     * Is the key defined?
     */
@@ -202,8 +203,8 @@ trait LifecycleCallbacks {
   def afterCreate {}
   def afterUpdate {}
 
-  def beforeDestroy {}
-  def afterDestroy {}
+  def beforeDelete {}
+  def afterDelete {}
 }
 
 

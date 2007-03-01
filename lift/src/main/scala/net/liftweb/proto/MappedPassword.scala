@@ -15,7 +15,7 @@ import java.lang.reflect.Method
 import scala.xml.{Node, Text, Elem}
 import java.util.Date
 
-class MappedPassword[T](val owner : Mapper[T]) extends MappedField[String, T] {
+class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[String, T] {
 
   /*
    override def i : Elem = {

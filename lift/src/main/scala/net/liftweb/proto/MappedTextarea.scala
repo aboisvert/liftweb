@@ -4,7 +4,7 @@ import net.liftweb.mapper._
 import scala.xml.Elem
 
 
-class MappedTextarea[T](owner : Mapper[T]) extends MappedString[T](owner) {
+class MappedTextarea[T<:Mapper[T]](owner : Mapper[T]) extends MappedString[T](owner) {
   
   /*
   override def i : Elem = {

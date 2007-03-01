@@ -13,7 +13,7 @@ import net.liftweb.util.Helpers._
 import java.lang.Boolean
 import java.util.Date
 
-class MappedBoolean[T](val owner : Mapper[T]) extends MappedField[boolean, T] {
+class MappedBoolean[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[boolean, T] {
   private var data : Option[boolean] = Some(defaultValue)
   def defaultValue = false
 

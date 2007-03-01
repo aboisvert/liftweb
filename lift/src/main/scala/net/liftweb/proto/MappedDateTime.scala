@@ -14,7 +14,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 
-class MappedDateTime[T](val owner : Mapper[T]) extends MappedField[Date, T] {
+class MappedDateTime[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Date, T] {
   private var data : Lazy[Date] = Lazy{defaultValue}
   
   protected def i_set_!(value : Date) : Date = {

@@ -13,7 +13,7 @@ import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.util.Date
 
-class MappedBinary[T](val owner : Mapper[T]) extends MappedField[Array[byte], T] {
+class MappedBinary[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Array[byte], T] {
   private val data : Lazy[Array[byte]] =  Lazy{defaultValue} // defaultValue
   
   protected def i_set_!(value : Array[byte]) : Array[byte] = {

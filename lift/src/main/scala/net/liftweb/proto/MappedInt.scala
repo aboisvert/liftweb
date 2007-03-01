@@ -12,7 +12,7 @@ import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
 import java.util.Date
 
-class MappedIntIndex[T](owner : Mapper[T]) extends MappedInt[T](owner) with IndexedField[int] {
+class MappedIntIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedInt[T](owner) with IndexedField[int] {
 
   override def writePermission_? = false // not writable
   
@@ -61,7 +61,7 @@ class MappedIntIndex[T](owner : Mapper[T]) extends MappedInt[T](owner) with Inde
 }
 
 
-class MappedInt[T](val owner : Mapper[T]) extends MappedField[int, T] {
+class MappedInt[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[int, T] {
   private var data : int = defaultValue
   def defaultValue = 0
 

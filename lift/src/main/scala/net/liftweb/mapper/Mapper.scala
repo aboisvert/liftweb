@@ -13,7 +13,7 @@ import scala.xml.{Elem, Node, NodeSeq}
 import net.liftweb.http.S
 import S._
 
-trait Mapper[A] {
+trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next
   private var was_deleted_? = false
   def getSingleton : MetaMapper[A];
@@ -111,6 +111,10 @@ trait Mapper[A] {
 }
 
 object Mapper {
-  implicit def fromSome[T](in : Option[Mapper[T]]) : Mapper[T] = in.get
+  implicit def fromSome[T<:Mapper[T]](in : Option[Mapper[T]]) : Mapper[T] = in.get
+}
+
+trait Keyed[KeyType, OwnerType<:Mapper[OwnerType]] {
+  def primaryKeyField: MappedField[KeyType, OwnerType]
 }
 

@@ -13,7 +13,7 @@ import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute
 import net.liftweb.util.Helpers._
 import java.util.Date
 
-trait MetaMapper[A] extends Mapper[A] {
+trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
 
   def beforeValidation: List[(Mapper[A]) => unit] = Nil
   def beforeValidationOnCreate: List[(Mapper[A]) => unit] = Nil
@@ -30,8 +30,8 @@ trait MetaMapper[A] extends Mapper[A] {
   def afterCreate: List[(Mapper[A]) => unit] = Nil
   def afterUpdate: List[(Mapper[A]) => unit] = Nil
 
-  def beforeDestroy: List[(Mapper[A]) => unit] = Nil
-  def afterDestroy: List[(Mapper[A]) => unit] = Nil
+  def beforeDelete: List[(Mapper[A]) => unit] = Nil
+  def afterDelete: List[(Mapper[A]) => unit] = Nil
   
   
   def findAll : List[A] = {
@@ -138,7 +138,7 @@ trait MetaMapper[A] extends Mapper[A] {
           case List(d: Date) => 
              st.setDate(curPos, new java.sql.Date(d.getTime))
              setStatementFields(st, xs, curPos + 1)
-          case List(field: MappedField[Any, Any]) => st.setObject(curPos, field.getJDBCFriendly, field.getTargetSQLType)
+          case List(field: MappedField[Any, A]) => st.setObject(curPos, field.getJDBCFriendly, field.getTargetSQLType)
           setStatementFields(st, xs, curPos + 1)
           
           case p :: ps => 
@@ -176,7 +176,7 @@ trait MetaMapper[A] extends Mapper[A] {
   }
   
   def delete_!(toDelete : Mapper[A]) : boolean = {
-    _beforeDestroy(toDelete)
+    _beforeDelete(toDelete)
     val ret = DB.prepareStatement("DELETE FROM "+tableName_$ +" WHERE "+indexMap+" = ?") {
       st =>
 	val indVal = indexedField(toDelete)
@@ -184,7 +184,7 @@ trait MetaMapper[A] extends Mapper[A] {
 
       st.executeUpdate == 1
     }
-    _afterDestroy(toDelete)
+    _afterDelete(toDelete)
     ret
   }
   
@@ -193,7 +193,7 @@ trait MetaMapper[A] extends Mapper[A] {
       case null => None
       case None => None
       case Some(n) => find(n)
-      case qp: QueryParam[Any] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
+      case qp: QueryParam[A] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
       // case s: Seq[Any] if (s.length > 0 && s(0).isInstanceOf[QueryParam[Any]]) => find(s.asInstanceOf[Seq[QueryParam[A]]])
       case v => find(v.toString)
     }
@@ -417,7 +417,7 @@ trait MetaMapper[A] extends Mapper[A] {
 
   def createInstance(rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,int,Mapper[A]) => unit]) : A = {
     val ret = createInstance
-    val ra = ret.asInstanceOf[Mapper[A]]
+    val ra = ret// .asInstanceOf[Mapper[A]]
     var pos = 1
     while (pos <= colCnt) {
       mapFuncs(pos) match {
@@ -477,7 +477,7 @@ trait MetaMapper[A] extends Mapper[A] {
   }
   
   
-  def createInstance : A = {
+  def createInstance: A = {
     
     val ret = rootClass.newInstance.asInstanceOf[A];
     
@@ -620,14 +620,14 @@ trait MetaMapper[A] extends Mapper[A] {
   private def _afterCreate(what: Mapper[A]) {eachField(what, afterCreate) {field => field.afterCreate}  }
   private def _afterUpdate(what: Mapper[A]) {eachField(what, afterUpdate) {field => field.afterUpdate}  }
 
-  private def _beforeDestroy(what: Mapper[A]) {eachField(what, beforeDestroy) {field => field.beforeDestroy}  }
-  private def _afterDestroy(what: Mapper[A]) {eachField(what, afterDestroy) {field => field.afterDestroy}  }
+  private def _beforeDelete(what: Mapper[A]) {eachField(what, beforeDelete) {field => field.beforeDelete}  }
+  private def _afterDelete(what: Mapper[A]) {eachField(what, afterDelete) {field => field.afterDelete}  }
   
   // protected def getField(inst : Mapper[A], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyRef,A]]
 }
 
-abstract class QueryParam[O]
-case class ByField[T <: Any, O](field: MappedField[T,O], value: T) extends QueryParam[O]
-case class OrderBy[T <: Any, O](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
-case class BySql[O](query: String, params: Any*) extends QueryParam[O]
+abstract class QueryParam[O<:Mapper[O]]
+case class ByField[T<: Any, O<:Mapper[O]](field: MappedField[T,O], value: T) extends QueryParam[O]
+case class OrderBy[T <: Any, O<:Mapper[O]](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
+case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
                                                               
