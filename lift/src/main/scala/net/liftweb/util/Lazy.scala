@@ -54,6 +54,8 @@ class Lazy[T](f: => T) {
     */
   def update(v: T): Unit = set(v)
   
+  def reset = value = None
+  
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
 }
 

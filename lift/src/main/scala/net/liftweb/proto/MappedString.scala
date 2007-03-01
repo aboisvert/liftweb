@@ -27,7 +27,7 @@ class MappedString[T](val owner : Mapper[T]) extends MappedField[String, T] {
   /**
   * Get the JDBC SQL Type for this field
   */
-  def getTargetSQLType(field : String) = Types.VARCHAR
+  def getTargetSQLType = Types.VARCHAR
   
   def defaultValue = ""
   def maxLen = 32

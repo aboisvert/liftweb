@@ -68,7 +68,7 @@ class MappedInt[T](val owner : Mapper[T]) extends MappedField[int, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType(field : String) = Types.INTEGER
+  def getTargetSQLType = Types.INTEGER
 
   protected def i_get_! = data
   

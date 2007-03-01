@@ -13,10 +13,12 @@ import net.liftweb.util.Helpers._
 import java.lang.Long
 import java.util.Date
 
-class MappedLongForeignKey[T,O](owner: Mapper[T], foreign: MetaMapper[O]) extends MappedLong[T](owner) with ForeignKey[long] {
+class MappedLongForeignKey[T,O](owner: Mapper[T], foreign: MetaMapper[O]) extends MappedLong[T](owner) with ForeignKey[long, O] {
   def defined_? = i_get_! != defaultValue
       
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
+  override def getJDBCFriendly = if (defined_?) new Long(get) else null
+  def obj = if(defined_?) foreign.find(i_get_!) else None
 }
 
 class MappedLongIndex[T](owner : Mapper[T]) extends MappedLong[T](owner) with IndexedField[long] {
@@ -75,7 +77,7 @@ class MappedLong[T](val owner : Mapper[T]) extends MappedField[long, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType(field : String) = Types.INTEGER
+  def getTargetSQLType = Types.INTEGER
 
   protected def i_get_! = data
   
@@ -93,6 +95,7 @@ class MappedLong[T](val owner : Mapper[T]) extends MappedField[long, T] {
       
       
   def getJDBCFriendly(field : String) = new Long(get)
+  override def getJDBCFriendly = new Long(get)
 
       def ::=(in : Any) : long = {
     in match {

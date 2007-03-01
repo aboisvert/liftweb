@@ -5,14 +5,21 @@ package net.liftweb.tests
   Distributed under an Apache License
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
-    
-import junit.framework._
-import junit.framework.Assert._
+  
+import scala.testing.SUnit
+import SUnit._
 
 import net.liftweb.util.RE
 import net.liftweb.util.RE._
 
-class RegExTests(name: String) extends TestCase(name: String) {
+class RegExTests extends TestCase("RegExTests") {
+  
+  override def runTest() {
+    testRegEx
+    testRegEx2
+    testCapture
+  }
+  
   def testRegEx() {
     assert(RE("moo") =~ "I like to say moo", "basic test")
   }

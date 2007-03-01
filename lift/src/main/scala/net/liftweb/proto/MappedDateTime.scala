@@ -25,10 +25,15 @@ class MappedDateTime[T](val owner : Mapper[T]) extends MappedField[Date, T] {
     data
   }
   
+  def toLong: long = i_get_! match {
+    case d: Date => d.getTime / 1000L
+    case _ => 0L
+  }
+  
   /**
   * Get the JDBC SQL Type for this field
   */
-  def getTargetSQLType(field : String) = Types.TIMESTAMP
+  def getTargetSQLType = Types.TIMESTAMP
   
   def defaultValue = null
   // private val defaultValue_i = new Date

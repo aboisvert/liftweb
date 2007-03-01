@@ -43,7 +43,7 @@ trait Mapper[A] {
     getSingleton.asHtml(this)
   }
   
-  def validate : List[ValidationIssues[AnyRef, A]] = {
+  def validate : List[ValidationIssues[Any, A]] = {
     runSafe {
       getSingleton.validate(this)
     }

@@ -20,11 +20,4 @@
 		<nature>ch.epfl.lamp.sdt.core.scalanature</nature>
 		<nature>org.eclipse.jdt.core.javanature</nature>
 	</natures>
-	<linkedResources>
-		<link>
-			<name>scala-output</name>
-			<type>2</type>
-			<location>/home/dpp/lang/workspace/lift/bin</location>
-		</link>
-	</linkedResources>
 </projectDescription>

@@ -395,15 +395,20 @@ object Helpers {
     in match {
       case null => false
       case b : boolean => b
+      case i: int => i != 0
+      case lo: long => lo != 0
       case n : Number => n.intValue != 0
       case s : String => {
      	var sl = s.toLowerCase
         if (sl.length == 0) false
         else {
           if (sl.charAt(0) == 't') true
-          else tryn {Integer.parseInt(sl) != 0}
+          else toInt(s) != 0
         }
       }
+      case None => false
+      case Some(n) => toBoolean(n)
+      case x :: xs => toBoolean(x)
       case o => toBoolean(o.toString)
     }
   }
@@ -412,11 +417,13 @@ object Helpers {
     in match {
       case null => 0
       case n: int => n
+      case lo: long => lo.toInt
       case n : Number => n.intValue
       case (n: Number) :: _ => n.intValue
-      case Some(n: Number) => n.intValue
+      case Some(n) => toInt(n)
       case None => 0
       case s : String => tryn {Integer.parseInt(s)}
+      case x :: xs => toInt(x)
       case o => toInt(o.toString)
     }
   }
@@ -424,12 +431,14 @@ object Helpers {
   def toLong(in: Any): long = {
     in match {
       case null => 0L
+      case i: int => i
       case n: long => n
       case n : Number => n.longValue
       case (n: Number) :: _ => n.longValue
-      case Some(n: Number) => n.longValue
+      case Some(n) => toLong(n)
       case None => 0L
       case s : String => tryn {java.lang.Long.parseLong(s)}
+      case x :: xs => toLong(x)
       case o => toLong(o.toString)
     }
   }

@@ -20,7 +20,7 @@ class MappedBoolean[T](val owner : Mapper[T]) extends MappedField[boolean, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType(field : String) = Types.BOOLEAN
+  def getTargetSQLType = Types.BOOLEAN
 
   protected def i_get_! = data match {case None => false; case Some(v) => v}
   

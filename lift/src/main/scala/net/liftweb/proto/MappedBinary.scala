@@ -25,7 +25,8 @@ class MappedBinary[T](val owner : Mapper[T]) extends MappedField[Array[byte], T]
   /**
   * Get the JDBC SQL Type for this field
   */
-  def getTargetSQLType(field : String) = Types.BINARY
+//  def getTargetSQLType(field : String) = Types.BINARY
+  def getTargetSQLType = Types.BINARY
   
   def defaultValue = null
   def maxLen = 1024
