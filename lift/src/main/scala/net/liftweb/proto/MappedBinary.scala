@@ -13,7 +13,7 @@ import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.util.Date
 
-class MappedBinary[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Array[byte], T] {
+class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte], T] {
   private val data : Lazy[Array[byte]] =  Lazy{defaultValue} // defaultValue
   
   protected def i_set_!(value : Array[byte]) : Array[byte] = {
@@ -50,25 +50,25 @@ class MappedBinary[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Arra
   
   def convertToJDBCFriendly(value: Array[byte]): Object = value
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
-      case null => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = null}}
-      case _ => {(inst : Mapper[T], f : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = (if (f == null) null
+      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = null}}
+      case _ => {(inst : T, f : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = (if (f == null) null
           else if (f.isInstanceOf[Array[byte]]) f.asInstanceOf[Array[byte]];
           else f.toString.getBytes("UTF-8"))}}
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
     null
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
     null
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     null
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     null
   }
 }

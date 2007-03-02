@@ -71,8 +71,8 @@ class UserTests extends TestCase("User Tests") {
     assert(User.count(BySql("email = ?", "eemr1@foo.com")) == 0)  
     assert(User.count(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")) == 1)  
     assert(User.count(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")) == 1)  
-    assert(User.count(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")) == 0)  
-    assert(User.count(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "1")) == 1)  
+    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "33")) == 0)  
+    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "1")) == 1)  
     val u = User.find(33).get
     assert(User.count(BySql("email = ?", u.email)) == 1)
     assert(User.count(BySql("email = ? AND id = ?", u.email, u.id)) == 1)

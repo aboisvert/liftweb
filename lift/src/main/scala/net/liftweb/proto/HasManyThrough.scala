@@ -9,7 +9,7 @@ package net.liftweb.proto
 import net.liftweb.mapper._
 import net.liftweb.util.Lazy
 
-class HasManyThrough[From<:Mapper[From], To<:Mapper[To], Through<:Mapper[Through], ThroughType<:Any](owner: Mapper[From] with Keyed[ThroughType, From],
+class HasManyThrough[ From<:(Mapper[From] with Keyed[ThroughType, From]), To<:Mapper[To], Through<:Mapper[Through], ThroughType<:Any](owner: From,
     otherSingleton: MetaMapper[To], through: MetaMapper[Through],
     throughFromField: MappedField[ThroughType, Through], 
     throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks {
@@ -18,17 +18,19 @@ class HasManyThrough[From<:Mapper[From], To<:Mapper[To], Through<:Mapper[Through
   
   private val others = Lazy[List[To]] {
     val query = "SELECT DISTINCT "+otherSingleton.tableName_$+".* FROM "+otherSingleton.tableName_$+","+
-      through.tableName_$+" WHERE "+otherSingleton.indexedField(otherSingleton).dbColumnName+" = "+
+      through.tableName_$+" WHERE "+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).get.dbColumnName+" = "+
         throughToField.dbColumnName+" AND "+
         throughFromField.dbColumnName+" = ?"
           DB.prepareStatement(query) {
           st =>
-          val indVal = owner.getSingleton.indexedField(owner)
-          st.setObject(1, indVal.getJDBCFriendly, indVal.get.getTargetSQLType)
+          owner.getSingleton.indexedField(owner).map {
+          indVal =>
+          st.setObject(1, indVal.getJDBCFriendly, indVal.getTargetSQLType)
           DB.exec(st) {
             rs =>
               otherSingleton.createInstances(rs)
           }
+          } getOrElse Nil
         }
   }
   
@@ -47,7 +49,7 @@ class HasManyThrough[From<:Mapper[From], To<:Mapper[To], Through<:Mapper[Through
    }
 
    override def beforeDelete {
-     through.findAll(ByField[ThroughType, Through](throughFromField, owner.primaryKeyField)).foreach {
+     through.findAll(ByField[Through, ThroughType](throughFromField, owner.primaryKeyField)).foreach {
        toDelete => toDelete.delete_!
      }
    }

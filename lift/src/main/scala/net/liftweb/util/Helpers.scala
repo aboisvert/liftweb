@@ -17,6 +17,7 @@ import java.text.SimpleDateFormat
 import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream}
+import java.security.{SecureRandom, MessageDigest}
 
 /**
  *  A bunch of helper functions
@@ -519,5 +520,51 @@ object Helpers {
       case f :: Nil => {f, second}
       case _ => {first, second}
     }
+  }
+
+  
+    def hash(in : String) : String = {
+    new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
+  }
+  
+  def hash(in : Array[byte]) : Array[byte] = {
+    (MessageDigest.getInstance("SHA")).digest(in)
+  }
+  
+  def hash256(in : Array[byte]) : Array[byte] = {
+    (MessageDigest.getInstance("SHA-256")).digest(in)
+  }
+  
+  def hexDigest(in: Array[byte]): String = {
+    val binHash = (MessageDigest.getInstance("SHA")).digest(in)
+    hexEncode(binHash)
+  }
+
+  
+  def hash256(in : String) : String = {
+    new String((new Base64) encode (MessageDigest.getInstance("SHA-256")).digest(in.getBytes("UTF-8")))
+  }
+  
+  def hexDigest256(in: Array[byte]): String = {
+    val binHash = (MessageDigest.getInstance("SHA-256")).digest(in)
+    hexEncode(binHash)
+  }
+
+  def hexEncode(in: Array[byte]): String = {
+    val sb = new StringBuilder
+    val len = in.length
+    def addDigit(in: Array[byte], pos: int, len: int, sb: StringBuilder) {
+      if (pos < len) {
+        val b: int = in(pos)
+        val msb = (b & 0xf0) >> 4
+        val lsb = (b & 0x0f)
+        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
+        sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[char] else ('a' + (lsb - 10)).asInstanceOf[char]))
+                   
+      addDigit(in, pos + 1, len, sb)
+      }
+    }
+    addDigit(in, 0, len, sb)
+    sb.toString
   }
 }

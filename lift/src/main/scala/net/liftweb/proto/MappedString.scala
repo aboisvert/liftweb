@@ -13,7 +13,7 @@ import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.util.Date
 
-class MappedString[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[String, T] {
+class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy{defaultValue} // defaultValue
   
   protected def i_set_!(value : String) : String = {
@@ -57,23 +57,23 @@ class MappedString[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Stri
   
   def convertToJDBCFriendly(value: String): Object = value
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
-      case null => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = null}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
+      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = null}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
-    {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
-    {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = v}}
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = v}}
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
-    {(inst : Mapper[T], v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
-    {(inst : Mapper[T], v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
   }
 }

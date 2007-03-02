@@ -12,7 +12,7 @@ import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
 import java.util.Date
 
-class MappedIntIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedInt[T](owner) with IndexedField[int] {
+class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[int] {
 
   override def writePermission_? = false // not writable
   
@@ -61,7 +61,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedInt[T](owner
 }
 
 
-class MappedInt[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[int, T] {
+class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   private var data : int = defaultValue
   def defaultValue = 0
 
@@ -103,25 +103,25 @@ class MappedInt[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[int, T]
   
   protected def i_obscure_!(in : int) = 0
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
-      case null => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = 0;}}
-      case _ if (inst.isInstanceOf[Number]) => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.asInstanceOf[Number].intValue}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v.toString))}}
+      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = 0;}}
+      case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.asInstanceOf[Number].intValue}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v.toString))}}
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
-    {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
-    {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v))}}
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v))}}
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
-    {(inst : Mapper[T], v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.getTime.asInstanceOf[int]}}
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.getTime.asInstanceOf[int]}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
-    {(inst : Mapper[T], v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
   }
 }
 

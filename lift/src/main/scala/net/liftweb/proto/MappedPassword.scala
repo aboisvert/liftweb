@@ -15,7 +15,7 @@ import java.lang.reflect.Method
 import scala.xml.{Node, Text, Elem}
 import java.util.Date
 
-class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[String, T] {
+class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
 
   /*
    override def i : Elem = {
@@ -42,7 +42,7 @@ class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[St
     password() = value match {
       case "*" | null | "*******" if (password.get.length < 3) => {invalidPw = true ; invalidMsg = "Password to short" ; "*"}
       case "*******" => {return "*"}
-      case _ if (value.length > 4) => {invalidPw = false; Safe.hash("{"+value+"} salt={"+salt_i.get+"}")}
+      case _ if (value.length > 4) => {invalidPw = false; hash("{"+value+"} salt={"+salt_i.get+"}")}
       case _ => {invalidPw = true ; invalidMsg = "Password to short"; "*"}
     }
     this.dirty_?( true)
@@ -60,7 +60,7 @@ class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[St
 
   
   def match_?(toMatch : String) = {
-    Safe.hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
+    hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
   }
   
   override def validate : List[ValidationIssues[String, T]] = {
@@ -69,7 +69,7 @@ class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[St
     else List(ValidationIssues(this, "Password must be set"))
   }
   
-  def convertToJDBCFriendly(value: String): Object = Safe.hash("{"+value+"} salt={"+salt_i.get+"}")
+  def convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")
   
   /**
    * Get the JDBC SQL Type for this field
@@ -96,41 +96,41 @@ class MappedPassword[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[St
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
     if (columnName.endsWith("_slt")) {
-      {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = if (isNull) null else v.toString}}
+      {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = if (isNull) null else v.toString}}
     } else if (columnName.endsWith("_pw")) {
-      {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = if (isNull) null else v.toString}}      
+      {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = if (isNull) null else v.toString}}      
     } else {
       null
     }
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
     if (columnName.endsWith("_slt")) {
-      {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = v}}
+      {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = v}}
     } else if (columnName.endsWith("_pw")) {
-      {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = v}}      
+      {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = v}}      
     } else {
       null
     }
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     null
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     null
   }
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     if (columnName.endsWith("_slt")) {
       inst match {
-	case null => {(inst : Mapper[T], v : AnyRef) => {}}
-	case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
+	case null => {(inst : T, v : AnyRef) => {}}
+	case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
 		    }
       } else if (columnName.endsWith("_pw")) {
 	inst match {
-	  case null => {(inst : Mapper[T], v : AnyRef) => {}}
-	  case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
+	  case null => {(inst : T, v : AnyRef) => {}}
+	  case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
       
     } else {

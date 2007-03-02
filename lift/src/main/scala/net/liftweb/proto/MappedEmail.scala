@@ -13,7 +13,7 @@ object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")
 }
 
-class MappedEmail[T<:Mapper[T]](owner : Mapper[T]) extends MappedString[T](owner) {
+class MappedEmail[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
 
   override protected def i_set_!(value : String) : String = {
     super.i_set_!(value match {
@@ -22,10 +22,10 @@ class MappedEmail[T<:Mapper[T]](owner : Mapper[T]) extends MappedString[T](owner
     })
   }
   
-  override def validate : List[ValidationIssues[String, T]] = {
+  override def validate /*: List[ValidationIssues[String, T]] */= {
     MappedEmail.emailPattern.matcher(i_get_!).matches match {
       case true => Nil
-      case false => List(ValidationIssues(this, "Invalid Email Address"))
+      case false => List(ValidationIssues[String, T](this, "Invalid Email Address"))
     }
   }
   

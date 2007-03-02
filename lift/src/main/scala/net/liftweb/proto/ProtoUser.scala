@@ -10,18 +10,18 @@ import net.liftweb.mapper._
  
 trait ProtoUser[T <: ProtoUser[T]] extends Mapper[T] {
   // the primary key for the database
-  val id = new MappedIntIndex(this)
+  val id = new MappedIntIndex[T](this)
   
   // First Name
-  val firstName = new MappedString(this) {override def maxLen =32}
+  val firstName = new MappedString[T](this) {override def maxLen =32}
 
   // Last Name
-  val lastName = new MappedString(this) {override def maxLen =32}
+  val lastName = new MappedString[T](this) {override def maxLen =32}
 
   // Email
-  val email = new MappedEmail(this)
+  val email = new MappedEmail[T](this)
 
   // Password
-  val password = new MappedPassword(this)
+  val password = new MappedPassword[T](this)
   
 }

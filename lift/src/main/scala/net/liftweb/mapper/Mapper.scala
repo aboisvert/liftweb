@@ -21,11 +21,13 @@ trait Mapper[A<:Mapper[A]] {
     Safe.safe_?(secure_#)
   }
   
+  implicit def thisToMappee(in: Mapper[A]): A = this.asInstanceOf[A]
+  
   def runSafe[T](f : => T) : T = {
     Safe.runSafe(secure_#)(f)
   }
   
-  def onFormPost(f : (A) => boolean) : Mapper[A] = {
+  def onFormPost(f : (A) => boolean) : A = {
     this
   }
   
@@ -111,10 +113,10 @@ trait Mapper[A<:Mapper[A]] {
 }
 
 object Mapper {
-  implicit def fromSome[T<:Mapper[T]](in : Option[Mapper[T]]) : Mapper[T] = in.get
+  implicit def fromSome[T<:Mapper[T]](in : Option[T]) : T = in.get
 }
 
-trait Keyed[KeyType, OwnerType<:Mapper[OwnerType]] {
+trait Keyed[KeyType, OwnerType<:Mapper[OwnerType]] requires Mapper[OwnerType] {
   def primaryKeyField: MappedField[KeyType, OwnerType]
 }
 

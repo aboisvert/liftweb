@@ -14,7 +14,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 
-class MappedDateTime[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Date, T] {
+class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   private var data : Lazy[Date] = Lazy{defaultValue}
   
   protected def i_set_!(value : Date) : Date = {
@@ -59,25 +59,25 @@ class MappedDateTime[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[Da
   
   def convertToJDBCFriendly(value: Date): Object = if (value == null) null else new java.sql.Date(value.getTime)
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
-      case null => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor); tv.set(null); tv.resetDirty}}
-      case d : java.util.Date => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor); tv.set(v.asInstanceOf[Date]); tv.resetDirty}}
-      case d : java.sql.Date => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v)); tv.resetDirty}}
+      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(null); tv.resetDirty}}
+      case d : java.util.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(v.asInstanceOf[Date]); tv.resetDirty}}
+      case d : java.sql.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v)); tv.resetDirty}}
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
-    {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = if (isNull) null else new Date(v)}}
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = if (isNull) null else new Date(v)}}
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
-    {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = toDate(v)}}
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = toDate(v)}}
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
-    {(inst : Mapper[T], v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = v}}
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = v}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
-    {(inst : Mapper[T], v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = null}}
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = null}}
   }
 }

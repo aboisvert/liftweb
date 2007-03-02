@@ -13,7 +13,7 @@ import net.liftweb.util.Helpers._
 import java.lang.Long
 import java.util.Date
 
-class MappedLongForeignKey[T<:Mapper[T],O<:Mapper[O]](owner: Mapper[T], foreign: MetaMapper[O]) extends MappedLong[T](owner) with ForeignKey[long, O] {
+class MappedLongForeignKey[T<:Mapper[T],O<:Mapper[O]](owner: T, foreign: MetaMapper[O]) extends MappedLong[T](owner) { // with ForeignKey[long, O] {
   def defined_? = i_get_! != defaultValue
       
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
@@ -21,7 +21,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:Mapper[O]](owner: Mapper[T], foreign:
   def obj = if(defined_?) foreign.find(i_get_!) else None
 }
 
-class MappedLongIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedLong[T](owner) with IndexedField[long] {
+class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[long] {
 
   override def writePermission_? = false // not writable
   
@@ -70,7 +70,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : Mapper[T]) extends MappedLong[T](own
 }
 
 
-class MappedLong[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[long, T] {
+class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   private var data : long = defaultValue
   def defaultValue = 0L
 
@@ -113,25 +113,25 @@ class MappedLong[T<:Mapper[T]](val owner : Mapper[T]) extends MappedField[long, 
 
   protected def i_obscure_!(in : long) = 0L
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[T], AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
-      case null => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = 0L}}
-      case _ if (inst.isInstanceOf[Number]) => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.asInstanceOf[Number].longValue}}
-      case _ => {(inst : Mapper[T], v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v.toString))}}
+      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = 0L}}
+      case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.asInstanceOf[Number].longValue}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v.toString))}}
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[T], long, boolean) => unit = {
-    {(inst : Mapper[T], v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = v}}
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = v}}
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[T], String) => unit  = {
-    {(inst : Mapper[T], v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v))}}
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v))}}
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[T], Date) => unit   = {
-    {(inst : Mapper[T], v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.getTime}}
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.getTime}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[T], boolean, boolean) => unit   = {
-    {(inst : Mapper[T], v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v && !isNull) 1L else 0L}}
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v && !isNull) 1L else 0L}}
   }
 }
 

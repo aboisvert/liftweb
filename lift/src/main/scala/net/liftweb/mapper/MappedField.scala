@@ -30,7 +30,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
    */
   def dbIndexFieldIndicatesSaved_? = false
   
-  def owner : Mapper[O]
+  def owner : O
   final def safe_? : boolean = {
     owner.safe_?
   }
@@ -98,12 +98,12 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
   
   protected def i_set_!(value : T) : T
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (Mapper[O], AnyRef) => unit 
-  def buildSetLongValue(accessor : Method, columnName : String) : (Mapper[O], long, boolean) => unit 
-  def buildSetStringValue(accessor : Method, columnName : String) : (Mapper[O], String) => unit 
-  def buildSetDateValue(accessor : Method, columnName : String) : (Mapper[O], Date) => unit 
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (Mapper[O], boolean, boolean) => unit 
-  protected def getField(inst : Mapper[O], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[T,O]];
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (O, AnyRef) => unit 
+  def buildSetLongValue(accessor : Method, columnName : String) : (O, long, boolean) => unit 
+  def buildSetStringValue(accessor : Method, columnName : String) : (O, String) => unit 
+  def buildSetDateValue(accessor : Method, columnName : String) : (O, Date) => unit 
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (O, boolean, boolean) => unit 
+  protected def getField(inst : O, meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[T,O]];
   
   def get : T = {
     if (safe_? || readPermission_?) i_get_!
@@ -158,7 +158,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
 
 object MappedField {
   implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]) : T = in.get
-  implicit def mapFromOption[T, A<:Mapper[A]](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
+  // implicit def mapFromOption[T, A<:Mapper[A]](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
 }
 
 case class ValidationIssues[T,O<:Mapper[O]](field : MappedField[T,O], msg : String)
@@ -175,7 +175,7 @@ trait IndexedField[O] {
 /**
   * A trait that defines foreign key references
   */
-trait ForeignKey[T,MT<:Mapper[MT]] {
+trait ForeignKey[T,MT<:Mapper[MT]] requires MappedField[T,MT] {
   /**
     * Is the key defined?
     */
