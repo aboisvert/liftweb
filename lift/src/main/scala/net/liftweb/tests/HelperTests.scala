@@ -9,90 +9,37 @@ package net.liftweb.tests
 import scala.testing.SUnit
 import SUnit._
 
-import net.liftweb.util.RE
-import net.liftweb.util.RE._
+import net.liftweb.util.Helpers
+import net.liftweb.util.Helpers._
 import net.liftweb.mapper._
 import net.liftweb.proto._
 
-class UserTests extends TestCase("User Tests") {
-  val maxUsers = 100
+class HelperTests extends TestCase("Helper Tests") {
   override def runTest() {
-    for (val cnt <- 1 to maxUsers) {
-      val u = new User
-      u.firstName := cnt.toString
-      u.lastName := "Name "+cnt
-      u.email := "mr"+cnt+"@foo.com"
-      u.password := "password"+cnt
-      u.save
-    }
+    assert(toInt("1") == 1)
+    assert(toInt(Some(1)) == 1)
+    assert(toInt(None) == 0)
+    assert(toInt(new java.lang.Double(1.0)) == 1)
+    assert(toInt(33 :: Nil) == 33)
+    assert(toInt(33L :: Nil) == 33)
+    assert(toBoolean(false) == false)
+    assert(toBoolean(true) == true)
+    assert(toBoolean("true") == true)
+    assert(toBoolean("TRUE") == true)
+    assert(toBoolean("t") == true)
+    assert(toBoolean("false") == false)
+    assert(toBoolean(1) == true)
+    assert(toBoolean(0L) == false)
+    assert(toBoolean(Some(true)) == true)
+    assert(toBoolean(None) == false)
+    assert(toBoolean(Some(33)) == true)
+    assert(toBoolean(Some(false)) == false)
+    assert(toBoolean(Some("true" :: Nil)) == true)
+    assert(toBoolean(1 :: Nil) == true)
+    assert(toBoolean(0 :: Nil) == false)
     
-    findTest
-    findAllTest
-    countTest
-    pwdTest
+        
   }
   
-  def findTest {
-    assert(User.find(1).isDefined)
-    assert(User.find(ByField(User.email, "mr9@foo.com")).isDefined)    
-    assert(!User.find(ByField(User.email, "eemr1@foo.com")).isDefined)  
-    assert(User.find(BySql("email = ?", "mr9@foo.com")).isDefined)
-    assert(!User.find(BySql("email = ?", "eemr1@foo.com")).isDefined)  
-    assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).isDefined)  
-    assert(User.find(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).isDefined)  
-    assert(!User.find(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).isDefined)  
-    val u = User.find(33).get
-    assert(User.find(BySql("email = ?", u.email)).get.id.get == u.id.get)
-    assert(User.find(BySql("id = ?", 33)).get.id.get == u.id.get)
-    assert(User.find(BySql("id = ?", u.id)).get.id.get == u.id.get)
-  }
-  
-  def findAllTest {
-    assert(User.findAll.length == maxUsers)
-    assert(User.findAll(ByField(User.email, "mr33@foo.com")).length == 1)
-    assert(User.findAll(ByField(User.email, "dogmr33@foo.com")).length == 0)
-    assert(User.findAll(BySql("email = ?", "mr9@foo.com")).length == 1)
-    assert(User.findAll(BySql("email = ?", "eemr1@foo.com")).length == 0)  
-    assert(User.findAll(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)  
-    assert(User.findAll(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).length == 1)  
-    assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)  
-    val u = User.find(33).get
-    assert(User.findAll(BySql("email = ?", u.email)).length == 1)
-    assert(User.findAll(OrderBy(User.firstName, true))(0).firstName.get == "1")
-    assert(User.findAll(OrderBy(User.firstName, false))(0).firstName.get == "99")
-  }
-  
-  def countTest {
-    assert(User.count == maxUsers)
-    
-     assert(User.count(ByField(User.email, "mr33@foo.com")) == 1)
-    assert(User.count(ByField(User.email, "dogmr33@foo.com")) == 0)
-    assert(User.count(BySql("email = ?", "mr9@foo.com")) == 1)
-    assert(User.count(BySql("email = ?", "eemr1@foo.com")) == 0)  
-    assert(User.count(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")) == 1)  
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")) == 1)  
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "33")) == 0)  
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "1")) == 1)  
-    val u = User.find(33).get
-    assert(User.count(BySql("email = ?", u.email)) == 1)
-    assert(User.count(BySql("email = ? AND id = ?", u.email, u.id)) == 1)
-  }
-  
-  def pwdTest {
-    for (val cnt <- 1 to maxUsers) {
-      val u = User.find(ByField(User.firstName, cnt.toString)).get
-      assert(u.password.match_?("password"+cnt))
-      assert(!u.password.match_?("dog"+cnt))
-    }
-  }
-  
-}
 
-
-object User extends User with MetaMapper[User] {
-  override protected def internalTableName_$ = "users"
-}
-
-class User extends ProtoUser[User] {
-  def getSingleton = User
 }
