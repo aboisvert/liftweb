@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem}
+import scala.xml.{NodeSeq, Elem, Node}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -18,6 +18,8 @@ import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream}
 import java.security.{SecureRandom, MessageDigest}
+import javax.mail._
+
 
 /**
  *  A bunch of helper functions
@@ -500,6 +502,10 @@ object Helpers {
     new String((new Base64).encode(in))
   }
   
+  def base64Decode(in: String): Array[byte] = {
+    (new Base64).decode(in.getBytes("UTF-8"))
+  }
+  
   def toByteArrayInputStream(in: InputStream) = {
     val ba = new Array[byte](4096)
     val bos = new ByteArrayOutputStream
@@ -566,5 +572,25 @@ object Helpers {
     }
     addDigit(in, 0, len, sb)
     sb.toString
+  }
+  
+  def sendMail(from: String, to: List[String], subject: String,cc: List[String], body: Map[String, Array[byte]]): boolean = {
+    false
+  }
+  
+  implicit def nodeSeqToOptionString(in: NodeSeq): Option[String] = if (in.length == 0) None else Some(in.text)
+  
+  def readWholeStream(in: InputStream): Array[byte] = {
+    val bos = new ByteArrayOutputStream
+    val ba = new Array[byte](4096)
+    
+    def readOnce {
+      val len = in.read(ba)
+      if (len < 0) return
+      if (len > 0) bos.write(ba, 0, len)
+      readOnce
+    }
+    
+    bos.toByteArray
   }
 }

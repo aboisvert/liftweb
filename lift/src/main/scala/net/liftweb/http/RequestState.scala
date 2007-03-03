@@ -27,7 +27,8 @@ object RequestState {
     val path = uri.split("/").toList.filter{n => n != null && n.length > 0}
     
     new RequestState(paramNames, params,uri,path,contextPath, RequestType(request),/* resourceFinder,*/
-        path.take(1) match {case List("rest") | List("soap") => true; case _ => false})
+        path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
+        readWholeStream(request.getInputStream))
   }
 }
 
@@ -37,7 +38,8 @@ class RequestState(val paramNames: List[String],val params: Map[String, List[Str
     val contextPath: String,
     val requestType: RequestType,
     /*val resourceFinder: (String) =>  InputStream,*/
-    val webServices_? : boolean) {
+    val webServices_? : boolean,
+        val body: Array[byte]) {
   
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}

@@ -46,6 +46,11 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
     v
   }
   
+  def :?=(v: Option[T]) : Option[T] = {
+    v.foreach(tv => this := tv)
+    v
+  }
+  
   /**
    * Assignment from the underlying type.  It's ugly, but:<br />
    * field() = new_value <br />
@@ -94,6 +99,11 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
   def set(value : T) : T = {
     if (safe_? || writePermission_?) i_set_!(value)
     else throw new Exception("Do not have permissions to set this field")
+  }
+
+  def set_?(value: Option[T]): Option[T] = {
+    value.foreach(v => this.set(v))
+    value
   }
   
   protected def i_set_!(value : T) : T

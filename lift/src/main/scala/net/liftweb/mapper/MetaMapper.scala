@@ -65,7 +65,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def count(by: QueryParam[A]*): long = {
     val bl = by.toList
-    val query = addOrdering(addFields("SELECT COUNT(*) FROM "+tableName_$+"  ", false, bl), bl)
+    val query = addEndStuffs(addFields("SELECT COUNT(*) FROM "+tableName_$+"  ", false, bl), bl)
 
     DB.prepareStatement(query) {
       st =>
@@ -80,7 +80,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def findAll(by: QueryParam[A]*): List[A] = {
     val bl = by.toList
-    val query = addOrdering(addFields("SELECT * FROM "+tableName_$+"  ", false, bl), bl)
+    val query = addEndStuffs(addFields("SELECT * FROM "+tableName_$+"  ", false, bl), bl)
     DB.prepareStatement(query) {
       st =>
         setStatementFields(st, bl, 1)
@@ -153,15 +153,29 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   // def find(by: QueryParam): Option[A] = find(List(by))
   
-  def addOrdering(in: String, params: List[QueryParam[A]]): String = {
+  private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
     val lst = params.flatMap{p => p match {case OrderBy(field, ascending) => List(field.name+" "+(if (ascending) "ASC" else "DESC")); case _ => Nil}} 
     if (lst.length == 0) in
     else in+" ORDER BY "+lst.mkString("", " , ", "")
   }
   
+  def addEndStuffs(in: String, params: List[QueryParam[A]]): String = {
+    val tmp = _addOrdering(in, params)
+    val max = params.foldRight(None.asInstanceOf[Option[long]]){a,b => a match {case MaxRows(n) => Some(n); case _ => b}}
+    val start = params.foldRight(None.asInstanceOf[Option[long]]){a,b => a match {case StartAt(n) => Some(n); case _ => b}}
+
+    if (max.isDefined && start.isDefined) {
+      tmp + " LIMIT "+start.get+","+max.get
+    } else if (max.isDefined) {
+      tmp + " LIMIT "+max.get
+    } else if (start.isDefined) {
+      tmp + " LIMIT "+start.get+","+java.lang.Long.MAX_VALUE
+    } else tmp
+  }
+  
   def find(by: QueryParam[A]*): Option[A] = {
     val bl = by.toList
-    val query = addOrdering(addFields("SELECT * FROM "+tableName_$+" ",false,  bl), bl)
+    val query = addEndStuffs(addFields("SELECT * FROM "+tableName_$+" ",false,  bl), bl)
     DB.prepareStatement(query) {
       st =>
         setStatementFields(st, bl, 1)
@@ -632,4 +646,5 @@ abstract class QueryParam[O<:Mapper[O]]
 case class ByField[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
-                                                              
+case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
+case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
