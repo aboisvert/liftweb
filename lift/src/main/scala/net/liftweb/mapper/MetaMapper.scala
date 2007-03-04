@@ -51,8 +51,9 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   // def findAll(by: QueryParam*): List[A] = findAll(List(by))
   
-  def findBySql(query: String): List[A] = {
-    DB.prepareStatement(query) {
+  def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = {
+    if (!IDidASecurityAuditOnThisQuery) Nil
+    else DB.prepareStatement(query) {
       st =>
 	DB.exec(st) {
           rs =>
@@ -648,3 +649,7 @@ case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) 
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
+                                                                 
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] {
+
+}

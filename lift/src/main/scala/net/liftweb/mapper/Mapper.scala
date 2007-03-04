@@ -116,7 +116,7 @@ object Mapper {
   implicit def fromSome[T<:Mapper[T]](in : Option[T]) : T = in.get
 }
 
-trait Keyed[KeyType, OwnerType<:Mapper[OwnerType]] requires Mapper[OwnerType] {
+trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
   def primaryKeyField: MappedField[KeyType, OwnerType]
 }
 
