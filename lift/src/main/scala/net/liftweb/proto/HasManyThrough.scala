@@ -9,7 +9,7 @@ package net.liftweb.proto
 import net.liftweb.mapper._
 import net.liftweb.util.Lazy
 
-class HasManyThrough[ From<:(Mapper[From] with Keyed[ThroughType, From]), To<:Mapper[To], Through<:Mapper[Through], ThroughType<:Any](owner: From,
+class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], Through<:Mapper[Through], ThroughType<:Any](owner: From,
     otherSingleton: MetaMapper[To], through: MetaMapper[Through],
     throughFromField: MappedField[ThroughType, Through], 
     throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks {
