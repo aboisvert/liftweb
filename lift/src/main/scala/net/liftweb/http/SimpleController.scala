@@ -40,7 +40,6 @@ trait SimpleController {
       httpRequest.getSession.getAttribute(name) match {
       case null => None
       case n => {
-        Console.println("Got n "+n)
         if (n.isInstanceOf[T]) Some(n.asInstanceOf[T])
         else None
       }
@@ -51,7 +50,7 @@ trait SimpleController {
   def update(name: String, value: Any) {
     value match {
       case null => httpRequest.getSession.removeAttribute(name)
-      case _ => {Console.println("Setting attribute "+name+" "+value);  httpRequest.getSession.setAttribute(name, value)}
+      case _ => {httpRequest.getSession.setAttribute(name, value)}
     }
   }
 }

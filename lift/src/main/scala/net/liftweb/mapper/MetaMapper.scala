@@ -155,7 +155,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   // def find(by: QueryParam): Option[A] = find(List(by))
   
   private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
-    val lst = params.flatMap{p => p match {case OrderBy(field, ascending) => List(field.name+" "+(if (ascending) "ASC" else "DESC")); case _ => Nil}} 
+    val lst = params.flatMap{p => p match {case OrderBy(field, ascending) => List(field.dbColumnName+" "+(if (ascending) "ASC" else "DESC")); case _ => Nil}} 
     if (lst.length == 0) in
     else in+" ORDER BY "+lst.mkString("", " , ", "")
   }
@@ -311,7 +311,8 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
           
           val indVal = indexedField(toSave)
           st.setObject(colNum, indVal.get.getJDBCFriendly(indexMap), indVal.get.getTargetSQLType(indexMap))
-          1 == st.executeUpdate
+          st.executeUpdate
+          true
         }
         _afterUpdate(toSave)
         ret
@@ -488,6 +489,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       field match {
         case null => {}
         case _ if (field.i_name_! == null) => field.setName_!(f._1)
+        case _ => 
       }
       pos = pos + 1
     }
@@ -514,7 +516,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   private val mappedAppliers = new HashMap[{String, Option[Class]}, (A, AnyRef) => unit];
   
-  // private val mappedFields  = new HashMap[String, Method];
+  private val mappedFields  = new HashMap[String, Method];
   private var mappedFieldArray : Array[{String, Method, MappedField[AnyRef,A]}] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
   private var mappedCallbacks: List[{String, Method}] = Nil
@@ -567,6 +569,10 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       tArray.foreach {mft => resArray += mft}      
       
       mappedFieldArray = resArray.toArray
+      mappedFieldArray.foreach {
+        ae =>
+        mappedFields(ae._1) = ae._2
+      }
     }
   }
 
@@ -609,6 +615,10 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       <td>{field.displayName}</td>
       <td>{field.toForm}</td>
       </tr>}.toList
+  }
+  
+  def getActualField[T <: Any](actual: A, protoField: MappedField[T, A]): MappedField[T, A] = {
+    ??(mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
   }
 
   val tableName_$ : String = {

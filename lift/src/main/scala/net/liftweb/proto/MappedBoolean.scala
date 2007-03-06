@@ -10,7 +10,7 @@ import net.liftweb.mapper.{Mapper, MappedField, IndexedField}
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-import java.lang.Boolean
+import java.lang.{Boolean, Integer}
 import java.util.Date
 
 class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T] {
@@ -34,10 +34,15 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
   override def readPermission_? = true
   override def writePermission_? = true
   
+      /*
   def convertToJDBCFriendly(value: boolean): Object = new Boolean(value)
       
       
   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new Boolean(get)}
+*/
+  def convertToJDBCFriendly(value: boolean): Object = new java.lang.Integer(if (value) 1 else 0)
+  
+  def getJDBCFriendly(field : String) = data match {case None => null; case _ => new java.lang.Integer(if (get) 1 else 0)}
 
   def ::=(in : Any) : boolean = {
     in match {

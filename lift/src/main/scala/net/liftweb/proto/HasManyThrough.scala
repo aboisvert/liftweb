@@ -8,6 +8,7 @@ package net.liftweb.proto
 
 import net.liftweb.mapper._
 import net.liftweb.util.Lazy
+import scala.collection.mutable.HashSet
 
 class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], Through<:Mapper[Through], ThroughType<:Any](owner: From,
     otherSingleton: MetaMapper[To], through: MetaMapper[Through],
@@ -18,9 +19,10 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   
   private val others = Lazy[List[To]] {
     val query = "SELECT DISTINCT "+otherSingleton.tableName_$+".* FROM "+otherSingleton.tableName_$+","+
-      through.tableName_$+" WHERE "+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).get.dbColumnName+" = "+
-        throughToField.dbColumnName+" AND "+
-        throughFromField.dbColumnName+" = ?"
+      through.tableName_$+" WHERE "+
+        otherSingleton.tableName_$+"."+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).get.dbColumnName+" = "+
+          through.tableName_$+"."+throughToField.dbColumnName+" AND "+
+            through.tableName_$+"."+throughFromField.dbColumnName+" = ?"
           DB.prepareStatement(query) {
           st =>
           owner.getSingleton.indexedField(owner).map {
@@ -36,15 +38,9 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   
    def apply(): List[To] = others.get
    
-   def :=(what: Seq[ThroughType]):Seq[ThroughType] = {theSetList = what; theSetList}
-   
-   def +=(what: ThroughType): Seq[ThroughType] = {
-     theSetList = what :: theSetList.toList
-     theSetList
-   }
 
-   def -=(what: ThroughType): Seq[ThroughType] = {
-     theSetList = theSetList.toList.remove{n => n == what}
+   def :=(what: Seq[ThroughType]): Seq[ThroughType] = {
+     theSetList = what
      theSetList
    }
 
@@ -52,6 +48,31 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
      through.findAll(ByField[Through, ThroughType](throughFromField, owner.primaryKeyField)).foreach {
        toDelete => toDelete.delete_!
      }
+   }
+   
+   override def afterUpdate {
+     val current = through.findAll(ByField(throughFromField, owner.primaryKeyField.get))
+     
+     val newKeys = new HashSet[ThroughType];
+     
+     theSetList.foreach(i => newKeys += i)
+     val toDelete = current.filter(c => !newKeys.contains(throughToField.getActualField(c).get))
+     toDelete.foreach{toDel => toDel.delete_!}
+     
+     val oldKeys = new HashSet[ThroughType];
+     current.foreach(i => oldKeys += throughToField.getActualField(i).get)
+
+     theSetList.toList.removeDuplicates.filter(i => !oldKeys.contains(i)).foreach {
+       i =>
+       val toCreate = through.createInstance
+       throughFromField.getActualField(toCreate) := owner.primaryKeyField
+       throughToField.getActualField(toCreate) := i
+       toCreate.save
+     }
+
+     theSetList = Nil
+     others.reset
+     super.afterUpdate
    }
    
    override def afterCreate {
@@ -63,6 +84,7 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
        toCreate.save
      }
      theSetList = Nil
+     others.reset
      super.afterCreate
    }
 }

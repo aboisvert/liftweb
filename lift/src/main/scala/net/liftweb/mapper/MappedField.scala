@@ -18,7 +18,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
   def defaultValue : T
   
 
-  def getActualField(owner: O): MappedField[T, O] = null
+  def getActualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
 
   
   private var _dirty_? = false
