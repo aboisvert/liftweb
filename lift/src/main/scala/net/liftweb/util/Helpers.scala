@@ -16,7 +16,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
-import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream}
+import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader}
 import java.security.{SecureRandom, MessageDigest}
 import javax.mail._
 
@@ -586,11 +586,28 @@ object Helpers {
     
     def readOnce {
       val len = in.read(ba)
-      if (len < 0) return
       if (len > 0) bos.write(ba, 0, len)
+      if (len >= 0) readOnce
+    }
+    
+    readOnce
+    
+    bos.toByteArray
+  }
+  
+  def readWholeThing(in: Reader): String = {
+    val bos = new StringBuilder
+    val ba = new Array[char](4096)
+    
+    def readOnce {
+      val len = in.read(ba)
+      if (len < 0) return
+      if (len > 0) bos.append(ba, 0, len)
       readOnce
     }
     
-    bos.toByteArray
+    readOnce
+    
+    bos.toString
   }
 }

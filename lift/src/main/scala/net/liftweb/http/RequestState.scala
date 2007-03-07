@@ -17,7 +17,9 @@ import scala.xml._
 object RequestState {
   def apply(request: HttpServletRequest/*, resourceFinder: (String) =>  InputStream*/): RequestState = {
     // val session = request.getSession
-
+    val reqType = RequestType(request)
+    val body = (if (reqType.post_? && request.getContentType == "text/xml") new String(readWholeStream(request.getInputStream), "UTF-8") else "")
+      
     val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     val tmp = paramNames.map{n => {n, request.getParameterValues(n).toList}}
     val params = TreeMap.Empty[String, List[String]] ++ paramNames.map{n => {n, request.getParameterValues(n).toList}}
@@ -26,9 +28,9 @@ object RequestState {
     val contextPath = request.getContextPath
     val path = uri.split("/").toList.filter{n => n != null && n.length > 0}
     
-    new RequestState(paramNames, params,uri,path,contextPath, RequestType(request),/* resourceFinder,*/
+    new RequestState(paramNames, params,uri,path,contextPath, reqType,/* resourceFinder,*/
         path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
-        readWholeStream(request.getInputStream))
+        body)
   }
 }
 
@@ -39,7 +41,7 @@ class RequestState(val paramNames: List[String],val params: Map[String, List[Str
     val requestType: RequestType,
     /*val resourceFinder: (String) =>  InputStream,*/
     val webServices_? : boolean,
-        val body: Array[byte]) {
+        val body: String) {
   
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}

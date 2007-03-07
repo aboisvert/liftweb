@@ -38,6 +38,8 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   
    def apply(): List[To] = others.get
    
+   def get: List[To] = this()
+   
 
    def :=(what: Seq[ThroughType]): Seq[ThroughType] = {
      theSetList = what

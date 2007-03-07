@@ -531,14 +531,18 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   private var indexMap : String = null
   
   {
-    
+    def canUse(meth: Method) = {
+      meth.getName != "primaryKeyField"
+    }
     this.runSafe {
       val tArray = new ArrayBuffer[{String, Method, MappedField[AnyRef,A]}]
       for (val v <- this.getClass.getSuperclass.getMethods) {
-        if (classOf[LifecycleCallbacks].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0) {
+        if (classOf[LifecycleCallbacks].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
+          canUse(v)) {
           mappedCallbacks = {v.getName, v} :: mappedCallbacks
         }
-	if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0) {
+	if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
+          canUse(v)) {
 	  val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
 	  if (mf != null && !mf.ignoreField) {
             mf.setName_!(v.getName)
