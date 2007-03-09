@@ -25,7 +25,7 @@ class UserTests extends TestCase("User Tests") {
       u.password := "password"+cnt
       u.save
     }
-    
+
     findTest
     findAllTest
     countTest

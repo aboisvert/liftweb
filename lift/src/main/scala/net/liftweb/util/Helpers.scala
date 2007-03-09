@@ -610,4 +610,6 @@ object Helpers {
     
     bos.toString
   }
+  
+  def timeNow = new java.util.Date
 }
