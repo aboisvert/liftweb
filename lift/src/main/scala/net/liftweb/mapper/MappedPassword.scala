@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
  (c) 2006 WorldWide Conferencing, LLC
@@ -137,4 +137,9 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
       null
     }
   }
+  
+  /**
+     * Given the driver type, return the string required to create the column in the database
+     */
+   def fieldCreatorString(dbType: DriverType, colName: String): String = if (colName.endsWith("_pw")) colName+" VARCHAR(48)" else colName+" VARCHAR(20)"
 }

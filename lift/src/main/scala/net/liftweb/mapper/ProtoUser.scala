@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
   (c) 2006-2007 WorldWide Conferencing, LLC
@@ -10,7 +10,7 @@ import net.liftweb.mapper._
  
 trait ProtoUser[T <: ProtoUser[T]] extends Mapper[T] {
   // the primary key for the database
-  val id = new MappedIntIndex[T](this)
+  val id = new MappedLongIndex[T](this)
   
   // First Name
   val firstName = new MappedString[T](this) {override def maxLen =32}

@@ -162,8 +162,8 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def addEndStuffs(in: String, params: List[QueryParam[A]]): String = {
     val tmp = _addOrdering(in, params)
-    val max = params.foldRight(None.asInstanceOf[Option[long]]){a,b => a match {case MaxRows(n) => Some(n); case _ => b}}
-    val start = params.foldRight(None.asInstanceOf[Option[long]]){a,b => a match {case StartAt(n) => Some(n); case _ => b}}
+    val max = params.foldRight(None.asInstanceOf[Option[long]]){(a,b) => a match {case MaxRows(n) => Some(n); case _ => b}}
+    val start = params.foldRight(None.asInstanceOf[Option[long]]){(a,b) => a match {case StartAt(n) => Some(n); case _ => b}}
 
     if (max.isDefined && start.isDefined) {
       tmp + " LIMIT "+start.get+","+max.get
@@ -206,11 +206,31 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   }
   
   def find(key: Any) : Option[A] = {
+    def testProdArity(prod: Product): boolean = {
+      var pos = 0
+      while (pos < prod.arity) {
+        if (!prod.element(pos).isInstanceOf[QueryParam[A]]) return false
+        pos = pos + 1
+      }
+      true
+    }
+    
+    def convertToQPList(prod: Product): Array[QueryParam[A]] = {
+      var pos = 0
+      val ret = new Array[QueryParam[A]](prod.arity)
+      while (pos < prod.arity) {
+        ret(pos) = prod.element(pos).asInstanceOf[QueryParam[A]]
+        pos = pos + 1
+      }
+      ret
+    }
+    
     key match {
       case null => None
       case None => None
       case Some(n) => find(n)
       case qp: QueryParam[A] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
+      case prod: Product if (testProdArity(prod)) => find(convertToQPList(prod) :_*)
       // case s: Seq[Any] if (s.length > 0 && s(0).isInstanceOf[QueryParam[Any]]) => find(s.asInstanceOf[Seq[QueryParam[A]]])
       case v => find(v.toString)
     }
@@ -382,7 +402,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   private val columnNameToMappee = new HashMap[String, Option[(ResultSet,int,A) => unit]]
   
-  def buildMapper(rs: ResultSet): {int, Array[(ResultSet,int,A) => unit]} = synchronized {
+  def buildMapper(rs: ResultSet): (int, Array[(ResultSet,int,A) => unit]) = synchronized {
     val meta = rs.getMetaData
     val colCnt = meta.getColumnCount
     val ar = new Array[(ResultSet,int,A) => unit](colCnt + 1)
@@ -430,7 +450,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
         case _ => null
       }
     }
-    {colCnt, ar}
+    (colCnt, ar)
   }
 
   def createInstance(rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,int,A) => unit]) : A = {
@@ -460,7 +480,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       case null => null
       case _ => inst.getClass
     }
-    val look = {name.toLowerCase, if (clz != null) Some(clz) else None}
+    val look = (name.toLowerCase, if (clz != null) Some(clz) else None)
     mappedAppliers.get(look) match {
       case s @ Some(_) => s
       case None => {
@@ -496,30 +516,18 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   }
   
   
-  def createInstance: A = {
-    
-    val ret = rootClass.newInstance.asInstanceOf[A];
-    
-    /*
-    val mr = ret.asInstanceOf[Mapper[A]]
-    mr.runSafe {
-      checkFieldNames(mr)
-    }*/
-    
-    ret
-  }
-  
+  def createInstance: A = rootClass.newInstance.asInstanceOf[A]
   
   def fieldOrder : List[AnyRef] = Nil
   
   protected val rootClass = this.getClass.getSuperclass
   
-  private val mappedAppliers = new HashMap[{String, Option[Class]}, (A, AnyRef) => unit];
+  private val mappedAppliers = new HashMap[(String, Option[Class]), (A, AnyRef) => unit];
   
-  private val mappedFields  = new HashMap[String, Method];
-  private var mappedFieldArray : Array[{String, Method, MappedField[AnyRef,A]}] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
+  private val _mappedFields  = new HashMap[String, Method];
+  private var mappedFieldArray : Array[(String, Method, MappedField[AnyRef,A])] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
-  private var mappedCallbacks: List[{String, Method}] = Nil
+  private var mappedCallbacks: List[(String, Method)] = Nil
   
   private val mappedColumns = new HashMap[String, Method];
   
@@ -535,18 +543,18 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       meth.getName != "primaryKeyField"
     }
     this.runSafe {
-      val tArray = new ArrayBuffer[{String, Method, MappedField[AnyRef,A]}]
+      val tArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])]
       for (val v <- this.getClass.getSuperclass.getMethods) {
         if (classOf[LifecycleCallbacks].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
           canUse(v)) {
-          mappedCallbacks = {v.getName, v} :: mappedCallbacks
+          mappedCallbacks = (v.getName, v) :: mappedCallbacks
         }
 	if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
           canUse(v)) {
 	  val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
 	  if (mf != null && !mf.ignoreField) {
             mf.setName_!(v.getName)
-            val trp = {mf.name, v, mf}
+            val trp = (mf.name, v, mf)
             tArray += trp
             for (val colName <- mf.dbColumnNames(v.getName)) {
               mappedColumnInfo(colName) = mf
@@ -563,7 +571,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
 	None
       }
       
-      val resArray = new ArrayBuffer[{String, Method, MappedField[AnyRef,A]}];
+      val resArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])];
       
       fieldOrder.foreach {
 	f => 
@@ -575,7 +583,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       mappedFieldArray = resArray.toArray
       mappedFieldArray.foreach {
         ae =>
-        mappedFields(ae._1) = ae._2
+        _mappedFields(ae._1) = ae._2
       }
     }
   }
@@ -597,6 +605,8 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     // mappedFieldInfo.elements.filter{e => e._2.db_display_?}. map {e => <th>{e._1}</th>}.toList
   }
   
+  def mappedFields: Seq[MappedField[AnyRef, A]] = mappedFieldArray.map(f => f._3)
+  
   def doHtmlLine(toLine : A) : NodeSeq = {
     mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {mft => <td>{??(mft._2, toLine).asHtml}</td>}.toList
   }
@@ -611,7 +621,6 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   }
   
   def toForm(toMap : A) : NodeSeq = {
-    
     mappedFieldArray.filter{e => e._3.dbDisplay_?}.map {
       e =>
 	val field = ??(e._2, toMap)
@@ -622,7 +631,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   }
   
   def getActualField[T <: Any](actual: A, protoField: MappedField[T, A]): MappedField[T, A] = {
-    ??(mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
+    ??(_mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
   }
 
   val tableName_$ : String = {

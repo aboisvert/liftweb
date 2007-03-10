@@ -6,7 +6,7 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.actors.{Actor, Exit}
+import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import scala.xml.{NodeSeq, Text, Elem}
@@ -73,6 +73,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 	reply("gotit")
 	replyTo match {
           case Some(p:Page) => p ! StartedUpdate(uniqueId)
+          case None =>
 	}
 	localFunctionMap.get(name) match {
           case Some(f) => {
@@ -83,13 +84,14 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 	}
 	replyTo match {
 	  case Some(p:Page) => p ! FinishedUpdate(uniqueId)
+          case None =>
 	}
       }
 
       loop
     }
     
-    case Exit(_, reason) => {
+    case ('Exit , theSelf, reason: AnyRef) => {
       self.exit(reason)
       loop
     }
@@ -103,7 +105,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     case AnswerQuestion(what, request) => {
       S.init(request) {
 	askingWho.unlink(self)
-	askingWho ! Exit(self, "bye")
+	askingWho ! ('Exit, self, "bye")
 	askingWho = null
 	if (answerWith(what)) reRender
 	answerWith = null
@@ -168,7 +170,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       n =>
       localFunctionMap = (localFunctionMap + (n._1 -> n._2))
     }
-    val newMap = TreeMap.Empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => {key, ActionMessage(key, Nil, self, None, null)}}
+    val newMap = TreeMap.Empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null))}
     AnswerRender(in, newMap, this)
   }
   

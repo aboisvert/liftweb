@@ -197,7 +197,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
       case null => Map.empty[String, String]
       case _ => Map.empty[String, String] ++ h.map{p =>
         p match {
-          case {"Location", v} if (v != null && v.startsWith("/")) => {"Location", "/"+state.contextPath+v}
+          case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+state.contextPath+v)
           case _ => p
         }
 						 }
@@ -249,7 +249,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
   
   private def findAttributeSnippet(name: String, request: RequestState, finder: (String) => InputStream, rest: MetaData): MetaData = {
-    val {cls, method} = splitColonPair(name, null, "render")
+    val (cls, method) = splitColonPair(name, null, "render")
     findSnippetClass(cls) match {
       case None => rest
       case Some(clz) => {
@@ -278,7 +278,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     snippetName match {
       case None => kids
       case Some(ns) => {
-        val {cls, method} = splitColonPair(ns.text, null, "render")
+        val (cls, method) = splitColonPair(ns.text, null, "render")
         findSnippetClass(cls) match {
 	  case None => kids
 	  case Some(clz) => {

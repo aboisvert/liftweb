@@ -1,6 +1,5 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
-import net.liftweb.mapper._
 import scala.xml.Elem
 
 

@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
   (c) 2006-2007 WorldWide Conferencing, LLC
@@ -6,7 +6,6 @@ package net.liftweb.proto
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
 
-import net.liftweb.mapper.{Mapper, MappedField}
 import java.sql.{ResultSet, Types}
 import java.util.Date
 import java.lang.reflect.Method
@@ -80,4 +79,12 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = null}}
   }
+  
+  /**
+     * Given the driver type, return the string required to create the column in the database
+     */
+   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+     case MySqlDriver => "DATETIME"
+     case DerbyDriver => "TIMESTAMP"
+   })
 }

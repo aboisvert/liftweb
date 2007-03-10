@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
   (c) 2006-2007 WorldWide Conferencing, LLC
@@ -6,7 +6,6 @@ package net.liftweb.proto
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
 
-import net.liftweb.mapper.{Mapper, MappedField, IndexedField}
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
@@ -78,5 +77,13 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedBoolean[T]]; tv.data = if (isNull) None else Some(v)}}
   }
+  
+  /**
+     * Given the driver type, return the string required to create the column in the database
+     */
+   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+     case MySqlDriver => "BOOLEAN"
+     case DerbyDriver => "SMALLINT"
+   })
 }
 

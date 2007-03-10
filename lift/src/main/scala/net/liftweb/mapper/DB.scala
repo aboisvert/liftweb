@@ -19,10 +19,10 @@ object DB {
   
   var connectionManager: Option[ConnectionManager] = None
   
-  private def info : HashMap[String, {Connection, int}] = {
-    threadStore.get.asInstanceOf[HashMap[String, {Connection, int}]] match {
+  private def info : HashMap[String, (Connection, int)] = {
+    threadStore.get.asInstanceOf[HashMap[String, (Connection, int)]] match {
       case null => {
-      val tinfo = new HashMap[String, {Connection, int}];
+      val tinfo = new HashMap[String, (Connection, int)];
       threadStore.set(tinfo)
       tinfo
     }
@@ -38,10 +38,10 @@ object DB {
   
   private def releaseConnection(conn : Connection) : unit = conn.close
   
-  private def getPairForName(name : String) : {Connection, int} =  {
+  private def getPairForName(name : String) : (Connection, int) =  {
     var ret = info.get(name) match {
-      case None => {newConnection(name), 1}
-      case c => {c.get._1, c.get._2 + 1}
+      case None => (newConnection(name), 1)
+      case c => (c.get._1, c.get._2 + 1)
     }
     info += name -> ret
     ret
@@ -51,8 +51,8 @@ object DB {
     info.get(name) match {
       case None => {}
       case Some(c)  => {c match {
-	case {c , 1} => {releaseConnection(c); info -= name}
-	case {c, cnt} => {info(name) = {c,cnt - 1}}
+	case (c , 1) => releaseConnection(c); info -= name
+	case (c, cnt) => info(name) = (c,cnt - 1)
       }
 		}
     }

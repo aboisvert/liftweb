@@ -155,7 +155,7 @@ class Page extends Actor {
   
   private def executeController(ctlMgr: ControllerManager, theType: Option[Seq[Node]], name: Option[Seq[Node]], factory: Option[Seq[Node]], kids: NodeSeq,
       request: RequestState): NodeSeq = {
-    val {myType, myName, myFactory} = {theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text}}
+    val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
     (ctlMgr !? AskFindController(myType, myName, myFactory) match {
       case AnswerFoundController(controller) => controller
       case _ => None
@@ -164,7 +164,7 @@ class Page extends Actor {
 	// set up the controller
 	controller ! PerformSetupController(List(this), kids)
       <span id={controller.uniqueId}>{
-        (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => {k, localState(k)}}, request))) match {
+        (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
           case Some(view: AnswerRender) => updateCallbacks(view, request) 
           case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
         }

@@ -21,8 +21,8 @@ object RequestState {
     val body = (if (reqType.post_? && request.getContentType == "text/xml") new String(readWholeStream(request.getInputStream), "UTF-8") else "")
       
     val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
-    val tmp = paramNames.map{n => {n, request.getParameterValues(n).toList}}
-    val params = TreeMap.Empty[String, List[String]] ++ paramNames.map{n => {n, request.getParameterValues(n).toList}}
+    val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
+    val params = TreeMap.Empty[String, List[String]] ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val uri = if (turi.length > 0) turi else "/"
     val contextPath = request.getContextPath

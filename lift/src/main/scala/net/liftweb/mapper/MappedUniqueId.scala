@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
   (c) 2006-2007 WorldWide Conferencing, LLC

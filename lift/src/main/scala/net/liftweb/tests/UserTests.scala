@@ -24,6 +24,12 @@ class UserTests extends TestCase("User Tests") {
       u.email := "mr"+cnt+"@foo.com"
       u.password := "password"+cnt
       u.save
+      for (val petCnt <- 1 to (1 + cnt/ 10)) {
+        val p = new Pet
+        p.name := ""+petCnt+" of "+u.lastName
+        p.owner := u.id.get
+        p.save
+      }
     }
 
     findTest
@@ -45,6 +51,13 @@ class UserTests extends TestCase("User Tests") {
     assert(User.find(BySql("email = ?", u.email)).get.id.get == u.id.get)
     assert(User.find(BySql("id = ?", 33)).get.id.get == u.id.get)
     assert(User.find(BySql("id = ?", u.id)).get.id.get == u.id.get)
+    
+    for (val uKey <- 1 to maxUsers) {
+      val u = User.find(uKey)
+      assert(u.isDefined)
+      val user = u.get
+      assert(user.pets.length == (1 + uKey / 10))
+    }
   }
   
   def findAllTest {
@@ -95,4 +108,19 @@ object User extends User with MetaMapper[User] {
 
 class User extends ProtoUser[User] {
   def getSingleton = User
+  
+  def pets = Pet.findAll(ByField(Pet.owner, this.id.get))
+}
+
+class Pet extends KeyedMapper[long, Pet] {
+  def getSingleton = Pet
+  def primaryKeyField = id
+  
+  val id = new MappedLongIndex(this)
+  val name = new MappedString(this) {override def maxLen = 32}
+  val owner = new MappedLongForeignKey(this, User)
+}
+
+object Pet extends Pet with KeyedMetaMapper[long, Pet] {
+  override protected def internalTableName_$ = "pets"
 }

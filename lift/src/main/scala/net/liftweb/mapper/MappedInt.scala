@@ -1,4 +1,4 @@
-package net.liftweb.proto
+package net.liftweb.mapper
 
 /*                                                *\
   (c) 2006-2007 WorldWide Conferencing, LLC
@@ -6,7 +6,6 @@ package net.liftweb.proto
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
 
-import net.liftweb.mapper.{Mapper, MappedField, IndexedField}
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
@@ -58,6 +57,12 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
       case _ => {None}
     }                                         
   }
+  
+  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+  case MySqlDriver => "INTEGER NOT NULL AUTO_INCREMENT UNIQUE"
+  case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY"
+})
+
 }
 
 
@@ -123,5 +128,12 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
   }
+  
+  /**
+     * Given the driver type, return the string required to create the column in the database
+     */
+   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+     case _ => "INTEGER"
+   })
 }
 

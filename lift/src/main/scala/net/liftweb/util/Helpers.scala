@@ -520,11 +520,11 @@ object Helpers {
     new ByteArrayInputStream(bos.toByteArray)
   }
   
-  def splitColonPair(in: String, first: String, second: String): {String, String} = {
+  def splitColonPair(in: String, first: String, second: String): (String, String) = {
     (if (in == null) "" else in).split(":").filter{s => s.length > 0}.toList match {
-      case f :: s :: _ => {f,s}
-      case f :: Nil => {f, second}
-      case _ => {first, second}
+      case f :: s :: _ => (f,s)
+      case f :: Nil => (f, second)
+      case _ => (first, second)
     }
   }
 

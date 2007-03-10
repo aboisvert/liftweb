@@ -6,7 +6,7 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.actors.{Actor, Exit}
+import scala.actors.{Actor}
 import Actor._
 import scala.collection.mutable.HashMap
 import scala.xml.{Node, NodeSeq, Comment}
@@ -25,7 +25,7 @@ class ControllerManager extends Actor {
   private def find(theType: Option[String],name: Option[String], factory: Option[String]): Option[ControllerActor] = {
     theType.flatMap {
       myType: String => 
-	val lookFor = {myType, name, factory}
+	val lookFor = (myType, name, factory)
       // look in the cache for the controller or try to build one
       controllers.get(lookFor) orElse {
         // build it and if we get one, put it in the cache
@@ -34,7 +34,7 @@ class ControllerManager extends Actor {
     }
   }
   
-  private var controllers = new HashMap[{String, Option[String], Option[String]}, ControllerActor]
+  private var controllers = new HashMap[(String, Option[String], Option[String]), ControllerActor]
   
   private def searchFactoryForController(contType: String, factory: Option[String]): Option[ControllerActor] = {
     findFactory(factory).flatMap{f => f.construct(contType)} orElse {findControllerByType(contType)}

@@ -11,19 +11,18 @@ import Helpers._
 import scala.testing.SUnit
 import SUnit._
 import net.liftweb.mapper._
-import net.liftweb.proto.ProtoUser
 import java.sql.{Connection, DriverManager}
 import java.io.File
 
 object TestRunner {
   def main(arg: Array[String]) {
+    
   val totalTime = calcTime {
     Console.println("Test runner...")
     val r = new TestResult
     val suite = new TestSuite
-
     setupDB
-    
+
     suite.addTest(new RegExTests)
     suite.addTest(new UserTests)
     suite.addTest(new HelperTests)
@@ -51,13 +50,18 @@ object TestRunner {
     deleteIt(f)
 
     DB.connectionManager = Some(DBVendor)
-    
+    Schemifier.schemify(User)
+    Schemifier.schemify(User)
+    Schemifier.schemify(Pet)
+
+    /*
     DB.use {
       db =>
       val st = db.createStatement
       // create the table
       st.execute("CREATE TABLE users (id INT NOT NULL GENERATED ALWAYS AS IDENTITY, firstname VARCHAR(64), lastname VARCHAR(64), email VARCHAR(64), password_slt VARCHAR(64), password_pw VARCHAR(64))")
     }
+    */
   }
 }
 

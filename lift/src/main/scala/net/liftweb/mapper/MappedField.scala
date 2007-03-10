@@ -20,6 +20,12 @@ trait MappedField[T <: Any,O<:Mapper[O]] {
 
   def getActualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
 
+  /**
+    * Given the driver type, return the string required to create the column in the database
+    */
+  def fieldCreatorString(dbType: DriverType, colName: String): String
+  
+  def fieldCreatorString(dbType: DriverType): List[String] = dbColumnNames(name).map{c => fieldCreatorString(dbType, c)}
   
   private var _dirty_? = false
   def dirty_? = !dbIndex_? && _dirty_?

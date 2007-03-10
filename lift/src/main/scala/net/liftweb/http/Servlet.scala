@@ -110,7 +110,7 @@ class Servlet extends HttpServlet {
     
     val finder = &getServletContext.getResourceAsStream
 
-    val toMatch = {session, session.path, finder}
+    val toMatch = (session, session.path, finder)
     
     val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
       S.init(session) {
@@ -149,9 +149,9 @@ class Servlet extends HttpServlet {
     val bytes = resp.out.toString.getBytes("UTF-8")
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(resp.headers, List({"Content-Type", "text/html"},
-                                                {"Content-Encoding", "UTF-8"},
-                                                {"Content-Length", len.toString}));
+    val header = insureField(resp.headers, List(("Content-Type", "text/html"),
+                                                ("Content-Encoding", "UTF-8"),
+                                                ("Content-Length", len.toString)));
     
     // send the response
     header.elements.foreach {n => response.setHeader(n._1, n._2)}
@@ -168,8 +168,8 @@ object Servlet {
   }
 
   
-  private var dispatchTable_i : PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]] = {
-    case {null, Nil, null} => {null}
+  private var dispatchTable_i : PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]] = {
+    case (null, Nil, null) => null
   }
   
   private val test_boot = {
@@ -185,12 +185,12 @@ object Servlet {
   }
 
   
-  def addBefore(pf: PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]]) = {
+  def addBefore(pf: PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]]) = {
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }
   
-  def addAfter(pf: PartialFunction[{RequestState, List[String], (String) => InputStream}, (HttpServletRequest) => Option[Any]]) = {
+  def addAfter(pf: PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]]) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }
