@@ -4,7 +4,7 @@ package net.liftweb.mapper
  (c) 2006-2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ \*                                                 */
 
 import scala.collection.mutable._
 import java.lang.reflect.Method
@@ -13,7 +13,15 @@ import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute
 import net.liftweb.util.Helpers._
 import java.util.Date
 
-trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
+trait BaseMetaMapper {
+  def beforeSchemifier: unit
+  def afterSchemifier: unit
+  
+  def dbTableName: String
+  def mappedFields: Seq[BaseMappedField]
+}
+
+trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   def beforeValidation: List[(A) => unit] = Nil
   def beforeValidationOnCreate: List[(A) => unit] = Nil
@@ -36,17 +44,6 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def findAll : List[A] = {
     findAll(Nil :_*)
-    /*
-    val ret: List[A] = DB.use {
-      db => 
-	
-	DB.exec(db, "SELECT * FROM "+tableName_$) { 
-	  rs =>
-	    createInstances(rs)
-	}
-    }
-    ret
-    */
   }
   
   // def findAll(by: QueryParam*): List[A] = findAll(List(by))
@@ -66,7 +63,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def count(by: QueryParam[A]*): long = {
     val bl = by.toList
-    val query = addEndStuffs(addFields("SELECT COUNT(*) FROM "+tableName_$+"  ", false, bl), bl)
+    val query = addEndStuffs(addFields("SELECT COUNT(*) FROM "+dbTableName+"  ", false, bl), bl)
 
     DB.prepareStatement(query) {
       st =>
@@ -81,7 +78,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def findAll(by: QueryParam[A]*): List[A] = {
     val bl = by.toList
-    val query = addEndStuffs(addFields("SELECT * FROM "+tableName_$+"  ", false, bl), bl)
+    val query = addEndStuffs(addFields("SELECT * FROM "+dbTableName+"  ", false, bl), bl)
     DB.prepareStatement(query) {
       st =>
         setStatementFields(st, bl, 1)
@@ -128,18 +125,18 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
         params.toList match {
           case Nil => setStatementFields(st, xs, curPos)
           case List(i: int) => 
-             st.setInt(curPos, i)
-             setStatementFields(st, xs, curPos + 1)
+            st.setInt(curPos, i)
+          setStatementFields(st, xs, curPos + 1)
           case List(lo: long) => 
-             st.setLong(curPos, lo)
-             setStatementFields(st, xs, curPos + 1)
+            st.setLong(curPos, lo)
+          setStatementFields(st, xs, curPos + 1)
           case List(s: String) => 
-             st.setString(curPos, s)
-             setStatementFields(st, xs, curPos + 1)
+            st.setString(curPos, s)
+          setStatementFields(st, xs, curPos + 1)
           case List(d: Date) => 
-             st.setDate(curPos, new java.sql.Date(d.getTime))
-             setStatementFields(st, xs, curPos + 1)
-          case List(field: MappedField[Any, A]) => st.setObject(curPos, field.getJDBCFriendly, field.getTargetSQLType)
+            st.setDate(curPos, new java.sql.Date(d.getTime))
+          setStatementFields(st, xs, curPos + 1)
+          case List(field: BaseMappedField) => st.setObject(curPos, field.getJDBCFriendly, field.getTargetSQLType)
           setStatementFields(st, xs, curPos + 1)
           
           case p :: ps => 
@@ -176,7 +173,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def find(by: QueryParam[A]*): Option[A] = {
     val bl = by.toList
-    val query = addEndStuffs(addFields("SELECT * FROM "+tableName_$+" ",false,  bl), bl)
+    val query = addEndStuffs(addFields("SELECT * FROM "+dbTableName+" ",false,  bl), bl)
     DB.prepareStatement(query) {
       st =>
         setStatementFields(st, bl, 1)
@@ -192,14 +189,14 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
   
   def delete_!(toDelete : A) : boolean = {
     _beforeDelete(toDelete)
-    val ret = DB.prepareStatement("DELETE FROM "+tableName_$ +" WHERE "+indexMap+" = ?") {
+    val ret = DB.prepareStatement("DELETE FROM "+dbTableName +" WHERE "+indexMap+" = ?") {
       st =>
 	val indVal = indexedField(toDelete)
-        indVal.map{indVal =>
-      st.setObject(1, indVal.getJDBCFriendly(indexMap), indVal.getTargetSQLType(indexMap))
+      indVal.map{indVal =>
+	st.setObject(1, indVal.getJDBCFriendly(indexMap), indVal.getTargetSQLType(indexMap))
 
-      st.executeUpdate == 1
-        } getOrElse false
+		 st.executeUpdate == 1
+               } getOrElse false
     }
     _afterDelete(toDelete)
     ret
@@ -243,7 +240,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       val convertedKey = field.convertKey(key)
       if (convertedKey eq None) None else
 	{
-          DB.prepareStatement("SELECT * FROM "+tableName_$+" WHERE "+indexMap+" = ?") {
+          DB.prepareStatement("SELECT * FROM "+dbTableName+" WHERE "+indexMap+" = ?") {
             st =>
               st.setObject(1, field.makeKeyJDBCFriendly(convertedKey.get), field.getTargetSQLType(indexMap))
             DB.exec(st) {
@@ -285,12 +282,12 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     mappedColumns.elements.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
   
-  def validate(toValidate : A) : List[ValidationIssues[Any, A]] = {
+  def validate(toValidate : A) : List[ValidationIssues] = {
     val saved_? = this.saved_?(toValidate)
     _beforeValidation(toValidate)
     if (saved_?) _beforeValidationOnUpdate(toValidate) else _beforeValidationOnCreate(toValidate)
     
-    var ret : List[ValidationIssues[Any, A]] = Nil
+    var ret : List[ValidationIssues] = Nil
     
     mappedFieldArray.foreach{f => ret = ret ::: ??(f._2, toValidate).validate}
 
@@ -317,7 +314,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     val ret = if (saved_?(toSave)) {
       if (!dirty_?(toSave)) true else {
         _beforeUpdate(toSave)
-        val ret = DB.prepareStatement("UPDATE "+tableName_$+" SET "+whatToSet(toSave)+" WHERE "+indexMap+" = ?") {
+        val ret = DB.prepareStatement("UPDATE "+dbTableName+" SET "+whatToSet(toSave)+" WHERE "+indexMap+" = ?") {
           st =>
             var colNum = 1
           
@@ -339,7 +336,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       }
     } else {
       _beforeCreate(toSave)
-      val ret = DB.prepareStatement("INSERT INTO "+tableName_$+" ("+columnNamesForInsert+") VALUES ("+columnQueriesForInsert+")", Statement.RETURN_GENERATED_KEYS) {
+      val ret = DB.prepareStatement("INSERT INTO "+dbTableName+" ("+columnNamesForInsert+") VALUES ("+columnQueriesForInsert+")", Statement.RETURN_GENERATED_KEYS) {
         st =>
           var colNum = 1
         for (val col <- mappedColumns.elements) {
@@ -461,13 +458,13 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       mapFuncs(pos) match {
         case null => {}
         /*
-        case f => try {
-          f(rs, pos, ra)
-        } catch {
-          case e : java.lang.NullPointerException => Console.println("Failed with pos "+pos+" Retrying")
-        f(rs, pos, ra)
-        }
-        */
+         case f => try {
+         f(rs, pos, ra)
+         } catch {
+         case e : java.lang.NullPointerException => Console.println("Failed with pos "+pos+" Retrying")
+         f(rs, pos, ra)
+         }
+         */
         case f => f(rs, pos, ra)
       }
       pos = pos + 1
@@ -481,14 +478,14 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       case _ => inst.getClass
     }
     val look = (name.toLowerCase, if (clz != null) Some(clz) else None)
-    mappedAppliers.get(look) match {
-      case s @ Some(_) => s
-      case None => {
-        val newFunc = createApplier(name, inst, clz)
-        mappedAppliers(look) = newFunc
-        Some(newFunc)
+      mappedAppliers.get(look) match {
+	case s @ Some(_) => s
+	case None => {
+          val newFunc = createApplier(name, inst, clz)
+          mappedAppliers(look) = newFunc
+          Some(newFunc)
+	}
       }
-    }
   }
   
 
@@ -546,25 +543,25 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       val tArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])]
       for (val v <- this.getClass.getSuperclass.getMethods) {
         if (classOf[LifecycleCallbacks].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
-          canUse(v)) {
-          mappedCallbacks = (v.getName, v) :: mappedCallbacks
-        }
+            canUse(v)) {
+              mappedCallbacks = (v.getName, v) :: mappedCallbacks
+            }
 	if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
-          canUse(v)) {
-	  val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
-	  if (mf != null && !mf.ignoreField) {
-            mf.setName_!(v.getName)
-            val trp = (mf.name, v, mf)
-            tArray += trp
-            for (val colName <- mf.dbColumnNames(v.getName)) {
-              mappedColumnInfo(colName) = mf
-              mappedColumns(colName) = v
-            }
-            if (mf.dbIndex_?) {
-              indexMap = v.getName
-            }
-	  }
-	}
+            canUse(v)) {
+	      val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
+	      if (mf != null && !mf.ignoreField) {
+		mf.setName_!(v.getName)
+		val trp = (mf.name, v, mf)
+		  tArray += trp
+		for (val colName <- mf.dbColumnNames(v.getName)) {
+		  mappedColumnInfo(colName) = mf
+		  mappedColumns(colName) = v
+		}
+		if (mf.dbIndex_?) {
+		  indexMap = v.getName
+		}
+	      }
+	    }
       }
       def findPos(in : AnyRef) : Option[int] = {
 	tArray.elements.zipWithIndex.foreach {mft => if (in eq mft._1._3) return Some(mft._2)}
@@ -583,7 +580,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
       mappedFieldArray = resArray.toArray
       mappedFieldArray.foreach {
         ae =>
-        _mappedFields(ae._1) = ae._2
+          _mappedFields(ae._1) = ae._2
       }
     }
   }
@@ -605,7 +602,7 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     // mappedFieldInfo.elements.filter{e => e._2.db_display_?}. map {e => <th>{e._1}</th>}.toList
   }
   
-  def mappedFields: Seq[MappedField[AnyRef, A]] = mappedFieldArray.map(f => f._3)
+  def mappedFields: Seq[BaseMappedField] = mappedFieldArray.map(f => f._3)
   
   def doHtmlLine(toLine : A) : NodeSeq = {
     mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {mft => <td>{??(mft._2, toLine).asHtml}</td>}.toList
@@ -615,8 +612,8 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     Text(internalTableName_$) :: Text("={ ") :: 
     mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {
       mft => 
-      val field = ??(mft._2, toLine)
-							     <span>{field.displayName}={field.asHtml}&nbsp;</span>}.toList :::
+	val field = ??(mft._2, toLine)
+      <span>{field.displayName}={field.asHtml}&nbsp;</span>}.toList :::
     List(Text(" }"))
   }
   
@@ -634,14 +631,16 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
     ??(_mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
   }
 
-  val tableName_$ : String = {
+  def dbTableName = _dbTableName
+  
+  private val _dbTableName: String = {
     fixTableName(internalTableName_$)
   }
   
   private def eachField(what: A, toRun: List[(A) => unit])(f: (LifecycleCallbacks) => unit) {
     mappedCallbacks.foreach {
       e =>
-      f(e._2.invoke(what, null).asInstanceOf[LifecycleCallbacks])
+	f(e._2.invoke(what, null).asInstanceOf[LifecycleCallbacks])
     }
     toRun.foreach{tf => tf(what)}
   }
@@ -662,6 +661,9 @@ trait MetaMapper[A<:Mapper[A]] extends Mapper[A] {
 
   private def _beforeDelete(what: A) {eachField(what, beforeDelete) {field => field.beforeDelete}  }
   private def _afterDelete(what: A) {eachField(what, afterDelete) {field => field.afterDelete}  }
+
+  def beforeSchemifier {}
+  def afterSchemifier {}
   
   // protected def getField(inst : Mapper[A], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyRef,A]]
 }
@@ -672,7 +674,7 @@ case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) 
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
-                                                                 
+
 trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] {
 
 }

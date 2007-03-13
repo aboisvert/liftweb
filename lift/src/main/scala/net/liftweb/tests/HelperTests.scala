@@ -1,11 +1,11 @@
 package net.liftweb.tests
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
-  
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
+
 import scala.testing.SUnit
 import SUnit._
 
@@ -37,9 +37,5 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(toBoolean(Some("true" :: Nil)) == true)
     assert(toBoolean(1 :: Nil) == true)
     assert(toBoolean(0 :: Nil) == false)
-    
-        
   }
-  
-
 }

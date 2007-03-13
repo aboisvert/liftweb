@@ -1,13 +1,13 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-  \*                                                 */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
 
 import net.liftweb.mapper._
- 
+
 trait ProtoUser[T <: ProtoUser[T]] extends Mapper[T] {
   // the primary key for the database
   val id = new MappedLongIndex[T](this)

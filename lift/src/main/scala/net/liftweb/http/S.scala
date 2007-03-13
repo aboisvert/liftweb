@@ -62,10 +62,10 @@ object S {
   def getFunctionMap: Map[String, (List[String]) => boolean] = functionMap.value
 
   /*
-  /**
-  * Get the value of a variable with:
-  * val myVariable = S("foo").asInstanceOf(List[int])
-  */
+   /**
+    * Get the value of a variable with:
+    * val myVariable = S("foo").asInstanceOf(List[int])
+    */
   def apply[T](n : String) : Option[T] = {
     variables.value match {
       case map : Map[_,_] => {
@@ -82,9 +82,9 @@ object S {
   }
   
   /**
-  * Set the value of a variable with:
-  * S("foo") = 1 :: 2 :: 3 :: Nil
-  */
+   * Set the value of a variable with:
+   * S("foo") = 1 :: 2 :: 3 :: Nil
+   */
   def update(n : String, v : Any) : Any = {
     if (variables.value != null) {
       v match {

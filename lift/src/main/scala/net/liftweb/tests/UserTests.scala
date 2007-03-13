@@ -1,11 +1,11 @@
 package net.liftweb.tests
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
-  
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
+
 import scala.testing.SUnit
 import SUnit._
 
@@ -17,25 +17,28 @@ import net.liftweb.proto._
 class UserTests extends TestCase("User Tests") {
   val maxUsers = 100
   override def runTest() {
-    for (val cnt <- 1 to maxUsers) {
-      val u = new User
-      u.firstName := cnt.toString
-      u.lastName := "Name "+cnt
-      u.email := "mr"+cnt+"@foo.com"
-      u.password := "password"+cnt
-      u.save
-      for (val petCnt <- 1 to (1 + cnt/ 10)) {
-        val p = new Pet
-        p.name := ""+petCnt+" of "+u.lastName
-        p.owner := u.id.get
-        p.save
-      }
-    }
+    DB.use {
+      conn =>
+	for (val cnt <- 1 to maxUsers) {
+	  val u = new User
+	  u.firstName := cnt.toString
+	  u.lastName := "Name "+cnt
+	  u.email := "mr"+cnt+"@foo.com"
+	  u.password := "password"+cnt
+	  u.save
+	  for (val petCnt <- 1 to (1 + cnt/ 10)) {
+            val p = new Pet
+            p.name := ""+petCnt+" of "+u.lastName
+            p.owner := u.id.get
+            p.save
+	  }
+	}
 
-    findTest
-    findAllTest
-    countTest
-    pwdTest
+      findTest
+      findAllTest
+      countTest
+      pwdTest
+    }
   }
   
   def findTest {
@@ -78,7 +81,7 @@ class UserTests extends TestCase("User Tests") {
   def countTest {
     assert(User.count == maxUsers)
     
-     assert(User.count(ByField(User.email, "mr33@foo.com")) == 1)
+    assert(User.count(ByField(User.email, "mr33@foo.com")) == 1)
     assert(User.count(ByField(User.email, "dogmr33@foo.com")) == 0)
     assert(User.count(BySql("email = ?", "mr9@foo.com")) == 1)
     assert(User.count(BySql("email = ?", "eemr1@foo.com")) == 0)  

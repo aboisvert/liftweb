@@ -45,7 +45,7 @@ trait Mapper[A<:Mapper[A]] {
     getSingleton.asHtml(this)
   }
   
-  def validate : List[ValidationIssues[Any, A]] = {
+  def validate : List[ValidationIssues] = {
     runSafe {
       getSingleton.validate(this)
     }
@@ -74,14 +74,14 @@ trait Mapper[A<:Mapper[A]] {
   }
   
   /*
-  def i(f : (Array[String]) => unit) : Elem = {
-    <input type='hidden' name={S.ae(f)} value="na"/>
-  }
-  
-  def a(f : (Array[String]) => unit) : String = {
-    S.ae(f)
-  }
-  */
+   def i(f : (Array[String]) => unit) : Elem = {
+   <input type='hidden' name={S.ae(f)} value="na"/>
+   }
+   
+   def a(f : (Array[String]) => unit) : String = {
+   S.ae(f)
+   }
+   */
   
   def dirty_? : boolean = getSingleton.dirty_?(this)
   

@@ -168,7 +168,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private def buildRendered(in: NodeSeq): AnswerRender = {
     S.getFunctionMap.foreach {
       n =>
-      localFunctionMap = (localFunctionMap + (n._1 -> n._2))
+	localFunctionMap = (localFunctionMap + (n._1 -> n._2))
     }
     val newMap = TreeMap.Empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null))}
     AnswerRender(in, newMap, this)

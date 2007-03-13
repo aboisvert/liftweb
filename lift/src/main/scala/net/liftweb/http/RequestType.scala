@@ -4,10 +4,10 @@ package net.liftweb.http
  (c) 2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ \*                                                 */
 
 import javax.servlet.http.{HttpServletRequest}
-  
+
 abstract class RequestType(val ajax_? : boolean) {
   def post_? : boolean = false
   def get_? : boolean = false
@@ -40,11 +40,11 @@ object RequestType {
     }
     
     req.getMethod.toUpperCase match {
-    case "GET" => GetRequest(ajax)
-    case "POST" => PostRequest(ajax)
-    case "HEAD" => HeadRequest(ajax)
-    case "PUT" => PutRequest(ajax)
-    case "DELETE" => DeleteRequest(ajax)
+      case "GET" => GetRequest(ajax)
+      case "POST" => PostRequest(ajax)
+      case "HEAD" => HeadRequest(ajax)
+      case "PUT" => PutRequest(ajax)
+      case "DELETE" => DeleteRequest(ajax)
     }
   }
 }

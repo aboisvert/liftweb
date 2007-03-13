@@ -46,34 +46,37 @@ class Page extends Actor {
         // wait for redraws
         val endAt = System.currentTimeMillis + (timeout - 1000L)
         
-          while (updates.isEmpty && endAt > System.currentTimeMillis) {
-            receiveWithin(endAt - System.currentTimeMillis) {
-              case ar: AnswerRender => updateRendered(ar)
-              case PerformSetupPage(page, session) => {
-		pageXml = page
-		this.theSession = session
-              }
-              
-              case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) => {
-		processParameters(state)
-		val resp: Response = if (state.ajax_?) {
-		  Response(Unparsed(""),Map("Content-Type" -> "text/javascript"), 200)
-		} else {
-		  try {Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)} catch {
-                    case rd : RedirectException => {   
-                      Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
-                               ListMap("Location" -> rd.to),
-                               302)
-                    }
-                    case e  => state.showException(e)
-		  }
-		}
-		reply(resp)
-              }
-              case TIMEOUT => null
+        while (updates.isEmpty && endAt > System.currentTimeMillis) {
+          receiveWithin(endAt - System.currentTimeMillis) {
+            case ar: AnswerRender => updateRendered(ar)
+            case PerformSetupPage(page, session) => {
+	      pageXml = page
+	      this.theSession = session
             }
+            
+            case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) => {
+	      processParameters(state)
+	      val resp: Response = if (state.ajax_? ) {
+		Response(Unparsed(""),
+			 Map("Content-Type" -> "text/javascript"), 200)
+	      } else {
+		try {
+		  Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
+		} catch {
+                  case rd : RedirectException => {   
+                    Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+                             ListMap("Location" -> rd.to),
+                             302)
+                  }
+                  case e  => state.showException(e)
+		}
+	      }
+	      reply(resp)
+            }
+            case TIMEOUT => null
           }
-
+        }
+	
         val ret = updates.map{
           pl => 
             val uid = pl._1
@@ -154,25 +157,25 @@ class Page extends Actor {
   }
   
   private def executeController(ctlMgr: ControllerManager, theType: Option[Seq[Node]], name: Option[Seq[Node]], factory: Option[Seq[Node]], kids: NodeSeq,
-      request: RequestState): NodeSeq = {
-    val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
-    (ctlMgr !? AskFindController(myType, myName, myFactory) match {
-      case AnswerFoundController(controller) => controller
-      case _ => None
-    }).map{
-      controller => 
-	// set up the controller
-	controller ! PerformSetupController(List(this), kids)
-      <span id={controller.uniqueId}>{
-        (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
-          case Some(view: AnswerRender) => updateCallbacks(view, request) 
-          case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
-        }
-      }</span>
-    } getOrElse {
-      Comment("FIX"+"ME -- Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") concat kids
-    }
-  }
+				request: RequestState): NodeSeq = {
+				  val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
+				    (ctlMgr !? AskFindController(myType, myName, myFactory) match {
+				      case AnswerFoundController(controller) => controller
+				      case _ => None
+				    }).map{
+				      controller => 
+					// set up the controller
+					controller ! PerformSetupController(List(this), kids)
+				      <span id={controller.uniqueId}>{
+					(controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
+					  case Some(view: AnswerRender) => updateCallbacks(view, request) 
+					  case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
+					}
+				      }</span>
+				    } getOrElse {
+				      Comment("FIX"+"ME -- Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") concat kids
+				    }
+				}
   
 
   private def updateCallbacks(in: AnswerRender, request: RequestState): NodeSeq = {

@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.util.Date
@@ -30,8 +30,8 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   }
   
   /**
-  * Get the JDBC SQL Type for this field
-  */
+   * Get the JDBC SQL Type for this field
+   */
   def getTargetSQLType = Types.TIMESTAMP
   
   def defaultValue = null
@@ -81,10 +81,10 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-     case MySqlDriver => "DATETIME"
-     case DerbyDriver => "TIMESTAMP"
-   })
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case MySqlDriver => "DATETIME"
+    case DerbyDriver => "TIMESTAMP"
+  })
 }

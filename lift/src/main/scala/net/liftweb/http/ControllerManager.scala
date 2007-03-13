@@ -26,11 +26,11 @@ class ControllerManager extends Actor {
     theType.flatMap {
       myType: String => 
 	val lookFor = (myType, name, factory)
-      // look in the cache for the controller or try to build one
-      controllers.get(lookFor) orElse {
-        // build it and if we get one, put it in the cache
-	searchFactoryForController(myType, factory).map{ctrl => controllers(lookFor) = ctrl; ctrl}
-      }
+	  // look in the cache for the controller or try to build one
+	  controllers.get(lookFor) orElse {
+            // build it and if we get one, put it in the cache
+	    searchFactoryForController(myType, factory).map{ctrl => controllers(lookFor) = ctrl; ctrl}
+	  }
     }
   }
   
@@ -68,37 +68,37 @@ class ControllerManager extends Actor {
   
   
   /*
-  
-  private def findController(controllerType : Option[Seq[Node]], controllerName : Option[Seq[Node]], controllerFactory : Option[Seq[Node]], kids : NodeSeq) : NodeSeq = {
-    if (controllerType == None && controllerName == None) Comment("FIX"+"ME No controller name specified") concat kids
-    else {
-    val actualName = controllerName match {
-    case Some(s) => s.text
-    case None => controllerType.get.text
-    }
-    
-    try {
-    locateController(actualName, controllerType, controllerFactory, kids) match {
-    case None => Comment("FIX"+"ME Can't find controller "+actualName) concat kids
-    case Some(controller) => <span id={controller.uniqueId}>{
-    (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => {k, localState(k)}}))) match {
-    case Some(view: AnswerRender) => updateCallbacks(view.messages) ; view.xml 
-    case s2 @ _ => Comment("FIX"+"ME controller "+actualName+" timeout") concat kids
-    }
-    }</span>
-    }
-    } catch {
-    case e @ _ => {
-    
-    <pre>{e.getMessage+"\n"}
-    {e.getStackTrace.toList.map{st => st.toString+"\n"}}
-    </pre>
-    }
-    }
-    }
-    }
-    */
-  }
+   
+   private def findController(controllerType : Option[Seq[Node]], controllerName : Option[Seq[Node]], controllerFactory : Option[Seq[Node]], kids : NodeSeq) : NodeSeq = {
+   if (controllerType == None && controllerName == None) Comment("FIX"+"ME No controller name specified") concat kids
+   else {
+   val actualName = controllerName match {
+   case Some(s) => s.text
+   case None => controllerType.get.text
+   }
+   
+   try {
+   locateController(actualName, controllerType, controllerFactory, kids) match {
+   case None => Comment("FIX"+"ME Can't find controller "+actualName) concat kids
+   case Some(controller) => <span id={controller.uniqueId}>{
+   (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => {k, localState(k)}}))) match {
+   case Some(view: AnswerRender) => updateCallbacks(view.messages) ; view.xml 
+   case s2 @ _ => Comment("FIX"+"ME controller "+actualName+" timeout") concat kids
+   }
+   }</span>
+   }
+   } catch {
+   case e @ _ => {
+   
+   <pre>{e.getMessage+"\n"}
+   {e.getStackTrace.toList.map{st => st.toString+"\n"}}
+   </pre>
+   }
+   }
+   }
+   }
+   */
+}
 
 abstract class ControllerManagerMessage
 case class AskFindController(theType: Option[String],name: Option[String], factory: Option[String]) extends ControllerManagerMessage

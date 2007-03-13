@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -14,7 +14,7 @@ import java.util.Date
 
 class MappedLongForeignKey[T<:Mapper[T],O<:Mapper[O]](owner: T, foreign: MetaMapper[O]) extends MappedLong[T](owner) { // with ForeignKey[long, O] {
   def defined_? = i_get_! != defaultValue
-      
+  
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
   override def getJDBCFriendly = if (defined_?) new Long(get) else null
   def obj = if(defined_?) foreign.find(i_get_!) else None
@@ -68,9 +68,9 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   }
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-  case MySqlDriver => "BIGINT NOT NULL AUTO_INCREMENT UNIQUE"
-  case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
-})
+    case MySqlDriver => "BIGINT NOT NULL AUTO_INCREMENT UNIQUE"
+    case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
+  })
 }
 
 
@@ -96,12 +96,12 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   override def writePermission_? = true
   
   def convertToJDBCFriendly(value: long): Object = new Long(value)
-      
-      
+  
+  
   def getJDBCFriendly(field : String) = new Long(get)
   override def getJDBCFriendly = new Long(get)
 
-      def ::=(in : Any) : long = {
+  def ::=(in : Any) : long = {
     in match {
       case n: long => this := n
       case n: Number => this := n.longValue
@@ -139,10 +139,10 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-     case _ => "BIGINT"
-   })
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case _ => "BIGINT"
+  })
 }
 

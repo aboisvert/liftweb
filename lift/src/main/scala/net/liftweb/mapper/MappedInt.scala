@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -59,9 +59,9 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
   }
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-  case MySqlDriver => "INTEGER NOT NULL AUTO_INCREMENT UNIQUE"
-  case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY"
-})
+    case MySqlDriver => "INTEGER NOT NULL AUTO_INCREMENT UNIQUE"
+    case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY"
+  })
 
 }
 
@@ -88,11 +88,11 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   override def writePermission_? = true
   
   def convertToJDBCFriendly(value: int): Object = new Integer(value)
-      
-      
+  
+  
   def getJDBCFriendly(field : String) = new Integer(get)
 
-    def ::=(in : Any) : int = {
+  def ::=(in : Any) : int = {
     in match {
       case n: int => this := n
       case n: Number => this := n.intValue
@@ -130,10 +130,10 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-     case _ => "INTEGER"
-   })
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case _ => "INTEGER"
+  })
 }
 

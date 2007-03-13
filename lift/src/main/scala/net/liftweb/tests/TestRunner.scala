@@ -1,10 +1,10 @@
 package net.liftweb.tests
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
 
 import net.liftweb.util.Helpers
 import Helpers._
@@ -17,24 +17,24 @@ import java.io.File
 object TestRunner {
   def main(arg: Array[String]) {
     
-  val totalTime = calcTime {
-    Console.println("Test runner...")
-    val r = new TestResult
-    val suite = new TestSuite
-    setupDB
+    val totalTime = calcTime {
+      Console.println("Test runner...")
+      val r = new TestResult
+      val suite = new TestSuite
+      setupDB
 
-    suite.addTest(new RegExTests)
-    suite.addTest(new UserTests)
-    suite.addTest(new HelperTests)
-    suite.run(r)
- for (val tf <- r.failures()) {
-   Console.println(tf.toString())
-   Console.println(tf.trace)
- }
-    Console.println(r.failures.toList.length+" Failures")
-  }
-  
-  Console.println("It took "+totalTime+" to run the tests")
+      suite.addTest(new RegExTests)
+      suite.addTest(new UserTests)
+      suite.addTest(new HelperTests)
+      suite.run(r)
+      for (val tf <- r.failures()) {
+	Console.println(tf.toString())
+	Console.println(tf.trace)
+      }
+      Console.println(r.failures.toList.length+" Failures")
+    }
+    
+    Console.println("It took "+totalTime+" to run the tests")
   }
   
   def setupDB {
@@ -50,18 +50,18 @@ object TestRunner {
     deleteIt(f)
 
     DB.connectionManager = Some(DBVendor)
-    Schemifier.schemify(User)
+    Schemifier.schemify(User, Pet)
     Schemifier.schemify(User)
     Schemifier.schemify(Pet)
 
     /*
-    DB.use {
-      db =>
-      val st = db.createStatement
-      // create the table
-      st.execute("CREATE TABLE users (id INT NOT NULL GENERATED ALWAYS AS IDENTITY, firstname VARCHAR(64), lastname VARCHAR(64), email VARCHAR(64), password_slt VARCHAR(64), password_pw VARCHAR(64))")
-    }
-    */
+     DB.use {
+     db =>
+     val st = db.createStatement
+     // create the table
+     st.execute("CREATE TABLE users (id INT NOT NULL GENERATED ALWAYS AS IDENTITY, firstname VARCHAR(64), lastname VARCHAR(64), email VARCHAR(64), password_slt VARCHAR(64), password_pw VARCHAR(64))")
+     }
+     */
   }
 }
 

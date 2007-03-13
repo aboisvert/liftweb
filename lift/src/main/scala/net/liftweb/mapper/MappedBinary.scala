@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -22,9 +22,9 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte],
   }
   
   /**
-  * Get the JDBC SQL Type for this field
-  */
-//  def getTargetSQLType(field : String) = Types.BINARY
+   * Get the JDBC SQL Type for this field
+   */
+  //  def getTargetSQLType(field : String) = Types.BINARY
   def getTargetSQLType = Types.BINARY
   
   def defaultValue = null
@@ -40,8 +40,8 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte],
   
   def ::=(f : Any) : Array[byte] = {
     this := (if (f == null) null
-    else if (f.isInstanceOf[Array[byte]]) f.asInstanceOf[Array[byte]];
-    else f.toString.getBytes("UTF-8"))
+	     else if (f.isInstanceOf[Array[byte]]) f.asInstanceOf[Array[byte]];
+	     else f.toString.getBytes("UTF-8"))
   }
   
   
@@ -53,8 +53,8 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte],
     inst match {
       case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = null}}
       case _ => {(inst : T, f : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedBinary[T]]; tv.data() = (if (f == null) null
-          else if (f.isInstanceOf[Array[byte]]) f.asInstanceOf[Array[byte]];
-          else f.toString.getBytes("UTF-8"))}}
+															  else if (f.isInstanceOf[Array[byte]]) f.asInstanceOf[Array[byte]];
+															  else f.toString.getBytes("UTF-8"))}}
     }
   }
   
@@ -72,11 +72,10 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte],
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-     case MySqlDriver => "VARBINARY("+maxLen+")"
-     case DerbyDriver => "LONG VARCHAR("+maxLen+") FOR BIT DATA"
-   })
-  
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case MySqlDriver => "VARBINARY("+maxLen+")"
+    case DerbyDriver => "LONG VARCHAR("+maxLen+") FOR BIT DATA"
+  })
 }

@@ -247,9 +247,9 @@ object Helpers {
   }
   
   /**
-     * Wraps a "try" block around the function f.  If f throws
-     * an exception return None
-     */
+   * Wraps a "try" block around the function f.  If f throws
+   * an exception return None
+   */
   def tryo[T](f: => T): Option[T] = {
     tryo(Nil)(f)
   }
@@ -425,7 +425,7 @@ object Helpers {
       case (n: Number) :: _ => n.intValue
       case Some(n) => toInt(n)
       case None => 0
-      case s : String => tryn {Integer.parseInt(s)}
+      case s : String => parseNumber(s)._1.toInt
       case x :: xs => toInt(x)
       case o => toInt(o.toString)
     }
@@ -440,10 +440,26 @@ object Helpers {
       case (n: Number) :: _ => n.longValue
       case Some(n) => toLong(n)
       case None => 0L
-      case s : String => tryn {java.lang.Long.parseLong(s)}
+      case s : String => parseNumber(s)._1
       case x :: xs => toLong(x)
       case o => toLong(o.toString)
     }
+  }
+  
+  def parseNumber(in: String): (long, int) = {
+    if (in == null || in.length == 0) return (0L, 0)
+    var num = 0L
+    var pos = 0
+    val len = in.length
+    while (pos < len) {
+      val chr = in.charAt(pos)
+      if (!java.lang.Character.isDigit(chr)) return (num, pos)
+      num = num * 10
+      val tn: int = chr - '0'
+      num = num + tn
+      pos = pos + 1
+    }
+    return (num, pos)
   }
   
   def toDate(in: String): Date = {
@@ -523,13 +539,13 @@ object Helpers {
   def splitColonPair(in: String, first: String, second: String): (String, String) = {
     (if (in == null) "" else in).split(":").filter{s => s.length > 0}.toList match {
       case f :: s :: _ => (f,s)
-      case f :: Nil => (f, second)
-      case _ => (first, second)
+	case f :: Nil => (f, second)
+	  case _ => (first, second)
     }
   }
 
   
-    def hash(in : String) : String = {
+  def hash(in : String) : String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
   }
   
@@ -564,10 +580,10 @@ object Helpers {
         val b: int = in(pos)
         val msb = (b & 0xf0) >> 4
         val lsb = (b & 0x0f)
-        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
+          sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
         sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[char] else ('a' + (lsb - 10)).asInstanceOf[char]))
-                   
-      addDigit(in, pos + 1, len, sb)
+        
+	addDigit(in, pos + 1, len, sb)
       }
     }
     addDigit(in, 0, len, sb)
@@ -612,4 +628,13 @@ object Helpers {
   }
   
   def timeNow = new java.util.Date
+  def time(when: long) = new java.util.Date(when)
+
+  /**
+    * Looks for a named parameter in the XML element and return it if found
+    */
+  def xmlParam(in: NodeSeq, param: String): Option[String] = {
+    val tmp = (in \ ("@"+param))
+    if (tmp.length == 0) None else Some(tmp.text)
+  }
 }

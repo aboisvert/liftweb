@@ -1,11 +1,11 @@
 package net.liftweb.tests
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
-  
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
+
 import scala.testing.SUnit
 import SUnit._
 
@@ -31,5 +31,4 @@ class RegExTests extends TestCase("RegExTests") {
   def testCapture {
     assert(("1 2 3 a b c 5" =~: RE("([0-9])")).capture.toList.length == 4, "Do we capture 4 numbers?")
   }
-  
 }

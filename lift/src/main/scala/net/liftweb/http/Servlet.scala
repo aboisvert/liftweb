@@ -47,8 +47,8 @@ class Servlet extends HttpServlet {
   }
 
   /**
-  * Is the file an existing file in the WAR?
-  */
+   * Is the file an existing file in the WAR?
+   */
   private def isExistingFile_?(request : HttpServletRequest) : boolean = {
     goodPath_?(request.getRequestURI) &&
     (getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) ne null)
@@ -101,8 +101,8 @@ class Servlet extends HttpServlet {
   }
   
   /**
-  * Service the HTTP request
-  */ 
+   * Service the HTTP request
+   */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
     val session = RequestState(request)
     
@@ -111,39 +111,39 @@ class Servlet extends HttpServlet {
     val finder = &getServletContext.getResourceAsStream
 
     val toMatch = (session, session.path, finder)
-    
-    val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
-      S.init(session) {
-	val f = Servlet.dispatchTable(toMatch)
-	f(request) match {
-          case None => session.createNotFound
-          case Some(v) => Servlet.convertResponse(v, session)
-	}
-      }
-    } else {
       
-      val sessionActor = getActor(request.getSession)
-      
-      if (true) {
-	val he = request.getHeaderNames
-	while (he.hasMoreElements) {
-	  val e = he.nextElement.asInstanceOf[String];
-	  val hv = request.getHeaders(e)
-	  while (hv.hasMoreElements) {
-            val v = hv.nextElement
-            Console.println(e+": "+v)
+      val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
+	S.init(session) {
+	  val f = Servlet.dispatchTable(toMatch)
+	  f(request) match {
+            case None => session.createNotFound
+            case Some(v) => Servlet.convertResponse(v, session)
 	  }
 	}
-        Console.println(session.params)
+      } else {
+	
+	val sessionActor = getActor(request.getSession)
+	
+	if (true) {
+	  val he = request.getHeaderNames
+	  while (he.hasMoreElements) {
+	    val e = he.nextElement.asInstanceOf[String];
+	    val hv = request.getHeaders(e)
+	    while (hv.hasMoreElements) {
+              val v = hv.nextElement
+              Console.println(e+": "+v)
+	    }
+	  }
+          Console.println(session.params)
+	}
+	
+	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
+	
+	sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
+	  case Some(r: Response) => Console.println(r); r
+	  case _ => {session.createNotFound}
+	}
       }
-      
-      val timeout = (if (session.ajax_?) 100 else 10) * 1000L
-      
-      sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
-	case Some(r: Response) => Console.println(r); r
-	case _ => {session.createNotFound}
-      }
-    }
     
     
     val bytes = resp.out.toString.getBytes("UTF-8")

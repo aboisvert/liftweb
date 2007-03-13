@@ -4,7 +4,7 @@ package net.liftweb.mapper
  (c) 2006-2007 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ \*                                                 */
 
 import java.sql.{Connection, ResultSet, Statement, PreparedStatement}
 import javax.sql.{ DataSource}
@@ -22,10 +22,10 @@ object DB {
   private def info : HashMap[String, (Connection, int)] = {
     threadStore.get.asInstanceOf[HashMap[String, (Connection, int)]] match {
       case null => {
-      val tinfo = new HashMap[String, (Connection, int)];
-      threadStore.set(tinfo)
-      tinfo
-    }
+	val tinfo = new HashMap[String, (Connection, int)];
+	threadStore.set(tinfo)
+	tinfo
+      }
       case v => {v}
     }
   }
@@ -34,14 +34,14 @@ object DB {
   
   private def newConnection(name : String) : Connection = 
     connectionManager.flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection}
-    
+  
   
   private def releaseConnection(conn : Connection) : unit = conn.close
   
   private def getPairForName(name : String) : (Connection, int) =  {
     var ret = info.get(name) match {
       case None => (newConnection(name), 1)
-      case c => (c.get._1, c.get._2 + 1)
+	case c => (c.get._1, c.get._2 + 1)
     }
     info += name -> ret
     ret
@@ -54,7 +54,7 @@ object DB {
 	case (c , 1) => releaseConnection(c); info -= name
 	case (c, cnt) => info(name) = (c,cnt - 1)
       }
-		}
+		      }
     }
   }
   

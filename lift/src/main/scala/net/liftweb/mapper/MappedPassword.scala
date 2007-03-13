@@ -63,7 +63,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
     hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
   }
   
-  override def validate : List[ValidationIssues[String, T]] = {
+  override def validate : List[ValidationIssues] = {
     if (!invalidPw && password.get != "*") Nil
     else if (invalidPw) List(ValidationIssues(this, invalidMsg))
     else List(ValidationIssues(this, "Password must be set"))
@@ -126,11 +126,11 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
       inst match {
 	case null => {(inst : T, v : AnyRef) => {}}
 	case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
-		    }
-      } else if (columnName.endsWith("_pw")) {
-	inst match {
-	  case null => {(inst : T, v : AnyRef) => {}}
-	  case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
+      }
+    } else if (columnName.endsWith("_pw")) {
+      inst match {
+	case null => {(inst : T, v : AnyRef) => {}}
+	case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
       
     } else {
@@ -139,7 +139,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = if (colName.endsWith("_pw")) colName+" VARCHAR(48)" else colName+" VARCHAR(20)"
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = if (colName.endsWith("_pw")) colName+" VARCHAR(48)" else colName+" VARCHAR(20)"
 }

@@ -19,8 +19,8 @@ import scala.collection.mutable.ArrayBuffer
  */
 object RE {
   /**
-    * Create a regular expression from a String
-    */
+   * Create a regular expression from a String
+   */
   def apply(in: String) = new REDoer(in)
 
   implicit def matchResToBoolean(in: REMatcher): boolean = {
@@ -32,7 +32,7 @@ object RE {
 
   class SuperString(val str: String) {
     def substring(re: REDoer) = re.=~(str).matchStr
-}
+  }
 
   implicit def strToSuperStr(in: String): SuperString = new SuperString(in)
 }

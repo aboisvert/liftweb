@@ -46,25 +46,25 @@ object Safe {
   def randomString(len: int) = Helpers.randomString(len)
 
   /*
-  def randomString(len : int) : String = {
-    len match {
-      case 0 => ""
-      case _ => randomChar + randomString(len - 1)
-    }
-  }
+   def randomString(len : int) : String = {
+   len match {
+   case 0 => ""
+   case _ => randomChar + randomString(len - 1)
+   }
+   }
+   
+   def randomChar : String = {
+   rand.nextInt(62) match {
+   case s @ _ if (s < 26) => {('A' + s).asInstanceOf[char].toString}      
+   case s @ _ if (s < 52) => {('a' + (s - 26)).asInstanceOf[char].toString}      
+   case s @ _  => {('0' + (s - 52)).asInstanceOf[char].toString}      
+   }
+   }*/
   
-  def randomChar : String = {
-    rand.nextInt(62) match {
-    case s @ _ if (s < 26) => {('A' + s).asInstanceOf[char].toString}      
-    case s @ _ if (s < 52) => {('a' + (s - 26)).asInstanceOf[char].toString}      
-    case s @ _  => {('0' + (s - 52)).asInstanceOf[char].toString}      
-    }
-  }*/
- 
   /*
-  def generateUniqueName = {
-    S.nc+"_inp_"+randomString(15)+"_$"
-  }
-  */
+   def generateUniqueName = {
+   S.nc+"_inp_"+randomString(15)+"_$"
+   }
+   */
 
 }

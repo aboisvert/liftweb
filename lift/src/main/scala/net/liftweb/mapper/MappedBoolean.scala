@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -33,12 +33,12 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
   override def readPermission_? = true
   override def writePermission_? = true
   
-      /*
-  def convertToJDBCFriendly(value: boolean): Object = new Boolean(value)
-      
-      
-  def getJDBCFriendly(field : String) = data match {case None => null; case _ => new Boolean(get)}
-*/
+  /*
+   def convertToJDBCFriendly(value: boolean): Object = new Boolean(value)
+   
+   
+   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new Boolean(get)}
+   */
   def convertToJDBCFriendly(value: boolean): Object = new java.lang.Integer(if (value) 1 else 0)
   
   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new java.lang.Integer(if (get) 1 else 0)}
@@ -79,11 +79,11 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-     case MySqlDriver => "BOOLEAN"
-     case DerbyDriver => "SMALLINT"
-   })
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case MySqlDriver => "BOOLEAN"
+    case DerbyDriver => "SMALLINT"
+  })
 }
 

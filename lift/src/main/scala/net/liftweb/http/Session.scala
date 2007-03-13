@@ -41,12 +41,12 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
      case o => Console.println("Didn't remove "+o)
      }
      }
-    Console.println("session Did passivate real good!")
-    */
+     Console.println("session Did passivate real good!")
+     */
   }
   /**
-  * What happens when this controller is bound to the HTTP session?
-  */ 
+   * What happens when this controller is bound to the HTTP session?
+   */ 
   def valueBound(event: HttpSessionBindingEvent) {
     //Console.println("bound ")
     //this.start
@@ -54,23 +54,23 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
 
   /**
-  * When the session is unbound the the HTTP controller, stop us
-  */
+   * When the session is unbound the the HTTP controller, stop us
+   */
   def valueUnbound(event: HttpSessionBindingEvent) {
     if (running_?) this ! "shutdown"
   }
   
   /**
-  * called when the Actor is started
-  */
+   * called when the Actor is started
+   */
   def act = {
     running_? = true
     loop
   }
   
   /**
-  * The loop for the actor.  Dispatches messages using Scala's event-based Actors
-  */
+   * The loop for the actor.  Dispatches messages using Scala's event-based Actors
+   */
   final def loop {
     react(dispatcher)
   }
@@ -134,8 +134,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
 
   /**
-  * Create a page based on the uri
-  */
+   * Create a page based on the uri
+   */
   private def createPage(state: RequestState, finder: (String) => InputStream): Option[Page] = {
     findVisibleTemplate(state.uri, state, finder) match {
       case None => None
@@ -190,15 +190,15 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
   
   /**
-  * Update any "Location" headers to add the Context path
-  */
+   * Update any "Location" headers to add the Context path
+   */
   def fixHeaders(h: Map[String, String], state: RequestState) = {
     h match {
       case null => Map.empty[String, String]
       case _ => Map.empty[String, String] ++ h.map{p =>
         p match {
           case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+state.contextPath+v)
-          case _ => p
+            case _ => p
         }
 						 }
     }
@@ -206,12 +206,12 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   
 
   /*
-  private def processTemplate(xml : NodeSeq, session: RequestState) : Option[Response] = {
-    val surrounded = processSurroundAndInclude(xml, session)
-  val withController = processControllers(surrounded)
-  
-  Some(Response(withController, ListMap.Empty, 200))
-  }*/
+   private def processTemplate(xml : NodeSeq, session: RequestState) : Option[Response] = {
+   val surrounded = processSurroundAndInclude(xml, session)
+   val withController = processControllers(surrounded)
+   
+   Some(Response(withController, ListMap.Empty, 200))
+   }*/
   
   private def findAndImbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
     templateName match {
@@ -321,27 +321,27 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 
   
   /*
-  private def serviceRequestWithTemplate(session: RequestState) : Option[Response] = {
-    findVisibleTemplate(session.uri, session) match {
-      case None => None
-  case Some(s) => {
-    processTemplate(s, session) match {
-      case None => None
-  case s @ Some(_) => s
-    }
-  }
-    }
-  }
-  
-  private def serviceRequest(session: RequestState) : Response = {
-    serviceRequestWithTemplate(session) match {
-      case Some(s) => s
-  case None => doRailsStyleDispatch(session) match {
-    case None => session.createNotFound
-  case Some(s) => s
-  }
-    }
-  }*/
+   private def serviceRequestWithTemplate(session: RequestState) : Option[Response] = {
+   findVisibleTemplate(session.uri, session) match {
+   case None => None
+   case Some(s) => {
+   processTemplate(s, session) match {
+   case None => None
+   case s @ Some(_) => s
+   }
+   }
+   }
+   }
+   
+   private def serviceRequest(session: RequestState) : Response = {
+   serviceRequestWithTemplate(session) match {
+   case Some(s) => s
+   case None => doRailsStyleDispatch(session) match {
+   case None => session.createNotFound
+   case Some(s) => s
+   }
+   }
+   }*/
   
 
   
@@ -377,8 +377,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
           f =>
             val what = places.take(i + 1).map{st => f(st)}.mkString("", ".", "")
 	  (buildPackage("view") ::: ("lift.app.view" :: Nil)).map{pkg => pkg + "."+what}
+	}
     }
-				     }
 
     first(toTry) {
       clsName => 
@@ -410,24 +410,24 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 
 
   /**
-  * Look for a class that matches the URL pattern and
-  * calls that class
-  */
+   * Look for a class that matches the URL pattern and
+   * calls that class
+   */
   /*
-  private def doRailsStyleDispatch(session : RequestState) : Option[Response] = {
-    // get the first element (the controller)
-    val controller = session.controller
-  // get the second element (the view, and put in 'index' if it doesn't exist)
-  val page = session.view
+   private def doRailsStyleDispatch(session : RequestState) : Option[Response] = {
+   // get the first element (the controller)
+   val controller = session.controller
+   // get the second element (the view, and put in 'index' if it doesn't exist)
+   val page = session.view
 
-  // invoke the named controller and view
-  invokeControllerAndView(controller, page, session)
-  }*/
+// invoke the named controller and view
+invokeControllerAndView(controller, page, session)
+}*/
   
   /*
-  /**
-  * Invoke the named controller and optionally its view
-  */
+   /**
+    * Invoke the named controller and optionally its view
+    */
   private def invokeControllerAndView(controller : String, page : String, session: RequestState) : Option[Response] = {
     // invoke the controller
     invokeController(controller, page, session) match {
@@ -448,8 +448,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 
   
   /**
-  * invoke the named controller
-  */
+   * invoke the named controller
+   */
   private def invokeController(controller : String, page : String, session: RequestState) : Any = {
     // find the controller
     findClass(controller, "lift.app.controller" :: "base.app.controller" :: "app.controller" :: Nil) match {
@@ -472,27 +472,27 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }*/
   
   /*
-  // invoke the "render" method on the named view
-  private def invokeView(controller : String, page : String, session: RequestState ) : Option[Response] = {
-    findClass(page, "app.view."+controller :: "base.app.view."+controller :: "lift.app.view."+controller :: Nil) match { 
-      case None => None
-  case Some(v) => invokeRenderMethod(v)
-    }
-  }*/
+   // invoke the "render" method on the named view
+   private def invokeView(controller : String, page : String, session: RequestState ) : Option[Response] = {
+   findClass(page, "app.view."+controller :: "base.app.view."+controller :: "lift.app.view."+controller :: Nil) match { 
+   case None => None
+   case Some(v) => invokeRenderMethod(v)
+   }
+   }*/
   
   /*
-  def invokeRenderMethod(clz : Class) : Option[Response] = {
-    if (clz == null)  null else {
-      try {
-        val meth = clz.getMethod("render", null)
-  if (!callableMethod_?(meth) ) null else {
-    dealWithViewRet(meth.invoke(clz.newInstance, null))
-  }
-      } catch {
-        case c : InvocationTargetException => {def findRoot(e : Throwable) : Option[Response] = {if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause)}; findRoot(c)}
-      }
-    }
-  }*/
+   def invokeRenderMethod(clz : Class) : Option[Response] = {
+   if (clz == null)  null else {
+   try {
+   val meth = clz.getMethod("render", null)
+   if (!callableMethod_?(meth) ) null else {
+   dealWithViewRet(meth.invoke(clz.newInstance, null))
+   }
+   } catch {
+   case c : InvocationTargetException => {def findRoot(e : Throwable) : Option[Response] = {if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause)}; findRoot(c)}
+   }
+   }
+   }*/
 
 }
 

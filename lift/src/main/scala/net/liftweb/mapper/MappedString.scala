@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-  (c) 2006-2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                */
+ (c) 2006-2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -24,8 +24,8 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   }
   
   /**
-  * Get the JDBC SQL Type for this field
-  */
+   * Get the JDBC SQL Type for this field
+   */
   def getTargetSQLType = Types.VARCHAR
   
   def defaultValue = ""
@@ -48,7 +48,7 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
       case None => this := null
       case o => this := o.toString
     }
-//     this := (if (f != null) f.toString else null)
+    //     this := (if (f != null) f.toString else null)
   }
   
   
@@ -77,8 +77,8 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   }
   
   /**
-     * Given the driver type, return the string required to create the column in the database
-     */
-   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" VARCHAR("+maxLen+")"
-    
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" VARCHAR("+maxLen+")"
+  
 }

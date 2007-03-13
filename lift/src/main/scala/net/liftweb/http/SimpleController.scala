@@ -1,22 +1,22 @@
 package net.liftweb.http
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
-  
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
+
 import scala.collection.immutable.TreeMap
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 
 /**
-  * The base trait of Controllers that handle pre-view requests
-  */
+ * The base trait of Controllers that handle pre-view requests
+ */
 trait SimpleController {
   var request: RequestState = _
   // private var session: TreeMap[String, Any] = _
   var httpRequest: HttpServletRequest = _
-                          
+  
   def params(name: String): Option[String] = {
     request.params.get(name) match {
       case None => None
@@ -30,20 +30,20 @@ trait SimpleController {
   def post_? : boolean = request.post_?
   
   /*
-  def apply(name: String): Option[Any] = {
-    session.get(name)
-  }*/
+   def apply(name: String): Option[Any] = {
+   session.get(name)
+   }*/
   
   def apply[T](name: String): Option[T] = {
     if (httpRequest == null) None
     else {
       httpRequest.getSession.getAttribute(name) match {
-      case null => None
-      case n => {
-        if (n.isInstanceOf[T]) Some(n.asInstanceOf[T])
-        else None
+	case null => None
+	case n => {
+          if (n.isInstanceOf[T]) Some(n.asInstanceOf[T])
+          else None
+	}
       }
-    }
     }
   }
   
