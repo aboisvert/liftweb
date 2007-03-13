@@ -25,9 +25,8 @@ class Boot {
     addToPackages("net.liftweb.example")
     FixUp.insureWeHaveATable
     
-    val dispatcher: PartialFunction[(RequestState, List[String],
-      (String) => java.io.InputStream), 
-      (HttpServletRequest) => Option[Any]] = {
+    val dispatcher: PartialFunction[(RequestState, List[String], (String) => java.io.InputStream),(HttpServletRequest) => Option[Any]] = 
+      {
     case (r, "webservices" :: c :: _, _) => { 
           (req: HttpServletRequest) => {
           val rc = new WebServices(r, req)
