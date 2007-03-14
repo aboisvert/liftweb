@@ -45,7 +45,7 @@ object Schemifier {
   
   private def ensureTable(table: BaseMetaMapper, connection: SuperConnection) {
     val md = connection.getMetaData
-    val rs = md.getTables(null, null, null, null)
+    val rs = md.getTables(null, null, table.dbTableName.toUpperCase, null)
     var hasTable = false
     while (!hasTable && rs.next) {
       val tableName = rs.getString(3)
