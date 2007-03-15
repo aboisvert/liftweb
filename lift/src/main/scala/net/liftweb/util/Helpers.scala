@@ -344,7 +344,7 @@ object Helpers {
    * @return the CamelCased string
    */
   def smartCaps(in : String) = {
-    def loop(x : List[Char]) : List[Char] = x match {
+    def loop(x : List[Char]) : List[Char] = (x: @unchecked) match {
       case '_' :: '_' :: rest => loop('_' :: rest)
       case '_' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
       case c :: rest => c :: loop(rest)

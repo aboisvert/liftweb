@@ -158,7 +158,9 @@ object Schemifier {
       val myTable = actualTableNames(table.dbTableName)
       
       val md = connection.getMetaData
-      val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
+      // val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
+       val rs = md.getExportedKeys(null, null,myTable)
+      //val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
       var foundIt = false
       while (!foundIt && rs.next) {
         val pkName = rs.getString(4)
@@ -172,7 +174,6 @@ object Schemifier {
         val st = connection.createStatement
         st.execute(ct)
         st.close
-        Console.println(ct)
       }
     }
   }

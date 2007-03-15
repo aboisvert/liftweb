@@ -27,7 +27,7 @@ trait CharParsers extends Parsers {
    * Match a list of characters
    */
   def str(in : List[char]) : Parser[char] = {
-    in match {
+    (in: @unchecked) match {
       case c :: Nil => chr(c)
       case c :: rest => chr(c) &&& str(rest)
     }
@@ -721,7 +721,7 @@ object TextileParser {
       ) yield Quoted(reduceCharBlocks(ln))
     
     def reduceCharBlocks(in : List[Textile]) : List[Textile] = 
-      in match {
+      (in: @unchecked) match {
         case Nil => {Nil}
         case EOL() :: BOL() :: rest => {EOL :: reduceCharBlocks(rest)}
         case EOL() :: rest => {reduceCharBlocks(rest)}

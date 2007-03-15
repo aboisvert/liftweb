@@ -14,22 +14,33 @@ import net.liftweb.mapper._
 import java.sql.{Connection, DriverManager}
 import java.io.File
 
+trait Runner {
+  def name: String
+  def setupDB: unit
+}
+
 object TestRunner {
   def main(arg: Array[String]) {
+    val dbRunners = DerbyRunner :: MySqlRunner :: Nil
     
     val totalTime = calcTime {
-      Console.println("Test runner...")
       val r = new TestResult
       val suite = new TestSuite
-      setupDB
+      dbRunners.foreach {
+        runner =>
+      Console.println("Test runner for..."+runner.name)
+      runner.setupDB
 
+      val ut = new UserTests
+      ut.init
       suite.addTest(new RegExTests)
       suite.addTest(new UserTests)
       suite.addTest(new HelperTests)
       suite.run(r)
+      }
       for (val tf <- r.failures()) {
-	Console.println(tf.toString())
-	Console.println(tf.trace)
+        Console.println(tf.toString())
+        Console.println(tf.trace)
       }
       Console.println(r.failures.toList.length+" Failures")
     }
@@ -37,6 +48,11 @@ object TestRunner {
     Console.println("It took "+totalTime+" to run the tests")
   }
   
+  }
+
+object DerbyRunner extends Runner {
+  def name = "Derby"
+    
   def setupDB {
     val f = new File("lift_tests")
     
@@ -49,16 +65,50 @@ object TestRunner {
     
     deleteIt(f)
 
-    /*DB.defineConnectionManager("", DBVendor)
+    DB.defineConnectionManager("", DBVendor)
     
     Schemifier.schemify(User, Pet)
-    Schemifier.schemify(User)
-    Schemifier.schemify(Pet)
-    */
+    // Schemifier.schemify(User, Pet)
+  }  
+}
+
+object MySqlRunner extends Runner {
+  def name = "MySql"
+    
+  def setupDB {
     DB.defineConnectionManager("", MySQLVendor)
+    
+    def deleteAllTables {
+    DB.use {
+      conn =>
+      val md = conn.getMetaData
+      val rs = md.getTables(null, null, null, null)
+      var toDelete: List[String] = Nil
+      while (rs.next) {
+        val tableName = rs.getString(3)
+        if (rs.getString(4).toLowerCase == "table") toDelete = tableName :: toDelete
+      }
+      rs.close
+      
+      toDelete.foreach {
+        table =>
+        try {
+        val ct = "DROP TABLE "+table
+        val st = conn.createStatement
+        st.execute(ct)
+        st.close
+        } catch {
+          case e => e.printStackTrace
+        }
+      }
+      
+      if (toDelete.length > 0) deleteAllTables
+    }
+    }
+    deleteAllTables
+    
     Schemifier.schemify(User, Pet)
-//    Schemifier.schemify(User)
-    //Schemifier.schemify(Pet)
+    // Schemifier.schemify(User, Pet)
   }
 }
 

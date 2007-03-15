@@ -16,29 +16,33 @@ import net.liftweb.proto._
 
 class UserTests extends TestCase("User Tests") {
   val maxUsers = 100
-  override def runTest() {
+  def init {
     DB.use {
       conn =>
-	for (val cnt <- 1 to maxUsers) {
-	  val u = new User
-	  u.firstName := cnt.toString
-	  u.lastName := "Name "+cnt
-	  u.email := "mr"+cnt+"@foo.com"
-	  u.password := "password"+cnt
-	  u.save
-	  for (val petCnt <- 1 to (1 + cnt/ 10)) {
+      
+        for (val cnt <- 1 to maxUsers) {
+          val u = new User
+          u.firstName := cnt.toString
+          u.lastName := "Name "+cnt
+          u.email := "mr"+cnt+"@foo.com"
+          u.password := "password"+cnt
+          u.save
+          for (val petCnt <- 1 to (1 + cnt/ 10)) {
             val p = new Pet
             p.name := ""+petCnt+" of "+u.lastName
             p.owner := u.id.get
             p.save
-	  }
-	}
+          }
+        }
+      }
+  }
+  override def runTest() {
+    
 
       findTest
       findAllTest
       countTest
       pwdTest
-    }
   }
   
   def findTest {
