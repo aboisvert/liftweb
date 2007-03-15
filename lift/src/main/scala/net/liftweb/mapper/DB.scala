@@ -17,7 +17,12 @@ object DB {
   private val threadStore = new ThreadLocal
   private val envContext = Lazy{(new InitialContext).lookup("java:/comp/env").asInstanceOf[Context]}
   
-  var connectionManager: Option[ConnectionManager] = None
+  // var connectionManager: Option[ConnectionManager] = None
+  private val connectionManagers = new HashMap[String, ConnectionManager];
+  
+  def defineConnectionManager(name: String, mgr: ConnectionManager) {
+    connectionManagers(name) = mgr
+  }
   
   private def info : HashMap[String, (Connection, int)] = {
     threadStore.get.asInstanceOf[HashMap[String, (Connection, int)]] match {
@@ -33,7 +38,7 @@ object DB {
   private def whichName(name : String) = if (name == null || name.length == 0) "lift" else name
   
   private def newConnection(name : String) : Connection = 
-    connectionManager.flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection}
+    connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection}
   
   
   private def releaseConnection(conn : Connection) : unit = conn.close

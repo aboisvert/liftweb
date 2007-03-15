@@ -320,7 +320,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
           
           for (val col <- mappedColumns.elements) {
             val colVal = ??(col._2, toSave)
-            if (!columnIndex_?(col._1) && colVal.dirty_?) {
+            if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
               st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
               colNum = colNum + 1
             }
@@ -340,7 +340,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
         st =>
           var colNum = 1
         for (val col <- mappedColumns.elements) {
-          if (!columnIndex_?(col._1)) {
+          if (!columnPrimaryKey_?(col._1)) {
             val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
             st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
             colNum = colNum + 1
@@ -374,11 +374,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     ret
   }
   
-  def columnIndex_?(name : String) = {
+  def columnPrimaryKey_?(name : String) = {
     
     mappedColumnInfo.get(name) match {
       case None => false
-      case Some(v) => v.dbIndex_?
+      case Some(v) => v.dbPrimaryKey_?
     }
   }
   
@@ -557,7 +557,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 		  mappedColumnInfo(colName) = mf
 		  mappedColumns(colName) = v
 		}
-		if (mf.dbIndex_?) {
+		if (mf.dbPrimaryKey_?) {
 		  indexMap = v.getName
 		}
 	      }
@@ -586,11 +586,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   val columnNamesForInsert = {
-    (mappedColumnInfo.elements.filter{c => !c._2.dbIndex_?}.map{p => p._1}).toList.mkString("", ",", "")
+    (mappedColumnInfo.elements.filter{c => !c._2.dbPrimaryKey_?}.map{p => p._1}).toList.mkString("", ",", "")
   }
   
   val columnQueriesForInsert = {
-    (mappedColumnInfo.elements.filter{c => !c._2.dbIndex_?}.map{p => "?"}).toList.mkString("", ",", "")
+    (mappedColumnInfo.elements.filter{c => !c._2.dbPrimaryKey_?}.map{p => "?"}).toList.mkString("", ",", "")
   }
   
   private def fixTableName(name : String) = clean(name.toLowerCase)
@@ -675,6 +675,6 @@ case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
 
-trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] {
-
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] {
+  
 }

@@ -59,12 +59,13 @@ class UserTests extends TestCase("User Tests") {
       val u = User.find(uKey)
       assert(u.isDefined)
       val user = u.get
-      assert(user.pets.length == (1 + uKey / 10))
+      val pl = user.pets.length
+      assert(pl == (1 + uKey / 10), "Wanted "+pl+" got "+(1 + uKey / 10)) 
     }
   }
   
   def findAllTest {
-    assert(User.findAll.length == maxUsers)
+    assert(User.findAll.length == maxUsers, "Actual len "+User.findAll.length+" expected "+maxUsers)
     assert(User.findAll(ByField(User.email, "mr33@foo.com")).length == 1)
     assert(User.findAll(ByField(User.email, "dogmr33@foo.com")).length == 0)
     assert(User.findAll(BySql("email = ?", "mr9@foo.com")).length == 1)
@@ -105,14 +106,16 @@ class UserTests extends TestCase("User Tests") {
 }
 
 
-object User extends User with MetaMapper[User] {
+object User extends User with KeyedMetaMapper[long, User] {
   override protected def internalTableName_$ = "users"
+    
 }
 
 class User extends ProtoUser[User] {
   def getSingleton = User
   
   def pets = Pet.findAll(ByField(Pet.owner, this.id.get))
+  def primaryKeyField = id
 }
 
 class Pet extends KeyedMapper[long, Pet] {

@@ -21,7 +21,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
   */
 class Boot {
   def boot {
-    DB.connectionManager = Some(DBVendor)
+    DB.defineConnectionManager("", DBVendor)
     addToPackages("net.liftweb.example")
     FixUp.insureWeHaveATable
     

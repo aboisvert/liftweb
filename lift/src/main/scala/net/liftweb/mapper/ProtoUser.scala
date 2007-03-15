@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import net.liftweb.mapper._
 
-trait ProtoUser[T <: ProtoUser[T]] extends Mapper[T] {
+trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[long, T] {
   // the primary key for the database
   val id = new MappedLongIndex[T](this)
   

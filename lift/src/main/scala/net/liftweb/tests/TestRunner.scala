@@ -49,19 +49,29 @@ object TestRunner {
     
     deleteIt(f)
 
-    DB.connectionManager = Some(DBVendor)
+    /*DB.defineConnectionManager("", DBVendor)
+    
     Schemifier.schemify(User, Pet)
     Schemifier.schemify(User)
     Schemifier.schemify(Pet)
+    */
+    DB.defineConnectionManager("", MySQLVendor)
+    Schemifier.schemify(User, Pet)
+//    Schemifier.schemify(User)
+    //Schemifier.schemify(Pet)
+  }
+}
 
-    /*
-     DB.use {
-     db =>
-     val st = db.createStatement
-     // create the table
-     st.execute("CREATE TABLE users (id INT NOT NULL GENERATED ALWAYS AS IDENTITY, firstname VARCHAR(64), lastname VARCHAR(64), email VARCHAR(64), password_slt VARCHAR(64), password_pw VARCHAR(64))")
-     }
-     */
+object MySQLVendor extends ConnectionManager {
+  def newConnection(name: String): Option[Connection] = {
+    try {
+      Class.forName("com.mysql.jdbc.Driver")
+      
+      val dm =  DriverManager.getConnection("jdbc:mysql://localhost:3306/lift_test?autoReconnect=true", "dpp", "")
+      Some(dm)
+    } catch {
+      case e : Exception => e.printStackTrace; None
+    }
   }
 }
 
