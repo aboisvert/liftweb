@@ -56,6 +56,8 @@ class Lazy[T](f: => T) {
   
   def reset = value = None
   
+  def calculated_? = value.isDefined
+  
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
 }
 
