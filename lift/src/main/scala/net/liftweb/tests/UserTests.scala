@@ -70,6 +70,8 @@ class UserTests extends TestCase("User Tests") {
   
   def findAllTest {
     assert(User.findAll.length == maxUsers, "Actual len "+User.findAll.length+" expected "+maxUsers)
+    assert(User.findAll(MaxRows(25), StartAt(25)).length == 25)
+    assert(User.findAll(StartAt(25)).length == (maxUsers - 25))
     assert(User.findAll(ByField(User.email, "mr33@foo.com")).length == 1)
     assert(User.findAll(ByField(User.email, "dogmr33@foo.com")).length == 0)
     assert(User.findAll(BySql("email = ?", "mr9@foo.com")).length == 1)

@@ -40,10 +40,10 @@ object DB {
     connectionManagers(name) = mgr
   }
   
-  private def info : HashMap[String, (Connection, int)] = {
-    threadStore.get.asInstanceOf[HashMap[String, (Connection, int)]] match {
+  private def info : HashMap[String, (SuperConnection, int)] = {
+    threadStore.get.asInstanceOf[HashMap[String, (SuperConnection, int)]] match {
       case null => {
-	val tinfo = new HashMap[String, (Connection, int)];
+	val tinfo = new HashMap[String, (SuperConnection, int)];
 	threadStore.set(tinfo)
 	tinfo
       }
@@ -53,13 +53,13 @@ object DB {
   
   private def whichName(name : String) = if (name == null || name.length == 0) "lift" else name
   
-  private def newConnection(name : String) : Connection = 
-    connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection}
+  private def newConnection(name : String) : SuperConnection = 
+    new SuperConnection(connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection})
   
   
-  private def releaseConnection(conn : Connection) : unit = conn.close
+  private def releaseConnection(conn : SuperConnection) : unit = conn.close
   
-  private def getPairForName(name : String) : (Connection, int) =  {
+  private def getPairForName(name : String) : (SuperConnection, int) =  {
     var ret = info.get(name) match {
       case None => (newConnection(name), 1)
 	case c => (c.get._1, c.get._2 + 1)
@@ -79,7 +79,7 @@ object DB {
     }
   }
   
-  def statement[T](db : Connection)(f : (Statement) => T) : T =  {
+  def statement[T](db : SuperConnection)(f : (Statement) => T) : T =  {
     val st = db.createStatement
     try {
       f(st)
@@ -88,7 +88,7 @@ object DB {
     }
   }
   
-  def exec[T](db : Connection, query : String)(f : (ResultSet) => T) : T = {
+  def exec[T](db : SuperConnection, query : String)(f : (ResultSet) => T) : T = {
     statement(db) {st => 
       f(st.executeQuery(query))
 		 }
@@ -103,38 +103,44 @@ object DB {
     }
   }
   
-  def prepareStatement[T](statement : String)(f : (PreparedStatement) => T) : T = {
-    use {
-      conn =>
+  def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
+    
 	val st = conn.prepareStatement(statement)
       try {
 	f(st)
       } finally {
         st.close
       }
-    }
+    
   }
   
-  def prepareStatement[T](statement : String,keys: int)(f : (PreparedStatement) => T) : T = {
-    use {
-      conn =>
+  def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
         val st = conn.prepareStatement(statement, keys)
       try {
         f(st)
       } finally {
         st.close
       }
-    }
   }
   
-  def use[T](f : (Connection) => T) : T = {
+  def use[T](f : (SuperConnection) => T) : T = {
     this.use("")(f)
   }
-  def use[T](name : String)(f : (Connection) => T) : T = {
+  def use[T](name : String)(f : (SuperConnection) => T) : T = {
     try {
       f(getPairForName(name)._1)
     } finally {
       releaseConnectionNamed(name)
     }
   }
+}
+
+class SuperConnection(val connection: Connection) {
+  val brokenLimit_? : Lazy[boolean] = Lazy {
+    connection.getMetaData.getDatabaseProductName ==  "Apache Derby"
+  }
+}
+
+object SuperConnection {
+  implicit def superToConn(in: SuperConnection): Connection = in.connection
 }

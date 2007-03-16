@@ -18,22 +18,25 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   private var theSetList: Seq[ThroughType] = Nil
   
   private val others = Lazy[List[To]] {
+    DB.use {
+    conn =>
     val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+
     through.dbTableName+" WHERE "+
     otherSingleton.dbTableName+"."+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).get.dbColumnName+" = "+
     through.dbTableName+"."+throughToField.dbColumnName+" AND "+
     through.dbTableName+"."+throughFromField.dbColumnName+" = ?"
-    DB.prepareStatement(query) {
+    DB.prepareStatement(query, conn) {
       st =>
 	owner.getSingleton.indexedField(owner).map {
 	  indVal =>
 	    st.setObject(1, indVal.getJDBCFriendly, indVal.getTargetSQLType)
 	  DB.exec(st) {
 	    rs =>
-	      otherSingleton.createInstances(rs)
+	      otherSingleton.createInstances(rs, None, None)
 	  }
 	} getOrElse Nil
     }
+  }
   }
   
   def apply(): List[To] = others.get
