@@ -59,6 +59,18 @@ trait BaseMappedField {
     * Is the field a foreign key reference
     */
   def dbForeignKey_? : boolean
+      
+  /**
+    * Called when a column has been added to the database via Schemifier
+    */
+  def dbAddedColumn: Option[() => unit]
+                            
+                            /**
+                               * Called when a column has indexed via Schemifier
+                               */
+                             def dbAddedIndex: Option[() => unit]
+                                                       
+                            
 }
 
 trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
@@ -79,6 +91,15 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   def dirty_? = !dbPrimaryKey_? && _dirty_?
   protected def dirty_?(b : boolean) = _dirty_? = b
 
+      /**
+         * Called when a column has been added to the database via Schemifier
+         */
+       def dbAddedColumn: Option[() => unit] = None
+
+       /**
+          * Called when a column has indexed via Schemifier
+          */
+        def dbAddedIndex: Option[() => unit] = None                                 
   /**
    * override this method in indexed fields to indicate that the field has been saved
    */
@@ -262,6 +283,12 @@ trait BaseForeignKey extends BaseMappedField {
      
   def dbKeyToTable: BaseMetaMapper
   def dbKeyToColumn: BaseMappedField
+  
+  /**
+    * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
+    * is done with the schemification.
+    */
+  def dbAddedForeignKey: Option[() => unit]
 }
 
 trait LifecycleCallbacks {

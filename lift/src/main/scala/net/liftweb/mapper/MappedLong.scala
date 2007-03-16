@@ -25,6 +25,13 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[FKType, O], FKType](owner
   override def dbIndexed_? = true
             
   override def dbForeignKey_? = true
+
+      
+      /**
+      * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
+      * is done with the schemification.
+      */
+    def dbAddedForeignKey: Option[() => unit] = None
 }
 
 class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[long] {
@@ -77,6 +84,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
     case MySqlDriver => "BIGINT NOT NULL AUTO_INCREMENT UNIQUE"
     case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
   })
+
 }
 
 

@@ -18,7 +18,9 @@ trait BaseMetaMapper {
   def afterSchemifier: unit
   
   def dbTableName: String
-  def mappedFields: Seq[BaseMappedField]
+  def mappedFields: Seq[BaseMappedField];
+  def dbAddTable: Option[() => unit]
+                        
 }
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
@@ -58,6 +60,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	}
     }
   }
+  
+  def dbAddTable: Option[() => unit] = None
   
   def count: long = count(Nil :_*)
   

@@ -20,6 +20,7 @@ object User extends User with KeyedMetaMapper[long, User] {
   override def fieldOrder = id :: firstName :: lastName :: email :: 
   password :: textArea :: Nil
   
+
 }
 
 /**
@@ -77,4 +78,5 @@ object FixUp {
       db.commit
     }
   }
+
 }

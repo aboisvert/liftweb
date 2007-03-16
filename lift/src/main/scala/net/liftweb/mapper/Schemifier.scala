@@ -24,18 +24,21 @@ object Schemifier {
   }
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
   
-  def schemify(tables: BaseMetaMapper*) {
+  def schemify(stables: BaseMetaMapper*) {
+    val tables = stables.toList
     DB.use {
       con =>
 	val connection = SuperConnection(con)
       val driver = calcDriver(connection.getMetaData.getDatabaseProductName)
       val actualTableNames = new HashMap[String, String]
       tables.foreach{t => t.beforeSchemifier}
-      tables.foreach{t => ensureTable(t, connection, actualTableNames)}
-      tables.foreach{t => ensureColumns(t, connection, actualTableNames)}
-      tables.foreach{t => ensureIndexes(t, connection, actualTableNames)}
-      tables.foreach{t => ensureConstraints(t, connection, actualTableNames)}
+        val toRun = tables.flatMap{t => ensureTable(t, connection, actualTableNames)} :::
+      tables.flatMap{t => ensureColumns(t, connection, actualTableNames)} :::
+      tables.flatMap{t => ensureIndexes(t, connection, actualTableNames)} :::
+      tables.flatMap{t => ensureConstraints(t, connection, actualTableNames)}
+      
       tables.foreach{t => t.afterSchemifier}
+      toRun.foreach{f => f()}
     }
   }
   
@@ -46,7 +49,7 @@ object Schemifier {
     }
   }
   
-  private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]) {
+  private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
     val md = connection.getMetaData
     val rs = md.getTables(null, null, null, null)
     var hasTable = false
@@ -62,7 +65,6 @@ object Schemifier {
       Console.println(ct)
       st.execute(ct)
       st.close
-      
       table.mappedFields.filter{f => f.dbPrimaryKey_?}.foreach {
         pkField =>
         val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
@@ -79,15 +81,16 @@ object Schemifier {
         if (hasTable) actualTableNames(table.dbTableName) = tableName
       }
       rs.close
-    }
+      table.dbAddTable.toList
+    } else Nil
   }
   
   private def createColumns(table: BaseMetaMapper, connection: SuperConnection): Seq[String] = {
     table.mappedFields.flatMap(_.fieldCreatorString(connection.driverType))
   }
 
-  private def ensureColumns(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]) {
-    table.mappedFields.foreach {
+  private def ensureColumns(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
+    table.mappedFields.toList.flatMap {
       field =>
 	var hasColumn = 0
       var cols: List[String] = Nil
@@ -122,12 +125,14 @@ object Schemifier {
         }
       }
       
+      field.dbAddedColumn.toList
+      
     }
     
   }
 
-  private def ensureIndexes(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]) {
-    table.mappedFields.filter{f => f.dbIndexed_?}.foreach {
+  private def ensureIndexes(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
+    table.mappedFields.filter{f => f.dbIndexed_?}.toList.flatMap {
       field =>
       val md = connection.getMetaData
       val rs = md.getIndexInfo(null, null, actualTableNames(table.dbTableName), false, false)
@@ -147,12 +152,13 @@ object Schemifier {
         val st = connection.createStatement
         st.execute(ct)
         st.close
-      }
+        field.dbAddedIndex.toList
+      } else Nil
     }
   }
 
-  private def ensureConstraints(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]) {
-    table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.foreach {
+  private def ensureConstraints(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
+    table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.toList.flatMap {
       field =>
       
       val other = field.dbKeyToTable
@@ -177,7 +183,8 @@ object Schemifier {
         val st = connection.createStatement
         st.execute(ct)
         st.close
-      }
+        field.dbAddedForeignKey.toList
+      } else Nil
     }
   }
 }
