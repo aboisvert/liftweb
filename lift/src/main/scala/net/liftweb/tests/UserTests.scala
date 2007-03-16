@@ -129,6 +129,9 @@ class Pet extends KeyedMapper[long, Pet] {
   val id = new MappedLongIndex(this)
   val name = new MappedString(this) {override def maxLen = 32}
   val owner = new MappedLongForeignKey(this, User)
+    val icon = new MappedBinary(this) {
+    override def maxLen = 65536
+  }
 }
 
 object Pet extends Pet with KeyedMetaMapper[long, Pet] {

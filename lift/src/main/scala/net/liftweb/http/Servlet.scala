@@ -106,10 +106,8 @@ class Servlet extends HttpServlet {
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
     val session = RequestState(request)
     
-    // Console.println("Servicing "+session.requestType+" ajax "+session.ajax_? +" params "+session.params+" path "+session.path)
-    
     val finder = &getServletContext.getResourceAsStream
-
+    
     val toMatch = (session, session.path, finder)
       
       val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
@@ -124,7 +122,7 @@ class Servlet extends HttpServlet {
 	
 	val sessionActor = getActor(request.getSession)
 	
-	if (true) {
+	if (false) {
 	  val he = request.getHeaderNames
 	  while (he.hasMoreElements) {
 	    val e = he.nextElement.asInstanceOf[String];
@@ -140,7 +138,7 @@ class Servlet extends HttpServlet {
 	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
 	
 	sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
-	  case Some(r: Response) => Console.println(r); r
+	  case Some(r: Response) => r
 	  case _ => {session.createNotFound}
 	}
       }
@@ -180,7 +178,7 @@ object Servlet {
       f.map{f => f()}
       
     } catch {
-      case e: Exception => None
+      case e: Exception => e.printStackTrace; None
     }
   }
 

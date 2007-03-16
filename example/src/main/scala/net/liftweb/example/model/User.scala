@@ -6,7 +6,6 @@ package net.liftweb.example.model
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.proto._
 import net.liftweb.mapper._
 import DB._
 import java.sql.Connection

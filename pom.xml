@@ -6,8 +6,8 @@
 
  <!-- 
   mvn install (in the root folder)
-  mvn scala:compile install (in the scalawithsails-core folder)
-  mvn scala:compile install jetty:run  (in the scalawithsails-example folder)
+  mvn scala:compile install (in the lift folder)
+  mvn scala:compile install jetty:run  (in the example folder)
   then open http://localhost:8888/
  -->
 
@@ -38,7 +38,7 @@
   <pluginRepository>
    <id>maven.liftweb.net</id>
    <name>Lift Maven2 Repository</name>
-   <url>http://maven.scalawithsails.com/</url>
+   <url>http://maven.liftweb.net/</url>
    <layout>default</layout>
   </pluginRepository>
  </pluginRepositories>
@@ -47,7 +47,7 @@
   <repository>
    <id>maven.liftweb.net</id>
    <name>Lift Maven2 Repository</name>
-   <url>http://maven.scalawithsails.com/</url>
+   <url>http://maven.liftweb.net/</url>
   </repository>
 
   <repository>
