@@ -26,6 +26,12 @@ object TestRunner {
     val totalTime = calcTime {
       val r = new TestResult
       val suite = new TestSuite
+      
+      suite.addTest(new RegExTests)
+      suite.addTest(new StateMachineTests)
+      suite.addTest(new UserTests)
+      suite.addTest(new HelperTests)
+      
       dbRunners.foreach {
         runner =>
       Console.println("Test runner for..."+runner.name)
@@ -33,9 +39,7 @@ object TestRunner {
 
       val ut = new UserTests
       ut.init
-      suite.addTest(new RegExTests)
-      suite.addTest(new UserTests)
-      suite.addTest(new HelperTests)
+
       suite.run(r)
       }
       for (val tf <- r.failures()) {

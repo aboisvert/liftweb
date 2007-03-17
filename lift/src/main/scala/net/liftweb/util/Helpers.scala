@@ -629,7 +629,14 @@ object Helpers {
   
   def timeNow = new java.util.Date
   def time(when: long) = new java.util.Date(when)
-
+  
+  def seconds(in: long): long = in * 1000L
+  def minutes(in: long): long = seconds(in) * 60L
+  def hours(in:long): long = minutes(in) * 60L
+  def days(in: long): long = hours( in) * 24L
+  def weeks(in: long): long = days(in) * 7L
+ 
+  
   /**
     * Looks for a named parameter in the XML element and return it if found
     */
@@ -638,4 +645,34 @@ object Helpers {
     if (tmp.length == 0) None else Some(tmp.text)
   }
   
+  class TimeInt(val in: long) {
+    def seconds = TimeInt(Helpers.seconds(in))
+    def minutes = TimeInt(Helpers.minutes(in))
+    def hours = TimeInt(Helpers.hours(in))
+    def days = TimeInt(Helpers.days(in))
+    def weeks = TimeInt(Helpers.weeks(in))
+    def later = TimeInt(in + System.currentTimeMillis)
+    def ago = TimeInt(System.currentTimeMillis - in)
+    
+    override def equals(in: Any) = {
+      in match {
+        case lo: long => lo == in
+        case i: int => i == in
+        case ti: TimeInt => in == ti.in
+        case _ => false
+      }
+    }
+    
+    def +(in: long) = TimeInt(this.in + in)
+    def -(in: long) = TimeInt(this.in - in)
+  }
+  
+  object TimeInt {
+    def apply(in: long) = new TimeInt(in)
+    implicit def timeIntToLong(in: TimeInt): long = in.in
+  }
+  
+  implicit def intToTimeInt(in: long): TimeInt = TimeInt(in)
+  implicit def intToTimeInt(in: int): TimeInt = TimeInt(in)
 }
+

@@ -32,7 +32,7 @@ object Schemifier {
       val driver = calcDriver(connection.getMetaData.getDatabaseProductName)
       val actualTableNames = new HashMap[String, String]
       tables.foreach{t => t.beforeSchemifier}
-        val toRun = tables.flatMap{t => ensureTable(t, connection, actualTableNames)} :::
+        val toRun = tables.flatMap(t => ensureTable(t, connection, actualTableNames) ) :::
       tables.flatMap{t => ensureColumns(t, connection, actualTableNames)} :::
       tables.flatMap{t => ensureIndexes(t, connection, actualTableNames)} :::
       tables.flatMap{t => ensureConstraints(t, connection, actualTableNames)}

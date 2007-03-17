@@ -22,5 +22,6 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyT
   override def primaryKeyField = id
   val currentState = new MappedInt[MyType](this)
   val timedEventAt = new MappedDateTime[MyType](this)
-  def getManagedItem: OtherType
+  def managedMetaMapper: KeyedMetaMapper[OtherKeyType, OtherType]
+  
 }
