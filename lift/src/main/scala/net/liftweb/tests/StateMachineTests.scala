@@ -21,13 +21,31 @@ class StateMachineTests extends TestCase("State Machine Tests") {
   }
 }
 
-object TestStateMachine extends TestStateMachine with KeyedMetaMapper[long, TestStateMachine] {
+object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, User, long, Moo] {
+  def managedMetaMapper = User
   
+  case class TestEvent1 extends Event
+  case class TestEvent2 extends Event
+  
+  
+  
+  def initialState = Moo.One
+  val states = {
+    // val t: PartialFunction[Event, int] = {case TestEvent1() => 33}
+    State(Moo.One, TimeTransition(Moo.Two, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof})  
+                   ) ::
+                   /*
+               State(Moo.One, Transition(Moo.Two), 
+                              Transition(Moo.Three)) ::
+                              */
+               Nil
+  }
 }
 
 object Moo extends Moo {
-  
+  val One, Two, Three = Value
 }
+
 
 class Moo extends Enumeration {
   
@@ -35,6 +53,5 @@ class Moo extends Enumeration {
 
 class TestStateMachine extends ProtoStateMachine[TestStateMachine, User, long, Moo] {
   def getSingleton = TestStateMachine
-  def managedMetaMapper = User
-  
+  def woof = "Hello"
 }
