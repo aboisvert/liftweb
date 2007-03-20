@@ -9,6 +9,7 @@ package net.liftweb.machine;
 import net.liftweb.mapper._
 import net.liftweb.proto._
 import net.liftweb.util.Helpers._
+import scala.collection.mutable.HashMap
 
 /**
  *  This trait manages state/workflow transition 
@@ -18,13 +19,41 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyT
 			OtherKeyType,
 			StateType <: Enumeration] extends KeyedMapper[long, MyType] 
 {
+  type StV = StateType#Value
+
+  class State(val name: StV,val trans: Seq[ATransition])
+  
+  object State {
+    def apply(name: StV, trans: ATransition*) = new State(name, trans)
+  }
+  
+  abstract class ATransition(val to: StV,val on: PartialFunction[Event, Any]) {
+    private var _action: Option[(MyType, StV, StV, Event) => Any] = None  
+    private var _guard: Option[(MyType, StV, StV, Event) => boolean] = None
+    def action(act: (MyType, StV, StV, Event) => Any): this.type = {_action = Some(act); this}
+    def guard(gurd: (MyType, StV, StV, Event) => boolean): this.type = {_guard = Some(gurd); this}
+
+  }
+  
+  // case class TimeTransition(to: StV, time: TimeSpan) extends Transition
+  object Timer {
+    def apply(to: StV, when: TimeSpan): To = To(to, {case TimerEvent(_) => true})
+  }
+                                                  
+  case class To(override val to: StV,override val on: PartialFunction[Event, Any]) extends ATransition(to, on)
+  
+  abstract class Event
+  case class TimerEvent(len: TimeSpan) extends Event
+  
   // the primary key for the database
   val id = new MappedLongIndex[MyType](this)
   override def primaryKeyField = id
   def getSingleton: MetaProtoStateMachine[MyType, OtherType, OtherKeyType, StateType]
   val currentState = new MappedInt[MyType](this)
   val timedEventAt = new MappedDateTime[MyType](this)
-
+  
+  def transition(from: StV, to: StV, why: Event): Any = {}
+  def terminate(from: StV,to: StV,event: MyType#Event) {}
 }
 
 trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType], 
@@ -32,45 +61,20 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, Othe
                              OtherKeyType,
                              StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType] {
   def managedMetaMapper: KeyedMetaMapper[OtherKeyType, OtherType]
-  val states : List[State]  
-  def initialState : StateType#Value
+  protected def states : List[State]  
+  def initialState : StV
   
-  class State
+  def terminate(what: MyType,from: StV,to: StV,event: MyType#Event) {what.terminate(from, to, event)}
   
-  object State {
-    def apply(name: StV, trans: Transition*) = new State
+  
+  private val stateInfo = new HashMap[StV, List[ATransition]]
+                                      
+  states.foreach {
+    st =>
+    val cur = stateInfo.get(st.name) getOrElse Nil
+    Console.println("State "+st.name+" trans "+st.trans)
+    stateInfo(st.name) = (cur ++ st.trans).toList
   }
-  
-  abstract class Transition {
-    private var _action: Option[(ActionType, StV, StV, Event) => Any] = None  
-    private var _guard: Option[(ActionType, StV, StV) => boolean] = None
-    def action(act: (ActionType, StV, StV, Event) => Any): this.type = {_action = Some(act); this}
-    def guard(gurd: (ActionType, StV, StV) => boolean): this.type = {_guard = Some(gurd); this}
-
-  }
-  
-  // case class TimeTransition(to: StV, time: TimeSpan) extends Transition
-  object TimeTransition {
-    def apply(to: StV, when: TimeSpan): EventTransition = EventTransition(to) on {case TimerEvent(_) => true}
-  }
-                                                  
-  case class EventTransition(to: StV) extends Transition {
-    private var _on: Option[PartialFunction[Event, Any]] = None
-    def on(why: PartialFunction[Event, Any]): this.type = {_on = Some(why); this}
-  }
-  
-  // case 
-  /*object Transition {
-    def apply(to: StV) = new Transition
-    def apply(to: StV, time: TimeSpan) = new Transition
-    def apply(to: StV, time: TimeSpan, action: (ActionType, StV, StV) => unit) = new Transition
-    def apply(to: StV, event: PartialFunction[Event, Any]) = new Transition
-    // def apply[N](to: StV, event: PartialFunction[Event, N], action: (ActionType, StV, StV, N) => unit) = new Transition
-  }*/
-  
-  abstract class Event
-  case class TimerEvent(len: TimeSpan) extends Event
-  
-  type StV = StateType#Value
-  type ActionType = ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType]
+                                      
+                                      
 }

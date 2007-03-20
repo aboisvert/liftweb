@@ -26,21 +26,31 @@ object TestRunner {
     val totalTime = calcTime {
       val r = new TestResult
       val suite = new TestSuite
+      val userTests = new UserTests
+      var addedUserTests = false
       
       suite.addTest(new RegExTests)
       suite.addTest(new StateMachineTests)
-      suite.addTest(new UserTests)
+      
       suite.addTest(new HelperTests)
       
+      if (false) {
       dbRunners.foreach {
         runner =>
       Console.println("Test runner for..."+runner.name)
+      if (!addedUserTests) {
+        suite.addTest(userTests)
+        addedUserTests = true
+      }
       runner.setupDB
 
       val ut = new UserTests
       ut.init
 
       suite.run(r)
+      } }
+      else {
+        suite.run(r)
       }
       for (val tf <- r.failures()) {
         Console.println(tf.toString())

@@ -17,7 +17,11 @@ import net.liftweb.machine._
 
 class StateMachineTests extends TestCase("State Machine Tests") {
   override def runTest() {
-    
+    try {
+    TestStateMachine.woofer
+    } catch {
+      case e => e.printStackTrace
+    }
   }
 }
 
@@ -27,17 +31,14 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
   case class TestEvent1 extends Event
   case class TestEvent2 extends Event
   
-  
+  val woofer = 44
   
   def initialState = Moo.One
-  val states = {
+  protected def states = {
     // val t: PartialFunction[Event, int] = {case TestEvent1() => 33}
-    State(Moo.One, TimeTransition(Moo.Two, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof})  
-                   ) ::
-                   /*
-               State(Moo.One, Transition(Moo.Two), 
-                              Transition(Moo.Three)) ::
-                              */
+    State(Moo.One, Timer(Moo.Two, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
+                   To(Moo.Three, {case TestEvent1() => }) action ((obj, from, to, event) => false) ) ::
+    State(Moo.Two, To(Moo.One, {case TestEvent2() => }) guard ((obj, from, to, event) => false)) ::
                Nil
   }
 }
