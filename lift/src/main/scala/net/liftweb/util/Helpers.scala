@@ -86,7 +86,7 @@ object Helpers {
     ret
   }
   
-  def first[B,C](in : List[B])(f : B => Option[C]) : Option[C] = {
+  def first[B,C](in : Seq[B])(f : B => Option[C]) : Option[C] = {
     in match {
       case Nil => None
       case x :: xs => {

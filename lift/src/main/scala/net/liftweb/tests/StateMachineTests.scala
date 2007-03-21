@@ -25,34 +25,36 @@ class StateMachineTests extends TestCase("State Machine Tests") {
   }
 }
 
-object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, User, long, Moo] {
+object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, User, long, TestState.type] {
   def managedMetaMapper = User
-  
-  case class TestEvent1 extends Event
-  case class TestEvent2 extends Event
   
   val woofer = 44
   
-  def initialState = Moo.One
+  def initialState = TestState.Initial
   protected def states = {
-    // val t: PartialFunction[Event, int] = {case TestEvent1() => 33}
-    State(Moo.One, Timer(Moo.Two, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
-                   To(Moo.Three, {case TestEvent1() => }) action ((obj, from, to, event) => false) ) ::
-    State(Moo.Two, To(Moo.One, {case TestEvent2() => }) guard ((obj, from, to, event) => false)) ::
+    State(TestState.Initial, To(TestState.First, {case FirstTransition() => })) ::
+    State(TestState.First, Timer(TestState.Second, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
+                   To(TestState.Third, {case TestEvent1() => }) action ((obj, from, to, event) => false) ) ::
+    State(TestState.Second, To(TestState.First, {case TestEvent2() => }) guard ((obj, from, to, event) => false)) ::
+    (State(TestState.Third) entry (terminate) exit (terminate)) ::
                Nil
   }
+  def stateEnumeration = TestState
+
+case class TestEvent1 extends Event
+case class TestEvent2 extends Event
+//case class TimerEvent(len: TimeSpan) extends Event
+//def Timer(to: StV, when: TimeSpan): To = To(to, {case TimerEvent(_) => true})
 }
 
-object Moo extends Moo {
-  val One, Two, Three = Value
+object TestState extends Enumeration {
+  val Initial, First, Second, Third = Value
 }
 
 
-class Moo extends Enumeration {
-  
-}
-
-class TestStateMachine extends ProtoStateMachine[TestStateMachine, User, long, Moo] {
+class TestStateMachine extends ProtoStateMachine[TestStateMachine, User, long, TestState.type] {
   def getSingleton = TestStateMachine
   def woof = "Hello"
+
+
 }
