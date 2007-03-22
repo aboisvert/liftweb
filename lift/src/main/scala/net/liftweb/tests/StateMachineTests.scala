@@ -40,7 +40,10 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
                Nil
   }
   def stateEnumeration = TestState
+  
+  protected def instantiate = new TestStateMachine
 
+  case class FirstTransition extends Event
 case class TestEvent1 extends Event
 case class TestEvent2 extends Event
 //case class TimerEvent(len: TimeSpan) extends Event

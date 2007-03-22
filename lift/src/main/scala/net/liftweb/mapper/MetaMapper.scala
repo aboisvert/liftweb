@@ -670,7 +670,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def eachField(what: A, toRun: List[(A) => unit])(f: (LifecycleCallbacks) => unit) {
     mappedCallbacks.foreach {
       e =>
-	f(e._2.invoke(what, null).asInstanceOf[LifecycleCallbacks])
+        e._2.invoke(what, null) match {
+          case lccb: LifecycleCallbacks => f(lccb)
+          case _ =>
+        }
+	// f(e._2.invoke(what, null).asInstanceOf[LifecycleCallbacks])
     }
     toRun.foreach{tf => tf(what)}
   }

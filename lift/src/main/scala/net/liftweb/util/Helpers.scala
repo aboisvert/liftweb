@@ -644,31 +644,31 @@ object Helpers {
     if (tmp.length == 0) None else Some(tmp.text)
   }
   
-  class TimeSpan(val in: long) {
-    def seconds = TimeSpan(Helpers.seconds(in))
-    def minutes = TimeSpan(Helpers.minutes(in))
-    def hours = TimeSpan(Helpers.hours(in))
-    def days = TimeSpan(Helpers.days(in))
-    def weeks = TimeSpan(Helpers.weeks(in))
-    def later = TimeSpan(in + System.currentTimeMillis)
-    def ago = TimeSpan(System.currentTimeMillis - in)
+  class TimeSpan(val len: long) {
+    def seconds = TimeSpan(Helpers.seconds(len))
+    def minutes = TimeSpan(Helpers.minutes(len))
+    def hours = TimeSpan(Helpers.hours(len))
+    def days = TimeSpan(Helpers.days(len))
+    def weeks = TimeSpan(Helpers.weeks(len))
+    def later = TimeSpan(len + System.currentTimeMillis)
+    def ago = TimeSpan(System.currentTimeMillis - len)
     
-    override def equals(in: Any) = {
-      in match {
-        case lo: long => lo == in
-        case i: int => i == in
-        case ti: TimeSpan => in == ti.in
+    override def equals(cmp: Any) = {
+      cmp match {
+        case lo: long => lo == this.len
+        case i: int => i == this.len
+        case ti: TimeSpan => ti.len == this.len
         case _ => false
       }
     }
     
-    def +(in: long) = TimeSpan(this.in + in)
-    def -(in: long) = TimeSpan(this.in - in)
+    def +(in: long) = TimeSpan(this.len + in)
+    def -(in: long) = TimeSpan(this.len - in)
   }
   
   object TimeSpan {
     def apply(in: long) = new TimeSpan(in)
-    implicit def timeSpanToLong(in: TimeSpan): long = in.in
+    implicit def timeSpanToLong(in: TimeSpan): long = in.len
   }
   
   implicit def intToTimeSpan(in: long): TimeSpan = TimeSpan(in)

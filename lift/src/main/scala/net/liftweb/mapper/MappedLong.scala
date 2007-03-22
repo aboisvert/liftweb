@@ -90,7 +90,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
 
 class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   private var data : long = defaultValue
-  def defaultValue = 0L
+  def defaultValue: long = 0L
 
   /**
    * Get the JDBC SQL Type for this field
