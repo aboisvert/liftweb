@@ -10,13 +10,14 @@ import net.liftweb.mapper._
 import net.liftweb.proto._
 import net.liftweb.util.Helpers._
 import scala.collection.mutable.{Queue, HashMap}
+import scala.actors.Actor
+import scala.actors.Actor._
+import net.liftweb.util._
 
 /**
  *  This trait manages state/workflow transition 
  */
-trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType], 
-			OtherType <: KeyedMapper[OtherKeyType, OtherType], 
-			OtherKeyType,
+trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType], 
 			StateType <: Enumeration] extends KeyedMapper[long, MyType] 
 {
   /**
@@ -27,7 +28,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyT
   /**
     *  Shorthand for the meta state machine
     */
-  type Meta = MetaProtoStateMachine[MyType, OtherType, OtherKeyType, StateType]
+  type Meta = MetaProtoStateMachine[MyType, StateType]
 
   /**
     * the primary key for the database
@@ -58,7 +59,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyT
     override def beforeSave {if (this.get < System.currentTimeMillis) this := -1L}
     override def dbIndexed_?  = true
   }
-
+  
   def setupTime(when: TimeSpan) {
     val trigger = timedEventAt.get + when.len
     if (trigger >= System.currentTimeMillis && (nextTransitionAt.get <= 0L || trigger < nextTransitionAt.get)) nextTransitionAt := trigger
@@ -123,15 +124,9 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyT
 /**
   * A singleton that implements this trait will manage transitions, etc. for the state machine instance
   */
-trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType], 
-                             OtherType <: KeyedMapper[OtherKeyType, OtherType], 
-                             OtherKeyType,
-                             StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, OtherType, OtherKeyType, StateType] {
+trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType], 
+                             StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, StateType] {
     
-  /**
-    * 
-    */
-//  def managedMetaMapper: KeyedMetaMapper[OtherKeyType, OtherType]
 
   /**
     * This method must be implemented.  It defines the states and legal state transitions
@@ -155,20 +150,25 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, Othe
   
 
   protected def instantiate: MyType
-  
-  def createNewInstance(firstEvent: Meta#Event): MyType = {
+
+  def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, None)  
+  def createNewInstance(firstEvent: Meta#Event, setup: Option[(MyType) => Any]): MyType = {
     val state = instantiate
+    setup.foreach(_(state))
     state.processEvent(firstEvent)
     state
   }
+  
+  def createNewInstance(firstEvent: Meta#Event)( setup: (MyType) => Any): MyType = createNewInstance(firstEvent, Some(setup))
+
   
   
   /**
     *  Process an event for an instance
     */
   protected def processEvent(who: MyType, what: Meta#Event) {
-    val transitions = stateInfo(who.state)
-    val which = first(transitions) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Some(t) else None}
+    val transitions = stateInfo(who.state) // get the transitions
+    val which = first(transitions.toList) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Some(t) else None}
     if (!which.isDefined) what.unmatchedEventHanlder(who, stateList(who.state))
     which.foreach {
       t =>
@@ -270,6 +270,14 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, Othe
                                                   
   case class To(override val to: StV,override val on: PartialFunction[Meta#Event, Any]) extends ATransition(to, on)
   
+  object Event {
+    def unmatchedHandler: Option[(MyType,State, Event) => Any] = None
+    def unmatchedEventHanlder(who: MyType, state: State, event: Event) {
+      val f = unmatchedHandler getOrElse ((who: MyType,state: State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
+      f(who, state, event)
+    }
+  }
+  
   abstract class Event {
     /**
        * An unhandled event has occurred.  By default, throw an exception.  However,
@@ -277,7 +285,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, Othe
        * something else
        */
      def unmatchedEventHanlder(who: MyType, state: State) {
-       throw new UnmatchedEventException("Event "+this+" was not matched at state "+who.state, who, this)
+       Event.unmatchedEventHanlder(who, state, this) // throw new UnmatchedEventException("Event "+this+" was not matched at state "+who.state, who, this)
      }
 
   }
@@ -285,6 +293,81 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, OtherType, Othe
   class DuplicateStateException(msg: String) extends Exception(msg) 
   
   class UnmatchedEventException(msg: String,val who: MyType,
-                                    val what: Meta#Event)  extends Exception(msg)
+                                    val what: Event)  extends Exception(msg)
+  
+  /**
+    * How long to wait to start looking for timed events.  Override this method to
+    * specify a time
+    */
+  def timedEventInitialWait = 120000L
+  
+  /**
+    * After the initial test, how long do we wait 
+    */
+  def timedEventPeriodicWait = 10000L
+  
+  private class TimedEventManager(val metaOwner: Meta) extends Actor {
+    def act = {
+      ActorPing.schedule(this, Ping, timedEventInitialWait) // give the system 2 minutes to "warm up" then start pinging  
+      loop
+    }
+    
+    def loop {
+      react {
+        case Ping() => 
+        val now = System.currentTimeMillis
+        try {
+        val name = metaOwner.nextTransitionAt.dbColumnName
+        metaOwner.findAll(BySql(name+" > 0 AND "+name+" <= ?", now)).foreach {
+          stateItem =>
+          val event = TimerEvent(now - stateItem.timedEventAt.get)
+          timedEventHandler ! (stateItem, event)
+        }
+        } catch {
+        case e: Exception => e.printStackTrace // FIXME, log
+        case e: MatchError => e.printStackTrace // FIXME, log
+        }
+        ActorPing.schedule(this, Ping, timedEventPeriodicWait) 
+        loop
+        
+        case _ => loop
+      }
+    }
+    
+    case class Ping
+  }
+    
+    private class TimedEventHandler(val metaOwner: Meta) extends Actor {
+      def act = loop
+      
+      def loop {
+        react {
+          case (item: MyType, event: Event) => 
+          try {
+          item.processEvent(event)
+          } catch {
+          case e: Exception  => e.printStackTrace // FIXME, log
+          case e: MatchError => e.printStackTrace // FIXME, log
+          }
+          loop
+          
+          case _ => loop
+        }
+      }
+      
+      case class Ping
+    }    
+  
+  val timedEventManager: Actor = {
+    val ret = new TimedEventManager(getSingleton)
+    ret.start
+    ret
+  }
+  
+  val timedEventHandler: Actor = {
+    val ret = new TimedEventHandler(getSingleton)
+    ret.start
+    ret
+  }
 }
 

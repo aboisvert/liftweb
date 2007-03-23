@@ -443,7 +443,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	    if (fieldInfo != None) {
               val tField = fieldInfo.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]
               Some(colType match {
-		case Types.INTEGER => {
+		case Types.INTEGER | Types.BIGINT => {
 		  val bsl = tField.buildSetLongValue(fieldInfo.get, colName)
 		  (rs: ResultSet, pos: int, objInst: A) => bsl(objInst, rs.getLong(pos), rs.wasNull)}
 		case Types.VARCHAR => {

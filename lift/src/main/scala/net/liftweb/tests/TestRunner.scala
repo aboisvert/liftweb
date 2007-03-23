@@ -13,6 +13,7 @@ import SUnit._
 import net.liftweb.mapper._
 import java.sql.{Connection, DriverManager}
 import java.io.File
+import scala.actors._
 
 trait Runner {
   def name: String
@@ -27,19 +28,19 @@ object TestRunner {
       val r = new TestResult
       val suite = new TestSuite
       val userTests = new UserTests
+      val stateMachineTests = new StateMachineTests
       var addedUserTests = false
       
       suite.addTest(new RegExTests)
-      suite.addTest(new StateMachineTests)
-      
       suite.addTest(new HelperTests)
       
-      if (false) {
+      if (true) {
       dbRunners.foreach {
         runner =>
       Console.println("Test runner for..."+runner.name)
       if (!addedUserTests) {
         suite.addTest(userTests)
+        suite.addTest(stateMachineTests)
         addedUserTests = true
       }
       runner.setupDB
@@ -48,10 +49,14 @@ object TestRunner {
       ut.init
 
       suite.run(r)
+      Scheduler.shutdown
       } }
       else {
         suite.run(r)
       }
+      Scheduler.shutdown
+
+
       for (val tf <- r.failures()) {
         Console.println(tf.toString())
         Console.println(tf.trace)
@@ -81,7 +86,7 @@ object DerbyRunner extends Runner {
 
     DB.defineConnectionManager("", DBVendor)
     
-    Schemifier.schemify(User, Pet)
+    Schemifier.schemify(User, Pet, TestStateMachine)
     // Schemifier.schemify(User, Pet)
   }  
 }
@@ -121,7 +126,7 @@ object MySqlRunner extends Runner {
     }
     deleteAllTables
     
-    Schemifier.schemify(User, Pet)
+    Schemifier.schemify(User, Pet, TestStateMachine)
     // Schemifier.schemify(User, Pet)
   }
 }

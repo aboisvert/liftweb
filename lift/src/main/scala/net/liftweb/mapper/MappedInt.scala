@@ -58,7 +58,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
     case MySqlDriver => "INTEGER NOT NULL AUTO_INCREMENT UNIQUE"
-    case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENTITY"
+    case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENITY"
   })
 
 }

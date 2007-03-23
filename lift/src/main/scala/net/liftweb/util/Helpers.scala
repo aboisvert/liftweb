@@ -86,7 +86,7 @@ object Helpers {
     ret
   }
   
-  def first[B,C](in : Seq[B])(f : B => Option[C]) : Option[C] = {
+  def first[B,C](in : List[B])(f : B => Option[C]) : Option[C] = {
     in match {
       case Nil => None
       case x :: xs => {
@@ -664,11 +664,24 @@ object Helpers {
     
     def +(in: long) = TimeSpan(this.len + in)
     def -(in: long) = TimeSpan(this.len - in)
+    override def toString = {
+      def moof(in: long, scales: List[(long, String)]): List[long] = {
+        val hd = scales.head
+        val sc = hd._1
+        if (sc == -1L) List(in)
+        else (in % sc) :: moof(in / sc, scales.tail)
+      }
+      
+      val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
+      lst.mkString("",", ", "")+" ("+len+")"
+    }
   }
   
   object TimeSpan {
     def apply(in: long) = new TimeSpan(in)
     implicit def timeSpanToLong(in: TimeSpan): long = in.len
+    
+    val scales = List((1000L, "ms"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (-1L, "week"))
   }
   
   implicit def intToTimeSpan(in: long): TimeSpan = TimeSpan(in)

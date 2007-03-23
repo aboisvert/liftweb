@@ -17,25 +17,51 @@ import net.liftweb.machine._
 
 class StateMachineTests extends TestCase("State Machine Tests") {
   override def runTest() {
-    try {
-    TestStateMachine.woofer
-    } catch {
-      case e => e.printStackTrace
-    }
+    
+    TestStateMachine.didExitInitial = false
+    TestStateMachine.didEnterFirst = false
+    TestStateMachine.didExitFirst = false
+    TestStateMachine.didEnterSecond = false
+    
+      val user = new User
+      user.save
+      TestStateMachine.stateEnumeration // cause the singleton to get loaded
+      val tran = TestStateMachine.FirstTransition
+      val toTest = TestStateMachine.createNewInstance(tran) {i => i.managedItem := user.id}
+      
+      assert(TestStateMachine.didExitInitial)
+      assert(TestStateMachine.didEnterFirst)
+      assert(!TestStateMachine.didExitFirst)
+      assert(!TestStateMachine.didEnterSecond)
+      Thread.sleep(3000L)
+      assert(TestStateMachine.didExitFirst)
+      assert(TestStateMachine.didEnterSecond)
+      
+      val toTest2 = TestStateMachine.find(toTest.id).get
+      assert(toTest2.state == TestState.Second)
+
+      toTest2.processEvent(TestStateMachine.TestEvent2)
+      assert(TestStateMachine.count == 0) // make sure the terminated request is removed from the DB
   }
 }
 
-object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, User, long, TestState.type] {
+object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, TestState.type] {
   def managedMetaMapper = User
   
-  val woofer = 44
+  var didExitInitial = false
+  var didEnterFirst = false
+  var didExitFirst = false
+  var didEnterSecond = false
   
   def initialState = TestState.Initial
   protected def states = {
-    State(TestState.Initial, To(TestState.First, {case FirstTransition() => })) ::
-    State(TestState.First, Timer(TestState.Second, 10 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
-                   To(TestState.Third, {case TestEvent1() => }) action ((obj, from, to, event) => false) ) ::
-    State(TestState.Second, To(TestState.First, {case TestEvent2() => }) guard ((obj, from, to, event) => false)) ::
+    (State(TestState.Initial, To(TestState.First, {case FirstTransition() => })) exit {(a,b,c,d) => didExitInitial = true; true}) ::
+    (State(TestState.First, Timer(TestState.Second, 2 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
+                   To(TestState.Third, {case TestEvent1() => }) action ((obj, from, to, event) => false))
+                   exit {(a,b,c,d) => didExitFirst = true}
+                   entry {(a,b,c,d) => didEnterFirst = true}) ::
+    (State(TestState.Second, To(TestState.First, {case TestEvent2() => }) guard ((obj, from, to, event) => false),
+                             To(TestState.Third, {case TestEvent2() => }) guard ((obj, from, to, event) => true)) entry {(a,b,c,d) => didEnterSecond = true}) ::
     (State(TestState.Third) entry (terminate) exit (terminate)) ::
                Nil
   }
@@ -43,6 +69,17 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
   
   protected def instantiate = new TestStateMachine
 
+  /**
+     * How long to wait to start looking for timed events.  Override this method to
+     * specify a time
+     */
+   override def timedEventInitialWait = 1000L
+   
+   /**
+     * After the initial test, how long do we wait 
+     */
+   override def timedEventPeriodicWait = 200L
+   
   case class FirstTransition extends Event
 case class TestEvent1 extends Event
 case class TestEvent2 extends Event
@@ -55,9 +92,20 @@ object TestState extends Enumeration {
 }
 
 
-class TestStateMachine extends ProtoStateMachine[TestStateMachine, User, long, TestState.type] {
+class TestStateMachine extends ProtoStateMachine[TestStateMachine, TestState.type] {
   def getSingleton = TestStateMachine
   def woof = "Hello"
-
-
+    
+    
+    /**
+       * This method is called on a transition from one state to another.  Override this method
+       * to perform an action.  Please call super to actually change the state and save the instance 
+       */
+    override def transition(from: StV, to: StV, why: Meta#Event): unit = {
+    Console.println("Transition from "+from+" to "+to+" why "+why+" at "+timeNow)
+       super.transition(from, to, why)
+     }
+     
+  
+  val managedItem = new MappedLongForeignKey(this, User) 
 }

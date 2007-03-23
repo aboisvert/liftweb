@@ -12,14 +12,15 @@ import net.liftweb.util.Helpers._
 import java.lang.Long
 import java.util.Date
 
-class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[FKType, O], FKType](owner: T, foreign: => KeyedMetaMapper[FKType, O]) extends MappedLong[T](owner) with BaseForeignKey {
+class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[long, O]](owner: T, foreign: => KeyedMetaMapper[long, O]) 
+   extends MappedLong[T](owner) with MappedForeignKey[long,T,O] with BaseForeignKey {
   def defined_? = i_get_! != defaultValue
   
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
   override def getJDBCFriendly = if (defined_?) new Long(get) else null
   def obj = if(defined_?) foreign.find(i_get_!) else None
   
-  def dbKeyToTable: KeyedMetaMapper[FKType, O] = foreign
+  def dbKeyToTable: KeyedMetaMapper[long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
 
   override def dbIndexed_? = true
@@ -95,7 +96,7 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.INTEGER
+  def getTargetSQLType = Types.BIGINT
 
   protected def i_get_! = data
   
