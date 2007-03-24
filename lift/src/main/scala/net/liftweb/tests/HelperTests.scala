@@ -51,5 +51,19 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(min5 < 2L)
     
     assert((5.minutes.ago - System.currentTimeMillis) + 5.minutes < 2L)
+    
+    val tn = timeNow.toString
+    sendMail("test@liftweb.net", List("test@liftweb.net"), "Testing lift's mail sending at "+tn,Nil,"Dude... this is kewl! @"+tn,
+        <html><body>Dude... <b>this</b> is kewl<i>! @{tn}</i></body></html>)
+    Thread.sleep(100) // give the background thread a chance to send the message
+    
+    assert(try {
+      processString("Hello <%= mrdog %> how are you", Map("mrcat" -> "meow"))
+      false
+    } catch {
+      case e: Exception => true
+    })
+    assert(processString("Hello <%= mrdog %> how are you", Map("mrdog" -> "meow")).indexOf("meow") > 4)
+
   }
 }

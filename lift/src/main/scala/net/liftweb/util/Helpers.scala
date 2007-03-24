@@ -19,7 +19,10 @@ import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader}
 import java.security.{SecureRandom, MessageDigest}
 import javax.mail._
-
+import javax.mail.internet._
+import scala.actors.Actor
+import scala.actors.Actor._
+import java.util.regex._
 
 /**
  *  A bunch of helper functions
@@ -112,8 +115,8 @@ object Helpers {
   }
   
   /**
-   * Insure all the appropriate fields are in the header
-   */
+  * Insure all the appropriate fields are in the header
+  */
   def insureField(toInsure : Map[String, String], headers : List[Pair[String, String]]) : Map[String, String] = {
     def insureField_inner(toInsure : HashMap[String, String], field : Pair[String, String]) : HashMap[String, String] = {
       toInsure match {
@@ -131,8 +134,8 @@ object Helpers {
   }
   
   /**
-   * Convert an enum to a List[T]
-   */
+  * Convert an enum to a List[T]
+  */
   def enumToList[T](enum : java.util.Enumeration) : List[T] = {
     if (enum.hasMoreElements) {
       val next = enum.nextElement
@@ -143,8 +146,8 @@ object Helpers {
   }
   
   /**
-   * Convert an enum to a List[String]
-   */
+  * Convert an enum to a List[String]
+  */
   def enumToStringList(enum : java.util.Enumeration) : List[String] = {
     if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
   }
@@ -152,17 +155,17 @@ object Helpers {
   def head[T](l : List[T], deft: T) = if (l.isEmpty) deft else l.head
   
   /**
-   * Find a class with name given name in a list of packages, either by matching 'name'
-   * or by matching 'smartCaps(name)'
-   */
+  * Find a class with name given name in a list of packages, either by matching 'name'
+  * or by matching 'smartCaps(name)'
+  */
   def findClass(name : String, where : List[String]) : Option[Class] = {
     findClass(name, where, List(smartCaps, {n => n}), {s => true})
   }
   
   /**
-   * Find a class with name given name in a list of packages, either by matching 'name'
-   * or by matching 'smartCaps(name)'
-   */
+  * Find a class with name given name in a list of packages, either by matching 'name'
+  * or by matching 'smartCaps(name)'
+  */
   def findClass(name : String, where : List[String], guard: (Class) => boolean ) : Option[Class] = {
     findClass(name, where, List(smartCaps, {n => n}), guard)
   }
@@ -180,9 +183,9 @@ object Helpers {
   }
 
   /**
-   * Find a class with name given name in a list of packages, with a list of functions that modify
-   * 'name' (e.g., leave it alone, make it camel case, etc.)
-   */
+  * Find a class with name given name in a list of packages, with a list of functions that modify
+  * 'name' (e.g., leave it alone, make it camel case, etc.)
+  */
   def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Option[Class] = {
     def findClass_s(name : String, where : String) : Class = {
       tryn(List(classOf[ClassNotFoundException])) {
@@ -219,10 +222,10 @@ object Helpers {
   }
   
   /**
-   * Wraps a "try" block around the function f.  If f throws
-   * an exception with it's class in 'ignore' or of 'ignore' is
-   * null or an empty list, ignore the exception and return null.
-   */
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception with it's class in 'ignore' or of 'ignore' is
+  * null or an empty list, ignore the exception and return null.
+  */
   def tryn[T](ignore : List[Class])(f : => T) : T = {
     try {
       f
@@ -233,10 +236,10 @@ object Helpers {
   }
   
   /**
-   * Wraps a "try" block around the function f.  If f throws
-   * an exception with it's class in 'ignore' or of 'ignore' is
-   * null or an empty list, ignore the exception and return None.
-   */
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception with it's class in 'ignore' or of 'ignore' is
+  * null or an empty list, ignore the exception and return None.
+  */
   def tryo[T](ignore : List[Class])(f : => T) : Option[T] = {
     try {
       Some(f)
@@ -247,9 +250,9 @@ object Helpers {
   }
   
   /**
-   * Wraps a "try" block around the function f.  If f throws
-   * an exception return None
-   */
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception return None
+  */
   def tryo[T](f: => T): Option[T] = {
     tryo(Nil)(f)
   }
@@ -261,10 +264,10 @@ object Helpers {
   
   
   /**
-   * Wraps a "try" block around the function f.  If f throws
-   * an exception with it's class in 'ignore' or of 'ignore' is
-   * null or an empty list, ignore the exception and return false.
-   */
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception with it's class in 'ignore' or of 'ignore' is
+  * null or an empty list, ignore the exception and return false.
+  */
   def tryf[T](ignore : List[Class])(f : => T) : Any = {
     try {
       f
@@ -275,19 +278,19 @@ object Helpers {
   }
   
   /**
-   * Wraps a "try" block around the function f.  If f throws
-   * an exception, ignore the exception and return null.
-   */
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception, ignore the exception and return null.
+  */
   def tryn[T](f : => T) : T = {tryn(null)(f)}
   
   /**
-   * Is the clz an instance of (assignable from) any of the classes in the list
-   * 
-   * @param clz the class to test
-   * @param toMatch the list of classes to match against
-   * 
-   * @return true if clz is assignable from of the matching classes
-   */
+  * Is the clz an instance of (assignable from) any of the classes in the list
+  * 
+  * @param clz the class to test
+  * @param toMatch the list of classes to match against
+  * 
+  * @return true if clz is assignable from of the matching classes
+  */
   def containsClass(clz : Class, toMatch : List[Class]) : boolean = {
     toMatch match {
       case null => {false}
@@ -336,13 +339,13 @@ object Helpers {
   }
   
   /**
-   * Turns a string of format "foo_bar" into camel case "FooBar"
-   *
-   * Functional code courtesy of Jamie Webb (j@jmawebb.cjb.net) 2006/11/28 
-   * @param in The String to CamelCase
-   *
-   * @return the CamelCased string
-   */
+  * Turns a string of format "foo_bar" into camel case "FooBar"
+  *
+  * Functional code courtesy of Jamie Webb (j@jmawebb.cjb.net) 2006/11/28 
+  * @param in The String to CamelCase
+  *
+  * @return the CamelCased string
+  */
   def smartCaps(in : String) = {
     def loop(x : List[Char]) : List[Char] = (x: @unchecked) match {
       case '_' :: '_' :: rest => loop('_' :: rest)
@@ -387,13 +390,13 @@ object Helpers {
   }    
   
   /**
-   * Remove all the characters from a string exception a-z, A-Z, 0-9, and '_'
-   */ 
+  * Remove all the characters from a string exception a-z, A-Z, 0-9, and '_'
+  */ 
   def clean(in : String) =  if (in == null) "" else in.replaceAll("[^a-zA-Z0-9_]", "")
   
   /**
-   * Convert a 
-   */
+  * Convert a 
+  */
   def toBoolean(in: Any): boolean = {
     in match {
       case null => false
@@ -497,19 +500,20 @@ object Helpers {
     on match {
       case null => None
       case o => {
-        o.getClass.getDeclaredMethods.filter{m => m.getName == name && 
-					     Modifier.isPublic(m.getModifiers) &&
-					     m.getParameterTypes.length == 0}.toList match {
-					       case Nil => None
-					       case x :: xs => Some(() => {
-						 try {
-						   Some(x.invoke(o, null))
-						 } catch {
-						   case e : InvocationTargetException => throw e.getCause
-						 }
-					       }
-								  )
-					     }
+        o.getClass.getDeclaredMethods.filter{
+          m => m.getName == name && 
+	  Modifier.isPublic(m.getModifiers) &&
+	  m.getParameterTypes.length == 0}.toList match {
+	    case Nil => None
+	    case x :: xs => Some(() => {
+	      try {
+		Some(x.invoke(o, null))
+	      } catch {
+		case e : InvocationTargetException => throw e.getCause
+	      }
+	    }
+			       )
+	  }
       }
     }
   }
@@ -590,8 +594,62 @@ object Helpers {
     sb.toString
   }
   
-  def sendMail(from: String, to: List[String], subject: String,cc: List[String], body: Map[String, Array[byte]]): boolean = {
-    false
+  sealed abstract class MailBodyType
+  case class PlainMailBodyType(text: String) extends MailBodyType
+  case class XHTMLMailBodyType(text: NodeSeq) extends MailBodyType
+  
+  implicit def stringToMailBodyType(text: String): MailBodyType = PlainMailBodyType(text)
+  implicit def xmlToMailBodyType(html: NodeSeq): MailBodyType = XHTMLMailBodyType(html)
+
+  
+  private class MsgSender extends Actor {
+    def act = loop
+    
+    def loop {
+      react {
+        case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
+          Console.println("Sending...")
+        try {
+          val session = Session.getInstance(System.getProperties)
+          val message = new MimeMessage(session)
+          message.setFrom(new InternetAddress(from))
+          message.setRecipients(Message.RecipientType.TO, to.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
+          message.setRecipients(Message.RecipientType.CC, cc.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
+          message.setSubject(subject)
+          val multiPart = new MimeMultipart("alternative")
+          body.foreach {
+	    tab =>
+	      val bp = new MimeBodyPart
+	    tab match {
+	      case PlainMailBodyType(txt) => bp.setContent(txt, "text/plain")
+	      case XHTMLMailBodyType(html) => bp.setContent(html.toString, "text/html")
+	    }
+	    multiPart.addBodyPart(bp)
+	  }
+          message.setContent(multiPart);
+
+          Transport.send(message);
+        } catch {
+          case e: Exception => e.printStackTrace // FIXME logging
+        }
+        
+        loop
+        
+        case _ => Console.println("Here... sorry") ; loop
+      }
+    }
+  }
+
+  
+  private val msgSender = {
+    val ret = new MsgSender
+    ret.start
+    ret
+  }
+  
+  def sendMail(from: String, to: List[String], subject: String,cc: List[String], body: MailBodyType*) {
+    // forward it to an actor so there's no time on this thread spent sending the message
+    msgSender ! ((from, to, subject, cc, body.toList))
   }
   
   implicit def nodeSeqToOptionString(in: NodeSeq): Option[String] = if (in.length == 0) None else Some(in.text)
@@ -637,11 +695,11 @@ object Helpers {
   def weeks(in: long): long = days(in) * 7L
   
   /**
-    * Looks for a named parameter in the XML element and return it if found
-    */
+  * Looks for a named parameter in the XML element and return it if found
+  */
   def xmlParam(in: NodeSeq, param: String): Option[String] = {
     val tmp = (in \ ("@"+param))
-    if (tmp.length == 0) None else Some(tmp.text)
+      if (tmp.length == 0) None else Some(tmp.text)
   }
   
   class TimeSpan(val len: long) {
@@ -686,5 +744,17 @@ object Helpers {
   
   implicit def intToTimeSpan(in: long): TimeSpan = TimeSpan(in)
   implicit def intToTimeSpan(in: int): TimeSpan = TimeSpan(in)
+  implicit def timeSpanToDate(in: TimeSpan): java.util.Date = new java.util.Date(in.len)
+  
+  def processString(msg: String, subst: Map[String, String]): String = {
+    val pat = Pattern.compile("\\<\\%\\=([^\\%]*)\\%\\>")
+    val m = pat.matcher(msg)
+    val ret = new StringBuffer
+    while (m.find) {
+      m.appendReplacement(ret, subst(m.group(1).trim))
+    }
+    m.appendTail(ret)
+    ret.toString
+  }
 }
 

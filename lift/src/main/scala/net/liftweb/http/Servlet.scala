@@ -28,13 +28,12 @@ class Servlet extends HttpServlet {
   
   
   override def destroy = {
-    // Console.println("************* ** destroying **********************")
-    Scheduler.shutdown // kill the scheduler so we don't have threading issues
+    Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
     super.destroy
   }
   
   override def init = {
-    // Console.println("***********init******************") 
+    if (Scheduler.tasks ne null) {Console.println("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
     super.init
   }
   

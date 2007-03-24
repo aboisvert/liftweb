@@ -34,7 +34,7 @@ object TestRunner {
       suite.addTest(new RegExTests)
       suite.addTest(new HelperTests)
       
-      if (true) {
+      if (false) {
       dbRunners.foreach {
         runner =>
       Console.println("Test runner for..."+runner.name)

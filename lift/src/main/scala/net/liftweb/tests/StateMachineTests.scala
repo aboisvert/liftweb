@@ -65,7 +65,14 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
     (State(TestState.Third) entry (terminate) exit (terminate)) ::
                Nil
   }
-  def stateEnumeration = TestState
+  
+  
+  /**
+     * Any transitions that are applied to all states can be listed here
+     */
+   protected override def globalTransitions: List[ATransition] = Nil       
+
+   def stateEnumeration = TestState
   
   protected def instantiate = new TestStateMachine
 

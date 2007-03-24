@@ -131,7 +131,25 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   /**
     * This method must be implemented.  It defines the states and legal state transitions
     */
-  protected def states : List[State]  
+  protected def states : List[State];
+  
+  /**
+    * Any transitions that are applied to all states can be listed here
+    */
+  protected def globalTransitions: List[ATransition]
+  
+  // the state transition table
+  private val stateInfo = new HashMap[StV, Seq[ATransition]]
+  private val stateList = new HashMap[StV, State]
+                                      
+  // process the states
+  states.foreach {
+    st =>
+    if (stateList.get(st.name).isDefined) throw new DuplicateStateException("State "+st.name+" is defined twice")
+    stateInfo(st.name) = st.trans ++ globalTransitions
+    stateList(st.name) = st
+  }
+                     
                               
   /**
     * The default initial state
@@ -182,29 +200,6 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
       who.transition(old, to, what)
       stateList.get(to).foreach(_.performEntry(who, old, to, what))
     }
-  }
-  
-  /**
-    * Process an event for a given 
-    */
-  /*
-  def processEvent(who: Any, what: Meta#Event): Option[MyType] = {
-    val ret = find(who)
-    ret.foreach(inst => processEvent(inst, what))
-    ret
-  }
-  */
-    
-   // the state transition table
-  private val stateInfo = new HashMap[StV, Seq[ATransition]]
-  private val stateList = new HashMap[StV, State]
-                                      
-  // process the states
-  states.foreach {
-    st =>
-    if (stateList.get(st.name).isDefined) throw new DuplicateStateException("State "+st.name+" is defined twice")
-    stateInfo(st.name) = st.trans
-    stateList(st.name) = st
   }
                        
   class State(val name: StV,val trans: Seq[ATransition]) {
