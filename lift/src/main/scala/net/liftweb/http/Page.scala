@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import scala.actors._
 import scala.actors.Actor._
-import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAttribute}
+import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAttribute, Text}
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
@@ -150,34 +150,57 @@ class Page extends Actor {
       v =>
         v match {
           case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request)}
+          case Elem("lift", "ctl", attr @ _, _, kids @ _*) => {executeControllerette(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processControllers(v.child, ctlMgr, request) : _*)}
           case _ => {v}
         }
     }
   }
   
-  private def executeController(ctlMgr: ControllerManager, theType: Option[Seq[Node]], name: Option[Seq[Node]], factory: Option[Seq[Node]], kids: NodeSeq,
-				request: RequestState): NodeSeq = {
-				  val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
-				    (ctlMgr !? AskFindController(myType, myName, myFactory) match {
-				      case AnswerFoundController(controller) => controller
-				      case _ => None
-				    }).map{
-				      controller => 
-					// set up the controller
-					controller ! PerformSetupController(List(this), kids)
-				      <span id={controller.uniqueId}>{
-					(controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
-					  case Some(view: AnswerRender) => updateCallbacks(view, request) 
-					  case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
-					}
-				      }</span>
-				    } getOrElse {
-				      Comment("FIX"+"ME -- Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") concat kids
-				    }
-				}
-  
+  private def executeController(ctlMgr: ControllerManager, 
+				theType: Option[Seq[Node]], 
+				name: Option[Seq[Node]], 
+				factory: Option[Seq[Node]], kids: NodeSeq,
+				request: RequestState): NodeSeq
+  = 
+    {
+      val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
+	(ctlMgr !? AskFindController(myType, myName, myFactory) match {
+	  case AnswerFoundController(controller) => controller
+	  case _ => None
+	}).map{
+	  controller => 
+	    // set up the controller
+	    controller ! PerformSetupController(List(this), kids)
+	  <span id={controller.uniqueId}>{
+	    (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
+	      case Some(view: AnswerRender) => updateCallbacks(view, request) 
+	      case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
+	    }
+	  }</span>
+	} getOrElse {
+	  Comment("FIX"+"ME -- Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") concat kids
+	}
+    }
 
+  private def executeControllerette(ctlMgr: ControllerManager, 
+        theType: Option[Seq[Node]], 
+        method: Option[Seq[Node]], 
+        factory: Option[Seq[Node]], kids: NodeSeq,
+        request: RequestState): NodeSeq
+  = 
+    {
+      // val (myType, myMethod, myFactory) = (theType.map{s => s.text},method.map{s => s.text}, factory.map{s => s.text})
+      val func: Option[(NodeSeq) => NodeSeq] = for (val typ <- theType.map(_.text);
+           val meth <- method.map(_.text);
+           val resp <- (ctlMgr !? AskFindControllerette(typ, meth, factory.map(_.text))) match {
+	       case AnswerFoundControllerette(controller) => controller
+	       case _ => None
+	     }) yield resp
+
+       func.map(_.apply(kids)) getOrElse (Comment("FIX"+"ME -- Controller type: "+theType+" method: "+method+" factory "+factory+" Not Found ") concat kids)
+    }
+  
   private def updateCallbacks(in: AnswerRender, request: RequestState): NodeSeq = {
     messageCallback = messageCallback ++ in.messages
     val ret = processForForms(in.xml, request)

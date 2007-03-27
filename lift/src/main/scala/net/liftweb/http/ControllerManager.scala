@@ -20,6 +20,9 @@ class ControllerManager extends Actor {
     case AskFindController(theType, name, factory) =>
       reply(AnswerFoundController(find(theType, name, factory)))
     loop
+    
+    case AskFindControllerette(theType, method , factory) =>
+      reply(AnswerFoundControllerette(findControllerette(theType, method, factory)))
   }
   
   private def find(theType: Option[String],name: Option[String], factory: Option[String]): Option[ControllerActor] = {
@@ -34,21 +37,34 @@ class ControllerManager extends Actor {
     }
   }
   
-  private var controllers = new HashMap[(String, Option[String], Option[String]), ControllerActor]
+  private def findControllerette(theType: String, method: String, factory: Option[String]): Option[(NodeSeq) => NodeSeq] = {
+
+        val lookFor = (theType, method, factory)
+          // look in the cache for the controller or try to build one
+          controllerettes.get(lookFor) orElse {
+            // build it and if we get one, put it in the cache
+            searchFactoryForControllerette(theType,method, factory).map{ctrl => controllerettes(lookFor) = ctrl; ctrl}
+          }
+  }
+  
+  private val controllers = new HashMap[(String, Option[String], Option[String]), ControllerActor]
+  private val controllerettes = new HashMap[(String, String, Option[String]), (NodeSeq) => NodeSeq]
   
   private def searchFactoryForController(contType: String, factory: Option[String]): Option[ControllerActor] = {
     findFactory(factory).flatMap{f => f.construct(contType)} orElse {findControllerByType(contType)}
   }
   
+  private def searchFactoryForControllerette(contType: String, method: String, factory: Option[String]): Option[(NodeSeq) => NodeSeq] = {
+    /*findFactory(factory).flatMap{f => f.construct(contType)} orElse FIXME -- controllerette factory */ findControlleretteByType(contType, method)
+  }
+  
+  
   private def findFactory(factory: Option[String]) : Option[ControllerFactory] = {
-    factory.flatMap {
-      factName =>
-     	findClass(factName, buildPackage("factory") ::: ("lift.app.factory" :: Nil),
-                  {c : Class => classOf[ControllerFactory].isAssignableFrom(c)}).flatMap {
-		    cls =>
-		      tryo {cls.newInstance.asInstanceOf[ControllerFactory]}
-		  }
-    }
+    for (val factName <- factory;
+         val cls <- findClass(factName, buildPackage("factory") ::: ("lift.app.factory" :: Nil),
+             {c : Class => classOf[ControllerFactory].isAssignableFrom(c)});
+         val ret <- tryo{cls.newInstance.asInstanceOf[ControllerFactory]})
+     	yield ret
   }
 
   
@@ -65,7 +81,18 @@ class ControllerManager extends Actor {
 	      }
   }
 
-  
+  private def findControlleretteByType(contType: String, method: String): Option[(NodeSeq) => NodeSeq] = {
+    findClass(contType, buildPackage("controller") ::: ("lift.app.controller" :: Nil), 
+              {c : Class => classOf[ControllerActor].isAssignableFrom(c)}).flatMap{
+                cls =>
+                  tryo {
+                    val ret = cls.newInstance.asInstanceOf[ControllerActor];
+                    ret.start
+                    ret.link(self)
+                    null // FIXME ret
+                  }
+              }
+  }
   
   /*
    
@@ -103,3 +130,5 @@ class ControllerManager extends Actor {
 abstract class ControllerManagerMessage
 case class AskFindController(theType: Option[String],name: Option[String], factory: Option[String]) extends ControllerManagerMessage
 case class AnswerFoundController(controller: Option[ControllerActor]) extends ControllerManagerMessage
+case class AskFindControllerette(theType: String, method: String, factory: Option[String]) extends ControllerManagerMessage
+case class AnswerFoundControllerette(controller: Option[(NodeSeq) => NodeSeq]) extends ControllerManagerMessage

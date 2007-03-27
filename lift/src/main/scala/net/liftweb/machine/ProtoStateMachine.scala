@@ -237,7 +237,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   }
   
   // case class TimeTransition(to: StV, time: TimeSpan) extends Transition
-  case class Timer(override val to: StV, when: TimeSpan) extends ATransition(to, {case TimerEvent(len) if (when.len <= len.len) => true}) {
+  case class After(when: TimeSpan, override val to: StV) extends ATransition(to, {case TimerEvent(len) if (when.len <= len.len) => true}) {
     setup ((what, state) => what.setupTime(when))
   }
           
@@ -252,7 +252,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        state.trans.foreach {
          to =>
          to match {
-           case Timer(_,when) => who.setupTime(when)
+           case After(when,_) => who.setupTime(when)
            case _ =>
          }
        }

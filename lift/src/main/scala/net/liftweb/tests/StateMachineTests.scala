@@ -56,7 +56,7 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
   def initialState = TestState.Initial
   protected def states = {
     (State(TestState.Initial, To(TestState.First, {case FirstTransition() => })) exit {(a,b,c,d) => didExitInitial = true; true}) ::
-    (State(TestState.First, Timer(TestState.Second, 2 seconds) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
+    (State(TestState.First, After( 2 seconds, TestState.Second) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
                    To(TestState.Third, {case TestEvent1() => }) action ((obj, from, to, event) => false))
                    exit {(a,b,c,d) => didExitFirst = true}
                    entry {(a,b,c,d) => didEnterFirst = true}) ::
