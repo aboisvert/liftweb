@@ -756,5 +756,33 @@ object Helpers {
     m.appendTail(ret)
     ret.toString
   }
+  
+  private val defaultFinder = &getClass.getResource
+  private var _finder = defaultFinder
+  
+  def setResourceFinder(in: (String) => java.net.URL):unit = synchronized {
+    _finder = in
+  }
+  
+  def resourceFinder = synchronized {_finder}
+  
+  def getResource(name: String): Option[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => None; case s => Some(s)} ; case s => Some(s)} 
+  def getResourceAsStream(name: String): Option[java.io.InputStream] = getResource(name).map(_.openStream)
+  def loadResource(name: String): Option[Array[byte]] = getResourceAsStream(name).map{
+    stream =>
+    val buffer = new Array[byte](2048)
+    val out = new ByteArrayOutputStream
+    def reader {
+      val len = stream.read(buffer)
+      if (len < 0) return
+      else if (len > 0) out.write(buffer, 0, len)
+      reader
+    }
+    reader
+    stream.close
+    out.toByteArray
+  }
+  def loadResourceAsXml(name: String): Option[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
+  def loadResourceAsString(name: String): Option[String] = loadResource(name).map(s => new String(s, "UTF-8"))
 }
 
