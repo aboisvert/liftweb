@@ -1,6 +1,4 @@
-
-
-    <lift:surround with="default" at="content">
+<lift:surround with="default" at="content">
 		<h2>Welcome to the <i>lift</i> Web Framework</h2>
 		<p><i>lift</i> is yet another web development framework.
 		<i>lift</i> runs inside a Java web container and
@@ -25,9 +23,21 @@ is multithreaded.  Additionally, because Scala is strongly typed, the compiler
 catches type errors.  For example:<br/>
 <code>
 <pre>
-User.find(ByField(User.email, "foo@bar.com")) // legal
-User.find(ByField(User.id, 20)) // legal
-User.find(ByField(User.id, "foo@bar.com")) // compiler error
+User.find(By(User.email, "foo@bar.com")) // legal
+User.find(By(User.birthday, new Date("Jan 4, 1975"))) // legal
+User.find(By(User.birthday, "foo@bar.com")) // compiler error
+</pre>
+</code>
+And <i>lift</i> has lots of helper methods to make things clean and
+simple:<br />
+<code>
+<pre>
+User.find(20) // find the user with primary key 20
+// find all the users that registered 4 days ago
+User.findAll(By(User.registered, 4.days.ago)) 
+// activate the account or suspend it after 4 days
+State(NewAcct, On({case Activate =>}, Activated),After(4 days, Suspended))
+State(Suspended) entry {sendSuspendedEmail}
 </pre>
 </code>
 But the LoC and total character count for <i>lift</i> and Rails substantive code is similar,

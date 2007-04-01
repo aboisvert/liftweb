@@ -10,9 +10,7 @@ import net.liftweb.http._
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import net.liftweb.example.model._
 
-class WebServices (rstate: RequestState, httpRequest_l: HttpServletRequest) extends SimpleController {
-  this.request = rstate
-  this.httpRequest = httpRequest_l
+class WebServices (val request: RequestState,val httpRequest: HttpServletRequest) extends SimpleController {
   
   def all_users: XmlResponse = {
     XmlResponse(<all_users>{
