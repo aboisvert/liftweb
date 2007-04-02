@@ -47,6 +47,7 @@ object Helpers {
     ret += "js"
     ret += "css"
     ret += "jpg"
+    ret += "gif"
     ret += "tiff"
     ret += "jpeg"
     ret
@@ -101,6 +102,26 @@ object Helpers {
     }
   }
   
+  def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
+    xml.flatMap {
+      node =>
+        node match {
+          case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
+            node.attributes.get("name") match {
+                case None => bind(vals, node.child)
+                case Some(ns) => {
+                vals.get(ns.text) match {
+                  case None => bind(vals, node.child)
+                  case Some(nodes) => nodes
+                }
+                }
+            }
+          }
+          case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
+          case n => node
+        }
+    }
+  }
   
   def processBind(around : NodeSeq, at : String, what : NodeSeq) : NodeSeq = {
     around.flatMap {
@@ -172,7 +193,7 @@ object Helpers {
   
   def findClass(where : List[Pair[String, List[String]]]) : Option[Class] = {
     where match {
-      case Nil => {null}
+      case Nil => None
       case s :: rest => {
 	findClass(s._1, s._2) match {
           case null => findClass(rest)
@@ -187,8 +208,8 @@ object Helpers {
   * 'name' (e.g., leave it alone, make it camel case, etc.)
   */
   def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Option[Class] = {
-    def findClass_s(name : String, where : String) : Class = {
-      tryn(List(classOf[ClassNotFoundException])) {
+    def findClass_s(name : String, where : String) : Option[Class] = {
+      tryo(List(classOf[ClassNotFoundException])) {
         val clzName = where+"."+name
 	
         Class.forName(clzName)
@@ -198,26 +219,14 @@ object Helpers {
     
     def findClass_l(name : String, where : List[String]) : Option[Class] = {
       where match {
-        case Nil => {null}
-        case c :: rest => {
-          findClass_s(name, c) match {
-            case null => {findClass_l(name, rest)}
-            case r @ _ => {Some(r)}
-            
-          }
-        }
+        case Nil => None
+        case c :: rest => findClass_s(name, c) orElse findClass_l(name, rest)
       }
     }
     
     modifiers match {
-      case Nil => {null}
-      case c :: rest => {
-        findClass_l(c(name), where) match {
-          case null => {findClass(name, where, rest, guard)}
-          case r @ _ => {r}
-        }
-      }
-      //testn(findClass_l(c(name), where)) {findClass(name, where, rest)}}
+      case Nil => None
+      case c :: rest => findClass_l(c(name), where) orElse findClass(name, where, rest, guard)
     }
   }
   
@@ -226,6 +235,7 @@ object Helpers {
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return null.
   */
+    /*
   def tryn[T](ignore : List[Class])(f : => T) : T = {
     try {
       f
@@ -233,7 +243,7 @@ object Helpers {
       case c if (containsClass(c.getClass, ignore)) => {null.asInstanceOf[T]}
       case c if (ignore == null || ignore.isEmpty) => {null.asInstanceOf[T]}
     }
-  }
+  }*/
   
   /**
   * Wraps a "try" block around the function f.  If f throws
@@ -281,7 +291,7 @@ object Helpers {
   * Wraps a "try" block around the function f.  If f throws
   * an exception, ignore the exception and return null.
   */
-  def tryn[T](f : => T) : T = {tryn(null)(f)}
+  // def tryn[T](f : => T) : T = {tryn(null)(f)}
   
   /**
   * Is the clz an instance of (assignable from) any of the classes in the list
@@ -300,13 +310,13 @@ object Helpers {
     }
   }
   
-  def classHasControllerMethod(clz : Class, methName : String) = {
-    tryn {
+  def classHasControllerMethod(clz : Class, methName : String): boolean = {
+    tryo {
       clz match {
         case null => false
         case _ => callableMethod_?(clz.getMethod(methName, null))
       }
-    }
+    } getOrElse false
   }
 
   def invokeControllerMethod(clz : Class, meth : String) = {
@@ -317,21 +327,23 @@ object Helpers {
     }
   }
   
-  private def _invokeMethod(clz: Class, meth: String): Option[Any] = {
+  private def _invokeMethod(clz: Class, meth: String, params: Array[Object]): Option[Any] = {
     try {
-      clz.getMethod(meth, null) match {
+      clz.getMethod(meth, params.map(_.getClass)) match {
 	case null => None
-	case m => Some(m.invoke(clz.newInstance, null))
+	case m => Some(m.invoke(clz.newInstance, params))
       }
     } catch {
       case e: java.lang.NoSuchMethodException => None
     }
   }
   
-  def invokeMethod(clz: Class, meth: String): Option[Any] = {
-    _invokeMethod(clz,meth) orElse _invokeMethod(clz, smartCaps(meth)) orElse 
-    _invokeMethod(clz, methodCaps(meth)) orElse None
+  def invokeMethod(clz: Class, meth: String, params: Array[Object]): Option[Any] = {
+    _invokeMethod(clz,meth, params) orElse _invokeMethod(clz, smartCaps(meth), params) orElse 
+    _invokeMethod(clz, methodCaps(meth), params) orElse None
   }
+  
+  def invokeMethod(clz: Class, meth: String): Option[Any] = invokeMethod(clz, meth, Array())
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)
@@ -608,7 +620,6 @@ object Helpers {
     def loop {
       react {
         case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
-          Console.println("Sending...")
         try {
           val session = Session.getInstance(System.getProperties)
           val message = new MimeMessage(session)

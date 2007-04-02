@@ -47,8 +47,8 @@ class UserTests extends TestCase("User Tests") {
   
   def findTest {
     assert(User.find(1).isDefined)
-    assert(User.find(ByField(User.email, "mr9@foo.com")).isDefined)    
-    assert(!User.find(ByField(User.email, "eemr1@foo.com")).isDefined)  
+    assert(User.find(By(User.email, "mr9@foo.com")).isDefined)    
+    assert(!User.find(By(User.email, "eemr1@foo.com")).isDefined)  
     assert(User.find(BySql("email = ?", "mr9@foo.com")).isDefined)
     assert(!User.find(BySql("email = ?", "eemr1@foo.com")).isDefined)  
     assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).isDefined)  
@@ -72,8 +72,8 @@ class UserTests extends TestCase("User Tests") {
     assert(User.findAll.length == maxUsers, "Actual len "+User.findAll.length+" expected "+maxUsers)
     assert(User.findAll(MaxRows(25), StartAt(25)).length == 25)
     assert(User.findAll(StartAt(25)).length == (maxUsers - 25))
-    assert(User.findAll(ByField(User.email, "mr33@foo.com")).length == 1)
-    assert(User.findAll(ByField(User.email, "dogmr33@foo.com")).length == 0)
+    assert(User.findAll(By(User.email, "mr33@foo.com")).length == 1)
+    assert(User.findAll(By(User.email, "dogmr33@foo.com")).length == 0)
     assert(User.findAll(BySql("email = ?", "mr9@foo.com")).length == 1)
     assert(User.findAll(BySql("email = ?", "eemr1@foo.com")).length == 0)  
     assert(User.findAll(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)  
@@ -88,8 +88,8 @@ class UserTests extends TestCase("User Tests") {
   def countTest {
     assert(User.count == maxUsers)
     
-    assert(User.count(ByField(User.email, "mr33@foo.com")) == 1)
-    assert(User.count(ByField(User.email, "dogmr33@foo.com")) == 0)
+    assert(User.count(By(User.email, "mr33@foo.com")) == 1)
+    assert(User.count(By(User.email, "dogmr33@foo.com")) == 0)
     assert(User.count(BySql("email = ?", "mr9@foo.com")) == 1)
     assert(User.count(BySql("email = ?", "eemr1@foo.com")) == 0)  
     assert(User.count(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")) == 1)  
@@ -103,7 +103,7 @@ class UserTests extends TestCase("User Tests") {
   
   def pwdTest {
     for (val cnt <- 1 to maxUsers) {
-      val u = User.find(ByField(User.firstName, cnt.toString)).get
+      val u = User.find(By(User.firstName, cnt.toString)).get
       assert(u.password.match_?("password"+cnt))
       assert(!u.password.match_?("dog"+cnt))
     }
@@ -120,7 +120,7 @@ object User extends User with KeyedMetaMapper[long, User] {
 class User extends ProtoUser[User] {
   def getSingleton = User
   
-  def pets = Pet.findAll(ByField(Pet.owner, this.id.get))
+  def pets = Pet.findAll(By(Pet.owner, this.id.get))
   def primaryKeyField = id
 }
 

@@ -1,9 +1,16 @@
 package net.liftweb.builtin.snippet
 
+
+/*                                                *\
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+\*                                                 */
+   
 import net.liftweb.http._
 import scala.xml._
 
-class CometScript extends SimpleController {
+class CometScript {
   def javaScript: NodeSeq = {
     val uri = S.request.contextPath + S.request.uri
     

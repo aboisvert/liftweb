@@ -50,13 +50,13 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   }
 
   override def beforeDelete {
-    through.findAll(ByField[Through, ThroughType](throughFromField, owner.primaryKeyField)).foreach {
+    through.findAll(By[Through, ThroughType](throughFromField, owner.primaryKeyField)).foreach {
       toDelete => toDelete.delete_!
     }
   }
   
   override def afterUpdate {
-    val current = through.findAll(ByField(throughFromField, owner.primaryKeyField.get))
+    val current = through.findAll(By(throughFromField, owner.primaryKeyField.get))
     
     val newKeys = new HashSet[ThroughType];
     

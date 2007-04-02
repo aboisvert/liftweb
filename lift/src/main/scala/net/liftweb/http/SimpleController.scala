@@ -13,9 +13,9 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
  * The base trait of Controllers that handle pre-view requests
  */
 trait SimpleController {
-  var request: RequestState = _
+  def request: RequestState
   // private var session: TreeMap[String, Any] = _
-  var httpRequest: HttpServletRequest = _
+  def httpRequest: HttpServletRequest
   
   def params(name: String): Option[String] = {
     request.params.get(name) match {
@@ -39,10 +39,10 @@ trait SimpleController {
   }
   }
   
-  def set(name: String, value: String) {
+  def set(name: String, value: Option[String]) {
     value match {
-    case null => httpRequest.getSession.removeAttribute(name)
-    case _ => {httpRequest.getSession.setAttribute(name, value)}
+    case None => httpRequest.getSession.removeAttribute(name)
+    case Some(s) => {httpRequest.getSession.setAttribute(name, s)}
   }
   }
       

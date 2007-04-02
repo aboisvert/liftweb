@@ -10,22 +10,24 @@ import scala.actors.Actor
 import scala.actors.Actor._
 import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
 import scala.collection.Map
-import scala.collection.mutable.{HashMap}
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.collection.immutable.{TreeMap}
 import scala.xml.{NodeSeq}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.collection.immutable.{ListMap}
-import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment}
+import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
 import java.io.InputStream
-import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
+import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 
 
 class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
   private var sessionState: TreeMap[String, Any] = TreeMap.empty
   private var running_? = false
+  private var messageCallback: HashMap[String, List[String] => Any] = new HashMap
+  private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
   
   def sessionDidActivate(se: HttpSessionEvent) = {
     // Console.println("session Did activate")
@@ -48,7 +50,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    * What happens when this controller is bound to the HTTP session?
    */ 
   def valueBound(event: HttpSessionBindingEvent) {
-    //Console.println("bound ")
+    Console.println("bound ")
     //this.start
     // ignore this event  
   }
@@ -57,7 +59,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    * When the session is unbound the the HTTP controller, stop us
    */
   def valueUnbound(event: HttpSessionBindingEvent) {
-    if (running_?) this ! "shutdown"
+    Console.println("Unbound ")
+    if (running_?) this ! 'shutdown
   }
   
   /**
@@ -76,11 +79,11 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
   
   def dispatcher: PartialFunction[Any, Unit] = {
-    case "shutdown" => self.exit("shutdown")
+    case 'shutdown => self.exit('shutdown )
     loop
     
-    case AskSessionToRender(request,finder,timeout) => 
-      processRequest(request, finder, timeout)
+    case AskSessionToRender(request,httpRequest, finder,timeout) => 
+      processRequest(request, httpRequest, finder, timeout)
     loop
     
     case AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) =>
@@ -90,37 +93,48 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 
     case SetGlobal(name, value) => sessionState = (sessionState(name) = value); loop
     case UnsetGlobal(name) => sessionState = (sessionState - name); loop
-    case _ => loop
+    case m => Console.println("Got a message "+m); loop
   }
   
-  private def processRequest(state: RequestState, finder: (String) => InputStream, timeout: long) = {
-    S.init(state) {
+  private def processParameters(r: RequestState) {
+    r.paramNames.filter(n => messageCallback.contains(n)).foreach{
+      n => 
+            val f = messageCallback(n)
+            f(r.params(n))
+    }
+  }
+  
+  private def processRequest(state: RequestState,httpRequest: HttpServletRequest, finder: (String) => InputStream, timeout: long) = {
+    S.init(state, httpRequest, notices) {
       try {
-	val page = 
-	  pages.get(state.uri) match {
-	    
-	    case None => {
-              createPage(state, finder) match {
-		case None => None
-		case s @ Some(p: Page) =>
-		  pages(state.uri) = p
-		s
-              }
-	    }
-	    case Some(p : Page) => {
-              findVisibleTemplate(state.uri, state, finder) match {
-		case Some(xml: NodeSeq) => p ! PerformSetupPage(processSurroundAndInclude(xml, state, finder), this) // FIXME reloads the page... maybe we don't always want to do this
-		case _ => {}
-              }
-              Some(p)
-	    }
-	  }
-	
-	page match {
-	  case Some(p) =>  p.forward(AskRenderPage(state, sessionState, sender, controllerMgr, timeout))
-	  case _ => reply(state.createNotFound)
-	}
+        processParameters(state)
+        findVisibleTemplate(state.uri, state, finder).map(xml => processSurroundAndInclude(xml, state, finder)) match {
+          case None => reply(state.createNotFound)
+          case Some(xml: NodeSeq) => {
+            S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+
+            if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {notices = Nil; reply(Response(state.fixHtml(xml), Map.empty, 200))}
+            else {
+              val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
+              page.forward(AskRenderPage(state, xml, sessionState, sender, controllerMgr, timeout))
+            }
+          }
+        }
       } catch {
+        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
+        val rd = ite.getCause.asInstanceOf[RedirectException]
+        notices = S.getNotices
+        
+        reply(Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+                 ListMap("Location" -> (state.contextPath+rd.to)),
+                 302))
+          case rd : net.liftweb.http.RedirectException => {   
+            notices = S.getNotices
+            
+            reply(Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+                     ListMap("Location" -> (state.contextPath+rd.to)),
+                     302))
+          }
 	case e  => {reply(state.showException(e))}
       }
     }
@@ -136,18 +150,11 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   /**
    * Create a page based on the uri
    */
-  private def createPage(state: RequestState, finder: (String) => InputStream): Option[Page] = {
-    findVisibleTemplate(state.uri, state, finder) match {
-      case None => None
-      case Some(xml: NodeSeq) => {
+  private def createPage: Page = {
         val ret = new Page // FIXME we really want a Page factory here so we can build other Page types
         ret.link(self)
         ret.start
-        val realXml : NodeSeq = processSurroundAndInclude(xml, state, finder)
-        ret ! PerformSetupPage(realXml, this)
-        Some(ret)
-      }
-    }
+	ret
   }
   
   private def findVisibleTemplate(name : String, session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
@@ -282,7 +289,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         findSnippetClass(cls) match {
 	  case None => kids
 	  case Some(clz) => {
-            invokeMethod(clz, method) match {
+            ((if (kids.length > 0) invokeMethod(clz, method, Array(Group(kids))) else None) orElse invokeMethod(clz, method)) match {
               case Some(md: NodeSeq) => md
               case _ => kids
             }
@@ -383,12 +390,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     first(toTry) {
       clsName => 
 	try {
-          tryn(List(classOf[ClassNotFoundException])) {
-
-            Class.forName(clsName)
-          } match {
-            case null => None
-            case c @ _ => {
+          tryo(List(classOf[ClassNotFoundException])) (Class.forName(clsName)).flatMap{
+	    c =>
               val inst = c.newInstance
               c.getMethod("render", null).invoke(inst, null) match {
 		case null | None => None
@@ -398,7 +401,6 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 		case _ => None
               }
             }
-          }
 	} catch {
           case _ => None
 	}
@@ -505,13 +507,13 @@ case class UnsetGlobal(name: String) extends SessionMessage
  * Sent from a session to a Page to tell the page to render itself and includes the sender that
  * the rendered response should be sent to
  */
-case class AskRenderPage(state: RequestState, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
+case class AskRenderPage(state: RequestState, xml: NodeSeq, sessionState: TreeMap[String, Any], sender: Actor, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
 
 /**
  * The response from a page saying that it's been rendered
  */
 case class AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
-case class AskSessionToRender(request: RequestState,finder: (String) => InputStream,timeout: long)
+case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,finder: (String) => InputStream,timeout: long)
 
 /*
  case class RequestPending(url: String,

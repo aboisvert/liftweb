@@ -110,7 +110,7 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
     inst match {
       case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = 0;}}
       case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.asInstanceOf[Number].intValue}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v.toString))}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = toInt(v.toString)}}
     }
   }
   
@@ -118,7 +118,7 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
     {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
   }
   def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = tryn(Integer.parseInt(v))}}
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = toInt(v.toString)}}
   }
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.getTime.asInstanceOf[int]}}

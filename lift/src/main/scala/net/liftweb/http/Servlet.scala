@@ -7,6 +7,7 @@ package net.liftweb.http;
  \*                                                 */
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import javax.servlet.{ServletContext}
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{HashSet, HashMap}
 import java.net.URLDecoder
@@ -16,6 +17,7 @@ import scala.actors._
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import java.io.InputStream
+import net.liftweb.util.Helpers
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -62,9 +64,12 @@ class Servlet extends HttpServlet {
         case "js" => "text/javascript"
         case "css" => "text/css"
         case "png" => "image/png"
+        case "gif" => "image/gif"
         case _ => "text/html"
       })
     }
+    
+    response.setHeader("Cache-Control", "max-age=3600, must-revalidate")
     val out = response.getOutputStream
     val ba = new Array[byte](2048)
 
@@ -93,9 +98,12 @@ class Servlet extends HttpServlet {
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
+    printTime("Service request "+req.getRequestURI) {
+    Servlet.setContext(getServletContext)
     req.getMethod.toUpperCase match {
       case "GET" => doGet(req, resp)
       case _ => doService(req, resp, RequestType(req))
+    }
     }
   }
   
@@ -136,7 +144,7 @@ class Servlet extends HttpServlet {
 	
 	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
 	
-	sessionActor !? (timeout, AskSessionToRender(session, finder, timeout)) match {
+	sessionActor !? (timeout, AskSessionToRender(session, request, finder, timeout)) match {
 	  case Some(r: Response) => r
 	  case _ => {session.createNotFound}
 	}
@@ -164,6 +172,16 @@ object Servlet {
     dispatchTable_i
   }
 
+  private var _context: ServletContext = _
+  
+  def context: ServletContext = synchronized {_context}
+  
+  def setContext(in: ServletContext): unit =  synchronized {
+    if (in ne _context) {
+      Helpers.setResourceFinder(in.getResource)
+      _context = in
+      }
+  }
   
   private var dispatchTable_i : PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]] = {
     case (null, Nil, null) => null

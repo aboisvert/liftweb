@@ -8,8 +8,8 @@ package net.liftweb.http
 \*                                                 */
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import scala.collection.mutable.{Map, HashMap}
-import scala.xml.Elem
+import scala.collection.mutable.{Map, HashMap, ArrayBuffer}
+import scala.xml.{NodeSeq, Elem, Text}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal}
 import net.liftweb.mapper.Safe
@@ -24,8 +24,10 @@ object S {
    * The current session
    */
   private val _request = new ThreadGlobal[RequestState];
-  private val functionMap = new ThreadGlobal[HashMap[String, (List[String]) => boolean]]
-  
+  private val _servletRequest = new ThreadGlobal[HttpServletRequest];
+  private val functionMap = new ThreadGlobal[HashMap[String, (List[String]) => boolean]];
+  private val _notice = new ThreadGlobal[ArrayBuffer[(NoticeType.Value, NodeSeq)]];
+  private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   /**
    * Get the current HttpServletSession
    *
@@ -48,13 +50,57 @@ object S {
     String.format("%06d", Array(new Integer(n)))
   }
   
+  private def initNotice[B](f: => B): B = {
+    _notice.doWith(new ArrayBuffer[(NoticeType.Value, NodeSeq)])(f)
+  }
+  
   /**
    * Initialize the current "State" session
-   */
-  def init[B](request : RequestState)(f : => B) : B = {    
+  */
+  def init[B](request : RequestState)(f : => B) : B = {
+    _oldNotice.doWith(Nil) {
+    initNotice {
     functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
       this._request.doWith(request) {
         this.currCnt.doWith(0)(f)
+      }
+    }
+    }
+    }
+  }
+  
+  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)])(f : => B) : B = {
+    _oldNotice.doWith(oldNotices) {
+    initNotice {
+    functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
+      this._servletRequest.doWith(servletRequest) {
+	this._request.doWith(request) {
+          this.currCnt.doWith(0)(f)
+	}
+      }
+    }
+    }
+    }
+  }
+  
+  def get(what: String): Option[String] = {
+    _servletRequest.value match {
+      case null => None
+      case s => s.getSession.getAttribute(what) match {
+	case null => None
+	case n => {
+	  if (n.isInstanceOf[String]) Some(n.asInstanceOf[String])
+	  else None
+	}
+      }
+    }
+  }
+  
+  def set(name: String, value: Option[String]) {
+    if (_servletRequest.value ne null) {
+      value match {
+	case None => _servletRequest.value.getSession.removeAttribute(name)
+	case Some(vlue) => {_servletRequest.value.getSession.setAttribute(name, vlue)}
       }
     }
   }
@@ -62,10 +108,10 @@ object S {
   def getFunctionMap: Map[String, (List[String]) => boolean] = functionMap.value
 
   /*
-   /**
-    * Get the value of a variable with:
-    * val myVariable = S("foo").asInstanceOf(List[int])
-    */
+  /**
+  * Get the value of a variable with:
+  * val myVariable = S("foo").asInstanceOf(List[int])
+  */
   def apply[T](n : String) : Option[T] = {
     variables.value match {
       case map : Map[_,_] => {
@@ -82,9 +128,9 @@ object S {
   }
   
   /**
-   * Set the value of a variable with:
-   * S("foo") = 1 :: 2 :: 3 :: Nil
-   */
+  * Set the value of a variable with:
+  * S("foo") = 1 :: 2 :: 3 :: Nil
+  */
   def update(n : String, v : Any) : Any = {
     if (variables.value != null) {
       v match {
@@ -113,6 +159,17 @@ object S {
     if (v == None || v == null) "" else v.asInstanceOf[Some[Any]].get.toString
   }
   */
+    
+  def f(in: List[String] => boolean): String = {
+    val name = "F"+System.nanoTime+"_"+randomString(3)
+    addFunctionMap(name, in)
+    name
+  }
+  
+  def f(name: String, inf: List[String] => boolean): String = {
+    addFunctionMap(name, inf)
+    name
+  }
   
   def addFunctionMap(name: String, value: (List[String]) => boolean) {
     functionMap.value += (name -> value)
@@ -125,4 +182,23 @@ object S {
   
   def params(n: String) = request.params(n)
   def param(n: String): Option[String] = request.param(n)
+  
+  def error(n: String) {error(Text(n))}
+  def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n)}
+  def notice(n: String) {notice(Text(n))}
+  def notice(n: NodeSeq) {_notice.value += (NoticeType.Notice, n)}
+  def warning(n: String) {warning(Text(n))}
+  def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n)}
+  
+  def getNotices = _notice.value.toList
+  
+  def errors: Seq[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(_._2))
+  def notices: Seq[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(_._2))
+  def warnings: Seq[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Warning).map(_._2))
+  def clearCurrentNotices {_notice.value.clear}
+  
+}
+
+object NoticeType extends Enumeration {
+  val Notice, Warning, Error = Value
 }

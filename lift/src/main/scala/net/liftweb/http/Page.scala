@@ -14,8 +14,8 @@ import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
 
 class Page extends Actor {
-  private var pageXml : NodeSeq = _
-  private var theSession: Session = _
+  // private var pageXml : NodeSeq = _
+  // private var theSession: Session = _
   private var globalState: TreeMap[String, Any] = _
   private var localState = new HashMap[String, Any]
   private var request: RequestState = _
@@ -30,13 +30,14 @@ class Page extends Actor {
   
   def dispatcher: PartialFunction[Any, Unit] = {
     case "shutdown" => self.exit("shutdown")
+    /*
     case PerformSetupPage(page, session) => {
       pageXml = page
       this.theSession = session
       loop
-    }
+    }*/
     
-    case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) =>
+    case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) =>
       this.globalState = sessionState
     this.request = state
     try {
@@ -49,12 +50,8 @@ class Page extends Actor {
         while (updates.isEmpty && endAt > System.currentTimeMillis) {
           receiveWithin(endAt - System.currentTimeMillis) {
             case ar: AnswerRender => updateRendered(ar)
-            case PerformSetupPage(page, session) => {
-	      pageXml = page
-	      this.theSession = session
-            }
             
-            case AskRenderPage(state, sessionState, sender, controllerMgr, timeout) => {
+            case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) => {
 	      processParameters(state)
 	      val resp: Response = if (state.ajax_? ) {
 		Response(Unparsed(""),
@@ -134,6 +131,7 @@ class Page extends Actor {
     localState(key) = value
   }
   
+  /*
   def globalUpdate(key: String, value: Any) = {
     globalState = (globalState(key) = value)
       theSession ! SetGlobal(key, value)
@@ -142,7 +140,7 @@ class Page extends Actor {
   def globalRemove(key: String) = {
     globalState = (globalState - key)
       theSession ! UnsetGlobal(key)
-  }
+  }*/
 
   
   private def processControllers(xml : NodeSeq, ctlMgr: ControllerManager, request: RequestState) : NodeSeq = {
@@ -150,7 +148,6 @@ class Page extends Actor {
       v =>
         v match {
           case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request)}
-          case Elem("lift", "ctl", attr @ _, _, kids @ _*) => {executeControllerette(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processControllers(v.child, ctlMgr, request) : _*)}
           case _ => {v}
         }
@@ -183,24 +180,6 @@ class Page extends Actor {
 	}
     }
 
-  private def executeControllerette(ctlMgr: ControllerManager, 
-        theType: Option[Seq[Node]], 
-        method: Option[Seq[Node]], 
-        factory: Option[Seq[Node]], kids: NodeSeq,
-        request: RequestState): NodeSeq
-  = 
-    {
-      // val (myType, myMethod, myFactory) = (theType.map{s => s.text},method.map{s => s.text}, factory.map{s => s.text})
-      val func: Option[(NodeSeq) => NodeSeq] = for (val typ <- theType.map(_.text);
-           val meth <- method.map(_.text);
-           val resp <- (ctlMgr !? AskFindControllerette(typ, meth, factory.map(_.text))) match {
-	       case AnswerFoundControllerette(controller) => controller
-	       case _ => None
-	     }) yield resp
-
-       func.map(_.apply(kids)) getOrElse (Comment("FIX"+"ME -- Controller type: "+theType+" method: "+method+" factory "+factory+" Not Found ") concat kids)
-    }
-  
   private def updateCallbacks(in: AnswerRender, request: RequestState): NodeSeq = {
     messageCallback = messageCallback ++ in.messages
     val ret = processForForms(in.xml, request)
@@ -234,9 +213,9 @@ class Page extends Actor {
   }
 }
 
-abstract class PageMessage
+// abstract class PageMessage
 
-case class PerformSetupPage(page: NodeSeq, session: Session) extends PageMessage
+// case class PerformSetupPage(page: NodeSeq, session: Session) extends PageMessage
 // case class Perform(localFunc: String, params: List[String]) extends PageMessage
 //case class Render extends PageMessage
 //case class Rendering(info: String, tpe: String) extends PageMessage

@@ -263,7 +263,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   
   /// case class FirstTransition extends Event
                                                   
-  case class To(override val to: StV,override val on: PartialFunction[Meta#Event, Any]) extends ATransition(to, on)
+  case class On(override val on: PartialFunction[Meta#Event, Any], override val to: StV) extends ATransition(to, on)
   
   object Event {
     def unmatchedHandler: Option[(MyType,State, Event) => Any] = None

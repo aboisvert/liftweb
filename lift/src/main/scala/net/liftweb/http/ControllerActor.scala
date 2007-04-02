@@ -9,9 +9,11 @@ package net.liftweb.http
 import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers
 import scala.xml.{NodeSeq, Text, Elem}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.HashSet
+
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
@@ -141,28 +143,9 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   def defaultXml = defaultXml_i
   
   def bind(vals: Map[String, NodeSeq]): NodeSeq = {
-    def _bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
-      xml.flatMap {
-        node =>
-          node match {
-            case Elem("lift", "bind", attr, foo, kids) => {
-              attr.get("name") match {
-		case None => _bind(vals, kids)
-		case Some(ns) => {
-                  vals.get(ns.text) match {
-                    case None => _bind(vals, kids)
-                    case Some(nodes) => nodes
-                  }
-		}
-              }
-            }
-            case Elem(ns, tag, attr, foo, kids) => Elem(ns, tag, attr,foo, _bind(vals, kids) : _*)
-            case n => node
-          }
-      }
-    }
+    Helpers.bind(vals, defaultXml)
     
-    _bind(vals, defaultXml)
+    // _bind(vals, defaultXml)
   }
   
   private def buildRendered(in: NodeSeq): AnswerRender = {

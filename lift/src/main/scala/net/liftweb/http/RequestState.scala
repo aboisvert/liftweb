@@ -57,7 +57,7 @@ class RequestState(val paramNames: List[String],
   }
   
   def createNotFound = {
-    Response(<html><body>The Requested URL {this.uri} was not found on this server</body></html>, TreeMap.Empty, 404)
+    Response(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.Empty, 404)
   }
   
   def showException(e: Throwable) = {
@@ -101,7 +101,8 @@ class RequestState(val paramNames: List[String],
       v => 
 	v match {
 	  case <form>{ _* }</form> => {Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(v.child) : _* )}
-	  case <script>{ _* }</script> => {Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(v.child) : _* )}
+          case <script>{ _* }</script> => {Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(v.child) : _* )}
+          case <img>{ _* }</img> => {Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(v.child) : _* )}
 	  case <a>{ _* }</a> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child) : _* );}
 	  case <link/> => {Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(v.child) : _* )}
 	  /*

@@ -113,7 +113,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case x :: xs => {
         var updatedWhat = what        
         x match {
-          case ByField(field, _) => 
+          case By(field, _) => 
             (1 to field.dbColumnCount).foreach {
               cn =>
 		updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" = ? "
@@ -130,7 +130,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: int) {
     by match {
       case Nil => {}
-      case ByField(field, value) :: xs => {
+      case By(field, value) :: xs => {
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
         setStatementFields(st, xs, curPos + 1)
       }
@@ -703,7 +703,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 }
 
 abstract class QueryParam[O<:Mapper[O]]
-case class ByField[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
+case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]

@@ -136,7 +136,7 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
     inst match {
       case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = 0L}}
       case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.asInstanceOf[Number].longValue}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v.toString))}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = toLong(v.toString)}}
     }
   }
   
@@ -144,7 +144,7 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
     {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = v}}
   }
   def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = tryn(Long.parseLong(v))}}
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = toLong(v.toString)}}
   }
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.getTime}}
