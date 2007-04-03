@@ -66,23 +66,13 @@ trait Mapper[A<:Mapper[A]] {
   }
   
   def toForm(f : (List[String]) => boolean): NodeSeq = {
-    getSingleton.toForm(this) concat <input type='hidden' name={S.mapFunction("submit", f)} value="n/a" />
+    getSingleton.toForm(this) ++ <input type='hidden' name={S.mapFunction("submit", f)} value="n/a" />
   }
   
   def db_can_delete_? : boolean = {
     getSingleton.saved_?(this) && !was_deleted_?
   }
-  
-  /*
-   def i(f : (Array[String]) => unit) : Elem = {
-   <input type='hidden' name={S.ae(f)} value="na"/>
-   }
-   
-   def a(f : (Array[String]) => unit) : String = {
-   S.ae(f)
-   }
-   */
-  
+
   def dirty_? : boolean = getSingleton.dirty_?(this)
   
   override def toString = {

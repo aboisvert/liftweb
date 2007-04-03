@@ -23,13 +23,18 @@ class Chat extends ControllerActor {
 
   override def lowPriority : PartialFunction[Any, Unit] = {
     case ChatServerUpdate(value) => {
+     try {
       currentData = value
       reRender
+    } catch {
+case e => e.printStackTrace
+}
       loop
     }
   } 
   
   def render = {
+try {
     val inputName = this.uniqueId+"_msg"
     
     S.addFunctionMap(inputName, sendMessage)
@@ -42,6 +47,9 @@ class Chat extends ControllerActor {
     }</ul><lift:form method="POST">
     <input name={inputName} type="text" value=""/><input value="Send" type="submit"/>
     </lift:form></span>
+} catch {
+  case e => e.printStackTrace ; Text("")
+}
   }
   
   override def localSetup {

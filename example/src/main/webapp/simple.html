@@ -80,10 +80,7 @@ as AJAX ready are re-written to use AJAX.</p>
     -->
     </style>
     <pre>
-  <span class="keyword">def</span> <span class="function-name">render</span> = {
-    <span class="keyword">val</span> <span class="variable-name">myXhtml</span> = bind(Map(<span class="string">"time"</span> -&gt; Text((<span class="keyword">new</span> java.util.Date).toString)))
-    XmlAndMap(myXhtml, Map.empty)
-  }
+  <span class="keyword">def</span> <span class="function-name">render</span> = bind(Map(<span class="string">"time"</span> -&gt; Text(<span class="keyword">timeNow</span>.toString)))
 </pre>
 
 <p>Which binds a string containing the current time to the "time" part

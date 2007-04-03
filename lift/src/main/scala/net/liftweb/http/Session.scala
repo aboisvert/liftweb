@@ -28,29 +28,26 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private var running_? = false
   private var messageCallback: HashMap[String, List[String] => Any] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
+  private val theControllerMgr = {
+    val ret = new ControllerManager
+    ret.start
+    ret.link(self)
+    ret
+  }
+
   
   def sessionDidActivate(se: HttpSessionEvent) = {
-    // Console.println("session Did activate")
+    Console.println("session Did activate")
   }
   def sessionWillPassivate(se: HttpSessionEvent) = {
-    /*
-     val session = se.getSession
-     val atNames = session.getAttributeNames
-     while (atNames.hasMoreElements) {
-     atNames.nextElement match {
-     
-     case s: String => Console.println("Removed "+s); session.removeAttribute(s)
-     case o => Console.println("Didn't remove "+o)
-     }
-     }
      Console.println("session Did passivate real good!")
-     */
   }
+  
   /**
    * What happens when this controller is bound to the HTTP session?
    */ 
   def valueBound(event: HttpSessionBindingEvent) {
-    Console.println("bound ")
+    Console.println("Session bound ")
     //this.start
     // ignore this event  
   }
@@ -67,6 +64,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    * called when the Actor is started
    */
   def act = {
+    this.trapExit = true
     running_? = true
     loop
   }
@@ -79,21 +77,32 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
   
   def dispatcher: PartialFunction[Any, Unit] = {
-    case 'shutdown => self.exit('shutdown )
+    case 'shutdown =>
+      theControllerMgr.exit
+      pages.foreach(p => p._2.exit)
+      self.exit
     loop
     
     case AskSessionToRender(request,httpRequest, finder,timeout) => 
+      try {
       processRequest(request, httpRequest, finder, timeout)
+      } catch {
+        case e => e.printStackTrace
+      }
     loop
     
-    case AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) =>
+    case AnswerRenderPage(state, thePage, sender) =>
+     try {
       val updatedPage = fixResponse(thePage, state)
     sender ! Some(updatedPage)
+     } catch {
+       case e => e.printStackTrace
+     }
     loop
 
-    case SetGlobal(name, value) => sessionState = (sessionState(name) = value); loop
-    case UnsetGlobal(name) => sessionState = (sessionState - name); loop
-    case m => Console.println("Got a message "+m); loop
+    //case SetGlobal(name, value) => sessionState = (sessionState(name) = value); loop
+    //case UnsetGlobal(name) => sessionState = (sessionState - name); loop
+    case unknown => Console.println("Session Got a message "+unknown); loop
   }
   
   private def processParameters(r: RequestState) {
@@ -116,7 +125,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
             if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {notices = Nil; reply(Response(state.fixHtml(xml), Map.empty, 200))}
             else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
-              page.forward(AskRenderPage(state, xml, sessionState, sender, controllerMgr, timeout))
+              page.forward(AskRenderPage(state, xml, sessionState, sender, theControllerMgr, timeout))
             }
           }
         }
@@ -140,13 +149,6 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  private val controllerMgr = {
-    val ret = new ControllerManager
-    ret.start
-    ret.link(self)
-    ret
-  }
-
   /**
    * Create a page based on the uri
    */
@@ -222,10 +224,10 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   
   private def findAndImbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
     templateName match {
-      case None => Comment("FIX"+"ME No named specified for embedding") concat kids
+      case None => Comment("FIX"+"ME No named specified for embedding") ++ kids
       case Some(s) => {
         findTemplate(s.text, session, finder) match {
-          case None => Comment("FIX"+"ME Unable to find template named "+s.text) concat kids
+          case None => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
           case Some(s) => processSurroundAndInclude(s, session, finder)
         }
       }
@@ -500,9 +502,9 @@ invokeControllerAndView(controller, page, session)
 
 abstract class SessionMessage
 
-case class Setup(page: NodeSeq, http: Actor) extends SessionMessage
-case class SetGlobal(name: String, value: Any) extends SessionMessage
-case class UnsetGlobal(name: String) extends SessionMessage
+//case class Setup(page: NodeSeq, http: Actor) extends SessionMessage
+//case class SetGlobal(name: String, value: Any) extends SessionMessage
+//case class UnsetGlobal(name: String) extends SessionMessage
 /**
  * Sent from a session to a Page to tell the page to render itself and includes the sender that
  * the rendered response should be sent to

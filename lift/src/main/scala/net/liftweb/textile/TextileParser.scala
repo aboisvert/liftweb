@@ -1054,7 +1054,7 @@ object TextileParser {
   }
   
   case class Line(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = super.toHtml concat Text("\n")
+    override def toHtml : NodeSeq = super.toHtml ++ Text("\n")
   }
 
   case class Lst(elems : List[Textile]) extends ATextile(elems, Nil) {
@@ -1073,7 +1073,7 @@ object TextileParser {
   
   case class Paragraph(elems : List[Textile], attrs: List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "p", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+      Elem(null, "p", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
     }
     
   }
@@ -1102,7 +1102,7 @@ object TextileParser {
 
   case class Quoted(elems : List[Textile]) extends ATextile(elems, Nil) {
     override def toHtml : NodeSeq = {
-      (Unparsed("&#8220;") concat elems.flatMap{e => e.toHtml.toList}) concat Unparsed("&#8221;")
+      (Unparsed("&#8220;") ++ elems.flatMap{e => e.toHtml.toList}) ++ Unparsed("&#8221;")
     }
   }
 
@@ -1148,13 +1148,13 @@ object TextileParser {
   }
 
   case class Header(what : int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*)  concat Text("\n")
+    override def toHtml : NodeSeq = Elem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*)  ++ Text("\n")
   }
 
   case class BlockQuote(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      val par : NodeSeq = Elem(null, "p", null, TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
-      Elem(null, "blockquote", fromStyle(attrs), TopScope, par : _*)  concat Text("\n")
+      val par : NodeSeq = Elem(null, "p", null, TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, "blockquote", fromStyle(attrs), TopScope, par : _*)  ++ Text("\n")
     }
   }
   case class HTML(tag : String, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
@@ -1173,7 +1173,7 @@ object TextileParser {
   case class Footnote(elems : List[Textile], attrs : List[Attribute], num : String) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
       Elem(null, "p", fromStyle(AnyAttribute("id", "fn"+num) :: attrs), TopScope, 
-           (Elem(null, "sup", null, TopScope, Text(num) : _*) :: elems.flatMap{e => e.toHtml.toList}) : _*) concat Text("\n")
+           (Elem(null, "sup", null, TopScope, Text(num) : _*) :: elems.flatMap{e => e.toHtml.toList}) : _*) ++ Text("\n")
     }
   }
 
@@ -1194,31 +1194,31 @@ object TextileParser {
 
   case class Table(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "table", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+      Elem(null, "table", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
     }
   }
 
   case class TableRow(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "tr", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+      Elem(null, "tr", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
     }
   }
 
   case class TableElement(elems : List[Textile], isHeader : boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else elems.flatMap{e => e.toHtml.toList}) : _*) concat Text("\n")
+      Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else elems.flatMap{e => e.toHtml.toList}) : _*) ++ Text("\n")
     }
   }
 
   case class Bullet(elems : List[Textile], numbered : boolean) extends ATextile(elems, Nil) {
     override def toHtml : NodeSeq = {
-      Elem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+      Elem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
     }
   }
 
   case class BulletLine(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "li", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+      Elem(null, "li", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
     }
   }
 
@@ -1251,7 +1251,7 @@ object TextileParser {
     override def toHtml : NodeSeq = Elem(null, "sub", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
   }  
   case class Pre(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "pre", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) concat Text("\n")
+    override def toHtml : NodeSeq = Elem(null, "pre", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
   }  
   case class Span(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = Elem(null, "span", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)

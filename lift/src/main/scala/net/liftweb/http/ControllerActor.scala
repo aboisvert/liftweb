@@ -26,11 +26,11 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private var defaultXml_i: NodeSeq = _
   private var localFunctionMap: Map[String, (List[String]) => boolean] = Map.empty
   
-  private var askingWho: ControllerActor = _
-  private var whosAsking: Actor = _
-  private var answerWith: (Any) => boolean = _
+  private var askingWho: Option[ControllerActor] = None
+  private var whosAsking: Option[Actor] = None
+  private var answerWith: Option[(Any) => boolean] = None
   
-  def act = loop
+  def act = {this.trapExit = true; loop}
   
   def loop : Unit = {
     react(composeFunction)
@@ -42,6 +42,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   def lowPriority : PartialFunction[Any, Unit] = {
     case Never => loop
+    case s => Console.println("Controller "+this+" got unexpected message "+s)
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
@@ -53,8 +54,8 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     }
     
     case r @ AskRender(state, request) => {
-      if (askingWho != null) {
-      	askingWho forward r
+      if (!askingWho.isEmpty) {
+      	askingWho.get forward r
       } else {
         try {
           S.init(request) {
@@ -93,25 +94,24 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       loop
     }
     
-    case ('Exit , theSelf, reason: AnyRef) => {
-      self.exit(reason)
-      loop
-    }
-    
     case AskQuestion(what, who) => {
       startQuestion(what)
-      whosAsking = who
+      whosAsking = Some(who)
       loop
     }
     
     case AnswerQuestion(what, request) => {
       S.init(request) {
+        askingWho.foreach {
+          askingWho =>
 	askingWho.unlink(self)
-	askingWho ! ('Exit, self, "bye")
-	askingWho = null
-	if (answerWith(what)) reRender
-	answerWith = null
+	askingWho ! ('EXIT, self, "bye")
+	// askingWho.exit
+	this.askingWho = None
+	if (answerWith.map(f => f(what)) getOrElse false) reRender
+	answerWith = None
 	reply("Done")
+        }
       }
       loop
     }
@@ -122,8 +122,10 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   def compute: Map[String, Any] = Map.empty[String, Any]
   
   def reRender = {
-    val rendered = buildRendered(render)
-    owner.foreach{o => o ! rendered}
+    S.initIfUninitted {
+      val rendered = buildRendered(render)
+      owner.foreach(_ ! rendered)
+    }
   }
   
   def startQuestion(what: Any) {}
@@ -144,16 +146,11 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   def bind(vals: Map[String, NodeSeq]): NodeSeq = {
     Helpers.bind(vals, defaultXml)
-    
-    // _bind(vals, defaultXml)
   }
   
   private def buildRendered(in: NodeSeq): AnswerRender = {
-    S.getFunctionMap.foreach {
-      n =>
-	localFunctionMap = (localFunctionMap + (n._1 -> n._2))
-    }
-    val newMap = TreeMap.Empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null))}
+    localFunctionMap = localFunctionMap ++ S.getFunctionMap
+    val newMap = TreeMap.empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null))}
     AnswerRender(in, newMap, this)
   }
   
@@ -161,35 +158,16 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     who.start
     who.link(self)
     who ! PerformSetupController(owner.toList, Text(""))
-    askingWho = who
-    this.answerWith = answerWith
+    askingWho = Some(who)
+    this.answerWith = Some(answerWith)
     who ! AskQuestion(what, self)
   }
   
   def answer(answer: Any, request: RequestState) {
-    whosAsking !? AnswerQuestion(answer, request)
-    whosAsking = null
+    whosAsking.foreach(_ !? AnswerQuestion(answer, request))
+    whosAsking = None
     reRender
   }
-  
-  /*
-   def sessionDidActivate(se: HttpSessionEvent) = {
-   Console.println("Did activate")
-   }
-   def sessionWillPassivate(se: HttpSessionEvent) = {
-   val session = se.getSession
-   val atNames = session.getAttributeNames
-   while (atNames.hasMoreElements) {
-   atNames.nextElement match {
-   
-   case s: String => Console.println("Removed "+s); session.removeAttribute(s)
-   case o => Console.println("Didn't remove "+o)
-   }
-   }
-   Console.println("Did passivate real good")
-   }
-   */
-
 }
 
 sealed abstract class ControllerMessage

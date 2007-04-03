@@ -20,9 +20,9 @@ class Page extends Actor {
   private var localState = new HashMap[String, Any]
   private var request: RequestState = _
   private var updates = new HashMap[String, AnswerRender]
-  private var messageCallback: Map[String, ActionMessage] = TreeMap.Empty[String, ActionMessage]
+  private var messageCallback: Map[String, ActionMessage] = TreeMap.empty[String, ActionMessage]
   
-  def act = loop
+  def act = {this.trapExit = true ; loop}
   
   def loop {
     react(dispatcher)
@@ -38,6 +38,7 @@ class Page extends Actor {
     }*/
     
     case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) =>
+      try {
       this.globalState = sessionState
     this.request = state
     try {
@@ -85,9 +86,7 @@ class Page extends Actor {
         Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
       } else {
         try {
-
 	  Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
-	  
 	} catch {
 	  case rd : RedirectException => {   
 	    Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
@@ -104,12 +103,15 @@ class Page extends Actor {
       this.globalState = null
       this.request = null
     }
+} catch {
+  case e => e.printStackTrace
+}
     loop
     
     case ar: AnswerRender => updateRendered(ar)
     loop
     
-    case _ => loop
+    case unknown => Console.println("Page got "+unknown); loop
   }
   
   def updateRendered(ar: AnswerRender) {
@@ -161,9 +163,10 @@ class Page extends Actor {
 				request: RequestState): NodeSeq
   = 
     {
+    try {
       val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
-	(ctlMgr !? AskFindController(myType, myName, myFactory) match {
-	  case AnswerFoundController(controller) => controller
+      val ret = (ctlMgr !? (1500l, AskFindController(myType, myName, myFactory)) match {
+	  case Some(AnswerFoundController(controller)) => controller
 	  case _ => None
 	}).map{
 	  controller => 
@@ -172,12 +175,17 @@ class Page extends Actor {
 	  <span id={controller.uniqueId}>{
 	    (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
 	      case Some(view: AnswerRender) => updateCallbacks(view, request) 
-	      case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") concat kids
+	      case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") ++ kids
 	    }
 	  }</span>
 	} getOrElse {
-	  Comment("FIX"+"ME -- Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") concat kids
+	  Comment("FIX"+"ME - Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") ++ kids
 	}
+        
+      ret
+    } catch {
+      case e => e.printStackTrace; kids
+    }
     }
 
   private def updateCallbacks(in: AnswerRender, request: RequestState): NodeSeq = {

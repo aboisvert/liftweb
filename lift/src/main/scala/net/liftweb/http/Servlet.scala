@@ -56,7 +56,9 @@ class Servlet extends HttpServlet {
   }
   
   private def doServiceFile(request : HttpServletRequest , response : HttpServletResponse) = {
-    val in = getServletContext.getResourceAsStream(request.getRequestURI.substring(request.getContextPath.length))
+    Console.println("Servicing file {"+request.getRequestURI+"}") 
+        
+    val in = getServletContext.getResourceAsStream(request.getRequestURI.substring(request.getContextPath.length).trim)
     
     val li = request.getRequestURI.lastIndexOf('.')
     if (li != -1) {
@@ -68,8 +70,7 @@ class Servlet extends HttpServlet {
         case _ => "text/html"
       })
     }
-    
-    response.setHeader("Cache-Control", "max-age=3600, must-revalidate")
+
     val out = response.getOutputStream
     val ba = new Array[byte](2048)
 

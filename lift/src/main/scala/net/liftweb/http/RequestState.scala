@@ -22,7 +22,7 @@ object RequestState {
       
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
-    val params = TreeMap.Empty[String, List[String]] ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
+    val params = TreeMap.empty[String, List[String]] ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val uri = if (turi.length > 0) turi else "/"
     val contextPath = request.getContextPath
@@ -32,9 +32,11 @@ object RequestState {
 		     path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
 		     body, request.getContentType)
   }
+  
+  def nil = new RequestState(Nil, Map.empty, "", Nil, "", GetRequest(false), false, "", "")
 }
 
-[scala.serializable]
+@scala.serializable
 class RequestState(val paramNames: List[String],
 		   val params: Map[String, List[String]],
 		   val uri: String,val path: List[String],
@@ -57,7 +59,7 @@ class RequestState(val paramNames: List[String],
   }
   
   def createNotFound = {
-    Response(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.Empty, 404)
+    Response(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
   }
   
   def showException(e: Throwable) = {

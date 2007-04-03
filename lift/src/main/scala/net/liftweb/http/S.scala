@@ -28,6 +28,12 @@ object S {
   private val functionMap = new ThreadGlobal[HashMap[String, (List[String]) => boolean]];
   private val _notice = new ThreadGlobal[ArrayBuffer[(NoticeType.Value, NodeSeq)]];
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
+  private val inS = {
+    val ret = new ThreadGlobal[boolean];
+    ret := false
+    ret           
+  }
+  
   /**
    * Get the current HttpServletSession
    *
@@ -58,6 +64,7 @@ object S {
    * Initialize the current "State" session
   */
   def init[B](request : RequestState)(f : => B) : B = {
+    inS.doWith(true) {
     _oldNotice.doWith(Nil) {
     initNotice {
     functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
@@ -67,19 +74,19 @@ object S {
     }
     }
     }
+    }
+  }
+  
+  def initIfUninitted[B](f: => B) : B = {
+    if (inS.value) f
+    else init(RequestState.nil)(f)
   }
   
   def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)])(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
-    initNotice {
-    functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
       this._servletRequest.doWith(servletRequest) {
-	this._request.doWith(request) {
-          this.currCnt.doWith(0)(f)
-	}
+        init(request)(f)
       }
-    }
-    }
     }
   }
   
@@ -105,7 +112,12 @@ object S {
     }
   }
   
-  def getFunctionMap: Map[String, (List[String]) => boolean] = functionMap.value
+  def getFunctionMap: Map[String, (List[String]) => boolean] = {
+    functionMap.value match {
+    case null => Map.empty
+    case s => s
+    }
+  }
 
   /*
   /**
