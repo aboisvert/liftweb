@@ -28,7 +28,7 @@ trait BaseMappedField {
    */
   def getTargetSQLType : int
   
-  def validate: List[ValidationIssues]
+  def validate: List[ValidationIssue]
   /**
    * Given the driver type, return the string required to create the column in the database
    */
@@ -244,7 +244,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     if (t == null) "" else t.toString
   }
   
-  def validate : List[ValidationIssues] = Nil
+  def validate : List[ValidationIssue] = Nil
 
   def convertToJDBCFriendly(value: T): Object
 
@@ -256,7 +256,7 @@ object MappedField {
   // implicit def mapFromOption[T, A<:Mapper[A]](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
 }
 
-case class ValidationIssues(field : BaseMappedField, msg : String)
+case class ValidationIssue(field : BaseMappedField, msg : String)
 
 trait IndexedField[O] requires BaseMappedField extends BaseIndexedField {
   def convertKey(in : String) : Option[O]

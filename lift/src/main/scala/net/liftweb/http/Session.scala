@@ -283,11 +283,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  private def findSnippet(snippetName: Option[Seq[Node]], kids: NodeSeq, request: RequestState, finder: (String) => InputStream) : NodeSeq = {
-    snippetName match {
+  private def processSnippet(snippetName: Option[Seq[Node]], attrs: MetaData, kids: NodeSeq) : NodeSeq = {
+    val ret = snippetName match {
       case None => kids
       case Some(ns) => {
-        val (cls, method) = splitColonPair(ns.text, null, "render")
+        S.invokeSnippet(ns.text) {
+          S.locateSnippet(ns.text).map(_(kids)) getOrElse {
+            val (cls, method) = splitColonPair(ns.text, null, "render")
         findSnippetClass(cls) match {
 	  case None => kids
 	  case Some(clz) => {
@@ -296,11 +298,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               case _ => kids
             }
 	  }
-
-          
+        }
+        }
         }
       }
     }
+    
+    attrs.get("form").map(ft => <form action={S.request.uri} method={ft.text}>{ret}</form>) getOrElse ret
   }
   
   private def processSurroundAndInclude(in : NodeSeq, session : RequestState, finder: (String) => InputStream) : NodeSeq = {
@@ -309,7 +313,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         v match {
           case Elem("lift", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)}
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => {findAndImbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) => {findSnippet(attr.get("type"), processSurroundAndInclude(kids, session, finder), session, finder)}
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder))}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)}
           case _ => {v}
         }
@@ -324,36 +328,9 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     
     findTemplate(name, session, finder) match {
       case None => kids
-      case Some(s) => processBind(processSurroundAndInclude(s, session, finder), at match {case None => "main"; case _ => at.get.text}, kids)
+      case Some(s) => processBind(processSurroundAndInclude(s, session, finder), at.map(_.text) getOrElse "main", kids)
     }
   }
-
-  
-  /*
-   private def serviceRequestWithTemplate(session: RequestState) : Option[Response] = {
-   findVisibleTemplate(session.uri, session) match {
-   case None => None
-   case Some(s) => {
-   processTemplate(s, session) match {
-   case None => None
-   case s @ Some(_) => s
-   }
-   }
-   }
-   }
-   
-   private def serviceRequest(session: RequestState) : Response = {
-   serviceRequestWithTemplate(session) match {
-   case Some(s) => s
-   case None => doRailsStyleDispatch(session) match {
-   case None => session.createNotFound
-   case Some(s) => s
-   }
-   }
-   }*/
-  
-
-  
 
   private val suffixes = List("xhtml", "htm", "_html", "xml", "html", "")
   

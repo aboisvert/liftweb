@@ -63,10 +63,10 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
     hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
   }
   
-  override def validate : List[ValidationIssues] = {
+  override def validate : List[ValidationIssue] = {
     if (!invalidPw && password.get != "*") Nil
-    else if (invalidPw) List(ValidationIssues(this, invalidMsg))
-    else List(ValidationIssues(this, "Password must be set"))
+    else if (invalidPw) List(ValidationIssue(this, invalidMsg))
+    else List(ValidationIssue(this, "Password must be set"))
   }
   
   def convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")

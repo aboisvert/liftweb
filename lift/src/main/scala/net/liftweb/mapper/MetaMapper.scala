@@ -305,12 +305,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     mappedColumns.elements.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
   
-  def validate(toValidate : A) : List[ValidationIssues] = {
+  def validate(toValidate : A) : List[ValidationIssue] = {
     val saved_? = this.saved_?(toValidate)
     _beforeValidation(toValidate)
     if (saved_?) _beforeValidationOnUpdate(toValidate) else _beforeValidationOnCreate(toValidate)
     
-    var ret : List[ValidationIssues] = Nil
+    var ret : List[ValidationIssue] = Nil
     
     mappedFieldArray.foreach{f => ret = ret ::: ??(f._2, toValidate).validate}
 

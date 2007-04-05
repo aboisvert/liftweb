@@ -67,6 +67,7 @@ class Servlet extends HttpServlet {
         case "css" => "text/css"
         case "png" => "image/png"
         case "gif" => "image/gif"
+        case "ico" => "image/x-icon"
         case _ => "text/html"
       })
     }

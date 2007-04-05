@@ -9,10 +9,10 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.mutable.{Map, HashMap, ArrayBuffer}
-import scala.xml.{NodeSeq, Elem, Text}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal}
-import net.liftweb.mapper.Safe
+import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
 /**
  * An object representing the current state of the HTTP request and response
@@ -33,6 +33,12 @@ object S {
     ret := false
     ret           
   }
+  private val _invokedAs = {
+    val ret = new ThreadGlobal[String];
+    ret := ""
+    ret                  
+  }
+  private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   
   /**
    * Get the current HttpServletSession
@@ -45,6 +51,13 @@ object S {
    * Test the current request to see if it's a POST
    */
   def post_? = request.post_?
+
+  /**
+   * Test the current request to see if it's a POST
+   */
+  def get_? = request.get_?
+  
+  def redirectTo[T](where: String): T = {throw new RedirectException("Not Found", where)}
   
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
   
@@ -62,19 +75,26 @@ object S {
   
   /**
    * Initialize the current "State" session
-  */
+   */
   def init[B](request : RequestState)(f : => B) : B = {
-    inS.doWith(true) {
     _oldNotice.doWith(Nil) {
-    initNotice {
-    functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
-      this._request.doWith(request) {
-        this.currCnt.doWith(0)(f)
+      _init(request)(f)
+    }
+
+  }
+  
+  private def _init[B](request: RequestState)(f : => B): B = {
+    snippetMap.doWith(new HashMap) {
+      inS.doWith(true) {
+          initNotice {
+            functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
+              this._request.doWith(request) {
+                this.currCnt.doWith(0)(f)
+              }
+            }
+          }
+        }
       }
-    }
-    }
-    }
-    }
   }
   
   def initIfUninitted[B](f: => B) : B = {
@@ -85,7 +105,7 @@ object S {
   def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)])(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
       this._servletRequest.doWith(servletRequest) {
-        init(request)(f)
+        _init(request)(f)
       }
     }
   }
@@ -103,6 +123,9 @@ object S {
     }
   }
   
+  def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
+  def invokedAs = _invokedAs.value
+  
   def set(name: String, value: Option[String]) {
     if (_servletRequest.value ne null) {
       value match {
@@ -114,71 +137,23 @@ object S {
   
   def getFunctionMap: Map[String, (List[String]) => boolean] = {
     functionMap.value match {
-    case null => Map.empty
-    case s => s
-    }
-  }
-
-  /*
-  /**
-  * Get the value of a variable with:
-  * val myVariable = S("foo").asInstanceOf(List[int])
-  */
-  def apply[T](n : String) : Option[T] = {
-    variables.value match {
-      case map : Map[_,_] => {
-        map.get(n.toLowerCase) match {
-          case v @ Some(_) if (v.get.isInstanceOf[T]) => {
-            val tv = v.get
-            Some(tv.asInstanceOf[T])
-          }
-          case _ => {None}
-        }
-      }
-      case _ => {None}
+      case null => Map.empty
+      case s => s
     }
   }
   
-  /**
-  * Set the value of a variable with:
-  * S("foo") = 1 :: 2 :: 3 :: Nil
-  */
-  def update(n : String, v : Any) : Any = {
-    if (variables.value != null) {
-      v match {
-	case ev @Some(_) => {variables.value += n.toLowerCase -> ev.get}
-	case _ => {variables.value += n.toLowerCase -> v}
-      }
-    }
-    v
-  }
+  def locateSnippet(name: String): Option[NodeSeq => NodeSeq] = snippetMap.value.get(name)
+  
+  def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
 
-  /**
-   * "Push" the current variable state.  The current variables are snapshotted and preserved.  When
-   * the closure is done executing, the "snapshotted" variables are restored.
-   */
-  def push[B](f : => B) : B = {
-    variables.doWith(variables.value.clone)(f)
-  }
-
-  /**
-   * Returns a string representation of the variable value or a zero length
-   * string if the variable is not found
-   */
-  def nice(n : String) : String = {
-    val v = variables.value.get(n)
-
-    if (v == None || v == null) "" else v.asInstanceOf[Some[Any]].get.toString
-  }
-  */
-    
-  def f(in: List[String] => boolean): String = {
+ 
+  def fL(in: List[String] => boolean): String = {
     val name = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(name, in)
     name
   }
   
-  def f(name: String, inf: List[String] => boolean): String = {
+  def fL(name: String, inf: List[String] => boolean): String = {
     addFunctionMap(name, inf)
     name
   }
@@ -191,6 +166,54 @@ object S {
     functionMap.value += (ret -> f)
     ret
   }
+
+  private def booster(lst: List[String], func: String => Any):boolean  = {
+    lst.foreach(v => func(v))
+    true
+  }
+  
+  sealed abstract class FormElementPieces
+  case class Id(name: String) extends FormElementPieces
+  case class Cls(name: String) extends FormElementPieces
+  case class Val(value: String) extends FormElementPieces
+  
+  private def wrapFormElement(in: Elem, params: List[FormElementPieces]): Elem = {
+    params match {
+      case Nil => in
+      case Id(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("id", name, Null), rs)
+      case Cls(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("class", name, Null), rs)
+      case Val(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("value", name, Null), rs)
+    }
+  }
+  
+  private def makeFormElement(name: String, func: String => Any, params: Seq[FormElementPieces]): NodeSeq =
+    wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
+ 
+    
+  def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
+  def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)
+  def hidden(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params)
+  def submit(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params)
+
+  private def makeFormElementL(name: String, func: List[String] => boolean, params: Seq[FormElementPieces]): NodeSeq =
+    wrapFormElement(<input type={name} name={fL(func)}/>, params.toList)
+  
+  def textL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("text", func, params)
+  def passwordL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("password", func, params)
+  def hiddenL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("hidden", func, params)
+  def submitL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("submit", func, params)
+  
+  def f(in: String => Any): String = {
+    val name = "F"+System.nanoTime+"_"+randomString(3)
+    addFunctionMap(name, {p: List[String] => booster(p, in)})
+    name
+  }
+  
+  def f(name: String, inf: String => Any): String = {
+    addFunctionMap(name, {p: List[String] => booster(p, inf)})
+    name
+  }
+  
   
   def params(n: String) = request.params(n)
   def param(n: String): Option[String] = request.param(n)
@@ -201,6 +224,8 @@ object S {
   def notice(n: NodeSeq) {_notice.value += (NoticeType.Notice, n)}
   def warning(n: String) {warning(Text(n))}
   def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n)}
+  
+  def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, <span><b>{i.field.name}</b>: {i.msg}</span>)}}
   
   def getNotices = _notice.value.toList
   

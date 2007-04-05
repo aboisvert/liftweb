@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem, Node}
+import scala.xml.{NodeSeq, Elem, Node, Text}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -42,14 +42,7 @@ object Helpers {
   
   val validSuffixes = {
     val ret = new HashSet[String];
-    // ret += "html" // serve html files using the servlet
-    ret += "png"
-    ret += "js"
-    ret += "css"
-    ret += "jpg"
-    ret += "gif"
-    ret += "tiff"
-    ret += "jpeg"
+    ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
     ret
   }
   
@@ -100,6 +93,40 @@ object Helpers {
 	}
       }
     }
+  }
+  
+  case class BindParam(name: String, value: NodeSeq)
+  implicit def stringThingToBindParam[T](p: (String, T)): BindParam = {
+    p._2 match {
+      case null => BindParam(p._1, Text("null"))
+      case s: Symbol => BindParam(p._1, Text(s.name))
+      case s: String => BindParam(p._1, Text(s))
+      case n: NodeSeq => BindParam(p._1, n)
+      case Some(s) => stringThingToBindParam((p._1, s))
+      case v => BindParam(p._1, Text(p._2.toString))
+    }
+  }
+  implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
+  
+  def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
+    val map: scala.collection.immutable.Map[String, NodeSeq] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p.value))
+    
+    def in_bind(xml:NodeSeq): NodeSeq = {
+      xml.flatMap {
+        node =>
+        node match {
+        case s : Elem if (node.prefix == namespace) => {
+          map.get(node.label) match {
+              case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+              case Some(ns) => ns
+              }
+          }
+        case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, in_bind(node.child) : _*)
+        case n => node
+        }
+      }
+    }
+    in_bind(xml)
   }
   
   def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
@@ -493,19 +520,21 @@ object Helpers {
     }
   }
   
+  def millis = System.currentTimeMillis
+  
   def printTime[T](msg: String)(f: => T): T = {
-    val start = System.currentTimeMillis
+    val start = millis
     try {
       f
     } finally {
-      Console.println(msg+" took "+(System.currentTimeMillis - start)+" Milliseconds")
+      Console.println(msg+" took "+(millis - start)+" Milliseconds")
     }
   }
   
   def calcTime(f: => Any): long = {
-    val start = System.currentTimeMillis
+    val start = millis
     f
-    System.currentTimeMillis - start
+    millis - start
   }
   
   def createInvoker(name: String, on: AnyRef): Option[() => Option[Any]] = {
@@ -719,8 +748,8 @@ object Helpers {
     def hours = TimeSpan(Helpers.hours(len))
     def days = TimeSpan(Helpers.days(len))
     def weeks = TimeSpan(Helpers.weeks(len))
-    def later = TimeSpan(len + System.currentTimeMillis)
-    def ago = TimeSpan(System.currentTimeMillis - len)
+    def later = TimeSpan(len + millis)
+    def ago = TimeSpan(millis - len)
     
     override def equals(cmp: Any) = {
       cmp match {
