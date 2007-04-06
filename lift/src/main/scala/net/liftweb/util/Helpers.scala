@@ -511,7 +511,6 @@ object Helpers {
   def toDate(in: Any): Date = {
     in match {
       case null => null
-      case d : java.sql.Date => new Date(d.getTime)
       case d : java.util.Date => d
       case lng : java.lang.Long => new Date(lng.longValue)
       case lng : long => new Date(lng)
