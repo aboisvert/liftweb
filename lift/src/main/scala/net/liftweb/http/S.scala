@@ -126,12 +126,15 @@ object S {
   def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
   def invokedAs = _invokedAs.value
   
-  def set(name: String, value: Option[String]) {
+  def set(name: String, value: String) {
     if (_servletRequest.value ne null) {
-      value match {
-	case None => _servletRequest.value.getSession.removeAttribute(name)
-	case Some(vlue) => {_servletRequest.value.getSession.setAttribute(name, vlue)}
-      }
+      _servletRequest.value.getSession.setAttribute(name, value)
+    }
+  }
+  
+  def unset(name: String) {
+    if (_servletRequest.value ne null) {
+      _servletRequest.value.getSession.removeAttribute(name)
     }
   }
   

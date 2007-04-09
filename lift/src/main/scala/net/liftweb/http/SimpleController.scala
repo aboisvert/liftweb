@@ -39,12 +39,11 @@ trait SimpleController {
   }
   }
   
-  def set(name: String, value: Option[String]) {
-    value match {
-    case None => httpRequest.getSession.removeAttribute(name)
-    case Some(s) => {httpRequest.getSession.setAttribute(name, s)}
+  def set(name: String, value: String) {
+    httpRequest.getSession.setAttribute(name, value)
   }
-  }
+  
+  def unset(name: String) {httpRequest.getSession.removeAttribute(name)}
       
   /*
    def apply(name: String): Option[Any] = {
