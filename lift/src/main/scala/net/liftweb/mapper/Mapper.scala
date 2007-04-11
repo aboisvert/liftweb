@@ -37,11 +37,11 @@ trait Mapper[A<:Mapper[A]] {
     }
   }
   
-  def htmlLine : Seq[Node] = {
+  def htmlLine : NodeSeq = {
     getSingleton.doHtmlLine(this)
   }
   
-  def asHtml : Seq[Node] = {
+  def asHtml : NodeSeq = {
     getSingleton.asHtml(this)
   }
   

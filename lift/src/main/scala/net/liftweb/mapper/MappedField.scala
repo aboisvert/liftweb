@@ -206,9 +206,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   
   protected def i_obscure_!(in : T) : T
   
-  def asString = displayName + "=" + get match {
-    case null => ""
-    case v @ _ => v.toString}
+  def asString = displayName + "=" + toString
   
   def dbColumnCount = 1
   

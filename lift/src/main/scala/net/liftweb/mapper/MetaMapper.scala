@@ -449,9 +449,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 		case Types.VARCHAR => {
 		  val bsl = tField.buildSetStringValue(fieldInfo.get, colName)
 		  (rs: ResultSet, pos: int, objInst: A) => bsl(objInst, rs.getString(pos))}
-		case Types.DATE | Types.TIME | Types.TIMESTAMP =>{
-		  val bsl = tField.buildSetDateValue(fieldInfo.get, colName)
-		  (rs: ResultSet, pos: int, objInst: A) => bsl(objInst, rs.getDate(pos))}
+		case Types.DATE | Types.TIME | Types.TIMESTAMP =>
+		  val bsl = tField.buildSetDateValue(fieldInfo.get, colName)                  
+		  (rs: ResultSet, pos: int, objInst: A) => bsl(objInst, rs.getTimestamp(pos))
 		case Types.BOOLEAN | Types.BIT =>{
 		  val bsl = tField.buildSetBooleanValue(fieldInfo.get, colName)
 		  (rs: ResultSet, pos: int, objInst: A) => bsl(objInst, rs.getBoolean(pos), rs.wasNull)}

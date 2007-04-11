@@ -14,7 +14,7 @@ import java.util.Date
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[long, O]](owner: T, foreign: => KeyedMetaMapper[long, O]) 
    extends MappedLong[T](owner) with MappedForeignKey[long,T,O] with BaseForeignKey {
-  def defined_? = i_get_! != defaultValue
+  def defined_? = /*i_get_! != defaultValue &&*/ i_get_! > 0L
   
   override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
   override def getJDBCFriendly = if (defined_?) new Long(get) else null
@@ -27,12 +27,13 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[long, O]](owner: T, forei
             
   override def dbForeignKey_? = true
 
-      
       /**
       * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
       * is done with the schemification.
       */
     def dbAddedForeignKey: Option[() => unit] = None
+    
+    override def toString = if (defined_?) super.toString else "NULL"
 }
 
 class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[long] {

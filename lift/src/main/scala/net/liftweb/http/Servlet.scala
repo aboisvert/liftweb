@@ -100,6 +100,7 @@ class Servlet extends HttpServlet {
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
+    req.setCharacterEncoding("UTF-8")
     printTime("Service request "+req.getRequestURI) {
     Servlet.setContext(getServletContext)
     req.getMethod.toUpperCase match {
