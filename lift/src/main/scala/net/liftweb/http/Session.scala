@@ -126,6 +126,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
             else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
               page.forward(AskRenderPage(state, xml, sessionState, sender, theControllerMgr, timeout))
+              if (!state.ajax_?) notices = Nil
             }
           }
         }
@@ -293,7 +294,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         findSnippetClass(cls) match {
 	  case None => kids
 	  case Some(clz) => {
-            ((if (kids.length > 0) invokeMethod(clz, method, Array(Group(kids))) else None) orElse invokeMethod(clz, method)) match {
+            ((invokeMethod(clz, method, Array(Group(kids)))) orElse invokeMethod(clz, method)) match {
               case Some(md: NodeSeq) => md
               case _ => kids
             }
@@ -313,7 +314,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         v match {
           case Elem("lift", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)}
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => {findAndImbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder))}
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_?) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder))}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)}
           case _ => {v}
         }

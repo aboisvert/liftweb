@@ -61,7 +61,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
     }
   }
   
-  override def db_display_? = false
+  override def dbDisplay_? = false
   
   def convertKey(in : long) : Option[long] = {
     if (in < 0L) None

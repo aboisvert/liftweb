@@ -22,7 +22,7 @@ class Chat extends ControllerActor {
   
 
   override def lowPriority : PartialFunction[Any, Unit] = {
-    case ChatServerUpdate(value) => {
+    val ret: PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => {
      try {
       currentData = value
       reRender
@@ -30,7 +30,10 @@ class Chat extends ControllerActor {
 case e => e.printStackTrace
 }
       loop
+    } 
     }
+    
+    ret orElse super.lowPriority
   } 
   
   def render = {
@@ -44,7 +47,7 @@ try {
         cl =>
           <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>
       }.toList
-    }</ul><lift:form method="POST">
+    }</ul><lift:form method="POST" action=".">
     <input name={inputName} type="text" value=""/><input value="Send" type="submit"/>
     </lift:form></span>
 } catch {

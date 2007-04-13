@@ -246,7 +246,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
 
   def convertToJDBCFriendly(value: T): Object
 
-  def asHtml : Node = Text(asString)
+  def asHtml : Node = Text(toString)
 }
 
 object MappedField {
@@ -262,7 +262,7 @@ trait IndexedField[O] requires BaseMappedField extends BaseIndexedField {
   def convertKey(in: long): Option[O]
   def convertKey(in : AnyRef) : Option[O];
   def makeKeyJDBCFriendly(in : O) : AnyRef
-  def db_display_? = false
+  def dbDisplay_? = false
 }
 
 trait BaseIndexedField requires BaseMappedField {

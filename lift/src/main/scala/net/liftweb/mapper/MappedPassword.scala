@@ -12,26 +12,20 @@ import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
-import scala.xml.{Node, Text, Elem}
+import scala.xml.{Node, Text, NodeSeq}
 import java.util.Date
+import net.liftweb.http.S
+
+object MappedPassword {
+  val blankPw = "*******"
+}
 
 class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
-
-  /*
-   override def i : Elem = {
-   val name = S.ae({s => this ::= s})
-   <span><input type='password' name={name} value={get.toString}/>&nbsp;
-   repeat<input type='password' name={name} value={get.toString}/></span>
-   }
-   */
-  
   override def dbColumnCount = 2
   
   override def dbColumnNames(in : String) = in.toLowerCase+"_pw" :: in.toLowerCase+"_slt" :: Nil
 
   def salt = this.salt_i
-  
-  override def asHtml : Node = Text(asString)
   
   private var password = Lazy{defaultValue}
   private val salt_i = Lazy{Safe.randomString(16)}
@@ -40,10 +34,10 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   
   protected def i_set_!(value : String) : String = {
     password() = value match {
-      case "*" | null | "*******" if (password.get.length < 3) => {invalidPw = true ; invalidMsg = "Password to short" ; "*"}
-      case "*******" => {return "*"}
+      case "*" | null | MappedPassword.blankPw if (value.length < 3) => {invalidPw = true ; invalidMsg = "Password must be set" ; "*"}
+      case MappedPassword.blankPw => {return "*"}
       case _ if (value.length > 4) => {invalidPw = false; hash("{"+value+"} salt={"+salt_i.get+"}")}
-      case _ => {invalidPw = true ; invalidMsg = "Password to short"; "*"}
+      case _ => {invalidPw = true ; invalidMsg = "Password too short"; "*"}
     }
     this.dirty_?( true)
     "*"
@@ -52,7 +46,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   override def ::=(f : Any) : String = {
     f match {
       case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this := a(0)}
-      case l : List[String] if (l.length == 2 && l(0) == l(1)) => {this := l(0)}
+      case l : List[String] if (l.length == 2 && l.head == l(1)) => {this := l.head}
       case _ => {invalidPw = true; invalidMsg = "Passwords do not match"}
     }
     get
@@ -81,10 +75,19 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   override def writePermission_? = true
   override def readPermission_? = true
 
-  protected def i_get_! = "*******"
+  protected def i_get_! = MappedPassword.blankPw
 
   protected def i_obscure_!(in : String) : String = in
   
+  /**
+     * Create an input field for the item
+     */
+    override def toForm : NodeSeq = {
+       val funcName = S.mapFunction(name, {s => this ::= s; true})
+       <span><input type='password' name={funcName} value={get.toString}/>&nbsp;
+       repeat<input type='password' name={funcName} value={get.toString}/></span>
+    }
+    
   
   def getJDBCFriendly(columnName : String) = {
     if (columnName.endsWith("_slt")) {

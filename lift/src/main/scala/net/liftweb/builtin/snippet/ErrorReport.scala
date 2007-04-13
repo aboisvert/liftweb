@@ -11,7 +11,7 @@ import net.liftweb.http._
 import scala.xml._
 
 class ErrorReport {
-  def render(styles: Group): NodeSeq = {
+  def render(styles: Group): NodeSeq =
     List((S.errors, (styles \\ "error_msg"), "Error", (styles \\ "error_class")),
         (S.warnings, (styles \\ "warning_msg"), "Warning", (styles \\ "warning_class")),
         (S.notices, (styles \\ "notice_msg"), "Notice", (styles \\ "notice_class"))).flatMap {
@@ -30,5 +30,5 @@ class ErrorReport {
         else <div>{title}:{msgList}</div>
       }
     }
-  }
+
 }

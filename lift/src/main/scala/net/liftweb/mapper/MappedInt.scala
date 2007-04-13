@@ -35,7 +35,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
     }
   }
   
-  override def db_display_? = false
+  override def dbDisplay_? = false
   
   def convertKey(in : int) : Option[int] = {
     if (in < 0) None

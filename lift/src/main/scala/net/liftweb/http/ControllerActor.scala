@@ -18,7 +18,7 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
   
-  val uniqueId = randomString(20)
+  val uniqueId = "Id"+randomString(20)
   
   private var globalState: Map[String, Any] = _
   
@@ -42,7 +42,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   def lowPriority : PartialFunction[Any, Unit] = {
     case Never => loop
-    case s => Console.println("Controller "+this+" got unexpected message "+s)
+    case s => Console.println("Controller "+this+" got unexpected message "+s); loop
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
@@ -104,17 +104,18 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       S.init(request) {
         askingWho.foreach {
           askingWho =>
+          reply("Done")
 	askingWho.unlink(self)
-	askingWho ! ('EXIT, self, "bye")
-	// askingWho.exit
+        askingWho ! DoExit
 	this.askingWho = None
 	if (answerWith.map(f => f(what)) getOrElse false) reRender
 	answerWith = None
-	reply("Done")
         }
       }
       loop
     }
+
+    case DoExit => self.exit("Politely Asked to Exit")
   }
   
   def render: NodeSeq
@@ -164,6 +165,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   }
   
   def answer(answer: Any, request: RequestState) {
+    Console.println("Answering with "+answer+" to "+whosAsking)
     whosAsking.foreach(_ !? AnswerQuestion(answer, request))
     whosAsking = None
     reRender
@@ -182,4 +184,5 @@ case class AnswerQuestion(what: Any, session: RequestState) extends ControllerMe
 case class StartedUpdate(id: String) extends ControllerMessage
 case class FinishedUpdate(id: String) extends ControllerMessage
 
+case object DoExit extends ControllerMessage
 
