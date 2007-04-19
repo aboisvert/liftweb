@@ -16,8 +16,8 @@ import net.liftweb.textile._
 
 class Wiki {
   /**
-   * Get the XHTML containing a list of users
-   */
+    * Display the Textile marked up wiki or an edit box
+    */
   def main: NodeSeq = {
     val pageName = S.param("wiki_page") getOrElse "HomePage" // set the name of the page
     
