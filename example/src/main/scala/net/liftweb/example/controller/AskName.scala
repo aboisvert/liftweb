@@ -7,7 +7,7 @@ class AskName extends ControllerActor {
   def render = {
     val inputName = uniqueId+"_name"
 
-      S.addFunctionMap(inputName,{in:List[String] => answer(in.head, S.request); true})
+      S.addFunctionMap(inputName,{in => answer(in.head, S.request); true})
     
     val ret = <lift:form method="post" action=".">
     <div>What is your username?</div>

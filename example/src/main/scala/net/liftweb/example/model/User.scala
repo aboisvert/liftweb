@@ -41,7 +41,8 @@ class User extends ProtoUser[User] {
 /**
  * Fix the database
  */
-object FixUp {
+/*
+   object FixUp {
   def insureWeHaveATable {
     DB.use {
       db =>
@@ -80,3 +81,4 @@ object FixUp {
   }
 
 }
+*/

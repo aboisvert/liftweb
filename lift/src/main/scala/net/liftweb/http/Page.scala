@@ -12,15 +12,12 @@ import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAt
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
+import net.liftweb.util.ActorPing
 
 class Page extends Actor {
-  // private var pageXml : NodeSeq = _
-  // private var theSession: Session = _
-  private var globalState: TreeMap[String, Any] = _
-  private var localState = new HashMap[String, Any]
-  private var request: RequestState = _
   private var updates = new HashMap[String, AnswerRender]
   private var messageCallback: Map[String, ActionMessage] = TreeMap.empty[String, ActionMessage]
+  private var pendingAjax: List[AjaxRerender] = Nil
   
   def act = {this.trapExit = true ; loop}
   
@@ -30,85 +27,20 @@ class Page extends Actor {
   
   def dispatcher: PartialFunction[Any, Unit] = {
     case "shutdown" => self.exit("shutdown")
-    /*
-    case PerformSetupPage(page, session) => {
-      pageXml = page
-      this.theSession = session
-      loop
-    }*/
+
     
-    case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) =>
-      try {
-      this.globalState = sessionState
-    this.request = state
-    try {
-      processParameters(state)
-      
-      val resp : Response = if (state.ajax_?) {
-        // wait for redraws
-        val endAt = System.currentTimeMillis + (timeout - 1000L)
-        
-        while (updates.isEmpty && endAt > System.currentTimeMillis) {
-          receiveWithin(endAt - System.currentTimeMillis) {
-            case ar: AnswerRender => updateRendered(ar)
-            
-            case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) => {
-	      processParameters(state)
-	      val resp: Response = if (state.ajax_? ) {
-		Response(Unparsed(""),
-			 Map("Content-Type" -> "text/javascript"), 200)
-	      } else {
-		try {
-		  Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
-		} catch {
-                  case rd : RedirectException => {   
-                    Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
-                             ListMap("Location" -> rd.to),
-                             302)
-                  }
-                  case e  => state.showException(e)
-		}
-	      }
-	      reply(resp)
-            }
-            case TIMEOUT => null
-          }
-        }
-	
-        val ret = updates.map{
-          pl => 
-            val uid = pl._1
-          val ar = pl._2
-          val html = updateCallbacks(ar, state).toString
-          "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
-        }.mkString("", "\n", "")
-        
-        Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
-      } else {
-        try {
-	  Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
-	} catch {
-	  case rd : RedirectException => {   
-	    Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
-                     ListMap("Location" -> rd.to),
-                     302)
-	  }
-	  case e  => state.showException(e)
-	  
-	}
-      }
-      this.updates = new HashMap
-      reply(resp)
-    } finally {
-      this.globalState = null
-      this.request = null
-    }
-} catch {
-  case e => e.printStackTrace
-}
+    case AskRenderPage(state, pageXml, sender, controllerMgr, timeout) =>
+      performRender(state, pageXml, sender, controllerMgr, timeout)
     loop
     
     case ar: AnswerRender => updateRendered(ar)
+    loop
+    
+    case ajr : AjaxRerender =>
+    if (pendingAjax.contains(ajr)) {
+      ajr.sendTo ! Response(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+      pendingAjax = pendingAjax.remove(_ eq ajr)
+    }
     loop
     
     case unknown => Console.println("Page got "+unknown); loop
@@ -116,11 +48,59 @@ class Page extends Actor {
   
   def updateRendered(ar: AnswerRender) {
     updates(ar.by.uniqueId) = ar
+    if (!pendingAjax.isEmpty) {
+      pendingAjax.foreach(ar => ar.sendTo ! buildResponseFromUpdates(ar.state))
+      pendingAjax = Nil
+      updates.clear
+    }
   }
   
+  private def buildResponseFromUpdates(state: RequestState): Response = {
+    val ret = updates.map{
+      pl => 
+        val uid = pl._1
+      val ar = pl._2
+      val html = updateCallbacks(ar, state).toString
+      "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
+    }.mkString("", "\n", "")
+    
+    Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
+  }
+  
+  private def performRender(state: RequestState, pageXml: NodeSeq,
+      sender: Actor, controllerMgr: ControllerManager, timeout: long) {
+      processParameters(state)
+      
+      if (state.ajax_? && updates.isEmpty) {
+        val ajaxer = AjaxRerender(System.currentTimeMillis + (timeout - 1000L), sender, state)
+        ActorPing.schedule(self, ajaxer, timeout - 1000L)
+        pendingAjax = ajaxer :: pendingAjax
+      } else {
+        val resp : Response = if (state.ajax_?) {
+          val ret = buildResponseFromUpdates(state)
+          updates.clear
+          ret
+        } else {
+          try {
+            Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
+          } catch {
+            case rd : RedirectException => {   
+              Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+                       ListMap("Location" -> rd.to),
+                       302)
+            }
+            case e  => state.showException(e)
+            
+          }
+        }
+        sender ! resp
+      }
+  }
+  
+  /*
   def apply[T](name: String): Option[T] = {
     (localState.get(name) match {
-      case None => globalState.get(name)
+      case None => None // globalState.get(name)
       case s @ Some(_) => s
     }) match {
       case None => None
@@ -131,7 +111,7 @@ class Page extends Actor {
   
   def update(key: String, value: Any) = {
     localState(key) = value
-  }
+  }*/
   
   /*
   def globalUpdate(key: String, value: Any) = {
@@ -173,7 +153,7 @@ class Page extends Actor {
 	    // set up the controller
 	    controller ! PerformSetupController(List(this), kids)
 	  <span id={controller.uniqueId}>{
-	    (controller !? (600L, AskRender(globalState ++ localState.keys.map{k => (k, localState(k))}, request))) match {
+	    (controller !? (600L, AskRender(request))) match {
 	      case Some(view: AnswerRender) => updateCallbacks(view, request) 
 	      case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") ++ kids
 	    }
@@ -215,11 +195,13 @@ class Page extends Actor {
     r.paramNames.filter{n => messageCallback.contains(n)}.foreach{
       n => 
     	val v = messageCallback(n)
-      v.target !? (100l, ActionMessage(v.name, r.params(n), self, Some(this), r))
+      v.target !? (100L, ActionMessage(v.name, r.params(n), self, Some(this), r))
     }
     // messageCallback = TreeMap.Empty[String, ActionMessage]
   }
 }
+
+case class AjaxRerender(timeOut: long, sendTo: Actor, state: RequestState)
 
 // abstract class PageMessage
 
@@ -228,3 +210,61 @@ class Page extends Actor {
 //case class Render extends PageMessage
 //case class Rendering(info: String, tpe: String) extends PageMessage
 // case class ComponentUpdated(view: NodeSeq, component: Component) extends PageMessage
+
+/*
+  val resp : Option[Response] = if (state.ajax_?) {
+    if (!updates.isEmpty) {
+      
+      
+    } else {
+      
+      None
+    }}
+  else {
+      
+    }
+    // wait for redraws
+    val endAt = System.currentTimeMillis + (timeout - 1000L)
+    
+    while (updates.isEmpty && endAt > System.currentTimeMillis) {
+      receiveWithin(endAt - System.currentTimeMillis) {
+        case ar: AnswerRender => updateRendered(ar)
+        
+        case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) => {
+          processParameters(state)
+          val resp: Response = if (state.ajax_? ) {
+            Response(Unparsed(""),
+                     Map("Content-Type" -> "text/javascript"), 200)
+          } else {
+            try {
+              Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
+            } catch {
+              case rd : RedirectException => {   
+                Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+                         ListMap("Location" -> rd.to),
+                         302)
+              }
+              case e  => state.showException(e)
+            }
+          }
+          sender ! resp
+        }
+        case TIMEOUT => null
+      }
+    }
+    
+    val ret = updates.map{
+      pl => 
+        val uid = pl._1
+      val ar = pl._2
+      val html = updateCallbacks(ar, state).toString
+      "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
+    }.mkString("", "\n", "")
+    
+    Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
+  } else {
+
+} catch {
+case e => e.printStackTrace
+}
+*/

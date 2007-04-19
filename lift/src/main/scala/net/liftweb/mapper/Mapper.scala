@@ -69,6 +69,8 @@ trait Mapper[A<:Mapper[A]] {
     getSingleton.toForm(this) ++ <input type='hidden' name={S.mapFunction("submit", f)} value="n/a" />
   }
   
+  def saved_? : boolean = getSingleton.saved_?(this)
+  
   def db_can_delete_? : boolean = {
     getSingleton.saved_?(this) && !was_deleted_?
   }

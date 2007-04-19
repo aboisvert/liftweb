@@ -9,11 +9,12 @@ package bootstrap.liftweb
 import net.liftweb.util.Helpers
 import net.liftweb.http._
 import Helpers._
-import net.liftweb.mapper.{DB, ConnectionManager}
+import net.liftweb.mapper.{DB, ConnectionManager, Schemifier}
 import java.sql.{Connection, DriverManager}
-import net.liftweb.example.model.FixUp
 import net.liftweb.example.controller.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import scala.collection.immutable.TreeMap
+import net.liftweb.example.model._
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -23,7 +24,8 @@ class Boot {
   def boot {
     DB.defineConnectionManager("", DBVendor)
     addToPackages("net.liftweb.example")
-    FixUp.insureWeHaveATable
+     
+    Schemifier.schemify(User, WikiEntry)
     
     val dispatcher: PartialFunction[(RequestState, List[String], (String) => java.io.InputStream),(HttpServletRequest) => Option[Any]] = 
       {
@@ -38,7 +40,14 @@ class Boot {
           }
         }
     }
-    Servlet.addBefore(dispatcher)
+    Servlet.addDispatchBefore(dispatcher)
+    
+    val rewriter: Servlet.rewritePf = {
+      case (_, path @ "wiki" :: page :: _, _, _) => ("/wiki", "wiki" :: Nil, 
+          TreeMap("wiki_page" -> page :: path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+    }
+    
+    Servlet.addRewriteBefore(rewriter)
   }
 }
 

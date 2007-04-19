@@ -9,7 +9,7 @@ package net.liftweb.http;
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import javax.servlet.{ServletContext}
 import scala.collection.immutable.{Map, ListMap}
-import scala.collection.mutable.{HashSet, HashMap}
+import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import java.net.URLDecoder
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
 import scala.xml.transform._
@@ -18,6 +18,8 @@ import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import java.io.InputStream
 import net.liftweb.util.Helpers
+import net.liftweb.util.ActorPing
+import scala.collection.immutable.{TreeMap, SortedMap}
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -27,15 +29,31 @@ import net.liftweb.util.Helpers
  */
 class Servlet extends HttpServlet {
   private val actorNameConst = "the_actor"
-  
+  private var requestCnt = 0
+  private val selves = new ArrayBuffer[Actor]
   
   override def destroy = {
+    try {
+    Servlet.ending = true
+    this.synchronized {
+      while (requestCnt > 0) {
+        selves.foreach(s => s ! None)
+        wait(100L)
+      }
+    }
     Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
+    ActorPing.snapshot
+    Console.println("Destroyed servlet")
     super.destroy
+    } catch {
+      case e => e.printStackTrace
+    }
   }
   
   override def init = {
     if (Scheduler.tasks ne null) {Console.println("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
+    ActorPing.start
+    Servlet.ending = false
     super.init
   }
   
@@ -56,8 +74,6 @@ class Servlet extends HttpServlet {
   }
   
   private def doServiceFile(request : HttpServletRequest , response : HttpServletResponse) = {
-    Console.println("Servicing file {"+request.getRequestURI+"}") 
-        
     val in = getServletContext.getResourceAsStream(request.getRequestURI.substring(request.getContextPath.length).trim)
     
     val li = request.getRequestURI.lastIndexOf('.')
@@ -95,12 +111,16 @@ class Servlet extends HttpServlet {
   def getActor(session: HttpSession) = {
     session.getValue(actorNameConst) match {
       case r : Session => r
-      case _ => {val ret = new Session; ret.start; ret ! "Hello"; session.putValue(actorNameConst, ret); ret}
+      case _ => 
+        val ret = new Session
+        ret.start
+        session.putValue(actorNameConst, ret)
+        ret
     }
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
-    req.setCharacterEncoding("UTF-8")
+
     printTime("Service request "+req.getRequestURI) {
     Servlet.setContext(getServletContext)
     req.getMethod.toUpperCase match {
@@ -114,13 +134,16 @@ class Servlet extends HttpServlet {
    * Service the HTTP request
    */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
-    val session = RequestState(request)
+    Servlet.early.foreach(_(request))
+    val session = RequestState(request, Servlet.rewriteTable)
     
     val finder = &getServletContext.getResourceAsStream
     
     val toMatch = (session, session.path, finder)
       
-      val resp: Response = if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
+      val resp: Response = if (Servlet.ending) {
+        session.createNotFound
+      } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
 	S.init(session) {
 	  val f = Servlet.dispatchTable(toMatch)
 	  f(request) match {
@@ -145,12 +168,38 @@ class Servlet extends HttpServlet {
           Console.println(session.params)
 	}
 	
+        try {
+          this.synchronized {
+            this.requestCnt = this.requestCnt + 1
+            selves += self
+          }
+          
+        def drainTheSwamp { // remove any message from the current thread's inbox
+          receiveWithin(0) {
+            case TIMEOUT => true
+            case s @ _ => Console.println("Drained "+s) ; false
+          } match {
+            case false => drainTheSwamp
+            case _ =>
+          }
+        }
+        
+        drainTheSwamp
+
 	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
-	
-	sessionActor !? (timeout, AskSessionToRender(session, request, finder, timeout)) match {
+	sessionActor ! AskSessionToRender(session, request, finder, timeout)
+        receiveWithin(timeout) {
+          case r @ Response(_, _, _) => r
 	  case Some(r: Response) => r
-	  case _ => {session.createNotFound}
+	  case n => Console.println("Got unknown (Servlet) resp "+n); session.createNotFound
 	}
+        } finally {
+          this.synchronized {
+            this.requestCnt = this.requestCnt - 1
+            selves -= self
+            this.notifyAll
+          }
+        }
       }
     
     
@@ -169,10 +218,30 @@ class Servlet extends HttpServlet {
 }
 
 object Servlet {
+  type dispatchPf = PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]];
+  type rewritePf = PartialFunction[(String, List[String], RequestType, HttpServletRequest), (String, List[String], SortedMap[String, String])]
+             
+  private var _early: List[(HttpServletRequest) => Any] = Nil
+  
+  def early = {
+    test_boot
+    _early
+  }
+  
+  def appendEarly(f: (HttpServletRequest) => Any) {
+    _early = _early ::: List(f)
+  }
+  
+  var ending = false
   private case class Never
   def dispatchTable = {
     test_boot
     dispatchTable_i
+  }
+  
+  def rewriteTable = {
+    test_boot
+    rewriteTable_i
   }
 
   private var _context: ServletContext = _
@@ -186,9 +255,9 @@ object Servlet {
       }
   }
   
-  private var dispatchTable_i : PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]] = {
-    case (null, Nil, null) => null
-  }
+  private var dispatchTable_i : dispatchPf = Map.empty
+  
+  private var rewriteTable_i : rewritePf = Map.empty
   
   private val test_boot = {
     try {
@@ -202,13 +271,22 @@ object Servlet {
     }
   }
 
+  def addRewriteBefore(pf: rewritePf) = {
+    rewriteTable_i = pf orElse rewriteTable_i
+    rewriteTable_i
+  }
   
-  def addBefore(pf: PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]]) = {
+  def addRewriteAfter(pf: rewritePf) = {
+    rewriteTable_i = rewriteTable_i orElse pf
+    rewriteTable_i
+  }
+  
+  def addDispatchBefore(pf: dispatchPf) = {
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }
   
-  def addAfter(pf: PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]]) = {
+  def addDispatchAfter(pf: dispatchPf) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }

@@ -29,10 +29,11 @@ object ActorPing extends AnyRef with Runnable {
 	 def compare(that: WakedActor): int = -(this.time compare that.time)
        }
 
-  var queue = new PriorityQueue[WakedActor]
-  val t = new Thread(this); t setDaemon true; t.start
-
-  var lateList: List[WakedActor] = Nil
+  private var queue = new PriorityQueue[WakedActor]
+  private var t = new Thread(this); t setDaemon true; t.start
+  
+  private var lateList: List[WakedActor] = Nil
+  private var running = true
 
   /**
    * @param a ...
@@ -50,18 +51,29 @@ object ActorPing extends AnyRef with Runnable {
         }
     }
   }
+  
+  def start: unit = synchronized {
+    if (!running) {
+      running = true
+      t = new Thread(this)
+      t setDaemon true
+      t.start
+    }
+  }
+  
+  def snapshot: unit = synchronized {
+    if (running) {
+      running = false
+      notifyAll
+    }
+  }
 
   override def run = {
     try {
-      while(true) {
+      while(running) {
         this.synchronized {
-          try {
             val sleepTime = dequeueLateAndGetSleepTime
             if (lateList.isEmpty) wait(sleepTime)
-          } catch {
-            case t: Throwable => { throw t }
-        }
-      }
 
         // process guys waiting for signal and empty list
         for (val wa <- lateList) {
@@ -70,6 +82,7 @@ object ActorPing extends AnyRef with Runnable {
           }
         }
         lateList = Nil
+        }
       }
     } catch {
       case consumed: InterruptedException => consumed.printStackTrace

@@ -15,12 +15,13 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable.HashSet
 
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
+
 trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
   
   val uniqueId = "Id"+randomString(20)
   
-  private var globalState: Map[String, Any] = _
+  // private var globalState: Map[String, Any] = _
   
   private var owner_i = new HashSet[Page]
   private var defaultXml_i: NodeSeq = _
@@ -53,16 +54,13 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       loop
     }
     
-    case r @ AskRender(state, request) => {
+    case r @ AskRender(request) => {
       if (!askingWho.isEmpty) {
       	askingWho.get forward r
       } else {
         try {
           S.init(request) {
-	    this.globalState = state
-	    val re = buildRendered(render)
-	    reply(re)
-	    this.globalState = null
+	    reply(buildRendered(render))
           }
         } catch {
           case e: Exception => e.printStackTrace
@@ -73,11 +71,6 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     
     case ActionMessage(name, value, _, replyTo, request) => {
       S.init(request) {
-	reply("gotit")
-	replyTo match {
-          case Some(p:Page) => p ! StartedUpdate(uniqueId)
-          case None =>
-	}
 	localFunctionMap.get(name) match {
           case Some(f) => {
 
@@ -85,10 +78,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
           }
           case _ => None
 	}
-	replyTo match {
-	  case Some(p:Page) => p ! FinishedUpdate(uniqueId)
-          case None =>
-	}
+        reply("gotit")
       }
 
       loop
@@ -104,7 +94,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       S.init(request) {
         askingWho.foreach {
           askingWho =>
-          reply("Done")
+        reply("A null message to release the actor from its send and await reply... do not delete this message")
 	askingWho.unlink(self)
         askingWho ! DoExit
 	this.askingWho = None
@@ -174,7 +164,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 
 sealed abstract class ControllerMessage
 
-case class AskRender(state: Map[String, Any], request: RequestState) extends ControllerMessage
+case class AskRender(request: RequestState) extends ControllerMessage
 case class ActionMessage(name: String, value: List[String], target: Actor, sender: Option[Page], request: RequestState) extends ControllerMessage
 case class AnswerRender(xml : NodeSeq, messages: Map[String, ActionMessage], by: ControllerActor ) extends ControllerMessage
 case class PerformSetupController(owner: List[Page], defaultXml: NodeSeq) extends ControllerMessage

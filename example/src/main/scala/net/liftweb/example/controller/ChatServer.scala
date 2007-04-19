@@ -16,6 +16,7 @@ import java.util.Date
 /**
  * A chat server.  It gets messages and returns them
  */
+
 class ChatServer extends Actor {
   def act = loop(Nil, Nil)
   

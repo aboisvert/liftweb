@@ -9,24 +9,38 @@ package net.liftweb.http
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse}
 import scala.collection.Map
 // import scala.collection.mutable.HashMap
-import scala.collection.immutable.TreeMap
+import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.util.Helpers._
 import java.io.InputStream
 import scala.xml._
 
 object RequestState {
-  def apply(request: HttpServletRequest/*, resourceFinder: (String) =>  InputStream*/): RequestState = {
-    // val session = request.getSession
+  def apply(request: HttpServletRequest, rewrite: Servlet.rewritePf): RequestState = {
     val reqType = RequestType(request)
+    val turi = request.getRequestURI.substring(request.getContextPath.length)
+    val tmpUri = if (turi.length > 0) turi else "/"
+    val contextPath = request.getContextPath
+    val tmpPath = tmpUri.split("/").toList.filter{n => n != null && n.length > 0}
+
+    def processRewrite(uri: String, path: List[String], params: SortedMap[String, String]): (String, List[String], SortedMap[String, String]) = {
+      val toMatch = (uri, path, reqType, request)
+      if (!rewrite.isDefinedAt(toMatch)) (uri, path, params)
+      else {
+        val (newUri, newPath, newMap) = rewrite(toMatch)
+        processRewrite(newUri, newPath, newMap)
+      }
+    }
+    
+    val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
+    
+    val localParams = TreeMap(localSingleParams.map(a => (a._1, List(a._2))).toList :_*)
+    
+    // val session = request.getSession
     val body = (if (reqType.post_? && request.getContentType == "text/xml") new String(readWholeStream(request.getInputStream), "UTF-8") else "")
       
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
-    val params = TreeMap.empty[String, List[String]] ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
-    val turi = request.getRequestURI.substring(request.getContextPath.length)
-    val uri = if (turi.length > 0) turi else "/"
-    val contextPath = request.getContextPath
-    val path = uri.split("/").toList.filter{n => n != null && n.length > 0}
+    val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
     
     new RequestState(paramNames, params,uri,path,contextPath, reqType,/* resourceFinder,*/
 		     path.take(1) match {case List("rest") | List("soap") => true; case _ => false},

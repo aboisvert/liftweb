@@ -22,6 +22,11 @@ class ControllerManager extends Actor {
       loop
     }
     
+    case 'shutdown =>
+    Console.println("Shutting down ctrl mgr")
+    self.exit('Shutdown)
+    loop
+    
     case ('EXIT, controller: Actor, reason: Exception) => 
       reason.printStackTrace
       try {
