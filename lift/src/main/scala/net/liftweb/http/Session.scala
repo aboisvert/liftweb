@@ -103,6 +103,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private def processRequest(state: RequestState,httpRequest: HttpServletRequest, finder: (String) => InputStream, timeout: long) = {
     S.init(state, httpRequest, notices) {
       try {
+        Servlet.testLocation.foreach{s => S.error(s._2); S.redirectTo(s._1)} 
+        
         processParameters(state)
         findVisibleTemplate(state.path, state, finder).map(xml => processSurroundAndInclude(xml, state, finder)) match {
           case None => sender ! state.createNotFound

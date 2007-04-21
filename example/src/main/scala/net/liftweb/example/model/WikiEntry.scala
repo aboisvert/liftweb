@@ -14,10 +14,10 @@ import java.sql.Connection
  * The singleton that has methods for accessing the database
  */
 object WikiEntry extends WikiEntry with KeyedMetaMapper[long, WikiEntry] {
-  protected override def internalTableName_$ = "wiki_entry" // define the DB table name
+  override def dbTableName = "wiki_entry" // define the DB table name
   
   // define the order fields will appear in forms and output
-  override def fieldOrder =  id :: entry :: Nil
+  override def fieldOrder =  id :: name :: entry :: Nil
 }
 
 /**

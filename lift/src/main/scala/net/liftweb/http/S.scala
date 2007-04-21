@@ -138,6 +138,8 @@ object S {
     }
   }
   
+  def servletRequest = _servletRequest.value
+  
   def getFunctionMap: Map[String, (List[String]) => boolean] = {
     functionMap.value match {
       case null => Map.empty

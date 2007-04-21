@@ -20,6 +20,7 @@ import java.io.InputStream
 import net.liftweb.util.Helpers
 import net.liftweb.util.ActorPing
 import scala.collection.immutable.{TreeMap, SortedMap}
+import net.liftweb.sitemap.SiteMap
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -171,6 +172,7 @@ class Servlet extends HttpServlet {
         try {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1
+            self.trapExit = true
             selves += self
           }
           
@@ -226,6 +228,19 @@ object Servlet {
   def early = {
     test_boot
     _early
+  }
+  
+  private var _sitemap: Option[SiteMap] = None
+  
+  def setSiteMap(sm: SiteMap) {_sitemap = Some(sm)}
+  
+  def testLocation: Option[(String, String)] = {
+    if (!_sitemap.isDefined) return None
+    val sm = _sitemap.get
+    val oLoc = sm.findLoc(S.request, S.servletRequest)
+    if (!oLoc.isDefined) return Some(("/", "Invalid URL"))
+    val loc = oLoc.get
+    loc.testAccess
   }
   
   def appendEarly(f: (HttpServletRequest) => Any) {
