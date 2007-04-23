@@ -33,7 +33,7 @@ object ActorPing extends AnyRef with Runnable {
   private var t = new Thread(this); t setDaemon true; t.start
   
   private var lateList: List[WakedActor] = Nil
-  private var running = true
+  private var running = false
 
   /**
    * @param a ...
@@ -68,7 +68,7 @@ object ActorPing extends AnyRef with Runnable {
     }
   }
 
-  override def run = {
+  override def run {
     try {
       while(running) {
         this.synchronized {

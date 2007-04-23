@@ -30,7 +30,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private val theControllerMgr = {
     val ret = new ControllerManager
     ret.start
-    ret.link(self)
+    ret.link(this)
     ret
   }
   
@@ -144,7 +144,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    */
   private def createPage: Page = {
         val ret = new Page // FIXME we really want a Page factory here so we can build other Page types
-        ret.link(self)
+        ret.link(this)
         ret.start
 	ret
   }

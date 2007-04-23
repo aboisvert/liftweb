@@ -59,6 +59,10 @@ object TextileParser {
     val parser = new ParseString(prep) with TextileParsers
     parser.parseAsTextile
   }
+  
+  def toHtml(toParse: String): NodeSeq = {
+    parse(toParse).map(_._1.toHtml) getOrElse Text("")
+  }
 
   /**
   * a class that will parse a string.  Based on

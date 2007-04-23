@@ -30,6 +30,15 @@ import java.util.regex._
 object Helpers {
   private var otherPackages: List[String] = Nil
   
+  def internetDateFormatter = (new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")) 
+  
+  def parseInternetDate(dateString: String): Date = tryo {
+    internetDateFormatter.parse(dateString)
+  } getOrElse new Date(0L)
+  
+  def toInternetDate(in: Date): String = internetDateFormatter.format(in)
+  def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
+  
   def buildPackage(end: String)  = synchronized {otherPackages.map{op => op+"."+end}}
   
   def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}

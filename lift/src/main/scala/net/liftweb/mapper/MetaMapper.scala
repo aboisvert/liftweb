@@ -101,7 +101,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
     }
   }
-  
+
+  def create: A = createInstance
+
   private def addFields(what: String,whereAdded: boolean, by: List[QueryParam[A]]): String = {
 
     var wav = whereAdded

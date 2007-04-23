@@ -21,6 +21,7 @@ import net.liftweb.util.Helpers
 import net.liftweb.util.ActorPing
 import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.sitemap.SiteMap
+import java.net.URL
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -62,20 +63,33 @@ class Servlet extends HttpServlet {
    * Forward the GET request to the POST handler
    */
   override def doGet(request : HttpServletRequest , response : HttpServletResponse ) = {
-    if (isExistingFile_?(request)) doServiceFile(request, response) else
+    isExistingFile_?(request).map(u => doServiceFile(u, request, response)) getOrElse
       doService(request, response, RequestType(request ))
   }
 
   /**
    * Is the file an existing file in the WAR?
    */
-  private def isExistingFile_?(request : HttpServletRequest) : boolean = {
-    goodPath_?(request.getRequestURI) &&
-    (getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) ne null)
+  private def isExistingFile_?(request : HttpServletRequest) : Option[URL] = {
+    if (!goodPath_?(request.getRequestURI)) return None
+    getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) match {
+      case null => None
+      case u : URL => Some(u)
+      case _ => None
+    }
   }
   
-  private def doServiceFile(request : HttpServletRequest , response : HttpServletResponse) = {
-    val in = getServletContext.getResourceAsStream(request.getRequestURI.substring(request.getContextPath.length).trim)
+  private def doServiceFile(url: URL, request : HttpServletRequest , response : HttpServletResponse) {
+    val uc = url.openConnection
+    val mod = request.getHeader("if-modified-since")
+    if (mod != null) {
+      val md = parseInternetDate(mod)
+      if (uc.getLastModified <= md.getTime) {
+        response.sendError(304)
+        return
+      }
+    }
+    val in = uc.getInputStream
     
     val li = request.getRequestURI.lastIndexOf('.')
     if (li != -1) {
@@ -88,6 +102,8 @@ class Servlet extends HttpServlet {
         case _ => "text/html"
       })
     }
+    
+    response.setDateHeader("Last-Modified", uc.getLastModified)
 
     val out = response.getOutputStream
     val ba = new Array[byte](2048)
