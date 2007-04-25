@@ -140,11 +140,10 @@ class Page extends Actor {
 				theType: Option[Seq[Node]], 
 				name: Option[Seq[Node]], 
 				factory: Option[Seq[Node]], kids: NodeSeq,
-				request: RequestState): NodeSeq
-  = 
+				request: RequestState): NodeSeq = 
     {
     try {
-      val (myType, myName, myFactory) = (theType.map{s => s.text},name.map{s => s.text}, factory.map{s => s.text})
+      val (myType, myName, myFactory) = (theType.map(_.text),name.map(_.text), factory.map(_.text))
       val ret = (ctlMgr !? (1500l, AskFindController(myType, myName, myFactory)) match {
 	  case Some(AnswerFoundController(controller)) => controller
 	  case _ => None

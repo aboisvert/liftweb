@@ -31,6 +31,14 @@ trait Mapper[A<:Mapper[A]] {
     this
   }
   
+  /**
+    * Save the instance and return the instance
+    */
+  def saveMe: A = {
+    this.save
+    this
+  }
+  
   def save : boolean = {
     runSafe {
       getSingleton.save(this)
@@ -94,6 +102,8 @@ trait Mapper[A<:Mapper[A]] {
   def toXml: NodeSeq = {
     getSingleton.toXml(this)
   }
+  
+  def ^ : A = this
   
   def checkNames : unit = {
     runSafe {

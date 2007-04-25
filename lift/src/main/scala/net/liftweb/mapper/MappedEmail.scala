@@ -21,6 +21,12 @@ class MappedEmail[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
     })
   }
   
+  override def convertToJDBCFriendly(value: String): Object = value match {
+    case null => ""
+    case s => s.toLowerCase.trim
+  }
+
+  
   override def validate /*: List[ValidationIssues[String, T]] */ = {
     MappedEmail.emailPattern.matcher(i_get_!).matches match {
       case true => Nil

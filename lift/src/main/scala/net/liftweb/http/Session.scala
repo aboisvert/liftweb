@@ -12,7 +12,7 @@ import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
 import scala.collection.Map
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.collection.immutable.{TreeMap}
-import scala.xml.{NodeSeq}
+import scala.xml.{NodeSeq, Unparsed}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -88,6 +88,10 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
       val updatedPage = fixResponse(thePage, state)
       sender ! Some(updatedPage)
     loop
+    
+    case SendEmptyTo(sender) =>
+      sender ! Response(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+    loop
 
     case unknown => Console.println("Session Got a message "+unknown); loop
   }
@@ -111,8 +115,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
           case Some(xml: NodeSeq) => {
             S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 
-            if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {notices = Nil; sender ! Response(state.fixHtml(xml), Map.empty, 200)}
-            else {
+            if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {
+              if (state.ajax_?) {
+                ActorPing.schedule(this, SendEmptyTo(sender), timeout - 250) 
+              } else {
+                notices = Nil; sender ! Response(state.fixHtml(xml), Map.empty, 200)
+              }
+            } else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
               page ! AskRenderPage(state, xml, sender, theControllerMgr, timeout)
               if (!state.ajax_?) notices = Nil
@@ -373,7 +382,7 @@ case class AskRenderPage(state: RequestState, xml: NodeSeq, sender: Actor, contr
  */
 case class AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
 case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,finder: (String) => InputStream,timeout: long)
-
+case class SendEmptyTo(who:Actor) extends SessionMessage
 
 
 

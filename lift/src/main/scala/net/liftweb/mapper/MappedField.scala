@@ -147,6 +147,11 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     this := v
     owner
   }
+    
+    def ->(v: T): O = {
+      this := v
+      owner
+    }
   
   private var _name : String = null
   

@@ -18,7 +18,8 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
 trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
-  
+  private var _name = ""
+    
   val uniqueId = "Id"+randomString(20)
   
   // private var globalState: Map[String, Any] = _
@@ -31,6 +32,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private var whosAsking: Option[Actor] = None
   private var answerWith: Option[(Any) => boolean] = None
   
+  def name = _name
   def act = {this.trapExit = true; loop}
   
   def loop : Unit = {
@@ -47,6 +49,10 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
+    case SetName(theName) =>
+    this._name = theName
+    loop
+    
     case PerformSetupController(owner, defaultXml) => {
       owner.foreach{o => owner_i += o}
       defaultXml_i = defaultXml
@@ -173,6 +179,6 @@ case class AskQuestion(what: Any, who: Actor) extends ControllerMessage
 case class AnswerQuestion(what: Any, session: RequestState) extends ControllerMessage
 case class StartedUpdate(id: String) extends ControllerMessage
 case class FinishedUpdate(id: String) extends ControllerMessage
-
+case class SetName(name: String) extends ControllerMessage
 case object DoExit extends ControllerMessage
 

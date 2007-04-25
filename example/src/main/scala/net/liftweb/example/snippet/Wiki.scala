@@ -51,7 +51,7 @@ class Wiki {
     if (pageName == "all") showAll // if the page is "all" display all the pages
     else {
       // find the entry in the database or create a new one
-      val entry = WikiEntry.find(By(WikiEntry.name, pageName)) getOrElse WikiEntry.create.name(pageName)
+      val entry = WikiEntry.find(By(WikiEntry.name, pageName)) getOrElse WikiEntry.create.name -> pageName
       
       // is it a new entry?
       val isNew = !entry.saved_?

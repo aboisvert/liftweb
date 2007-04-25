@@ -23,6 +23,7 @@ import javax.mail.internet._
 import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.regex._
+import java.util.TimeZone
 
 /**
  *  A bunch of helper functions
@@ -30,7 +31,12 @@ import java.util.regex._
 object Helpers {
   private var otherPackages: List[String] = Nil
   
-  def internetDateFormatter = (new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")) 
+  val utc = TimeZone.getTimeZone("UTC")
+  def internetDateFormatter = {
+    val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
+    ret.setTimeZone(utc)
+    ret
+  }
   
   def parseInternetDate(dateString: String): Date = tryo {
     internetDateFormatter.parse(dateString)

@@ -46,7 +46,9 @@ class ControllerManager extends Actor {
 	  // look in the cache for the controller or try to build one
 	  controllers.get(lookFor) orElse {
             // build it and if we get one, put it in the cache
-	    searchFactoryForController(myType, factory).map{ctrl => controllers(lookFor) = ctrl; ctrl}
+	    searchFactoryForController(myType, factory).map{ctrl => controllers(lookFor) = ctrl;
+            name.foreach(n => ctrl ! SetName(n))
+            ctrl}
 	  }
     }
   }
@@ -73,7 +75,7 @@ class ControllerManager extends Actor {
 		  tryo {
 		    val ret = cls.newInstance.asInstanceOf[ControllerActor];
 		    ret.start
-		    ret.link(self)
+		    ret.link(this)
 		    ret
 		  }
 	      }
