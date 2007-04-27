@@ -22,7 +22,7 @@
  <modules>
   <module>lift</module>
   <module>example</module>
-  <module>skitter</module>
+  <module>skittr</module>
  </modules>
 
  <properties>
