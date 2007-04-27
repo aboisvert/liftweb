@@ -22,6 +22,7 @@
  <modules>
   <module>lift</module>
   <module>example</module>
+  <module>skitter</module>
  </modules>
 
  <properties>

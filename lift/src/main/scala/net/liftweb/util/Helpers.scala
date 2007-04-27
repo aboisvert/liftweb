@@ -423,6 +423,10 @@ object Helpers {
   
   val random = new java.security.SecureRandom
   
+  def randomLong(mod: long) = random.nextLong % mod
+  
+  def shouldShow(percent: int): boolean = random.nextInt % 100 < percent
+  
   def randomString(size: int) : String = {
     var pos = 0
     val sb = new StringBuilder(size)
