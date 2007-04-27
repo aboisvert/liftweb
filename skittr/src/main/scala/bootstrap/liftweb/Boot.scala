@@ -13,8 +13,8 @@ import net.liftweb.mapper.{DB, ConnectionManager, Schemifier}
 import java.sql.{Connection, DriverManager}
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.immutable.TreeMap
-import com.skitter.model._
-import com.skitter.actor._
+import com.skittr.model._
+import com.skittr.actor._
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -23,7 +23,7 @@ import com.skitter.actor._
 class Boot {
   def boot {
     DB.defineConnectionManager("", DBVendor)
-    addToPackages("com.skitter")
+    addToPackages("com.skittr")
      
     Schemifier.schemify(User, Friend, MsgStore)
     
@@ -41,7 +41,7 @@ object DBVendor extends ConnectionManager {
   def newConnection(name: String): Option[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
-      val dm =  DriverManager.getConnection("jdbc:derby:skitter;create=true")
+      val dm =  DriverManager.getConnection("jdbc:derby:skittr;create=true")
 
       Some(dm)
     } catch {

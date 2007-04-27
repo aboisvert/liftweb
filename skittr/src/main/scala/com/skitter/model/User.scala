@@ -1,4 +1,4 @@
-package com.skitter.model
+package com.skittr.model
 
 /*                                                *\
  (c) 2007 WorldWide Conferencing, LLC
@@ -7,7 +7,7 @@ package com.skitter.model
  \*                                                 */
 
 import net.liftweb.mapper._
-import com.skitter.actor._
+import com.skittr.actor._
 
 /**
  * The singleton that has methods for accessing the database
@@ -25,7 +25,7 @@ object User extends User with KeyedMetaMapper[long, User] {
       (1 to 1000).foreach {
         i =>
         
-        User.create.firstName("Mr.").lastName("User "+i).email("user"+i+"@skitter.com").
+        User.create.firstName("Mr.").lastName("User "+i).email("user"+i+"@skittr.com").
           password("password"+i).name("test"+i).dontStart.saveMe
       }
     })

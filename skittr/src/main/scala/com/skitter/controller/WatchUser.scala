@@ -1,4 +1,4 @@
-package com.skitter.controller
+package com.skittr.controller
 
 import scala.actors._
 import scala.actors.Actor._
@@ -6,7 +6,7 @@ import net.liftweb.http._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Helpers
 import scala.xml._
-import com.skitter.actor._
+import com.skittr.actor._
 
 class WatchUser extends ControllerActor {
   private var userActor: Option[UserActor] = None

@@ -1,4 +1,4 @@
-package com.skitter.model
+package com.skittr.model
 
 /*                                                *\
  (c) 2007 WorldWide Conferencing, LLC

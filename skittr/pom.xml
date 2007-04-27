@@ -11,9 +11,9 @@
  </parent>
 
  <groupId>net.liftweb</groupId>
- <artifactId>skitter-example</artifactId>
+ <artifactId>skittr-example</artifactId>
  <packaging>war</packaging>
- <name>Skitter Example</name>
+ <name>Skittr Example</name>
  <version>0.1.7</version>
 
  <dependencies>

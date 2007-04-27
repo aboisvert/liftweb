@@ -1,13 +1,13 @@
-package com.skitter.snippet
+package com.skittr.snippet
 
 import scala.xml._
 import net.liftweb.http._
 import net.liftweb.http.S._
-import com.skitter.model._
+import com.skittr.model._
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
-import com.skitter.actor._
+import com.skittr.actor._
 
 class UserMgt {
   def login_panel(xhtml: Group): NodeSeq = {
@@ -47,7 +47,7 @@ class UserMgt {
           if (issues.isEmpty) {
             theUser.save
             S.set("user_name", theUser.name)
-            S.notice("Welcome to Skitter")
+            S.notice("Welcome to Skittr")
             redirectTo("/")
           }
 

@@ -1,9 +1,9 @@
-package com.skitter.actor
+package com.skittr.actor
 
 import scala.actors._
 import scala.actors.Actor._
-import com.skitter.model._
-// import com.skitter.model.MsgStore._
+import com.skittr.model._
+// import com.skittr.model.MsgStore._
 import scala.collection.mutable.{HashMap}
 import net.liftweb.mapper._
 import java.util.concurrent.locks.ReentrantReadWriteLock

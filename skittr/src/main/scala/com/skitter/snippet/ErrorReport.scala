@@ -1,4 +1,4 @@
-package com.skitter.snippet
+package com.skittr.snippet
 
 
 /*                                                *\
