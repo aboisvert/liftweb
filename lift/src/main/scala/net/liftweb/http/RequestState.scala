@@ -73,7 +73,7 @@ class RequestState(val paramNames: List[String],
   }
   
   def createNotFound = {
-    Response(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
+    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
   }
   
   def showException(e: Throwable) = {
@@ -89,7 +89,7 @@ class RequestState(val paramNames: List[String],
       ret + also
     }
     val et = _showException(e)
-    Response(<html><body>Exception occured while processing {this.uri} 
+    XhtmlResponse(<html><body>Exception occured while processing {this.uri} 
 	     <pre>{
 	       
 	       et      

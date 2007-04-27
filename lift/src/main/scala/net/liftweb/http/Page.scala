@@ -38,7 +38,7 @@ class Page extends Actor {
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
-      ajr.sendTo ! Response(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+      ajr.sendTo ! XhtmlResponse(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     loop
@@ -55,7 +55,7 @@ class Page extends Actor {
     }
   }
   
-  private def buildResponseFromUpdates(state: RequestState): Response = {
+  private def buildResponseFromUpdates(state: RequestState): XhtmlResponse = {
     val ret = updates.map{
       pl => 
         val uid = pl._1
@@ -64,7 +64,7 @@ class Page extends Actor {
       "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
     }.mkString("", "\n", "")
     
-    Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
+    XhtmlResponse(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
@@ -76,16 +76,16 @@ class Page extends Actor {
         ActorPing.schedule(self, ajaxer, timeout - 1000L)
         pendingAjax = ajaxer :: pendingAjax
       } else {
-        val resp : Response = if (state.ajax_?) {
+        val resp : XhtmlResponse = if (state.ajax_?) {
           val ret = buildResponseFromUpdates(state)
           updates.clear
           ret
         } else {
           try {
-            Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
+            XhtmlResponse(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
           } catch {
             case rd : RedirectException => {   
-              Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+              XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
                        ListMap("Location" -> rd.to),
                        302)
             }
@@ -201,69 +201,3 @@ class Page extends Actor {
 }
 
 case class AjaxRerender(timeOut: long, sendTo: Actor, state: RequestState)
-
-// abstract class PageMessage
-
-// case class PerformSetupPage(page: NodeSeq, session: Session) extends PageMessage
-// case class Perform(localFunc: String, params: List[String]) extends PageMessage
-//case class Render extends PageMessage
-//case class Rendering(info: String, tpe: String) extends PageMessage
-// case class ComponentUpdated(view: NodeSeq, component: Component) extends PageMessage
-
-/*
-  val resp : Option[Response] = if (state.ajax_?) {
-    if (!updates.isEmpty) {
-      
-      
-    } else {
-      
-      None
-    }}
-  else {
-      
-    }
-    // wait for redraws
-    val endAt = System.currentTimeMillis + (timeout - 1000L)
-    
-    while (updates.isEmpty && endAt > System.currentTimeMillis) {
-      receiveWithin(endAt - System.currentTimeMillis) {
-        case ar: AnswerRender => updateRendered(ar)
-        
-        case AskRenderPage(state, pageXml, sessionState, sender, controllerMgr, timeout) => {
-          processParameters(state)
-          val resp: Response = if (state.ajax_? ) {
-            Response(Unparsed(""),
-                     Map("Content-Type" -> "text/javascript"), 200)
-          } else {
-            try {
-              Response(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
-            } catch {
-              case rd : RedirectException => {   
-                Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
-                         ListMap("Location" -> rd.to),
-                         302)
-              }
-              case e  => state.showException(e)
-            }
-          }
-          sender ! resp
-        }
-        case TIMEOUT => null
-      }
-    }
-    
-    val ret = updates.map{
-      pl => 
-        val uid = pl._1
-      val ar = pl._2
-      val html = updateCallbacks(ar, state).toString
-      "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
-    }.mkString("", "\n", "")
-    
-    Response(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
-  } else {
-
-} catch {
-case e => e.printStackTrace
-}
-*/

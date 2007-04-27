@@ -90,7 +90,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     loop
     
     case SendEmptyTo(sender) =>
-      sender ! Response(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+      sender ! XhtmlResponse(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
     loop
 
     case unknown => Console.println("Session Got a message "+unknown); loop
@@ -119,7 +119,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               if (state.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(sender), timeout - 250) 
               } else {
-                notices = Nil; sender ! Response(state.fixHtml(xml), Map.empty, 200)
+                notices = Nil; sender ! XhtmlResponse(state.fixHtml(xml), Map.empty, 200)
               }
             } else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
@@ -133,13 +133,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         val rd = ite.getCause.asInstanceOf[RedirectException]
         notices = S.getNotices
         
-        sender ! Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+        sender ! XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
                  ListMap("Location" -> (state.contextPath+rd.to)),
                  302)
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            sender ! Response(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+            sender ! XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
                      ListMap("Location" -> (state.contextPath+rd.to)),
                      302)
           }
@@ -233,10 +233,10 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  def fixResponse(resp: Response, state: RequestState): Response = {
+  def fixResponse(resp: XhtmlResponse, state: RequestState): XhtmlResponse = {
     val newHeaders = fixHeaders(resp.headers, state)
     val newXml = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) state.fixHtml(resp.out) else resp.out
-    Response(resp.out, newHeaders, resp.code)
+    XhtmlResponse(resp.out, newHeaders, resp.code)
   }
   
   /**
@@ -380,7 +380,7 @@ case class AskRenderPage(state: RequestState, xml: NodeSeq, sender: Actor, contr
 /**
  * The response from a page saying that it's been rendered
  */
-case class AnswerRenderPage(state: RequestState, thePage: Response, sender: Actor) extends SessionMessage
+case class AnswerRenderPage(state: RequestState, thePage: XhtmlResponse, sender: Actor) extends SessionMessage
 case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,finder: (String) => InputStream,timeout: long)
 case class SendEmptyTo(who:Actor) extends SessionMessage
 

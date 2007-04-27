@@ -62,7 +62,7 @@ class Servlet extends HttpServlet {
   /**
    * Forward the GET request to the POST handler
    */
-  override def doGet(request : HttpServletRequest , response : HttpServletResponse ) = {
+  override def doGet(request : HttpServletRequest , response : HttpServletResponse) = {
     isExistingFile_?(request).map(u => doServiceFile(u, request, response)) getOrElse
       doService(request, response, RequestType(request ))
   }
@@ -159,12 +159,12 @@ class Servlet extends HttpServlet {
     val toMatch = (session, session.path, finder)
       
       val resp: Response = if (Servlet.ending) {
-        session.createNotFound
+        session.createNotFound.toResponse
       } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
 	S.init(session) {
 	  val f = Servlet.dispatchTable(toMatch)
 	  f(request) match {
-            case None => session.createNotFound
+            case None => session.createNotFound.toResponse
             case Some(v) => Servlet.convertResponse(v, session)
 	  }
 	}
@@ -207,9 +207,11 @@ class Servlet extends HttpServlet {
 	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
 	sessionActor ! AskSessionToRender(session, request, finder, timeout)
         receiveWithin(timeout) {
-          case r @ Response(_, _, _) => r
+          case r: XhtmlResponse => r.toResponse
+          case Some(r: XhtmlResponse) => r.toResponse
+          case r : Response => r
 	  case Some(r: Response) => r
-	  case n => Console.println("Got unknown (Servlet) resp "+n); session.createNotFound
+	  case n => Console.println("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
 	}
         } finally {
           this.synchronized {
@@ -221,7 +223,7 @@ class Servlet extends HttpServlet {
       }
     
     
-    val bytes = resp.out.toString.getBytes("UTF-8")
+    val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
     val header = insureField(resp.headers, List(("Content-Type", "text/html"),
@@ -324,11 +326,13 @@ object Servlet {
   
   def convertResponse(r: Any, session: RequestState): Response = {
     r match {
+      case r: XhtmlResponse => r.toResponse
+      case Some(r: XhtmlResponse) => r.toResponse
       case r: Response => r
       case Some(r: Response) => r
-      case ns: NodeSeq => Response(session.fixHtml(ns), null, 200)
-      case xml: XmlResponse => Response(xml.xml, Map("Content-Type" -> "text/xml"), 200)
-      case _ => session.createNotFound
+      case ns: NodeSeq => convertResponse(XhtmlResponse(session.fixHtml(ns), Map.empty, 200), session)
+      case xml: XmlResponse => Response(xml.xml.toString.getBytes("UTF-8"), Map("Content-Type" -> "text/xml"), 200)
+      case _ => session.createNotFound.toResponse
     }
   }
 }

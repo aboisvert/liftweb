@@ -9,4 +9,7 @@ package net.liftweb.http
 import scala.xml.NodeSeq
 import scala.collection.immutable.Map
 
-case class Response(out : NodeSeq, headers : Map[String, String], code : int)
+case class XhtmlResponse(out : NodeSeq, headers : Map[String, String], code : int) {
+  def toResponse = Response(out.toString.getBytes("UTF-8"), headers, code)
+}
+case class Response(data: Array[byte], headers : Map[String, String], code : int)

@@ -34,7 +34,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
    */
   def getTargetSQLType = Types.TIMESTAMP
   
-  def defaultValue = null
+  def defaultValue: Date = null
   // private val defaultValue_i = new Date
 
   override def writePermission_? = true
