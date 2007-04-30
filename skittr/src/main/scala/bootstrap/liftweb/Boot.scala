@@ -22,7 +22,7 @@ import com.skittr.actor._
   */
 class Boot {
   def boot {
-    DB.defineConnectionManager("", DBVendor)
+    // DB.defineConnectionManager("", DBVendor)
     addToPackages("com.skittr")
      
     Schemifier.schemify(User, Friend, MsgStore)

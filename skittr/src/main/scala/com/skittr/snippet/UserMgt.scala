@@ -80,8 +80,8 @@ class UserMgt {
   def show_user(xhtml: Group): NodeSeq = {
     (for (val userName <- S.param("user");
          val userActor <- UserList.find(userName);
-         val user <- (userActor !? (400L, GetUser)) match {case Some(u: User) => Some(u) ; case _ => None}) yield {
-      bind("sk", xhtml, "username" -> user.name, "content" -> Text(user.wholeName))
+         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
+      bind("sk", xhtml, "username" -> user.name, "content" -> Text(user.fullName))
     }) getOrElse {S.error("User "+(S.param("user") getOrElse "")+" not found"); S.redirectTo("/")}
   }
   

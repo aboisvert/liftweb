@@ -44,25 +44,13 @@ class User extends ProtoUser[User] {
   
   // The Name of the User
   val name =  new MappedString(this) {
-    override protected def i_set_!(value : String) : String = {
-      super.i_set_!(value match {
-        case null => ""
-        case _ => value.toLowerCase.trim
-      })
-    }
+    override def setFilter = &notNull :: &toLower :: &trim :: super.setFilter
     
-    override def convertToJDBCFriendly(value: String): Object = value match {
-    case null => ""
-    case s => s.toLowerCase.trim
-    }
-
-
-    
-    override def validate = {
-      (if (get.length < 3) List(ValidationIssue(this, "Name too short"))
-      else Nil) :::
-      User.find(By(this, get)).filter(_.id.get != owner.id.get).toList.map(i => ValidationIssue(this, "The name '"+get+"' is already taken"))
-    }
+    override def validations = &valMinLen(3, "Name too short") :: 
+     &valUnique("The name '"+get+"' is already taken") :: 
+     super.validations
+     
+    override def dbIndexed_? = true
   }
   
   def dontStart = {
