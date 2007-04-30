@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import java.security.{SecureRandom, MessageDigest}
 import org.apache.commons.codec.binary.Base64
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, ThreadGlobal}
 
 /**
  * Manage the current "safety" state of the stack
@@ -19,27 +19,19 @@ object Safe {
    * Get the next "safe" number
    */
   def next = rand.nextLong
-  private val threadLocal = new ThreadLocal
+  private val threadLocal = new ThreadGlobal[long]
   
   /**
    * Is the current context "safe" for the object with the
    * given safety code?
    */
-  def safe_?(test : long) : boolean = test == threadLocal.get
+  def safe_?(test : long) : boolean = test == threadLocal.value
 
   /**
    * Marks access to a given object as safe for the duration of the function
    */
   def runSafe[T](x : long)(f : => T) : T = {
-    // FIXME -- this should collect all the objects that have been marked safe such that
-    // multiple objects can be safe at the same time
-    val old = threadLocal.get
-    try {
-      threadLocal.set(x)
-      f
-    } finally {
-      threadLocal.set(old)
-    }
+     threadLocal.doWith(x)(f)
   }
   
 

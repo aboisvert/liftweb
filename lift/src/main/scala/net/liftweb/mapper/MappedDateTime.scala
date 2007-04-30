@@ -16,7 +16,7 @@ import net.liftweb.util.Lazy._
 class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   private var data : Lazy[Date] = Lazy{defaultValue}
   
-  protected def i_set_!(value : Date) : Date = {
+  protected def real_i_set_!(value : Date) : Date = {
     if (value != data) {
       data() = value
       this.dirty_?( true)
@@ -56,7 +56,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     case d => new java.sql.Date(d.getTime)
   }
   
-  def convertToJDBCFriendly(value: Date): Object = if (value == null) null else new java.sql.Date(value.getTime)
+  def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new java.sql.Date(value.getTime)
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {

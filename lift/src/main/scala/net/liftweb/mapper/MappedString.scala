@@ -15,7 +15,23 @@ import java.util.Date
 class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy{defaultValue} // defaultValue
   
-  protected def i_set_!(value : String) : String = {
+  final def toLower(in: String): String = in match {
+    case null => null
+    case s => s.toLowerCase
+  }
+  
+  final def trim(in: String): String = in match {
+  case null => null
+  case s => s.trim
+}
+  
+  final def notNull(in: String): String = in match {
+    case null => ""
+    case s => s
+  }
+
+  
+  protected def real_i_set_!(value : String) : String = {
     if (!data.defined_? || value != data.get) {
       data() = value
       this.dirty_?( true)
@@ -54,7 +70,7 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   
   def getJDBCFriendly(field : String) : Object = get
   
-  def convertToJDBCFriendly(value: String): Object = value
+  def real_convertToJDBCFriendly(value: String): Object = value
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {
@@ -75,6 +91,13 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
   }
+  
+  def valMinLen(len: int, msg: String)(value: String): List[ValidationIssue] = 
+    if (get.length < 3) List(ValidationIssue(this, msg)) else Nil
+
+  def valUnique(msg: String)(value: String): List[ValidationIssue] =
+    owner.getSingleton.findAll(By(this, value)).filter(_.comparePrimaryKeys(this.owner)).
+      map(x =>ValidationIssue(this, msg))
   
   /**
    * Given the driver type, return the string required to create the column in the database

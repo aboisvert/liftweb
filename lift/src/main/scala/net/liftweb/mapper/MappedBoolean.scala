@@ -23,7 +23,7 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
 
   protected def i_get_! = data match {case None => false; case Some(v) => v}
   
-  protected def i_set_!(value : boolean) : boolean = {
+  protected def real_i_set_!(value : boolean) : boolean = {
     if (data != None || value != data.get) {
       data = Some(value)
       this.dirty_?( true)
@@ -33,13 +33,7 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[boolean, T]
   override def readPermission_? = true
   override def writePermission_? = true
   
-  /*
-   def convertToJDBCFriendly(value: boolean): Object = new Boolean(value)
-   
-   
-   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new Boolean(get)}
-   */
-  def convertToJDBCFriendly(value: boolean): Object = new java.lang.Integer(if (value) 1 else 0)
+  def real_convertToJDBCFriendly(value: boolean): Object = new java.lang.Integer(if (value) 1 else 0)
   
   def getJDBCFriendly(field : String) = data match {case None => null; case _ => new java.lang.Integer(if (get) 1 else 0)}
 

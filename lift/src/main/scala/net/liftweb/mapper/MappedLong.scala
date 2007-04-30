@@ -101,7 +101,7 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
 
   protected def i_get_! = data
   
-  protected def i_set_!(value : long) : long = {
+  protected def real_i_set_!(value : long) : long = {
     if (value != data) {
       data = value
       this.dirty_?( true)
@@ -111,7 +111,7 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
   override def readPermission_? = true
   override def writePermission_? = true
   
-  def convertToJDBCFriendly(value: long): Object = new Long(value)
+  def real_convertToJDBCFriendly(value: long): Object = new Long(value)
   
   
   def getJDBCFriendly(field : String) = new Long(get)

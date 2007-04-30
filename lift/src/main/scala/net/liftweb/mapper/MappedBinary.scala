@@ -15,7 +15,7 @@ import java.util.Date
 class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte], T] {
   private val data : Lazy[Array[byte]] =  Lazy{defaultValue} // defaultValue
   
-  protected def i_set_!(value : Array[byte]) : Array[byte] = {
+  protected def real_i_set_!(value : Array[byte]) : Array[byte] = {
     data() = value
     this.dirty_?( true)
     value
@@ -47,7 +47,7 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte],
   
   def getJDBCFriendly(field : String) : Object = get
   
-  def convertToJDBCFriendly(value: Array[byte]): Object = value
+  def real_convertToJDBCFriendly(value: Array[byte]): Object = value
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
     inst match {

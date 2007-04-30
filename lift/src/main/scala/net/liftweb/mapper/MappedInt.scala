@@ -75,7 +75,7 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
 
   protected def i_get_! = data
   
-  protected def i_set_!(value : int) : int = {
+  protected def real_i_set_!(value : int) : int = {
     if (value != data) {
       data = value
       this.dirty_?( true)
@@ -85,7 +85,7 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   override def readPermission_? = true
   override def writePermission_? = true
   
-  def convertToJDBCFriendly(value: int): Object = new Integer(value)
+  def real_convertToJDBCFriendly(value: int): Object = new Integer(value)
   
   
   def getJDBCFriendly(field : String) = new Integer(get)

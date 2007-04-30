@@ -196,7 +196,21 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     value
   }
   
-  protected def i_set_!(value : T) : T
+  protected def setFilter: List[(T) => T] = Nil
+  
+  protected final def i_set_!(value : T) : T = {
+    real_i_set_!(runFilters(value, setFilter))
+  }
+  
+  def runFilters(in: T, filter: List[(T) => T]): T = {
+    filter match {
+      case Nil => in
+      case x :: xs => runFilters(x(in), xs)
+    }
+  }
+  
+  
+  protected def real_i_set_!(value: T) : T
   
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (O, AnyRef) => unit 
   def buildSetLongValue(accessor : Method, columnName : String) : (O, long, boolean) => unit 
@@ -252,9 +266,18 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     if (t == null) "" else t.toString
   }
   
-  def validate : List[ValidationIssue] = Nil
+  def validations: List[(T) => List[ValidationIssue]] = Nil
+  
+  def validate : List[ValidationIssue] = {
+    val cv = get
+    validations.flatMap(_(cv))
+  }
 
-  def convertToJDBCFriendly(value: T): Object
+  final def convertToJDBCFriendly(value: T): Object = real_convertToJDBCFriendly(runFilters(value, setFilter))
+
+  protected def real_convertToJDBCFriendly(value: T): Object
+  
+  
 
   def asHtml : Node = Text(toString)
 }

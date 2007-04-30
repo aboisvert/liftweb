@@ -112,6 +112,8 @@ trait Mapper[A<:Mapper[A]] {
       }
     }
   }
+  
+  def comparePrimaryKeys(other: A) = false
 }
 
 object Mapper {
@@ -119,6 +121,10 @@ object Mapper {
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
-  def primaryKeyField: MappedField[KeyType, OwnerType]
+  def primaryKeyField: MappedField[KeyType, OwnerType];
+  
+  override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.get == other.primaryKeyField.get
+                                   
+                                   
 }
 

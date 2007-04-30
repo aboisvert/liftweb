@@ -177,7 +177,8 @@ class Page extends Actor {
     xml.flatMap {
       v =>
         v match {
-          case Elem("lift", "form", attr @ _ , scope @ _, kids @ _*) => {Elem(null, "form", addAjaxOnSubmit(request, attr), scope, processForForms(kids, request): _*)}
+        case Elem("lift", "form", attr @ _ , scope @ _, kids @ _*) => {Elem(null, "form", addAjaxOnSubmit(request, attr), scope, processForForms(kids, request): _*)}
+        case Elem("lift", "a", attr @ _ , scope @ _, kids @ _*) => {Elem(null, "a", addAjaxHREF(request, attr), scope, processForForms(kids, request): _*)}
           case Elem(prefix @ _,label @ _,attr @ _,scope @ _,kids @ _*) => {Elem(prefix, label, attr, scope, processForForms(kids, request) : _*)}
           case _ => {v}
         }
@@ -189,6 +190,11 @@ class Page extends Actor {
     new UnprefixedAttribute("onsubmit", ajax, attr)
   }
 
+  private def addAjaxHREF(request: RequestState, attr: MetaData): MetaData = {
+    val ajax = "javascript: new Ajax.Request('"+request.contextPath+request.uri+"', {asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }}); return false;"
+    new UnprefixedAttribute("href", ajax, attr)
+  }
+  
   
   private def processParameters(r: RequestState) {
     r.paramNames.filter{n => messageCallback.contains(n)}.foreach{

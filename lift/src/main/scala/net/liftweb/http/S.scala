@@ -194,6 +194,17 @@ object S {
   private def makeFormElement(name: String, func: String => Any, params: Seq[FormElementPieces]): NodeSeq =
     wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
  
+  /**
+    * create an anchor tag around a body which will do an AJAX call and invoke the function
+    *
+    * @param func - the function to invoke when the link is clicked
+    * @param body - the NodeSeq to wrap in the anchor tag
+    */
+  def a(func: () => Any, body: NodeSeq): NodeSeq = {
+    val key = "F"+System.nanoTime+"_"+randomString(3)
+    addFunctionMap(key, (a: List[String]) => {func(); true})
+    <lift:a key={key}>{body}</lift:a>
+  }
     
   def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
   def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)

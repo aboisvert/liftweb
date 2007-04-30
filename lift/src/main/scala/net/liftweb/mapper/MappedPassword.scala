@@ -32,7 +32,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   private var invalidPw = false
   private var invalidMsg = ""
   
-  protected def i_set_!(value : String) : String = {
+  protected def real_i_set_!(value : String) : String = {
     password() = value match {
       case "*" | null | MappedPassword.blankPw if (value.length < 3) => {invalidPw = true ; invalidMsg = "Password must be set" ; "*"}
       case MappedPassword.blankPw => {return "*"}
@@ -63,7 +63,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
     else List(ValidationIssue(this, "Password must be set"))
   }
   
-  def convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")
+  def real_convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")
   
   /**
    * Get the JDBC SQL Type for this field
