@@ -96,7 +96,7 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
     if (get.length < 3) List(ValidationIssue(this, msg)) else Nil
 
   def valUnique(msg: String)(value: String): List[ValidationIssue] =
-    owner.getSingleton.findAll(By(this, value)).filter(_.comparePrimaryKeys(this.owner)).
+    owner.getSingleton.findAll(By(this, value)).filter(!_.comparePrimaryKeys(this.owner)).
       map(x =>ValidationIssue(this, msg))
   
   /**
