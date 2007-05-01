@@ -423,9 +423,11 @@ object Helpers {
   
   val random = new java.security.SecureRandom
   
-  def randomLong(mod: long) = random.nextLong % mod
+  def randomLong(mod: long): long = Math.abs(random.nextLong) % mod
+  def randomInt(mod: int): int = Math.abs(random.nextInt) % mod
   
-  def shouldShow(percent: int): boolean = random.nextInt % 100 < percent
+  def shouldShow(percent: int): boolean = Math.abs(random.nextInt) % 100 < percent
+  def shouldShow(percent: double): boolean = random.nextDouble <= percent
   
   def randomString(size: int) : String = {
     var pos = 0
@@ -662,9 +664,8 @@ object Helpers {
 
   
   private class MsgSender extends Actor {
-    def act = loop
-    
-    def loop {
+    def act = {
+    loop {
       react {
         case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
         try {
@@ -691,11 +692,10 @@ object Helpers {
           case e: Exception => e.printStackTrace // FIXME logging
         }
         
-        loop
-        
-        case _ => Console.println("Here... sorry") ; loop
+        case _ => Console.println("Here... sorry")
       }
     }
+  }
   }
 
   

@@ -45,7 +45,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   
   def findAll : List[A] = {
-    findAll(Nil :_*)
+    findMap(Nil :_*)(v => Some(v))
   }
   
   // def findAll(by: QueryParam*): List[A] = findAll(List(by))
@@ -58,7 +58,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       st =>
 	DB.exec(st) {
           rs =>
-            createInstances(rs, None, None)
+            createInstances(rs, None, None, v => Some(v))
 	}
     }
   }
@@ -86,7 +86,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
   }
   
-  def findAll(by: QueryParam[A]*): List[A] = {
+  def findAll(by: QueryParam[A]*): List[A] = findMap(by :_*)(v => Some(v))
+  
+  def findMap[T](by: QueryParam[A]*)(f: A => Option[T]) : List[T] = {
     DB.use {
       conn =>
     val bl = by.toList
@@ -96,7 +98,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
         setStatementFields(st, bl, 1)
       DB.exec(st) {
         rs =>
-          createInstances(rs, start, max)
+          createInstances(rs, start, max, f)
       }
     }
     }
@@ -408,16 +410,19 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case Some(v) => v.dbPrimaryKey_?
     }
   }
-  
-  def createInstances(rs: ResultSet, start: Option[long], omax: Option[long]) : List[A] = {
-    var ret = new ArrayBuffer[A]
+
+  def createInstances(rs: ResultSet, start: Option[long], omax: Option[long]) : List[A] = createInstances(rs, start, omax, v => Some(v))
+
+    
+  def createInstances[T](rs: ResultSet, start: Option[long], omax: Option[long], f: A => Option[T]) : List[T] = {
+    var ret = new ArrayBuffer[T]
     val bm = buildMapper(rs)
     var pos = (start getOrElse 0L) * -1L
     val max = omax getOrElse java.lang.Long.MAX_VALUE
 
     while (pos < max && rs.next()) {
       if (pos >= 0L) {
-        ret += createInstance(rs, bm._1, bm._2)
+        f(createInstance(rs, bm._1, bm._2)).foreach(v => ret += v)
       }
       pos = pos + 1L
     }

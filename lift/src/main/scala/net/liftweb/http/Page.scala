@@ -19,31 +19,27 @@ class Page extends Actor {
   private var messageCallback: Map[String, ActionMessage] = TreeMap.empty[String, ActionMessage]
   private var pendingAjax: List[AjaxRerender] = Nil
   
-  def act = {this.trapExit = true ; loop}
-  
-  def loop {
-    react(dispatcher)
+  def act = {
+    this.trapExit = true
+    loop(react(dispatcher))
   }
   
+
   def dispatcher: PartialFunction[Any, Unit] = {
     case "shutdown" => self.exit("shutdown")
-
     
     case AskRenderPage(state, pageXml, sender, controllerMgr, timeout) =>
       performRender(state, pageXml, sender, controllerMgr, timeout)
-    loop
     
     case ar: AnswerRender => updateRendered(ar)
-    loop
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
       ajr.sendTo ! XhtmlResponse(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
-    loop
     
-    case unknown => Console.println("Page got "+unknown); loop
+    case unknown => Console.println("Page got "+unknown)
   }
   
   def updateRendered(ar: AnswerRender) {
@@ -96,34 +92,6 @@ class Page extends Actor {
         sender ! resp
       }
   }
-  
-  /*
-  def apply[T](name: String): Option[T] = {
-    (localState.get(name) match {
-      case None => None // globalState.get(name)
-      case s @ Some(_) => s
-    }) match {
-      case None => None
-      case Some(s) if (s.isInstanceOf[T]) => Some(s.asInstanceOf[T])
-      case _ => None
-    }
-  }
-  
-  def update(key: String, value: Any) = {
-    localState(key) = value
-  }*/
-  
-  /*
-  def globalUpdate(key: String, value: Any) = {
-    globalState = (globalState(key) = value)
-      theSession ! SetGlobal(key, value)
-  }
-  
-  def globalRemove(key: String) = {
-    globalState = (globalState - key)
-      theSession ! UnsetGlobal(key)
-  }*/
-
   
   private def processControllers(xml : NodeSeq, ctlMgr: ControllerManager, request: RequestState) : NodeSeq = {
     xml.flatMap {

@@ -346,7 +346,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         v match {
           case Elem("lift", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)}
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => {findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_?) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder), session, finder)}
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder), session, finder)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)}
           case _ => {v}
         }

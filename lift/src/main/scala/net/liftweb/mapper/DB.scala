@@ -21,7 +21,7 @@ object DB {
     * can we get a JDBC connection from JNDI?
     */
   def jndiJdbcConnAvailable_? : boolean = {
-    val touchedEnv = envContext.calculated_? ;
+    val touchedEnv = envContext.calculated_?
     
     val ret = try {
       (envContext.lookup(whichName("lift")).asInstanceOf[DataSource].getConnection) != null

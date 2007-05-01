@@ -33,49 +33,44 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private var answerWith: Option[(Any) => boolean] = None
   
   def name = _name
-  def act = {this.trapExit = true; loop}
-  
-  def loop : Unit = {
+  def act = {
+    this.trapExit = true
+    loop {
     react(composeFunction)
-  }  
+    }
+  }
+  
+  /*def loop : Unit = {
+    react(composeFunction)
+  } */ 
 
   def highPriority : PartialFunction[Any, Unit] = {
-    case Never => loop
+    case Never =>
   }
   
   def lowPriority : PartialFunction[Any, Unit] = {
-    case Never => loop
-    case s => Console.println("Controller "+this+" got unexpected message "+s); loop
+    case s => Console.println("Controller "+this+" got unexpected message "+s)
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
     case SetName(theName) =>
     this._name = theName
-    loop
     
-    case PerformSetupController(owner, defaultXml) => {
+    case PerformSetupController(owner, defaultXml) =>
       owner.foreach{o => owner_i += o}
       defaultXml_i = defaultXml
       localSetup
-      loop
-    }
     
-    case r @ AskRender(request) => {
+    case r @ AskRender(request) =>
       if (!askingWho.isEmpty) {
       	askingWho.get forward r
       } else {
-        try {
           S.init(request) {
 	    reply(buildRendered(render))
           }
-        } catch {
-          case e: Exception => e.printStackTrace
-        }
       }
-      loop
-    }
     
-    case ActionMessage(name, value, _, replyTo, request) => {
+    case ActionMessage(name, value, _, replyTo, request) =>
       S.init(request) {
 	localFunctionMap.get(name) match {
           case Some(f) => {
@@ -87,16 +82,11 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
         reply("gotit")
       }
 
-      loop
-    }
-    
-    case AskQuestion(what, who) => {
+    case AskQuestion(what, who) =>
       startQuestion(what)
       whosAsking = Some(who)
-      loop
-    }
     
-    case AnswerQuestion(what, request) => {
+    case AnswerQuestion(what, request) =>
       S.init(request) {
         askingWho.foreach {
           askingWho =>
@@ -108,8 +98,6 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 	answerWith = None
         }
       }
-      loop
-    }
 
     case DoExit => self.exit("Politely Asked to Exit")
   }
@@ -131,18 +119,13 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   def composeFunction = composeFunction_i
   
-  val composeFunction_i = {
-    val cleanUp: PartialFunction[Any, Unit] = {
-      case _ => loop
-    }
-    highPriority orElse mediumPriority orElse lowPriority orElse cleanUp
-  }
+  def composeFunction_i = highPriority orElse mediumPriority orElse lowPriority
   
   def owner = owner_i
   def defaultXml = defaultXml_i
   
-  def bind(vals: Map[String, NodeSeq]): NodeSeq = {
-    Helpers.bind(vals, defaultXml)
+  def bind(vals: (String, NodeSeq)*): NodeSeq = {
+    Helpers.bind(Map.empty ++ vals, defaultXml)
   }
   
   private def buildRendered(in: NodeSeq): AnswerRender = {
@@ -161,7 +144,6 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   }
   
   def answer(answer: Any, request: RequestState) {
-    Console.println("Answering with "+answer+" to "+whosAsking)
     whosAsking.foreach(_ !? AnswerQuestion(answer, request))
     whosAsking = None
     reRender
