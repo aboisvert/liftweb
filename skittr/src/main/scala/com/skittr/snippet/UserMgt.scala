@@ -13,7 +13,7 @@ class UserMgt {
   def login_panel(xhtml: Group): NodeSeq = {
     <h1>acct</h1> ++
     (if (logged_in_?) {
-      <a href="/logout">Log Out</a>
+      <ul><li><a href="/logout">log out</a></li></ul>
     } else {
         var username = ""
         var pwd = ""
@@ -47,7 +47,7 @@ class UserMgt {
           if (issues.isEmpty) {
             theUser.save
             S.set("user_name", theUser.name)
-            S.notice("Welcome to Skittr")
+            S.notice("welcome to skittr")
             redirectTo("/")
           }
 
@@ -77,25 +77,37 @@ class UserMgt {
     S.redirectTo("/")
   }
   
+  private def friendList(user: UserIdInfo): NodeSeq = <ul>{
+    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a>&nbsp;<a href={"/unfriend/"+f}></a></li>)
+  }</ul>
+  
   def show_user(xhtml: Group): NodeSeq = {
     (for (val userName <- S.param("user");
          val userActor <- UserList.find(userName);
-         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
-      bind("sk", xhtml, "username" -> user.name, "content" -> Text(user.fullName))
+         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None};
+         val messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Some(m.messages); case _ => None}) yield {
+      bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++ 
+        messages.flatMap{
+        msg => 
+        Helpers.bind("sk", xhtml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
+      }
     }) getOrElse {S.error("User "+(S.param("user") getOrElse "")+" not found"); S.redirectTo("/")}
   }
   
   def watch_or_show(xhtml: Group): NodeSeq = {
-    if (logged_in_?) {
-    <lift:controller type="watch_user" name={S.get("user_name").get}>
+   (for (val userName <- S.get("user_name");
+         val userActor <- UserList.find(userName);
+         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
+      bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++
+    <lift:controller type="watch_user" name={userName}>
     {
       xhtml.nodes
     }
     </lift:controller>
-    } else {
+    }) getOrElse {
       Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>, 
           "content" -> <span>See what others are up to:<ul>{
-            UserList.randomUsers.flatMap {
+            UserList.randomUsers(40).flatMap {
               u =>
               <li><a href={"/user/"+u}>{u}</a></li>
             }
@@ -106,7 +118,7 @@ class UserMgt {
   def random(xhtml: Group): NodeSeq = {
     Helpers.bind("sk", xhtml, "username" -> "A Random List of Users", 
         "content" -> <span>See what others are up to:<ul>{
-          UserList.randomUsers.flatMap {
+          UserList.randomUsers(40).flatMap {
             u =>
             <li><a href={"/user/"+u}>{u}</a></li>
           }

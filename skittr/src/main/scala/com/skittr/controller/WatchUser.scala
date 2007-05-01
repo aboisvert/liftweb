@@ -13,7 +13,14 @@ class WatchUser extends ControllerActor {
   private var messages: List[Message] = Nil
   
   def render: NodeSeq = {
-    Helpers.bind("sk", defaultXml, "username" -> name, "content" -> "") ++ 
+    val inputName = uniqueId+"_msg"
+
+      S.addFunctionMap(inputName,{in => in.foreach(m =>  userActor.foreach(_ ! SendMessage(m, "web"))); true})
+      
+    Helpers.bind("sk", defaultXml, "username" -> name, "content" -> <lift:form method="post" action=".">
+    <input name={inputName} type="text"/>
+    <input type="submit" value="msg"/>
+    </lift:form>) ++ 
     messages.flatMap{
       msg => 
       Helpers.bind("sk", defaultXml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
@@ -21,10 +28,10 @@ class WatchUser extends ControllerActor {
   }
   
   override def lowPriority : PartialFunction[Any, Unit] = {
-    val ret: PartialFunction[Any, Unit] = {case Messages(msg) =>
+    val ret: PartialFunction[Any, Unit] = {
+      case Timeline(msg) =>
       messages = msg
       reRender
-      loop
     }
     
     ret orElse super.lowPriority
@@ -33,6 +40,6 @@ class WatchUser extends ControllerActor {
   
   override def localSetup {
     userActor = UserList.find(name) 
-    userActor.foreach{ua => ua ! AddTimelineViewer ;  messages = (ua !? GetTimeline) match {case Messages(m) => m; case _ => Nil}}
+    userActor.foreach{ua => ua ! AddTimelineViewer ;  messages = (ua !? GetTimeline) match {case Timeline(m) => m; case _ => Nil}}
   }
 }

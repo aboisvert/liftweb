@@ -22,10 +22,12 @@ import com.skittr.actor._
   */
 class Boot {
   def boot {
-    // DB.defineConnectionManager("", DBVendor)
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager("", DBVendor)
     addToPackages("com.skittr")
      
     Schemifier.schemify(User, Friend, MsgStore)
+    
+    if ((true || System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     
     val rewriter: Servlet.rewritePf = {
     case (_, path @ "user" :: user :: _, _, _) => ("/user", "user" :: Nil, 

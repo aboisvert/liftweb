@@ -8,6 +8,7 @@ package com.skittr.model
 
 import net.liftweb.mapper._
 import com.skittr.actor._
+import net.liftweb.util.Helpers._
 
 /**
  * The singleton that has methods for accessing the database
@@ -20,16 +21,37 @@ object User extends User with KeyedMetaMapper[long, User] {
   
   override def afterCreate = &UserList.startUser :: super.afterCreate
   
-  override def dbAddTable = {
-    Some(() => {
-      (1 to 1000).foreach {
-        i =>
-        
-        User.create.firstName("Mr.").lastName("User "+i).email("user"+i+"@skittr.com").
-          password("password"+i).name("test"+i).dontStart.saveMe
+  
+  /**
+    * Calculate a random persiod of at least 2 minutes and at most 8 minutes
+    */
+  // def randomPeriod: long = 2.minutes + randomLong(6.minutes)
+  def randomPeriod: long = 15.seconds + randomLong(45.seconds)
+    
+  def shouldAutogen_? = true
+      
+  // the number of test users to create
+  def createdCount = 100
+  
+  def createTestUsers {
+    (1 to createdCount).foreach {
+      i =>
+      
+      User.create.firstName("Mr.").lastName("User "+i).email("user"+i+"@skittr.com").
+        password("password"+i).name("test"+i).dontStart.saveMe
+    }
+    
+    (1 to createdCount * 7).foreach {
+      i =>
+      val owner = randomLong(createdCount) + 1
+      val friend = randomLong(createdCount) + 1
+      if (owner != friend && Friend.count(By(Friend.friend, friend), By(Friend.owner, owner)) == 0) {
+        Friend.create.owner(owner).friend(friend).save
       }
-    })
+    }
+    
   }
+  
 }
 
 /**
