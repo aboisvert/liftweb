@@ -22,16 +22,11 @@ class Chat extends ControllerActor {
   
 
   override def lowPriority : PartialFunction[Any, Unit] = {
-    val ret: PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => {
-     try {
+    val ret: PartialFunction[Any, Unit] = {
+      case ChatServerUpdate(value) => 
       currentData = value
       reRender
-    } catch {
-case e => e.printStackTrace
-}
-      loop
     } 
-    }
     
     ret orElse super.lowPriority
   } 
