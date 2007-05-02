@@ -42,40 +42,41 @@ object DB {
   
   private def info : HashMap[String, (SuperConnection, int)] = {
     threadStore.get.asInstanceOf[HashMap[String, (SuperConnection, int)]] match {
-      case null => {
+      case null =>
 	val tinfo = new HashMap[String, (SuperConnection, int)];
 	threadStore.set(tinfo)
 	tinfo
-      }
-      case v => {v}
+
+      case v => v
     }
   }
   
   private def whichName(name : String) = if (name == null || name.length == 0) "lift" else name
   
-  private def newConnection(name : String) : SuperConnection = 
-    new SuperConnection(connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection})
+  private def newConnection(name : String) : SuperConnection = {
+    val ret = new SuperConnection(connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection})
+    ret.setAutoCommit(false)
+    ret
+  }
   
   
   private def releaseConnection(conn : SuperConnection) : unit = conn.close
   
-  private def getPairForName(name : String) : (SuperConnection, int) =  {
+  private def getConnection(name : String): SuperConnection =  {
     var ret = info.get(name) match {
       case None => (newConnection(name), 1)
-	case c => (c.get._1, c.get._2 + 1)
+      case Some(c) => (c._1, c._2 + 1)
     }
-    info += name -> ret
-    ret
+    info(name) = ret
+    ret._1
   }
   
   def releaseConnectionNamed(name : String) {
     info.get(name) match {
-      case None => {}
-      case Some(c)  => {c match {
-	case (c , 1) => releaseConnection(c); info -= name
-	case (c, cnt) => info(name) = (c,cnt - 1)
-      }
-		      }
+      case Some(c)  => if (c._2 == 1) c._1.commit
+      info(name) = (c._1, c._2 - 1)
+      
+      case _ =>
     }
   }
   
@@ -91,7 +92,7 @@ object DB {
   def exec[T](db : SuperConnection, query : String)(f : (ResultSet) => T) : T = {
     statement(db) {st => 
       f(st.executeQuery(query))
-		 }
+      }
   }
   
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
@@ -104,14 +105,12 @@ object DB {
   }
   
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
-    
-	val st = conn.prepareStatement(statement)
+    val st = conn.prepareStatement(statement)
       try {
 	f(st)
       } finally {
         st.close
       }
-    
   }
   
   def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
@@ -127,8 +126,9 @@ object DB {
     this.use("")(f)
   }
   def use[T](name : String)(f : (SuperConnection) => T) : T = {
+    val conn = getConnection(name)
     try {
-      f(getPairForName(name)._1)
+      f(conn)
     } finally {
       releaseConnectionNamed(name)
     }
