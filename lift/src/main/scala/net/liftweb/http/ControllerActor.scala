@@ -108,7 +108,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   def reRender = {
     S.initIfUninitted {
-      val rendered = buildRendered(render)
+      val rendered: AnswerRender = buildRendered(render)
       owner.foreach(_ ! rendered)
     }
   }

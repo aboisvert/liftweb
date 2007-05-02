@@ -25,20 +25,28 @@ class Boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager("", DBVendor)
     addToPackages("com.skittr")
      
+    // make sure the database is up to date
     Schemifier.schemify(User, Friend, MsgStore)
     
-    if ((true || System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
+    if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     
+    // map certain urls to the right place
     val rewriter: Servlet.rewritePf = {
-    case (_, path @ "user" :: user :: _, _, _) => ("/user", "user" :: Nil, 
-        TreeMap("user" -> user :: path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+    case (_, "user" :: user :: _, _, _) => ("/user", "user" :: Nil, TreeMap("user" -> user))
+    case (_, "friend" :: user :: _, _, _) => ("/friend", "friend" :: Nil, TreeMap("user" -> user))
+    case (_, "unfriend" :: user :: _, _, _) => ("/unfriend", "unfriend" :: Nil, TreeMap("user" -> user))
   }
   
   Servlet.addRewriteBefore(rewriter)
+  
+  // load up the list of user actors
   UserList.create
   }
 }
 
+/**
+  * A singleton that vends a database connection to a Derby database
+  */
 object DBVendor extends ConnectionManager {
   def newConnection(name: String): Option[Connection] = {
     try {

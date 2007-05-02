@@ -11,6 +11,7 @@ import java.lang.reflect.Method
 import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 import java.util.Date
+import java.util.regex._
 
 class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy{defaultValue} // defaultValue
@@ -21,9 +22,9 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   }
   
   final def trim(in: String): String = in match {
-  case null => null
-  case s => s.trim
-}
+    case null => null
+    case s => s.trim
+  }
   
   final def notNull(in: String): String = in match {
     case null => ""
@@ -40,8 +41,8 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   }
   
   /**
-   * Get the JDBC SQL Type for this field
-   */
+  * Get the JDBC SQL Type for this field
+  */
   def getTargetSQLType = Types.VARCHAR
   
   def defaultValue = ""
@@ -92,13 +93,38 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
   }
   
+  /**
+   * A validation helper.  Make sure the string is at least a particular
+   * length and generate a validation issue if not
+   */
   def valMinLen(len: int, msg: String)(value: String): List[ValidationIssue] = 
-    if (get.length < 3) List(ValidationIssue(this, msg)) else Nil
+    if ((value eq null) || value.length < len) List(ValidationIssue(this, msg))
+    else Nil
 
+  /**
+   * A validation helper.  Make sure the string is no more than a particular
+   * length and generate a validation issue if not
+   */
+  def valMaxLen(len: int, msg: String)(value: String): List[ValidationIssue] = 
+    if ((value ne null) && value.length > len) List(ValidationIssue(this, msg))
+    else Nil
+
+  /**
+   * Make sure that the field is unique in the database
+   */
   def valUnique(msg: String)(value: String): List[ValidationIssue] =
-    owner.getSingleton.findAll(By(this, value)).filter(!_.comparePrimaryKeys(this.owner)).
+    owner.getSingleton.findAll(By(this, value)).
+      filter(!_.comparePrimaryKeys(this.owner)).
       map(x =>ValidationIssue(this, msg))
-  
+
+  /**
+   * Make sure the field matches a regular expression
+   */
+  def valRegex(pat: Pattern, msg: String)(value: String): List[ValidationIssue] = pat.matcher(value).matches match {
+    case true => Nil
+    case false => List(ValidationIssue(this, msg))
+  }
+
   /**
    * Given the driver type, return the string required to create the column in the database
    */

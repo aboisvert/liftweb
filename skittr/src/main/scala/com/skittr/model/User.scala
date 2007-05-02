@@ -9,6 +9,7 @@ package com.skittr.model
 import net.liftweb.mapper._
 import com.skittr.actor._
 import net.liftweb.util.Helpers._
+import java.util.regex._
 
 /**
  * The singleton that has methods for accessing the database
@@ -19,26 +20,27 @@ object User extends User with KeyedMetaMapper[long, User] {
   // define the order fields will appear in forms and output
   override def fieldOrder = id :: name :: firstName :: lastName :: email ::  password :: Nil
   
+  // after we create a user in the database, add the user to the active actors
   override def afterCreate = &UserList.startUser :: super.afterCreate
   
   
   /**
     * Calculate a random persiod of at least 2 minutes and at most 8 minutes
     */
-  // def randomPeriod: long = 2.minutes + randomLong(6.minutes)
-  def randomPeriod: long = 15.seconds + randomLong(45.seconds)
+  def randomPeriod: long = 2.minutes + randomLong(6.minutes)
+  // def randomPeriod: long = 15.seconds + randomLong(45.seconds)
     
-  def shouldAutogen_? = true
+  def shouldAutogen_? = false
       
   // the number of test users to create
-  def createdCount = 100
+  def createdCount = 1000
   
   def createTestUsers {
     (1 to createdCount).foreach {
       i =>
       
       User.create.firstName("Mr.").lastName("User "+i).email("user"+i+"@skittr.com").
-        password("password"+i).name("test"+i).dontStart.saveMe
+        password("my_pwd_"+i).name("test"+i).dontStart.saveMe
     }
     
     (1 to createdCount * 7).foreach {
@@ -52,6 +54,7 @@ object User extends User with KeyedMetaMapper[long, User] {
     
   }
   
+  val validName = Pattern.compile("^[a-z0-9_]{3,30}$")
 }
 
 /**
@@ -66,9 +69,12 @@ class User extends ProtoUser[User] {
   
   // The Name of the User
   val name =  new MappedString(this) {
+    // input filter for the user name
     override def setFilter = &notNull :: &toLower :: &trim :: super.setFilter
     
-    override def validations = &valMinLen(3, "Name too short") :: 
+    // validation for the user name
+    override def validations = &valMinLen(3, "Name too short") ::
+     &valRegex(User.validName, "The 'name' must be letters, numbers, or the '_' (underscore)") ::
      &valUnique("The name '"+get+"' is already taken") :: 
      super.validations
      

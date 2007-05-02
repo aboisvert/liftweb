@@ -78,8 +78,15 @@ class UserMgt {
   }
   
   private def friendList(user: UserIdInfo): NodeSeq = <ul>{
-    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a>&nbsp;<a href={"/unfriend/"+f}></a></li>)
-  }</ul>
+    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a></li>)
+  }</ul> ++ (
+      (for (val curUser <- S.get("user_name");
+           val ua <- UserList.find(curUser);
+           val userInfo <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
+        if (userInfo.friends.contains(user.name)) <a href={"/unfriend/"+user.name}>Unfriend</a>
+        else <a href={"/friend/"+user.name}>Befriend</a>
+      }
+      ) getOrElse Text(""))
   
   def show_user(xhtml: Group): NodeSeq = {
     (for (val userName <- S.param("user");
@@ -95,10 +102,7 @@ class UserMgt {
   }
   
   def watch_or_show(xhtml: Group): NodeSeq = {
-   (for (val userName <- S.get("user_name");
-         val userActor <- UserList.find(userName);
-         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
-      bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++
+   (for (val userName <- S.get("user_name")) yield {
     <lift:controller type="watch_user" name={userName}>
     {
       xhtml.nodes
@@ -113,6 +117,32 @@ class UserMgt {
             }
           }</ul></span>)
     }
+  }
+ 
+  def friend: NodeSeq = {
+    (for (val userName <- S.get("user_name");
+          val userActor <- UserList.find(userName);
+          val toFriend <- S.param("user")) yield {
+      S.notice("You've add "+toFriend+" your your list of friends")
+       userActor ! AddFriend(toFriend)      
+    }) getOrElse {
+      S.error("Unable to friend")
+    }
+
+    S.redirectTo("/")
+  }
+  
+  def unfriend: NodeSeq = {
+    (for (val userName <- S.get("user_name");
+          val userActor <- UserList.find(userName);
+          val toUnfriend <- S.param("user")) yield {
+      S.notice("You've removed "+toUnfriend+" from your list of friends")
+       userActor ! RemoveFriend(toUnfriend)      
+    }) getOrElse {
+      S.error("Unable to unfriend")
+    }
+
+    S.redirectTo("/")
   }
   
   def random(xhtml: Group): NodeSeq = {

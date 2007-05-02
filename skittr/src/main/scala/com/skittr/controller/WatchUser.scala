@@ -1,5 +1,11 @@
 package com.skittr.controller
 
+/*                                                *\
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
+
 import scala.actors._
 import scala.actors.Actor._
 import net.liftweb.http._
@@ -14,17 +20,22 @@ class WatchUser extends ControllerActor {
   
   def render: NodeSeq = {
     val inputName = uniqueId+"_msg"
+    (for (val ua <- userActor;
+          val user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u)
+							      case _ => None}) yield {
+	    S.addFunctionMap(inputName,{in => in.foreach(m =>  ua ! SendMessage(m, "web")); true})
 
-      S.addFunctionMap(inputName,{in => in.foreach(m =>  userActor.foreach(_ ! SendMessage(m, "web"))); true})
-      
-    Helpers.bind("sk", defaultXml, "username" -> name, "content" -> <lift:form method="post" action=".">
-    <input name={inputName} type="text"/>
-    <input type="submit" value="msg"/>
-    </lift:form>) ++ 
-    messages.flatMap{
-      msg => 
-      Helpers.bind("sk", defaultXml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
-    }
+	    Helpers.bind("sk", defaultXml, "username" -> (user.name+" -> "+user.fullName), 
+			 "content" -> <span>{friendList(user) ++
+				       <lift:form method="post" action=".">
+				       <textarea name={inputName} cols='40'></textarea><br />
+				       <input type="submit" value="msg"/>
+				       </lift:form>}</span>) ++ 
+	    messages.flatMap(msg => 
+	      Helpers.bind("sk", defaultXml,
+			   "username" -> (msg.who+" @ "+toInternetDate(msg.when)),
+			   "content" -> msg.text))
+	  }) getOrElse Helpers.bind("sk", defaultXml, "username" -> "N/A", "content" -> "N/A")
   }
   
   override def lowPriority : PartialFunction[Any, Unit] = {
@@ -42,4 +53,8 @@ class WatchUser extends ControllerActor {
     userActor = UserList.find(name) 
     userActor.foreach{ua => ua ! AddTimelineViewer ;  messages = (ua !? GetTimeline) match {case Timeline(m) => m; case _ => Nil}}
   }
+  
+  private def friendList(user: UserIdInfo): NodeSeq = <ul>{
+    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a>&nbsp;<a href={"/unfriend/"+f}>Unfriend</a></li>)
+  }</ul>
 }

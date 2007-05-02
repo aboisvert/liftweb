@@ -1,5 +1,11 @@
 package com.skittr.actor
 
+/*                                                *\
+ (c) 2007 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+\*                                                 */
+  
 import scala.actors._
 import scala.actors.Actor._
 import com.skittr.model._
@@ -13,6 +19,9 @@ import net.liftweb.util.Helpers._
  * All the "current state" and logic necessary to deal with messages between users
  */
 class UserActor extends Actor {
+  // the maximum messages to keep in memory
+  private val maxMessages = 20
+  
   // Information about the user
   private var userName: String = _
   private var userId: long = _
@@ -49,8 +58,8 @@ class UserActor extends Actor {
           // create a new Message object to be added to the user's local message and sent
           // to followers
           val msg = Message(text, System.currentTimeMillis, userName, src)
-          // add to our local messages (keeping only the 50 most recent messages)
-          latestMsgs = (msg :: latestMsgs).take(50)
+          // add to our local messages (keeping only the maxMessages most recent messages)
+          latestMsgs = (msg :: latestMsgs).take(maxMessages)
           // update all our followers (and ourselves) with the message 
           (this :: followers).foreach(_ ! msg)
           // and put it in the database
@@ -81,7 +90,7 @@ class UserActor extends Actor {
           // get the latest messages from the database
           latestMsgs = MsgStore.findAll(By(MsgStore.who, userId), 
                                       OrderBy(MsgStore.when, false),
-                                      MaxRows(50)).map(s => Message(s.message, s.when, userName, s.source))
+                                      MaxRows(maxMessages)).map(s => Message(s.message, s.when, userName, s.source))
           localTimeline = latestMsgs  // set the local timeline to our messages (the folks we follow will update us)
           // get friends
           friends = User.findAllByInsecureSql("SELECT users.* FROM users, friends WHERE users.id = friends.friend AND friends.owner = "+userId,
@@ -160,7 +169,7 @@ class UserActor extends Actor {
         // We get a message
         case msg : Message =>
           messageViewers.foreach(_ ! Messages(latestMsgs)) // send it to the message viewers
-          localTimeline = (msg :: localTimeline).take(50) // update our timeline
+          localTimeline = (msg :: localTimeline).take(maxMessages) // update our timeline
           timelineViewers.foreach(_ ! Timeline(localTimeline)) // send the updated timeline to the timeline viewers
 
         // If someone is exiting, remove them from our lists
@@ -175,16 +184,14 @@ class UserActor extends Actor {
   }
   
   /**
-  * Sort the list in reverse chronological order and take the first 50 elements
+  * Sort the list in reverse chronological order and take the first maxMessages elements
   */
-  private def merge(bigList: List[Message]) = bigList.sort((a,b) => b.when < a.when).take(50) 
+  private def merge(bigList: List[Message]) = bigList.sort((a,b) => b.when < a.when).take(maxMessages) 
 
   /**
   * Autogenerate and schedule a message
   */
   def autoGen = ActorPing.schedule(this, SendMessage("This is a random message @ "+timeNow+" for "+userName, "autogen"), User.randomPeriod)
-  
-  
 }
 
 /**

@@ -56,7 +56,7 @@ class Page extends Actor {
       pl => 
         val uid = pl._1
       val ar = pl._2
-      val html = updateCallbacks(ar, state).toString
+      val html = state.fixHtml(updateCallbacks(ar, state)).toString
       "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
     }.mkString("", "\n", "")
     
