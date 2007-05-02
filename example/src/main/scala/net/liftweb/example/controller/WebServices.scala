@@ -20,9 +20,9 @@ class WebServices (val request: RequestState,val httpRequest: HttpServletRequest
   
   def add_user: XmlResponse = {
     var success = false
-    for (val firstname <- params("firstname");
-         val lastname <- params("lastname");
-         val email <- params("email")) {
+    for (firstname <- params("firstname");
+         lastname <- params("lastname");
+         email <- params("email")) {
       val u = new User
       u.firstName := firstname
       u.lastName := lastname

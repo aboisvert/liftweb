@@ -76,7 +76,7 @@ object ActorPing extends AnyRef with Runnable {
             if (lateList.isEmpty) wait(sleepTime)
 
         // process guys waiting for signal and empty list
-        for (val wa <- lateList) {
+        for (wa <- lateList) {
           if (wa.valid) {
             wa.actor ! wa.msg
           }

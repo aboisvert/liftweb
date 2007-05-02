@@ -42,6 +42,6 @@ val toCount = param("country") getOrElse {"US"}
         }
       
       private def countryCount(toMatch : String, xml : NodeSeq) = {
-         (for (val addr <- xml \\ "address"; val country <- addr \\ "country" ; country.text == toMatch) yield country).length
+         (for (addr <- xml \\ "address"; country <- addr \\ "country" ; if country.text == toMatch) yield country).length
       }
 }

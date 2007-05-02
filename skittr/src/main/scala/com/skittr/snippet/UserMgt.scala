@@ -78,21 +78,20 @@ class UserMgt {
   }
   
   private def friendList(user: UserIdInfo): NodeSeq = <ul>{
-    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a></li>)
-  }</ul> ++ (
-      (for (val curUser <- S.get("user_name");
-           val ua <- UserList.find(curUser);
-           val userInfo <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
+    user.friends.map(f => <li><a href={"/user/"+f}>{f}</a></li>)}</ul> ++ (
+      (for (curUser <- S.get("user_name");
+            ua <- UserList.find(curUser);
+            userInfo <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
         if (userInfo.friends.contains(user.name)) <a href={"/unfriend/"+user.name}>Unfriend</a>
         else <a href={"/friend/"+user.name}>Befriend</a>
       }
       ) getOrElse Text(""))
   
   def show_user(xhtml: Group): NodeSeq = {
-    (for (val userName <- S.param("user");
-         val userActor <- UserList.find(userName);
-         val user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None};
-         val messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Some(m.messages); case _ => None}) yield {
+    (for (userName <- S.param("user");
+          userActor <- UserList.find(userName);
+          user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None};
+          messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Some(m.messages); case _ => None}) yield {
       bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++ 
         messages.flatMap{
         msg => 
@@ -102,7 +101,7 @@ class UserMgt {
   }
   
   def watch_or_show(xhtml: Group): NodeSeq = {
-   (for (val userName <- S.get("user_name")) yield {
+   (for (userName <- S.get("user_name")) yield {
     <lift:controller type="watch_user" name={userName}>
     {
       xhtml.nodes
@@ -120,9 +119,9 @@ class UserMgt {
   }
  
   def friend: NodeSeq = {
-    (for (val userName <- S.get("user_name");
-          val userActor <- UserList.find(userName);
-          val toFriend <- S.param("user")) yield {
+    (for (userName <- S.get("user_name");
+          userActor <- UserList.find(userName);
+          toFriend <- S.param("user")) yield {
       S.notice("You've add "+toFriend+" your your list of friends")
        userActor ! AddFriend(toFriend)      
     }) getOrElse {
@@ -133,9 +132,9 @@ class UserMgt {
   }
   
   def unfriend: NodeSeq = {
-    (for (val userName <- S.get("user_name");
-          val userActor <- UserList.find(userName);
-          val toUnfriend <- S.param("user")) yield {
+    (for (userName <- S.get("user_name");
+          userActor <- UserList.find(userName);
+          toUnfriend <- S.param("user")) yield {
       S.notice("You've removed "+toUnfriend+" from your list of friends")
        userActor ! RemoveFriend(toUnfriend)      
     }) getOrElse {

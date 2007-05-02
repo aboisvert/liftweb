@@ -31,8 +31,8 @@ class Misc {
    * Confirm deleting a user
    */
   def confirmDelete(xhtml: Group): NodeSeq = {      
-    (for (val id <- param("id"); // get the ID
-          val user <- User.find(id)) // find the user
+    (for (id <- param("id"); // get the ID
+          user <- User.find(id)) // find the user
      yield { 
        def deleteUser(p: String) {
          notice("User "+(user.firstName+" "+user.lastName)+" deleted")
@@ -60,8 +60,8 @@ class Misc {
     val invokedAs = S.invokedAs
     
     
-    (for (val id <- param("id"); // get the id
-          val user <- User.find(id)) // find the user
+    (for (id <- param("id"); // get the id
+          user <- User.find(id)) // find the user
      yield {
        // define a function that will be called to deal
        // with editing the user

@@ -20,14 +20,14 @@ class UserTests extends TestCase("User Tests") {
     DB.use {
       conn =>
       
-        for (val cnt <- 1 to maxUsers) {
+        for (cnt <- 1 to maxUsers) {
           val u = new User
           u.firstName := cnt.toString
           u.lastName := "Name "+cnt
           u.email := "mr"+cnt+"@foo.com"
           u.password := "password"+cnt
           u.save
-          for (val petCnt <- 1 to (1 + cnt/ 10)) {
+          for (petCnt <- 1 to (1 + cnt/ 10)) {
             val p = new Pet
             p.name := ""+petCnt+" of "+u.lastName
             p.owner := u.id.get
@@ -59,7 +59,7 @@ class UserTests extends TestCase("User Tests") {
     assert(User.find(BySql("id = ?", 33)).get.id.get == u.id.get)
     assert(User.find(BySql("id = ?", u.id)).get.id.get == u.id.get)
     
-    for (val uKey <- 1 to maxUsers) {
+    for (uKey <- 1 to maxUsers) {
       val u = User.find(uKey)
       assert(u.isDefined)
       val user = u.get
@@ -102,7 +102,7 @@ class UserTests extends TestCase("User Tests") {
   }
   
   def pwdTest {
-    for (val cnt <- 1 to maxUsers) {
+    for (cnt <- 1 to maxUsers) {
       val u = User.find(By(User.firstName, cnt.toString)).get
       assert(u.password.match_?("password"+cnt))
       assert(!u.password.match_?("dog"+cnt))

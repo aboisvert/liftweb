@@ -57,7 +57,7 @@ object TestRunner {
       Scheduler.shutdown
 
 
-      for (val tf <- r.failures()) {
+      for (tf <- r.failures()) {
         Console.println(tf.toString())
         Console.println(tf.trace)
       }

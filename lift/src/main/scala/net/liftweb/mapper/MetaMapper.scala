@@ -346,7 +346,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
           st =>
             var colNum = 1
           
-          for (val col <- mappedColumns.elements) {
+          for (col <- mappedColumns.elements) {
             val colVal = ??(col._2, toSave)
             if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
               st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
@@ -367,7 +367,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       val ret = DB.prepareStatement("INSERT INTO "+dbTableName+" ("+columnNamesForInsert+") VALUES ("+columnQueriesForInsert+")", Statement.RETURN_GENERATED_KEYS, conn) {
         st =>
           var colNum = 1
-        for (val col <- mappedColumns.elements) {
+        for (col <- mappedColumns.elements) {
           if (!columnPrimaryKey_?(col._1)) {
             val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
             st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
@@ -440,7 +440,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     val meta = rs.getMetaData
     val colCnt = meta.getColumnCount
     val ar = new Array[(ResultSet,int,A) => unit](colCnt + 1)
-    for (val pos <- 1 to colCnt) {
+    for (pos <- 1 to colCnt) {
       val colName = meta.getColumnName(pos).toLowerCase
       val optFunc = columnNameToMappee.get(colName) match {
         case None => {
@@ -578,7 +578,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
     this.runSafe {
       val tArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])]
-      for (val v <- this.getClass.getSuperclass.getMethods) {
+      for (v <- this.getClass.getSuperclass.getMethods) {
         if (classOf[LifecycleCallbacks].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
             canUse(v)) {
               mappedCallbacks = (v.getName, v) :: mappedCallbacks
@@ -590,7 +590,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 		mf.setName_!(v.getName)
 		val trp = (mf.name, v, mf)
 		  tArray += trp
-		for (val colName <- mf.dbColumnNames(v.getName)) {
+		for (colName <- mf.dbColumnNames(v.getName)) {
 		  mappedColumnInfo(colName) = mf
 		  mappedColumns(colName) = v
 		}

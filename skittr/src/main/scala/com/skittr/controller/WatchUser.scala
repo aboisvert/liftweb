@@ -20,8 +20,8 @@ class WatchUser extends ControllerActor {
   
   def render: NodeSeq = {
     val inputName = uniqueId+"_msg"
-    (for (val ua <- userActor;
-          val user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u)
+    (for (ua <- userActor;
+          user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u)
 							      case _ => None}) yield {
 	    S.addFunctionMap(inputName,{in => in.foreach(m =>  ua ! SendMessage(m, "web")); true})
 

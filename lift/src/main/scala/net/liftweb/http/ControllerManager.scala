@@ -60,10 +60,10 @@ class ControllerManager extends Actor {
   }
   
   private def findFactory(factory: Option[String]) : Option[ControllerFactory] = {
-    for (val factName <- factory;
-         val cls <- findClass(factName, buildPackage("factory") ::: ("lift.app.factory" :: Nil),
+    for (factName <- factory;
+         cls <- findClass(factName, buildPackage("factory") ::: ("lift.app.factory" :: Nil),
              {c : Class => classOf[ControllerFactory].isAssignableFrom(c)});
-         val ret <- tryo{cls.newInstance.asInstanceOf[ControllerFactory]})
+         ret <- tryo{cls.newInstance.asInstanceOf[ControllerFactory]})
      	yield ret
   }
 

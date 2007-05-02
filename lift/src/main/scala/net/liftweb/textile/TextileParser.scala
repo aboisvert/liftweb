@@ -18,10 +18,10 @@ import scala.collection.mutable.HashMap
 trait CharParsers extends Parsers {
   def any: Parser[char]
   def chr(ch: char) = {
-    for (val c <- any; c == ch) yield c
+    for (c <- any; if c == ch) yield c
   }
   def chr(p: char => boolean) =
-    for (val c <- any; p(c)) yield c
+    for (c <- any; if p(c)) yield c
   
   /**
    * Match a list of characters
@@ -89,9 +89,9 @@ object TextileParser {
     */
     def blankLine: Parser[Textile] = {
       for (
-        val c: char <- chr('\0');
-        val spaces <- rep(chr(' '));
-        val cs: char <- chr('\n')
+        c: char <- chr('\0');
+        spaces <- rep(chr(' '));
+        cs: char <- chr('\n')
       ) yield BlankLine
     }
 
@@ -138,10 +138,10 @@ object TextileParser {
     */
     def acronym : Parser[Textile] = {
       for (
-        val thing : List[char] <- rep1(chr(&acro_thing));
-        val op <- not(copyright ||| trademark ||| registered) &&& str("(");
-        val acro <- rep1(chr(&acro));
-        val cp <- str(")")
+        thing : List[char] <- rep1(chr(&acro_thing));
+        op <- not(copyright ||| trademark ||| registered) &&& str("(");
+        acro <- rep1(chr(&acro));
+        cp <- str(")")
       ) yield Acronym(thing.mkString("","",""), acro.mkString("","",""))
     }
     
@@ -155,13 +155,13 @@ object TextileParser {
     */
     def image : Parser[Textile] = {
       for (
-        val c1 <- chr('!');
-        val fl <- opt(chr('<'));
-        val fr <- opt(chr('>'));
-        val img_url : List[char] <- rep1(not(chr('!')) &&& chr(validUrlChar));
-        val alt : List[List[char]] <- opt(img_alt);
-        val ce <- chr('!');
-        val link <- opt(img_link)
+        c1 <- chr('!');
+        fl <- opt(chr('<'));
+        fr <- opt(chr('>'));
+        img_url : List[char] <- rep1(not(chr('!')) &&& chr(validUrlChar));
+        alt : List[List[char]] <- opt(img_alt);
+        ce <- chr('!');
+        link <- opt(img_link)
       ) yield Image(img_url.mkString("","",""), if (alt.length > 0) alt.head.mkString("","","") else "",
 		    if (link.length > 0) link.head.href else null, 
 		    if (fl.length > 0) List(AnyAttribute("style", "float:left"))
@@ -171,17 +171,17 @@ object TextileParser {
     
     private def img_alt  = {
       for (
-        val c1 <- str("(");
-        val ret <- rep1(not(str(")")) &&& chr(&not_eol));
-        val c2 <- str(")")
+        c1 <- str("(");
+        ret <- rep1(not(str(")")) &&& chr(&not_eol));
+        c2 <- str(")")
       ) yield ret
     }
     
     private def img_link : Parser[Anchor] = 
       for (
-        val c <- chr(':');
-        val anchor : Textile <- url;
-        anchor.isInstanceOf[Anchor]
+        c <- chr(':');
+        anchor : Textile <- url;
+        if anchor.isInstanceOf[Anchor]
       ) yield anchor.asInstanceOf[Anchor]
 
     
@@ -190,9 +190,9 @@ object TextileParser {
     */
     def footnote_def : Parser[Textile] = {
       for (
-        val c1 <- chr('[');
-        val nr : List[char] <- rep1(chr(isDigit));
-        val c2 <- chr(']')
+        c1 <- chr('[');
+        nr : List[char] <- rep1(chr(isDigit));
+        c2 <- chr(']')
       ) yield FootnoteDef((nr).mkString("","",""))
     }
     
@@ -213,16 +213,16 @@ object TextileParser {
     */
     def escCamelUrl : Parser[Textile] = {
       for (
-        val esc : char <- chr('\\');
-        val fc1 : char <- chr(isUpper);
-        val fc2 : char <- chr(isLower);
-        val fcr : List[char] <- rep(chr(isLowerOrNumber));
+        esc : char <- chr('\\');
+        fc1 : char <- chr(isUpper);
+        fc2 : char <- chr(isLower);
+        fcr : List[char] <- rep(chr(isLowerOrNumber));
         
-        val sc1 : char <- chr(isUpper);
-        val sc2 : char <- chr(isLower);
-        val scr : List[char] <- rep(chr(isLowerOrNumber));
+        sc1 : char <- chr(isUpper);
+        sc2 : char <- chr(isLower);
+        scr : List[char] <- rep(chr(isLowerOrNumber));
         
-        val sc3 : List[List[char]] <- rep(chr(isUpper) &&& chr(isLower) &&& rep(chr(isLowerOrNumber)))
+        sc3 : List[List[char]] <- rep(chr(isUpper) &&& chr(isLower) &&& rep(chr(isLowerOrNumber)))
       ) yield CharBlock(((esc :: fc1 :: fc2 :: fcr) ::: (sc1 :: sc2 :: scr) ::: 
 			 (sc3.flatMap{a => a})).mkString("","",""))
     }
@@ -232,9 +232,9 @@ object TextileParser {
     */
     def camelizedWord : Parser[CharBlock] = {
       for (
-        val fc1 : char <- chr(isUpper);
-        val fc2 <- chr(isLower);
-        val fcr <- rep(chr(isLowerOrNumber))
+        fc1 : char <- chr(isUpper);
+        fc2 <- chr(isLower);
+        fcr <- rep(chr(isLowerOrNumber))
       ) yield CharBlock((fc1 :: fc2 :: fcr).mkString("","",""))
       
     }
@@ -244,9 +244,9 @@ object TextileParser {
     */
     def camelUrl : Parser[Textile] = {
       for (
-        val fc1 <- camelizedWord;
-        val sc1 <- camelizedWord;
-        val sc3 : List[CharBlock] <- rep(camelizedWord)
+        fc1 <- camelizedWord;
+        sc1 <- camelizedWord;
+        sc3 : List[CharBlock] <- rep(camelizedWord)
       ) yield WikiAnchor(Nil, ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("","","") ,
 			 ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("","",""), Nil)
       
@@ -257,10 +257,10 @@ object TextileParser {
     */
     def quote_ref : Parser[Textile] = {
       for (
-        val qt : char <- chr('"');
-        val fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
-        val eq <- str("\":");          
-        val rc : List[char] <- rep1(chr(validUrlChar))
+        qt : char <- chr('"');
+        fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
+        eq <- str("\":");          
+        rc : List[char] <- rep1(chr(validUrlChar))
       ) yield RefAnchor(Nil, (rc).mkString("","",""),
 			(fs).mkString("","",""), Nil)      
     }
@@ -270,13 +270,13 @@ object TextileParser {
     */
     def quote_url : Parser[Textile] = {
       for (
-        val qt : char <- chr('"');
-        val fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
-        val eq <- str("\":");          
-        val http : char <- str("http");
-        val s : List[char] <- opt(chr('s'));
-        val css : char <- str("://");
-        val rc : List[char] <- rep1(chr(validUrlChar))
+        qt : char <- chr('"');
+        fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
+        eq <- str("\":");          
+        http : char <- str("http");
+        s : List[char] <- opt(chr('s'));
+        css : char <- str("://");
+        rc : List[char] <- rep1(chr(validUrlChar))
       ) yield Anchor(Nil, "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""),
 		     (fs).mkString("","",""), Nil)      
     }
@@ -287,10 +287,10 @@ object TextileParser {
 
     def a_ref : Parser[Textile] = {
       for (
-        val c1 : char <- chr('[');
-        val fr : List[char] <- rep1(chr(validUrlChar));
-        val c2 : char <- chr(']');
-        val url <- url
+        c1 : char <- chr('[');
+        fr : List[char] <- rep1(chr(validUrlChar));
+        c2 : char <- chr(']');
+        url <- url
       ) yield ARef((fr).mkString("","",""), url.asInstanceOf[Anchor].href)
     }
 
@@ -299,10 +299,10 @@ object TextileParser {
     */
     def url : Parser[Textile] = {
       for (
-        val http : char <- str("http");
-        val s : List[char] <- opt(chr('s'));
-        val css : char <- str("://");
-        val rc : List[char] <- rep1(chr(validUrlChar))
+        http : char <- str("http");
+        s : List[char] <- opt(chr('s'));
+        css : char <- str("://");
+        rc : List[char] <- rep1(chr(validUrlChar))
       ) yield Anchor(Nil, "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""),
 		     "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""), Nil)
     }
@@ -323,7 +323,7 @@ object TextileParser {
     */
     def endOfLine : Parser[Textile] = 
       for (
-        val s1 <- chr('\n')
+        s1 <- chr('\n')
       ) yield EOL
     
     /**
@@ -332,7 +332,7 @@ object TextileParser {
     */
     def preEndOfLine : Parser[Textile] = 
       for (
-        val s1 <- chr('\n')
+        s1 <- chr('\n')
       ) yield CharBlock("\n")
     
     
@@ -341,17 +341,17 @@ object TextileParser {
     */
     def preBlock : Parser[Textile] = {
       for (
-        val c1  <- chr('\0');
-        val c2 <- rep(chr(' '));
-        val s1 <- str("<pre");
-        val c3 <- rep(chr(' '));
-	val c4 <- chr('>');
-        val elms <- rep(not(str("</pre")) &&& (preEndOfLine ||| beginingOfLine ||| charBlock ));
-        val c5 <- str("</pre");
-        val c6 <- rep(chr(' '));
-        val c7 <- chr('>');
-        val c8 <- rep(chr(' '));
-        val c9 <- chr('\n')
+        c1  <- chr('\0');
+        c2 <- rep(chr(' '));
+        s1 <- str("<pre");
+        c3 <- rep(chr(' '));
+	c4 <- chr('>');
+        elms <- rep(not(str("</pre")) &&& (preEndOfLine ||| beginingOfLine ||| charBlock ));
+        c5 <- str("</pre");
+        c6 <- rep(chr(' '));
+        c7 <- chr('>');
+        c8 <- rep(chr(' '));
+        c9 <- chr('\n')
       ) yield Pre(reduceCharBlocks(elms), Nil)
     }      
     
@@ -360,7 +360,7 @@ object TextileParser {
     */
     def beginingOfLine : Parser[Textile] = 
       for (
-        val s1 <- chr('\0')
+        s1 <- chr('\0')
       ) yield BOL
     
     /**
@@ -368,9 +368,9 @@ object TextileParser {
     */
     def copyright : Parser[Textile] = 
       for (
-        val s1 <- chr('(');
-        val s2 <- (chr('c') ||| chr('C'));
-        val s3 <- chr(')')
+        s1 <- chr('(');
+        s2 <- (chr('c') ||| chr('C'));
+        s3 <- chr(')')
       ) yield Copyright
     
     
@@ -407,17 +407,17 @@ object TextileParser {
     */
     def multi_html : Parser[Textile] = 
       for (
-        val c1 <- str("<") ;
-        val tag : List[char] <- rep1(chr(validTagChar));
+        c1 <- str("<") ;
+        tag : List[char] <- rep1(chr(validTagChar));
 
-        val attrs : List[Attribute] <- rep(tag_attr);
-        val c2 : char <- chr('>');
-        val body <- rep(not((str("</") &&& str(tag) &&& rep(chr(' ')) &&& chr('>'))) &&& (lineElem ||| paragraph));
-        val e1 <- str("</");
-        val et <- str(tag);
-        val sp2 <- rep(chr(' '));
-        val e2 <- chr('>');
-        isValidTag((tag).mkString("","","")) // && showBody("body ", body) && showBody("body2 ",body2)
+        attrs : List[Attribute] <- rep(tag_attr);
+        c2 : char <- chr('>');
+        body <- rep(not((str("</") &&& str(tag) &&& rep(chr(' ')) &&& chr('>'))) &&& (lineElem ||| paragraph));
+        e1 <- str("</");
+        et <- str(tag);
+        sp2 <- rep(chr(' '));
+        e2 <- chr('>');
+        if isValidTag((tag).mkString("","","")) // && showBody("body ", body) && showBody("body2 ",body2)
       ) yield HTML((tag).mkString("","",""), reduceCharBlocks(body), attrs)
     
     /**
@@ -425,11 +425,11 @@ object TextileParser {
     */
     def single_html : Parser[Textile] = 
       for (
-        val c1 <- str("<") ;
-        val tag : List[char] <- rep1(chr(validTagChar));
-        val attrs : List[Attribute] <- rep(tag_attr);
-        val c2 : char <- str("/>");
-        isValidTag((tag).mkString("","",""))
+        c1 <- str("<") ;
+        tag : List[char] <- rep1(chr(validTagChar));
+        attrs : List[Attribute] <- rep(tag_attr);
+        c2 : char <- str("/>");
+        if isValidTag((tag).mkString("","",""))
       ) yield HTML((tag).mkString("","",""), Nil, attrs)
 
     def tag_attr = single_quote_attr ||| double_quote_attr
@@ -444,11 +444,11 @@ object TextileParser {
     */
     def single_quote_attr : Parser[Attribute] = {
       for (
-        val sp <- rep(chr(' '));
-        val name : List[char] <- rep1(chr(&attr_name));
-        val eq <- str("='");
-        val value : List[char] <- rep(not(chr('\'')) &&& chr(&attr_value));
-        val end <- chr('\'')
+        sp <- rep(chr(' '));
+        name : List[char] <- rep1(chr(&attr_name));
+        eq <- str("='");
+        value : List[char] <- rep(not(chr('\'')) &&& chr(&attr_value));
+        end <- chr('\'')
       ) yield AnyAttribute((name).mkString("","",""), value.mkString("","",""))
     }
     
@@ -457,11 +457,11 @@ object TextileParser {
     */
     def double_quote_attr : Parser[Attribute] = {
       for (
-        val sp <- rep(chr(' '));
-        val name : List[char] <- rep1(chr(&attr_name));
-        val eq <- str("=\"");
-        val value : List[char] <- rep(not(chr('"')) &&& chr(&attr_value));
-        val end <- chr('"')
+        sp <- rep(chr(' '));
+        name : List[char] <- rep1(chr(&attr_name));
+        eq <- str("=\"");
+        value : List[char] <- rep(not(chr('"')) &&& chr(&attr_value));
+        end <- chr('"')
       ) yield AnyAttribute((name).mkString("","",""), value.mkString("","",""))
     }
     
@@ -476,57 +476,57 @@ object TextileParser {
     */
     def dimension : Parser[Textile] = 
       for (
-        val s1 <- str(" x ")
+        s1 <- str(" x ")
       ) yield Dimension
 
     def registered : Parser[Textile] = 
       for (
-        val s1 <- chr('(');
-        val s2 <- (chr('r') ||| chr('R'));
-        val s3 <- chr(')')
+        s1 <- chr('(');
+        s2 <- (chr('r') ||| chr('R'));
+        s3 <- chr(')')
       ) yield Register
 
     def trademark : Parser[Textile] = 
       for (
-        val s1 <- str("(");
-        val s2 <- (chr('t') ||| chr('T'));
-        val s2a <- (chr('m') ||| chr('M'));
-        val s3 <- str(")")
+        s1 <- str("(");
+        s2 <- (chr('t') ||| chr('T'));
+        s2a <- (chr('m') ||| chr('M'));
+        s3 <- str(")")
       ) yield Trademark
     
     def elipsis : Parser[Textile] = 
       for (
-        val s1 <- str("...")
+        s1 <- str("...")
       ) yield Elipsis
 
     def emDash : Parser[Textile] = 
       for (
-        val s1 <- str(" -- ")
+        s1 <- str(" -- ")
       ) yield EmDash
 
     def enDash : Parser[Textile] = 
       for (
-        val s1 <- str(" - ")
+        s1 <- str(" - ")
       ) yield EnDash
 
     def single_quote : Parser[Textile] = 
       for (
-        val s1 <- str("'")
+        s1 <- str("'")
       ) yield SingleQuote
 
     def bold : Parser[Textile] = 
       for (
-        val s1 <- str("**");
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(str("**")) &&& lineElem_notStrong); 
-        val s2 <- str("**")
+        s1 <- str("**");
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(str("**")) &&& lineElem_notStrong); 
+        s2 <- str("**")
       ) yield Bold(reduceCharBlocks(ln), attrs)
     
     def bullet(depth : int, numbered : boolean) : Parser[Textile] = {
       for (
-        val fbl <- bullet_line(depth, numbered);
-        val sbl <- bullet(depth + 1, numbered) ||| bullet_line(depth, numbered);
-        val abl <- rep(bullet(depth + 1, numbered) ||| bullet_line(depth, numbered))
+        fbl <- bullet_line(depth, numbered);
+        sbl <- bullet(depth + 1, numbered) ||| bullet_line(depth, numbered);
+        abl <- rep(bullet(depth + 1, numbered) ||| bullet_line(depth, numbered))
       ) yield Bullet(fbl :: sbl :: abl, numbered)
     }
     
@@ -537,46 +537,46 @@ object TextileParser {
 
     def bullet_line(depth : int, numbered : boolean) : Parser[Textile] = {
       for (
-        val bol <- chr('\0');
-        val sp <- begin_bullet(depth, numbered);
-        val elms : List[Textile] <- rep(not(chr('\n')) &&& lineElem);
-        val eol <- chr('\n')
+        bol <- chr('\0');
+        sp <- begin_bullet(depth, numbered);
+        elms : List[Textile] <- rep(not(chr('\n')) &&& lineElem);
+        eol <- chr('\n')
       ) yield BulletLine(reduceCharBlocks(elms), Nil)
     }
     
     
     def strong : Parser[Textile] = {
       for (
-        val s1 <- chr('*');
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(chr('*')) &&& lineElem); 
-        val s4 <- chr('*')
+        s1 <- chr('*');
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(chr('*')) &&& lineElem); 
+        s4 <- chr('*')
       ) yield Strong(reduceCharBlocks(ln), attrs)
     }
     
     def cite : Parser[Textile] = {
       for (
-        val s1 <- str("??");
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(str("??")) &&& lineElem); 
-        val s4 <- str("??")
+        s1 <- str("??");
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(str("??")) &&& lineElem); 
+        s4 <- str("??")
       ) yield Cite(reduceCharBlocks(ln), attrs)
     }
     
     def code : Parser[Textile] = {
       for (
-        val s1 <- chr('@');
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(chr('@')) &&& lineElem); 
-        val s4 <- chr('@')
+        s1 <- chr('@');
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(chr('@')) &&& lineElem); 
+        s4 <- chr('@')
       ) yield Code(reduceCharBlocks(ln), attrs)
     }
     
     def styleElem : Parser[StyleElem] = {
       for (
-        val ncl : List[char] <- rep1(chr(validStyleChar));
-        val c <- chr(':');
-        val vcl : List[char] <- rep1(chr(validStyleChar))
+        ncl : List[char] <- rep1(chr(validStyleChar));
+        c <- chr(':');
+        vcl : List[char] <- rep1(chr(validStyleChar))
       )
       yield StyleElem((ncl).mkString("","",""), (vcl).mkString("","",""))
     }
@@ -586,62 +586,62 @@ object TextileParser {
     def para_attribute = attribute ||| fill_align ||| left_align ||| right_align |||
     center_align ||| top_align ||| bottom_align ||| em_left ||| em_right;
     
-    def left_align : Parser[Attribute] = for (val ac : char <- chr('<')) yield Align(ac)
+    def left_align : Parser[Attribute] = for (ac : char <- chr('<')) yield Align(ac)
     
-    def right_align : Parser[Attribute] = for (val ac : char <- chr('>')) yield Align(ac)
+    def right_align : Parser[Attribute] = for (ac : char <- chr('>')) yield Align(ac)
     
-    def center_align : Parser[Attribute] = for (val ac : char <- chr('=')) yield Align(ac)
+    def center_align : Parser[Attribute] = for (ac : char <- chr('=')) yield Align(ac)
     
-    def top_align : Parser[Attribute] = for (val ac : char <- chr('^')) yield Align(ac)
+    def top_align : Parser[Attribute] = for (ac : char <- chr('^')) yield Align(ac)
     
-    def bottom_align : Parser[Attribute] = for (val ac : char <- chr('~')) yield Align(ac)
+    def bottom_align : Parser[Attribute] = for (ac : char <- chr('~')) yield Align(ac)
     
-    def fill_align : Parser[Attribute] = for (val ac <- str("<>")) yield Align('f')
+    def fill_align : Parser[Attribute] = for (ac <- str("<>")) yield Align('f')
     
     def em_left : Parser[Attribute] = {
-      for (val ac : char <- chr('(');
-           val acl : List[char] <- rep(chr('('))
+      for (ac : char <- chr('(');
+           acl : List[char] <- rep(chr('('))
 	 ) yield Em(1 + acl.length)
     }
 
     def em_right : Parser[Attribute] = {
-      for (val ac : char <- chr(')');
-           val acl : List[char] <- rep(chr(')'))
+      for (ac : char <- chr(')');
+           acl : List[char] <- rep(chr(')'))
          ) yield Em((1 + acl.length) * -1)
     }
     
     def class_id : Parser[Attribute] = {
       for (
-        val cc <- chr('(');
-        val rc : List[char] <- rep1(chr(validClassChar));
-        val ps <- chr('#');
-        val ri : List[char] <- rep1(chr(validClassChar));
-        val c2 <- chr(')')
+        cc <- chr('(');
+        rc : List[char] <- rep1(chr(validClassChar));
+        ps <- chr('#');
+        ri : List[char] <- rep1(chr(validClassChar));
+        c2 <- chr(')')
       ) yield ClassAndId((rc).mkString("","",""), (ri).mkString("","",""))
     }
 
     def the_id : Parser[Attribute] = {
       for (
-        val cc <- chr('(');
-        val ps <- chr('#');
-        val ri : List[char] <- rep1(chr(validClassChar));
-        val cc2 <- chr(')')
+        cc <- chr('(');
+        ps <- chr('#');
+        ri : List[char] <- rep1(chr(validClassChar));
+        cc2 <- chr(')')
       ) yield ClassAndId(null, (ri).mkString("","",""))
     }
 
     def the_lang : Parser[Attribute] = {
       for (
-        val ps <- chr('[');
-        val ri : List[char] <- rep1(chr(validClassChar));
-        val ps2 <- chr(']')
+        ps <- chr('[');
+        ri : List[char] <- rep1(chr(validClassChar));
+        ps2 <- chr(']')
       ) yield Lang( (ri).mkString("","",""))
     }
 
     def the_class : Parser[Attribute] = {
       for (
-        val cc <- chr('(');
-        val rc : List[char] <- rep1(chr(validClassChar));
-        val cc2 <- chr(')')
+        cc <- chr('(');
+        rc : List[char] <- rep1(chr(validClassChar));
+        cc2 <- chr(')')
       ) yield ClassAndId((rc).mkString("","",""),null)
     }
     
@@ -649,79 +649,79 @@ object TextileParser {
     
     def style : Parser[Attribute] = {
       for (
-        val cb1 <- str("{");
-        val se : StyleElem <- styleElem;
-        val sel : List[StyleElem] <- rep(chr(';') &&& styleElem);
-        val cb2 <- str("}")
+        cb1 <- str("{");
+        se : StyleElem <- styleElem;
+        sel : List[StyleElem] <- rep(chr(';') &&& styleElem);
+        cb2 <- str("}")
       ) yield Style(se :: sel)
     }
     
     def span : Parser[Textile] = {
       for (
-        val s1 <- chr('%');
-        val style : List[Attribute] <- opt(style); 
-        val ln <-  rep1(not(chr('%')) &&& lineElem); 
-        val s4 <- chr('%')
+        s1 <- chr('%');
+        style : List[Attribute] <- opt(style); 
+        ln <-  rep1(not(chr('%')) &&& lineElem); 
+        s4 <- chr('%')
       ) yield Span(reduceCharBlocks(ln), style)
     }
     
     def delete : Parser[Textile] = {
       for (
-        val s1 <- str("-");
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(str("-")) &&& lineElem); 
-        val s4 <- str("-")
+        s1 <- str("-");
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(str("-")) &&& lineElem); 
+        s4 <- str("-")
       ) yield Delete(reduceCharBlocks(ln), attrs)
     }
     
     def insert : Parser[Textile] = {
       for (
-        val s1 <- str("+");
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(str("+")) &&& lineElem); 
-        val s4 <- str("+")
+        s1 <- str("+");
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(str("+")) &&& lineElem); 
+        s4 <- str("+")
       ) yield Ins(reduceCharBlocks(ln), attrs)
     }
     
     def sup : Parser[Textile] = {
       for (
-        val s1 <- chr('^');
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(chr('^')) &&& lineElem); 
-        val s4 <- chr('^')
+        s1 <- chr('^');
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(chr('^')) &&& lineElem); 
+        s4 <- chr('^')
       ) yield Super(reduceCharBlocks(ln), attrs)
     }
     
     def sub : Parser[Textile] =
       for (
-        val s1 <- chr('~');
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(chr('~')) &&& lineElem); 
-        val s4 <- chr('~')
+        s1 <- chr('~');
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(chr('~')) &&& lineElem); 
+        s4 <- chr('~')
       ) yield Sub(reduceCharBlocks(ln), attrs)
     
     def italic : Parser[Textile] = 
       for (
-        val s1 <- str("__");
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(str("__")) &&& lineElem_notStrong); 
-        val s2 <- str("__")
+        s1 <- str("__");
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(str("__")) &&& lineElem_notStrong); 
+        s2 <- str("__")
       ) yield Italic(reduceCharBlocks(ln), attrs)
     
     def emph : Parser[Textile] = {
       for (
-        val s1 <- chr('_');
-        val attrs : List[Attribute] <- rep(attribute);
-        val ln <-  rep1(not(chr('_')) &&& lineElem); 
-        val s4 <- chr('_')
+        s1 <- chr('_');
+        attrs : List[Attribute] <- rep(attribute);
+        ln <-  rep1(not(chr('_')) &&& lineElem); 
+        s4 <- chr('_')
       ) yield Emph(reduceCharBlocks(ln), attrs)
     }
     
     def quote : Parser[Textile] =
       for (
-        val s1 <- chr('"');
-        val ln <-  rep1(not(chr('"')) &&& lineElem); 
-        val s4 <- chr('"')
+        s1 <- chr('"');
+        ln <-  rep1(not(chr('"')) &&& lineElem); 
+        s4 <- chr('"')
       ) yield Quoted(reduceCharBlocks(ln))
     
     def reduceCharBlocks(in : List[Textile]) : List[Textile] = 
@@ -737,65 +737,63 @@ object TextileParser {
     
     def charBlock : Parser[Textile] = 
       for (
-        val c : char <- chr(&not_eol)
+        c : char <- chr(&not_eol)
       ) yield CharBlock(c.toString)
 
     
     
     def blankPara : Parser[Textile] =
       for (
-        val b1 <- blankLine;
-        val bls <- rep(blankLine)
+        b1 <- blankLine;
+        bls <- rep(blankLine)
       ) yield BlankLine
     
     def not_blank_line : Parser[Textile] = not(blankLine) &&& lineElem
     
     def head_line : Parser[Textile] =
-      for (val sc : char <- chr('\0') ;
-	   val h : char <- chr('h') ;
-	   val n : char <- (chr('1') ||| chr('2') ||| chr('3')) ;
-	   val attrs : List[Attribute] <- rep(para_attribute);
-	   val dot <- str(". ") ;
-           val ln <- rep1(not_blank_line);
-           val bl <- blankLine
-           
+      for (sc : char <- chr('\0') ;
+	   h : char <- chr('h') ;
+	   n : char <- (chr('1') ||| chr('2') ||| chr('3')) ;
+	   attrs : List[Attribute] <- rep(para_attribute);
+	   dot <- str(". ") ;
+           ln <- rep1(not_blank_line);
+           bl <- blankLine
 	 ) yield Header(n - '0', reduceCharBlocks(ln), attrs)
     
     def blockquote : Parser[Textile] =
-      for (val sc   <- str("\0bq");
-           val attrs : List[Attribute] <- rep(para_attribute);
-           val sc2 <- str(". ");
-           val ln <- rep1(not_blank_line);
-           val bl <- blankLine
+      for (sc   <- str("\0bq");
+           attrs : List[Attribute] <- rep(para_attribute);
+           sc2 <- str(". ");
+           ln <- rep1(not_blank_line);
+           bl <- blankLine
 	 ) yield BlockQuote(reduceCharBlocks(ln), attrs)
 
     
     def footnote : Parser[Textile] = {
-      for (val sc   <- str("\0fn");
-           val dr <- rep1(chr(isDigit));
-           val attrs : List[Attribute] <- rep(para_attribute);
-           val sc2 <- str(". ");
-           val ln <- rep1(not_blank_line);
-           val bl <- blankLine
-           
+      for (sc   <- str("\0fn");
+           dr <- rep1(chr(isDigit));
+           attrs : List[Attribute] <- rep(para_attribute);
+           sc2 <- str(". ");
+           ln <- rep1(not_blank_line);
+           bl <- blankLine
 	 ) yield Footnote(reduceCharBlocks(ln), attrs, (dr).mkString("","",""))
     }
     
     def first_paraAttrs : Parser[TableDef] = {
       for (
-        val fc <- chr('\0');
-        val sp1 <- rep(chr(' '));
-        val table <- str("p");
-        val style <- rep(para_attribute);
-        val dot <- chr('.')
+        fc <- chr('\0');
+        sp1 <- rep(chr(' '));
+        table <- str("p");
+        style <- rep(para_attribute);
+        dot <- chr('.')
       ) yield TableDef(style)
     }
     
     def normPara : Parser[Textile] =
       for (
-        val td : List[TableDef] <- opt(first_paraAttrs);
-        val fp <- rep1(not_blank_line);
-        val bl <- blankLine
+        td : List[TableDef] <- opt(first_paraAttrs);
+        fp <- rep1(not_blank_line);
+        bl <- blankLine
       ) yield Paragraph(reduceCharBlocks(fp), if (td == Nil) Nil else td.head.attrs)
     
     def table_attribute = para_attribute ||| row_span ||| col_span
@@ -804,77 +802,77 @@ object TextileParser {
     
     def row_span : Parser[Attribute] = {
       for (
-        val c <- chr('/');
-        val dr : List[char] <- rep1(chr(isDigit))
+        c <- chr('/');
+        dr : List[char] <- rep1(chr(isDigit))
       ) yield AnyAttribute("rowspan", (dr).mkString("","",""))
     }
 
     
     def col_span : Parser[Attribute] = {
       for (
-        val c <- chr('\\');
-        val dr : List[char] <- rep1(chr(isDigit))
+        c <- chr('\\');
+        dr : List[char] <- rep1(chr(isDigit))
       ) yield AnyAttribute("colspan", (dr).mkString("","",""))
     }
 
     def table : Parser[Textile] = {
       for (
-        val td <- opt(table_def);
-        val th <- opt(table_header);
-        val tr1 <- table_row;
-        val trr <- rep(table_row)
+        td <- opt(table_def);
+        th <- opt(table_header);
+        tr1 <- table_row;
+        trr <- rep(table_row)
       ) yield Table(th ::: tr1 :: trr, if (td == Nil) Nil else td.head.attrs)
     }
     
     def table_def : Parser[TableDef] = {
       for (
-        val fc <- chr('\0');
-        val sp1 <- rep(chr(' '));
-        val table <- str("table");
-        val style <- rep(para_attribute);
-        val dot <- chr('.');
-        val sp <- rep(chr(' '));
-        val ec <- chr('\n')
+        fc <- chr('\0');
+        sp1 <- rep(chr(' '));
+        table <- str("table");
+        style <- rep(para_attribute);
+        dot <- chr('.');
+        sp <- rep(chr(' '));
+        ec <- chr('\n')
       ) yield TableDef(style)
     }
     
     def row_def : Parser[TableDef] =
       for (
-        val sr <- rep1(table_attribute);
-        val dot <- chr('.')
+        sr <- rep1(table_attribute);
+        dot <- chr('.')
       ) yield TableDef(sr)
 
     def table_row : Parser[Textile] =
       for (
-        val bol <- chr('\0');
-        val sp <- rep(chr(' '));
-        val td <- opt(row_def);
-        val sp <- rep(chr(' '));
-        val fb <- chr('|');
-        val re <- rep1(table_element(false));
-        val spe <- rep(chr(' '));
-        val eol <- chr('\n')
+        bol <- chr('\0');
+        sp <- rep(chr(' '));
+        td <- opt(row_def);
+        sp <- rep(chr(' '));
+        fb <- chr('|');
+        re <- rep1(table_element(false));
+        spe <- rep(chr(' '));
+        eol <- chr('\n')
       ) yield TableRow(re, if (td == Nil) Nil else td.head.attrs)
 
     def table_header : Parser[Textile] = 
       for (
-        val bol <- chr('\0');
-        val sp <- rep(chr(' '));
-        val td <- opt(row_def);
-        val sp <- rep(chr(' '));
-        val fb <- str("|_.");
+        bol <- chr('\0');
+        sp <- rep(chr(' '));
+        td <- opt(row_def);
+        sp <- rep(chr(' '));
+        fb <- str("|_.");
         
-        val fe <- table_element(true);
-        val re <- rep(str("_.") &&& table_element(true));
-        val spe <- rep(chr(' '));
-        val eol <- chr('\n')
+        fe <- table_element(true);
+        re <- rep(str("_.") &&& table_element(true));
+        spe <- rep(chr(' '));
+        eol <- chr('\n')
       ) yield TableRow(fe :: re, if (td == Nil) Nil else td.head.attrs)
     
     def table_element(isHeader : boolean) : Parser[Textile] =
       for (
-        val td <- opt(row_def);
-        val el <- rep(not(chr('|') ||| chr('\n')) &&& lineElem);
-        val pipe <- chr('|')
+        td <- opt(row_def);
+        el <- rep(not(chr('|') ||| chr('\n')) &&& lineElem);
+        pipe <- chr('|')
       ) yield TableElement(reduceCharBlocks(el), isHeader, if (td == Nil) Nil else td.head.attrs)
 
 
@@ -882,9 +880,7 @@ object TextileParser {
       preBlock ||| footnote ||| table ||| bullet(0, false) ||| bullet(0, true) ||| blockquote ||| head_line ||| blankPara ||| normPara
     
     def parseAsTextile : Option[Pair[Lst, inputType]] = {
-      val ret : Parser[Lst] = for (
-        val pl <- rep(paragraph)
-      ) yield Lst(pl)
+      val ret : Parser[Lst] = for (pl <- rep(paragraph)) yield Lst(pl)
       
       def findRefs(in : List[Textile]) : List[Pair[String,String]] = {
 

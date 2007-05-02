@@ -15,7 +15,7 @@
  <artifactId>lift</artifactId>
  <packaging>pom</packaging>
  <name>Lift</name>
- <version>0.1.7</version>
+ <version>0.1.8</version>
  <url>http://liftweb.net</url>
  <inceptionYear>2007</inceptionYear>
 
@@ -64,17 +64,12 @@
    <dependency>
     <groupId>scala</groupId>
     <artifactId>scala-compiler</artifactId>
-    <version>2.4.0</version>
+    <version>2.5.0-RC1</version>
    </dependency>
    <dependency>
     <groupId>scala</groupId>
     <artifactId>scala-library</artifactId>
-    <version>2.4.0</version>
-   </dependency>
-   <dependency>
-    <groupId>scala</groupId>
-    <artifactId>scala-actors</artifactId>
-    <version>2.4.0</version>
+    <version>2.5.0-RC1</version>
    </dependency>
   </dependencies>
  </dependencyManagement>
