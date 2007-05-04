@@ -35,20 +35,22 @@ object UserList {
       def userToUserActor(u: User) = {
         val ua = new UserActor // create a new Actor
         ua.start // start it up
-        ua ! Setup(u.id, u.name, u.wholeName) // tell it to set up
+        ua !? Setup(u.id, u.name, u.wholeName) // tell it to set up
         Some(ua) // return it 
       }
       // load all the users
-      User.findMap()(userToUserActor).foreach (_ ! ConfigFollowers) // for each of the UserActors, tell them to configure their followers
+      User.findMap()(userToUserActor).foreach (_ !? ConfigFollowers) // for each of the UserActors, tell them to configure their followers
   }
   
   // We've just added a new user to the system
   // add that user to the list
   def startUser(who: User) {
+    if (who.shouldStart_?) {
     val ua = new UserActor
     ua.start
     ua ! Setup(who.id, who.name, who.wholeName)
     ua ! ConfigFollowers
+    }
   }
   
   def shutdown = foreach(_ ! Bye) // shutdown by telling each of the Actors a "Bye" message

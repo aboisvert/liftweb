@@ -229,8 +229,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def find(key: Any) : Option[A] = {
     def testProdArity(prod: Product): boolean = {
       var pos = 0
-      while (pos < prod.arity) {
-        if (!prod.element(pos).isInstanceOf[QueryParam[A]]) return false
+      while (pos < prod.productArity) {
+        if (!prod.productElement(pos).isInstanceOf[QueryParam[A]]) return false
         pos = pos + 1
       }
       true
@@ -238,9 +238,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     
     def convertToQPList(prod: Product): Array[QueryParam[A]] = {
       var pos = 0
-      val ret = new Array[QueryParam[A]](prod.arity)
-      while (pos < prod.arity) {
-        ret(pos) = prod.element(pos).asInstanceOf[QueryParam[A]]
+      val ret = new Array[QueryParam[A]](prod.productArity)
+      while (pos < prod.productArity) {
+        ret(pos) = prod.productElement(pos).asInstanceOf[QueryParam[A]]
         pos = pos + 1
       }
       ret

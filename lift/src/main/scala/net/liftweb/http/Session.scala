@@ -107,7 +107,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private def processRequest(state: RequestState,httpRequest: HttpServletRequest, finder: (String) => InputStream, timeout: long) = {
     S.init(state, httpRequest, notices) {
       try {
-        Servlet.testLocation.foreach{s => S.error(s._2); S.redirectTo(s._1)} 
+        state.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
         processParameters(state)
         findVisibleTemplate(state.path, state, finder).map(xml => processSurroundAndInclude(xml, state, finder)) match {
@@ -158,8 +158,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
 	ret
   }
   
-  private def findVisibleTemplate(path: List[String], session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
-    val tpath = if (session.uri.endsWith("/")) path ::: List("index") else path
+  private def findVisibleTemplate(path: ParsePath, session : RequestState, finder: (String) => InputStream) : Option[NodeSeq] = {
+    val tpath = path.path
     val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
       case s @ _ if (!s.isEmpty) => s
       case _ => List("index")

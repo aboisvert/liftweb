@@ -22,6 +22,7 @@ import net.liftweb.util.ActorPing
 import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.sitemap.SiteMap
 import java.net.URL
+import net.liftweb.sitemap._
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -157,7 +158,8 @@ class Servlet extends HttpServlet {
     val finder = &getServletContext.getResourceAsStream
     
     val toMatch = (session, session.path, finder)
-      
+    Console.println("toMatch is "+toMatch)
+    
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
       } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
@@ -238,8 +240,8 @@ class Servlet extends HttpServlet {
 }
 
 object Servlet {
-  type dispatchPf = PartialFunction[(RequestState, List[String], (String) => InputStream), (HttpServletRequest) => Option[Any]];
-  type rewritePf = PartialFunction[(String, List[String], RequestType, HttpServletRequest), (String, List[String], SortedMap[String, String])]
+  type dispatchPf = PartialFunction[(RequestState, ParsePath, (String) => InputStream), (HttpServletRequest) => Option[Any]];
+  type rewritePf = PartialFunction[(String, ParsePath, RequestType, HttpServletRequest), (String, ParsePath, SortedMap[String, String])]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
   
@@ -251,19 +253,9 @@ object Servlet {
   private var _sitemap: Option[SiteMap] = None
   
   def setSiteMap(sm: SiteMap) {_sitemap = Some(sm)}
-  
-  def testLocation: Option[(String, String)] = {
-    if (!_sitemap.isDefined) return None
-    val sm = _sitemap.get
-    val oLoc = sm.findLoc(S.request, S.servletRequest)
-    if (!oLoc.isDefined) return Some(("/", "Invalid URL"))
-    val loc = oLoc.get
-    loc.testAccess
-  }
-  
-  def appendEarly(f: (HttpServletRequest) => Any) {
-    _early = _early ::: List(f)
-  }
+  def siteMap: Option[SiteMap] = _sitemap
+    
+  def appendEarly(f: (HttpServletRequest) => Any) = _early = _early ::: List(f)
   
   var ending = false
   private case class Never

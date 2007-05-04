@@ -32,9 +32,9 @@ class Boot {
     
     // map certain urls to the right place
     val rewriter: Servlet.rewritePf = {
-    case (_, "user" :: user :: _, _, _) => ("/user", "user" :: Nil, TreeMap("user" -> user))
-    case (_, "friend" :: user :: _, _, _) => ("/friend", "friend" :: Nil, TreeMap("user" -> user))
-    case (_, "unfriend" :: user :: _, _, _) => ("/unfriend", "unfriend" :: Nil, TreeMap("user" -> user))
+    case (_, ParsePath("user" :: user :: _, _,_), _, _) => ("/user", ParsePath("user" :: Nil, true, false), TreeMap("user" -> user))
+    case (_, ParsePath("friend" :: user :: _, _,_), _, _) => ("/friend", ParsePath("friend" :: Nil, true, false), TreeMap("user" -> user))
+    case (_, ParsePath("unfriend" :: user :: _, _,_), _, _) => ("/unfriend", ParsePath("unfriend" :: Nil, true, false), TreeMap("user" -> user))
   }
   
   Servlet.addRewriteBefore(rewriter)

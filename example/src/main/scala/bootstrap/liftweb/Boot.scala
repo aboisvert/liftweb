@@ -15,7 +15,7 @@ import net.liftweb.example.controller.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.immutable.TreeMap
 import net.liftweb.example.model._
-
+ 
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -27,9 +27,9 @@ class Boot {
      
     Schemifier.schemify(User, WikiEntry)
     
-    val dispatcher: PartialFunction[(RequestState, List[String], (String) => java.io.InputStream),(HttpServletRequest) => Option[Any]] = 
+    val dispatcher: PartialFunction[(RequestState, ParsePath, (String) => java.io.InputStream),(HttpServletRequest) => Option[Any]] = 
       {
-    case (r, "webservices" :: c :: _, _) => { 
+    case (r, ParsePath("webservices" :: c :: _, _,_), _) => { 
           (req: HttpServletRequest) => {
           val rc = new WebServices(r, req)
           val invoker = createInvoker(c, rc)
@@ -43,8 +43,8 @@ class Boot {
     Servlet.addDispatchBefore(dispatcher)
     
     val rewriter: Servlet.rewritePf = {
-      case (_, path @ "wiki" :: page :: _, _, _) => ("/wiki", "wiki" :: Nil, 
-          TreeMap("wiki_page" -> page :: path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      case (_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => ("/wiki", ParsePath("wiki" :: Nil, true, false), 
+          TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     
     Servlet.addRewriteBefore(rewriter)

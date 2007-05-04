@@ -8,7 +8,14 @@ package net.liftweb.sitemap
 
 import net.liftweb.http._
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
+import net.liftweb.util._
+import Helpers._
 
 case class SiteMap(map: Menu*) {
-  def findLoc(req: RequestState, httpReq: HttpServletRequest): Option[Loc] = None
+  map.foreach(_.init)
+  map.foreach(_.validate)
+  
+  def findLoc(req: RequestState, httpReq: HttpServletRequest): Option[Loc] = {
+    first(map.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
+  }
 }

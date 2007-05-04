@@ -95,13 +95,15 @@ class UserActor extends Actor {
           // get friends
           friends = User.findAllByInsecureSql("SELECT users.* FROM users, friends WHERE users.id = friends.friend AND friends.owner = "+userId,
 					    true).map(_.name.get).sort(_ < _)
+          reply("Done")
         
         // tell all our friends that we follow them
         case ConfigFollowers =>
           friends.flatMap(f => UserList.find(f).toList).foreach(_ ! AddFollower)
           // if the "autogen" property is set, then have each of the actors
           // randomly generate a message 
-          if (User.shouldAutogen_? || System.getProperty("autogen") != null) autoGen     
+          if (User.shouldAutogen_? || System.getProperty("autogen") != null) autoGen
+          reply("Done")
         
         // if we add a friend, 
         case AddFriend(name) =>

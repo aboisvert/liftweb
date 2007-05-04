@@ -11,23 +11,29 @@ import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.util.Helpers._
+import net.liftweb.util.Lazy
+import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
 
+
 object RequestState {
+  object NilPath extends ParsePath(Nil, true, false)
+  
   def apply(request: HttpServletRequest, rewrite: Servlet.rewritePf): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
     val contextPath = request.getContextPath
-    val tmpPath = tmpUri.split("/").toList.filter{n => n != null && n.length > 0}
+    val tmpPath = parsePath(tmpUri)
 
-    def processRewrite(uri: String, path: List[String], params: SortedMap[String, String]): (String, List[String], SortedMap[String, String]) = {
+    def processRewrite(uri: String, path: ParsePath, params: SortedMap[String, String]): (String, ParsePath, SortedMap[String, String]) = {
       val toMatch = (uri, path, reqType, request)
       if (!rewrite.isDefinedAt(toMatch)) (uri, path, params)
       else {
-        val (newUri, newPath, newMap) = rewrite(toMatch)
-        processRewrite(newUri, newPath, newMap)
+        //val (newUri, newPath, newMap) = rewrite(toMatch)
+        //processRewrite(newUri, newPath, newMap)
+        rewrite(toMatch)
       }
     }
     
@@ -43,17 +49,28 @@ object RequestState {
     val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
     
     new RequestState(paramNames, params,uri,path,contextPath, reqType,/* resourceFinder,*/
-		     path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
+		     path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
 		     body, request.getContentType)
   }
   
-  def nil = new RequestState(Nil, Map.empty, "", Nil, "", GetRequest(false), false, "", "")
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "")
+  
+  def parsePath(in: String): ParsePath = {
+    val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
+    val front = p1.startsWith("/")
+    val back = p1.length > 1 && p1.endsWith("/")
+    ParsePath(p1.replaceAll("/$", "/index").split("/").toList.filter(_.length > 0), front, back)
+  }
 }
 
-@scala.serializable
+case class ParsePath(path: List[String], absolute: boolean, endSlash: boolean) {
+  def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
+}
+
+
 class RequestState(val paramNames: List[String],
 		   val params: Map[String, List[String]],
-		   val uri: String,val path: List[String],
+		   val uri: String,val path: ParsePath,
 		   val contextPath: String,
 		   val requestType: RequestType,
 		   /*val resourceFinder: (String) =>  InputStream,*/
@@ -65,12 +82,20 @@ class RequestState(val paramNames: List[String],
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
   val id = pathParam(0)
-  def pathParam(n: int) = head(path.drop(n + 2), "")
-  def path(n: int) = head(path.drop(n), null)
+  def pathParam(n: int) = head(path.path.drop(n + 2), "")
+  def path(n: int) = head(path.path.drop(n), null)
   def param(n: String) = params.get(n) match {
     case Some(s :: _) => Some(s)
     case _ => None
   }
+  
+  def testLocation: Option[RedirectWithMessage] = None
+  
+  //def testLocation: Option[RedirectWithMessage] = _sitemap.flatMap(_.findLoc(S.request, S.servletRequest).map(_.testAccess) getOrElse
+  //    Some(RedirectWithMessage("/", "Invalid URL")))
+      
+  //def buildMenu: CompleteMenu = _sitemap.flatMap(_.findLoc(S.request, S.servletRequest).map(_.buildMenu)) getOrElse CompleteMenu(Nil) 
+  
   
   def createNotFound = {
     XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
