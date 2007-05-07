@@ -159,8 +159,8 @@ class Page extends Actor {
   }
 
   private def addAjaxHREF(request: RequestState, attr: MetaData): MetaData = {
-    val ajax = "javascript: new Ajax.Request('"+request.contextPath+request.uri+"', {asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }}); return false;"
-    new UnprefixedAttribute("href", ajax, attr)
+    val ajax = "new Ajax.Request('"+request.contextPath+request.uri+"', {asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }}); return false;"
+    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", attr))
   }
   
   

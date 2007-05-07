@@ -165,6 +165,15 @@ object Helpers {
     }
   }
   
+  def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Option[NodeSeq] = {
+    def build (listvals: List[Map[String, NodeSeq]], ret : NodeSeq) : NodeSeq = listvals match {
+      case vals :: rest => build(rest, ret.concat(bind(vals, xml)))
+      case Nil => ret
+    }
+    if (listvals.length > 0) Some(build(listvals.drop(1), bind(listvals.head, xml)))
+    else None
+  }
+
   def processBind(around : NodeSeq, at : String, what : NodeSeq) : NodeSeq = {
     around.flatMap {
       v =>
@@ -369,22 +378,62 @@ object Helpers {
     }
   }
   
-  private def _invokeMethod(clz: Class, meth: String, params: Array[Object]): Option[Any] = {
+  /**
+   * Invoke the given method for the given class, with the given params.
+   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
+   */
+  private def _invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Option[Array[Class]]): Option[Any] = {
+    /*
+     * try to find a method matching the given parameters
+     */
+    def findMethod : Option[Method] = {
+      /* try to find a method with the same name and the same number of arguments. Doesn't check the types.
+       * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
+       * add some extra $ for ex.
+       */
+      def findAlternates : Option[Method] = {
+        val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
+	    && Modifier.isPublic(m.getModifiers)
+	    && m.getParameterTypes.length == params.length)
+	if (t.length == 1) Some(t(0))
+	else None
+      }
+      try {
+        clz.getMethod(meth, ptypes match {
+          case None => params.map(_.getClass)
+	  case Some(a) => a }) match {
+            case null => findAlternates
+	    case m => Some(m)
+        }
+      } catch {
+        case e: java.lang.NoSuchMethodException => findAlternates
+      }
+    }
+  
     try {
-      clz.getMethod(meth, params.map(_.getClass)) match {
-	case null => None
-	case m => Some(m.invoke(clz.newInstance, params))
+      findMethod match {
+        case None => None
+        case Some(m) => {
+	    if (Modifier.isStatic(m.getModifiers)) Some(m.invoke(null, params))
+	    else Some(m.invoke(clz.newInstance, params))
+	}
       }
     } catch {
-      case e: java.lang.NoSuchMethodException => None
+      case e: java.lang.IllegalAccessException => None
+      case e: java.lang.IllegalArgumentException => None
     }
   }
-  
+
   def invokeMethod(clz: Class, meth: String, params: Array[Object]): Option[Any] = {
-    _invokeMethod(clz,meth, params) orElse _invokeMethod(clz, smartCaps(meth), params) orElse 
-    _invokeMethod(clz, methodCaps(meth), params) orElse None
+    _invokeMethod(clz,meth, params, None) orElse _invokeMethod(clz, smartCaps(meth), params, None) orElse
+    _invokeMethod(clz, methodCaps(meth), params, None) orElse None
   }
   
+  def invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Array[Class]): Option[Any] = {
+    _invokeMethod(clz,meth, params, Some(ptypes)) orElse _invokeMethod(clz, smartCaps(meth), params, Some(ptypes)) orElse
+    _invokeMethod(clz, methodCaps(meth), params, Some(ptypes)) orElse None
+  }
+
   def invokeMethod(clz: Class, meth: String): Option[Any] = invokeMethod(clz, meth, Array())
   
   def methodCaps(name: String): String = {
