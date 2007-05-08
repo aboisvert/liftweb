@@ -12,7 +12,7 @@ import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
 import scala.collection.Map
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.collection.immutable.{TreeMap}
-import scala.xml.{NodeSeq, Unparsed}
+import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -344,10 +344,11 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     in.flatMap{
       v => 
         v match {
-          case Elem("lift", "surround", attr @ _, _, kids @ _*) => {findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem("lift", "embed", attr @ _, _, kids @ _*) => {findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => {processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder), session, finder)}
-          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)}
+          case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
+          case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session, finder), session, finder)
+          case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session, finder), session, finder)
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session, finder), session, finder)
+          case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes, session, finder), v.scope, processSurroundAndInclude(v.child, session, finder) : _*)
           case _ => {v}
         }
     }

@@ -205,6 +205,19 @@ object S {
     addFunctionMap(key, (a: List[String]) => {func(); true})
     <lift:a key={key}>{body}</lift:a>
   }
+
+    
+    /**
+       * create an anchor tag around a body 
+       *
+       * @param func - the function to invoke when the link is clicked
+       * @param body - the NodeSeq to wrap in the anchor tag
+       */
+     def link(to: String, func: () => Any, body: NodeSeq): NodeSeq = {
+       val key = "F"+System.nanoTime+"_"+randomString(3)
+       addFunctionMap(key, (a: List[String]) => {func(); true})
+       <a href={to+"?"+key+"=_"}>{body}</a>
+     }
     
   def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
   def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)

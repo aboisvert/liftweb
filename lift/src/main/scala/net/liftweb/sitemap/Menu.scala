@@ -11,8 +11,8 @@ package net.liftweb.sitemap
    import net.liftweb.util._
    import Helpers._
    
-case class Menu(page: Loc, kids: Menu*) {
-  private var _parent: Option[Menu] = None
+case class Menu(page: Loc, kids: Menu*) extends HasKids {
+  private[sitemap] var _parent: Option[HasKids] = None
   
   private[sitemap] def init {
     kids.foreach(_._parent = Some(this))
@@ -26,9 +26,9 @@ case class Menu(page: Loc, kids: Menu*) {
   }
   
   private[sitemap] def testParentAccess: Option[RedirectWithMessage] = _parent.flatMap(_.testAccess)
-  private[sitemap] def testAccess: Option[RedirectWithMessage] = page.testAccess
+  override private[sitemap] def testAccess: Option[RedirectWithMessage] = page.testAccess
   
-  def isRoot_? = page.isRoot_?
+  override def isRoot_? = page.isRoot_?
       
   def isAbsolute_? = page.isAbsolute_?
 
@@ -43,9 +43,26 @@ case class Menu(page: Loc, kids: Menu*) {
     }
   }
   
-  def buildThisLine(loc: Loc) = MenuLine(Nil)
-  def buildChildLine = MenuLine(Nil)
-  def buildUpperLines: List[MenuLine] = Nil
+  def buildThisLine(loc: Loc) = {
+    val menuList = _parent.map(_.kids.toList) getOrElse List(this)
+    MenuLine(menuList.flatMap{
+      mi =>
+      val p = mi.page
+      val same = loc eq p
+      p.buildItem(same, same).toList
+    })
+  }
+  
+  def buildChildLine = MenuLine(kids.toList.flatMap(m => m.page.buildItem(false, false).toList))
+  override def buildUpperLines: List[MenuLine] = _parent match {
+    case None => Nil
+    case Some(p) => p.buildUpperLines ::: p.buildAboveLine(this)
+  }
+  
+  override def buildAboveLine(path: Menu): List[MenuLine] = _parent match {
+    case None => Nil
+    case Some(p) => List(MenuLine(p.kids.toList.flatMap(m => m.page.buildItem(false, m eq path).toList)))
+  }
 }
 
 class SiteMapException(msg: String) extends Exception(msg)

@@ -142,7 +142,7 @@ object TextileParser {
         op <- not(copyright ||| trademark ||| registered) &&& str("(");
         acro <- rep1(chr(&acro));
         cp <- str(")")
-      ) yield Acronym(thing.mkString("","",""), acro.mkString("","",""))
+      ) yield Acronym(thing.mkString(""), acro.mkString(""))
     }
     
     
@@ -162,7 +162,7 @@ object TextileParser {
         alt : List[List[char]] <- opt(img_alt);
         ce <- chr('!');
         link <- opt(img_link)
-      ) yield Image(img_url.mkString("","",""), if (alt.length > 0) alt.head.mkString("","","") else "",
+      ) yield Image(img_url.mkString(""), if (alt.length > 0) alt.head.mkString("") else "",
 		    if (link.length > 0) link.head.href else null, 
 		    if (fl.length > 0) List(AnyAttribute("style", "float:left"))
 		    else if (fr.length > 0) List(AnyAttribute("style", "float:right"))
@@ -193,7 +193,7 @@ object TextileParser {
         c1 <- chr('[');
         nr : List[char] <- rep1(chr(isDigit));
         c2 <- chr(']')
-      ) yield FootnoteDef((nr).mkString("","",""))
+      ) yield FootnoteDef((nr).mkString(""))
     }
     
     def isUpper : (char) => boolean = Character.isUpperCase
@@ -224,7 +224,7 @@ object TextileParser {
         
         sc3 : List[List[char]] <- rep(chr(isUpper) &&& chr(isLower) &&& rep(chr(isLowerOrNumber)))
       ) yield CharBlock(((esc :: fc1 :: fc2 :: fcr) ::: (sc1 :: sc2 :: scr) ::: 
-			 (sc3.flatMap{a => a})).mkString("","",""))
+			 (sc3.flatMap{a => a})).mkString(""))
     }
     
     /**
@@ -235,7 +235,7 @@ object TextileParser {
         fc1 : char <- chr(isUpper);
         fc2 <- chr(isLower);
         fcr <- rep(chr(isLowerOrNumber))
-      ) yield CharBlock((fc1 :: fc2 :: fcr).mkString("","",""))
+      ) yield CharBlock((fc1 :: fc2 :: fcr).mkString(""))
       
     }
     
@@ -247,8 +247,8 @@ object TextileParser {
         fc1 <- camelizedWord;
         sc1 <- camelizedWord;
         sc3 : List[CharBlock] <- rep(camelizedWord)
-      ) yield WikiAnchor(Nil, ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("","","") ,
-			 ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("","",""), Nil)
+      ) yield WikiAnchor(Nil, ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("") ,
+			 ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString(""), Nil)
       
     }
     
@@ -261,8 +261,8 @@ object TextileParser {
         fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
         eq <- str("\":");          
         rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield RefAnchor(Nil, (rc).mkString("","",""),
-			(fs).mkString("","",""), Nil)      
+      ) yield RefAnchor(Nil, (rc).mkString(""),
+			(fs).mkString(""), Nil)      
     }
     
     /**
@@ -277,8 +277,8 @@ object TextileParser {
         s : List[char] <- opt(chr('s'));
         css : char <- str("://");
         rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield Anchor(Nil, "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""),
-		     (fs).mkString("","",""), Nil)      
+      ) yield Anchor(Nil, "http" + s.mkString("") + "://"+ (rc).mkString("","",""),
+		     (fs).mkString(""), Nil)      
     }
     
     /**
@@ -291,7 +291,7 @@ object TextileParser {
         fr : List[char] <- rep1(chr(validUrlChar));
         c2 : char <- chr(']');
         url <- url
-      ) yield ARef((fr).mkString("","",""), url.asInstanceOf[Anchor].href)
+      ) yield ARef((fr).mkString(""), url.asInstanceOf[Anchor].href)
     }
 
     /**
@@ -303,8 +303,8 @@ object TextileParser {
         s : List[char] <- opt(chr('s'));
         css : char <- str("://");
         rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield Anchor(Nil, "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""),
-		     "http" + s.mkString("","","") + "://"+ (rc).mkString("","",""), Nil)
+      ) yield Anchor(Nil, "http" + s.mkString("") + "://"+ (rc).mkString("","",""),
+		     "http" + s.mkString("") + "://"+ (rc).mkString("","",""), Nil)
     }
     
     /**
@@ -313,7 +313,7 @@ object TextileParser {
     def _validUrlChar(c : char) : boolean = {
       Character.isLetterOrDigit(c) || c == '/' || c == '%' || c == '&' || c == '?' || c == '#' || 
       c == '$' || c == '.' ||
-      c == '-' || c == ':'
+      c == '-' || c == ':' || c == '_'
     }
     
     def validUrlChar : (char) => boolean = _validUrlChar
@@ -417,8 +417,8 @@ object TextileParser {
         et <- str(tag);
         sp2 <- rep(chr(' '));
         e2 <- chr('>');
-        if isValidTag((tag).mkString("","","")) // && showBody("body ", body) && showBody("body2 ",body2)
-      ) yield HTML((tag).mkString("","",""), reduceCharBlocks(body), attrs)
+        if isValidTag((tag).mkString("")) // && showBody("body ", body) && showBody("body2 ",body2)
+      ) yield HTML((tag).mkString(""), reduceCharBlocks(body), attrs)
     
     /**
     * A stand-alone tag
@@ -429,8 +429,8 @@ object TextileParser {
         tag : List[char] <- rep1(chr(validTagChar));
         attrs : List[Attribute] <- rep(tag_attr);
         c2 : char <- str("/>");
-        if isValidTag((tag).mkString("","",""))
-      ) yield HTML((tag).mkString("","",""), Nil, attrs)
+        if isValidTag((tag).mkString(""))
+      ) yield HTML((tag).mkString(""), Nil, attrs)
 
     def tag_attr = single_quote_attr ||| double_quote_attr
     
@@ -449,7 +449,7 @@ object TextileParser {
         eq <- str("='");
         value : List[char] <- rep(not(chr('\'')) &&& chr(&attr_value));
         end <- chr('\'')
-      ) yield AnyAttribute((name).mkString("","",""), value.mkString("","",""))
+      ) yield AnyAttribute((name).mkString(""), value.mkString(""))
     }
     
     /**
@@ -462,7 +462,7 @@ object TextileParser {
         eq <- str("=\"");
         value : List[char] <- rep(not(chr('"')) &&& chr(&attr_value));
         end <- chr('"')
-      ) yield AnyAttribute((name).mkString("","",""), value.mkString("","",""))
+      ) yield AnyAttribute((name).mkString(""), value.mkString(""))
     }
     
     /**
@@ -578,7 +578,7 @@ object TextileParser {
         c <- chr(':');
         vcl : List[char] <- rep1(chr(validStyleChar))
       )
-      yield StyleElem((ncl).mkString("","",""), (vcl).mkString("","",""))
+      yield StyleElem((ncl).mkString(""), (vcl).mkString(""))
     }
     
     def attribute = style ||| class_id ||| the_class ||| the_id ||| the_lang 
@@ -617,7 +617,7 @@ object TextileParser {
         ps <- chr('#');
         ri : List[char] <- rep1(chr(validClassChar));
         c2 <- chr(')')
-      ) yield ClassAndId((rc).mkString("","",""), (ri).mkString("","",""))
+      ) yield ClassAndId((rc).mkString(""), (ri).mkString(""))
     }
 
     def the_id : Parser[Attribute] = {
@@ -626,7 +626,7 @@ object TextileParser {
         ps <- chr('#');
         ri : List[char] <- rep1(chr(validClassChar));
         cc2 <- chr(')')
-      ) yield ClassAndId(null, (ri).mkString("","",""))
+      ) yield ClassAndId(null, (ri).mkString(""))
     }
 
     def the_lang : Parser[Attribute] = {
@@ -634,7 +634,7 @@ object TextileParser {
         ps <- chr('[');
         ri : List[char] <- rep1(chr(validClassChar));
         ps2 <- chr(']')
-      ) yield Lang( (ri).mkString("","",""))
+      ) yield Lang( (ri).mkString(""))
     }
 
     def the_class : Parser[Attribute] = {
@@ -642,7 +642,7 @@ object TextileParser {
         cc <- chr('(');
         rc : List[char] <- rep1(chr(validClassChar));
         cc2 <- chr(')')
-      ) yield ClassAndId((rc).mkString("","",""),null)
+      ) yield ClassAndId((rc).mkString(""),null)
     }
     
     
@@ -776,7 +776,7 @@ object TextileParser {
            sc2 <- str(". ");
            ln <- rep1(not_blank_line);
            bl <- blankLine
-	 ) yield Footnote(reduceCharBlocks(ln), attrs, (dr).mkString("","",""))
+	 ) yield Footnote(reduceCharBlocks(ln), attrs, (dr).mkString(""))
     }
     
     def first_paraAttrs : Parser[TableDef] = {
@@ -804,7 +804,7 @@ object TextileParser {
       for (
         c <- chr('/');
         dr : List[char] <- rep1(chr(isDigit))
-      ) yield AnyAttribute("rowspan", (dr).mkString("","",""))
+      ) yield AnyAttribute("rowspan", (dr).mkString(""))
     }
 
     
@@ -812,7 +812,7 @@ object TextileParser {
       for (
         c <- chr('\\');
         dr : List[char] <- rep1(chr(isDigit))
-      ) yield AnyAttribute("colspan", (dr).mkString("","",""))
+      ) yield AnyAttribute("colspan", (dr).mkString(""))
     }
 
     def table : Parser[Textile] = {
@@ -1168,7 +1168,7 @@ object TextileParser {
     }
   }
 
-  // ) yield Footnote(reduceCharBlocks(le :: ln), attrs, (d1 :: dr).mkString("","",""))
+  // ) yield Footnote(reduceCharBlocks(le :: ln), attrs, (d1 :: dr).mkString(""))
 
   case class Footnote(elems : List[Textile], attrs : List[Attribute], num : String) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {

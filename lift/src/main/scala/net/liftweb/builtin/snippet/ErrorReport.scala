@@ -22,7 +22,7 @@ class ErrorReport {
         case _ => v._3
       }
       
-      val style = v._4.filter(_.prefix == "lift").take(1).text
+      val style = v._4.filter(_.prefix == "lift").take(1).text.trim
       if (msg.isEmpty) Nil
       else {
         val msgList = msg.flatMap(e => <li>{e}</li>)

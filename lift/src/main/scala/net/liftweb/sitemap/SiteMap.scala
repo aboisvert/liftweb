@@ -11,11 +11,20 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, Http
 import net.liftweb.util._
 import Helpers._
 
-case class SiteMap(map: Menu*) {
-  map.foreach(_.init)
-  map.foreach(_.validate)
+case class SiteMap(kids: Menu*) extends HasKids  {
+  kids.foreach(_._parent = Some(this))
+  kids.foreach(_.init)
+  kids.foreach(_.validate)
   
   def findLoc(req: RequestState, httpReq: HttpServletRequest): Option[Loc] = {
-    first(map.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
+    first(kids.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
   }
+}
+
+trait HasKids {
+  def kids: Seq[Menu]
+  def buildUpperLines: List[MenuLine] = Nil
+  def isRoot_? = false
+  def buildAboveLine(path: Menu): List[MenuLine] = Nil
+  private[sitemap] def testAccess: Option[RedirectWithMessage] = None  
 }

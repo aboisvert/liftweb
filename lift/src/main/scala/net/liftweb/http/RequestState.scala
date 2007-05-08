@@ -50,10 +50,10 @@ object RequestState {
     
     new RequestState(paramNames, params,uri,path,contextPath, reqType,/* resourceFinder,*/
 		     path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
-		     body, request.getContentType)
+		     body, request.getContentType, request)
   }
   
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "")
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "", null)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -76,7 +76,8 @@ class RequestState(val paramNames: List[String],
 		   /*val resourceFinder: (String) =>  InputStream,*/
 		   val webServices_? : boolean,
 		   val body: String,
-                   val contentType: String) 
+                   val contentType: String,
+                   val request: HttpServletRequest) 
 {
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
   val section = path(0) match {case null => "default"; case s => s}
@@ -89,12 +90,12 @@ class RequestState(val paramNames: List[String],
     case _ => None
   }
   
-  def testLocation: Option[RedirectWithMessage] = None
+  val location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
   
-  //def testLocation: Option[RedirectWithMessage] = _sitemap.flatMap(_.findLoc(S.request, S.servletRequest).map(_.testAccess) getOrElse
-  //    Some(RedirectWithMessage("/", "Invalid URL")))
-      
-  //def buildMenu: CompleteMenu = _sitemap.flatMap(_.findLoc(S.request, S.servletRequest).map(_.buildMenu)) getOrElse CompleteMenu(Nil) 
+  
+  def testLocation: Option[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) None else location.map(_.testAccess) getOrElse Some(RedirectWithMessage("/", "Invalid URL"))
+  
+  def buildMenu: CompleteMenu = location.map(_.buildMenu) getOrElse CompleteMenu(Nil) 
   
   
   def createNotFound = {

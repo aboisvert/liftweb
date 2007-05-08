@@ -56,6 +56,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   }
   
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
+  
   private[sitemap] def buildItem(current: boolean, path: boolean) = {
     if (hidden || testAccess.isDefined) None
     else link.create(Nil).map(t => MenuItem(text.text(),t , current, path))
