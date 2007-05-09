@@ -13,5 +13,5 @@ import java.sql.Connection
  * Vend JDBC connections
  */ 
 trait ConnectionManager {
-  def newConnection(name: String): Option[Connection]
+  def newConnection(name: ConnectionIdentifier): Option[Connection]
 }

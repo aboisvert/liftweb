@@ -18,7 +18,7 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
   private var theSetList: Seq[ThroughType] = Nil
   
   private val others = Lazy[List[To]] {
-    DB.use {
+    DB.use(owner.connectionIdentifier) {
     conn =>
     val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+
     through.dbTableName+" WHERE "+
@@ -32,7 +32,7 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
 	    st.setObject(1, indVal.getJDBCFriendly, indVal.getTargetSQLType)
 	  DB.exec(st) {
 	    rs =>
-	      otherSingleton.createInstances(rs, None, None)
+	      otherSingleton.createInstances(owner.connectionIdentifier, rs, None, None)
 	  }
 	} getOrElse Nil
     }

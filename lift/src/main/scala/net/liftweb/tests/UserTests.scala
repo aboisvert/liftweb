@@ -17,7 +17,7 @@ import net.liftweb.proto._
 class UserTests extends TestCase("User Tests") {
   val maxUsers = 100
   def init {
-    DB.use {
+    DB.use(DefaultConnectionIdentifier) {
       conn =>
       
         for (cnt <- 1 to maxUsers) {

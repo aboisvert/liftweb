@@ -84,7 +84,7 @@ object DerbyRunner extends Runner {
     
     deleteIt(f)
 
-    DB.defineConnectionManager("", DBVendor)
+    DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     
     Schemifier.schemify(User, Pet, TestStateMachine)
     // Schemifier.schemify(User, Pet)
@@ -95,10 +95,10 @@ object MySqlRunner extends Runner {
   def name = "MySql"
     
   def setupDB {
-    DB.defineConnectionManager("", MySQLVendor)
+    DB.defineConnectionManager(DefaultConnectionIdentifier, MySQLVendor)
     
     def deleteAllTables {
-    DB.use {
+    DB.use(DefaultConnectionIdentifier) {
       conn =>
       val md = conn.getMetaData
       val rs = md.getTables(null, null, null, null)
@@ -132,7 +132,7 @@ object MySqlRunner extends Runner {
 }
 
 object MySQLVendor extends ConnectionManager {
-  def newConnection(name: String): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
     try {
       Class.forName("com.mysql.jdbc.Driver")
       
@@ -145,7 +145,7 @@ object MySQLVendor extends ConnectionManager {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: String): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       

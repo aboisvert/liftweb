@@ -24,7 +24,7 @@ object DB {
     val touchedEnv = envContext.calculated_?
     
     val ret = try {
-      (envContext.lookup(whichName("lift")).asInstanceOf[DataSource].getConnection) != null
+      (envContext.lookup(DefaultConnectionIdentifier.jndiName).asInstanceOf[DataSource].getConnection) != null
     } catch {
       case e => false
     }
@@ -34,16 +34,16 @@ object DB {
   }
   
   // var connectionManager: Option[ConnectionManager] = None
-  private val connectionManagers = new HashMap[String, ConnectionManager];
+  private val connectionManagers = new HashMap[ConnectionIdentifier, ConnectionManager];
   
-  def defineConnectionManager(name: String, mgr: ConnectionManager) {
+  def defineConnectionManager(name: ConnectionIdentifier, mgr: ConnectionManager) {
     connectionManagers(name) = mgr
   }
   
-  private def info : HashMap[String, (SuperConnection, int)] = {
-    threadStore.get.asInstanceOf[HashMap[String, (SuperConnection, int)]] match {
+  private def info : HashMap[ConnectionIdentifier, (SuperConnection, int)] = {
+    threadStore.get.asInstanceOf[HashMap[ConnectionIdentifier, (SuperConnection, int)]] match {
       case null =>
-	val tinfo = new HashMap[String, (SuperConnection, int)];
+	val tinfo = new HashMap[ConnectionIdentifier, (SuperConnection, int)];
 	threadStore.set(tinfo)
 	tinfo
 
@@ -51,10 +51,9 @@ object DB {
     }
   }
   
-  private def whichName(name : String) = if (name == null || name.length == 0) "lift" else name
-  
-  private def newConnection(name : String) : SuperConnection = {
-    val ret = new SuperConnection(connectionManagers.get(name).flatMap{cm => cm.newConnection(name)}.getOrElse {envContext.lookup(whichName(name)).asInstanceOf[DataSource].getConnection})
+
+  private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
+    val ret = new SuperConnection(connectionManagers.get(name).flatMap(_.newConnection(name)).getOrElse {envContext.lookup(name.jndiName).asInstanceOf[DataSource].getConnection})
     ret.setAutoCommit(false)
     ret
   }
@@ -62,7 +61,7 @@ object DB {
   
   private def releaseConnection(conn : SuperConnection) : unit = conn.close
   
-  private def getConnection(name : String): SuperConnection =  {
+  private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
     var ret = info.get(name) match {
       case None => (newConnection(name), 1)
       case Some(c) => (c._1, c._2 + 1)
@@ -71,7 +70,7 @@ object DB {
     ret._1
   }
   
-  def releaseConnectionNamed(name : String) {
+  def releaseConnectionNamed(name : ConnectionIdentifier) {
     info.get(name) match {
       case Some(c)  => if (c._2 == 1) c._1.commit
       info(name) = (c._1, c._2 - 1)
@@ -122,10 +121,13 @@ object DB {
       }
   }
   
+  /*
   def use[T](f : (SuperConnection) => T) : T = {
     this.use("")(f)
   }
-  def use[T](name : String)(f : (SuperConnection) => T) : T = {
+  */
+    
+  def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
     val conn = getConnection(name)
     try {
       f(conn)
@@ -143,4 +145,11 @@ class SuperConnection(val connection: Connection) {
 
 object SuperConnection {
   implicit def superToConn(in: SuperConnection): Connection = in.connection
+}
+
+trait ConnectionIdentifier {
+  def jndiName: String
+}
+case object DefaultConnectionIdentifier extends ConnectionIdentifier {
+  var jndiName = "lift"
 }

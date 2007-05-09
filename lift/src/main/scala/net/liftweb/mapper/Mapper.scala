@@ -16,6 +16,8 @@ import S._
 trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next
   private var was_deleted_? = false
+  private var dbConnectionIdentifier:ConnectionIdentifier = DefaultConnectionIdentifier
+  
   def getSingleton : MetaMapper[A];
   final def safe_? : boolean = {
     Safe.safe_?(secure_#)
@@ -27,9 +29,17 @@ trait Mapper[A<:Mapper[A]] {
     Safe.runSafe(secure_#)(f)
   }
   
+  def connectionIdentifier(id: ConnectionIdentifier): A = {
+    dbConnectionIdentifier = id
+    thisToMappee(this)
+  }
+  
+  def connectionIdentifier = dbConnectionIdentifier
+  
+  /*
   def onFormPost(f : (A) => boolean) : A = {
     this
-  }
+  }*/
   
   /**
     * Save the instance and return the instance

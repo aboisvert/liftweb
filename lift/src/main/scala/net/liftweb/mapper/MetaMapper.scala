@@ -43,22 +43,23 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def beforeDelete: List[(A) => unit] = Nil
   def afterDelete: List[(A) => unit] = Nil
   
+  def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
   
-  def findAll : List[A] = {
-    findMap(Nil :_*)(v => Some(v))
-  }
-  
-  // def findAll(by: QueryParam*): List[A] = findAll(List(by))
-  
-  def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = {
-    DB.use {
+  def findAll : List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Some(v))
+
+  def findAllDb(dbId:ConnectionIdentifier)  : List[A] =  findMapDb(dbId, Nil :_*)(v => Some(v))
+    
+  def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = findAllByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
+
+  def findAllByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = {
+    DB.use(dbId) {
       conn =>
     if (!IDidASecurityAuditOnThisQuery) Nil
     else DB.prepareStatement(query, conn) {
       st =>
 	DB.exec(st) {
           rs =>
-            createInstances(rs, None, None, v => Some(v))
+            createInstances(dbId, rs, None, None, v => Some(v))
 	}
     }
   }
@@ -66,10 +67,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   def dbAddTable: Option[() => unit] = None
   
-  def count: long = count(Nil :_*)
+  def count: long = countDb(dbDefaultConnectionIdentifier, Nil :_*)
+
+  def count(by: QueryParam[A]*): long = countDb(dbDefaultConnectionIdentifier, by:_*)
   
-  def count(by: QueryParam[A]*): long = {
-    DB.use {
+  def countDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): long = {
+    DB.use(dbId) {
       conn =>
     val bl = by.toList
     val (query, start, max) = addEndStuffs(addFields("SELECT COUNT(*) FROM "+dbTableName+"  ", false, bl), bl, conn)
@@ -86,20 +89,21 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
   }
   
-  def findAll(by: QueryParam[A]*): List[A] = findMap(by :_*)(v => Some(v))
   
-  def findMap[T](by: QueryParam[A]*)(f: A => Option[T]) : List[T] = {
-    DB.use {
+  def findAll(by: QueryParam[A]*): List[A] = findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Some(v))
+  def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] = findMapDb(dbId, by :_*)(v => Some(v))
+
+  def findMap[T](by: QueryParam[A]*)(f: A => Option[T]) = findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
+
+  def findMapDb[T](dbId: ConnectionIdentifier, by: QueryParam[A]*)(f: A => Option[T]) : List[T] = {
+    DB.use(dbId) {
       conn =>
     val bl = by.toList
     val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+"  ", false, bl), bl, conn)
     DB.prepareStatement(query, conn) {
       st =>
         setStatementFields(st, bl, 1)
-      DB.exec(st) {
-        rs =>
-          createInstances(rs, start, max, f)
-      }
+      DB.exec(st)(createInstances(dbId, _, start, max, f))
     }
     }
   }
@@ -188,9 +192,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       tmp + " LIMIT "+start.get+","+java.lang.Long.MAX_VALUE
     } else tmp), None, None)}
   }
-  
-  def find(by: QueryParam[A]*): Option[A] = {
-    DB.use {
+
+  def find(by: QueryParam[A]*): Option[A] = findDb(dbDefaultConnectionIdentifier, by :_*)
+
+  def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Option[A] = {
+    DB.use(dbId) {
       conn =>
     val bl = by.toList
     val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+" ",false,  bl), bl, conn)
@@ -200,7 +206,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       DB.exec(st) {
         rs =>
           val mi = buildMapper(rs)
-        if (rs.next) Some(createInstance(rs, mi._1, mi._2))
+        if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
         else None
       }
       
@@ -209,7 +215,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
   
   def delete_!(toDelete : A) : boolean = {
-    DB.use {
+    DB.use(toDelete.connectionIdentifier) {
       conn =>
     _beforeDelete(toDelete)
     val ret = DB.prepareStatement("DELETE FROM "+dbTableName +" WHERE "+indexMap+" = ?", conn) {
@@ -226,7 +232,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
   }
   
-  def find(key: Any) : Option[A] = {
+  def find(key: Any): Option[A] = findDb(dbDefaultConnectionIdentifier, key)
+  
+  def findDb(dbId: ConnectionIdentifier, key: Any) : Option[A] = {
     def testProdArity(prod: Product): boolean = {
       var pos = 0
       while (pos < prod.productArity) {
@@ -253,13 +261,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case qp: QueryParam[A] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
       case prod: Product if (testProdArity(prod)) => find(convertToQPList(prod) :_*)
       // case s: Seq[Any] if (s.length > 0 && s(0).isInstanceOf[QueryParam[Any]]) => find(s.asInstanceOf[Seq[QueryParam[A]]])
-      case v => find(v.toString)
+      case v => findDb(dbId, v.toString)
     }
   }
-  
-  def find(key : String) : Option[A] = {
-    
-    DB.use { conn => 
+
+  def find(key : String) : Option[A] = findDb(dbDefaultConnectionIdentifier, key)
+
+  def findDb(dbId: ConnectionIdentifier,key : String) : Option[A] = {
+    DB.use(dbId) { conn => 
     if (indexMap eq null) None
     else {
       val field = mappedColumnInfo(indexMap).asInstanceOf[MappedField[AnyRef,A] with IndexedField[AnyRef]]
@@ -272,7 +281,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
             DB.exec(st) {
               rs =>
                 val mi = buildMapper(rs)
-	      if (rs.next) Some(createInstance(rs, mi._1, mi._2))
+	      if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
 	      else None
             }
           }
@@ -337,7 +346,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
   
   def save(toSave : A) : boolean = {
-    DB.use { conn =>
+    DB.use(toSave.connectionIdentifier) { conn =>
     _beforeSave(toSave)
     val ret = if (saved_?(toSave)) {
       if (!dirty_?(toSave)) true else {
@@ -411,10 +420,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def createInstances(rs: ResultSet, start: Option[long], omax: Option[long]) : List[A] = createInstances(rs, start, omax, v => Some(v))
+  def createInstances(dbId: ConnectionIdentifier, rs: ResultSet, start: Option[long], omax: Option[long]) : List[A] = createInstances(dbId, rs, start, omax, v => Some(v))
 
     
-  def createInstances[T](rs: ResultSet, start: Option[long], omax: Option[long], f: A => Option[T]) : List[T] = {
+  def createInstances[T](dbId: ConnectionIdentifier, rs: ResultSet, start: Option[long], omax: Option[long], f: A => Option[T]) : List[T] = {
     var ret = new ArrayBuffer[T]
     val bm = buildMapper(rs)
     var pos = (start getOrElse 0L) * -1L
@@ -422,7 +431,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
     while (pos < max && rs.next()) {
       if (pos >= 0L) {
-        f(createInstance(rs, bm._1, bm._2)).foreach(v => ret += v)
+        f(createInstance(dbId, rs, bm._1, bm._2)).foreach(v => ret += v)
       }
       pos = pos + 1L
     }
@@ -487,8 +496,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     (colCnt, ar)
   }
 
-  def createInstance(rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,int,A) => unit]) : A = {
-    val ret = createInstance
+  def createInstance(dbId: ConnectionIdentifier, rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,int,A) => unit]) : A = {
+    val ret = createInstance.connectionIdentifier(dbId)
     val ra = ret// .asInstanceOf[Mapper[A]]
     var pos = 1
     while (pos <= colCnt) {

@@ -23,10 +23,12 @@ object Schemifier {
     val driverType = calcDriver(connection.getMetaData.getDatabaseProductName)
   }
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
-  
-  def schemify(stables: BaseMetaMapper*) {
+
+  def schemify(stables: BaseMetaMapper*): unit = schemify(DefaultConnectionIdentifier, stables :_*)
+
+  def schemify(dbId: ConnectionIdentifier, stables: BaseMetaMapper*) {
     val tables = stables.toList
-    DB.use {
+    DB.use(dbId) {
       con =>
 	val connection = SuperConnection(con)
       val driver = calcDriver(connection.getMetaData.getDatabaseProductName)

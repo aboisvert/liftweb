@@ -9,7 +9,7 @@ package bootstrap.liftweb
 import net.liftweb.util.Helpers
 import net.liftweb.http._
 import Helpers._
-import net.liftweb.mapper.{DB, ConnectionManager, Schemifier}
+import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.immutable.TreeMap
@@ -22,7 +22,7 @@ import com.skittr.actor._
   */
 class Boot {
   def boot {
-    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager("", DBVendor)
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("com.skittr")
      
     // make sure the database is up to date
@@ -48,7 +48,7 @@ class Boot {
   * A singleton that vends a database connection to a Derby database
   */
 object DBVendor extends ConnectionManager {
-  def newConnection(name: String): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:skittr;create=true")

@@ -9,7 +9,7 @@ package bootstrap.liftweb
 import net.liftweb.util.Helpers
 import net.liftweb.http._
 import Helpers._
-import net.liftweb.mapper.{DB, ConnectionManager, Schemifier}
+import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
 import net.liftweb.example.controller.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
@@ -22,7 +22,7 @@ import net.liftweb.example.model._
   */
 class Boot {
   def boot {
-    DB.defineConnectionManager("", DBVendor)
+    DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("net.liftweb.example")
      
     Schemifier.schemify(User, WikiEntry)
@@ -52,7 +52,7 @@ class Boot {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: String): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
