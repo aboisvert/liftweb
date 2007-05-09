@@ -12,11 +12,12 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
 import net.liftweb.http.S
 import S._
+import net.liftweb.util.Lazy
 
 trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next
   private var was_deleted_? = false
-  private var dbConnectionIdentifier:ConnectionIdentifier = getSingleton.dbDefaultConnectionIdentifier
+  private var dbConnectionIdentifier:Option[ConnectionIdentifier] = None
   
   def getSingleton : MetaMapper[A];
   final def safe_? : boolean = {
@@ -30,11 +31,11 @@ trait Mapper[A<:Mapper[A]] {
   }
   
   def connectionIdentifier(id: ConnectionIdentifier): A = {
-    dbConnectionIdentifier = id
+    if (id != getSingleton.dbDefaultConnectionIdentifier || dbConnectionIdentifier.isDefined) dbConnectionIdentifier = Some(id)
     thisToMappee(this)
   }
   
-  def connectionIdentifier = dbConnectionIdentifier
+  def connectionIdentifier = dbConnectionIdentifier getOrElse getSingleton.dbDefaultConnectionIdentifier
   
   /*
   def onFormPost(f : (A) => boolean) : A = {
