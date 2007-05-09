@@ -16,7 +16,7 @@ import S._
 trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next
   private var was_deleted_? = false
-  private var dbConnectionIdentifier:ConnectionIdentifier = DefaultConnectionIdentifier
+  private var dbConnectionIdentifier:ConnectionIdentifier = getSingleton.dbDefaultConnectionIdentifier
   
   def getSingleton : MetaMapper[A];
   final def safe_? : boolean = {
