@@ -15,12 +15,20 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   def testAccess: Option[RedirectWithMessage] = {
     first(stuff)(s =>
      s match {
-       case Loc.If(test, msg) => Console.println("in if and the result is "+test()); if (!test()) Some(msg.msg()) else None
+       case Loc.If(test, msg) if (!test()) => Some(msg.msg())
        case Loc.Unless(test, msg) if test() => Some(msg.msg())
        case _ => None
      }
     ) orElse _menu.testParentAccess
   }
+  
+  private def findTitle(lst: List[Loc.LocStuff]): Option[Loc.Title] = lst match {
+    case Nil => None
+    case (t : Loc.Title) :: xs => Some(t)
+    case _ => findTitle(lst.tail)
+  }
+  
+  def title: String = findTitle(stuff).map(_.title()) getOrElse name
   
   def isRoot_? = link.isRoot_?
   private[sitemap] def setMenu(p: Menu) {_menu = p}

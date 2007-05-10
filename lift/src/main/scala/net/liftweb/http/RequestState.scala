@@ -92,12 +92,15 @@ class RequestState(val paramNames: List[String],
     case _ => None
   }
   
-  val location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
+  private val _location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
+  def location = _location.get 
   
   def testLocation: Option[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) None
      else location.map(_.testAccess) getOrElse Some(RedirectWithMessage("/", "Invalid URL"))
   
-  def buildMenu: CompleteMenu = location.map(_.buildMenu) getOrElse CompleteMenu(Nil) 
+  private val _buildMenu = Lazy(location.map(_.buildMenu) getOrElse CompleteMenu(Nil))
+  
+  def buildMenu: CompleteMenu = _buildMenu.get  
 
   def finder(name: String): Option[InputStream] = {
     context match {
