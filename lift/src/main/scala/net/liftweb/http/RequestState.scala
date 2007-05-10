@@ -6,7 +6,8 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse}
+import javax.servlet.http._
+import javax.servlet.ServletContext
 import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import scala.collection.immutable.{TreeMap, SortedMap}
@@ -20,16 +21,16 @@ import scala.xml._
 object RequestState {
   object NilPath extends ParsePath(Nil, true, false)
   
-  def apply(request: HttpServletRequest, rewrite: Servlet.rewritePf): RequestState = {
+  def apply(request: HttpServletRequest, rewrite: Servlet.rewritePf, context: ServletContext): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
     val contextPath = request.getContextPath
     val tmpPath = parsePath(tmpUri)
 
-    def processRewrite(uri: String, path: ParsePath, params: SortedMap[String, String]): (String, ParsePath, SortedMap[String, String]) = {
-      val toMatch = (uri, path, reqType, request)
-      if (!rewrite.isDefinedAt(toMatch)) (uri, path, params)
+    def processRewrite(uri: String, path: ParsePath, params: SortedMap[String, String]): RewriteResponse = {
+      val toMatch = RewriteRequest(uri, path, reqType, request)
+      if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(uri, path, params)
       else {
         //val (newUri, newPath, newMap) = rewrite(toMatch)
         //processRewrite(newUri, newPath, newMap)
@@ -37,9 +38,10 @@ object RequestState {
       }
     }
     
-    val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
+    // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
+    val rewritten = processRewrite(tmpUri, tmpPath, TreeMap.empty)
     
-    val localParams = TreeMap(localSingleParams.map(a => (a._1, List(a._2))).toList :_*)
+    val localParams = TreeMap(rewritten.params.map(a => (a._1, List(a._2))).toList :_*)
     
     // val session = request.getSession
     val body = (if (reqType.post_? && request.getContentType == "text/xml") new String(readWholeStream(request.getInputStream), "UTF-8") else "")
@@ -48,12 +50,12 @@ object RequestState {
     val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
     val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
     
-    new RequestState(paramNames, params,uri,path,contextPath, reqType,/* resourceFinder,*/
-		     path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
-		     body, request.getContentType, request)
+    new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
+		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
+		     body, request.getContentType, request, context)
   }
   
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "", null)
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "", null, null)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -73,11 +75,11 @@ class RequestState(val paramNames: List[String],
 		   val uri: String,val path: ParsePath,
 		   val contextPath: String,
 		   val requestType: RequestType,
-		   /*val resourceFinder: (String) =>  InputStream,*/
 		   val webServices_? : boolean,
 		   val body: String,
                    val contentType: String,
-                   val request: HttpServletRequest) 
+                   val request: HttpServletRequest,
+                   val context: ServletContext) 
 {
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
   val section = path(0) match {case null => "default"; case s => s}
@@ -92,11 +94,20 @@ class RequestState(val paramNames: List[String],
   
   val location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
   
-  
-  def testLocation: Option[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) None else location.map(_.testAccess) getOrElse Some(RedirectWithMessage("/", "Invalid URL"))
+  def testLocation: Option[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) None
+     else location.map(_.testAccess) getOrElse Some(RedirectWithMessage("/", "Invalid URL"))
   
   def buildMenu: CompleteMenu = location.map(_.buildMenu) getOrElse CompleteMenu(Nil) 
-  
+
+  def finder(name: String): Option[InputStream] = {
+    context match {
+      case null => None
+      case c => c.getResourceAsStream(name) match {
+        case null => None
+        case s => Some(s)
+      }
+    }
+  }
   
   def createNotFound = {
     XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
@@ -156,5 +167,8 @@ class RequestState(val paramNames: List[String],
 		   }
     }
   }
-  
 }
+
+case class RequestMatcher(request: RequestState, path: ParsePath)
+case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
+case class RewriteResponse(uri: String,path: ParsePath,params: SortedMap[String, String])

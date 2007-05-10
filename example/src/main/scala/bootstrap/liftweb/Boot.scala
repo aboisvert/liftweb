@@ -27,28 +27,50 @@ class Boot {
      
     Schemifier.schemify(User, WikiEntry)
     
-    val dispatcher: PartialFunction[(RequestState, ParsePath, (String) => java.io.InputStream),(HttpServletRequest) => Option[Any]] = 
-      {
-    case (r, ParsePath("webservices" :: c :: _, _,_), _) => { 
-          (req: HttpServletRequest) => {
-          val rc = new WebServices(r, req)
-          val invoker = createInvoker(c, rc)
-          invoker match {
-            case None => None
-            case Some(f) => f()
-          }
-          }
-        }
+    val dispatcher: Servlet.dispatchPf = {
+      // if the url is "showcities" then return the showCities function
+      case RequestMatcher(_, ParsePath("showcities":: _, _, _)) => XmlServer.showCities
+
+      // if the url is "showstates" "curry" the showStates function with the optional second parameter
+      case RequestMatcher(_, ParsePath("showstates":: xs, _, _)) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+      
+      // if it's a web service, pass it to the web services invoker
+      case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_)) => invokeWebService(r, c)
     }
     Servlet.addDispatchBefore(dispatcher)
     
     val rewriter: Servlet.rewritePf = {
-      case (_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => ("/wiki", ParsePath("wiki" :: Nil, true, false), 
+      case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => 
+         RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
           TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     
     Servlet.addRewriteBefore(rewriter)
   }
+  
+  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Option[Any] =
+      createInvoker(methodName, new WebServices(request, req)).map(_())
+}
+
+object XmlServer {
+  def showStates(which: String)(req: HttpServletRequest): Option[XmlResponse] = Some(XmlResponse(
+      <states renderedAt={timeNow.toString}>{
+      which match {
+        case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
+        
+        case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
+        
+        case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
+      } }</states>))
+ 
+  def showCities(ignore: HttpServletRequest): Option[XmlResponse] = Some(XmlResponse(<cities>
+  <city name="Boston"/>
+  <city name="New York"/>
+  <city name="San Francisco"/>
+  <city name="Dallas"/>
+  <city name="Chicago"/>
+  </cities>))
+  
 }
 
 object DBVendor extends ConnectionManager {

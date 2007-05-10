@@ -138,7 +138,6 @@ class Servlet extends HttpServlet {
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
-
     printTime("Service request "+req.getRequestURI) {
     Servlet.setContext(getServletContext)
     req.getMethod.toUpperCase match {
@@ -153,12 +152,9 @@ class Servlet extends HttpServlet {
    */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
     Servlet.early.foreach(_(request))
-    val session = RequestState(request, Servlet.rewriteTable)
-    
-    val finder = &getServletContext.getResourceAsStream
-    
-    val toMatch = (session, session.path, finder)
-    Console.println("toMatch is "+toMatch)
+    val session = RequestState(request, Servlet.rewriteTable, getServletContext)
+
+    val toMatch = RequestMatcher(session, session.path)
     
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
@@ -207,7 +203,7 @@ class Servlet extends HttpServlet {
         drainTheSwamp
 
 	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
-	sessionActor ! AskSessionToRender(session, request, finder, timeout)
+	sessionActor ! AskSessionToRender(session, request, timeout)
         receiveWithin(timeout) {
           case r: XhtmlResponse => r.toResponse
           case Some(r: XhtmlResponse) => r.toResponse
@@ -240,8 +236,8 @@ class Servlet extends HttpServlet {
 }
 
 object Servlet {
-  type dispatchPf = PartialFunction[(RequestState, ParsePath, (String) => InputStream), (HttpServletRequest) => Option[Any]];
-  type rewritePf = PartialFunction[(String, ParsePath, RequestType, HttpServletRequest), (String, ParsePath, SortedMap[String, String])]
+  type dispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[Any]];
+  type rewritePf = PartialFunction[RewriteRequest, RewriteResponse]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
   
