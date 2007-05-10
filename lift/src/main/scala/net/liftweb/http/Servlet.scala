@@ -320,6 +320,7 @@ object Servlet {
       case Some(r: Response) => r
       case ns: NodeSeq => convertResponse(XhtmlResponse(session.fixHtml(ns), Map.empty, 200), session)
       case xml: XmlResponse => Response(xml.xml.toString.getBytes("UTF-8"), Map("Content-Type" -> "text/xml"), 200)
+      case Some(o: Option[Any]) => convertResponse(o, session)
       case _ => session.createNotFound.toResponse
     }
   }
