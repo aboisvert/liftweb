@@ -29,14 +29,11 @@ trait SimpleController {
   
   def post_? : boolean = request.post_?
   
-  def get(name: String): Option[String] = {
+  def get(name: String): Option[String] =
     httpRequest.getSession.getAttribute(name) match {
         case null => None
-        case n => {
-      if (n.isInstanceOf[String]) Some(n.asInstanceOf[String])
-      else None
-        }
-  }
+        case n: String => Some(n)
+        case _ => None
   }
   
   def set(name: String, value: String) {

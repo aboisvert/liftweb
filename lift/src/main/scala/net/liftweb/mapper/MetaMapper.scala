@@ -48,7 +48,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def findAll : List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Some(v))
 
   def findAllDb(dbId:ConnectionIdentifier)  : List[A] =  findMapDb(dbId, Nil :_*)(v => Some(v))
-    
+
+  def countByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): long = countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
+
+  def countByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): long =
+    if (!IDidASecurityAuditOnThisQuery) -1L
+    else DB.use(dbId)(DB.prepareStatement(query, _)(DB.exec(_)(rs => if (rs.next) rs.getLong(1) else 0L))) 
+  
   def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = findAllByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
 
   def findAllByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = {

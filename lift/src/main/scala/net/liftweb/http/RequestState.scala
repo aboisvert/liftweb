@@ -44,7 +44,7 @@ object RequestState {
     val localParams = TreeMap(rewritten.params.map(a => (a._1, List(a._2))).toList :_*)
     
     // val session = request.getSession
-    val body = (if (reqType.post_? && request.getContentType == "text/xml") new String(readWholeStream(request.getInputStream), "UTF-8") else "")
+    val body = (if (reqType.post_? && request.getContentType == "text/xml") readWholeStream(request.getInputStream) else null)
       
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
@@ -55,7 +55,7 @@ object RequestState {
 		     body, request.getContentType, request, context)
   }
   
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, "", "", null, null)
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, null, "", null, null)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -76,7 +76,7 @@ class RequestState(val paramNames: List[String],
 		   val contextPath: String,
 		   val requestType: RequestType,
 		   val webServices_? : boolean,
-		   val body: String,
+		   val body: Array[byte],
                    val contentType: String,
                    val request: HttpServletRequest,
                    val context: ServletContext) 
