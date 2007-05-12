@@ -13,6 +13,7 @@ import net.liftweb.util.Helpers
 import scala.xml.{NodeSeq, Text, Elem}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.HashSet
+import S._
 
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
@@ -26,7 +27,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   private var owner_i = new HashSet[Page]
   private var defaultXml_i: NodeSeq = _
-  private var localFunctionMap: Map[String, (List[String]) => boolean] = Map.empty
+  private var localFunctionMap: Map[String, AFuncHolder] = Map.empty
   
   private var askingWho: Option[ControllerActor] = None
   private var whosAsking: Option[Actor] = None

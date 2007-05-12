@@ -25,7 +25,7 @@ object S {
    */
   private val _request = new ThreadGlobal[RequestState];
   private val _servletRequest = new ThreadGlobal[HttpServletRequest];
-  private val functionMap = new ThreadGlobal[HashMap[String, (List[String]) => boolean]];
+  private val functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]];
   private val _notice = new ThreadGlobal[ArrayBuffer[(NoticeType.Value, NodeSeq)]];
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = {
@@ -87,7 +87,7 @@ object S {
     snippetMap.doWith(new HashMap) {
       inS.doWith(true) {
           initNotice {
-            functionMap.doWith(new HashMap[String, (List[String]) => boolean]) {
+            functionMap.doWith(new HashMap[String, AFuncHolder]) {
               this._request.doWith(request) {
                 this.currCnt.doWith(0)(f)
               }
@@ -140,7 +140,7 @@ object S {
   
   def servletRequest = _servletRequest.value
   
-  def getFunctionMap: Map[String, (List[String]) => boolean] = {
+  def getFunctionMap: Map[String, AFuncHolder] = {
     functionMap.value match {
       case null => Map.empty
       case s => s
@@ -152,6 +152,7 @@ object S {
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
 
  
+  /*
   def fL(in: List[String] => boolean): String = {
     val name = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(name, in)
@@ -161,12 +162,12 @@ object S {
   def fL(name: String, inf: List[String] => boolean): String = {
     addFunctionMap(name, inf)
     name
-  }
+  }*/
   
-  def addFunctionMap(name: String, value: (List[String]) => boolean) {
+  def addFunctionMap(name: String, value: AFuncHolder) {
     functionMap.value += (name -> value)
   }
-  def mapFunction(name: String, f: (List[String]) => boolean): String = {
+  def mapFunction(name: String, f: AFuncHolder): String = {
     val ret = ""+nc+"_"+name+"_"+randomString(5)
     functionMap.value += (ret -> f)
     ret
@@ -191,7 +192,7 @@ object S {
     }
   }
   
-  private def makeFormElement(name: String, func: String => Any, params: Seq[FormElementPieces]): NodeSeq =
+  private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): NodeSeq =
     wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
  
   /**
@@ -219,27 +220,61 @@ object S {
        <a href={to+"?"+key+"=_"}>{body}</a>
      }
     
-  def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
-  def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)
-  def hidden(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params)
-  def submit(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params)
-
+    def text_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
+    def password_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)
+    def hidden_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params)
+    def submit_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params)
+  def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", SFuncHolder(func), params)
+  def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", SFuncHolder(func), params)
+  def hidden(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", SFuncHolder(func), params)
+  def submit(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", SFuncHolder(func), params)
+  def select(opts: List[(String, String)],func: String => Any, params: FormElementPieces*): NodeSeq = 
+    select_*(opts, SFuncHolder(func), params :_*)
+  def select_*(opts: List[(String, String)],func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
+    wrapFormElement(<select name={f(func)}>{
+      opts.flatMap(o => <option value={o._1}>{o._2}</option>)
+    }</select>, params.toList)
+    
+    /*
+    
+    private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): NodeSeq =
+      wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
+*/
+  /*
   private def makeFormElementL(name: String, func: List[String] => boolean, params: Seq[FormElementPieces]): NodeSeq =
     wrapFormElement(<input type={name} name={fL(func)}/>, params.toList)
-  
+  */
+    
+  /*
   def textL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("text", func, params)
   def passwordL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("password", func, params)
   def hiddenL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("hidden", func, params)
   def submitL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("submit", func, params)
+  */
   
-  def f(in: String => Any): String = {
-    val name = "F"+System.nanoTime+"_"+randomString(3)
-    addFunctionMap(name, {p: List[String] => booster(p, in)})
-    name
+  // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
+  implicit def toLFunc(in: List[String] => boolean): AFuncHolder = LFuncHolder(in)
+  implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in)
+  
+  abstract class AFuncHolder {
+    def apply(in: List[String]): boolean
+  }
+  case class SFuncHolder(func: String => Any) extends AFuncHolder {
+    def apply(in: List[String]): boolean = {in.foreach(func(_)); true}
+  }
+  case class LFuncHolder(func: List[String] => boolean) extends AFuncHolder  {
+    def apply(in: List[String]): boolean = func(in)
+  }
+  case class NFuncHolder(func: () => Any) extends AFuncHolder  {
+    def apply(in: List[String]): boolean = {in.foreach(s => func()); true}
   }
   
-  def f(name: String, inf: String => Any): String = {
-    addFunctionMap(name, {p: List[String] => booster(p, inf)})
+  def f(in: AFuncHolder): String = {
+    f("F"+System.nanoTime+"_"+randomString(3), in)
+  }
+  
+  def f(name: String, inf: AFuncHolder): String = {
+    addFunctionMap(name, inf)
     name
   }
   

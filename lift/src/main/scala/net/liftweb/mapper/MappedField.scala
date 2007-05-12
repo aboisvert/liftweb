@@ -12,6 +12,7 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Text, Node, NodeSeq}
 import java.util.Date
 import net.liftweb.http.S
+import net.liftweb.http.S._
 
 trait BaseMappedField {
   def getJDBCFriendly(field : String) : Object
@@ -183,7 +184,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
    * Create an input field for the item
    */
   def toForm : NodeSeq = {
-    <input type='text' name={S.mapFunction(name, {s => this ::= s; true})} value={get.toString}/>
+    <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={get.toString}/>
   }
   
   def set(value : T) : T = {

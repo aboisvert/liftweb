@@ -2,6 +2,7 @@ package net.liftweb.mapper
 
 import scala.xml.{NodeSeq}
 import net.liftweb.http.S
+import net.liftweb.http.S._
 
 class MappedTextarea[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
   
@@ -10,7 +11,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
      * Create an input field for the item
      */
     override def toForm : NodeSeq = {
-       val funcName = S.mapFunction(name, {s => this ::= s; true})
+       val funcName = S.mapFunction(name, {s: List[String] => this ::= s; true})
        <textarea name={funcName} rows={textareaRows.toString} cols={textareaCols.toString}>{get.toString}</textarea>
     }
   /*

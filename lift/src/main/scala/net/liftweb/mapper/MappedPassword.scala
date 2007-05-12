@@ -15,6 +15,7 @@ import java.lang.reflect.Method
 import scala.xml.{Node, Text, NodeSeq}
 import java.util.Date
 import net.liftweb.http.S
+import net.liftweb.http.S._
 
 object MappedPassword {
   val blankPw = "*******"
@@ -83,7 +84,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
      * Create an input field for the item
      */
     override def toForm : NodeSeq = {
-       val funcName = S.mapFunction(name, {s => this ::= s; true})
+       val funcName = S.mapFunction(name, {s: List[String] => this ::= s; true})
        <span><input type='password' name={funcName} value={get.toString}/>&nbsp;
        repeat<input type='password' name={funcName} value={get.toString}/></span>
     }

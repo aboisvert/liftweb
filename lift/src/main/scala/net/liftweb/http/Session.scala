@@ -20,12 +20,13 @@ import scala.collection.immutable.{ListMap}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
 import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
+import net.liftweb.http.S._
 
 class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
   // private var sessionState: TreeMap[String, Any] = TreeMap.empty
   private var running_? = false
-  private var messageCallback: HashMap[String, List[String] => Any] = new HashMap
+  private var messageCallback: HashMap[String, AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
   private val theControllerMgr = {
     val ret = new ControllerManager
