@@ -6,6 +6,7 @@ import net.liftweb.http._
 import net.liftweb.util.Helpers._
 import scala.collection.immutable.TreeMap
 import scala.xml._
+import S._
 
 class Chat extends ControllerActor {
   private var userName = ""
@@ -35,7 +36,7 @@ class Chat extends ControllerActor {
 try {
     val inputName = this.uniqueId+"_msg"
     
-    S.addFunctionMap(inputName, sendMessage)
+    S.addFunctionMap(inputName, &sendMessage)
     
     <span>Hello "{userName}"<ul>{
       currentData.reverse.map{

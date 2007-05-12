@@ -13,6 +13,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Helpers
 import scala.xml._
 import com.skittr.actor._
+import S._
 
 class WatchUser extends ControllerActor {
   private var userActor: Option[UserActor] = None
@@ -23,7 +24,7 @@ class WatchUser extends ControllerActor {
     (for (ua <- userActor;
           user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u)
 							      case _ => None}) yield {
-	    S.addFunctionMap(inputName,{in => in.foreach(m =>  ua ! SendMessage(m, "web")); true})
+	    S.addFunctionMap(inputName,{in: List[String] => in.foreach(m =>  ua ! SendMessage(m, "web")); true})
 
 	    Helpers.bind("sk", defaultXml, "username" -> (user.name+" -> "+user.fullName), 
 			 "content" -> <span>{friendList(user) ++
