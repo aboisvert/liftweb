@@ -15,7 +15,7 @@ import net.liftweb.util.Lazy._
 
 object DB {
   private val threadStore = new ThreadLocal
-  private val envContext = Lazy{(new InitialContext).lookup("java:/comp/env").asInstanceOf[Context]}
+  private val envContext = Lazy(() => (new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   
   /**
     * can we get a JDBC connection from JNDI?
@@ -138,9 +138,7 @@ object DB {
 }
 
 class SuperConnection(val connection: Connection) {
-  val brokenLimit_? : Lazy[boolean] = Lazy {
-    connection.getMetaData.getDatabaseProductName ==  "Apache Derby"
-  }
+  val brokenLimit_? : Lazy[boolean] = Lazy( () => connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
 }
 
 object SuperConnection {

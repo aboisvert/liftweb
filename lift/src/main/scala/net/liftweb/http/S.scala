@@ -9,11 +9,12 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.mutable.{Map, HashMap, ArrayBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
-import net.liftweb.util.{Helpers, ThreadGlobal}
+import net.liftweb.util.{Helpers, ThreadGlobal, Lazy}
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
+
 /**
  * An object representing the current state of the HTTP request and response
  * It uses the DynamicVariable construct such that each thread has its own
@@ -39,6 +40,7 @@ object S {
     ret                  
   }
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
+  private val _reqVar = new ThreadGlobal[HashMap[String, String]]
   
   /**
    * Get the current HttpServletSession
@@ -84,6 +86,7 @@ object S {
   }
   
   private def _init[B](request: RequestState)(f : => B): B = {
+    _reqVar.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
       inS.doWith(true) {
           initNotice {
@@ -95,6 +98,20 @@ object S {
           }
         }
       }
+    }
+  }
+  
+  object reqVar {
+    def apply(what: String): Option[String] = S._reqVar.value.get(what)
+    def update(what: String, value: String) = S._reqVar.value(what) = value
+  }
+  
+  def setVars[T](attr: MetaData)(f: => T): T = {
+    val old = _reqVar.value
+    val ht: HashMap[String, String] = new HashMap
+    old.elements.foreach(v => ht(v._1) = v._2)
+    attr.elements.foreach(e => ht(e.key) = e.value.text)
+    _reqVar.doWith(ht)(f)
   }
   
   def initIfUninitted[B](f: => B) : B = {
@@ -228,12 +245,55 @@ object S {
   def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", SFuncHolder(func), params)
   def hidden(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", SFuncHolder(func), params)
   def submit(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", SFuncHolder(func), params)
-  def select(opts: List[(String, String)],func: String => Any, params: FormElementPieces*): NodeSeq = 
-    select_*(opts, SFuncHolder(func), params :_*)
-  def select_*(opts: List[(String, String)],func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
+  def select(opts: List[(String, String)], deflt: Option[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
+    select_*(opts, deflt, SFuncHolder(func), params :_*)
+    
+    // FIXME wrap the select in a filter to insure that stuff received is in the set of things sent
+  def select_*(opts: List[(String, String)],deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
     wrapFormElement(<select name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option>)
+      opts.flatMap(o => <option value={o._1}>{o._2}</option> % (if (deflt.filter(_ == o._1).isDefined) new UnprefixedAttribute("selected", "true", Null) else Null))
     }</select>, params.toList)
+    
+    
+     def multiSelect(opts: List[(String, String)], deflt: List[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
+       multiSelect_*(opts, deflt, SFuncHolder(func), params :_*)
+
+     def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
+    wrapFormElement(<select multiple="true" name={f(func)}>{
+      opts.flatMap(o => <option value={o._1}>{o._2}</option> % (if (deflt.contains(o._1)) new UnprefixedAttribute("selected", "true", Null) else Null))
+    }</select>, params.toList)
+    
+    
+    def radio(opts: List[String], deflt: Option[String], func: String => Any, params: FormElementPieces*): RadioHolder =
+      radio_*(opts, deflt, SFuncHolder(func), params :_*)
+      
+    def radio_*(opts: List[String], deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): RadioHolder = {
+      val name = f(func)
+      val itemList = opts.map(v => RadioItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
+          (if (deflt.filter(_ == v).isDefined) new UnprefixedAttribute("checked", "checked", Null) else Null), params.toList)))
+      RadioHolder(itemList)
+    }
+    
+  case class RadioItem(key: String, xhtml: NodeSeq)
+    
+  case class RadioHolder(items: List[RadioItem]) {
+      def apply(in: String) = items.filter(_.key == in).head.xhtml
+      def apply(in: int) = items(in).xhtml
+    }
+  
+  def checkbox(value: boolean, func: boolean => Any, params: FormElementPieces*): NodeSeq = {
+    def from(f: boolean => Any): List[String] => boolean = (in: List[String]) => {
+      f(in.exists(toBoolean(_)))
+      true
+    }
+    checkbox_*(value, LFuncHolder(from(func)), params :_*)
+  }
+    
+  def checkbox_*(value: boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
+    val name = f(func)
+    <input type="hidden" name={name} value="false"/> ++
+      wrapFormElement(<input type="checkbox" name={name} value="true"/>, params.toList)
+  }
     
     /*
     

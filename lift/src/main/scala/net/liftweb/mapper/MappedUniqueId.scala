@@ -13,6 +13,6 @@ import net.liftweb.util.Lazy._
 
 class MappedUniqueId[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
   override def writePermission_? = false
-  private val dv = Lazy{randomString(maxLen)}
+  private val dv = Lazy(() => randomString(maxLen))
   override def defaultValue = dv.get
 }

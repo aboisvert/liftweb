@@ -7,7 +7,6 @@ package net.liftweb.machine;
  \*                                                 */
 
 import net.liftweb.mapper._
-import net.liftweb.proto._
 import net.liftweb.util.Helpers._
 import scala.collection.mutable.{Queue, HashMap}
 import scala.actors.Actor

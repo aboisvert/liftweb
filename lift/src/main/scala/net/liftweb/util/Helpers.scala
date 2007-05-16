@@ -329,6 +329,7 @@ object Helpers {
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return false.
   */
+    /*
   def tryf[T](ignore : List[Class])(f : => T) : Any = {
     try {
       f
@@ -336,7 +337,7 @@ object Helpers {
       case c if (containsClass(c.getClass, ignore)) => {false}
       case c if (ignore == null || ignore.isEmpty) => {false}
     }
-  }
+  }*/
   
   /**
   * Wraps a "try" block around the function f.  If f throws

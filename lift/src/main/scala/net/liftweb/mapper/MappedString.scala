@@ -14,7 +14,7 @@ import java.util.Date
 import java.util.regex._
 
 class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
-  private val data : Lazy[String] =  Lazy{defaultValue} // defaultValue
+  private val data : Lazy[String] =  Lazy(() => defaultValue) // defaultValue
   
   final def toLower(in: String): String = in match {
     case null => null
