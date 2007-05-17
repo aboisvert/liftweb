@@ -246,16 +246,18 @@ object S {
     // FIXME wrap the select in a filter to insure that stuff received is in the set of things sent
   def select_*(opts: List[(String, String)],deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
     wrapFormElement(<select name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option> % (if (deflt.filter(_ == o._1).isDefined) new UnprefixedAttribute("selected", "true", Null) else Null))
+      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.filter(_ == o._1).isDefined))
     }</select>, params.toList)
     
+    
+    private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "true", Null) else Null
     
      def multiSelect(opts: List[(String, String)], deflt: List[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
        multiSelect_*(opts, deflt, SFuncHolder(func), params :_*)
 
      def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
     wrapFormElement(<select multiple="true" name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option> % (if (deflt.contains(o._1)) new UnprefixedAttribute("selected", "true", Null) else Null))
+      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.contains(o._1)))
     }</select>, params.toList)
     
 
@@ -270,7 +272,7 @@ object S {
     def radio_*(opts: List[String], deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): RadioHolder = {
       val name = f(func)
       val itemList = opts.map(v => RadioItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
-          (if (deflt.filter(_ == v).isDefined) new UnprefixedAttribute("checked", "checked", Null) else Null), params.toList)))
+        checked(deflt.filter(_ == v).isDefined), params.toList)))
       RadioHolder(itemList)
     }
     
@@ -280,6 +282,8 @@ object S {
       def apply(in: String) = items.filter(_.key == in).head.xhtml
       def apply(in: int) = items(in).xhtml
     }
+  
+  private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
   
   def checkbox(value: boolean, func: boolean => Any, params: FormElementPieces*): NodeSeq = {
     def from(f: boolean => Any): List[String] => boolean = (in: List[String]) => {
@@ -292,7 +296,7 @@ object S {
   def checkbox_*(value: boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
     <input type="hidden" name={name} value="false"/> ++
-      wrapFormElement(<input type="checkbox" name={name} checked={value.toString}/>, params.toList)
+      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
   }
     
     /*
