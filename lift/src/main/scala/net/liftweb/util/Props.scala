@@ -50,12 +50,14 @@ object Props {
   private val toTry: List[() => String] = List(() => "/props/" + userName + "." + hostName + ".props",
 					       () => "/props/" + userName + ".props",
 					       () => "/props/" + hostName + ".props",
+                                               () => "/props/default.props", 
 					       () => "/" + userName + "." + hostName + ".props",
 					       () => "/" + userName + ".props",
-					       () => "/" + hostName + ".props")
+					       () => "/" + hostName + ".props",
+                                               () => "/default.props")
   val props = {
     // find the first property file that is available
-    first(toTry)(f => tryo(getClass.getResourceAsStream(f()))).map{s => val ret = new Properties; ret.load(s); ret} match {
+    first(toTry)(f => tryo(getClass.getResourceAsStream(f())) match {case None => None; case Some(s) if s eq null => None; case s => s}).map{s => val ret = new Properties; ret.load(s); ret} match {
       case None => Map.empty[String, String] // if none, it's an empty map
       
       // if we've got a propety file, create name/value pairs and turn them into a Map
