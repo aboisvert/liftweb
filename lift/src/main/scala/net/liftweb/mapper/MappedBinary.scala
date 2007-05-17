@@ -13,7 +13,7 @@ import net.liftweb.util.Lazy._
 import java.util.Date
 
 class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[byte], T] {
-  private val data : Lazy[Array[byte]] =  Lazy{defaultValue} // defaultValue
+  private val data : Lazy[Array[byte]] =  Lazy(defaultValue)
   
   protected def real_i_set_!(value : Array[byte]) : Array[byte] = {
     data() = value

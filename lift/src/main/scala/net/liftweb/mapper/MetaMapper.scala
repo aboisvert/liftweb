@@ -189,7 +189,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     val max = params.foldRight(None.asInstanceOf[Option[long]]){(a,b) => a match {case MaxRows(n) => Some(n); case _ => b}}
     val start = params.foldRight(None.asInstanceOf[Option[long]]){(a,b) => a match {case StartAt(n) => Some(n); case _ => b}}
 
-    if (conn.brokenLimit_?) (tmp, start, max) else {
+    if (conn.brokenLimit_?.get) (tmp, start, max) else {
     ((if (max.isDefined && start.isDefined) {
       tmp + " LIMIT "+start.get+","+max.get
     } else if (max.isDefined) {

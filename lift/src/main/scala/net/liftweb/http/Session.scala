@@ -315,7 +315,6 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     val ret = snippetName match {
       case None => kids
       case Some(ns) => {
-        S.invokeSnippet(ns.text) {
           S.locateSnippet(ns.text).map(_(kids)) getOrElse {
             val (cls, method) = splitColonPair(ns.text, null, "render")
         findSnippetClass(cls) match {
@@ -326,7 +325,6 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               case _ => kids
             }
 	  }
-        }
         }
         }
       }
@@ -342,7 +340,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
           case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
           case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session), session)
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session), session)
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session), session)
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => S.setVars(attr)(processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session), session))
           case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids, session)
           case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids, session))
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes, session), v.scope, processSurroundAndInclude(v.child, session) : _*)

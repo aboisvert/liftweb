@@ -13,13 +13,13 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[long, T] {
   val id = new MappedLongIndex[T](this)
   
   // First Name
-  val firstName = new MappedString[T](this) {override def maxLen =32}
+  val firstName = new MappedString[T](this, 32)
 
   // Last Name
-  val lastName = new MappedString[T](this) {override def maxLen =32}
+  val lastName = new MappedString[T](this, 32)
 
   // Email
-  val email = new MappedEmail[T](this)
+  val email = new MappedEmail[T](this, 48)
 
   // Password
   val password = new MappedPassword[T](this)

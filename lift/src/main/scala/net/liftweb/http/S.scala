@@ -11,7 +11,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.mutable.{Map, HashMap, ArrayBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, Lazy}
+import net.liftweb.util.{Helpers, ThreadGlobal}
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
 
@@ -33,11 +33,6 @@ object S {
     val ret = new ThreadGlobal[boolean];
     ret := false
     ret           
-  }
-  private val _invokedAs = {
-    val ret = new ThreadGlobal[String];
-    ret := ""
-    ret                  
   }
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _reqVar = new ThreadGlobal[HashMap[String, String]]
@@ -101,7 +96,7 @@ object S {
     }
   }
   
-  object reqVar {
+  object vars {
     def apply(what: String): Option[String] = S._reqVar.value.get(what)
     def update(what: String, value: String) = S._reqVar.value(what) = value
   }
@@ -140,8 +135,8 @@ object S {
     }
   }
   
-  def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
-  def invokedAs = _invokedAs.value
+  // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
+  def invokedAs: String = _reqVar.value.get("type") getOrElse ""
   
   def set(name: String, value: String) {
     if (_servletRequest.value ne null) {
@@ -263,6 +258,11 @@ object S {
       opts.flatMap(o => <option value={o._1}>{o._2}</option> % (if (deflt.contains(o._1)) new UnprefixedAttribute("selected", "true", Null) else Null))
     }</select>, params.toList)
     
+
+    def textarea(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = textarea_*(value, SFuncHolder(func), params :_*)
+    
+    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = 
+      wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
     
     def radio(opts: List[String], deflt: Option[String], func: String => Any, params: FormElementPieces*): RadioHolder =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
@@ -292,7 +292,7 @@ object S {
   def checkbox_*(value: boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
     <input type="hidden" name={name} value="false"/> ++
-      wrapFormElement(<input type="checkbox" name={name} value="true"/>, params.toList)
+      wrapFormElement(<input type="checkbox" name={name} checked={value.toString}/>, params.toList)
   }
     
     /*

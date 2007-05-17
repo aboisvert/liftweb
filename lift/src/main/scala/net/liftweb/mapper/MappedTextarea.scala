@@ -4,9 +4,7 @@ import scala.xml.{NodeSeq}
 import net.liftweb.http.S
 import net.liftweb.http.S._
 
-class MappedTextarea[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
-  
-  
+class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
   /**
      * Create an input field for the item
      */

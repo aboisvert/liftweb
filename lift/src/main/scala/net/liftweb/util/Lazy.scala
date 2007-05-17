@@ -11,7 +11,7 @@ package net.liftweb.util
  *
  * @param f -- a function that evaluates to the default value of the instance
  */
-class Lazy[T](f: () => T) {
+class Lazy[T](f: => T) {
   private var value: Option[T] = None
   
   /**
@@ -22,7 +22,7 @@ class Lazy[T](f: () => T) {
   def get: T = {
     value match {
       case Some(v) => v
-      case None => value = Some(f())
+      case None => value = Some(f)
       value.get
     }
   }
@@ -61,6 +61,6 @@ class Lazy[T](f: () => T) {
 }
 
 object Lazy {
-  implicit def fromLazy[T](in: Lazy[T]): T = in.get
-  def apply[T](f:() => T) = new Lazy(f)
+  // implicit def fromLazy[T](in: Lazy[T]): T = in.get
+  def apply[T](f: => T) = new Lazy(f)
 }

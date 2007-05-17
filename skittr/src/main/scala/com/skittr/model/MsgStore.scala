@@ -26,11 +26,11 @@ class MsgStore extends KeyedMapper[long, MsgStore] {
   
   val id = new MappedLongIndex(this)
   
-  val message = new MappedString(this){ override def maxLen = 200}
+  val message = new MappedString(this, 200)
   val who = new MappedLongForeignKey(this, User)
   val when = new MappedLong(this) {
     override def dbColumnName = "when_c"
     override def defaultValue = System.currentTimeMillis
   }
-  val source = new MappedString(this)
+  val source = new MappedString(this, 16)
 }

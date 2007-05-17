@@ -46,9 +46,8 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     }
   }
   
-  def doesMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): boolean = {
+  def doesMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): boolean = 
     link.path.path == path && link.test(req.path, req, httpReq) && testAllStuff(stuff, req.path, req, httpReq)
-  }
   
   /*
   def doesPathlessMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): boolean = {
@@ -111,7 +110,7 @@ object Loc {
 case class RedirectWithMessage(to: String, msg: String)
 
 case class CompleteMenu(lines: List[MenuLine]) {
-  private val _breadCrumbs = Lazy(() => lines.flatMap(_.breadCrumbs))
+  private val _breadCrumbs = Lazy(lines.flatMap(_.breadCrumbs))
   def breadCrumbs: List[MenuItem] = _breadCrumbs.get
 }
 case class MenuLine(items: List[MenuItem]) {

@@ -12,7 +12,6 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
 import net.liftweb.http.S
 import S._
-import net.liftweb.util.Lazy
 
 trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next

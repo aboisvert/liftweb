@@ -31,14 +31,13 @@ class WikiEntry extends KeyedMapper[long, WikiEntry] {
   val id = new MappedLongIndex(this)
   
   // the name of the entry
-  val name = new MappedString(this) {
+  val name = new MappedString(this, 32) {
     override def dbIndexed_? = true // indexed in the DB
   }
   
   // the text of the entry
-  val entry =  new MappedTextarea(this) {
+  val entry =  new MappedTextarea(this, 8192) {
     override def textareaRows  = 10
     override def textareaCols = 50
-    override def maxLen = 8192
   }
 }

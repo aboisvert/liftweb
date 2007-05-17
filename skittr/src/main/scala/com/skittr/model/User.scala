@@ -68,7 +68,7 @@ class User extends ProtoUser[User] {
   private var startMeUp = true
   
   // The Name of the User
-  val name =  new MappedString(this) {
+  val name =  new MappedString(this, 32) {
     // input filter for the user name
     override def setFilter = &notNull :: &toLower :: &trim :: super.setFilter
     

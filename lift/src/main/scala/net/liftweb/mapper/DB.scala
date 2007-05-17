@@ -15,7 +15,7 @@ import net.liftweb.util.Lazy._
 
 object DB {
   private val threadStore = new ThreadLocal
-  private val envContext = Lazy(() => (new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
+  private val envContext = Lazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   
   /**
     * can we get a JDBC connection from JNDI?
@@ -24,7 +24,7 @@ object DB {
     val touchedEnv = envContext.calculated_?
     
     val ret = try {
-      (envContext.lookup(DefaultConnectionIdentifier.jndiName).asInstanceOf[DataSource].getConnection) != null
+      (envContext.get.lookup(DefaultConnectionIdentifier.jndiName).asInstanceOf[DataSource].getConnection) != null
     } catch {
       case e => false
     }
@@ -53,7 +53,7 @@ object DB {
   
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
-    val ret = new SuperConnection(connectionManagers.get(name).flatMap(_.newConnection(name)).getOrElse {envContext.lookup(name.jndiName).asInstanceOf[DataSource].getConnection})
+    val ret = new SuperConnection(connectionManagers.get(name).flatMap(_.newConnection(name)).getOrElse {envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection})
     ret.setAutoCommit(false)
     ret
   }
@@ -138,7 +138,7 @@ object DB {
 }
 
 class SuperConnection(val connection: Connection) {
-  val brokenLimit_? : Lazy[boolean] = Lazy( () => connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
+  val brokenLimit_? : Lazy[boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
 }
 
 object SuperConnection {

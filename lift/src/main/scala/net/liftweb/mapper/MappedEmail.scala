@@ -12,7 +12,7 @@ object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")
 }
 
-class MappedEmail[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
+class MappedEmail[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
 
   override def setFilter = &notNull :: &toLower :: &trim :: super.setFilter 
     

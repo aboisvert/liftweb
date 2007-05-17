@@ -11,8 +11,8 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Lazy
 import net.liftweb.util.Lazy._
 
-class MappedUniqueId[T<:Mapper[T]](owner : T) extends MappedString[T](owner) {
+class MappedUniqueId[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
   override def writePermission_? = false
-  private val dv = Lazy(() => randomString(maxLen))
+  private val dv = Lazy(randomString(maxLen))
   override def defaultValue = dv.get
 }

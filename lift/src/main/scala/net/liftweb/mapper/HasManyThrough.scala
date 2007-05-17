@@ -17,7 +17,7 @@ class HasManyThrough[ From<:(KeyedMapper[ThroughType, From] ), To<:Mapper[To], T
 
   private var theSetList: Seq[ThroughType] = Nil
   
-  private val others = Lazy[List[To]] {() => 
+  private val others = Lazy[List[To]] { 
     DB.use(owner.connectionIdentifier) {
     conn =>
     val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+

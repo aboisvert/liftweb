@@ -13,8 +13,8 @@ import net.liftweb.util.Lazy._
 import java.util.Date
 import java.util.regex._
 
-class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
-  private val data : Lazy[String] =  Lazy(() => defaultValue) // defaultValue
+class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedField[String, T] {
+  private val data : Lazy[String] =  Lazy(defaultValue) // defaultValue
   
   final def toLower(in: String): String = in match {
     case null => null
@@ -37,7 +37,7 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
       data() = value
       this.dirty_?( true)
     }
-    data
+    data.get
   }
   
   /**
@@ -46,7 +46,7 @@ class MappedString[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   def getTargetSQLType = Types.VARCHAR
   
   def defaultValue = ""
-  def maxLen = 32
+
   override def writePermission_? = true
   override def readPermission_? = true
 

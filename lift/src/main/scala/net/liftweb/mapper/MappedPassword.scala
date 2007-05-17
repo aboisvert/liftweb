@@ -28,8 +28,8 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
 
   def salt = this.salt_i
   
-  private var password = Lazy(() => defaultValue)
-  private val salt_i = Lazy(() => Safe.randomString(16))
+  private var password = Lazy(defaultValue)
+  private val salt_i = Lazy(Safe.randomString(16))
   private var invalidPw = false
   private var invalidMsg = ""
   
