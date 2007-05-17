@@ -295,8 +295,9 @@ object S {
     
   def checkbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
+    val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     <input type="hidden" name={name} value="false"/> ++
-      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
+      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), realParams)
   }
     
     /*

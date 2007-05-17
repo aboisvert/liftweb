@@ -135,6 +135,6 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
   
   override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.get == other.primaryKeyField.get
                                    
-                                   
+  def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField.get)) getOrElse this    
 }
 

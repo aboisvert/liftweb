@@ -127,11 +127,16 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case x :: xs => {
         var updatedWhat = what        
         x match {
-          case By(field, _) => 
-            (1 to field.dbColumnCount).foreach {
-              cn =>
-		updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" = ? "
-            }
+        case By(field, _) => 
+        (1 to field.dbColumnCount).foreach {
+          cn =>
+                updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" = ? "
+        }
+        case NotBy(field, _) => 
+        (1 to field.dbColumnCount).foreach {
+          cn =>
+                updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" <> ? "
+        }
           case BySql(query, _*) => 
             updatedWhat = updatedWhat + whereOrAnd + query
           case _ => 
@@ -145,6 +150,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     by match {
       case Nil => {}
       case By(field, value) :: xs => {
+        st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
+        setStatementFields(st, xs, curPos + 1)
+      }
+      case NotBy(field, value) :: xs => {
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
         setStatementFields(st, xs, curPos + 1)
       }
@@ -730,7 +739,6 @@ case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) 
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
+case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
 
-trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] {
-  
-}
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A]
