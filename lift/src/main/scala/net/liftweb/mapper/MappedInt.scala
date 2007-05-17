@@ -11,7 +11,7 @@ import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
 import java.util.Date
 
-class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[int] {
+class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {
 
   override def writePermission_? = false // not writable
 
@@ -23,7 +23,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
   
   override def dbIndexFieldIndicatesSaved_? = {i_get_! != defaultValue}
   
-  def makeKeyJDBCFriendly(in : int) = new Integer(in)
+  def makeKeyJDBCFriendly(in : Int) = new java.lang.Integer(in)
   
   def convertKey(in : String) : Option[int] = {
     if (in eq null) None
@@ -114,8 +114,8 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => unit = {
+    {(inst : T, v: Long, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
   }
   def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
     {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = toInt(v.toString)}}
@@ -123,8 +123,8 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.getTime.asInstanceOf[int]}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => unit   = {
+    {(inst : T, v: Boolean, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
   }
   
   /**

@@ -9,18 +9,17 @@ package net.liftweb.mapper
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-import java.lang.Long
 import java.util.Date
 
-class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[long, O]](owner: T, foreign: => KeyedMetaMapper[long, O]) 
-   extends MappedLong[T](owner) with MappedForeignKey[long,T,O] with BaseForeignKey {
+class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, foreign: => KeyedMetaMapper[Long, O]) 
+   extends MappedLong[T](owner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_get_! > 0L
   
-  override def getJDBCFriendly(field : String) = if (defined_?) new Long(get) else null
-  override def getJDBCFriendly = if (defined_?) new Long(get) else null
+  override def getJDBCFriendly(field : String) = if (defined_?) new java.lang.Long(i_get_!) else null
+  override def getJDBCFriendly = if (defined_?) new java.lang.Long(i_get_!) else null
   def obj = if(defined_?) foreign.find(i_get_!) else None
   
-  def dbKeyToTable: KeyedMetaMapper[long, O] = foreign
+  def dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
 
   override def dbIndexed_? = true
@@ -36,7 +35,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[long, O]](owner: T, forei
     override def toString = if (defined_?) super.toString else "NULL"
 }
 
-class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[long] {
+class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[Long] {
 
   override def writePermission_? = false // not writable
   
@@ -51,11 +50,11 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   
   def makeKeyJDBCFriendly(in : long) = new java.lang.Long(in)
   
-  def convertKey(in : String) : Option[long] = {
+  def convertKey(in : String): Option[Long] = {
     if (in eq null) None
     try {
       val what = if (in.startsWith(name + "=")) in.substring((name + "=").length) else in
-      Some(Long.parseLong(what))
+      Some(toLong(what))
     } catch {
       case _ => {None}
     }
@@ -63,23 +62,19 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   
   override def dbDisplay_? = false
   
-  def convertKey(in : long) : Option[long] = {
+  def convertKey(in : Long): Option[Long] = {
     if (in < 0L) None
     else Some(in)
   }
   
-  def convertKey(in : int) : Option[long] = {
+  def convertKey(in : Int): Option[Long] = {
     if (in < 0) None
     else Some(in)
   }
   
-  def convertKey(in : AnyRef) : Option[long] = {
+  def convertKey(in : AnyRef): Option[Long] = {
     if ((in eq null) || (in eq None)) None
-    try {
-      convertKey(in.toString)
-    } catch {
-      case _ => {None}
-    }                                         
+    else tryo(convertKey(in.toString)) getOrElse None
   }
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
@@ -90,9 +85,9 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
 }
 
 
-class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
-  private var data : long = defaultValue
-  def defaultValue: long = 0L
+class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
+  private var data : Long = defaultValue
+  def defaultValue: Long = 0L
 
   /**
    * Get the JDBC SQL Type for this field
@@ -101,25 +96,25 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
 
   protected def i_get_! = data
   
-  protected def real_i_set_!(value : long) : long = {
+  protected def real_i_set_!(value : Long): Long = {
     if (value != data) {
       data = value
-      this.dirty_?( true)
+      dirty_?(true)
     }
     data
   }
   override def readPermission_? = true
   override def writePermission_? = true
   
-  def real_convertToJDBCFriendly(value: long): Object = new Long(value)
+  def real_convertToJDBCFriendly(value: Long): Object = new java.lang.Long(value)
   
   
-  def getJDBCFriendly(field : String) = new Long(get)
-  override def getJDBCFriendly = new Long(get)
+  def getJDBCFriendly(field : String) = new java.lang.Long(i_get_!)
+  override def getJDBCFriendly = new java.lang.Long(i_get_!)
 
   def ::=(in : Any) : long = {
     in match {
-      case n: long => this := n
+      case n: Long => this := n
       case n: Number => this := n.longValue
       case (n: Number) :: _ => this := n.longValue
       case Some(n: Number) => this := n.longValue
@@ -131,26 +126,25 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[long, T] {
     }
   }
 
-  protected def i_obscure_!(in : long) = 0L
+  protected def i_obscure_!(in : Long) = 0L
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
-    inst match {
-      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = 0L}}
-      case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.asInstanceOf[Number].longValue}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = toLong(v.toString)}}
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
+    data match {
+      case null => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = 0L
+      case n : Number => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = if (v == null) 0L else v.asInstanceOf[Number].longValue
+      case _ => (inst : T, v : AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = toLong(v.toString)
     }
-  }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
     {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = v}}
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
     {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = toLong(v.toString)}}
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
     {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.getTime}}
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
     {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v && !isNull) 1L else 0L}}
   }
   

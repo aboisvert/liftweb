@@ -30,7 +30,7 @@ object S {
   private val _notice = new ThreadGlobal[ArrayBuffer[(NoticeType.Value, NodeSeq)]];
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = {
-    val ret = new ThreadGlobal[boolean];
+    val ret = new ThreadGlobal[Boolean];
     ret := false
     ret           
   }
@@ -58,7 +58,7 @@ object S {
   
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
   
-  private val currCnt = new ThreadGlobal[int]
+  private val currCnt = new ThreadGlobal[Int]
   
   def nc : String = {
     val n = currCnt.value
@@ -185,7 +185,7 @@ object S {
     ret
   }
 
-  private def booster(lst: List[String], func: String => Any):boolean  = {
+  private def booster(lst: List[String], func: String => Any): Boolean  = {
     lst.foreach(v => func(v))
     true
   }
@@ -280,20 +280,20 @@ object S {
     
   case class RadioHolder(items: List[RadioItem]) {
       def apply(in: String) = items.filter(_.key == in).head.xhtml
-      def apply(in: int) = items(in).xhtml
+      def apply(in: Int) = items(in).xhtml
     }
   
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
   
-  def checkbox(value: boolean, func: boolean => Any, params: FormElementPieces*): NodeSeq = {
-    def from(f: boolean => Any): List[String] => boolean = (in: List[String]) => {
+  def checkbox(value: Boolean, func: Boolean => Any, params: FormElementPieces*): NodeSeq = {
+    def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
       f(in.exists(toBoolean(_)))
       true
     }
     checkbox_*(value, LFuncHolder(from(func)), params :_*)
   }
     
-  def checkbox_*(value: boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
+  def checkbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
     <input type="hidden" name={name} value="false"/> ++
       wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
@@ -317,20 +317,20 @@ object S {
   */
   
   // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
-  implicit def toLFunc(in: List[String] => boolean): AFuncHolder = LFuncHolder(in)
+  implicit def toLFunc(in: List[String] => Boolean): AFuncHolder = LFuncHolder(in)
   implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in)
   
   abstract class AFuncHolder {
-    def apply(in: List[String]): boolean
+    def apply(in: List[String]): Boolean
   }
   case class SFuncHolder(func: String => Any) extends AFuncHolder {
-    def apply(in: List[String]): boolean = {in.foreach(func(_)); true}
+    def apply(in: List[String]): Boolean = {in.foreach(func(_)); true}
   }
-  case class LFuncHolder(func: List[String] => boolean) extends AFuncHolder  {
-    def apply(in: List[String]): boolean = func(in)
+  case class LFuncHolder(func: List[String] => Boolean) extends AFuncHolder  {
+    def apply(in: List[String]): Boolean = func(in)
   }
   case class NFuncHolder(func: () => Any) extends AFuncHolder  {
-    def apply(in: List[String]): boolean = {in.foreach(s => func()); true}
+    def apply(in: List[String]): Boolean = {in.foreach(s => func()); true}
   }
   
   def f(in: AFuncHolder): String = {
