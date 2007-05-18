@@ -266,24 +266,34 @@ object S {
     def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = 
       wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
     
-    def radio(opts: List[String], deflt: Option[String], func: String => Any, params: FormElementPieces*): RadioHolder =
+    def radio(opts: List[String], deflt: Option[String], func: String => Any, params: FormElementPieces*): ChoiceHolder =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
       
-    def radio_*(opts: List[String], deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): RadioHolder = {
+    def radio_*(opts: List[String], deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): ChoiceHolder = {
       val name = f(func)
-      val itemList = opts.map(v => RadioItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
+      val itemList = opts.map(v => ChoiceItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
         checked(deflt.filter(_ == v).isDefined), params.toList)))
-      RadioHolder(itemList)
+      ChoiceHolder(itemList)
     }
     
-  case class RadioItem(key: String, xhtml: NodeSeq)
+  case class ChoiceItem(key: String, xhtml: NodeSeq)
     
-  case class RadioHolder(items: List[RadioItem]) {
+  case class ChoiceHolder(items: List[ChoiceItem]) {
       def apply(in: String) = items.filter(_.key == in).head.xhtml
       def apply(in: Int) = items(in).xhtml
     }
   
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
+  
+  def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any, params: FormElementPieces*): ChoiceHolder = {
+    val len = possible.length
+    val name = f(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
+    val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
+    
+    ChoiceHolder(possible.zipWithIndex.map(p => 
+      ChoiceItem(p._2.toString, wrapFormElement(<input type="checkbox" name={name} value={p._2.toString}/> % checked(actual.contains(p._1)),
+          realParams) ++ (if (p._2 == 0) <input type="hidden" name={name} value="-1"/> else Nil))))
+  }
   
   def checkbox(value: Boolean, func: Boolean => Any, params: FormElementPieces*): NodeSeq = {
     def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
