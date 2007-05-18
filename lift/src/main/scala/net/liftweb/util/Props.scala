@@ -35,26 +35,51 @@ object Props {
   def require(what: String*) = what.filter(!props.contains(_))
   
   def requireOrDie(what: String*) {
-     require(what :_*).toList match {
-       case Nil =>
-       case bad => throw new Exception("The following required properties are not defined: "+bad.mkString(","))
-     }
+    require(what :_*).toList match {
+      case Nil =>
+      case bad => throw new Exception("The following required properties are not defined: "+bad.mkString(","))
+      }
    }
+  
+  object RunModes extends Enumeration {
+    val Development = Value(1, "Development")
+    val Test = Value(2, "Test")
+    val Staging = Value(3, "Staging")
+    val Production = Value(4, "Production")
+    val Pilot = Value(5, "Pilot")
+  }
+  
+  import RunModes._
   
   val propFileName = "lift.props"
   val fileName = "lift.props"
 
-  val userName = System.getProperty("user.name")
-  val hostName = InetAddress.getLocalHost.getHostName
+  val mode = System.getProperty("run.mode") match {
+    case "test" => Test
+    case "production" => Production
+    case "staging" => Staging
+    case "pilot" => Pilot
+    case _ => Development
+  }
+  val modeName = mode match {
+    case Test => "test."
+    case Staging => "staging."
+    case Production => "production."
+    case Pilot => "pilot."
+    case _ => ""
+  }
+  val userName = System.getProperty("user.name") +"."
 
-  private val toTry: List[() => String] = List(() => "/props/" + userName + "." + hostName + ".props",
-					       () => "/props/" + userName + ".props",
-					       () => "/props/" + hostName + ".props",
-                                               () => "/props/default.props", 
-					       () => "/" + userName + "." + hostName + ".props",
-					       () => "/" + userName + ".props",
-					       () => "/" + hostName + ".props",
-                                               () => "/default.props")
+  val hostName = InetAddress.getLocalHost.getHostName + "."
+  
+  private val toTry: List[() => String] = List(() => "/props/" + modeName + userName + hostName + "props",
+					       () => "/props/" + modeName + userName + "props",
+					       () => "/props/" + modeName + hostName + "props",
+                                               () => "/props/"+ modeName + "default.props", 
+					       () => "/" + modeName + userName + hostName + "props",
+					       () => "/" + modeName + userName + "props",
+					       () => "/" + modeName + hostName + "props",
+                                               () => "/"+ modeName +"default.props")
   val props = {
     // find the first property file that is available
     first(toTry)(f => tryo(getClass.getResourceAsStream(f())) match {case None => None; case Some(s) if s eq null => None; case s => s}).map{s => val ret = new Properties; ret.load(s); ret} match {
@@ -63,10 +88,10 @@ object Props {
       // if we've got a propety file, create name/value pairs and turn them into a Map
       case Some(prop) => 
         Map(prop.entrySet.toArray.map{
-	s2 => 
-	  val s = s2.asInstanceOf[java.util.Map.Entry]
-	(s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
-      } :_*)
+	  s2 => 
+	    val s = s2.asInstanceOf[java.util.Map.Entry]
+	  (s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
+	} :_*)
     }
   }
 }
