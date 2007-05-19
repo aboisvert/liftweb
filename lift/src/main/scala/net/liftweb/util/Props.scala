@@ -47,6 +47,7 @@ object Props {
     val Staging = Value(3, "Staging")
     val Production = Value(4, "Production")
     val Pilot = Value(5, "Pilot")
+    val Profile = Value(6, "Profile")
   }
   
   import RunModes._
@@ -59,6 +60,7 @@ object Props {
     case "production" => Production
     case "staging" => Staging
     case "pilot" => Pilot
+    case "profile" => Profile
     case _ => Development
   }
   val modeName = mode match {
@@ -66,6 +68,7 @@ object Props {
     case Staging => "staging."
     case Production => "production."
     case Pilot => "pilot."
+    case Profile => "profile."
     case _ => ""
   }
   val userName = System.getProperty("user.name") +"."
