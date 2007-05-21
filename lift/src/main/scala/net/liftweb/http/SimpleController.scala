@@ -17,7 +17,7 @@ trait SimpleController {
   // private var session: TreeMap[String, Any] = _
   def httpRequest: HttpServletRequest
   
-  def params(name: String): Option[String] = {
+  def param(name: String): Option[String] = {
     request.params.get(name) match {
       case None => None
       case Some(nl) => nl.take(1) match {

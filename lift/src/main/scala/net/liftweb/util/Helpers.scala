@@ -893,6 +893,15 @@ object Helpers {
   def loadResourceAsXml(name: String): Option[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
   def loadResourceAsString(name: String): Option[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   
+  /**
+    * Optional cons that implements the expression: expr ?> value ::: List
+    */
+  class OptiCons(expr: Boolean) {
+    def ?>[T](f: => T): List[T] = if (expr) List(f) else Nil
+  }
+  
+  implicit def toOptiCons(expr: Boolean): OptiCons = new OptiCons(expr)
+  
   def listIf[T](expr: Boolean)(f: => T): List[T] = if(expr) List(f) else Nil
 }
 

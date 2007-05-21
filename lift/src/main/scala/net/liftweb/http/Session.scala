@@ -120,7 +120,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               if (state.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(sender), timeout - 250) 
               } else {
-                notices = Nil; sender ! XhtmlResponse(state.fixHtml(xml), Map.empty, 200)
+                notices = Nil; sender ! XhtmlResponse(Group(state.fixHtml(xml)), Map.empty, 200)
               }
             } else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
@@ -134,13 +134,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         val rd = ite.getCause.asInstanceOf[RedirectException]
         notices = S.getNotices
         
-        sender ! XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+        sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
                  ListMap("Location" -> (state.contextPath+rd.to)),
                  302)
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            sender ! XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+            sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
                      ListMap("Location" -> (state.contextPath+rd.to)),
                      302)
           }

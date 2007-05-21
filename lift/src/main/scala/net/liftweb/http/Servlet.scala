@@ -11,11 +11,12 @@ import javax.servlet.{ServletContext}
 import scala.collection.immutable.{Map, ListMap}
 import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
 import java.net.URLDecoder
-import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
+import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
 import scala.xml.transform._
 import scala.actors._
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
+import net.liftweb.util._
 import java.io.InputStream
 import net.liftweb.util.Helpers
 import net.liftweb.util.ActorPing
@@ -316,7 +317,7 @@ object Servlet {
     r match {
       case r: XhtmlResponse => r.toResponse
       case r: Response => r
-      case ns: NodeSeq => convertResponse(XhtmlResponse(session.fixHtml(ns), Map.empty, 200), session)
+      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), Map.empty, 200), session)
       case xml: XmlResponse => Response(xml.xml.toString.getBytes("UTF-8"), Map("Content-Type" -> "text/xml"), 200)
       case Some(o) => convertResponse(o, session)
       case _ => session.createNotFound.toResponse

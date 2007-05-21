@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import scala.actors._
 import scala.actors.Actor._
-import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAttribute, Text}
+import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAttribute, Text, Group}
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
@@ -78,10 +78,10 @@ class Page extends Actor {
           ret
         } else {
           try {
-            XhtmlResponse(state.fixHtml(processControllers(pageXml, controllerMgr, state)), TreeMap.empty, 200)
+            XhtmlResponse(Group(state.fixHtml(processControllers(pageXml, controllerMgr, state))), TreeMap.empty, 200)
           } catch {
             case rd : RedirectException => {   
-              XhtmlResponse(state.fixHtml(<html><body>{state.uri} Not Found</body></html>),
+              XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
                        ListMap("Location" -> rd.to),
                        302)
             }

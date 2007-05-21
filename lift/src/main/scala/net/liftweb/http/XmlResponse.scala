@@ -6,8 +6,8 @@ package net.liftweb.http
   http://www.apache.org/licenses/LICENSE-2.0
   \*                                                 */
     
-import scala.xml.NodeSeq
+import scala.xml.Node
 
-case class XmlResponse(xml: NodeSeq)
+case class XmlResponse(xml: Node)
 
 

@@ -6,10 +6,11 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.xml.NodeSeq
+import scala.xml.{Node}
 import scala.collection.immutable.Map
+import net.liftweb.util._
 
-case class XhtmlResponse(out : NodeSeq, headers : Map[String, String], code : int) {
-  def toResponse = Response(out.toString.getBytes("UTF-8"), headers, code)
+case class XhtmlResponse(out : Node, headers : Map[String, String], code : int) {
+  def toResponse = Response(AltXML.toXML(out, false).getBytes("UTF-8"), headers, code)
 }
 case class Response(data: Array[byte], headers : Map[String, String], code : int)

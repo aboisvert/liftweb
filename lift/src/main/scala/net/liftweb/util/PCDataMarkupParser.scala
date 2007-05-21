@@ -7,7 +7,7 @@ package net.liftweb.util
  \*                                                 */
 
 import scala.xml.parsing.{MarkupParser, MarkupHandler, FatalError, ConstructingHandler, ExternalSources}
-import scala.xml.{Unparsed, NodeSeq, Atom, Elem}
+import scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, NamespaceBinding, Node, SpecialNode, Text, TopScope}
 import scala.io.{Source}
 import java.io.{InputStream}
 
@@ -86,4 +86,80 @@ case class PCData(_data: String) extends Atom[String](_data) {
     sb.append(data)
     sb.append("]]>")
   }
+}
+
+object AltXML {
+  def toXML(n: Node, stripComment: Boolean): String = {
+    val sb = new StringBuilder()
+    toXML(n, TopScope, sb, stripComment)
+    sb.toString()
+  }
+
+
+  /** 
+   * Appends a tree to the given stringbuffer within given namespace scope.
+   *
+   * @param n            the node
+   * @param pscope       the parent scope
+   * @param sb           stringbuffer to append to
+   * @param stripComment if true, strip comments
+   */
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
+    x match {
+
+      case c: Comment if !stripComment =>
+        c.toString(sb)
+
+      case x: SpecialNode =>
+        x.toString(sb)
+
+      case g: Group =>
+        for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
+
+      case _  =>
+        if ((x.child eq null) || (x.child.length == 0)) {
+          sb.append('<')
+          x.nameToString(sb)
+          if (x.attributes ne null) x.attributes.toString(sb)
+          x.scope.toString(sb, pscope)
+          sb.append("/>")
+        } else {
+        // print tag with namespace declarations
+        sb.append('<')
+        x.nameToString(sb)
+        if (x.attributes ne null) x.attributes.toString(sb)
+        x.scope.toString(sb, pscope)
+        sb.append('>')
+        sequenceToXML(x.child, pscope, sb, stripComment)
+        sb.append("</")
+        x.nameToString(sb)
+        sb.append('>')
+        }
+    }
+  }
+
+  /**
+   * @param children     ...
+   * @param pscope       ...
+   * @param sb           ...
+   * @param stripComment ...
+   */
+  def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
+                    sb: StringBuilder, stripComment: Boolean): Unit = {
+    if (children.isEmpty)
+      return
+    else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
+      val it = children.elements
+      val f = it.next
+      toXML(f, f.scope, sb, stripComment)
+      while (it.hasNext) {
+        val x = it.next
+        sb.append(' ')
+        toXML(x, x.scope, sb, stripComment)
+      }
+    } else {
+      for (c <- children) toXML(c, c.scope, sb, stripComment)
+    }
+  }
+  
 }
