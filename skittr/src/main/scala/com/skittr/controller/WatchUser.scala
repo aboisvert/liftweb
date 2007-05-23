@@ -14,6 +14,8 @@ import net.liftweb.util.Helpers
 import scala.xml._
 import com.skittr.actor._
 import S._
+import com.skittr.model.{Friend, User}
+import net.liftweb.mapper._
 
 class WatchUser extends ControllerActor {
   private var userActor: Option[UserActor] = None

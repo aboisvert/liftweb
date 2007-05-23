@@ -495,7 +495,7 @@ object Helpers {
   
   val hourFormat = new SimpleDateFormat("HH:mm:ss")
   
-  def hourFormat(in: Date) = {
+  def hourFormat(in: Date): String = {
     hourFormat.format(in)
   }    
   

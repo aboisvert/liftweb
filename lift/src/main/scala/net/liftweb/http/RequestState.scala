@@ -72,7 +72,8 @@ case class ParsePath(path: List[String], absolute: boolean, endSlash: boolean) {
 
 class RequestState(val paramNames: List[String],
 		   val params: Map[String, List[String]],
-		   val uri: String,val path: ParsePath,
+		   val uri: String,
+		   val path: ParsePath,
 		   val contextPath: String,
 		   val requestType: RequestType,
 		   val webServices_? : boolean,
@@ -86,7 +87,7 @@ class RequestState(val paramNames: List[String],
   val view = path(1) match {case null => "index"; case s @ _ => s}
   val id = pathParam(0)
   def pathParam(n: int) = head(path.path.drop(n + 2), "")
-  def path(n: int) = head(path.path.drop(n), null)
+  def path(n: int):String = head(path.path.drop(n), null)
   def param(n: String) = params.get(n) match {
     case Some(s :: _) => Some(s)
     case _ => None

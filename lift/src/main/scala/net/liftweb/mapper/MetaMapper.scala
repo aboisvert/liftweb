@@ -25,29 +25,29 @@ trait BaseMetaMapper {
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
-  def beforeValidation: List[(A) => unit] = Nil
-  def beforeValidationOnCreate: List[(A) => unit] = Nil
-  def beforeValidationOnUpdate: List[(A) => unit] = Nil
-  def afterValidation: List[(A) => unit] = Nil
-  def afterValidationOnCreate: List[(A) => unit] = Nil
-  def afterValidationOnUpdate: List[(A) => unit] = Nil
+  def beforeValidation: List[(A) => Any] = Nil
+  def beforeValidationOnCreate: List[(A) => Any] = Nil
+  def beforeValidationOnUpdate: List[(A) => Any] = Nil
+  def afterValidation: List[(A) => Any] = Nil
+  def afterValidationOnCreate: List[(A) => Any] = Nil
+  def afterValidationOnUpdate: List[(A) => Any] = Nil
 
-  def beforeSave: List[(A) => unit] = Nil
-  def beforeCreate: List[(A) => unit] = Nil
-  def beforeUpdate: List[(A) => unit] = Nil
+  def beforeSave: List[(A) => Any] = Nil
+  def beforeCreate: List[(A) => Any] = Nil
+  def beforeUpdate: List[(A) => Any] = Nil
 
-  def afterSave: List[(A) => unit] = Nil
-  def afterCreate: List[(A) => unit] = Nil
-  def afterUpdate: List[(A) => unit] = Nil
+  def afterSave: List[(A) => Any] = Nil
+  def afterCreate: List[(A) => Any] = Nil
+  def afterUpdate: List[(A) => Any] = Nil
 
-  def beforeDelete: List[(A) => unit] = Nil
-  def afterDelete: List[(A) => unit] = Nil
+  def beforeDelete: List[(A) => Any] = Nil
+  def afterDelete: List[(A) => Any] = Nil
   
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
   
-  def findAll : List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Some(v))
+  def findAll: List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Some(v))
 
-  def findAllDb(dbId:ConnectionIdentifier)  : List[A] =  findMapDb(dbId, Nil :_*)(v => Some(v))
+  def findAllDb(dbId:ConnectionIdentifier): List[A] =  findMapDb(dbId, Nil :_*)(v => Some(v))
 
   def countByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): long = countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
 
@@ -698,7 +698,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     fixTableName(internalTableName_$)
   }
   
-  private def eachField(what: A, toRun: List[(A) => unit])(f: (LifecycleCallbacks) => unit) {
+  private def eachField(what: A, toRun: List[(A) => Any])(f: (LifecycleCallbacks) => unit) {
     mappedCallbacks.foreach {
       e =>
         e._2.invoke(what, null) match {

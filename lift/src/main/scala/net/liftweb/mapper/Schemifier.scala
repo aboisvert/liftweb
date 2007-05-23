@@ -44,6 +44,37 @@ object Schemifier {
     }
   }
   
+  def destroyTables_!!(stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, stables :_*)
+
+  def destroyTables_!!(dbId: ConnectionIdentifier, stables: BaseMetaMapper*): Unit = destroyTables_!!(dbId, 0, stables.toList)
+
+  def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, stables: List[BaseMetaMapper]) {
+    val th = new HashMap[String, String]()
+    (DB.use(dbId) {
+      conn =>
+      val sConn = SuperConnection(conn)
+      val tables = stables.toList.filter(t => hasTable_?(t, sConn, th))
+      
+      tables.foreach{
+        table =>
+        try {
+          val ct = "DROP TABLE "+table.dbTableName
+          val st = conn.createStatement
+          st.execute(ct)
+          Console.println(ct)
+          st.close
+        } catch {
+          case e: Exception => // dispose... probably just an SQL Exception
+        }
+      }
+      
+      tables
+    }) match {
+      case t if t.length > 0 && cnt < 1000 => destroyTables_!!(dbId, cnt + 1, t)
+      case _ =>
+    }
+  }
+
   private def calcDriver(name: String): DriverType = {
     name match {
       case "Apache Derby" => DerbyDriver
@@ -51,16 +82,23 @@ object Schemifier {
     }
   }
   
-  private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
+  private def hasTable_? (table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Boolean = {
     val md = connection.getMetaData
     val rs = md.getTables(null, null, null, null)
-    var hasTable = false
-    while (!hasTable && rs.next) {
-      val tableName = rs.getString(3)
-      hasTable = table.dbTableName.toLowerCase == tableName.toLowerCase
-      if (hasTable) actualTableNames(table.dbTableName) = tableName
+    
+    def hasTable: Boolean = {
+      if (!rs.next) false
+      else rs.getString(3) match {
+        case s if s.toLowerCase == table.dbTableName.toLowerCase => actualTableNames(table.dbTableName) = s; true
+        case _ => hasTable
+      }
     }
-    rs.close
+
+    hasTable
+  }
+  
+  private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Any] = {
+    val hasTable = hasTable_?(table, connection, actualTableNames)
     if (!hasTable) {
       val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString("", " , ", "")+")";
       val st = connection.createStatement
@@ -75,14 +113,7 @@ object Schemifier {
           st.close
       }
       
-      val rs = md.getTables(null, null, null, null)
-      var hasTable = false
-      while (!hasTable && rs.next) {
-        val tableName = rs.getString(3)
-        hasTable = table.dbTableName.toLowerCase == tableName.toLowerCase
-        if (hasTable) actualTableNames(table.dbTableName) = tableName
-      }
-      rs.close
+      hasTable_?(table, connection, actualTableNames)
       table.dbAddTable.toList
     } else Nil
   }

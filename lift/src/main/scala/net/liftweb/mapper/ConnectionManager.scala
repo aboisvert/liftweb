@@ -14,4 +14,5 @@ import java.sql.Connection
  */ 
 trait ConnectionManager {
   def newConnection(name: ConnectionIdentifier): Option[Connection]
+  // def releaseConnection(conn: Connection)  
 }
