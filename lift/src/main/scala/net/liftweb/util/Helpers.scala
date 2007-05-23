@@ -50,8 +50,8 @@ object Helpers {
   def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}
   
   /**
-   * URL decode the string.  A pass-through to Java's URL decode with UTF-8
-   */
+  * URL decode the string.  A pass-through to Java's URL decode with UTF-8
+  */
   def urlDecode(in : String) = {URLDecoder.decode(in, "UTF-8")}
   def urlEncode(in : String) = {URLEncoder.encode(in, "UTF-8")}
   
@@ -129,16 +129,16 @@ object Helpers {
     def in_bind(xml:NodeSeq): NodeSeq = {
       xml.flatMap {
         node =>
-        node match {
-        case s : Elem if (node.prefix == namespace) => {
-          map.get(node.label) match {
-              case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
-              case Some(ns) => ns
+          node match {
+            case s : Elem if (node.prefix == namespace) => {
+              map.get(node.label) match {
+		case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+            case Some(ns) => ns
               }
+            }
+            case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, in_bind(node.child) : _*)
+            case n => node
           }
-        case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, in_bind(node.child) : _*)
-        case n => node
-        }
       }
     }
     in_bind(xml)
@@ -150,13 +150,13 @@ object Helpers {
         node match {
           case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
             node.attributes.get("name") match {
-                case None => bind(vals, node.child)
-                case Some(ns) => {
+              case None => bind(vals, node.child)
+              case Some(ns) => {
                 vals.get(ns.text) match {
                   case None => bind(vals, node.child)
                   case Some(nodes) => nodes
                 }
-                }
+              }
             }
           }
           case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
@@ -286,13 +286,13 @@ object Helpers {
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return null.
   */
-    /*
+  /*
   def tryn[T](ignore : List[Class])(f : => T) : T = {
     try {
       f
     } catch {
       case c if (containsClass(c.getClass, ignore)) => {null.asInstanceOf[T]}
-      case c if (ignore == null || ignore.isEmpty) => {null.asInstanceOf[T]}
+  case c if (ignore == null || ignore.isEmpty) => {null.asInstanceOf[T]}
     }
   }*/
   
@@ -329,13 +329,13 @@ object Helpers {
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return false.
   */
-    /*
+  /*
   def tryf[T](ignore : List[Class])(f : => T) : Any = {
     try {
       f
     } catch {
       case c if (containsClass(c.getClass, ignore)) => {false}
-      case c if (ignore == null || ignore.isEmpty) => {false}
+  case c if (ignore == null || ignore.isEmpty) => {false}
     }
   }*/
   
@@ -380,22 +380,22 @@ object Helpers {
   }
   
   /**
-   * Invoke the given method for the given class, with the given params.
-   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
-   */
+  * Invoke the given method for the given class, with the given params.
+  * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
+  */
   private def _invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Option[Array[Class]]): Option[Any] = {
     /*
-     * try to find a method matching the given parameters
-     */
+    * try to find a method matching the given parameters
+    */
     def findMethod : Option[Method] = {
       /* try to find a method with the same name and the same number of arguments. Doesn't check the types.
-       * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
-       * add some extra $ for ex.
-       */
+      * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
+      * add some extra $ for ex.
+      */
       def findAlternates : Option[Method] = {
         val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
-	    && Modifier.isPublic(m.getModifiers)
-	    && m.getParameterTypes.length == params.length)
+						&& Modifier.isPublic(m.getModifiers)
+						&& m.getParameterTypes.length == params.length)
 	if (t.length == 1) Some(t(0))
 	else None
       }
@@ -405,18 +405,18 @@ object Helpers {
 	  case Some(a) => a }) match {
             case null => findAlternates
 	    case m => Some(m)
-        }
+          }
       } catch {
         case e: java.lang.NoSuchMethodException => findAlternates
       }
     }
-  
+    
     try {
       findMethod match {
         case None => None
         case Some(m) => {
-	    if (Modifier.isStatic(m.getModifiers)) Some(m.invoke(null, params))
-	    else Some(m.invoke(clz.newInstance, params))
+	  if (Modifier.isStatic(m.getModifiers)) Some(m.invoke(null, params))
+	  else Some(m.invoke(clz.newInstance, params))
 	}
       }
     } catch {
@@ -529,7 +529,7 @@ object Helpers {
     }
   }
   
-  def toInt(in: Any): int = {
+  def toInt(in: Any): Int = {
     in match {
       case null => 0
       case n: int => n
@@ -544,7 +544,7 @@ object Helpers {
     }
   }
   
-  def toLong(in: Any): long = {
+  def toLong(in: Any): Long = {
     in match {
       case null => 0L
       case i: int => i
@@ -559,25 +559,22 @@ object Helpers {
     }
   }
   
-  def parseNumber(in: String): (long, int) = {
-    if (in == null || in.length == 0) return (0L, 0)
-    var num = 0L
-    var pos = 0
-    val len = in.length
-    while (pos < len) {
-      val chr = in.charAt(pos)
-      if (!java.lang.Character.isDigit(chr)) return (num, pos)
-      num = num * 10
-      val tn: int = chr - '0'
-      num = num + tn
-      pos = pos + 1
+  def parseNumber(tin: String): (Long, Int) = {
+    def doIt(neg: Long, cur: Long, pos: Int, in: List[Char]): (Long, Int) = in match {
+      case Nil => (neg * cur, pos)
+      case x :: xs if !java.lang.Character.isDigit(x) => (neg * cur, pos)
+      case x :: xs => doIt(neg, (cur * 10L) + x.toLong - '0'.toLong,pos + 1, xs)
     }
-    return (num, pos)
+    if (tin eq null) (0L, 0)
+    else {
+      tin.trim.toList match {
+        case '-' :: xs => doIt(-1L, 0L, 1, xs)
+        case xs => doIt(1L, 0L, 0, xs)
+      }
+    }
   }
   
-  def toDate(in: String): Date = {
-    new Date(in)
-  }
+  def toDate(in: String): Date = new Date(in)
   
   def toDate(in: Any): Date = {
     in match {
@@ -715,37 +712,37 @@ object Helpers {
   
   private class MsgSender extends Actor {
     def act = {
-    loop {
-      react {
-        case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
-        try {
-          val session = Session.getInstance(System.getProperties)
-          val message = new MimeMessage(session)
-          message.setFrom(new InternetAddress(from))
-          message.setRecipients(Message.RecipientType.TO, to.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
-          message.setRecipients(Message.RecipientType.CC, cc.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
-          message.setSubject(subject)
-          val multiPart = new MimeMultipart("alternative")
-          body.foreach {
-	    tab =>
-	      val bp = new MimeBodyPart
-	    tab match {
-	      case PlainMailBodyType(txt) => bp.setContent(txt, "text/plain")
-	      case XHTMLMailBodyType(html) => bp.setContent(html.toString, "text/html")
-	    }
-	    multiPart.addBodyPart(bp)
-	  }
-          message.setContent(multiPart);
+      loop {
+	react {
+          case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
+            try {
+              val session = Session.getInstance(System.getProperties)
+              val message = new MimeMessage(session)
+              message.setFrom(new InternetAddress(from))
+              message.setRecipients(Message.RecipientType.TO, to.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
+              message.setRecipients(Message.RecipientType.CC, cc.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
+              message.setSubject(subject)
+              val multiPart = new MimeMultipart("alternative")
+              body.foreach {
+		tab =>
+		  val bp = new MimeBodyPart
+		tab match {
+		  case PlainMailBodyType(txt) => bp.setContent(txt, "text/plain")
+		  case XHTMLMailBodyType(html) => bp.setContent(html.toString, "text/html")
+		}
+		multiPart.addBodyPart(bp)
+	      }
+              message.setContent(multiPart);
 
-          Transport.send(message);
-        } catch {
-          case e: Exception => e.printStackTrace // FIXME logging
-        }
-        
-        case _ => Console.println("Here... sorry")
+              Transport.send(message);
+            } catch {
+              case e: Exception => e.printStackTrace // FIXME logging
+            }
+          
+          case _ => Console.println("Here... sorry")
+	}
       }
     }
-  }
   }
 
   
@@ -878,7 +875,7 @@ object Helpers {
   def getResourceAsStream(name: String): Option[java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Option[Array[byte]] = getResourceAsStream(name).map{
     stream =>
-    val buffer = new Array[byte](2048)
+      val buffer = new Array[byte](2048)
     val out = new ByteArrayOutputStream
     def reader {
       val len = stream.read(buffer)
@@ -894,8 +891,8 @@ object Helpers {
   def loadResourceAsString(name: String): Option[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   
   /**
-    * Optional cons that implements the expression: expr ?> value ::: List
-    */
+   * Optional cons that implements the expression: expr ?> value ::: List
+   */
   class OptiCons(expr: Boolean) {
     def ?>[T](f: => T): List[T] = if (expr) List(f) else Nil
   }
