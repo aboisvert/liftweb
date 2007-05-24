@@ -72,21 +72,18 @@ object Helpers {
     }
   }
   
-  def couldBeHtml(in : Map[String, String]) : boolean = {
+  def couldBeHtml(in: Map[String, String]): Boolean =
     in match {
       case null => true
-      case _ => {
-	in.get("Content-Type") match {
-	  case s @ Some(_) => {s.get.toLowerCase == "text/html"}
-	  case None | null => true
+      case n => {
+	n.get("Content-Type") match {
+	  case Some(s) => s.toLowerCase == "text/html"
+	  case None => true
 	}
       }
     }
-  }
   
-  def noHtmlTag(in : NodeSeq) : boolean = {
-    (in \\ "html").length != 1
-  }
+  def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
   
   def toHashMap[A,B](in : Map[A,B]) : HashMap[A,B] = {
     val ret = new HashMap[A,B];
@@ -98,7 +95,7 @@ object Helpers {
     ret
   }
   
-  def first[B,C](in : List[B])(f : B => Option[C]) : Option[C] = {
+  def first[B,C](in : List[B])(f : B => Option[C]): Option[C] = {
     in match {
       case Nil => None
       case x :: xs => {
@@ -111,6 +108,7 @@ object Helpers {
   }
   
   case class BindParam(name: String, value: NodeSeq)
+  
   implicit def stringThingToBindParam[T](p: (String, T)): BindParam = {
     p._2 match {
       case null => BindParam(p._1, Text("null"))
@@ -121,6 +119,7 @@ object Helpers {
       case v => BindParam(p._1, Text(p._2.toString))
     }
   }
+  
   implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
   
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
@@ -166,15 +165,15 @@ object Helpers {
   }
   
   def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Option[NodeSeq] = {
-    def build (listvals: List[Map[String, NodeSeq]], ret : NodeSeq) : NodeSeq = listvals match {
-      case vals :: rest => build(rest, ret.concat(bind(vals, xml)))
+    def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
       case Nil => ret
+      case vals :: rest => build(rest, ret.concat(bind(vals, xml)))
     }
     if (listvals.length > 0) Some(build(listvals.drop(1), bind(listvals.head, xml)))
     else None
   }
 
-  def processBind(around : NodeSeq, at : String, what : NodeSeq) : NodeSeq = {
+  def processBind(around: NodeSeq, at: String, what: NodeSeq) : NodeSeq = {
     around.flatMap {
       v =>
 	v match {
@@ -220,26 +219,27 @@ object Helpers {
   /**
   * Convert an enum to a List[String]
   */
-  def enumToStringList(enum : java.util.Enumeration) : List[String] = {
+  def enumToStringList(enum : java.util.Enumeration) : List[String] =
     if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
-  }
   
-  def head[T](l : List[T], deft: T) = if (l.isEmpty) deft else l.head
-  
-  /**
-  * Find a class with name given name in a list of packages, either by matching 'name'
-  * or by matching 'smartCaps(name)'
-  */
-  def findClass(name : String, where : List[String]) : Option[Class] = {
-    findClass(name, where, List(smartCaps, {n => n}), {s => true})
-  }
+  def head[T](l : List[T], deft: => T) = l match {
+      case Nil => deft
+      case x :: xs => x
+    }
   
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String], guard: (Class) => boolean ) : Option[Class] = {
-    findClass(name, where, List(smartCaps, {n => n}), guard)
+  def findClass(name : String, where : List[String]) : Option[Class] =
+    findClass(name, where, List(smartCaps, n => n), s => true)
+  
+  /**
+  * Find a class with name given name in a list of packages, either by matching 'name'
+  * or by matching 'smartCaps(name)'
+  */
+  def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Option[Class] = {
+    findClass(name, where, List(smartCaps, n => n), guard)
   }
   
   def findClass(where : List[Pair[String, List[String]]]) : Option[Class] = {
@@ -284,29 +284,14 @@ object Helpers {
   /**
   * Wraps a "try" block around the function f.  If f throws
   * an exception with it's class in 'ignore' or of 'ignore' is
-  * null or an empty list, ignore the exception and return null.
-  */
-  /*
-  def tryn[T](ignore : List[Class])(f : => T) : T = {
-    try {
-      f
-    } catch {
-      case c if (containsClass(c.getClass, ignore)) => {null.asInstanceOf[T]}
-  case c if (ignore == null || ignore.isEmpty) => {null.asInstanceOf[T]}
-    }
-  }*/
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return None.
   */
   def tryo[T](ignore : List[Class])(f : => T) : Option[T] = {
     try {
       Some(f)
     } catch {
-      case c if (containsClass(c.getClass, ignore)) => {None}
-      case c if (ignore == null || ignore.isEmpty) => {None}
+      case c if (containsClass(c.getClass, ignore)) => None
+      case c if (ignore == null || ignore.isEmpty) => None
     }
   }
   
@@ -314,36 +299,11 @@ object Helpers {
   * Wraps a "try" block around the function f.  If f throws
   * an exception return None
   */
-  def tryo[T](f: => T): Option[T] = {
-    tryo(Nil)(f)
-  }
+  def tryo[T](f: => T): Option[T] = tryo(Nil)(f)
   
   def callableMethod_?(meth : Method) = {
     meth != null && meth.getParameterTypes.length == 0 && (meth.getModifiers & java.lang.reflect.Modifier.PUBLIC) != 0
   }
-  
-  
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception with it's class in 'ignore' or of 'ignore' is
-  * null or an empty list, ignore the exception and return false.
-  */
-  /*
-  def tryf[T](ignore : List[Class])(f : => T) : Any = {
-    try {
-      f
-    } catch {
-      case c if (containsClass(c.getClass, ignore)) => {false}
-  case c if (ignore == null || ignore.isEmpty) => {false}
-    }
-  }*/
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception, ignore the exception and return null.
-  */
-  // def tryn[T](f : => T) : T = {tryn(null)(f)}
   
   /**
   * Is the clz an instance of (assignable from) any of the classes in the list
@@ -353,16 +313,15 @@ object Helpers {
   * 
   * @return true if clz is assignable from of the matching classes
   */
-  def containsClass(clz : Class, toMatch : List[Class]) : boolean = {
+  def containsClass(clz : Class, toMatch : List[Class]) : Boolean = {
     toMatch match {
-      case null => {false}
-      case Nil => {false}
-      case c :: rest if (c.isAssignableFrom(clz)) => {true}
-      case _ => {false}
+      case null | Nil => false
+      case c :: rest if (c.isAssignableFrom(clz)) => true
+      case c :: rest => containsClass(clz, rest)
     }
   }
   
-  def classHasControllerMethod(clz : Class, methName : String): boolean = {
+  def classHasControllerMethod(clz : Class, methName : String): Boolean = {
     tryo {
       clz match {
         case null => false
@@ -473,24 +432,25 @@ object Helpers {
   
   val random = new java.security.SecureRandom
   
-  def randomLong(mod: long): long = Math.abs(random.nextLong) % mod
-  def randomInt(mod: int): int = Math.abs(random.nextInt) % mod
+  def randomLong(mod: Long): Long = Math.abs(random.nextLong) % mod
+  def randomInt(mod: Int): Int = Math.abs(random.nextInt) % mod
   
-  def shouldShow(percent: int): boolean = Math.abs(random.nextInt) % 100 < percent
-  def shouldShow(percent: double): boolean = random.nextDouble <= percent
+  def shouldShow(percent: Int): Boolean = Math.abs(random.nextInt) % 100 < percent
+  def shouldShow(percent: Double): Boolean = random.nextDouble <= percent
   
-  def randomString(size: int) : String = {
-    var pos = 0
-    val sb = new StringBuilder(size)
-    var lastRand = 0
-    while (pos < size) {
-      if ((pos % 6) == 0) lastRand = random.nextInt
-      val n = lastRand & 0x1f
-      lastRand = lastRand >> 5
-      sb.append(if (n < 26) ('A' + n).asInstanceOf[char] else ('0' + (n - 26)).asInstanceOf[char])
-      pos = pos + 1
+  def randomString(size: Int): String = {
+    def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
+      if (pos >= size) sb 
+      else {
+	val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
+	sb.append((randNum & 0x1f) match {
+	  case n if n < 26 => ('A' + n).toChar
+	  case n => ('0' + (n - 26)).toChar
+	})
+	addChar(pos + 1, randNum >> 5, sb)
+      }
     }
-    sb.toString
+    addChar(0, 0, new StringBuilder(size)).toString
   }
   
   val hourFormat = new SimpleDateFormat("HH:mm:ss")

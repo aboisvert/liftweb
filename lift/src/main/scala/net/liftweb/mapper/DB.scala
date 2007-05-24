@@ -40,20 +40,26 @@ object DB {
     connectionManagers(name) = mgr
   }
   
-  private def info : HashMap[ConnectionIdentifier, (SuperConnection, int)] = {
-    threadStore.get.asInstanceOf[HashMap[ConnectionIdentifier, (SuperConnection, int)]] match {
+  private def info : HashMap[ConnectionIdentifier, (SuperConnection, Int)] = {
+    threadStore.get match {
       case null =>
-	val tinfo = new HashMap[ConnectionIdentifier, (SuperConnection, int)];
+	val tinfo = new HashMap[ConnectionIdentifier, (SuperConnection, Int)];
 	threadStore.set(tinfo)
 	tinfo
 
-      case v => v
+      case v: HashMap[ConnectionIdentifier, (SuperConnection, Int)] => v
     }
   }
   
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
-    val ret = new SuperConnection(connectionManagers.get(name).flatMap(_.newConnection(name)).getOrElse {envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection})
+    val ret = (connectionManagers.get(name) match {
+      case Some(cm) => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c)))
+      case _ => None
+    }) getOrElse {
+      val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
+      new SuperConnection(conn, () => conn.close)
+    }
     ret.setAutoCommit(false)
     ret
   }
@@ -72,9 +78,8 @@ object DB {
   
   def releaseConnectionNamed(name : ConnectionIdentifier) {
     info.get(name) match {
-      case Some(c)  => if (c._2 == 1) c._1.commit
-      info(name) = (c._1, c._2 - 1)
-      
+      case Some((c, 1)) => c.commit; c.releaseFunc() ; info -= name
+      case Some((c, n)) => info(name) = (c, n - 1)
       case _ =>
     }
   }
@@ -137,7 +142,7 @@ object DB {
   }
 }
 
-class SuperConnection(val connection: Connection) {
+class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
   val brokenLimit_? : Lazy[boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
 }
 

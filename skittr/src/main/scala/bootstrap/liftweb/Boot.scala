@@ -8,6 +8,7 @@ package bootstrap.liftweb
 
 import net.liftweb.util.Helpers
 import net.liftweb.http._
+import net.liftweb.mapper._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
@@ -21,12 +22,13 @@ import com.skittr.actor._
   * to modify lift's environment
   */
 class Boot {
+  def modelList = List[BaseMetaMapper](User, Friend, MsgStore)
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("com.skittr")
      
     // make sure the database is up to date
-    Schemifier.schemify(User, Friend, MsgStore)
+    Schemifier.schemify(modelList :_*)
     
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     
@@ -61,4 +63,5 @@ object DBVendor extends ConnectionManager {
       case e : Exception => e.printStackTrace; None
     }
   }
+  def releaseConnection(conn: Connection) {conn.close}
 }

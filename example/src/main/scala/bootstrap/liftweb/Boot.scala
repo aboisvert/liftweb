@@ -83,4 +83,5 @@ object DBVendor extends ConnectionManager {
       case e : Exception => e.printStackTrace; None
     }
   }
+  def releaseConnection(conn: Connection) {conn.close}
 }
