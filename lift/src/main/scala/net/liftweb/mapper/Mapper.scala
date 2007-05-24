@@ -136,5 +136,14 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
   override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.get == other.primaryKeyField.get
                                    
   def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField.get)) getOrElse this    
+  
+  override def equals(other: Any): Boolean = {
+    other match {
+      case null => false
+      case km: KeyedMapper[Nothing, Nothing] if this.getClass.isAssignableFrom(km.getClass) ||
+        km.getClass.isAssignableFrom(this.getClass) => this.primaryKeyField == km.primaryKeyField
+      case k => super.equals(k)
+    }
+  }
 }
 
