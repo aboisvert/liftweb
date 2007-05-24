@@ -35,7 +35,7 @@ class Page extends Actor {
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
-      ajr.sendTo ! XhtmlResponse(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+      ajr.sendTo ! XhtmlResponse(Unparsed(""),None,  Map("Content-Type" -> "text/javascript"), 200)
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     
@@ -60,7 +60,7 @@ class Page extends Actor {
       "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
     }.mkString("", "\n", "")
     
-    XhtmlResponse(Unparsed(ret),Map("Content-Type" -> "text/javascript"), 200)
+    XhtmlResponse(Unparsed(ret),None, Map("Content-Type" -> "text/javascript"), 200)
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
@@ -78,10 +78,11 @@ class Page extends Actor {
           ret
         } else {
           try {
-            XhtmlResponse(Group(state.fixHtml(processControllers(pageXml, controllerMgr, state))), TreeMap.empty, 200)
+            XhtmlResponse(Group(state.fixHtml(processControllers(pageXml, controllerMgr, state))), ResponseInfo.xhtmlTransitional, TreeMap.empty, 200)
           } catch {
             case rd : RedirectException => {   
               XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
+                  ResponseInfo.xhtmlTransitional,
                        ListMap("Location" -> rd.to),
                        302)
             }

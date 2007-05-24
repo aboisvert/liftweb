@@ -117,12 +117,12 @@ object AltXML {
         for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
 
       case _  =>
-        if ((x.child eq null) || (x.child.length == 0)) {
+        if (((x.child eq null) || (x.child.length == 0)) && x.label != "script") {
           sb.append('<')
           x.nameToString(sb)
           if (x.attributes ne null) x.attributes.toString(sb)
           x.scope.toString(sb, pscope)
-          sb.append("/>")
+          sb.append(" />")
         } else {
         // print tag with namespace declarations
         sb.append('<')

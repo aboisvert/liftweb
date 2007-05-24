@@ -278,7 +278,15 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
 
   protected def real_convertToJDBCFriendly(value: T): Object
   
-  
+  /**
+    * Does the "right thing" comparing mapped fields 
+    */
+  override def equals(other: Any): Boolean = {
+    other match {
+      case mapped: MappedField[Any, Nothing] => this.get == mapped.get
+      case ov => this.get == ov
+    }
+  }
 
   def asHtml : Node = Text(toString)
 }

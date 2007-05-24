@@ -317,8 +317,8 @@ object Servlet {
     r match {
       case r: XhtmlResponse => r.toResponse
       case r: Response => r
-      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), Map.empty, 200), session)
-      case xml: XmlResponse => Response(xml.xml.toString.getBytes("UTF-8"), Map("Content-Type" -> "text/xml"), 200)
+      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional, Map.empty, 200), session)
+      case xml: XmlResponse => xml.toResponse
       case Some(o) => convertResponse(o, session)
       case _ => session.createNotFound.toResponse
     }

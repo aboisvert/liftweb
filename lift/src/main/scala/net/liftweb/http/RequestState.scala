@@ -114,7 +114,8 @@ class RequestState(val paramNames: List[String],
   }
   
   def createNotFound = {
-    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>, TreeMap.empty, 404)
+    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,
+        ResponseInfo.xhtmlTransitional , TreeMap.empty, 404)
   }
   
   def showException(e: Throwable) = {
@@ -134,7 +135,7 @@ class RequestState(val paramNames: List[String],
 	     <pre>{
 	       
 	       et      
-	     }</pre></body></html>, Map("Content-Type" -> "text/html"), 500)
+	     }</pre></body></html>,ResponseInfo.xhtmlTransitional, Map("Content-Type" -> "text/html"), 500)
   }
   
   def post_? = requestType.post_?

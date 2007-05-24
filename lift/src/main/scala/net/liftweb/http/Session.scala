@@ -91,7 +91,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     loop
     
     case SendEmptyTo(sender) =>
-      sender ! XhtmlResponse(Unparsed(""), Map("Content-Type" -> "text/javascript"), 200)
+      sender ! XhtmlResponse(Unparsed(""),None, Map("Content-Type" -> "text/javascript"), 200)
     loop
 
     case unknown => Console.println("Session Got a message "+unknown); loop
@@ -120,7 +120,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               if (state.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(sender), timeout - 250) 
               } else {
-                notices = Nil; sender ! XhtmlResponse(Group(state.fixHtml(xml)), Map.empty, 200)
+                notices = Nil; sender ! XhtmlResponse(Group(state.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200)
               }
             } else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
@@ -135,12 +135,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         notices = S.getNotices
         
         sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
+                 ResponseInfo.xhtmlTransitional,
                  ListMap("Location" -> (state.contextPath+rd.to)),
                  302)
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
+            sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
                      ListMap("Location" -> (state.contextPath+rd.to)),
                      302)
           }
@@ -230,8 +231,9 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   
   def fixResponse(resp: XhtmlResponse, state: RequestState): XhtmlResponse = {
     val newHeaders = fixHeaders(resp.headers, state)
-    val newXml = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) state.fixHtml(resp.out) else resp.out
-    XhtmlResponse(resp.out, newHeaders, resp.code)
+    val (newXml, theType) = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) (state.fixHtml(resp.out), ResponseInfo.xhtmlTransitional)
+       else (resp.out, None)
+    XhtmlResponse(resp.out, theType, newHeaders, resp.code)
   }
   
   /**
