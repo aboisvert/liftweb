@@ -127,16 +127,19 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case x :: xs => {
         var updatedWhat = what        
         x match {
-        case By(field, _) => 
-        (1 to field.dbColumnCount).foreach {
-          cn =>
-                updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" = ? "
-        }
-        case NotBy(field, _) => 
-        (1 to field.dbColumnCount).foreach {
-          cn =>
-                updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" <> ? "
-        }
+          case Cmp(field, opr, Some(_), _) =>
+          (1 to field.dbColumnCount).foreach {
+            cn =>
+                  updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" ? "
+          }
+          
+          case Cmp(field, opr, _, Some(otherField)) =>
+          (1 to field.dbColumnCount).foreach {
+            cn =>
+                  updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" "+
+                    otherField.dbColumnNames(otherField.name)(cn - 1)
+          }
+
           case BySql(query, _*) => 
             updatedWhat = updatedWhat + whereOrAnd + query
           case _ => 
@@ -149,14 +152,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: int) {
     by match {
       case Nil => {}
-      case By(field, value) :: xs => {
+      case Cmp(field, _, Some(value), _) :: xs =>
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
         setStatementFields(st, xs, curPos + 1)
-      }
-      case NotBy(field, value) :: xs => {
-        st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
-        setStatementFields(st, xs, curPos + 1)
-      }
+
       case BySql(query, params @ _*) :: xs => {
         params.toList match {
           case Nil => setStatementFields(st, xs, curPos)
@@ -733,12 +732,50 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   // protected def getField(inst : Mapper[A], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyRef,A]]
 }
 
+object OprEnum extends Enumeration {
+  val Eql = Value(1, "=")
+  val <> = Value(2, "<>")
+  val >= = Value(3, ">=")
+  val != = <>
+  val <= = Value(4, "<=")
+  val > = Value(5, ">")
+  val < = Value(6, "<")
+}
+
 abstract class QueryParam[O<:Mapper[O]]
-case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
+//case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
+case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Option[T], otherField: Option[MappedField[T, O]]) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
-case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
+//case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
+object By {
+  import OprEnum._
+  
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, Eql, Some(value), None)
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, Eql, None, Some(otherField))
+}
+
+object NotBy {
+  import OprEnum._
+
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <>, Some(value), None)
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <>, None, Some(otherField))
+}
+
+object ByGt {
+  import OprEnum._
+
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, >, Some(value), None)
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, >, None, Some(otherField))  
+}
+
+object ByLt {
+  import OprEnum._
+
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <, Some(value), None)
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <, None, Some(otherField))    
+}
 
 trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A]

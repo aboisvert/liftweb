@@ -113,7 +113,7 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedFi
    * Make sure that the field is unique in the database
    */
   def valUnique(msg: String)(value: String): List[ValidationIssue] =
-    owner.getSingleton.findAll(By(this, value)).
+    owner.getSingleton.findAll(By(this,value)).
       filter(!_.comparePrimaryKeys(this.owner)).
       map(x =>ValidationIssue(this, msg))
 
