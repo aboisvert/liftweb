@@ -24,6 +24,7 @@ import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.regex._
 import java.util.TimeZone
+import java.lang.Character._
 
 /**
  *  A bunch of helper functions
@@ -498,7 +499,7 @@ object Helpers {
       case (n: Number) :: _ => n.intValue
       case Some(n) => toInt(n)
       case None => 0
-      case s : String => parseNumber(s)._1.toInt
+      case s : String => parseNumber(s).toInt
       case x :: xs => toInt(x)
       case o => toInt(o.toString)
     }
@@ -513,23 +514,22 @@ object Helpers {
       case (n: Number) :: _ => n.longValue
       case Some(n) => toLong(n)
       case None => 0L
-      case s : String => parseNumber(s)._1
+      case s : String => parseNumber(s)
       case x :: xs => toLong(x)
       case o => toLong(o.toString)
     }
   }
   
-  def parseNumber(tin: String): (Long, Int) = {
-    def doIt(neg: Long, cur: Long, pos: Int, in: List[Char]): (Long, Int) = in match {
-      case Nil => (neg * cur, pos)
-      case x :: xs if !java.lang.Character.isDigit(x) => (neg * cur, pos)
-      case x :: xs => doIt(neg, (cur * 10L) + x.toLong - '0'.toLong,pos + 1, xs)
-    }
-    if (tin eq null) (0L, 0)
+  def parseNumber(tin: String): Long = {
+    def cToL(in: Char) = in.toLong - '0'.toLong
+    def p(in: List[Char]) = in.takeWhile(isDigit).foldLeft(0L)((acc,c) => (acc * 10L) + cToL(c))
+
+    if (tin eq null) 0L
     else {
       tin.trim.toList match {
-        case '-' :: xs => doIt(-1L, 0L, 1, xs)
-        case xs => doIt(1L, 0L, 0, xs)
+        case '-' :: xs => -p(xs)
+        case '+' :: xs => p(xs)
+        case xs => p(xs)
       }
     }
   }

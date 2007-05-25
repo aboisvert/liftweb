@@ -100,7 +100,7 @@ object Schemifier {
   private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Any] = {
     val hasTable = hasTable_?(table, connection, actualTableNames)
     if (!hasTable) {
-      val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString("", " , ", "")+")";
+      val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+")";
       val st = connection.createStatement
       Console.println(ct)
       st.execute(ct)

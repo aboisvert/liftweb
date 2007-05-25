@@ -189,7 +189,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
     val lst = params.flatMap{p => p match {case OrderBy(field, ascending) => List(field.dbColumnName+" "+(if (ascending) "ASC" else "DESC")); case _ => Nil}} 
     if (lst.length == 0) in
-    else in+" ORDER BY "+lst.mkString("", " , ", "")
+    else in+" ORDER BY "+lst.mkString(" , ")
   }
   
   def addEndStuffs(in: String, params: List[QueryParam[A]], conn: SuperConnection): (String, Option[long], Option[long]) = {
@@ -510,21 +510,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     (colCnt, ar)
   }
 
-  def createInstance(dbId: ConnectionIdentifier, rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,int,A) => unit]) : A = {
+  def createInstance(dbId: ConnectionIdentifier, rs : ResultSet, colCnt:int, mapFuncs: Array[(ResultSet,Int,A) => Unit]) : A = {
     val ret = createInstance.connectionIdentifier(dbId)
     val ra = ret// .asInstanceOf[Mapper[A]]
+
     var pos = 1
     while (pos <= colCnt) {
       mapFuncs(pos) match {
-        case null => {}
-        /*
-         case f => try {
-         f(rs, pos, ra)
-         } catch {
-         case e : java.lang.NullPointerException => Console.println("Failed with pos "+pos+" Retrying")
-         f(rs, pos, ra)
-         }
-         */
+        case null => 
         case f => f(rs, pos, ra)
       }
       pos = pos + 1
@@ -537,7 +530,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       case null => null
       case _ => inst.getClass
     }
-    val look = (name.toLowerCase, if (clz != null) Some(clz) else None)
+    val look = (name.toLowerCase, if (clz ne null) Some(clz) else None)
       mappedAppliers.get(look) match {
 	case s @ Some(_) => s
 	case None => {
@@ -551,7 +544,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   private def createApplier(name : String, inst : AnyRef, clz : Class) : (A, AnyRef) => unit = {
     val accessor = mappedColumns.get(name)
-    if (accessor == null || accessor == None) {null} else {
+    if ((accessor eq null) || accessor == None) null else {
       (accessor.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
     }
   }
@@ -565,7 +558,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       val field = ??(f._2, in);
       field match {
         case null => {}
-        case _ if (field.i_name_! == null) => field.setName_!(f._1)
+        case _ if (field.i_name_! ne null) => field.setName_!(f._1)
         case _ => 
       }
       pos = pos + 1
@@ -606,10 +599,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
             canUse(v)) {
               mappedCallbacks = (v.getName, v) :: mappedCallbacks
             }
+
 	if (classOf[MappedField[AnyRef, A]].isAssignableFrom(v.getReturnType) && v.getParameterTypes.length == 0 &&
             canUse(v)) {
 	      val mf = v.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]];
-	      if (mf != null && !mf.ignoreField) {
+	      if ((mf ne null) && !mf.ignoreField) {
 		mf.setName_!(v.getName)
 		val trp = (mf.name, v, mf)
 		  tArray += trp
