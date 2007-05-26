@@ -114,5 +114,5 @@ class TestStateMachine extends ProtoStateMachine[TestStateMachine, TestState.typ
      }
      
   
-  val managedItem = new MappedLongForeignKey(this, User) 
+  object managedItem extends MappedLongForeignKey(this, User) 
 }

@@ -113,7 +113,7 @@ class UserTests extends TestCase("User Tests") {
 
 
 object User extends User with KeyedMetaMapper[long, User] {
-  override protected def internalTableName_$ = "users"
+  override def dbTableName = "users"
     
 }
 
@@ -128,14 +128,14 @@ class Pet extends KeyedMapper[long, Pet] {
   def getSingleton = Pet
   def primaryKeyField = id
   
-  val id = new MappedLongIndex(this)
-  val name = new MappedString(this, 32)
-  val owner = new MappedLongForeignKey(this, User)
-    val icon = new MappedBinary(this) {
+  object id extends MappedLongIndex(this)
+  object name extends MappedString(this, 32)
+  object owner extends MappedLongForeignKey(this, User)
+  object icon extends MappedBinary(this) {
     override def maxLen = 65536
   }
 }
 
 object Pet extends Pet with KeyedMetaMapper[long, Pet] {
-  override protected def internalTableName_$ = "pets"
+  override def dbTableName = "pets"
 }

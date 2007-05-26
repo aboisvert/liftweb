@@ -87,8 +87,8 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
     theSetList.toList.removeDuplicates.foreach {
       i =>
 	val toCreate = through.createInstance
-      throughFromField.getActualField(toCreate) := owner.primaryKeyField
-      throughToField.getActualField(toCreate) := i
+      throughFromField.getActualField(toCreate)(owner.primaryKeyField.get)
+      throughToField.getActualField(toCreate)(i)
       toCreate.save
     }
     theSetList = Nil

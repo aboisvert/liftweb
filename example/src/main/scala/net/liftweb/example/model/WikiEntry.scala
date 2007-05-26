@@ -28,15 +28,15 @@ class WikiEntry extends KeyedMapper[long, WikiEntry] {
   def primaryKeyField = id
 
   // the primary key
-  val id = new MappedLongIndex(this)
+  object id extends MappedLongIndex(this)
   
   // the name of the entry
-  val name = new MappedString(this, 32) {
+  object name extends MappedString(this, 32) {
     override def dbIndexed_? = true // indexed in the DB
   }
   
   // the text of the entry
-  val entry =  new MappedTextarea(this, 8192) {
+  object entry extends MappedTextarea(this, 8192) {
     override def textareaRows  = 10
     override def textareaCols = 50
   }

@@ -15,7 +15,6 @@ import net.liftweb.util.Lazy._
 
 class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   private var data : Lazy[Date] = Lazy(defaultValue)
-  
   protected def real_i_set_!(value : Date) : Date = {
     if (value != data.get) {
       data() = value

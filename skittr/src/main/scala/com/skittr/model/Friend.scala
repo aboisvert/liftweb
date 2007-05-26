@@ -24,11 +24,11 @@ class Friend extends KeyedMapper[long, Friend] {
   def getSingleton = Friend // what's the "meta" server
   def primaryKeyField = id
   
-  val id = new MappedLongIndex(this)
+  object id extends MappedLongIndex(this)
 
-  val owner = new MappedLongForeignKey(this, User)
-  val friend = new MappedLongForeignKey(this, User)
-  val when = new MappedLong(this) {
+  object owner extends MappedLongForeignKey(this, User)
+  object friend extends MappedLongForeignKey(this, User)
+  object when extends MappedLong(this) {
     override def dbColumnName = "when_c"
     override def defaultValue = System.currentTimeMillis
   }

@@ -112,13 +112,12 @@ trait Mapper[A<:Mapper[A]] {
   def toXml: NodeSeq = {
     getSingleton.toXml(this)
   }
-  
-  def ^ : A = this
-  
-  def checkNames : unit = {
+
+  def checkNames {
     runSafe {
-      if ((getSingleton ne null)) {
-        getSingleton.checkFieldNames(this)
+      getSingleton match {
+        case null => 
+        case s => s.checkFieldNames(this)
       }
     }
   }

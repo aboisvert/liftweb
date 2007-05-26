@@ -159,7 +159,9 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   final def i_name_! = {_name}
   
   final def name = synchronized {
-    if (_name == null) owner.checkNames
+    if (_name eq null) {
+      owner.checkNames
+    }
     _name
   }
   final def setName_!(newName : String) : String = {

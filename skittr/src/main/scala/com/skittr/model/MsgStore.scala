@@ -24,13 +24,13 @@ class MsgStore extends KeyedMapper[long, MsgStore] {
   def getSingleton = MsgStore // what's the "meta" server
   def primaryKeyField = id
   
-  val id = new MappedLongIndex(this)
+  object id extends MappedLongIndex(this)
   
-  val message = new MappedString(this, 200)
-  val who = new MappedLongForeignKey(this, User)
-  val when = new MappedLong(this) {
+  object message extends MappedString(this, 200)
+  object who extends MappedLongForeignKey(this, User)
+  object when extends MappedLong(this) {
     override def dbColumnName = "when_c"
     override def defaultValue = System.currentTimeMillis
   }
-  val source = new MappedString(this, 16)
+  object source extends MappedString(this, 16)
 }

@@ -32,7 +32,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   /**
     * the primary key for the database
     */
-  val id = new MappedLongIndex[MyType](this)
+  object id extends MappedLongIndex[MyType](this)
   
   /**
     * get the primary key field
@@ -47,14 +47,14 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   /**
     * The column in the database that stores the current state
     */
-  val currentState = new MappedInt[MyType](this)
+  object currentState extends MappedInt[MyType](this)
   
   /**
     * The column in the database that stores the next time an event should go off
     */
-  val timedEventAt = new MappedLong[MyType](this) 
+  object timedEventAt extends MappedLong[MyType](this) 
   
-  val nextTransitionAt = new MappedLong[MyType](this) with LifecycleCallbacks {
+  object nextTransitionAt extends MappedLong[MyType](this) with LifecycleCallbacks {
     override def beforeSave {if (this.get < System.currentTimeMillis) this := -1L}
     override def dbIndexed_?  = true
   }
