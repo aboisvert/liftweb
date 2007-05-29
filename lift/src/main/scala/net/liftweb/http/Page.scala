@@ -35,7 +35,7 @@ class Page extends Actor {
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
-      ajr.sendTo ! XhtmlResponse(Unparsed(""),None,  Map("Content-Type" -> "text/javascript"), 200)
+      ajr.sendTo(XhtmlResponse(Unparsed(""),None,  Map("Content-Type" -> "text/javascript"), 200))
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     
@@ -45,7 +45,7 @@ class Page extends Actor {
   def updateRendered(ar: AnswerRender) {
     updates(ar.by.uniqueId) = ar
     if (!pendingAjax.isEmpty) {
-      pendingAjax.foreach(ar => ar.sendTo ! buildResponseFromUpdates(ar.state))
+      pendingAjax.foreach(ar => ar.sendTo(buildResponseFromUpdates(ar.state)))
       pendingAjax = Nil
       updates.clear
     }
@@ -64,7 +64,7 @@ class Page extends Actor {
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
-      sender: Actor, controllerMgr: ControllerManager, timeout: long) {
+      sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: long) {
       processParameters(state)
       
       if (state.ajax_? && updates.isEmpty) {
@@ -90,7 +90,7 @@ class Page extends Actor {
             
           }
         }
-        sender ! resp
+        sender(resp)
       }
   }
   
@@ -175,4 +175,4 @@ class Page extends Actor {
   }
 }
 
-case class AjaxRerender(timeOut: long, sendTo: Actor, state: RequestState)
+case class AjaxRerender(timeOut: long, sendTo: AnyRef => Any, state: RequestState)

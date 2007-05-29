@@ -139,19 +139,30 @@ class Servlet extends HttpServlet {
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
-    printTime("Service request "+req.getRequestURI) {
-    Servlet.setContext(getServletContext)
-    req.getMethod.toUpperCase match {
-      case "GET" => doGet(req, resp)
-      case _ => doService(req, resp, RequestType(req))
+    def doIt {
+      printTime("Service request "+req.getRequestURI) {
+        Servlet.setContext(getServletContext)
+        req.getMethod.toUpperCase match {
+          case "GET" => doGet(req, resp)
+          case _ => doService(req, resp, RequestType(req))
+        }
+        }      
     }
-    }
+    Servlet.checkJetty(req) match {
+      case None => doIt
+      case r if r eq null => doIt
+      case r: XhtmlResponse => println("resuming a continuation"); sendResponse(r.toResponse, resp)
+      case Some(r: XhtmlResponse) => println("resuming a continuation"); sendResponse(r.toResponse, resp)
+      case r : Response => println("resuming a continuation"); sendResponse(r, resp)
+          case Some(r: Response) => println("resuming a continuation"); sendResponse(r, resp)
+          case _ => doIt
+  }
   }
   
   /**
    * Service the HTTP request
    */ 
-  def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) : unit = {
+  def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) {
     Servlet.early.foreach(_(request))
     val session = RequestState(request, Servlet.rewriteTable, getServletContext)
 
@@ -202,9 +213,13 @@ class Servlet extends HttpServlet {
         }
         
         drainTheSwamp
-
-	val timeout = (if (session.ajax_?) 100 else 10) * 1000L
-	sessionActor ! AskSessionToRender(session, request, timeout)
+        if (session.ajax_? && Servlet.hasJetty_?) {
+          sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
+          Servlet.doContinuation(request)
+        } else {
+	val timeout = (if (session.ajax_?) 120 else 10) * 1000L
+        val thisSelf = self
+	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
         receiveWithin(timeout) {
           case r: XhtmlResponse => r.toResponse
           case Some(r: XhtmlResponse) => r.toResponse
@@ -212,6 +227,7 @@ class Servlet extends HttpServlet {
 	  case Some(r: Response) => r
 	  case n => Console.println("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
 	}
+        }
         } finally {
           this.synchronized {
             this.requestCnt = this.requestCnt - 1
@@ -221,7 +237,10 @@ class Servlet extends HttpServlet {
         }
       }
     
-    
+    sendResponse(resp, response)
+  }
+  
+  def sendResponse(resp: Response, response: HttpServletResponse) {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
@@ -232,7 +251,7 @@ class Servlet extends HttpServlet {
     // send the response
     header.elements.foreach {n => response.setHeader(n._1, n._2)}
     response setStatus resp.code
-    response.getOutputStream.write(bytes)
+    response.getOutputStream.write(bytes)    
   }
 }
 
@@ -245,6 +264,48 @@ object Servlet {
   def early = {
     test_boot
     _early
+  }
+  
+  val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
+    try {
+    val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
+    val meth = cc.getMethod("getContinuation", Array(classOf[HttpServletRequest], classOf[AnyRef]))
+    val cci = Class.forName("org.mortbay.util.ajax.Continuation")
+    val getObj = cci.getMethod("getObject", null)
+    val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
+    val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
+    val resume = cci.getMethod("resume", null)
+    (true, (cc), (meth), (getObj), (setObj), (suspend), resume)
+    } catch {
+      case e => (false, null, null, null, null, null, null)
+    }
+  }
+  
+  def resumeRequest(what: AnyRef, req: HttpServletRequest) {
+    val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+    setObject.invoke(cont, Array(what))
+    resume.invoke(cont, null)
+  }
+  
+  def doContinuation(req: HttpServletRequest): Nothing = {
+    try {
+    val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+    Console.println("About to suspend continuation")
+    suspend.invoke(cont, Array(new java.lang.Long(200000L)))
+    throw new Exception("Bail")
+    } catch {
+      case e: java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") => throw e.getCause
+    }
+  }
+  
+  def checkJetty(req: HttpServletRequest) = {
+    if (!hasJetty_?) None
+    else {
+      val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+      val ret = getObject.invoke(cont, null)
+      setObject.invoke(cont, Array(null))
+      ret
+    }
   }
   
   private var _sitemap: Option[SiteMap] = None

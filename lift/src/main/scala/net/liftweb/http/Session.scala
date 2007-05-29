@@ -81,17 +81,17 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
       self.exit
     loop
     
-    case AskSessionToRender(request,httpRequest, timeout) => 
-      processRequest(request, httpRequest, timeout)
+    case AskSessionToRender(request,httpRequest, timeout, whenDone) => 
+      processRequest(request, httpRequest, timeout, whenDone)
     loop
     
     case AnswerRenderPage(state, thePage, sender) =>
       val updatedPage = fixResponse(thePage, state)
-      sender ! Some(updatedPage)
+      sender(Some(updatedPage))
     loop
     
     case SendEmptyTo(sender) =>
-      sender ! XhtmlResponse(Unparsed(""),None, Map("Content-Type" -> "text/javascript"), 200)
+      sender(XhtmlResponse(Unparsed(""),None, Map("Content-Type" -> "text/javascript"), 200))
     loop
 
     case unknown => Console.println("Session Got a message "+unknown); loop
@@ -105,26 +105,27 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  private def processRequest(state: RequestState,httpRequest: HttpServletRequest, timeout: long) = {
+  private def processRequest(state: RequestState,httpRequest: HttpServletRequest, timeout: long,
+      whenDone: AnyRef => Any) = {
     S.init(state, httpRequest, notices) {
       try {
         state.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
         processParameters(state)
         findVisibleTemplate(state.path, state).map(xml => processSurroundAndInclude(xml, state)) match {
-          case None => sender ! state.createNotFound
+          case None => whenDone(state.createNotFound)
           case Some(xml: NodeSeq) => {
             S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 
             if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {
               if (state.ajax_?) {
-                ActorPing.schedule(this, SendEmptyTo(sender), timeout - 250) 
+                ActorPing.schedule(this, SendEmptyTo(whenDone), timeout - 250) 
               } else {
-                notices = Nil; sender ! XhtmlResponse(Group(state.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200)
+                notices = Nil; whenDone(XhtmlResponse(Group(state.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200))
               }
             } else {
               val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
-              page ! AskRenderPage(state, xml, sender, theControllerMgr, timeout)
+              page ! AskRenderPage(state, xml, whenDone, theControllerMgr, timeout)
               if (!state.ajax_?) notices = Nil
             }
           }
@@ -134,18 +135,18 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         val rd = ite.getCause.asInstanceOf[RedirectException]
         notices = S.getNotices
         
-        sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
+        whenDone(XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
                  ResponseInfo.xhtmlTransitional,
                  ListMap("Location" -> (state.contextPath+rd.to)),
-                 302)
+                 302))
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            sender ! XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
+            whenDone(XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
                      ListMap("Location" -> (state.contextPath+rd.to)),
-                     302)
+                     302))
           }
-	case e  => {sender ! state.showException(e)}
+	case e  => whenDone(state.showException(e))
       }
     }
   }
@@ -373,14 +374,14 @@ abstract class SessionMessage
  * Sent from a session to a Page to tell the page to render itself and includes the sender that
  * the rendered response should be sent to
  */
-case class AskRenderPage(state: RequestState, xml: NodeSeq, sender: Actor, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
+case class AskRenderPage(state: RequestState, xml: NodeSeq, sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
 
 /**
  * The response from a page saying that it's been rendered
  */
-case class AnswerRenderPage(state: RequestState, thePage: XhtmlResponse, sender: Actor) extends SessionMessage
-case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: long)
-case class SendEmptyTo(who:Actor) extends SessionMessage
+case class AnswerRenderPage(state: RequestState, thePage: XhtmlResponse, sender: AnyRef => Any) extends SessionMessage
+case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: long,sendBack: AnyRef => Any)
+case class SendEmptyTo(who:AnyRef => Any) extends SessionMessage
 
 
 
