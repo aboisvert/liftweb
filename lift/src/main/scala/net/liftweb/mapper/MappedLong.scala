@@ -78,7 +78,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   }
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "BIGINT NOT NULL AUTO_INCREMENT UNIQUE"
+    case MySqlDriver => "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE KEY"
     case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
   })
 
