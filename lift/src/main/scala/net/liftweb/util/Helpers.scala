@@ -859,6 +859,12 @@ object Helpers {
   
   implicit def toOptiCons(expr: Boolean): OptiCons = new OptiCons(expr)
   
+  implicit def toSuperList[T](in: List[T]): SuperList[T] = new SuperList(in)
+  
   def listIf[T](expr: Boolean)(f: => T): List[T] = if(expr) List(f) else Nil
 }
 
+class SuperList[T](val what: List[T]) {
+  def or(other: => List[T]): List[T] = if (!what.isEmpty) what else other
+  def str: String = what.mkString("")
+}
