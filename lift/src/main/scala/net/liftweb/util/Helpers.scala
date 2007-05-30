@@ -865,6 +865,8 @@ object Helpers {
 }
 
 class SuperList[T](val what: List[T]) {
+  def headOr(other: => T): T = if (what.isEmpty) other else what.head
   def or(other: => List[T]): List[T] = if (!what.isEmpty) what else other
   def str: String = what.mkString("")
+  def comma: String = what.mkString(",")
 }
