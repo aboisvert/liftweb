@@ -33,6 +33,12 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
     def dbAddedForeignKey: Option[() => unit] = None
     
     override def toString = if (defined_?) super.toString else "NULL"
+
+      def :=(v : Option[O]) : Long = this.:=(v.map(_.primaryKeyField.get) getOrElse 0L)
+   def :=(v : O) : Long = this.:=(v.primaryKeyField.get)
+      
+   def apply(v: Option[O]): T = this(v.map(_.primaryKeyField.get) getOrElse 0L)
+   def apply(v: O): T = this(v.primaryKeyField.get)
 }
 
 class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[Long] {

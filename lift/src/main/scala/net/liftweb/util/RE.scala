@@ -35,6 +35,7 @@ object RE {
   }
 
   implicit def strToSuperStr(in: String): SuperString = new SuperString(in)
+  implicit def strToRe(in: String): REDoer = new REDoer(in)
 }
 
 class REDoer(val pattern: String) {
