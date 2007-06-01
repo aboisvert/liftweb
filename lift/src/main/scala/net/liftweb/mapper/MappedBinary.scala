@@ -21,6 +21,8 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[Byte],
     value
   }
   
+  def dbFieldClass = classOf[Array[Byte]]
+  
   /**
    * Get the JDBC SQL Type for this field
    */

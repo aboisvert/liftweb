@@ -16,6 +16,8 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
   private var data : Option[Boolean] = Some(defaultValue)
   def defaultValue = false
 
+  def dbFieldClass = classOf[Boolean]
+  
   /**
    * Get the JDBC SQL Type for this field
    */

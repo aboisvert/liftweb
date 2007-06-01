@@ -76,13 +76,12 @@ trait BaseMappedField {
 
 
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
-  
 }
 
 trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   def ignoreField = false
-  def defaultValue : T
-  
+  def defaultValue: T
+  def dbFieldClass: Class
 
   def getActualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
 
@@ -286,6 +285,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   override def equals(other: Any): Boolean = {
     other match {
       case mapped: MappedField[Any, Nothing] => this.get == mapped.get
+      case ov: AnyRef if (ov ne null) && dbFieldClass.isAssignableFrom(ov.getClass) => this.get == runFilters(ov.asInstanceOf[T], setFilter)
       case ov => this.get == ov
     }
   }

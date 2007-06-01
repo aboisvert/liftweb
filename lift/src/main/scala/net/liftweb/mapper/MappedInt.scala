@@ -64,9 +64,10 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 }
 
 
-class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[int, T] {
+class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
   private var data : int = defaultValue
   def defaultValue = 0
+  def dbFieldClass = classOf[Int]
 
   /**
    * Get the JDBC SQL Type for this field

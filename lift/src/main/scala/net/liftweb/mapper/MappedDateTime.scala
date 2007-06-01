@@ -23,6 +23,9 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     data.get
   }
   
+  def dbFieldClass = classOf[Date]
+
+  
   def toLong: long = i_get_! match {
     case d: Date => d.getTime / 1000L
     case _ => 0L

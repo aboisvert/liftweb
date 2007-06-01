@@ -23,6 +23,7 @@ object MappedPassword {
 
 class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T] {
   override def dbColumnCount = 2
+  def dbFieldClass = classOf[String]
   
   override def dbColumnNames(in : String) = in.toLowerCase+"_pw" :: in.toLowerCase+"_slt" :: Nil
 

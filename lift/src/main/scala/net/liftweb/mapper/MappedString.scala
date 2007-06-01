@@ -16,6 +16,9 @@ import java.util.regex._
 class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy(defaultValue) // defaultValue
   
+  def dbFieldClass = classOf[String]
+
+  
   final def toLower(in: String): String = in match {
   case null => null
   case s => s.toLowerCase
