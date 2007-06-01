@@ -57,17 +57,23 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = findAllByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
 
-  def findAllByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = {
+  def findAllByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = 
+    findMapByInsecureSqlDb(dbId, query, IDidASecurityAuditOnThisQuery)(a => Some(a))
+  
+
+  def findMapByInsecureSql[T](query: String, IDidASecurityAuditOnThisQuery: boolean)(f: A => Option[T]): List[T] = findMapByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)(f)
+
+  def findMapByInsecureSqlDb[T](dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean)(f: A => Option[T]): List[T] = {
     DB.use(dbId) {
       conn =>
-	if (!IDidASecurityAuditOnThisQuery) Nil
-	else DB.prepareStatement(query, conn) {
-	  st =>
-	    DB.exec(st) {
+        if (!IDidASecurityAuditOnThisQuery) Nil
+        else DB.prepareStatement(query, conn) {
+          st =>
+            DB.exec(st) {
               rs =>
-		createInstances(dbId, rs, None, None, v => Some(v))
-	    }
-	}
+                createInstances(dbId, rs, None, None, f)
+            }
+        }
     }
   }
   
@@ -437,7 +443,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   
   def createInstances[T](dbId: ConnectionIdentifier, rs: ResultSet, start: Option[long], omax: Option[long], f: A => Option[T]) : List[T] = {
-    var ret = new ArrayBuffer[T]
+    var ret = new ListBuffer[T]
     val bm = buildMapper(rs)
     var pos = (start getOrElse 0L) * -1L
     val max = omax getOrElse java.lang.Long.MAX_VALUE
@@ -586,7 +592,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private var indexMap : String = null
   
   this.runSafe {
-    val tArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])]
+    val tArray = new ListBuffer[(String, Method, MappedField[AnyRef,A])]
     
     def isMagicObject(m: Method) = m.getReturnType.getName.endsWith("$"+m.getName+"$") && m.getParameterTypes.length == 0
     def isMappedField(m: Method) = classOf[MappedField[Nothing, A]].isAssignableFrom(m.getReturnType)
@@ -618,7 +624,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       }
     }
     
-    val resArray = new ArrayBuffer[(String, Method, MappedField[AnyRef,A])];
+    val resArray = new ListBuffer[(String, Method, MappedField[AnyRef,A])];
     
     fieldOrder.foreach(f => findPos(f).foreach(pos => resArray += tArray.remove(pos)))
     

@@ -17,10 +17,14 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedFi
   private val data : Lazy[String] =  Lazy(defaultValue) // defaultValue
   
   final def toLower(in: String): String = in match {
-    case null => null
-    case s => s.toLowerCase
-  }
-  
+  case null => null
+  case s => s.toLowerCase
+}
+  final def toUpper(in: String): String = in match {
+  case null => null
+  case s => s.toUpperCase
+}
+
   final def trim(in: String): String = in match {
     case null => null
     case s => s.trim
