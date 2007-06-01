@@ -281,6 +281,10 @@ object S {
   case class ChoiceHolder[T](items: List[ChoiceItem[T]]) {
       def apply(in: T) = items.filter(_.key == in).head.xhtml
       def apply(in: Int) = items(in).xhtml
+      def map[A](f: ChoiceItem[T] => A) = items.map(f)
+      def flatMap[A](f: ChoiceItem[T] => Iterable[A]) = items.flatMap(f)
+      def filter(f: ChoiceItem[T] => Boolean) = items.filter(f)
+      def toForm: NodeSeq = flatMap(c => <span>{c.key.toString}&nbsp;{c.xhtml}<br /></span>)
     }
   
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 

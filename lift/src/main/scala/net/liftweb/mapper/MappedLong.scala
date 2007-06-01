@@ -9,7 +9,11 @@ package net.liftweb.mapper
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
+import net.liftweb.util._
 import java.util.Date
+import scala.xml.{NodeSeq, Text, Unparsed}
+import net.liftweb.http.S
+import S._
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, foreign: => KeyedMetaMapper[Long, O]) 
    extends MappedLong[T](owner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
@@ -88,6 +92,91 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
     case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
   })
 
+}
+
+class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM) extends MappedField[List[ENUM#Value], T] {
+  private var data: List[ENUM#Value] = defaultValue
+  def defaultValue: List[ENUM#Value] = Nil
+  def dbFieldClass = classOf[List[ENUM#Value]]
+
+  /**
+   * Get the JDBC SQL Type for this field
+   */
+  def getTargetSQLType = Types.BIGINT
+
+  protected def i_get_! = data
+  
+  protected def real_i_set_!(value: List[ENUM#Value]): List[ENUM#Value] = {
+    if (value != data) {
+      data = value
+      dirty_?(true)
+    }
+    data
+  }
+  override def readPermission_? = true
+  override def writePermission_? = true
+  
+  def real_convertToJDBCFriendly(value: List[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
+  
+  private def toLong: Long = {
+    i_get_!.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
+  }
+  
+  def fromLong(in: Long): List[ENUM#Value] = enum.Set64(in).toList
+  
+  def getJDBCFriendly(field: String) = new java.lang.Long(toLong)
+  override def getJDBCFriendly = new java.lang.Long(toLong)
+
+
+  def ::=(in : Any): List[ENUM#Value] = {
+    in match {
+      case n: Long => this := fromLong(n)
+      case n: Number => this := fromLong(n.longValue)
+      case (n: Number) :: _ => this := fromLong(n.longValue)
+      case Some(n: Number) => this := fromLong(n.longValue)
+      case None => this := Nil
+      case (s: String) :: _ => this := fromLong(Helpers.toLong(s))
+      case vs: List[ENUM#Value] => this := vs
+      case null => this := Nil
+      case s: String => this := fromLong(Helpers.toLong(s))
+      case o => this := fromLong(Helpers.toLong(o))
+    }
+  }
+  
+  protected def i_obscure_!(in : List[ENUM#Value]) = Nil
+  
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
+    data match {
+      case null => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = Nil
+      case n : Number => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = fromLong(if (v == null) 0L else v.asInstanceOf[Number].longValue)
+      case _ => (inst : T, v : AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = fromLong(Helpers.toLong(v.toString))
+    }
+  
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
+    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(v)}}
+  }
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(Helpers.toLong(v.toString))}}
+  }
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
+    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(if (v == null) 0L else v.getTime)}}
+  }
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
+    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(if (v && !isNull) 1L else 0L)}}
+  }
+  
+  /**
+   * Given the driver type, return the string required to create the column in the database
+   */
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+    case _ => "BIGINT"
+  })  
+  
+    /**
+   * Create an input field for the item
+   */
+  override def toForm : NodeSeq = 
+     S.checkbox[ENUM#Value](enum.elements.toList, get,this(_)).toForm
 }
 
 

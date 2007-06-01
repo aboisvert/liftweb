@@ -862,6 +862,25 @@ object Helpers {
   implicit def toSuperList[T](in: List[T]): SuperList[T] = new SuperList(in)
   
   def listIf[T](expr: Boolean)(f: => T): List[T] = if(expr) List(f) else Nil
+  
+  abstract class MyOption[+A] {
+    def |[B >: A](default: => B): B
+  }
+  case class MySome[+A](x: A) extends MyOption[A] {
+    def |[B >: A](default: => B): B  = x
+  }
+  case class MyNone extends MyOption[Nothing] {
+    def |[B ](default: => B): B  = default
+  }
+
+  class Boolean2(b: Boolean) {
+    def ? [A](first: A): MyOption[A] = {
+        if (b) MySome(first)
+        else MyNone
+    }
+  }
+
+ implicit def boolean2(b: Boolean) = new Boolean2(b)  
 }
 
 class SuperList[T](val what: List[T]) {

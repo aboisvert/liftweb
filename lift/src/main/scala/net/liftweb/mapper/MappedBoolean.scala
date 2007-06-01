@@ -9,7 +9,8 @@ package net.liftweb.mapper
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-import java.lang.{Integer}
+// import java.lang.{Integer}
+import net.liftweb.http.S
 import java.util.Date
 
 class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T] {
@@ -81,5 +82,12 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
     case MySqlDriver => "BOOLEAN"
     case DerbyDriver => "SMALLINT"
   })
+  
+
+  
+    /**
+   * Create an input field for the item
+   */
+  override def toForm = S.checkbox(get,this(_))
 }
 

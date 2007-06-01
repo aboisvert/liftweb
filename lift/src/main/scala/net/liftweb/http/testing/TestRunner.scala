@@ -3,13 +3,13 @@ package net.liftweb.http.testing;
 
 import net.liftweb.util.Helpers._
 import net.liftweb.util.Helpers
-import scala.collection.mutable.ArrayBuffer
+import scala.collection.mutable.ListBuffer
 
 class TestRunner(clearDB: () => Any, setupDB: () => Any) {
   private var _assertCnt = 0
   var beforeAssertListeners: List[String => Any] = Nil
   var afterAssertListeners: List[(String, Boolean) => Any] = Nil
-  private var log = new ArrayBuffer[Tracker]()
+  private var log = new ListBuffer[Tracker]()
  
   implicit def fToItem(f: () => Any): Item = Item(f)
   
@@ -48,7 +48,7 @@ class TestRunner(clearDB: () => Any, setupDB: () => Any) {
       clearDB()
       setupDB()
       _assertCnt = 0
-      log = new ArrayBuffer()
+      log = new ListBuffer()
       what.foreach{
         testItem =>
         log += Tracker(testItem.name, false, true, true, None, Nil)
