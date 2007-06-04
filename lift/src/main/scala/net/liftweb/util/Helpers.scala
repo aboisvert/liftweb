@@ -25,6 +25,8 @@ import scala.actors.Actor._
 import java.util.regex._
 import java.util.TimeZone
 import java.lang.Character._
+import javax.crypto._
+import javax.crypto.spec._
 
 /**
  *  A bunch of helper functions
@@ -438,6 +440,9 @@ object Helpers {
   
   def shouldShow(percent: Int): Boolean = Math.abs(random.nextInt) % 100 < percent
   def shouldShow(percent: Double): Boolean = random.nextDouble <= percent
+  
+  def makeBlowfishKey: Array[Byte] = KeyGenerator.getInstance("blowfish").generateKey.getEncoded
+  def blowfishKeyFromBytes(key: Array[Byte]): SecretKey = new SecretKeySpec(key, "blowfish")
   
   def randomString(size: Int): String = {
     def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {

@@ -198,7 +198,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     value
   }
   
-  protected def setFilter: List[(T) => T] = Nil
+  protected def setFilter: List[T => T] = Nil
   
   protected final def i_set_!(value : T) : T = {
     real_i_set_!(runFilters(value, setFilter))
