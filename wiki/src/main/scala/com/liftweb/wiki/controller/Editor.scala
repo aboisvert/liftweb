@@ -23,10 +23,6 @@ class Editor extends ControllerActor {
 
   def render = paragraph match {
     case Some(paragraph) =>
-      val lockDummy = this.uniqueId + "_id"
-      S.addFunctionMap(lockDummy, &lock)
-      val unlockDummy = this.uniqueId + "_id"
-      S.addFunctionMap(unlockDummy, &unlock)
       val text = this.uniqueId + "_id"
       S.addFunctionMap(text, &save)
 
@@ -39,25 +35,20 @@ class Editor extends ControllerActor {
 
       <li>
         <h3>{ paragraph.title }, { hasLock.toString }, { isLocked.toString }</h3>
-        <lift:form method="POST" action=".">
-          {
-            if (hasLock) <textarea name={ text } class="owned">{ paragraph.text }</textarea>
-            else if (isLocked) <textarea name={ text } class="locked">{ paragraph.text }</textarea>
-            else <textarea name={ text } class="unlocked">{ paragraph.text }</textarea> 
-          }
-          {
-            if (hasLock) <input type="submit" value="save" />
-            else "foo"
-          }
-        </lift:form>
-        { if (!isLocked || hasLock) {
-            <lift:form method="POST" action=".">
-              <input name={ if (hasLock) unlockDummy else lockDummy } value="" type="hidden"/>
-              <input type="submit" value={ if (hasLock) "unlock" else "lock" } />
+        {
+          if (hasLock) {
+            <lift:form action=".">
+              <textarea name={ text } class="owned">{ paragraph.text }</textarea>
+              <button type="submit" value="save" />
             </lift:form>
-          } else {
-            "bar"
           }
+          else if (isLocked) <textarea name={ text } class="locked">{ paragraph.text }</textarea>
+          else <textarea name={ text } class="unlocked">{ paragraph.text }</textarea> 
+        }
+        {
+          if (hasLock) S.a(&unlock, Text("unlock"))
+          else if (!isLocked) S.a(&lock, Text("lock"))
+          else "bar"
         }
       </li>
 
@@ -73,7 +64,7 @@ class Editor extends ControllerActor {
     ret orElse super.lowPriority
   }
 
-  private def lock(in: List[String]) = {
+  private def lock = {
     Console.println(this + " try to lock")
     paragraph match {
       case Some(paragraph) =>
@@ -83,7 +74,7 @@ class Editor extends ControllerActor {
     true
   }
 
-  private def unlock(in: List[String]) = {
+  private def unlock = {
     paragraph match {
       case Some(paragraph) =>
         manager !? Unlock(paragraph, this)
