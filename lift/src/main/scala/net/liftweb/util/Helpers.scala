@@ -225,6 +225,7 @@ object Helpers {
   def enumToStringList(enum : java.util.Enumeration) : List[String] =
     if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
   
+  
   def head[T](l : List[T], deft: => T) = l match {
       case Nil => deft
       case x :: xs => x
@@ -443,6 +444,20 @@ object Helpers {
   
   def makeBlowfishKey: Array[Byte] = KeyGenerator.getInstance("blowfish").generateKey.getEncoded
   def blowfishKeyFromBytes(key: Array[Byte]): SecretKey = new SecretKeySpec(key, "blowfish")
+  
+  def decryptStream(in: InputStream, key: Array[Byte]): InputStream = decryptStream(in, blowfishKeyFromBytes(key))
+  def decryptStream(in: InputStream, key: SecretKey): InputStream = {
+      val cipher = Cipher.getInstance("blowfish")
+      cipher.init(Cipher.DECRYPT_MODE, key)
+      new CipherInputStream(in, cipher)
+  }
+  
+  def encryptStream(in: InputStream, key: Array[Byte]): InputStream= encryptStream(in, blowfishKeyFromBytes(key))
+  def encryptStream(in: InputStream, key: SecretKey): InputStream = {
+    val cipher = Cipher.getInstance("blowfish")
+    cipher.init(Cipher.ENCRYPT_MODE, key)
+    new CipherInputStream(in, cipher)
+  }
   
   def randomString(size: Int): String = {
     def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
@@ -737,6 +752,18 @@ object Helpers {
     readOnce
     
     bos.toByteArray
+  }
+  
+  def notEq(a: Array[Byte], b: Array[Byte]) = !isEq(a,b)
+  def isEq(a: Array[Byte], b: Array[Byte]) = {
+    def eq(a: Array[Byte], b: Array[Byte], pos: Int, len: Int): Boolean = {
+      if (pos == len) true
+      else if (a(pos) != b(pos)) false
+      else eq(a,b, pos + 1, len)
+    }
+    
+    val len = a.length
+    len == b.length && eq(a,b,0,len)
   }
   
   def readWholeThing(in: Reader): String = {

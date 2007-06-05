@@ -67,5 +67,14 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(processString("Hello <%= mrdog %> how are you", Map("mrdog" -> "meow")).indexOf("meow") > 4)
 
     Log.warn("Hello world")
+    
+    val key = makeBlowfishKey
+    val theMsg = (1 to 100000).mkString("(", ",", ")")
+    val msgBytes = theMsg.getBytes
+    val enc = readWholeStream(encryptStream(new java.io.ByteArrayInputStream(msgBytes), key))
+    assert(notEq(enc, msgBytes), "The encypted stream is different, but the len is the same "+enc.length+" "+msgBytes.length+" str "+(new String(enc)))
+    val dec = new String(readWholeStream(decryptStream(new java.io.ByteArrayInputStream(enc), key)))
+    assert (dec == theMsg, "We encrypted and decrypted it")
+    
   }
 }
