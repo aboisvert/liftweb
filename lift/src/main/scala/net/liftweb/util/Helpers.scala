@@ -701,7 +701,7 @@ object Helpers {
 
               Transport.send(message);
             } catch {
-              case e: Exception => e.printStackTrace // FIXME logging
+              case e: Exception => Log.error("Couldn't send mail", e)
             }
           
           case _ => Console.println("Here... sorry")

@@ -10,15 +10,38 @@ import java.net.InetAddress
 import java.util.Properties
 import Helpers._
 import org.apache.log4j._
+import org.apache.log4j.xml._
+
 /**
  * A thin wrapper around log4j
  */
 object Log {
+  val defaultProps = 
+    """<?xml version="1.0" encoding="UTF-8" ?>
+    <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+  <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+  <appender name="appender" class="org.apache.log4j.ConsoleAppender">
+  <layout class="org.apache.log4j.SimpleLayout"/>
+  </appender>
+  <root>
+  <priority value ="INFO"/>
+  <appender-ref ref="appender"/>
+  </root>
+  </log4j:configuration>
+"""
+  
   val log4jUrl = first(Props.toTry)(f => tryo(getClass.getResource(f()+"log4j.props")) match {case None => None; case Some(s) if s eq null => None; case s => s})
+  
   log4jUrl.foreach(url => PropertyConfigurator.configure(url))
+  if (!log4jUrl.isDefined) {
+    val domConf = new DOMConfigurator
+    val defPropBytes = defaultProps.toString.getBytes("UTF-8")
+    val is = new java.io.ByteArrayInputStream(defPropBytes)
+    domConf.doConfigure(is, LogManager.getLoggerRepository())
+  }
   def logger(clz: Class): LiftLogger = new LiftLogger(Logger.getLogger(clz))
   def logger(name: String): LiftLogger = new LiftLogger(Logger.getLogger(name))
-  val rootLogger: LiftLogger = new LiftLogger(Logger.getRootLogger)
+  val rootLogger: LiftLogger = logger("lift") // new LiftLogger(Logger.getRootLogger)
 
   def trace(msg: => AnyRef) = rootLogger.trace(msg)
    def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)

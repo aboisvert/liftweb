@@ -9,6 +9,7 @@ package net.liftweb.tests
 import scala.testing.SUnit
 import SUnit._
 
+import net.liftweb.util.Log
 import net.liftweb.util.Helpers
 import net.liftweb.util.Helpers._
 import net.liftweb.mapper._
@@ -65,5 +66,6 @@ class HelperTests extends TestCase("Helper Tests") {
     })
     assert(processString("Hello <%= mrdog %> how are you", Map("mrdog" -> "meow")).indexOf("meow") > 4)
 
+    Log.warn("Hello world")
   }
 }
