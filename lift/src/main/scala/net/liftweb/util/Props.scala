@@ -75,17 +75,17 @@ object Props {
 
   val hostName = InetAddress.getLocalHost.getHostName + "."
   
-  private val toTry: List[() => String] = List(() => "/props/" + modeName + userName + hostName + "props",
-					       () => "/props/" + modeName + userName + "props",
-					       () => "/props/" + modeName + hostName + "props",
-                                               () => "/props/"+ modeName + "default.props", 
-					       () => "/" + modeName + userName + hostName + "props",
-					       () => "/" + modeName + userName + "props",
-					       () => "/" + modeName + hostName + "props",
-                                               () => "/"+ modeName +"default.props")
+  val toTry: List[() => String] = List(() => "/props/" + modeName + userName + hostName,
+					       () => "/props/" + modeName + userName,
+					       () => "/props/" + modeName + hostName,
+                                               () => "/props/"+ modeName + "default.", 
+					       () => "/" + modeName + userName + hostName,
+					       () => "/" + modeName + userName,
+					       () => "/" + modeName + hostName,
+                                               () => "/"+ modeName +"default.")
   val props = {
     // find the first property file that is available
-    first(toTry)(f => tryo(getClass.getResourceAsStream(f())) match {case None => None; case Some(s) if s eq null => None; case s => s}).map{s => val ret = new Properties; ret.load(s); ret} match {
+    first(toTry)(f => tryo(getClass.getResourceAsStream(f()+"props")) match {case None => None; case Some(s) if s eq null => None; case s => s}).map{s => val ret = new Properties; ret.load(s); ret} match {
       case None => Map.empty[String, String] // if none, it's an empty map
       
       // if we've got a propety file, create name/value pairs and turn them into a Map

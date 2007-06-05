@@ -16,6 +16,7 @@ import net.liftweb.util.Lazy._
 object DB {
   private val threadStore = new ThreadLocal
   private val envContext = Lazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
+  val logger = Log.logger(DB.getClass)
   
   /**
     * can we get a JDBC connection from JNDI?
@@ -78,7 +79,7 @@ object DB {
   
   def releaseConnectionNamed(name : ConnectionIdentifier) {
     info.get(name) match {
-      case Some((c, 1)) => c.commit; c.releaseFunc() ; info -= name
+      case Some((c, 1)) => c.commit; c.releaseFunc() ; info -= name; logger.trace("Released connection "+name)
       case Some((c, n)) => info(name) = (c, n - 1)
       case _ =>
     }
@@ -95,6 +96,7 @@ object DB {
   
   def exec[T](db : SuperConnection, query : String)(f : (ResultSet) => T) : T = {
     statement(db) {st => 
+      logger.trace("About to execute query: "+query)
       f(st.executeQuery(query))
       }
   }
@@ -109,6 +111,7 @@ object DB {
   }
   
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
+    logger.trace("About to prepare statement "+statement)
     val st = conn.prepareStatement(statement)
       try {
 	f(st)
@@ -118,6 +121,7 @@ object DB {
   }
   
   def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
+    logger.trace("About to prepare statement: "+statement+" with keys "+keys)
         val st = conn.prepareStatement(statement, keys)
       try {
         f(st)
@@ -126,12 +130,6 @@ object DB {
       }
   }
   
-  /*
-  def use[T](f : (SuperConnection) => T) : T = {
-    this.use("")(f)
-  }
-  */
-    
   def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
     val conn = getConnection(name)
     try {
@@ -153,6 +151,7 @@ object SuperConnection {
 trait ConnectionIdentifier {
   def jndiName: String
 }
+
 case object DefaultConnectionIdentifier extends ConnectionIdentifier {
   var jndiName = "lift"
 }
