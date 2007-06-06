@@ -20,7 +20,7 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private object Never
   private var _name = ""
-    
+  private var attributes: Map[String, String] = Map.empty
   val uniqueId = "Id"+randomString(20)
   
   // private var globalState: Map[String, Any] = _
@@ -28,10 +28,11 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   private var owner_i = new HashSet[Page]
   private var defaultXml_i: NodeSeq = _
   private var localFunctionMap: Map[String, AFuncHolder] = Map.empty
-  
+  private var theSession: Session = _
   private var askingWho: Option[ControllerActor] = None
   private var whosAsking: Option[Actor] = None
   private var answerWith: Option[(Any) => boolean] = None
+  private var sessionVars: Map[String, String] = Map.empty
   
   def name = _name
   def act = {
@@ -57,7 +58,10 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     case SetName(theName) =>
     this._name = theName
     
-    case PerformSetupController(owner, defaultXml) =>
+    case PerformSetupController(owner, defaultXml, attributes, session, sessionVars) =>
+      this.theSession = session
+      this.sessionVars = sessionVars
+      this.attributes = attributes
       owner.foreach{o => owner_i += o}
       defaultXml_i = defaultXml
       localSetup
@@ -66,13 +70,14 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       if (!askingWho.isEmpty) {
       	askingWho.get forward r
       } else {
-          S.init(request) {
+          S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
 	    reply(buildRendered(render))
           }
       }
     
-    case ActionMessage(name, value, _, replyTo, request) =>
-      S.init(request) {
+    case ActionMessage(name, value, _, replyTo, request, sv) =>
+    this.sessionVars = sv
+      S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false) ) {
 	localFunctionMap.get(name) match {
           case Some(f) => {
 
@@ -80,7 +85,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
           }
           case _ => None
 	}
-        reply("gotit")
+        reply(sessionVars)
       }
 
     case AskQuestion(what, who) =>
@@ -88,7 +93,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       whosAsking = Some(who)
     
     case AnswerQuestion(what, request) =>
-      S.init(request) {
+      S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
         askingWho.foreach {
           askingWho =>
         reply("A null message to release the actor from its send and await reply... do not delete this message")
@@ -108,7 +113,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   def compute: Map[String, Any] = Map.empty[String, Any]
   
   def reRender = {
-    S.initIfUninitted {
+    S.initIfUninitted(new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
       val rendered: AnswerRender = buildRendered(render)
       owner.foreach(_ ! rendered)
     }
@@ -131,14 +136,14 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   
   private def buildRendered(in: NodeSeq): AnswerRender = {
     localFunctionMap = localFunctionMap ++ S.getFunctionMap
-    val newMap = TreeMap.empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null))}
+    val newMap = TreeMap.empty[String, ActionMessage] ++ localFunctionMap.keys.map{key => (key, ActionMessage(key, Nil, self, None, null, Map.empty))}
     AnswerRender(in, newMap, this)
   }
   
   def ask(who: ControllerActor, what: Any)(answerWith: (Any) => boolean) {
     who.start
     who.link(self)
-    who ! PerformSetupController(owner.toList, Text(""))
+    who ! PerformSetupController(owner.toList, Text(""), attributes, theSession, sessionVars)
     askingWho = Some(who)
     this.answerWith = Some(answerWith)
     who ! AskQuestion(what, self)
@@ -154,12 +159,13 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 sealed abstract class ControllerMessage
 
 case class AskRender(request: RequestState) extends ControllerMessage
-case class ActionMessage(name: String, value: List[String], target: Actor, sender: Option[Page], request: RequestState) extends ControllerMessage
+case class ActionMessage(name: String, value: List[String], target: Actor, sender: Option[Page], request: RequestState, sessionVars: Map[String, String]) extends ControllerMessage
 case class AnswerRender(xml : NodeSeq, messages: Map[String, ActionMessage], by: ControllerActor ) extends ControllerMessage
-case class PerformSetupController(owner: List[Page], defaultXml: NodeSeq) extends ControllerMessage
+case class PerformSetupController(owner: List[Page], defaultXml: NodeSeq, attributes: Map[String, String], session: Session,
+    sessionVars: Map[String, String]) extends ControllerMessage
 case class XmlAndMap(xml: NodeSeq, map: Map[String, Function1[List[String], boolean]]) extends ControllerMessage
 case class AskQuestion(what: Any, who: Actor) extends ControllerMessage
-case class AnswerQuestion(what: Any, session: RequestState) extends ControllerMessage
+case class AnswerQuestion(what: Any, request: RequestState) extends ControllerMessage
 case class StartedUpdate(id: String) extends ControllerMessage
 case class FinishedUpdate(id: String) extends ControllerMessage
 case class SetName(name: String) extends ControllerMessage

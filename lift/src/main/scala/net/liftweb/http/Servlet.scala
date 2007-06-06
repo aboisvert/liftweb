@@ -171,7 +171,9 @@ class Servlet extends HttpServlet {
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
       } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
-	S.init(session) {
+        val sessionActor = getActor(request.getSession)
+         
+	S.init(session, new VarStateHolder(sessionActor, sessionActor.currentVars, None, false)) {
 	  val f = Servlet.dispatchTable(toMatch)
 	  f(request) match {
             case None => session.createNotFound.toResponse
@@ -180,7 +182,7 @@ class Servlet extends HttpServlet {
 	}
       } else {
 	
-	val sessionActor = getActor(request.getSession)
+        val sessionActor = getActor(request.getSession)
 	
 	if (false) {
 	  val he = request.getHeaderNames

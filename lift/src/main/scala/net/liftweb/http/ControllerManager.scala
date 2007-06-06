@@ -6,7 +6,7 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.actors.{Actor}
+import scala.actors.{Actor, Exit}
 import Actor._
 import scala.collection.mutable.HashMap
 import scala.xml.{Node, NodeSeq, Comment}
@@ -27,7 +27,7 @@ class ControllerManager extends Actor {
     self.exit('Shutdown)
     loop
     
-    case ('EXIT, controller: Actor, reason: Exception) => 
+    case Exit( controller, reason: Exception) => 
       reason.printStackTrace
       try {
         controller.start

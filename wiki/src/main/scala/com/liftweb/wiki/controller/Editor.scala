@@ -59,7 +59,7 @@ class Editor extends ControllerActor {
   override def lowPriority: PartialFunction[Any, Unit] = {
     val ret: PartialFunction[Any, Unit] = {
       case Locked() | Unlocked() => reRender
-      case ('EXIT, _) => terminate
+      case Exit(_,_) => terminate
     }
     ret orElse super.lowPriority
   }

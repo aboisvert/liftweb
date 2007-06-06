@@ -8,7 +8,7 @@ package net.liftweb.http
 \*                                                 */
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import scala.collection.mutable.{Map, HashMap, ArrayBuffer}
+import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal}
@@ -35,7 +35,8 @@ object S {
     ret           
   }
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
-  private val _reqVar = new ThreadGlobal[HashMap[String, String]]
+  private val _attrs = new ThreadGlobal[HashMap[String, String]]
+  private val _stateInfo = new ThreadGlobal[VarStateHolder]
   
   /**
    * Get the current HttpServletSession
@@ -71,17 +72,18 @@ object S {
   }
   
   /**
-   * Initialize the current "State" session
+   * Initialize the current request session
    */
-  def init[B](request : RequestState)(f : => B) : B = {
+  def init[B](request : RequestState, vsh: VarStateHolder)(f : => B) : B = {
     _oldNotice.doWith(Nil) {
-      _init(request)(f)
+      _init(request, vsh)(f)
     }
 
   }
   
-  private def _init[B](request: RequestState)(f : => B): B = {
-    _reqVar.doWith(new HashMap) {
+  private def _init[B](request: RequestState, vsh: VarStateHolder)(f : => B): B = {
+    _stateInfo.doWith(vsh) {
+    _attrs.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
       inS.doWith(true) {
           initNotice {
@@ -94,30 +96,50 @@ object S {
         }
       }
     }
+    }
   }
   
-  object vars {
-    def apply(what: String): Option[String] = S._reqVar.value.get(what)
-    def update(what: String, value: String) = S._reqVar.value(what) = value
+  object state {
+    def apply(name: String): Option[String] = _stateInfo.value match {
+      case null => None
+      case v => v(name)
+    }
+    def update(name: String, value: String) {_stateInfo.value match
+      {
+      case null => 
+      case v => v(name) = value
+      }
+    }
+    def -=(name: String) {
+      _stateInfo.value match {
+        case null =>
+        case v => v -= name
+      }
+    }
+  }
+  
+  object attr {
+    def apply(what: String): Option[String] = S._attrs.value.get(what)
+    def update(what: String, value: String) = S._attrs.value(what) = value
   }
   
   def setVars[T](attr: MetaData)(f: => T): T = {
-    val old = _reqVar.value
+    val old = _attrs.value
     val ht: HashMap[String, String] = new HashMap
     old.elements.foreach(v => ht(v._1) = v._2)
     attr.elements.foreach(e => ht(e.key) = e.value.text)
-    _reqVar.doWith(ht)(f)
+    _attrs.doWith(ht)(f)
   }
   
-  def initIfUninitted[B](f: => B) : B = {
+  def initIfUninitted[B](vsh: VarStateHolder)(f: => B) : B = {
     if (inS.value) f
-    else init(RequestState.nil)(f)
+    else init(RequestState.nil, vsh)(f)
   }
   
-  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)])(f : => B) : B = {
+  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], vsh: VarStateHolder)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
       this._servletRequest.doWith(servletRequest) {
-        _init(request)(f)
+        _init(request, vsh)(f)
       }
     }
   }
@@ -136,7 +158,7 @@ object S {
   }
   
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
-  def invokedAs: String = _reqVar.value.get("type") getOrElse ""
+  def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
   def set(name: String, value: String) {
     if (_servletRequest.value ne null) {
@@ -152,7 +174,7 @@ object S {
   
   def servletRequest = _servletRequest.value
   
-  def getFunctionMap: Map[String, AFuncHolder] = {
+  def getFunctionMap: scala.collection.Map[String, AFuncHolder] = {
     functionMap.value match {
       case null => Map.empty
       case s => s
@@ -284,7 +306,7 @@ object S {
       def map[A](f: ChoiceItem[T] => A) = items.map(f)
       def flatMap[A](f: ChoiceItem[T] => Iterable[A]) = items.flatMap(f)
       def filter(f: ChoiceItem[T] => Boolean) = items.filter(f)
-      def toForm: NodeSeq = flatMap(c => <span>{c.key.toString}&nbsp;{c.xhtml}<br /></span>)
+      def toForm: NodeSeq = flatMap(c => <span>{c.xhtml}&nbsp;{c.key.toString}<br /></span>)
     }
   
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
@@ -381,4 +403,25 @@ object S {
 
 object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
+}
+
+class VarStateHolder(val session: Session, initVars: Map[String, String],setter: Option[Map[String, String] => Any], val local: Boolean) {
+  //def this(s: Session) = this(s, s.currentVars, false)
+  
+  private var vars = initVars
+  
+  def apply(name: String): Option[String] = vars.get(name)
+  def -=(name: String) {
+    vars = vars - name
+    setter.foreach(_(vars))
+    if (local) session.stateVar - name
+    else session ! UpdateState(name, None)
+  }
+  def update(name: String, value: String) {
+    vars = vars + name -> value
+    setter.foreach(_(vars))
+    if (local) session.stateVar(name) = value
+    else session ! UpdateState(name, Some(value))
+  }
+  
 }

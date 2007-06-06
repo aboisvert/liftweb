@@ -9,7 +9,6 @@ package net.liftweb.http
 import scala.actors.Actor
 import scala.actors.Actor._
 import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
-import scala.collection.Map
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.collection.immutable.{TreeMap}
 import scala.xml.{NodeSeq, Unparsed, Text}
@@ -21,6 +20,7 @@ import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, Pref
 import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 import net.liftweb.http.S._
+import scala.collection.immutable.Map
 
 class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
@@ -28,6 +28,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   private var running_? = false
   private var messageCallback: HashMap[String, AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
+  private var _state: Map[String, String] = Map.empty
   private val theControllerMgr = {
     val ret = new ControllerManager
     ret.start
@@ -85,16 +86,28 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
       processRequest(request, httpRequest, timeout, whenDone)
     loop
     
-    case AnswerRenderPage(state, thePage, sender) =>
-      val updatedPage = fixResponse(thePage, state)
+    case AnswerRenderPage(request, thePage, sender) =>
+      val updatedPage = fixResponse(thePage, request)
       sender(Some(updatedPage))
     loop
     
     case SendEmptyTo(sender) =>
       sender(XhtmlResponse(Unparsed(""),None, Map("Content-Type" -> "text/javascript"), 200))
     loop
+    
+    case UpdateState(name, None) => stateVar - name; loop
+
+    case UpdateState(name, Some(value)) => stateVar(name) = value ; loop
+    
+    case CurrentVars => reply(_state); loop
 
     case unknown => Console.println("Session Got a message "+unknown); loop
+  }
+  
+  object stateVar {
+    def apply(name: String): Option[String] = _state.get(name)
+    def -(name: String): Unit = _state = _state - name
+    def update(name: String, value: String): Unit = _state = _state + name -> value
   }
   
   private def processParameters(r: RequestState) {
@@ -105,28 +118,28 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  private def processRequest(state: RequestState,httpRequest: HttpServletRequest, timeout: long,
+  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: long,
       whenDone: AnyRef => Any) = {
-    S.init(state, httpRequest, notices) {
+    S.init(request, httpRequest, notices, new VarStateHolder(this, this._state, None, true)) {
       try {
-        state.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
+        request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
-        processParameters(state)
-        findVisibleTemplate(state.path, state).map(xml => processSurroundAndInclude(xml, state)) match {
-          case None => whenDone(state.createNotFound)
+        processParameters(request)
+        findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(xml, request)) match {
+          case None => whenDone(request.createNotFound)
           case Some(xml: NodeSeq) => {
             S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 
             if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {
-              if (state.ajax_?) {
+              if (request.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(whenDone), timeout - 250) 
               } else {
-                notices = Nil; whenDone(XhtmlResponse(Group(state.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200))
+                notices = Nil; whenDone(XhtmlResponse(Group(request.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200))
               }
             } else {
-              val page = pages.get(state.uri) getOrElse {val p = createPage; pages(state.uri) = p; p }
-              page ! AskRenderPage(state, xml, whenDone, theControllerMgr, timeout)
-              if (!state.ajax_?) notices = Nil
+              val page = pages.get(request.uri) getOrElse {val p = createPage; pages(request.uri) = p; p }
+              page ! AskRenderPage(request, xml, whenDone, theControllerMgr, timeout, _state)
+              if (!request.ajax_?) notices = Nil
             }
           }
         }
@@ -135,18 +148,18 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         val rd = ite.getCause.asInstanceOf[RedirectException]
         notices = S.getNotices
         
-        whenDone(XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
+        whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
                  ResponseInfo.xhtmlTransitional,
-                 ListMap("Location" -> (state.contextPath+rd.to)),
+                 ListMap("Location" -> (request.contextPath+rd.to)),
                  302))
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            whenDone(XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
-                     ListMap("Location" -> (state.contextPath+rd.to)),
+            whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
+                     ListMap("Location" -> (request.contextPath+rd.to)),
                      302))
           }
-	case e  => whenDone(state.showException(e))
+	case e  => whenDone(request.showException(e))
       }
     }
   }
@@ -155,7 +168,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    * Create a page based on the uri
    */
   private def createPage: Page = {
-        val ret = new Page // FIXME we really want a Page factory here so we can build other Page types
+        val ret = new Page(this) // FIXME we really want a Page factory here so we can build other Page types
         ret.link(this)
         ret.start
 	ret
@@ -168,6 +181,11 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
       case _ => List("index")
     }
     findAnyTemplate(splits, session)
+  }
+  
+  def currentVars: Map[String, String] = (this !? (500L, CurrentVars)) match {
+    case Some(s: Map[String, String]) => s
+    case _ => Map.empty
   }
   
   private def findTemplate(name: String, session : RequestState) : Option[NodeSeq] = {
@@ -230,9 +248,9 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  def fixResponse(resp: XhtmlResponse, state: RequestState): XhtmlResponse = {
-    val newHeaders = fixHeaders(resp.headers, state)
-    val (newXml, theType) = if (couldBeHtml(resp.headers) && state.contextPath.length > 0) (state.fixHtml(resp.out), ResponseInfo.xhtmlTransitional)
+  def fixResponse(resp: XhtmlResponse, request: RequestState): XhtmlResponse = {
+    val newHeaders = fixHeaders(resp.headers, request)
+    val (newXml, theType) = if (couldBeHtml(resp.headers) && request.contextPath.length > 0) (request.fixHtml(resp.out), ResponseInfo.xhtmlTransitional)
        else (resp.out, None)
     XhtmlResponse(resp.out, theType, newHeaders, resp.code)
   }
@@ -240,12 +258,12 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   /**
    * Update any "Location" headers to add the Context path
    */
-  def fixHeaders(h: Map[String, String], state: RequestState) = {
+  def fixHeaders(h: Map[String, String], request: RequestState) = {
     h match {
       case null => Map.empty[String, String]
       case _ => Map.empty[String, String] ++ h.map{p =>
         p match {
-          case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+state.contextPath+v)
+          case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+request.contextPath+v)
             case _ => p
         }
 						 }
@@ -374,14 +392,15 @@ abstract class SessionMessage
  * Sent from a session to a Page to tell the page to render itself and includes the sender that
  * the rendered response should be sent to
  */
-case class AskRenderPage(state: RequestState, xml: NodeSeq, sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: long) extends SessionMessage
+case class AskRenderPage(request: RequestState, xml: NodeSeq, sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: Long,
+    state: Map[String, String]) extends SessionMessage
 
 /**
  * The response from a page saying that it's been rendered
  */
-case class AnswerRenderPage(state: RequestState, thePage: XhtmlResponse, sender: AnyRef => Any) extends SessionMessage
-case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: long,sendBack: AnyRef => Any)
-case class SendEmptyTo(who:AnyRef => Any) extends SessionMessage
-
-
+case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse, sender: AnyRef => Any) extends SessionMessage
+case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnyRef => Any)
+case class SendEmptyTo(who: AnyRef => Any) extends SessionMessage
+case class UpdateState(name: String, value: Option[String]) extends SessionMessage
+case object CurrentVars extends SessionMessage
 

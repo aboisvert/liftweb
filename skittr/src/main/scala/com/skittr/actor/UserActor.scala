@@ -175,7 +175,7 @@ class UserActor extends Actor {
           timelineViewers.foreach(_ ! Timeline(localTimeline)) // send the updated timeline to the timeline viewers
 
         // If someone is exiting, remove them from our lists
-        case ('EXIT, who : Actor, why) =>
+        case Exit(who, why) =>
           messageViewers = messageViewers.remove(_ == who)
           timelineViewers = timelineViewers.remove(_ == who)
           Console.println(why)

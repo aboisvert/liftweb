@@ -8,16 +8,17 @@ package net.liftweb.http
 
 import scala.actors._
 import scala.actors.Actor._
-import scala.xml.{NodeSeq, Elem, Node, Comment, Unparsed, MetaData, UnprefixedAttribute, Text, Group}
+import scala.xml._
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.ActorPing
 
-class Page extends Actor {
+class Page(val theSession: Session) extends Actor {
   private var updates = new HashMap[String, AnswerRender]
   private var messageCallback: Map[String, ActionMessage] = TreeMap.empty[String, ActionMessage]
   private var pendingAjax: List[AjaxRerender] = Nil
+  private var sessionVars: Map[String, String] = Map.empty
   
   def act = {
     this.trapExit = true
@@ -28,8 +29,8 @@ class Page extends Actor {
   def dispatcher: PartialFunction[Any, Unit] = {
     case "shutdown" => self.exit("shutdown")
     
-    case AskRenderPage(state, pageXml, sender, controllerMgr, timeout) =>
-      performRender(state, pageXml, sender, controllerMgr, timeout)
+    case AskRenderPage(state, pageXml, sender, controllerMgr, timeout, varState) =>
+      performRender(state, pageXml, sender, controllerMgr, timeout, varState)
     
     case ar: AnswerRender => updateRendered(ar)
     
@@ -64,7 +65,9 @@ class Page extends Actor {
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
-      sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: long) {
+      sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: Long,
+      varState: Map[String, String]) {
+      sessionVars = varState
       processParameters(state)
       
       if (state.ajax_? && updates.isEmpty) {
@@ -98,7 +101,7 @@ class Page extends Actor {
     xml.flatMap {
       v =>
         v match {
-          case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request)}
+          case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request, attr)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processControllers(v.child, ctlMgr, request) : _*)}
           case _ => {v}
         }
@@ -109,7 +112,8 @@ class Page extends Actor {
 				theType: Option[Seq[Node]], 
 				name: Option[Seq[Node]], 
 				factory: Option[Seq[Node]], kids: NodeSeq,
-				request: RequestState): NodeSeq = 
+				request: RequestState,
+                                attr: MetaData): NodeSeq = 
     {
     try {
       val (myType, myName, myFactory) = (theType.map(_.text),name.map(_.text), factory.map(_.text))
@@ -119,7 +123,9 @@ class Page extends Actor {
 	}).map{
 	  controller => 
 	    // set up the controller
-	    controller ! PerformSetupController(List(this), kids)
+	    controller ! PerformSetupController(List(this), kids,  
+                Map.empty ++ attr.elements.map({case e: UnprefixedAttribute => (e.key, e.value.text)
+                  case e: PrefixedAttribute => (e.pre+":"+e.key, e.value.text)}), theSession, sessionVars)
 	  <span id={controller.uniqueId}>{
 	    (controller !? (600L, AskRender(request))) match {
 	      case Some(view: AnswerRender) => updateCallbacks(view, request) 
@@ -169,7 +175,10 @@ class Page extends Actor {
     r.paramNames.filter{n => messageCallback.contains(n)}.foreach{
       n => 
     	val v = messageCallback(n)
-      v.target !? (100L, ActionMessage(v.name, r.params(n), self, Some(this), r))
+      (v.target !? (100L, ActionMessage(v.name, r.params(n), self, Some(this), r, sessionVars))) match {
+              case Some(sv: Map[String, String]) => sessionVars = sv
+              case _ =>
+            }
     }
     // messageCallback = TreeMap.Empty[String, ActionMessage]
   }

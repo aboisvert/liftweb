@@ -170,7 +170,7 @@ object Helpers {
   def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Option[NodeSeq] = {
     def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
       case Nil => ret
-      case vals :: rest => build(rest, ret.concat(bind(vals, xml)))
+      case vals :: rest => build(rest, ret ++ bind(vals, xml))
     }
     if (listvals.length > 0) Some(build(listvals.drop(1), bind(listvals.head, xml)))
     else None
