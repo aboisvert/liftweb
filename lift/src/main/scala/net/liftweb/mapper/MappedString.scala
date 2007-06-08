@@ -19,6 +19,8 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedFi
   def dbFieldClass = classOf[String]
 
   
+  final def removeRegExChars(regEx: String)(in: String): String = in.replaceAll(regEx, "")
+  
   final def toLower(in: String): String = in match {
   case null => null
   case s => s.toLowerCase

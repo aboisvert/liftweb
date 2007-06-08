@@ -434,7 +434,7 @@ object Helpers {
     List.toString(Character.toLowerCase(in.charAt(0)) :: loop(List.fromString(in.substring(1))))
   }
   
-  val random = new java.security.SecureRandom
+  private val random = new java.security.SecureRandom
   
   def randomLong(mod: Long): Long = Math.abs(random.nextLong) % mod
   def randomInt(mod: Int): Int = Math.abs(random.nextInt) % mod
