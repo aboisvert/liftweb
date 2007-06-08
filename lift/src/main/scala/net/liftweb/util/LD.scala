@@ -35,7 +35,7 @@ object LD extends Application {
     * @return a Tuple containing item with the shortest edit distance and the edit distance
     */
   def apply[T](root: String, ly: List[T], f: T => String): (T, Int) =
-    ly match {
+    (ly: @unchecked) match {
       case w :: Nil => (w, this(root, f(w)))
         
         case w :: ws => 

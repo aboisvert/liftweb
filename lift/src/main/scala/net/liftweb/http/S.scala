@@ -215,18 +215,18 @@ object S {
   sealed abstract class FormElementPieces
   case class Id(name: String) extends FormElementPieces
   case class Cls(name: String) extends FormElementPieces
-  case class Val(value: String) extends FormElementPieces
+  // case class Val(value: String) extends FormElementPieces
   
   private def wrapFormElement(in: Elem, params: List[FormElementPieces]): Elem = {
     params match {
       case Nil => in
       case Id(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("id", name, Null), rs)
       case Cls(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("class", name, Null), rs)
-      case Val(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("value", name, Null), rs)
+      // case Val(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("value", name, Null), rs)
     }
   }
   
-  private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): NodeSeq =
+  private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): Elem =
     wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
  
   /**
@@ -254,14 +254,14 @@ object S {
        <a href={to+"?"+key+"=_"}>{body}</a>
      }
     
-    def text_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params)
-    def password_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params)
-    def hidden_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params)
-    def submit_*(func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params)
-  def text(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", SFuncHolder(func), params)
-  def password(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", SFuncHolder(func), params)
-  def hidden(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", SFuncHolder(func), params)
-  def submit(func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", SFuncHolder(func), params)
+    def text_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params) % new UnprefixedAttribute("value", value, Null)
+    def password_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params) % new UnprefixedAttribute("value", value, Null)
+    def hidden_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params) % new UnprefixedAttribute("value", value, Null)
+    def submit_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params) % new UnprefixedAttribute("value", value, Null)
+  def text(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def password(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def hidden(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def submit(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
   // List[value, display]
   def select(opts: List[(String, String)], deflt: Option[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
@@ -316,11 +316,11 @@ object S {
   def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any, params: FormElementPieces*): ChoiceHolder[T] = {
     val len = possible.length
     val name = f(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
-    val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
+    // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     
     ChoiceHolder(possible.zipWithIndex.map(p => 
       ChoiceItem(p._1, wrapFormElement(<input type="checkbox" name={name} value={p._2.toString}/> % checked(actual.contains(p._1)),
-          realParams) ++ (if (p._2 == 0) <input type="hidden" name={name} value="-1"/> else Nil))))
+          params.toList) ++ (if (p._2 == 0) <input type="hidden" name={name} value="-1"/> else Nil))))
   }
   
   def checkbox(value: Boolean, func: Boolean => Any, params: FormElementPieces*): NodeSeq = {
@@ -333,9 +333,9 @@ object S {
     
   def checkbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
-    val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
+    // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     <input type="hidden" name={name} value="false"/> ++
-      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), realParams)
+      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
   }
     
     /*
