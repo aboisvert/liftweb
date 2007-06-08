@@ -7,10 +7,20 @@ import java.net._
 
 trait TestFramework {
   def baseUrl: String
-  def runner: TestRunner
+  // def runner: TestRunner
   def tests: List[Item]
+  def buildRunner: TestRunner
   
-  def runTests = runner.run(tests)
+  private var assertFunc: (String, () => ReqRes) => ReqRes = _
+  def runTests = synchronized {
+    val (runner, tAssert) = buildRunner.setup[ReqRes](tests)
+    try {
+      assertFunc = tAssert
+    runner()
+    } finally {
+      assertFunc = null
+    }
+  }
   
   class TestHandler(res: ReqRes) {
     def then (f: ReqRes => ReqRes): ReqRes = f(res)
@@ -90,10 +100,10 @@ trait TestFramework {
     def xml: Elem = <xml:group />
     
     def assert(f: => Boolean, msg: String): ReqRes = {
-      TestFramework.this.runner.applyAssert(msg) {
+      TestFramework.this.assertFunc(msg,{() =>
         if (!f) throw new TestFailureError(msg)
         this
-      }
+      })
     }
     def headers: Map[String, List[String]] = Map.empty
     def values: Map[String, String] = Map.empty
