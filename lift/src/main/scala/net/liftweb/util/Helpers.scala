@@ -637,6 +637,8 @@ object Helpers {
   }
 
   
+  def md5(in: Array[Byte]) = (MessageDigest.getInstance("MD5")).digest(in)
+  
   def hash(in : String) : String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
   }

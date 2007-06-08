@@ -19,8 +19,6 @@ object User extends User with KeyedMetaMapper[long, User] {
   // define the order fields will appear in forms and output
   override def fieldOrder = id :: firstName :: lastName :: email :: 
   password :: textArea :: Nil
-  
-
 }
 
 /**

@@ -15,7 +15,7 @@
  <artifactId>lift</artifactId>
  <packaging>pom</packaging>
  <name>Lift</name>
- <version>0.2.0</version>
+ <version>0.2.1</version>
  <url>http://liftweb.net</url>
  <inceptionYear>2007</inceptionYear>
 
