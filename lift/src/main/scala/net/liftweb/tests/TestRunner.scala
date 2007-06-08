@@ -6,7 +6,7 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, Log}
 import Helpers._
 import scala.testing.SUnit
 import SUnit._
@@ -37,7 +37,7 @@ object TestRunner {
       if (false) {
       dbRunners.foreach {
         runner =>
-      Console.println("Test runner for..."+runner.name)
+      Log.info("Test runner for..."+runner.name)
       if (!addedUserTests) {
         suite.addTest(userTests)
         suite.addTest(stateMachineTests)
@@ -58,13 +58,13 @@ object TestRunner {
 
 
       for (tf <- r.failures()) {
-        Console.println(tf.toString())
-        Console.println(tf.trace)
+        Log.error(tf.toString())
+        Log.error(tf.trace)
       }
-      Console.println(r.failures.toList.length+" Failures")
+      Log.info(r.failures.toList.length+" Failures")
     }
     
-    Console.println("It took "+totalTime+" to run the tests")
+    Log.info("It took "+totalTime+" to run the tests")
   }
   
   }

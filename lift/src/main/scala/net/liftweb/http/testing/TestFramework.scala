@@ -43,7 +43,7 @@ trait TestFramework {
       val respHeaders = snurpHeaders(u.getHeaderFields)
       new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
                      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Console.println(z); new CompleteFailure(server) 
+      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
     }
     ret
   }
@@ -62,7 +62,7 @@ trait TestFramework {
       val respHeaders = snurpHeaders(u.getHeaderFields)
       new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
                      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Console.println(z); new CompleteFailure(server) 
+      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
     }
     ret
   }
@@ -80,7 +80,7 @@ trait TestFramework {
       val respHeaders = snurpHeaders(u.getHeaderFields)
       new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
                      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Console.println(z); new CompleteFailure(server) 
+      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
     }
     ret
   }

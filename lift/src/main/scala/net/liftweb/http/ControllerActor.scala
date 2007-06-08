@@ -9,7 +9,7 @@ package net.liftweb.http
 import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, Log}
 import scala.xml.{NodeSeq, Text, Elem}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.HashSet
@@ -51,7 +51,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   }
   
   def lowPriority : PartialFunction[Any, Unit] = {
-    case s => Console.println("Controller "+this+" got unexpected message "+s)
+    case s => Log.debug("Controller "+this+" got unexpected message "+s)
   }
   
   def mediumPriority : PartialFunction[Any, Unit] = {

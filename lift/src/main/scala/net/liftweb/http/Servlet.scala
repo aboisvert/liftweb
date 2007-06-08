@@ -47,7 +47,7 @@ class Servlet extends HttpServlet {
     }
     Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
     ActorPing.snapshot
-    Console.println("Destroyed servlet")
+    Log.debug("Destroyed servlet")
     super.destroy
     } catch {
       case e => e.printStackTrace
@@ -55,7 +55,7 @@ class Servlet extends HttpServlet {
   }
   
   override def init = {
-    if (Scheduler.tasks ne null) {Console.println("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
+    if (Scheduler.tasks ne null) {Log.debug("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
     ActorPing.start
     Servlet.ending = false
     super.init
@@ -151,10 +151,10 @@ class Servlet extends HttpServlet {
     Servlet.checkJetty(req) match {
       case None => doIt
       case r if r eq null => doIt
-      case r: XhtmlResponse => println("resuming a continuation"); sendResponse(r.toResponse, resp)
-      case Some(r: XhtmlResponse) => println("resuming a continuation"); sendResponse(r.toResponse, resp)
-      case r : Response => println("resuming a continuation"); sendResponse(r, resp)
-          case Some(r: Response) => println("resuming a continuation"); sendResponse(r, resp)
+      case r: XhtmlResponse => sendResponse(r.toResponse, resp)
+      case Some(r: XhtmlResponse) => sendResponse(r.toResponse, resp)
+      case r : Response => sendResponse(r, resp)
+          case Some(r: Response) => sendResponse(r, resp)
           case _ => doIt
   }
   }
@@ -184,19 +184,6 @@ class Servlet extends HttpServlet {
 	
         val sessionActor = getActor(request.getSession)
 	
-	if (false) {
-	  val he = request.getHeaderNames
-	  while (he.hasMoreElements) {
-	    val e = he.nextElement.asInstanceOf[String];
-	    val hv = request.getHeaders(e)
-	    while (hv.hasMoreElements) {
-              val v = hv.nextElement
-              Console.println(e+": "+v)
-	    }
-	  }
-          Console.println(session.params)
-	}
-	
         try {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1
@@ -207,7 +194,7 @@ class Servlet extends HttpServlet {
         def drainTheSwamp { // remove any message from the current thread's inbox
           receiveWithin(0) {
             case TIMEOUT => true
-            case s @ _ => Console.println("Drained "+s) ; false
+            case s @ _ => Log.trace("Drained "+s) ; false
           } match {
             case false => drainTheSwamp
             case _ =>
@@ -227,7 +214,7 @@ class Servlet extends HttpServlet {
           case Some(r: XhtmlResponse) => r.toResponse
           case r : Response => r
 	  case Some(r: Response) => r
-	  case n => Console.println("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
+	  case n => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
 	}
         }
         } finally {
@@ -292,7 +279,7 @@ object Servlet {
   def doContinuation(req: HttpServletRequest): Nothing = {
     try {
     val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
-    Console.println("About to suspend continuation")
+    Log.trace("About to suspend continuation")
     suspend.invoke(cont, Array(new java.lang.Long(200000L)))
     throw new Exception("Bail")
     } catch {

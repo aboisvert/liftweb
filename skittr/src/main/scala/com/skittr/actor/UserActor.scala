@@ -178,9 +178,9 @@ class UserActor extends Actor {
         case Exit(who, why) =>
           messageViewers = messageViewers.remove(_ == who)
           timelineViewers = timelineViewers.remove(_ == who)
-          Console.println(why)
+          Log.info("Exitted from actor "+who+" why "+why)
         
-        case s => Console.println("User "+userName+" Got msg "+s)
+        case s => Log.info("User "+userName+" Got msg "+s)
       }
     }
   }

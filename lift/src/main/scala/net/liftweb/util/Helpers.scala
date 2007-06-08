@@ -574,7 +574,7 @@ object Helpers {
     try {
       f
     } finally {
-      Console.println(msg+" took "+(millis - start)+" Milliseconds")
+      Log.info(msg+" took "+(millis - start)+" Milliseconds")
     }
   }
   
@@ -721,7 +721,7 @@ object Helpers {
               case e: Exception => Log.error("Couldn't send mail", e)
             }
           
-          case _ => Console.println("Here... sorry")
+          case _ => Log.warn("Email Send: Here... sorry")
 	}
       }
     }

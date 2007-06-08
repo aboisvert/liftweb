@@ -76,7 +76,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   
   def dispatcher: PartialFunction[Any, Unit] = {
     case 'shutdown =>
-      Console.println("Shutting down session")
+      Log.debug("Shutting down session")
       theControllerMgr ! 'shutdown
       pages.foreach(_._2 ! 'shutdown)
       self.exit
@@ -101,7 +101,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     
     case CurrentVars => reply(_state); loop
 
-    case unknown => Console.println("Session Got a message "+unknown); loop
+    case unknown => Log.debug("Session Got a message "+unknown); loop
   }
   
   object stateVar {

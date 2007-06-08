@@ -8,6 +8,7 @@ package net.liftweb.mapper
 
 import java.sql.Connection
 import scala.collection.mutable.HashMap
+import net.liftweb.util.Log
 
 /**
  * Given a list of MetaMappers, make sure the database has the right schema
@@ -61,7 +62,7 @@ object Schemifier {
           val ct = "DROP TABLE "+table.dbTableName
           val st = conn.createStatement
           st.execute(ct)
-          Console.println(ct)
+          Log.debug(ct)
           st.close
         } catch {
           case e: Exception => // dispose... probably just an SQL Exception
@@ -102,7 +103,7 @@ object Schemifier {
     if (!hasTable) {
       val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+")";
       val st = connection.createStatement
-      Console.println(ct)
+      Log.debug(ct)
       st.execute(ct)
       st.close
       table.mappedFields.filter{f => f.dbPrimaryKey_?}.foreach {
@@ -181,7 +182,7 @@ object Schemifier {
       
       if (!foundIt) {
         val ct = "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
-        Console.println(ct)
+        Log.debug(ct)
         val st = connection.createStatement
         st.execute(ct)
         st.close
@@ -212,7 +213,7 @@ object Schemifier {
 
       if (!foundIt) {
         val ct = "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
-          Console.println(ct)
+          Log.debug(ct)
         val st = connection.createStatement
         st.execute(ct)
         st.close

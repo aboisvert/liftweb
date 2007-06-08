@@ -12,7 +12,7 @@ import scala.xml._
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.ActorPing
+import net.liftweb.util.{ActorPing, Log}
 
 class Page(val theSession: Session) extends Actor {
   private var updates = new HashMap[String, AnswerRender]
@@ -40,7 +40,7 @@ class Page(val theSession: Session) extends Actor {
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     
-    case unknown => Console.println("Page got "+unknown)
+    case unknown => Log.warn("Page got msg: "+unknown)
   }
   
   def updateRendered(ar: AnswerRender) {

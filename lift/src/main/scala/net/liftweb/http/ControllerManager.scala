@@ -23,7 +23,7 @@ class ControllerManager extends Actor {
     }
     
     case 'shutdown =>
-    Console.println("Shutting down ctrl mgr")
+    Log.debug("Shutting down ctrl mgr")
     self.exit('Shutdown)
     loop
     
@@ -36,7 +36,7 @@ class ControllerManager extends Actor {
       }
       loop
     
-    case s => Console.println("Controller manager got message "+s); loop
+    case s => Log.debug("Controller manager got message "+s); loop
   }
   
   private def find(theType: Option[String],name: Option[String], factory: Option[String]): Option[ControllerActor] = {
