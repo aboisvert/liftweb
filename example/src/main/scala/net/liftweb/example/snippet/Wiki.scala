@@ -35,7 +35,7 @@ class Wiki {
       
       val cancelLink = <a href={S.request.uri+"/"+pageName}>Cancel</a>
       
-      val submitButton = S.submit(s => entry.save, Val(if (isNew) "Add" else "Edit"))
+      val submitButton = S.submit(isNew ? "Add" | "Edit", s => entry.save)
       
       <form method="POST" action={action}>{ // the form tag
             message ++ 

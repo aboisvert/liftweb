@@ -45,7 +45,7 @@ class Misc {
        // function (which is a closure and bound the "user" object
        // in the current content)
        bind("xmp", xhtml, "username" -> (user.firstName+" "+user.lastName),
-	    "delete" -> submit(deleteUser, Val("Delete")))
+	    "delete" -> submit("Delete", deleteUser))
        
        // if the was no ID or the user couldn't be found,
        // display an error and redirect

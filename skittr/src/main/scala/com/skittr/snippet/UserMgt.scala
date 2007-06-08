@@ -25,9 +25,9 @@ class UserMgt {
         }
       <form method="POST" action={S.request.uri}>
       <table>
-      <tr><td>name:</td><td>{S.text(username=_)}</td></tr>
-      <tr><td>pwd:</td><td>{S.password(pwd=_)}</td></tr>
-      <tr><td><a href="/new_acct">new acct</a></td><td>{S.submit(&testPwd, Val("login"))}</td></tr>
+      <tr><td>name:</td><td>{S.text("", username=_)}</td></tr>
+      <tr><td>pwd:</td><td>{S.password("", pwd=_)}</td></tr>
+      <tr><td><a href="/new_acct">new acct</a></td><td>{S.submit("login", &testPwd)}</td></tr>
       </table>
       </form>
     })
