@@ -101,7 +101,6 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
   
-  
   def findAll(by: QueryParam[A]*): List[A] = findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Some(v))
   def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] = findMapDb(dbId, by :_*)(v => Some(v))
 
@@ -122,7 +121,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   def create: A = createInstance
 
-  private def addFields(what: String,whereAdded: boolean, by: List[QueryParam[A]]): String = {
+  private[mapper] def addFields(what: String,whereAdded: boolean, by: List[QueryParam[A]]): String = {
 
     var wav = whereAdded
 
@@ -145,6 +144,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
                 updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" "+
               otherField.dbColumnNames(otherField.name)(cn - 1)
             }
+            
+          case Cmp(field, opr, None, None) =>
+          (1 to field.dbColumnCount).foreach (cn => updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" ")
 
           case BySql(query, _*) => 
             updatedWhat = updatedWhat + whereOrAnd + query
@@ -155,7 +157,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
   
-  private def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: int) {
+  private[mapper] def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: int) {
     by match {
       case Nil => {}
       case Cmp(field, _, Some(value), _) :: xs =>
@@ -212,27 +214,6 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	tmp + " LIMIT "+start.get+","+java.lang.Long.MAX_VALUE
       } else tmp), None, None)}
   }
-
-  def find(by: QueryParam[A]*): Option[A] = findDb(dbDefaultConnectionIdentifier, by :_*)
-
-  def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Option[A] = {
-    DB.use(dbId) {
-      conn =>
-	val bl = by.toList
-      val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+" ",false,  bl), bl, conn)
-      DB.prepareStatement(query, conn) {
-	st =>
-          setStatementFields(st, bl, 1)
-	DB.exec(st) {
-          rs =>
-            val mi = buildMapper(rs)
-          if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
-          else None
-	}
-	
-      }
-    }
-  }
   
   def delete_!(toDelete : A) : boolean = {
     DB.use(toDelete.connectionIdentifier) {
@@ -252,63 +233,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
   
-  def find(key: Any): Option[A] = findDb(dbDefaultConnectionIdentifier, key)
-  
-  def findDb(dbId: ConnectionIdentifier, key: Any) : Option[A] = {
-    def testProdArity(prod: Product): boolean = {
-      var pos = 0
-      while (pos < prod.productArity) {
-        if (!prod.productElement(pos).isInstanceOf[QueryParam[A]]) return false
-        pos = pos + 1
-      }
-      true
-    }
-    
-    def convertToQPList(prod: Product): Array[QueryParam[A]] = {
-      var pos = 0
-      val ret = new Array[QueryParam[A]](prod.productArity)
-      while (pos < prod.productArity) {
-        ret(pos) = prod.productElement(pos).asInstanceOf[QueryParam[A]]
-        pos = pos + 1
-      }
-      ret
-    }
-    
-    key match {
-      case null => None
-      case None => None
-      case Some(n) => find(n)
-      case qp: QueryParam[A] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
-      case prod: Product if (testProdArity(prod)) => find(convertToQPList(prod) :_*)
-      // case s: Seq[Any] if (s.length > 0 && s(0).isInstanceOf[QueryParam[Any]]) => find(s.asInstanceOf[Seq[QueryParam[A]]])
-      case v => findDb(dbId, v.toString)
-    }
-  }
 
-  def find(key : String) : Option[A] = findDb(dbDefaultConnectionIdentifier, key)
-
-  def findDb(dbId: ConnectionIdentifier,key : String) : Option[A] = {
-    DB.use(dbId) { conn => 
-      if (indexMap eq null) None
-      else {
-	val field = mappedColumnInfo(indexMap).asInstanceOf[MappedField[AnyRef,A] with IndexedField[AnyRef]]
-	val convertedKey = field.convertKey(key)
-	if (convertedKey eq None) None else
-	  {
-            DB.prepareStatement("SELECT * FROM "+dbTableName+" WHERE "+indexMap+" = ?", conn) {
-              st =>
-		st.setObject(1, field.makeKeyJDBCFriendly(convertedKey.get), field.getTargetSQLType(indexMap))
-              DB.exec(st) {
-		rs =>
-                  val mi = buildMapper(rs)
-		if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
-		else None
-              }
-            }
-	  }
-      }
-		}
-  }
   
   private def ??(meth : Method, inst :A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
   
@@ -725,6 +650,8 @@ object OprEnum extends Enumeration {
   val <= = Value(4, "<=")
   val > = Value(5, ">")
   val < = Value(6, "<")
+  val IsNull = Value(7, "IS NULL")
+  val IsNotNull = Value(8, "IS NOT NULL")
 }
 
 abstract class QueryParam[O<:Mapper[O]]
@@ -763,4 +690,108 @@ object ByLt {
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <, None, Some(otherField))    
 }
 
-trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A]
+object NullRef {
+  import OprEnum._
+  def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNull, None, None)
+}
+
+object NotNullRef {
+  import OprEnum._
+  def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNotNull, None, None)
+}
+
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] {
+ 
+  private def testProdArity(prod: Product): boolean = {
+    var pos = 0
+    while (pos < prod.productArity) {
+      if (!prod.productElement(pos).isInstanceOf[QueryParam[A]]) return false
+      pos = pos + 1
+    }
+    true
+  }
+  
+  private def convertToQPList(prod: Product): Array[QueryParam[A]] = {
+    var pos = 0
+    val ret = new Array[QueryParam[A]](prod.productArity)
+    while (pos < prod.productArity) {
+      ret(pos) = prod.productElement(pos).asInstanceOf[QueryParam[A]]
+      pos = pos + 1
+    }
+    ret
+  }  
+  
+  private def anyToFindString(in: Any): Option[String] =
+    in match {
+      case null => None
+      case None => None
+      case Some(n) => anyToFindString(n)
+      case v => Some(v.toString)
+  }
+  
+  def find(key: Any): Option[A] =
+    key match {
+  case qp: QueryParam[A] => find(List(qp.asInstanceOf[QueryParam[A]]) :_*)
+  case prod: Product if (testProdArity(prod)) => find(convertToQPList(prod) :_*)
+  case key => anyToFindString(key) flatMap (find(_))
+  }
+  
+  def findDb(dbId: ConnectionIdentifier, key: Any) : Option[A] = 
+    key match {
+    case qp: QueryParam[A] => findDb(dbId, List(qp.asInstanceOf[QueryParam[A]]) :_*)
+    case prod: Product if (testProdArity(prod)) => findDb(dbId, convertToQPList(prod) :_*)
+    case key => anyToFindString(key) flatMap (find(dbId, _))
+    }   
+  
+  def find(key: String): Option[A] = dbStringToKey(key) flatMap (realKey => findDbByKey(selectDbForKey(realKey), realKey))
+  
+  def find(dbId: ConnectionIdentifier, key: String): Option[A] =  dbStringToKey(key) flatMap (realKey =>  findDbByKey(dbId, realKey))
+
+  def findByKey(key: Type) : Option[A] = findDbByKey(dbDefaultConnectionIdentifier, key)
+  
+  def dbStringToKey(in: String): Option[Type] = primaryKeyField.convertKey(in) 
+  
+  private def selectDbForKey(key: Type): ConnectionIdentifier = 
+    if (dbSelectDBConnectionForFind.isDefinedAt(key)) dbSelectDBConnectionForFind(key)
+    else dbDefaultConnectionIdentifier
+  
+  def dbSelectDBConnectionForFind: PartialFunction[Type, ConnectionIdentifier] = Map.empty
+
+  def findDbByKey(dbId: ConnectionIdentifier,key: Type) : Option[A] = 
+    DB.use(dbId) { conn => 
+        val field = primaryKeyField
+
+            DB.prepareStatement("SELECT * FROM "+dbTableName+" WHERE "+field.dbColumnName+" = ?", conn) {
+              st =>
+                st.setObject(1, field.makeKeyJDBCFriendly(key), field.getTargetSQLType(field.dbColumnName))
+              DB.exec(st) {
+                rs =>
+                  val mi = buildMapper(rs)
+                if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
+                else None
+              }
+            }
+      }
+    
+  def find(by: QueryParam[A]*): Option[A] = findDb(dbDefaultConnectionIdentifier, by :_*)
+
+  def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Option[A] = {
+    DB.use(dbId) {
+      conn =>
+        val bl = by.toList
+      val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+" ",false,  bl), bl, conn)
+      DB.prepareStatement(query, conn) {
+        st =>
+          setStatementFields(st, bl, 1)
+        DB.exec(st) {
+          rs =>
+            val mi = buildMapper(rs)
+          if (rs.next) Some(createInstance(dbId, rs, mi._1, mi._2))
+          else None
+        }
+        
+      }
+    }
+  }
+   
+}

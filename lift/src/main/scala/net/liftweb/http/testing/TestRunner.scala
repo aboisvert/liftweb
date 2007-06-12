@@ -5,7 +5,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.Helpers
 import scala.collection.mutable.ListBuffer
 
-class TestRunner(clearDB: () => Any, setupDB: () => Any,beforeAssertListeners: List[String => Any],  afterAssertListeners: List[(String, Boolean) => Any],
+class TestRunner(clearDB: Option[() => Any], setupDB: Option[() => Any],beforeAssertListeners: List[String => Any],  afterAssertListeners: List[(String, Boolean) => Any],
     beforeTestListeners: List[String => Any], afterTestListeners: List[(String, Boolean, Option[Throwable], List[StackTraceElement]) => Any]) {
   implicit def fToItem(f: () => Any): Item = Item(f)
 
@@ -44,23 +44,25 @@ class TestRunner(clearDB: () => Any, setupDB: () => Any,beforeAssertListeners: L
       afterTestListeners.foreach(_(name, success, excp, trace))
     }
     
+
+    
   def run: TestResults = {
     
     def doResetDB {
-      clearDB()
-      setupDB()
+      clearDB.foreach(_())
+      setupDB.foreach(_())
     }
     
-    clearDB()
-    setupDB()
+    doResetDB
     
-    what.foreach{
-      testItem =>
-        beforeTest(testItem.name)
+    
+    def runASingleTest(testItem: Item) {
+      beforeTest(testItem.name)
+      
       val myTrace = (try{throw new Exception("")} catch {case e => e}).getStackTrace.toList.tail.head
       if (testItem.resetDB) doResetDB
       val (success, trace, excp) = try {
-        testItem.func()
+        testItem.getFunc(0)()
         (true, Nil, None)
       } catch {
         case e => 
@@ -72,7 +74,55 @@ class TestRunner(clearDB: () => Any, setupDB: () => Any,beforeAssertListeners: L
         (false, trace, Some(e))
       }
       
-      afterTest(testItem.name, success, excp, trace)       
+      afterTest(testItem.name, success, excp, trace)      
+    }
+    
+    def runForkTest(testItem: Item, cnt: Int) {
+      val threads = for (n <- (1 to cnt).toList) yield {
+        val thread = new Thread(new Runnable {def run {
+      beforeTest(testItem.name+" thread "+n)
+      
+      val myTrace = (try{throw new Exception("")} catch {case e => e}).getStackTrace.toList.tail.head
+      if (testItem.resetDB) doResetDB
+      val (success, trace, excp) = try {
+        testItem.getFunc(n)()
+        (true, Nil, None)
+      } catch {
+        case e => 
+        def combineStack(ex: Throwable,base: List[StackTraceElement]): List[StackTraceElement] = ex match {
+          case null => base
+          case e => combineStack(e.getCause,e.getStackTrace.toList ::: base)
+        }
+        val trace = combineStack(e, Nil).takeWhile(e => e.getClassName != myTrace.getClassName || e.getFileName != myTrace.getFileName || e.getMethodName != myTrace.getMethodName).dropRight(2)
+        (false, trace, Some(e))
+      }
+      
+      afterTest(testItem.name+" thread "+n, success, excp, trace)
+      }
+        })
+        thread.start
+        thread
+      }
+      
+      def waitAll(in: List[Thread]) {
+        in match {
+          case Nil =>
+          case x :: xs => x.join; waitAll(xs)
+        }
+      }
+      
+      waitAll(threads)      
+    }    
+    
+    what.foreach{
+      testItem =>
+      
+      testItem.forkCnt match {
+        case 0 => runASingleTest(testItem)
+        case n => runForkTest(testItem, n)
+      }
+      
+              
     }
     TestResults(log.toList)
   }
@@ -104,16 +154,28 @@ case class TestResults(res: List[Tracker]) {
 
 class TestFailureError(msg: String) extends Error(msg)
 
-class Item(val name: String, val resetDB: Boolean, val func: () => Any)
+class Item(val name: String, val resetDB: Boolean, val func: Option[() => Any], val forkCnt: Int, forkFunc: Option[Int => Any]) {
+  def getFunc(cnt: Int) = {
+    (func, forkFunc) match {
+      case (Some(f), _) => f
+      case (_, Some(cf)) => () => cf(cnt)
+      case _ => () => 
+    }
+  }
+}
+
 object Item {
   private var _cnt = 0
   private def cnt() = synchronized {
     _cnt = _cnt + 1
     _cnt
   }
-  def apply(f: () => Any) = new Item("Test "+cnt(), false, f)
-  def apply(name: String, f: () => Any) = new Item(name, false, f)
-  def apply(name: String, resetDB: Boolean, f: () => Any) = new Item(name, resetDB, f)
+  def apply(f: () => Any) = new Item("Test "+cnt(), false,Some(f), 0, None)
+  def apply(name: String, f: () => Any) = new Item(name, false, Some(f), 0, None)
+  def apply(name: String, resetDB: Boolean, f: () => Any) = new Item(name, resetDB, Some(f), 0, None)
+  def apply(theCnt: Int, f: Int => Any) = new Item("Test "+cnt(), false, None, theCnt, Some(f))
+  def apply(name: String, theCnt: Int, f: Int => Any) = new Item(name, false, None, theCnt, Some(f))
+  def apply(name: String, resetDB: Boolean, theCnt: Int, f: Int => Any) = new Item(name, resetDB, None, theCnt, Some(f))
 }
 
 case class Tracker(name: String, isAssert: Boolean, isBegin: Boolean, success: Boolean,

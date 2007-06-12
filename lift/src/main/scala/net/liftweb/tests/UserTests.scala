@@ -51,7 +51,7 @@ class UserTests extends TestCase("User Tests") {
     assert(!User.find(By(User.email, "eemr1@foo.com")).isDefined)  
     assert(User.find(BySql("email = ?", "mr9@foo.com")).isDefined)
     assert(!User.find(BySql("email = ?", "eemr1@foo.com")).isDefined)  
-    assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).isDefined)  
+    assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9"), BySql("firstname = ?", 9)).isDefined)  
     assert(User.find(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).isDefined)  
     assert(!User.find(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).isDefined)  
     val u = User.find(33).get

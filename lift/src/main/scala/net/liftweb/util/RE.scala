@@ -39,7 +39,7 @@ object RE {
 }
 
 class REDoer(val pattern: String) {
-  private val compiled = Pattern.compile(pattern)
+  val compiled = Pattern.compile(pattern)
   
   def =~(other: String) = {
     new REMatcher(other, compiled)
@@ -56,8 +56,8 @@ class REMatcher(val str: String,val compiled: Pattern) {
   
   val matches = matcher.find
 
-  val matchStr = if (matches) str.substring(matcher.start, matcher.end)
-                 else ""
+  val matchStr: Option[String] = if (matches) Some(str.substring(matcher.start, matcher.end))
+                 else None
 
   def capture= map{s => s}
 

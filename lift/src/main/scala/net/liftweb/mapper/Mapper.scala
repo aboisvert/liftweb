@@ -34,7 +34,12 @@ trait Mapper[A<:Mapper[A]] {
     thisToMappee(this)
   }
   
-  def connectionIdentifier = dbConnectionIdentifier getOrElse getSingleton.dbDefaultConnectionIdentifier
+  def connectionIdentifier = dbConnectionIdentifier getOrElse calcDbId
+  
+  def dbCalculateConnectionIdentifier: PartialFunction[A, ConnectionIdentifier] = Map.empty
+  
+  private def calcDbId = if (dbCalculateConnectionIdentifier.isDefinedAt(this)) dbCalculateConnectionIdentifier(this)
+  else getSingleton.dbDefaultConnectionIdentifier
   
   /*
   def onFormPost(f : (A) => boolean) : A = {
@@ -130,7 +135,8 @@ object Mapper {
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
-  def primaryKeyField: MappedField[KeyType, OwnerType];
+  def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
+  def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
   
   override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.get == other.primaryKeyField.get
                                    

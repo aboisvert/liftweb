@@ -130,6 +130,23 @@ trait TestFramework {
   class CompleteFailure(val serverName: String) extends ReqRes {
     override def assertSuccess = assert(false, "Failed to connect to server: "+serverName)
   }
+  
+  def fork(cnt: Int)(f: Int => Any) {
+    val threads = for (t <- (1 to cnt).toList) yield {
+      val th = new Thread(new Runnable{def run {f(t)}})
+      th.start
+      th
+    }
+    
+    def waitAll(in: List[Thread]) {
+      in match {
+        case Nil =>
+        case x :: xs => x.join; waitAll(xs)
+      }
+    }
+    
+    waitAll(threads)
+  }  
 
   private def snurpHeaders(in: java.util.Map): Map[String, List[String]] = {
     def entryToPair(e: AnyRef): List[(String, List[String])] = {
