@@ -1,5 +1,37 @@
 package net.liftweb.util
 
+import scala.actors.Actor
+import java.util.concurrent._
+
+object ActorPing {
+  def start: Unit = {}
+  
+  def snapshot: Unit = {}
+  
+  def schedule(to: Actor, msg: Any, delay: Long): ScheduledFuture = schedule(to, msg, delay, TimeUnit.MILLISECONDS)
+  
+   // Can be canceled by using the future returned.
+   def schedule(to: Actor, msg: Any, delay: Long, tu: TimeUnit) :
+ScheduledFuture = {
+       val r = new Runnable { def run { to ! msg } }
+       service.schedule(r, delay, tu)
+   }
+
+   private val service =
+Executors.newSingleThreadScheduledExecutor(TF)
+}
+
+private object TF extends ThreadFactory {
+   val threadFactory = Executors.defaultThreadFactory()
+   def newThread(r: Runnable) : Thread = {
+           val d: Thread = threadFactory.newThread(r)
+           d setDaemon true
+           d
+   }
+}
+
+/*
+
 /*                     __                                               *\
  **     ________ ___   / /  ___     Scala API                            **
  **    / __/ __// _ | / /  / _ |    (c) 2005-2007, LAMP/EPFL             **
@@ -136,3 +168,4 @@ object ActorPing extends AnyRef with Runnable {
 
   def now = System.currentTimeMillis
 }
+*/
