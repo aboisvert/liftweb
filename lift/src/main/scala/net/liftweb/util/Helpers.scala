@@ -16,7 +16,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
-import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader}
+import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream}
 import java.security.{SecureRandom, MessageDigest}
 import javax.mail._
 import javax.mail.internet._
@@ -741,7 +741,9 @@ object Helpers {
   
   implicit def nodeSeqToOptionString(in: NodeSeq): Option[String] = if (in.length == 0) None else Some(in.text)
   
-  def readWholeStream(in: InputStream): Array[byte] = {
+  def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
+  
+  def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     val ba = new Array[byte](4096)
     
