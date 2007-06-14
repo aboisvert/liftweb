@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import javax.servlet.http._
 import javax.servlet.ServletContext
-import scala.collection.Map
+// import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.util.Helpers._

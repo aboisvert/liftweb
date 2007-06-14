@@ -1,5 +1,6 @@
 import java.io._
 
+def println(in: String) {scala.Console.println(in)}
 
 def copy(src: File, dest: File) {
   src.listFiles.filter(f => f.isFile && !f.getName.startsWith(".")).
