@@ -748,12 +748,18 @@ object Helpers {
   
   class TimeSpan(val len: long) {
     def seconds = TimeSpan(Helpers.seconds(len))
+    def second = seconds
     def minutes = TimeSpan(Helpers.minutes(len))
+    def minute = minutes
     def hours = TimeSpan(Helpers.hours(len))
+    def hour = hours
     def days = TimeSpan(Helpers.days(len))
+    def day = days
     def weeks = TimeSpan(Helpers.weeks(len))
+    def week = weeks
     def later = TimeSpan(len + millis)
     def ago = TimeSpan(millis - len)
+    def date = new java.util.Date(len)
     
     override def equals(cmp: Any) = {
       cmp match {
