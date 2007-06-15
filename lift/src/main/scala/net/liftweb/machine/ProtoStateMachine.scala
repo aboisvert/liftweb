@@ -88,6 +88,8 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     this.delete_!
   }
     
+  def !(event: Meta#Event): Unit = processEvent(event)  
+  
   /**
     * Process an event
     */

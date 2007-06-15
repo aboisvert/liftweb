@@ -18,8 +18,6 @@ import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream}
 import java.security.{SecureRandom, MessageDigest}
-import javax.mail._
-import javax.mail.internet._
 import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.regex._
@@ -683,62 +681,7 @@ object Helpers {
     addDigit(in, 0, len, sb)
     sb.toString
   }
-  
-  sealed abstract class MailBodyType
-  case class PlainMailBodyType(text: String) extends MailBodyType
-  case class XHTMLMailBodyType(text: NodeSeq) extends MailBodyType
-  
-  implicit def stringToMailBodyType(text: String): MailBodyType = PlainMailBodyType(text)
-  implicit def xmlToMailBodyType(html: NodeSeq): MailBodyType = XHTMLMailBodyType(html)
-
-  
-  private class MsgSender extends Actor {
-    def act = {
-      loop {
-	react {
-          case (from: String, to: List[String], subject: String,cc: List[String], body: Seq[MailBodyType]) =>
-            try {
-              val session = Session.getInstance(System.getProperties)
-              val message = new MimeMessage(session)
-              message.setFrom(new InternetAddress(from))
-              message.setRecipients(Message.RecipientType.TO, to.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
-              message.setRecipients(Message.RecipientType.CC, cc.map(t => new InternetAddress(t).asInstanceOf[Address]).toArray)
-              message.setSubject(subject)
-              val multiPart = new MimeMultipart("alternative")
-              body.foreach {
-		tab =>
-		  val bp = new MimeBodyPart
-		tab match {
-		  case PlainMailBodyType(txt) => bp.setContent(txt, "text/plain")
-		  case XHTMLMailBodyType(html) => bp.setContent(html.toString, "text/html")
-		}
-		multiPart.addBodyPart(bp)
-	      }
-              message.setContent(multiPart);
-
-              Transport.send(message);
-            } catch {
-              case e: Exception => Log.error("Couldn't send mail", e)
-            }
-          
-          case _ => Log.warn("Email Send: Here... sorry")
-	}
-      }
-    }
-  }
-
-  
-  private val msgSender = {
-    val ret = new MsgSender
-    ret.start
-    ret
-  }
-  
-  def sendMail(from: String, to: List[String], subject: String,cc: List[String], body: MailBodyType*) {
-    // forward it to an actor so there's no time on this thread spent sending the message
-    msgSender ! ((from, to, subject, cc, body.toList))
-  }
-  
+    
   implicit def nodeSeqToOptionString(in: NodeSeq): Option[String] = if (in.length == 0) None else Some(in.text)
   
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
