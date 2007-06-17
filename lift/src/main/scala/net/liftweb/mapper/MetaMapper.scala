@@ -149,7 +149,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
           (1 to field.dbColumnCount).foreach (cn => updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" ")
 
           case BySql(query, _*) => 
-            updatedWhat = updatedWhat + whereOrAnd + query
+            updatedWhat = updatedWhat + whereOrAnd + " ( "+ query +" ) "
           case _ => 
         }
         addFields(updatedWhat,wav, xs)
