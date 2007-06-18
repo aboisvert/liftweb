@@ -101,6 +101,7 @@ class Page(val theSession: Session) extends Actor {
     xml.flatMap {
       v =>
         v match {
+	  case Group(nodes) => Group(processControllers(nodes, ctlMgr, request))
           case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request, attr)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processControllers(v.child, ctlMgr, request) : _*)}
           case _ => {v}
@@ -152,6 +153,7 @@ class Page(val theSession: Session) extends Actor {
     xml.flatMap {
       v =>
         v match {
+	  case Group(nodes) => Group(processForForms(nodes, request))
         case Elem("lift", "form", attr @ _ , scope @ _, kids @ _*) => {Elem(null, "form", addAjaxOnSubmit(request, attr), scope, processForForms(kids, request): _*)}
         case Elem("lift", "a", attr @ _ , scope @ _, kids @ _*) => {Elem(null, "a", addAjaxHREF(request, attr), scope, processForForms(kids, request): _*)}
           case Elem(prefix @ _,label @ _,attr @ _,scope @ _,kids @ _*) => {Elem(prefix, label, attr, scope, processForForms(kids, request) : _*)}

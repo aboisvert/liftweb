@@ -158,6 +158,7 @@ class RequestState(val paramNames: List[String],
     in.map{
       v => 
 	v match {
+	  case Group(nodes) => Group(fixHtml(nodes))
 	  case <form>{ _* }</form> => {Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(v.child) : _* )}
           case <script>{ _* }</script> => {Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(v.child) : _* )}
           case <img>{ _* }</img> => {Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(v.child) : _* )}

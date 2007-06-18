@@ -136,6 +136,7 @@ object Helpers {
             case Some(ns) => ns
               }
             }
+	    case Group(nodes) => Group(in_bind(nodes))
             case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, in_bind(node.child) : _*)
             case n => node
           }
@@ -159,6 +160,7 @@ object Helpers {
               }
             }
           }
+	  case Group(nodes) => Group(bind(vals, nodes))
           case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
           case n => node
         }
@@ -178,6 +180,7 @@ object Helpers {
     around.flatMap {
       v =>
 	v match {
+	  case Group(nodes) => Group(processBind(nodes, at what))
 	  case Elem("lift", "bind", attr @ _, _, kids @ _*) if (attr("name").text == at) => {what}
           case Elem(_,_,_,_,kids @ _*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processBind(kids, at, what) : _*)}
           case _ => {v}

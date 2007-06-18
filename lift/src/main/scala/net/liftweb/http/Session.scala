@@ -358,6 +358,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     in.flatMap{
       v => 
         v match {
+	  case Group(nodes) => Group(processSurroundAndInclude(nodes, session)
           case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
           case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session), session)
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session), session)
