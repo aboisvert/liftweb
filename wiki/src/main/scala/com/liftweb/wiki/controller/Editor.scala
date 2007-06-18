@@ -8,6 +8,7 @@ import net.liftweb.util._
 import net.liftweb.mapper._
 import com.liftweb.wiki.model._
 import com.liftweb.wiki.actor._
+import scala.actors._
 
 class Editor extends ControllerActor {
   private val manager = LockManager.instance

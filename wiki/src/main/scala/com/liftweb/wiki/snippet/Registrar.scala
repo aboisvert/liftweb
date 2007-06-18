@@ -33,9 +33,9 @@ class Registrar {
         }
 
         <form method="POST" action={ S.request.uri }>
-          Username: { S.text(username = _) }
-          Password: { S.text(password = _) }
-          { S.submit(doLogin _, Val("login")) }
+          Username: { S.text("", username = _) }
+          Password: { S.text("", password = _) }
+          { S.submit("login", doLogin _) }
           or <a href="/register">register</a>
         </form>
     }
