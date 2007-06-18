@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem, Node, Text}
+import scala.xml.{NodeSeq, Elem, Node, Text, Group}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -180,7 +180,7 @@ object Helpers {
     around.flatMap {
       v =>
 	v match {
-	  case Group(nodes) => Group(processBind(nodes, at what))
+	  case Group(nodes) => Group(processBind(nodes, at, what))
 	  case Elem("lift", "bind", attr @ _, _, kids @ _*) if (attr("name").text == at) => {what}
           case Elem(_,_,_,_,kids @ _*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processBind(kids, at, what) : _*)}
           case _ => {v}
