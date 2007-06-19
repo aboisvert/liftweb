@@ -10,17 +10,14 @@ import scala.actors.Actor
 import scala.actors.Actor._
 import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
 import scala.collection.mutable.{HashMap, ArrayBuffer}
-import scala.collection.immutable.{TreeMap}
 import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
-import scala.collection.immutable.{ListMap}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
 import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 import net.liftweb.http.S._
-import scala.collection.immutable.Map
 
 class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
@@ -92,7 +89,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     loop
     
     case SendEmptyTo(sender) =>
-      sender(XhtmlResponse(Unparsed(""),None, Map("Content-Type" -> "text/javascript"), 200))
+      sender(XhtmlResponse(Unparsed(""),None, List("Content-Type" -> "text/javascript"), 200))
     loop
     
     case UpdateState(name, None) => stateVar - name; loop
@@ -134,7 +131,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               if (request.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(whenDone), timeout - 250) 
               } else {
-                notices = Nil; whenDone(XhtmlResponse(Group(request.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Map.empty, 200))
+                notices = Nil; whenDone(XhtmlResponse(Group(request.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Nil, 200))
               }
             } else {
               val page = pages.get(request.uri) getOrElse {val p = createPage; pages(request.uri) = p; p }
@@ -150,13 +147,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
         
         whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
                  ResponseInfo.xhtmlTransitional,
-                 ListMap("Location" -> (request.contextPath+rd.to)),
+                 List("Location" -> (request.contextPath+rd.to)),
                  302))
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
             whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
-                     ListMap("Location" -> (request.contextPath+rd.to)),
+                     List("Location" -> (request.contextPath+rd.to)),
                      302))
           }
 	case e  => whenDone(request.showException(e))
@@ -236,13 +233,13 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     }
   }
   
-  def couldBeHtml(in : Map[String, String]) : boolean = {
+  def couldBeHtml(in : List[(String, String)]) : boolean = {
     in match {
       case null => true
       case _ => {
-	in.get("Content-Type") match {
-	  case s @ Some(_) => {s.get.toLowerCase == "text/html"}
-	  case None | null => true
+	in.ciGet("Content-Type") match {
+	  case Some(s) => {s.toLowerCase == "text/html"}
+	  case None => true
 	}
       }
     }
@@ -258,17 +255,14 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   /**
    * Update any "Location" headers to add the Context path
    */
-  def fixHeaders(h: Map[String, String], request: RequestState) = {
+  def fixHeaders(h: List[(String, String)], request: RequestState): List[(String, String)] =
     h match {
-      case null => Map.empty[String, String]
-      case _ => Map.empty[String, String] ++ h.map{p =>
-        p match {
-          case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+request.contextPath+v)
-            case _ => p
+      case null => Nil
+      case _ => h.map{
+        case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+request.contextPath+v)
+        case (a, b) => (a, b)
         }
-						 }
     }
-  }
   
   
   private def findAndEmbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {

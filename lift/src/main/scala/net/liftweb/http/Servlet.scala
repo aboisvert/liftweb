@@ -8,8 +8,7 @@ package net.liftweb.http;
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import javax.servlet.{ServletContext}
-import scala.collection.immutable.{Map, ListMap}
-import scala.collection.mutable.{HashSet, HashMap, ArrayBuffer}
+import scala.collection.mutable.{ListBuffer}
 import java.net.URLDecoder
 import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
 import scala.xml.transform._
@@ -20,7 +19,6 @@ import net.liftweb.util._
 import java.io.InputStream
 import net.liftweb.util.Helpers
 import net.liftweb.util.ActorPing
-import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.sitemap.SiteMap
 import java.net.URL
 import net.liftweb.sitemap._
@@ -34,7 +32,7 @@ import net.liftweb.sitemap._
 class Servlet extends HttpServlet {
   private val actorNameConst = "the_actor"
   private var requestCnt = 0
-  private val selves = new ArrayBuffer[Actor]
+  private val selves = new ListBuffer[Actor]
   
   override def destroy = {
     try {
@@ -238,7 +236,7 @@ class Servlet extends HttpServlet {
                                                 ("Content-Length", len.toString)));
     
     // send the response
-    header.elements.foreach {n => response.setHeader(n._1, n._2)}
+    header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
     response.getOutputStream.write(bytes)    
   }
@@ -367,7 +365,7 @@ object Servlet {
     r match {
       case r: XhtmlResponse => r.toResponse
       case r: Response => r
-      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional, Map.empty, 200), session)
+      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional, Nil, 200), session)
       case xml: XmlResponse => xml.toResponse
       case Some(o) => convertResponse(o, session)
       case _ => session.createNotFound.toResponse

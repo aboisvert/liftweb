@@ -192,21 +192,33 @@ object Helpers {
   /**
   * Insure all the appropriate fields are in the header
   */
-  def insureField(toInsure : Map[String, String], headers : List[Pair[String, String]]) : Map[String, String] = {
-    def insureField_inner(toInsure : HashMap[String, String], field : Pair[String, String]) : HashMap[String, String] = {
-      toInsure match {
-        case null => {val ret = new HashMap[String, String]; ret += field._1 -> field._2; ret}
-        case _ if (toInsure.contains(field._1)) => toInsure
-        case _ => {toInsure += field._1 -> field._2; toInsure}
+  def insureField(toInsure: List[(String, String)], headers: List[(String, String)]): List[(String, String)] = {
+    def insureField_inner(toInsure : List[(String, String)], field : (String, String)): List[(String, String)] =
+      toInsure.ciGet(field._1) match {
+        case Some(_) => toInsure
+        case None => field :: toInsure
       }
+
+    headers match {
+      case Nil => toInsure
+      case x :: xs => insureField(insureField_inner(toInsure, x), xs)
     }
-
-    if (headers.isEmpty) 
-      if (toInsure == null) new HashMap else toInsure
-      else insureField(insureField_inner(toHashMap(toInsure), 
-					 headers.head), headers.tail) 
-
   }
+  
+  class ListMapish(val theList: List[(String, String)]) {
+    def ciGet(swhat: String): Option[String] = {
+      val what = swhat.toLowerCase
+      def tGet(in: List[(String, String)]): Option[String] = 
+	in match {
+        case Nil => None
+        case x :: xs if (x._1.toLowerCase == what) => Some(x._2)
+        case x :: xs => tGet(xs)
+      }
+      tGet(theList)
+    }
+  }
+  
+  implicit def listToListMapish(in: List[(String, String)]): ListMapish = new ListMapish(in)
   
   /**
   * Convert an enum to a List[T]
