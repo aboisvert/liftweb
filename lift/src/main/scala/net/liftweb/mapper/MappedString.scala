@@ -13,11 +13,12 @@ import net.liftweb.util.Lazy._
 import java.util.Date
 import java.util.regex._
 
-class MappedString[T<:Mapper[T]](val owner : T,val maxLen: int) extends MappedField[String, T] {
+class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedField[String, T] {
   private val data : Lazy[String] =  Lazy(defaultValue) // defaultValue
   
   def dbFieldClass = classOf[String]
 
+  final def crop(in: String): String = in.substring(0,Math.min(in.length, maxLen))
   
   final def removeRegExChars(regEx: String)(in: String): String = in.replaceAll(regEx, "")
   
