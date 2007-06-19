@@ -91,6 +91,7 @@ class Servlet extends HttpServlet {
     }
     val in = uc.getInputStream
     
+    try {
     val li = request.getRequestURI.lastIndexOf('.')
     if (li != -1) {
       response.setContentType(request.getRequestURI.substring(li + 1) match {
@@ -122,6 +123,9 @@ class Servlet extends HttpServlet {
     readAndWrite
     
     out.flush
+    } finally {
+      in.close
+    }
   }
   
   
