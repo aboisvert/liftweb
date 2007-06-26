@@ -736,7 +736,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   case key => anyToFindString(key) flatMap (find(_))
   }
   
-  def findDb(dbId: ConnectionIdentifier, key: Any) : Option[A] = 
+  def findDb(dbId: ConnectionIdentifier, key: Any): Option[A] = 
     key match {
     case qp: QueryParam[A] => findDb(dbId, List(qp.asInstanceOf[QueryParam[A]]) :_*)
     case prod: Product if (testProdArity(prod)) => findDb(dbId, convertToQPList(prod) :_*)

@@ -96,6 +96,13 @@ object Helpers {
     ret
   }
   
+  def first_? [B](in: List[B])(f: => B => Boolean): Option[B] =
+    in match {
+    case Nil => None
+    case x :: xs => if (f(x)) Some(x) else first_? (xs)(f)
+  }
+  
+  
   def first[B,C](in : List[B])(f : B => Option[C]): Option[C] = {
     in match {
       case Nil => None
@@ -120,6 +127,8 @@ object Helpers {
       case v => BindParam(p._1, Text(p._2.toString))
     }
   }
+  
+  def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
   implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
   
