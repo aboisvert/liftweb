@@ -30,7 +30,7 @@ object Log {
   </log4j:configuration>
 """
   
-  val log4jUrl = first(Props.toTry)(f => tryo(getClass.getResource(f()+"log4j.props")) match {case None => None; case Some(s) if s eq null => None; case s => s})
+  val log4jUrl = first(Props.toTry){f => println("Log trying "+f()) ; tryo(getClass.getResource(f()+"log4j.props")) match {case None => None; case Some(s) if s eq null => None; case s =>println("Success "+f()); s}}
   
   log4jUrl.foreach(url => PropertyConfigurator.configure(url))
   if (!log4jUrl.isDefined) {

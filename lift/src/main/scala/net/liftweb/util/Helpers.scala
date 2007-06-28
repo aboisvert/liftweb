@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem, Node, Text, Group}
+import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -889,7 +889,9 @@ object Helpers {
     }
   }
 
- implicit def boolean2(b: Boolean) = new Boolean2(b)  
+ implicit def boolean2(b: Boolean) = new Boolean2(b) 
+ 
+ implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
 }
 
 class SuperList[T](val what: List[T]) {
