@@ -131,7 +131,7 @@ trait Mapper[A<:Mapper[A]] {
 }
 
 object Mapper {
-  implicit def fromSome[T<:Mapper[T]](in : Option[T]) : T = in.get
+  // implicit def fromSome[T<:Mapper[T]](in : Option[T]) : T = in.get
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
