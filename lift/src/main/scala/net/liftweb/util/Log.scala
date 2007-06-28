@@ -30,9 +30,21 @@ object Log {
   </log4j:configuration>
 """
   
-  val log4jUrl = first(Props.toTry){f => println("Log trying "+f()) ; tryo(getClass.getResource(f()+"log4j.props")) match {case None => None; case Some(s) if s eq null => None; case s =>println("Success "+f()); s}}
+  private def findTheFile: (Option[java.net.URL], Option[String]) = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
+  (name =>tryo(getClass.getResource(name)) match {case None => None; case Some(s) if s eq null => None; case Some(s) => Some( (s, name) )})) match {
+    case None => (None, None)
+    case Some((s, name)) => (Some(s), Some(name))
+  }
   
-  log4jUrl.foreach(url => PropertyConfigurator.configure(url))
+  val (log4jUrl, fileName) = findTheFile
+
+  for (url <- log4jUrl; name <- fileName) {
+    if (name.endsWith(".xml")) {
+      val domConf = new DOMConfigurator
+      domConf.doConfigure(url, LogManager.getLoggerRepository())      
+    } else PropertyConfigurator.configure(url)
+  }
+
   if (!log4jUrl.isDefined) {
     val domConf = new DOMConfigurator
     val defPropBytes = defaultProps.toString.getBytes("UTF-8")
