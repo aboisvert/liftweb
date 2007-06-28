@@ -235,7 +235,7 @@ object S {
     * @param func - the function to invoke when the link is clicked
     * @param body - the NodeSeq to wrap in the anchor tag
     */
-  def a(func: () => Any, body: NodeSeq): NodeSeq = {
+  def a(func: () => Any, body: NodeSeq): Elem = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(key, (a: List[String]) => {func(); true})
     <lift:a key={key}>{body}</lift:a>
@@ -248,27 +248,27 @@ object S {
        * @param func - the function to invoke when the link is clicked
        * @param body - the NodeSeq to wrap in the anchor tag
        */
-     def link(to: String, func: () => Any, body: NodeSeq): NodeSeq = {
+     def link(to: String, func: () => Any, body: NodeSeq): Elem = {
        val key = "F"+System.nanoTime+"_"+randomString(3)
        addFunctionMap(key, (a: List[String]) => {func(); true})
        <a href={to+"?"+key+"=_"}>{body}</a>
      }
     
-    def text_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("text", func, params) % new UnprefixedAttribute("value", value, Null)
-    def password_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("password", func, params) % new UnprefixedAttribute("value", value, Null)
-    def hidden_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", func, params) % new UnprefixedAttribute("value", value, Null)
-    def submit_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = makeFormElement("submit", func, params) % new UnprefixedAttribute("value", value, Null)
-  def text(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("text", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
-  def password(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("password", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
-  def hidden(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("hidden", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
-  def submit(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+    def text_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = makeFormElement("text", func, params) % new UnprefixedAttribute("value", value, Null)
+    def password_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = makeFormElement("password", func, params) % new UnprefixedAttribute("value", value, Null)
+    def hidden_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = makeFormElement("hidden", func, params) % new UnprefixedAttribute("value", value, Null)
+    def submit_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = makeFormElement("submit", func, params) % new UnprefixedAttribute("value", value, Null)
+  def text(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("text", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def password(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("password", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def hidden(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("hidden", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
+  def submit(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
   // List[value, display]
-  def select(opts: List[(String, String)], deflt: Option[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
+  def select(opts: List[(String, String)], deflt: Option[String], func: String => Any, params: FormElementPieces*): Elem = 
     select_*(opts, deflt, SFuncHolder(func), params :_*)
     
     // FIXME wrap the select in a filter to insure that stuff received is in the set of things sent
-  def select_*(opts: List[(String, String)],deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
+  def select_*(opts: List[(String, String)],deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): Elem =  
     wrapFormElement(<select name={f(func)}>{
       opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.filter(_ == o._1).isDefined))
     }</select>, params.toList)
@@ -276,10 +276,10 @@ object S {
     
     private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "true", Null) else Null
     
-     def multiSelect(opts: List[(String, String)], deflt: List[String], func: String => Any, params: FormElementPieces*): NodeSeq = 
+     def multiSelect(opts: List[(String, String)], deflt: List[String], func: String => Any, params: FormElementPieces*): Elem = 
        multiSelect_*(opts, deflt, SFuncHolder(func), params :_*)
 
-     def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): NodeSeq =  
+     def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): Elem =  
     wrapFormElement(<select multiple="true" name={f(func)}>{
       opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.contains(o._1)))
     }</select>, params.toList)
