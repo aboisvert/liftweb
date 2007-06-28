@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute}
+import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
