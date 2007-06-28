@@ -204,11 +204,15 @@ class Servlet extends HttpServlet {
         }
         
         drainTheSwamp
+        
+        val timeout = (Servlet.calcRequestTimeout.map(_(session)) getOrElse (if (session.ajax_?) (Servlet.ajaxRequestTimeout getOrElse 120) 
+            else (Servlet.stdRequestTimeout getOrElse 10))) * 1000L        
+        
         if (session.ajax_? && Servlet.hasJetty_?) {
           sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
           Servlet.doContinuation(request)
         } else {
-	val timeout = (if (session.ajax_?) 120 else 10) * 1000L
+	
         val thisSelf = self
 	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
         receiveWithin(timeout) {
@@ -216,7 +220,11 @@ class Servlet extends HttpServlet {
           case Some(r: XhtmlResponse) => r.toResponse
           case r : Response => r
 	  case Some(r: Response) => r
-	  case n => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
+          // if we failed allow the optional handler to process a request 
+	  case n => Servlet.requestTimedOut.flatMap(_(session, n)) match {
+            case Some(r) => r
+            case None => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
+          }
 	}
         }
         } finally {
@@ -251,6 +259,29 @@ object Servlet {
   type rewritePf = PartialFunction[RewriteRequest, RewriteResponse]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
+  
+  /**
+    * Put a function that will calculate the request timeout based on the
+    * incoming request.
+    */
+  var calcRequestTimeout: Option[RequestState => Int] = None
+  
+  /**
+    * If you want the standard (non-AJAX) request timeout to be something other than
+    * 10 seconds, put the value here
+    */
+  var stdRequestTimeout: Option[Int] = None
+  
+  /**
+    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
+    */
+  var ajaxRequestTimeout: Option[Int] = None
+  
+  /**
+    * If the request times out (or returns a non-Response) you can
+    * intercept the response here and create your own response
+    */
+  var requestTimedOut: Option[(RequestState, Any) => Option[Response]] = None
   
   def early = {
     test_boot
