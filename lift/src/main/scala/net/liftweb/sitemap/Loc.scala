@@ -28,7 +28,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     case _ => findTitle(lst.tail)
   }
   
-  def title: String = findTitle(stuff).map(_.title()) getOrElse name
+  def title: String = findTitle(stuff).map(_.title()) getOrElse text.text()
   
   def isRoot_? = link.isRoot_?
   private[sitemap] def setMenu(p: Menu) {_menu = p}
