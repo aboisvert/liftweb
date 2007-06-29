@@ -372,7 +372,8 @@ object Servlet {
       f.map{f => f()}
       
     } catch {
-      case e: Exception => e.printStackTrace; None
+    case e: java.lang.reflect.InvocationTargetException => Log.error("Failed to Boot", e); None
+    case e => Log.error("Failed to Boot", e); None
     }
   }
 
