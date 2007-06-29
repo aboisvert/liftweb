@@ -34,6 +34,8 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     */
   object id extends MappedLongIndex[MyType](this)
   
+  object inProcess extends MappedBoolean[MyType](this)
+  
   /**
     * get the primary key field
     */
@@ -74,10 +76,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     * This method is called on a transition from one state to another.  Override this method
     * to perform an action.  Please call super to actually change the state and save the instance 
     */
-  def transition(from: StV, to: StV, why: Meta#Event): unit = {
-    this.currentState := to.id
-    this.save
-  }
+  def transition(from: StV, to: StV, why: Meta#Event): Unit = this.currentState(to.id).inProcess(false).save
   
   /**
     * This item has reached a terminating state.  This method will remove the
@@ -258,7 +257,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
          }
        }
        if (who.nextTransitionAt.get == -1) super.unmatchedEventHanlder(who, state)
-       else who.save
+       else who.inProcess(false).save
      }    
   }
   
@@ -314,14 +313,14 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         val now = System.currentTimeMillis
         try {
         val name = metaOwner.nextTransitionAt.dbColumnName
-        metaOwner.findAll(BySql(name+" > 0 AND "+name+" <= ?", now)).foreach {
+        metaOwner.findAll(By(metaOwner.inProcess, false), BySql(name+" > 0 AND "+name+" <= ?", now)).foreach {
           stateItem =>
+          stateItem.inProcess(true).save
           val event = TimerEvent(now - stateItem.timedEventAt.get)
           timedEventHandler ! (stateItem, event)
         }
         } catch {
-        case e: Exception => e.printStackTrace // FIXME, log
-        case e: MatchError => e.printStackTrace // FIXME, log
+          case e => Log.error("State machine loop", e)
         }
         ActorPing.schedule(this, Ping, timedEventPeriodicWait) 
         loop
@@ -342,8 +341,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
           try {
           item.processEvent(event)
           } catch {
-          case e: Exception  => e.printStackTrace // FIXME, log
-          case e: MatchError => e.printStackTrace // FIXME, log
+            case e => Log.error("Timed Event Handler"+e)
           }
           loop
           
