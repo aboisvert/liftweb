@@ -831,7 +831,7 @@ object Helpers {
     ret.toString
   }
   
-  private val defaultFinder = &getClass.getResource
+  private val defaultFinder = getClass.getResource _
   private var _finder = defaultFinder
   
   def setResourceFinder(in: (String) => java.net.URL):unit = synchronized {

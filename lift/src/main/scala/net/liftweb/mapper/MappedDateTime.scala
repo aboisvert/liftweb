@@ -64,7 +64,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     inst match {
       case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(null.asInstanceOf[java.util.Date]); tv.resetDirty}}
       case d : java.util.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(v.asInstanceOf[Date]); tv.resetDirty}}
-      case d : java.sql.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
+      // case d : java.sql.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
       case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v)); tv.resetDirty}}
     }
   }

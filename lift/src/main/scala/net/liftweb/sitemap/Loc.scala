@@ -98,7 +98,7 @@ object Loc {
   private def retString(toRet: String)(other: Seq[(String, String)]) = Some(toRet)
   
   implicit def strToLinkText(in: String): LinkText = LinkText(f(in))
-  implicit def strToLink(in: String): Link = Link(in, &alwaysTrue, &retString(in))
+  implicit def strToLink(in: String): Link = Link(in, alwaysTrue _, retString(in) _)
   implicit def strToFailMsg(in: String): FailMsg = FailMsg(f(RedirectWithMessage("/", in)))
   implicit def redirectToFailMsg(in: RedirectWithMessage): FailMsg = FailMsg(f(in))
   

@@ -138,9 +138,9 @@ object TextileParser {
     */
     def acronym : Parser[Textile] = {
       for (
-        thing : List[char] <- rep1(chr(&acro_thing));
+        thing : List[char] <- rep1(chr(acro_thing _));
         op <- not(copyright ||| trademark ||| registered) &&& str("(");
-        acro <- rep1(chr(&acro));
+        acro <- rep1(chr(acro _));
         cp <- str(")")
       ) yield Acronym(thing.mkString(""), acro.mkString(""))
     }
@@ -172,7 +172,7 @@ object TextileParser {
     private def img_alt  = {
       for (
         c1 <- str("(");
-        ret <- rep1(not(str(")")) &&& chr(&not_eol));
+        ret <- rep1(not(str(")")) &&& chr(not_eol _));
         c2 <- str(")")
       ) yield ret
     }
@@ -258,7 +258,7 @@ object TextileParser {
     def quote_ref : Parser[Textile] = {
       for (
         qt : char <- chr('"');
-        fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
+        fs : List[char] <- rep1(not(chr('"')) &&& chr(not_eol _));
         eq <- str("\":");          
         rc : List[char] <- rep1(chr(validUrlChar))
       ) yield RefAnchor(Nil, (rc).mkString(""),
@@ -271,7 +271,7 @@ object TextileParser {
     def quote_url : Parser[Textile] = {
       for (
         qt : char <- chr('"');
-        fs : List[char] <- rep1(not(chr('"')) &&& chr(&not_eol));
+        fs : List[char] <- rep1(not(chr('"')) &&& chr(not_eol _));
         eq <- str("\":");          
         http : char <- str("http");
         s : List[char] <- opt(chr('s'));
@@ -445,9 +445,9 @@ object TextileParser {
     def single_quote_attr : Parser[Attribute] = {
       for (
         sp <- rep(chr(' '));
-        name : List[char] <- rep1(chr(&attr_name));
+        name : List[char] <- rep1(chr(attr_name _));
         eq <- str("='");
-        value : List[char] <- rep(not(chr('\'')) &&& chr(&attr_value));
+        value : List[char] <- rep(not(chr('\'')) &&& chr(attr_value _));
         end <- chr('\'')
       ) yield AnyAttribute((name).mkString(""), value.mkString(""))
     }
@@ -458,9 +458,9 @@ object TextileParser {
     def double_quote_attr : Parser[Attribute] = {
       for (
         sp <- rep(chr(' '));
-        name : List[char] <- rep1(chr(&attr_name));
+        name : List[char] <- rep1(chr(attr_name _));
         eq <- str("=\"");
-        value : List[char] <- rep(not(chr('"')) &&& chr(&attr_value));
+        value : List[char] <- rep(not(chr('"')) &&& chr(attr_value _));
         end <- chr('"')
       ) yield AnyAttribute((name).mkString(""), value.mkString(""))
     }
@@ -737,7 +737,7 @@ object TextileParser {
     
     def charBlock : Parser[Textile] = 
       for (
-        c : char <- chr(&not_eol)
+        c : char <- chr(not_eol _)
       ) yield CharBlock(c.toString)
 
     

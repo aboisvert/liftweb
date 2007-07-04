@@ -20,7 +20,6 @@ trait BaseMetaMapper {
   def dbTableName: String
   def mappedFields: Seq[BaseMappedField];
   def dbAddTable: Option[() => Unit]
-  
 }
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
@@ -639,6 +638,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def beforeSchemifier {}
   def afterSchemifier {}
   
+  def dbIndexes: List[Index[A]] = Nil
+ 
+ 
+  implicit def fieldToItem[T](in: MappedField[T, A]): IndexItem[A] = IndexField(in)
+  implicit def boundedFieldToItem(in: (MappedField[String, A], Int)): BoundedIndexField[A] = BoundedIndexField(in._1, in._2)
+  
   // protected def getField(inst : Mapper[A], meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyRef,A]]
 }
 
@@ -653,6 +658,14 @@ object OprEnum extends Enumeration {
   val IsNull = Value(7, "IS NULL")
   val IsNotNull = Value(8, "IS NOT NULL")
 }
+
+
+case class Index[A <: Mapper[A]](columns: IndexItem[A]*)
+
+abstract class IndexItem[A <: Mapper[A]]
+
+case class IndexField[A <: Mapper[A], T](field: MappedField[T, A]) extends IndexItem[A]
+case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len: Int) extends IndexItem[A]
 
 abstract class QueryParam[O<:Mapper[O]]
 //case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]

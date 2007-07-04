@@ -60,7 +60,7 @@ trait PCDataMarkupParser requires (MarkupParser with MarkupHandler) extends Mark
       if (ch==']'  &&
           { sb.append(ch); nextch; ch == ']' } &&
           { sb.append(ch); nextch; ch == '>' } ) {
-            sb.setLength(sb.length() - 2);
+            sb.setLength(sb.length - 2);
             nextch; 
             return PCData(sb.toString)
           } else sb.append( ch );

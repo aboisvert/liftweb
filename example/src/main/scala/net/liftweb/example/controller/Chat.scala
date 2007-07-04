@@ -36,7 +36,7 @@ class Chat extends ControllerActor {
 try {
     val inputName = this.uniqueId+"_msg"
     
-    S.addFunctionMap(inputName, &sendMessage)
+    S.addFunctionMap(inputName, sendMessage _)
     
     <span>Hello "{userName}"<ul>{
       currentData.reverse.map{

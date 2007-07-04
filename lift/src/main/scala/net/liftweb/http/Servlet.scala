@@ -335,7 +335,7 @@ object Servlet {
   def setSiteMap(sm: SiteMap) {_sitemap = Some(sm)}
   def siteMap: Option[SiteMap] = _sitemap
     
-  def appendEarly(f: (HttpServletRequest) => Any) = _early = _early ::: List(f)
+  def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
   
   var ending = false
   private case class Never

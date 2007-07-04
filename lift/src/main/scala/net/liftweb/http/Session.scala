@@ -222,8 +222,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
               c.getMethod(action, null).invoke(inst, null) match {
                 case null | None => None
                 case s : NodeSeq => Some(s)
-                case Some(n : Seq[Node]) => Some(n)
                 case Some(n : NodeSeq) => Some(n)
+                case Some(n : Seq[Node]) => Some(n)
                 case _ => None
               }
             }

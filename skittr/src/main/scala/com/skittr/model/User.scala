@@ -21,7 +21,7 @@ object User extends User with KeyedMetaMapper[long, User] {
   override def fieldOrder = id :: name :: firstName :: lastName :: email ::  password :: Nil
   
   // after we create a user in the database, add the user to the active actors
-  override def afterCreate = &UserList.startUser :: super.afterCreate
+  override def afterCreate = UserList.startUser _ :: super.afterCreate
   
   
   /**
@@ -70,12 +70,12 @@ class User extends ProtoUser[User] {
   // The Name of the User
   object name extends MappedString(this, 32) {
     // input filter for the user name
-    override def setFilter = &notNull :: &toLower :: &trim :: super.setFilter
+    override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter
     
     // validation for the user name
-    override def validations = &valMinLen(3, "Name too short") ::
-     &valRegex(User.validName, "The 'name' must be letters, numbers, or the '_' (underscore)") ::
-     &valUnique("The name '"+get+"' is already taken") :: 
+    override def validations = valMinLen(3, "Name too short") _ ::
+     valRegex(User.validName, "The 'name' must be letters, numbers, or the '_' (underscore)") _ ::
+     valUnique("The name '"+get+"' is already taken") _ :: 
      super.validations
      
     override def dbIndexed_? = true
