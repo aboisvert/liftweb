@@ -14,24 +14,29 @@ import net.liftweb.util.Helpers._
 import java.util.Date
 
 trait BaseMetaMapper {
+  type RealType <: Mapper[RealType]
+  
   def beforeSchemifier: Unit
   def afterSchemifier: Unit
   
   def dbTableName: String
   def mappedFields: Seq[BaseMappedField];
   def dbAddTable: Option[() => Unit]
+  
+  def dbIndexes: List[Index[RealType]]  
 }
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
+  type RealType = A
+  
+  def beforeValidation: List[A => Any] = Nil
+  def beforeValidationOnCreate: List[A => Any] = Nil
+  def beforeValidationOnUpdate: List[A => Any] = Nil
+  def afterValidation: List[A => Any] = Nil
+  def afterValidationOnCreate: List[A => Any] = Nil
+  def afterValidationOnUpdate: List[A => Any] = Nil
 
-  def beforeValidation: List[(A) => Any] = Nil
-  def beforeValidationOnCreate: List[(A) => Any] = Nil
-  def beforeValidationOnUpdate: List[(A) => Any] = Nil
-  def afterValidation: List[(A) => Any] = Nil
-  def afterValidationOnCreate: List[(A) => Any] = Nil
-  def afterValidationOnUpdate: List[(A) => Any] = Nil
-
-  def beforeSave: List[(A) => Any] = Nil
+  def beforeSave: List[A => Any] = Nil
   def beforeCreate: List[(A) => Any] = Nil
   def beforeUpdate: List[(A) => Any] = Nil
 
@@ -301,7 +306,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	    for (col <- mappedColumns.elements) {
 	      val colVal = ??(col._2, toSave)
 	      if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
-		st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                colVal.getTargetSQLType(col._1) match {
+                  case Types.VARCHAR => st.setString(colNum, colVal.getJDBCFriendly(col._1).asInstanceOf[String])
+                  
+                  case _ => st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                }
 		colNum = colNum + 1
 	      }
 	    }
@@ -322,7 +331,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	  for (col <- mappedColumns.elements) {
 	    if (!columnPrimaryKey_?(col._1)) {
 	      val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
-	      st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                colVal.getTargetSQLType(col._1) match {
+                  case Types.VARCHAR => st.setString(colNum, colVal.getJDBCFriendly(col._1).asInstanceOf[String])
+                  
+                  case _ => st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                }
+              
+	      // st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
 	      colNum = colNum + 1
 	    }
 	  }
@@ -639,8 +654,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def afterSchemifier {}
   
   def dbIndexes: List[Index[A]] = Nil
- 
- 
+  
   implicit def fieldToItem[T](in: MappedField[T, A]): IndexItem[A] = IndexField(in)
   implicit def boundedFieldToItem(in: (MappedField[String, A], Int)): BoundedIndexField[A] = BoundedIndexField(in._1, in._2)
   
@@ -662,10 +676,17 @@ object OprEnum extends Enumeration {
 
 case class Index[A <: Mapper[A]](columns: IndexItem[A]*)
 
-abstract class IndexItem[A <: Mapper[A]]
+abstract class IndexItem[A <: Mapper[A]] {
+  def field: BaseMappedField
+  def indexDesc: String  
+}
 
-case class IndexField[A <: Mapper[A], T](field: MappedField[T, A]) extends IndexItem[A]
-case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len: Int) extends IndexItem[A]
+case class IndexField[A <: Mapper[A], T](field: MappedField[T, A]) extends IndexItem[A] {
+  def indexDesc: String = field.dbColumnName
+}
+case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len: Int) extends IndexItem[A] {
+  def indexDesc: String = field.dbColumnName+"("+len+")"
+}
 
 abstract class QueryParam[O<:Mapper[O]]
 //case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]

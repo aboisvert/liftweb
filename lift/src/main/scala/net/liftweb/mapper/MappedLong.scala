@@ -44,6 +44,15 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
       
    def apply(v: Option[O]): T = this(v.map(_.primaryKeyField.get) getOrElse 0L)
    def apply(v: O): T = this(v.primaryKeyField.get)
+   
+   /**
+      * Given the driver type, return the string required to create the column in the database
+      */
+    override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
+       case DerbyDriver => "BIGINT"
+       case MySqlDriver => "BIGINT UNSIGNED"
+     })  
+        
 }
 
 class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[Long] {

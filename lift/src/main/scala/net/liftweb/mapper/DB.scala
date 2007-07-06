@@ -140,8 +140,34 @@ object DB {
   }
 }
 
+
+abstract class DriverType
+object MySqlDriver extends DriverType
+object DerbyDriver extends DriverType
+
+
 class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
   val brokenLimit_? : Lazy[boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
+  def createTablePostpend: String = driverType match {
+    case DerbyDriver => ""
+    case MySqlDriver => " ENGINE = InnoDB "
+  }
+  
+  def supportsForeignKeys_? : Boolean = driverType match {
+    case DerbyDriver => false
+    case MySqlDriver => false
+  }
+  
+  private val _driverType = Lazy(calcDriver(connection.getMetaData.getDatabaseProductName))
+  
+  def driverType = _driverType.get
+    
+  def calcDriver(name: String): DriverType = {
+    name match {
+      case "Apache Derby" => DerbyDriver
+      case "MySQL" => MySqlDriver
+    }
+  }  
 }
 
 object SuperConnection {

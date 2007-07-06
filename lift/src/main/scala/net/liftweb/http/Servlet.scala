@@ -143,6 +143,7 @@ class Servlet extends HttpServlet {
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
     def doIt {
       printTime("Service request "+req.getRequestURI) {
+        Servlet.early.foreach(_(req))
         Servlet.setContext(getServletContext)
         req.getMethod.toUpperCase match {
           case "GET" => doGet(req, resp)
@@ -165,7 +166,6 @@ class Servlet extends HttpServlet {
    * Service the HTTP request
    */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) {
-    Servlet.early.foreach(_(request))
     val session = RequestState(request, Servlet.rewriteTable, getServletContext)
 
     val toMatch = RequestMatcher(session, session.path)
@@ -287,6 +287,8 @@ object Servlet {
     test_boot
     _early
   }
+  
+  var getXLator: Option[String => String] = None
   
   val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {

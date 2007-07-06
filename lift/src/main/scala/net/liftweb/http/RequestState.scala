@@ -38,6 +38,14 @@ object RequestState {
       }
     }
     
+    def xlateIfGet(in: List[String]): List[String] = {
+      if (!reqType.get_? || !Servlet.getXLator.isDefined) in
+      else {
+        val xl = Servlet.getXLator.get
+        in.map(s => xl(s))
+      }
+    }
+    
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
     val rewritten = processRewrite(tmpUri, tmpPath, TreeMap.empty)
     
@@ -47,13 +55,15 @@ object RequestState {
     val body = (if (reqType.post_? && request.getContentType == "text/xml") readWholeStream(request.getInputStream) else null)
       
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
-    val tmp = paramNames.map{n => (n, request.getParameterValues(n).toList)}
-    val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
+    val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
+    val params = localParams ++ paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
     
     new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
 		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
 		     body, request.getContentType, request, context)
   }
+  
+ 
   
   def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, null, "", null, null)
   
