@@ -288,8 +288,6 @@ object Servlet {
     _early
   }
   
-  var getXLator: Option[String => String] = None
-  
   val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
     val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")

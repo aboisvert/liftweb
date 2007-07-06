@@ -38,13 +38,14 @@ object RequestState {
       }
     }
     
+    /*
     def xlateIfGet(in: List[String]): List[String] = {
       if (!reqType.get_? || !Servlet.getXLator.isDefined) in
       else {
         val xl = Servlet.getXLator.get
         in.map(s => xl(s))
       }
-    }
+    }*/
     
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
     val rewritten = processRewrite(tmpUri, tmpPath, TreeMap.empty)
@@ -52,11 +53,37 @@ object RequestState {
     val localParams = TreeMap(rewritten.params.map(a => (a._1, List(a._2))).toList :_*)
     
     // val session = request.getSession
-    val body = (if (reqType.post_? && request.getContentType == "text/xml") readWholeStream(request.getInputStream) else null)
+   //  val body = ()
       
+   val eMap = Map.empty[String, List[String]]
+   
+    val (paramNames, params: Map[String, List[String]], body) = if (reqType.post_? && request.getContentType == "text/xml") {
+      (Nil,eMap, readWholeStream(request.getInputStream))
+    } else if (reqType.get_?) {
+        request.getQueryString match {
+          case null => (Nil, Map.empty, null)
+          case s =>
+          val pairs = s.split("&").toList.map(_.trim).filter(_.length > 0).map(_.split("=").toList match {
+            case name :: value :: Nil => (true, urlDecode(name), urlDecode(value))
+            case name :: Nil => (true, urlDecode(name), "")
+            case _ => (false, "", "")
+          }).filter(_._1).map{case (_, name, value) => (name, value)}
+          val names = pairs.map(_._1).removeDuplicates
+          val params = pairs.foldLeft(eMap) (
+            (a,b) => a.get(b._1) match {
+              case None => a + b._1 -> List(b._2)
+              case Some(xs) => a + b._1 -> (xs ::: List(b._2))
+            }
+          )
+          (names, params, null)
+        }
+    } else {
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
-    val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
-    val params = localParams ++ paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
+    // val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
+    val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
+      (paramNames, params, null)
+    }
+
     
     new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
 		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
