@@ -79,6 +79,11 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
   }
   
   
+  def apply(ov: Option[String]): T = {
+    ov.foreach(v => this := v)
+    owner
+  }
+  
   def getJDBCFriendly(field : String): String = data.get
   
   def real_convertToJDBCFriendly(value: String): Object = value

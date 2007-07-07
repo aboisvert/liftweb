@@ -467,6 +467,13 @@ object Helpers {
   def makeBlowfishKey: Array[Byte] = KeyGenerator.getInstance("blowfish").generateKey.getEncoded
   def blowfishKeyFromBytes(key: Array[Byte]): SecretKey = new SecretKeySpec(key, "blowfish")
   
+  def blowfishDecrypt(enc: Array[Byte], key: Array[Byte]): Array[Byte] = blowfishDecrypt(enc, blowfishKeyFromBytes(key))
+  def blowfishDecrypt(enc: Array[Byte], key: SecretKey): Array[Byte] = readWholeStream(decryptStream(new ByteArrayInputStream(enc), key))
+  
+  def blowfishEncrypt(plain: Array[Byte], key: Array[Byte]): Array[Byte] = blowfishEncrypt(plain, blowfishKeyFromBytes(key))
+  def blowfishEncrypt(plain: Array[Byte], key: SecretKey): Array[Byte] = readWholeStream(encryptStream(new ByteArrayInputStream(plain), key))
+  
+  
   def decryptStream(in: InputStream, key: Array[Byte]): InputStream = decryptStream(in, blowfishKeyFromBytes(key))
   def decryptStream(in: InputStream, key: SecretKey): InputStream = {
       val cipher = Cipher.getInstance("blowfish")
@@ -591,19 +598,23 @@ object Helpers {
   
   def millis = System.currentTimeMillis
   
-  def printTime[T](msg: String)(f: => T): T = {
+  def logTime[T](msg: String)(f: => T): T = {
+    val (time, ret) = calcTime(f)
+    Log.info(msg+" took "+time+" Milliseconds")
+    ret
+    /*
     val start = millis
     try {
       f
     } finally {
       Log.info(msg+" took "+(millis - start)+" Milliseconds")
-    }
+    }*/
   }
   
-  def calcTime(f: => Any): long = {
+  def calcTime[T](f: => T): (Long, T) = {
     val start = millis
-    f
-    millis - start
+    val ret = f
+    (millis - start, ret)
   }
   
   def createInvoker(name: String, on: AnyRef): Option[() => Option[Any]] = {
@@ -628,11 +639,11 @@ object Helpers {
     }
   }
   
-  def base64Encode(in: Array[byte]): String = {
+  def base64Encode(in: Array[Byte]): String = {
     new String((new Base64).encode(in))
   }
   
-  def base64Decode(in: String): Array[byte] = {
+  def base64Decode(in: String): Array[Byte] = {
     (new Base64).decode(in.getBytes("UTF-8"))
   }
   

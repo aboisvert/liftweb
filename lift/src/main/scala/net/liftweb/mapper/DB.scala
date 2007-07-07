@@ -18,6 +18,8 @@ object DB {
   private val envContext = Lazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   val logger = Log.logger(DB.getClass)
   
+  var queryTimeout: Option[Int] = None
+  
   /**
     * can we get a JDBC connection from JNDI?
     */
@@ -87,6 +89,7 @@ object DB {
   
   def statement[T](db : SuperConnection)(f : (Statement) => T) : T =  {
     val st = db.createStatement
+    queryTimeout.foreach(to => st.setQueryTimeout(to))
     try {
       f(st)
     } finally {
@@ -102,6 +105,7 @@ object DB {
   }
   
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
+    queryTimeout.foreach(to => statement.setQueryTimeout(to))
     val rs = statement.executeQuery
     try {
       f(rs)
@@ -113,6 +117,7 @@ object DB {
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     logger.trace("About to prepare statement "+statement)
     val st = conn.prepareStatement(statement)
+    queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
 	f(st)
       } finally {
@@ -123,6 +128,7 @@ object DB {
   def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     logger.trace("About to prepare statement: "+statement+" with keys "+keys)
         val st = conn.prepareStatement(statement, keys)
+        queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
         f(st)
       } finally {

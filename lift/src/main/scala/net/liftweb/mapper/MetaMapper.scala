@@ -710,14 +710,14 @@ object NotBy {
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <>, None, Some(otherField))
 }
 
-object ByGt {
+object By_> {
   import OprEnum._
 
   def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, >, Some(value), None)
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, >, None, Some(otherField))  
 }
 
-object ByLt {
+object By_< {
   import OprEnum._
 
   def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <, Some(value), None)

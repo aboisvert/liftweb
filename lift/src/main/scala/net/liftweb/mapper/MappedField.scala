@@ -142,7 +142,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   def update(v: T) {
     this := v
   }
-   
+  
   def apply(v: T): O = {
     this := v
     owner

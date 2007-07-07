@@ -48,7 +48,7 @@ class Servlet extends HttpServlet {
     Log.debug("Destroyed servlet")
     super.destroy
     } catch {
-      case e => e.printStackTrace
+      case e => Log.error("Servlet destruction failure",e)
     }
   }
   
@@ -141,8 +141,9 @@ class Servlet extends HttpServlet {
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
+    try {
     def doIt {
-      printTime("Service request "+req.getRequestURI) {
+      logTime("Service request "+req.getRequestURI) {
         Servlet.early.foreach(_(req))
         Servlet.setContext(getServletContext)
         req.getMethod.toUpperCase match {
@@ -160,6 +161,9 @@ class Servlet extends HttpServlet {
           case Some(r: Response) => sendResponse(r, resp)
           case _ => doIt
   }
+    } catch {
+      case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw new Exception("Request failed", e)
+    }
   }
   
   /**
