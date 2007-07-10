@@ -8,10 +8,10 @@ package net.liftweb.http
 \*                                                 */
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import scala.collection.mutable.{HashMap, ArrayBuffer}
+import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
-import net.liftweb.util.{Helpers, ThreadGlobal}
+import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper}
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
 
@@ -27,7 +27,7 @@ object S {
   private val _request = new ThreadGlobal[RequestState];
   private val _servletRequest = new ThreadGlobal[HttpServletRequest];
   private val functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]];
-  private val _notice = new ThreadGlobal[ArrayBuffer[(NoticeType.Value, NodeSeq)]];
+  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]];
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = {
     val ret = new ThreadGlobal[Boolean];
@@ -37,6 +37,7 @@ object S {
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[HashMap[String, String]]
   private val _stateInfo = new ThreadGlobal[VarStateHolder]
+  private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   
   /**
    * Get the current HttpServletSession
@@ -61,14 +62,17 @@ object S {
   
   private val currCnt = new ThreadGlobal[Int]
   
-  def nc : String = {
+  /**
+    * A string with the "next count"
+    */
+  def nextCount(): String = {
     val n = currCnt.value
     currCnt := n + 1
     String.format("%06d", Array(new Integer(n)))
   }
   
   private def initNotice[B](f: => B): B = {
-    _notice.doWith(new ArrayBuffer[(NoticeType.Value, NodeSeq)])(f)
+    _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq)])(f)
   }
   
   /**
@@ -81,6 +85,46 @@ object S {
 
   }
   
+  def logQuery(query: String, time: Long) {
+    _queryLog.value match {
+      case null =>
+      case lb => lb += (query, time)
+    }
+  }
+  
+  private var _queryAnalyzer: List[(RequestState, Long, List[(String, Long)]) => Any] = Nil
+  
+  def addAnalyzer(f: (RequestState, Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
+  
+  private var aroundRequest: List[LoanWrapper] = Nil
+  private def doAround[B](f: => B, ar: List[LoanWrapper]): B = 
+    ar match {
+    case Nil => f
+    case x :: xs => x(doAround(f, xs))
+  }
+  
+  def addAround(lw: LoanWrapper): Unit = aroundRequest = lw :: aroundRequest 
+  
+  
+  def queryLog: List[(String, Long)] = _queryLog.value match {
+    case null => Nil
+    case lb => lb.toList
+  }
+  
+  private def wrapQuery[B](f: => B): B = {
+    _queryLog.doWith(new ListBuffer) {
+      val begin = millis
+      try {
+      doAround(f, aroundRequest)
+      } finally {
+        val log = queryLog
+        val req = request
+        val time = millis - begin
+        _queryAnalyzer.foreach(_(req, time, log))
+      }
+    }
+  }
+  
   private def _init[B](request: RequestState, vsh: VarStateHolder)(f : => B): B = {
     _stateInfo.doWith(vsh) {
     _attrs.doWith(new HashMap) {
@@ -89,7 +133,9 @@ object S {
           initNotice {
             functionMap.doWith(new HashMap[String, AFuncHolder]) {
               this._request.doWith(request) {
+                wrapQuery {
                 this.currCnt.doWith(0)(f)
+                }
               }
             }
           }
@@ -185,24 +231,12 @@ object S {
   
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
 
- 
-  /*
-  def fL(in: List[String] => boolean): String = {
-    val name = "F"+System.nanoTime+"_"+randomString(3)
-    addFunctionMap(name, in)
-    name
-  }
-  
-  def fL(name: String, inf: List[String] => boolean): String = {
-    addFunctionMap(name, inf)
-    name
-  }*/
   
   def addFunctionMap(name: String, value: AFuncHolder) {
     functionMap.value += (name -> value)
   }
   def mapFunction(name: String, f: AFuncHolder): String = {
-    val ret = ""+nc+"_"+name+"_"+randomString(5)
+    val ret = ""+nextCount()+"_"+name+"_"+randomString(5)
     functionMap.value += (ret -> f)
     ret
   }

@@ -20,6 +20,13 @@ object DB {
   
   var queryTimeout: Option[Int] = None
   
+  private var logFuncs: List[(String, Long) => Any] = Nil
+  
+  def addLogFunc(f: (String, Long) => Any): List[(String, Long) => Any] = {
+    logFuncs = logFuncs ::: List(f)
+    logFuncs
+  }
+  
   /**
     * can we get a JDBC connection from JNDI?
     */
@@ -73,7 +80,7 @@ object DB {
   private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
     var ret = info.get(name) match {
       case None => (newConnection(name), 1)
-      case Some(c) => (c._1, c._2 + 1)
+      case Some((conn, cnt)) => (conn, cnt + 1)
     }
     info(name) = ret
     ret._1
@@ -87,53 +94,60 @@ object DB {
     }
   }
   
+  private def runLogger(query: String, time: Long) {
+    logFuncs.foreach(_(query, time))
+  }
+  
   def statement[T](db : SuperConnection)(f : (Statement) => T) : T =  {
+    Helpers.calcTime {
     val st = db.createStatement
     queryTimeout.foreach(to => st.setQueryTimeout(to))
     try {
-      f(st)
+      (st.toString, f(st))
     } finally {
       st.close
     }
+    } match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def exec[T](db : SuperConnection, query : String)(f : (ResultSet) => T) : T = {
+    Helpers.calcTime(
     statement(db) {st => 
-      logger.trace("About to execute query: "+query)
       f(st.executeQuery(query))
-      }
+      }) match {case (time, res) => runLogger(query, time); res}
   }
   
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))
+    Helpers.calcTime{
     val rs = statement.executeQuery
     try {
-      f(rs)
+      (statement.toString, f(rs))
     } finally {
       rs.close
-    }
+    }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
-    logger.trace("About to prepare statement "+statement)
+    Helpers.calcTime {
     val st = conn.prepareStatement(statement)
     queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
-	f(st)
+	(st.toString, f(st))
       } finally {
         st.close
-      }
+      }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
-    logger.trace("About to prepare statement: "+statement+" with keys "+keys)
+    Helpers.calcTime{
         val st = conn.prepareStatement(statement, keys)
         queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
-        f(st)
+        (st.toString, f(st))
       } finally {
         st.close
-      }
+      }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
