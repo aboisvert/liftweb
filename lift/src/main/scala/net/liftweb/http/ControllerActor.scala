@@ -70,14 +70,14 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       if (!askingWho.isEmpty) {
       	askingWho.get forward r
       } else {
-          S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
+          S.init(request,theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
 	    reply(buildRendered(render))
           }
       }
     
     case ActionMessage(name, value, _, replyTo, request, sv) =>
     this.sessionVars = sv
-      S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false) ) {
+      S.init(request,theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false) ) {
 	localFunctionMap.get(name) match {
           case Some(f) => {
 
@@ -93,7 +93,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       whosAsking = Some(who)
     
     case AnswerQuestion(what, request) =>
-      S.init(request, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
+      S.init(request,theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
         askingWho.foreach {
           askingWho =>
         reply("A null message to release the actor from its send and await reply... do not delete this message")
@@ -113,7 +113,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
   def compute: Map[String, Any] = Map.empty[String, Any]
   
   def reRender = {
-    S.initIfUninitted(new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
+    S.initIfUninitted(theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
       val rendered: AnswerRender = buildRendered(render)
       owner.foreach(_ ! rendered)
     }

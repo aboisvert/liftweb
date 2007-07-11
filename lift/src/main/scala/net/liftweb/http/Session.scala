@@ -19,7 +19,30 @@ import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 import net.liftweb.http.S._
 
-class Session extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
+object Session {
+  def createSession( uri: String,
+      path: ParsePath,
+       contextPath: String,
+       requestType: RequestType,
+       webServices_? : boolean,
+       contentType: String) = new Session(uri, path, contextPath, requestType, webServices_?, contentType)
+       
+   var creator = createSession _
+   
+   def apply(uri: String,
+      path: ParsePath,
+       contextPath: String,
+       requestType: RequestType,
+       webServices_? : boolean,
+       contentType: String) = creator(uri, path, contextPath, requestType, webServices_?, contentType)
+}
+
+class Session(val uri: String,
+           val path: ParsePath,
+           val contextPath: String,
+           val requestType: RequestType,
+           val webServices_? : boolean,
+           val contentType: String) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private val pages = new HashMap[String, Page]
   // private var sessionState: TreeMap[String, Any] = TreeMap.empty
   private var running_? = false
@@ -33,6 +56,8 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
     ret
   }
   
+  val uniqueId = randomString(20)
+  
   def sessionDidActivate(se: HttpSessionEvent) = {
 
   }
@@ -44,15 +69,14 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
    * What happens when this controller is bound to the HTTP session?
    */ 
   def valueBound(event: HttpSessionBindingEvent) {
-    //this.start
-    // ignore this event  
+    
   }
 
   /**
    * When the session is unbound the the HTTP controller, stop us
    */
   def valueUnbound(event: HttpSessionBindingEvent) {
-    if (running_?) this ! 'shutdown
+    if (running_?) this ! ShutDown
   }
   
   /**
@@ -72,10 +96,10 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   }
   
   def dispatcher: PartialFunction[Any, Unit] = {
-    case 'shutdown =>
+    case ShutDown =>
       Log.debug("Shutting down session")
-      theControllerMgr ! 'shutdown
-      pages.foreach(_._2 ! 'shutdown)
+      theControllerMgr ! ShutDown
+      pages.foreach(_._2 ! ShutDown)
       self.exit
     loop
     
@@ -117,7 +141,7 @@ class Session extends Actor with HttpSessionBindingListener with HttpSessionActi
   
   private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: long,
       whenDone: AnyRef => Any) = {
-    S.init(request, httpRequest, notices, new VarStateHolder(this, this._state, None, true)) {
+    S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, None, true)) {
       try {
         request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
@@ -398,4 +422,4 @@ case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequ
 case class SendEmptyTo(who: AnyRef => Any) extends SessionMessage
 case class UpdateState(name: String, value: Option[String]) extends SessionMessage
 case object CurrentVars extends SessionMessage
-
+case object ShutDown

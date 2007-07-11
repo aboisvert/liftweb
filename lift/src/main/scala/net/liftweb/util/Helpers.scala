@@ -903,6 +903,8 @@ object Helpers {
  implicit def boolean2(b: Boolean) = new Boolean2(b) 
  
  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
+ 
+ implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
 }
 
 class SuperList[T](val what: List[T]) {
@@ -912,4 +914,8 @@ class SuperList[T](val what: List[T]) {
   def comma: String = what.mkString(", ")
   def join(str: String) = what.mkString(str)
   def ? : Boolean = !what.isEmpty
+}
+
+class DoubleOption[T](val what: Option[Option[T]]) {
+  def flatten: Option[T] = what.flatMap(a => a)
 }

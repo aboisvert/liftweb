@@ -129,11 +129,12 @@ class Servlet extends HttpServlet {
   }
   
   
-  def getActor(session: HttpSession) = {
+  def getActor(request: RequestState, session: HttpSession) = {
     session.getValue(actorNameConst) match {
       case r : Session => r
       case _ => 
-        val ret = new Session
+        val ret = new Session(request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
+            request.contentType)
         ret.start
         session.putValue(actorNameConst, ret)
         ret
@@ -177,9 +178,9 @@ class Servlet extends HttpServlet {
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
       } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
-        val sessionActor = getActor(request.getSession)
+        val sessionActor = getActor(session, request.getSession)
          
-	S.init(session, new VarStateHolder(sessionActor, sessionActor.currentVars, None, false)) {
+	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, None, false)) {
 	  val f = Servlet.dispatchTable(toMatch)
 	  f(request) match {
             case None => session.createNotFound.toResponse
@@ -188,7 +189,7 @@ class Servlet extends HttpServlet {
 	}
       } else {
 	
-        val sessionActor = getActor(request.getSession)
+        val sessionActor = getActor(session, request.getSession)
 	
         try {
           this.synchronized {

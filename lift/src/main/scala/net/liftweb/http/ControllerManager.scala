@@ -22,9 +22,9 @@ class ControllerManager extends Actor {
       loop
     }
     
-    case 'shutdown =>
+    case ShutDown =>
     Log.debug("Shutting down ctrl mgr")
-    self.exit('Shutdown)
+    self.exit()
     loop
     
     case Exit( controller, reason: Exception) => 

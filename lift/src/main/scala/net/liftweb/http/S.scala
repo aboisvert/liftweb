@@ -37,6 +37,7 @@ object S {
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[HashMap[String, String]]
   private val _stateInfo = new ThreadGlobal[VarStateHolder]
+  private val _sessionInfo = new ThreadGlobal[Session]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   
   /**
@@ -78,11 +79,16 @@ object S {
   /**
    * Initialize the current request session
    */
-  def init[B](request : RequestState, vsh: VarStateHolder)(f : => B) : B = {
+  def init[B](request : RequestState, session: Session, vsh: VarStateHolder)(f : => B) : B = {
     _oldNotice.doWith(Nil) {
-      _init(request, vsh)(f)
+      _init(request,session, vsh)(f)
     }
 
+  }
+  
+  def session: Option[Session] = _sessionInfo.value match {
+    case null => None
+    case s => Some(s)
   }
   
   def logQuery(query: String, time: Long) {
@@ -125,7 +131,8 @@ object S {
     }
   }
   
-  private def _init[B](request: RequestState, vsh: VarStateHolder)(f : => B): B = {
+  private def _init[B](request: RequestState, session: Session, vsh: VarStateHolder)(f : => B): B = {
+    _sessionInfo.doWith(session) (
     _stateInfo.doWith(vsh) {
     _attrs.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
@@ -142,7 +149,7 @@ object S {
         }
       }
     }
-    }
+    })
   }
   
   object state {
@@ -177,15 +184,15 @@ object S {
     _attrs.doWith(ht)(f)
   }
   
-  def initIfUninitted[B](vsh: VarStateHolder)(f: => B) : B = {
+  def initIfUninitted[B](session: Session, vsh: VarStateHolder)(f: => B) : B = {
     if (inS.value) f
-    else init(RequestState.nil, vsh)(f)
+    else init(RequestState.nil,session, vsh)(f)
   }
   
-  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], vsh: VarStateHolder)(f : => B) : B = {
+  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: Session, vsh: VarStateHolder)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
       this._servletRequest.doWith(servletRequest) {
-        _init(request, vsh)(f)
+        _init(request, session, vsh)(f)
       }
     }
   }

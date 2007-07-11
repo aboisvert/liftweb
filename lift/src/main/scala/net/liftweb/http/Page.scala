@@ -27,7 +27,7 @@ class Page(val theSession: Session) extends Actor {
   
 
   def dispatcher: PartialFunction[Any, Unit] = {
-    case "shutdown" => self.exit("shutdown")
+    case ShutDown => self.exit()
     
     case AskRenderPage(state, pageXml, sender, controllerMgr, timeout, varState) =>
       performRender(state, pageXml, sender, controllerMgr, timeout, varState)
