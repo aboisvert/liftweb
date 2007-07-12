@@ -85,15 +85,16 @@ class Session(val uri: String,
   def act = {
     this.trapExit = true
     running_? = true
-    loop
+
+    loop(react(dispatcher))
   }
   
   /**
    * The loop for the actor.  Dispatches messages using Scala's event-based Actors
    */
-  final def loop {
+  /*final def loop {
     react(dispatcher)
-  }
+  }*/
   
   def dispatcher: PartialFunction[Any, Unit] = {
     case ShutDown =>
@@ -101,28 +102,24 @@ class Session(val uri: String,
       theControllerMgr ! ShutDown
       pages.foreach(_._2 ! ShutDown)
       self.exit
-    loop
     
     case AskSessionToRender(request,httpRequest, timeout, whenDone) => 
       processRequest(request, httpRequest, timeout, whenDone)
-    loop
     
     case AnswerRenderPage(request, thePage, sender) =>
       val updatedPage = fixResponse(thePage, request)
       sender(Some(updatedPage))
-    loop
     
     case SendEmptyTo(sender) =>
       sender(XhtmlResponse(Unparsed(""),None, List("Content-Type" -> "text/javascript"), 200))
-    loop
     
-    case UpdateState(name, None) => stateVar - name; loop
+    case UpdateState(name, None) => stateVar - name
 
-    case UpdateState(name, Some(value)) => stateVar(name) = value ; loop
+    case UpdateState(name, Some(value)) => stateVar(name) = value
     
-    case CurrentVars => reply(_state); loop
+    case CurrentVars => reply(_state)
 
-    case unknown => Log.debug("Session Got a message "+unknown); loop
+    case unknown => Log.debug("Session Got a message "+unknown)
   }
   
   object stateVar {
