@@ -911,6 +911,8 @@ object Helpers {
  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
  
  implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
+ 
+ implicit def stringToSuper(in: String): SuperString = new SuperString(in)
 }
 
 class SuperList[T](val what: List[T]) {
@@ -920,6 +922,25 @@ class SuperList[T](val what: List[T]) {
   def comma: String = what.mkString(", ")
   def join(str: String) = what.mkString(str)
   def ? : Boolean = !what.isEmpty
+}
+
+class SuperString(val what: String) {
+  def commafy: String = {
+    if (what eq null) null
+    else {
+    val toDo = what.toList.reverse
+    
+    def commaIt(in: List[Char]): List[Char] = in match {
+      case Nil => in
+      case x :: Nil => in
+      case x1 :: x2 :: Nil => in
+      case x1 :: x2 :: x3 :: Nil => in
+      case x1 :: x2 :: x3 :: xs => x1 :: x2 :: x3 :: ',' :: commaIt(xs)
+    }
+    
+    commaIt(toDo).reverse.mkString("")
+  }
+  }
 }
 
 class DoubleOption[T](val what: Option[Option[T]]) {

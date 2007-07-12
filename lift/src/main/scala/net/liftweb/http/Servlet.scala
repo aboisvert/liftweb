@@ -133,7 +133,7 @@ class Servlet extends HttpServlet {
     session.getValue(actorNameConst) match {
       case r : Session => r
       case _ => 
-        val ret = new Session(request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
+        val ret = Session(request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
             request.contentType)
         ret.start
         session.putValue(actorNameConst, ret)

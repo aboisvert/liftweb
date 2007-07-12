@@ -6,7 +6,7 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import java.sql.{Connection, ResultSet, Statement, PreparedStatement}
+import java.sql.{Connection, ResultSet, Statement, PreparedStatement, Types, ResultSetMetaData}
 import javax.sql.{ DataSource}
 import javax.naming.{Context, InitialContext}
 import scala.collection.mutable._
@@ -75,6 +75,7 @@ object DB {
   }
   
   
+  
   private def releaseConnection(conn : SuperConnection) : unit = conn.close
   
   private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
@@ -116,6 +117,43 @@ object DB {
       f(st.executeQuery(query))
       }) match {case (time, res) => runLogger(query, time); res}
   }
+  
+  def runQuery(query: String): (List[String], List[List[String]]) = {
+    import java.sql.Types._
+    
+    def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = md.getColumnType(1) match {
+      
+      case ARRAY | BINARY | BLOB | DATALINK | DISTINCT | JAVA_OBJECT | LONGVARBINARY | NULL | OTHER | REF | STRUCT | VARBINARY  => rs.getObject(pos) match {
+        case null => null
+        case s => s.toString
+      }
+      case BIGINT |  INTEGER | DECIMAL | NUMERIC | SMALLINT | TINYINT => rs.getLong(pos).toString
+      case BIT | BOOLEAN => rs.getBoolean(pos).toString
+      
+      case VARCHAR | CHAR | CLOB | LONGVARCHAR => rs.getString(pos)
+
+      case DATE | TIME | TIMESTAMP => rs.getTimestamp(pos).toString
+      
+      case DOUBLE | FLOAT | REAL  => rs.getDouble(pos).toString
+    }
+    
+    use(DefaultConnectionIdentifier)(conn => exec(conn, query) {
+      rs =>
+      val md = rs.getMetaData
+      val cnt = md.getColumnCount
+      val cntList = (1 to cnt).toList
+      val colNames = cntList.map(i => md.getColumnName(i))
+      
+      val lb = new ListBuffer[List[String]]()
+      
+      while(rs.next) {
+        lb += cntList.map(i => asString(i, rs, md))
+      }
+      
+      (colNames, lb.toList)
+    })
+  }
+  
   
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))

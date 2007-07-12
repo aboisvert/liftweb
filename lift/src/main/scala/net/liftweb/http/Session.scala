@@ -25,7 +25,7 @@ object Session {
        contextPath: String,
        requestType: RequestType,
        webServices_? : boolean,
-       contentType: String) = new Session(uri, path, contextPath, requestType, webServices_?, contentType)
+       contentType: String) = {new Session(uri, path, contextPath, requestType, webServices_?, contentType)}
        
    var creator = createSession _
    
