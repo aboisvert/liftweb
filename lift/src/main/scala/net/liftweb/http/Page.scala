@@ -36,7 +36,7 @@ class Page(val theSession: Session) extends Actor {
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
-      ajr.sendTo(XhtmlResponse(Unparsed(""),None,  List("Content-Type" -> "text/javascript"), 200))
+      ajr.sendTo(AnswerHolder(XhtmlResponse(Unparsed(""),None,  List("Content-Type" -> "text/javascript"), 200)))
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     
@@ -46,7 +46,7 @@ class Page(val theSession: Session) extends Actor {
   def updateRendered(ar: AnswerRender) {
     updates(ar.by.uniqueId) = ar
     if (!pendingAjax.isEmpty) {
-      pendingAjax.foreach(ar => ar.sendTo(buildResponseFromUpdates(ar.state)))
+      pendingAjax.foreach(ar => ar.sendTo(AnswerHolder(buildResponseFromUpdates(ar.state))))
       pendingAjax = Nil
       updates.clear
     }
@@ -65,7 +65,7 @@ class Page(val theSession: Session) extends Actor {
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
-      sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: Long,
+      sender: AnswerHolder => Any, controllerMgr: ControllerManager, timeout: Long,
       varState: Map[String, String]) {
       sessionVars = varState
       processParameters(state)
@@ -93,7 +93,7 @@ class Page(val theSession: Session) extends Actor {
             
           }
         }
-        sender(resp)
+        sender(AnswerHolder(resp))
       }
   }
   
@@ -186,4 +186,4 @@ class Page(val theSession: Session) extends Actor {
   }
 }
 
-case class AjaxRerender(timeOut: long, sendTo: AnyRef => Any, state: RequestState)
+case class AjaxRerender(timeOut: long, sendTo: AnswerHolder => Any, state: RequestState)
