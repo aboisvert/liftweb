@@ -121,7 +121,7 @@ object DB {
   def runQuery(query: String): (List[String], List[List[String]]) = {
     import java.sql.Types._
     
-    def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = md.getColumnType(1) match {
+    def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = md.getColumnType(pos) match {
       
       case ARRAY | BINARY | BLOB | DATALINK | DISTINCT | JAVA_OBJECT | LONGVARBINARY | NULL | OTHER | REF | STRUCT | VARBINARY  => rs.getObject(pos) match {
         case null => null
