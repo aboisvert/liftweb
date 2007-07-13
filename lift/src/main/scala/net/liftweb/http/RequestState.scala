@@ -12,7 +12,7 @@ import javax.servlet.ServletContext
 // import scala.collection.mutable.HashMap
 import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Lazy
+import net.liftweb.util.{Lazy, Log}
 import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
@@ -164,6 +164,7 @@ class RequestState(val paramNames: List[String],
   }
   
   def showException(e: Throwable) = {
+    Log.error("Exception being returned to browser", e)
     def _showException(le: Throwable): String = {
       val ret = "Message: "+le.toString+"\n"+
       le.getStackTrace.map{st => st.toString}.mkString("","\n","") + "\n"

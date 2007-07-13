@@ -108,10 +108,10 @@ class Session(val uri: String,
     
     case AnswerRenderPage(request, thePage, sender) =>
       val updatedPage = fixResponse(thePage, request)
-      sender(Some(updatedPage))
+      sender(AnswerHolder(updatedPage))
     
     case SendEmptyTo(sender) =>
-      sender(XhtmlResponse(Unparsed(""),None, List("Content-Type" -> "text/javascript"), 200))
+      sender(AnswerHolder(XhtmlResponse(Unparsed(""),None, List("Content-Type" -> "text/javascript"), 200)))
     
     case UpdateState(name, None) => stateVar - name
 
@@ -137,14 +137,14 @@ class Session(val uri: String,
   }
   
   private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: long,
-      whenDone: AnyRef => Any) = {
+      whenDone: AnswerHolder => Any) = {
     S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, None, true)) {
       try {
         request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
         processParameters(request)
         findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(xml, request)) match {
-          case None => whenDone(request.createNotFound)
+          case None => whenDone(AnswerHolder(request.createNotFound))
           case Some(xml: NodeSeq) => {
             S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 
@@ -152,7 +152,7 @@ class Session(val uri: String,
               if (request.ajax_?) {
                 ActorPing.schedule(this, SendEmptyTo(whenDone), timeout - 250) 
               } else {
-                notices = Nil; whenDone(XhtmlResponse(Group(request.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Nil, 200))
+                notices = Nil; whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(xml)),ResponseInfo.xhtmlTransitional, Nil, 200)))
               }
             } else {
               val page = pages.get(request.uri) getOrElse {val p = createPage; pages(request.uri) = p; p }
@@ -166,18 +166,18 @@ class Session(val uri: String,
         val rd = ite.getCause.asInstanceOf[RedirectException]
         notices = S.getNotices
         
-        whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
+        whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
                  ResponseInfo.xhtmlTransitional,
                  List("Location" -> (request.contextPath+rd.to)),
-                 302))
+                 302)))
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
-            whenDone(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
+            whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
                      List("Location" -> (request.contextPath+rd.to)),
-                     302))
+                     302)))
           }
-	case e  => whenDone(request.showException(e))
+	case e  => whenDone(AnswerHolder(request.showException(e)))
       }
     }
   }
@@ -408,15 +408,17 @@ abstract class SessionMessage
  * Sent from a session to a Page to tell the page to render itself and includes the sender that
  * the rendered response should be sent to
  */
-case class AskRenderPage(request: RequestState, xml: NodeSeq, sender: AnyRef => Any, controllerMgr: ControllerManager, timeout: Long,
+case class AskRenderPage(request: RequestState, xml: NodeSeq, sender: AnswerHolder => Any, controllerMgr: ControllerManager, timeout: Long,
     state: Map[String, String]) extends SessionMessage
 
 /**
  * The response from a page saying that it's been rendered
  */
-case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse, sender: AnyRef => Any) extends SessionMessage
-case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnyRef => Any)
-case class SendEmptyTo(who: AnyRef => Any) extends SessionMessage
+case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse, sender: AnswerHolder => Any) extends SessionMessage
+case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
+case class SendEmptyTo(who: AnswerHolder => Any) extends SessionMessage
 case class UpdateState(name: String, value: Option[String]) extends SessionMessage
 case object CurrentVars extends SessionMessage
 case object ShutDown
+
+case class AnswerHolder(what: AnyRef)

@@ -221,12 +221,12 @@ class Servlet extends HttpServlet {
         val thisSelf = self
 	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
         receiveWithin(timeout) {
-          case r: XhtmlResponse => r.toResponse
-          case Some(r: XhtmlResponse) => r.toResponse
-          case r : Response => r
-	  case Some(r: Response) => r
+          case AnswerHolder(r: XhtmlResponse) => r.toResponse
+          case AnswerHolder(Some(r: XhtmlResponse)) => r.toResponse
+          case AnswerHolder(r : Response) => r
+	  case AnswerHolder(Some(r: Response)) => r
           // if we failed allow the optional handler to process a request 
-	  case n => Servlet.requestTimedOut.flatMap(_(session, n)) match {
+	  case n @ TIMEOUT => Servlet.requestTimedOut.flatMap(_(session, n)) match {
             case Some(r) => r
             case None => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
           }
