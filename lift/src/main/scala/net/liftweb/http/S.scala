@@ -198,17 +198,20 @@ object S {
   }
   
   def get(what: String): Option[String] = {
-    _servletRequest.value match {
-      case null => None
-      case s => s.getSession.getAttribute(what) match {
-	case null => None
-	case n => {
-	  if (n.isInstanceOf[String]) Some(n.asInstanceOf[String])
-	  else None
-	}
+    val sr = _servletRequest.value
+    if (sr eq null) None
+    else {
+      val ses = sr.getSession
+      if (ses eq null) None
+      else {
+      val ret = ses.getAttribute(what)
+      if (ret eq null) None
+      else if (ret.isInstanceOf[String]) Some(ret.toString)
+      else None
       }
     }
   }
+
   
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
