@@ -40,21 +40,17 @@ trait Mapper[A<:Mapper[A]] {
   
   private def calcDbId = if (dbCalculateConnectionIdentifier.isDefinedAt(this)) dbCalculateConnectionIdentifier(this)
   else getSingleton.dbDefaultConnectionIdentifier
-  
-  /*
-  def onFormPost(f : (A) => boolean) : A = {
-    this
-  }*/
+
   
   /**
     * Save the instance and return the instance
     */
-  def saveMe: A = {
+  def saveMe(): A = {
     this.save
     this
   }
   
-  def save : boolean = {
+  def save(): boolean = {
     runSafe {
       getSingleton.save(this)
     }

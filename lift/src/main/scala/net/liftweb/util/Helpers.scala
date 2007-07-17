@@ -678,19 +678,19 @@ object Helpers {
   
   def md5(in: Array[Byte]) = (MessageDigest.getInstance("MD5")).digest(in)
   
-  def hash(in : String) : String = {
+  def hash(in: String) : String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
   }
   
-  def hash(in : Array[byte]) : Array[byte] = {
+  def hash(in : Array[Byte]) : Array[byte] = {
     (MessageDigest.getInstance("SHA")).digest(in)
   }
   
-  def hash256(in : Array[byte]) : Array[byte] = {
+  def hash256(in : Array[Byte]) : Array[byte] = {
     (MessageDigest.getInstance("SHA-256")).digest(in)
   }
   
-  def hexDigest(in: Array[byte]): String = {
+  def hexDigest(in: Array[Byte]): String = {
     val binHash = (MessageDigest.getInstance("SHA")).digest(in)
     hexEncode(binHash)
   }
@@ -824,6 +824,24 @@ object Helpers {
       val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
       lst.mkString("",", ", "")+" ("+len+")"
     }
+  }
+  
+  object backgrounder extends Actor {
+    def act {
+      loop {
+        react {
+          case BkgExec(f) => f()
+        }
+      }
+    }
+  }
+  
+  backgrounder.start
+  
+  case class BkgExec(f:() => Any)
+  
+  def background(f: => Any) {
+    backgrounder ! BkgExec(() => f)
   }
   
   object TimeSpan {

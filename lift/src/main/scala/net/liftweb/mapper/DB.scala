@@ -30,7 +30,7 @@ object DB {
   /**
     * can we get a JDBC connection from JNDI?
     */
-  def jndiJdbcConnAvailable_? : boolean = {
+  def jndiJdbcConnAvailable_? : Boolean = {
     val touchedEnv = envContext.calculated_?
     
     val ret = try {
@@ -154,6 +154,7 @@ object DB {
     })
   }
   
+  def rollback(name: ConnectionIdentifier) = use(name)(conn => conn.rollback)
   
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))
@@ -205,7 +206,7 @@ object DerbyDriver extends DriverType
 
 
 class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
-  val brokenLimit_? : Lazy[boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
+  val brokenLimit_? : Lazy[Boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
   def createTablePostpend: String = driverType match {
     case DerbyDriver => ""
     case MySqlDriver => " ENGINE = InnoDB "
