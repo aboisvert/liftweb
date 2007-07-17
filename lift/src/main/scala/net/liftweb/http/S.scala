@@ -79,9 +79,9 @@ object S {
   /**
    * Initialize the current request session
    */
-  def init[B](request : RequestState, session: Session, vsh: VarStateHolder)(f : => B) : B = {
+  def init[B](request : RequestState, session: Session, vsh: VarStateHolder)(f: => B) : B = {
     _oldNotice.doWith(Nil) {
-      _init(request,session, vsh)(f)
+      _init(request,session, vsh)(() => f)
     }
 
   }
@@ -103,9 +103,9 @@ object S {
   def addAnalyzer(f: (RequestState, Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
-  private def doAround[B](f: => B, ar: List[LoanWrapper]): B = 
+  private def doAround[B](f:() => B, ar: List[LoanWrapper]): B = 
     ar match {
-    case Nil => f
+    case Nil => f()
     case x :: xs => x(doAround(f, xs))
   }
   
@@ -117,11 +117,11 @@ object S {
     case lb => lb.toList
   }
   
-  private def wrapQuery[B](f: => B): B = {
+  private def wrapQuery[B](f:() => B): B = {
     _queryLog.doWith(new ListBuffer) {
       val begin = millis
       try {
-      doAround(f, aroundRequest)
+      f()
       } finally {
         val log = queryLog
         val req = request
@@ -131,7 +131,7 @@ object S {
     }
   }
   
-  private def _init[B](request: RequestState, session: Session, vsh: VarStateHolder)(f : => B): B = {
+  private def _init[B](request: RequestState, session: Session, vsh: VarStateHolder)(f: () => B): B = {
     _sessionInfo.doWith(session) (
     _stateInfo.doWith(vsh) {
     _attrs.doWith(new HashMap) {
@@ -192,7 +192,7 @@ object S {
   def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: Session, vsh: VarStateHolder)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
       this._servletRequest.doWith(servletRequest) {
-        _init(request, session, vsh)(f)
+        _init(request, session, vsh)(() => f)
       }
     }
   }
