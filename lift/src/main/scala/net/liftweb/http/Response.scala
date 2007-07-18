@@ -10,7 +10,7 @@ import scala.xml.{Node, Unparsed}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 
-trait ToResponse {
+trait ToResponse extends ResponseIt {
   def out: Node
   def headers: List[(String, String)]
   def code: Int
@@ -35,9 +35,15 @@ trait ToResponse {
     // "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
 }
 
-case class XhtmlResponse(out: Node, docType: Option[String], headers: List[(String, String)], code: Int) extends ToResponse 
+trait ResponseIt {
+  def toResponse: Response
+}
 
-case class Response(data: Array[byte], headers: List[(String, String)], code: Int)
+case class XhtmlResponse(out: Node, docType: Option[String], headers: List[(String, String)], code: Int) extends ToResponse
+
+case class Response(data: Array[Byte], headers: List[(String, String)], code: Int) extends ResponseIt {
+  def toResponse = this
+}
 
 object ResponseInfo {
   val xhtmlTransitional = Some("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")

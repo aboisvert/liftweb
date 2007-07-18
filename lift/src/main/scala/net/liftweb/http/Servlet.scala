@@ -62,9 +62,9 @@ class Servlet extends HttpServlet {
   /**
    * Forward the GET request to the POST handler
    */
-  override def doGet(request : HttpServletRequest , response : HttpServletResponse) = {
+  def doGet(request : HttpServletRequest , response : HttpServletResponse, start: Long) = {
     isExistingFile_?(request).map(u => doServiceFile(u, request, response)) getOrElse
-      doService(request, response, RequestType(request ))
+      doService(request, response, RequestType(request ), start)
   }
 
   /**
@@ -147,19 +147,18 @@ class Servlet extends HttpServlet {
       logTime("Service request "+req.getRequestURI) {
         Servlet.early.foreach(_(req))
         Servlet.setContext(getServletContext)
+        val start = System.nanoTime
         req.getMethod.toUpperCase match {
-          case "GET" => doGet(req, resp)
-          case _ => doService(req, resp, RequestType(req))
+          case "GET" => doGet(req, resp, start)
+          case _ => doService(req, resp, RequestType(req), start)
         }
         }      
     }
     Servlet.checkJetty(req) match {
       case None => doIt
       case r if r eq null => doIt
-      case r: XhtmlResponse => sendResponse(r.toResponse, resp)
-      case Some(r: XhtmlResponse) => sendResponse(r.toResponse, resp)
-      case r : Response => sendResponse(r, resp)
-          case Some(r: Response) => sendResponse(r, resp)
+      case r: ResponseIt => sendResponse(r.toResponse, resp, None)
+      case Some(r: ResponseIt) => sendResponse(r.toResponse, resp, None)
           case _ => doIt
   }
     } catch {
@@ -170,8 +169,8 @@ class Servlet extends HttpServlet {
   /**
    * Service the HTTP request
    */ 
-  def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType ) {
-    val session = RequestState(request, Servlet.rewriteTable, getServletContext)
+  def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType, start: Long) {
+    val session = RequestState(request, Servlet.rewriteTable, getServletContext, start)
 
     val toMatch = RequestMatcher(session, session.path)
     
@@ -221,10 +220,7 @@ class Servlet extends HttpServlet {
         val thisSelf = self
 	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
         receiveWithin(timeout) {
-          case AnswerHolder(r: XhtmlResponse) => r.toResponse
-          case AnswerHolder(Some(r: XhtmlResponse)) => r.toResponse
-          case AnswerHolder(r : Response) => r
-	  case AnswerHolder(Some(r: Response)) => r
+          case AnswerHolder(r) => r.toResponse
           // if we failed allow the optional handler to process a request 
 	  case n @ TIMEOUT => Servlet.requestTimedOut.flatMap(_(session, n)) match {
             case Some(r) => r
@@ -241,10 +237,10 @@ class Servlet extends HttpServlet {
         }
       }
     
-    sendResponse(resp, response)
+    sendResponse(resp, response, Some(session))
   }
   
-  def sendResponse(resp: Response, response: HttpServletResponse) {
+  def sendResponse(resp: Response, response: HttpServletResponse, request: Option[RequestState]) {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
@@ -252,10 +248,13 @@ class Servlet extends HttpServlet {
                                                 ("Content-Encoding", "UTF-8"),
                                                 ("Content-Length", len.toString)));
     
+    Servlet._beforeSend.foreach(_(resp, response, header, request))
+    
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
     response.getOutputStream.write(bytes)    
+    Servlet._afterSend.foreach(_(resp, response, header, request))
   }
 }
 
@@ -264,6 +263,17 @@ object Servlet {
   type rewritePf = PartialFunction[RewriteRequest, RewriteResponse]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
+  private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
+  
+  def appendBeforeSend(f: (Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any) {
+    _beforeSend = _beforeSend ::: List(f)
+  }
+  
+  private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
+  
+  def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any) {
+    _afterSend = _afterSend ::: List(f)
+  }
   
   /**
     * Put a function that will calculate the request timeout based on the
@@ -404,7 +414,7 @@ object Servlet {
   
   def convertResponse(r: Any, session: RequestState): Response = {
     r match {
-      case r: XhtmlResponse => r.toResponse
+      case r: ResponseIt => r.toResponse
       case r: Response => r
       case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional, Nil, 200), session)
       case xml: XmlResponse => xml.toResponse

@@ -77,7 +77,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
     
     case ActionMessage(name, value, _, replyTo, request, sv) =>
     this.sessionVars = sv
-      S.init(request,theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false) ) {
+      S.init(request,theSession, new VarStateHolder(theSession, sessionVars,Some(sessionVars_= _), false)) {
 	localFunctionMap.get(name) match {
           case Some(f) => {
 

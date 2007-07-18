@@ -39,7 +39,7 @@ object S {
   private val _stateInfo = new ThreadGlobal[VarStateHolder]
   private val _sessionInfo = new ThreadGlobal[Session]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
-  
+
   /**
    * Get the current HttpServletSession
    *
@@ -51,7 +51,7 @@ object S {
    * Test the current request to see if it's a POST
    */
   def post_? = request.post_?
-
+      
   /**
    * Test the current request to see if it's a POST
    */

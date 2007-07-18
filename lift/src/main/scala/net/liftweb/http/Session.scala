@@ -136,7 +136,7 @@ class Session(val uri: String,
     }
   }
   
-  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: long,
+  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long,
       whenDone: AnswerHolder => Any) = {
     S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, None, true)) {
       try {
@@ -414,11 +414,11 @@ case class AskRenderPage(request: RequestState, xml: NodeSeq, sender: AnswerHold
 /**
  * The response from a page saying that it's been rendered
  */
-case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse, sender: AnswerHolder => Any) extends SessionMessage
+case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse,  sender: AnswerHolder => Any) extends SessionMessage
 case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
 case class SendEmptyTo(who: AnswerHolder => Any) extends SessionMessage
 case class UpdateState(name: String, value: Option[String]) extends SessionMessage
 case object CurrentVars extends SessionMessage
 case object ShutDown
 
-case class AnswerHolder(what: AnyRef)
+case class AnswerHolder(what: ResponseIt)
