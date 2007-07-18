@@ -51,9 +51,10 @@ object Log {
     val is = new java.io.ByteArrayInputStream(defPropBytes)
     domConf.doConfigure(is, LogManager.getLoggerRepository())
   }
-  def logger(clz: Class): LiftLogger = new LiftLogger(Logger.getLogger(clz))
-  def logger(name: String): LiftLogger = new LiftLogger(Logger.getLogger(name))
-  val rootLogger: LiftLogger = logger("lift") // new LiftLogger(Logger.getRootLogger)
+  def logger(clz: Class): LiftLogger = new LiftLogger(LogBoot.loggerByClass(clz))
+  def logger(name: String): LiftLogger = new LiftLogger(LogBoot.loggerByName(name))
+  private val _rootLogger = Lazy(logger("lift"))
+  val rootLogger: LiftLogger = _rootLogger.get
 
   def trace(msg: => AnyRef) = rootLogger.trace(msg)
    def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)
@@ -85,7 +86,15 @@ object Log {
    
    def isWarnEnabled = rootLogger.isWarnEnabled
    def warn(msg: => AnyRef) = rootLogger.warn(msg)
-   def warn(msg: => AnyRef, t: => Throwable) = rootLogger.warn(msg, t)  
+   def warn(msg: => AnyRef, t: => Throwable) = rootLogger.warn(msg, t)
+}
+
+object LogBoot {
+  private def _loggerCls(clz: Class): Logger = Logger.getLogger(clz)
+  private def _logger(name: String): Logger = Logger.getLogger(name)
+  
+  var loggerByName: String => Logger = _logger
+  var loggerByClass: Class => Logger = _loggerCls
 }
 
 class LiftLogger(val logger: Logger) {
