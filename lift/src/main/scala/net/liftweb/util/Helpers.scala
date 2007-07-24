@@ -602,6 +602,10 @@ object Helpers {
     }
   }
   
+  def currentYear:Int = {
+    java.util.Calendar.getInstance.get(java.util.Calendar.YEAR)
+  }
+  
   def millis = System.currentTimeMillis
   
   def logTime[T](msg: String)(f: => T): T = {
