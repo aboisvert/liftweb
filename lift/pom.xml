@@ -75,13 +75,18 @@
     <sourceDirectory>src/main/scala</sourceDirectory>
     <plugins>
       <plugin>
-        <groupId>iodp.usio</groupId>
+        <groupId>scala</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <version>1.1-ALT</version>
+        <configuration>
+          <maxmemory>1024m</maxmemory>
+        </configuration>
         <executions>
           <execution>
             <phase>compile</phase>
             <goals>
-              <goal>compile</goal>
+              <goal>compile
+	      </goal>
             </goals>
           </execution>
         </executions>
