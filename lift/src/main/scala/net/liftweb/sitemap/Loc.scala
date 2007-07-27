@@ -12,6 +12,8 @@ import net.liftweb.util._
 import Helpers._
 
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
+  override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
+    
   def testAccess: Option[RedirectWithMessage] = {
     first(stuff)(s =>
      s match {

@@ -17,7 +17,8 @@ case class SiteMap(kids: Menu*) extends HasKids  {
   kids.foreach(_.validate)
   
   def findLoc(req: RequestState, httpReq: HttpServletRequest): Option[Loc] = {
-    first(kids.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
+    val ret = first(kids.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
+    ret
   }
 }
 
