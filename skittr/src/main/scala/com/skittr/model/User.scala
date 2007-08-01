@@ -75,7 +75,7 @@ class User extends ProtoUser[User] {
     // validation for the user name
     override def validations = valMinLen(3, "Name too short") _ ::
      valRegex(User.validName, "The 'name' must be letters, numbers, or the '_' (underscore)") _ ::
-     valUnique("The name '"+get+"' is already taken") _ :: 
+     valUnique("The name '"+is+"' is already taken") _ :: 
      super.validations
      
     override def dbIndexed_? = true

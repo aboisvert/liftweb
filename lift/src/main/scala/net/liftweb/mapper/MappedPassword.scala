@@ -51,7 +51,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
       case l : List[String] if (l.length == 2 && l.head == l(1)) => {this := l.head}
       case _ => {invalidPw = true; invalidMsg = "Passwords do not match"}
     }
-    get
+    is
   }
 
   
@@ -70,14 +70,14 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.VARCHAR
+  def targetSQLType = Types.VARCHAR
   
   def defaultValue = "*"
 
   override def writePermission_? = true
   override def readPermission_? = true
 
-  protected def i_get_! = MappedPassword.blankPw
+  protected def i_is_! = MappedPassword.blankPw
 
   protected def i_obscure_!(in : String) : String = in
   
@@ -86,12 +86,12 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
      */
     override def toForm : NodeSeq = {
        val funcName = S.mapFunction(name, {s: List[String] => this ::= s; true})
-       <span><input type='password' name={funcName} value={get.toString}/>&nbsp;
-       repeat<input type='password' name={funcName} value={get.toString}/></span>
+       <span><input type='password' name={funcName} value={is.toString}/>&nbsp;
+       repeat<input type='password' name={funcName} value={is.toString}/></span>
     }
     
   
-  def getJDBCFriendly(columnName : String) = {
+  def jdbcFriendly(columnName : String) = {
     if (columnName.endsWith("_slt")) {
       salt_i.get
     } else if (columnName.endsWith("_pw")) {

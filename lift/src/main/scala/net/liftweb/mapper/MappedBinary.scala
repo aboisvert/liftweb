@@ -27,14 +27,14 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[Byte],
    * Get the JDBC SQL Type for this field
    */
   //  def getTargetSQLType(field : String) = Types.BINARY
-  def getTargetSQLType = Types.BINARY
+  def targetSQLType = Types.BINARY
   
   def defaultValue = null
   def maxLen = 1024
   override def writePermission_? = true
   override def readPermission_? = true
 
-  protected def i_get_! = data.get
+  protected def i_is_! = data.get
 
   protected def i_obscure_!(in : Array[Byte]) : Array[Byte] = {
     new Array[Byte](0)
@@ -47,7 +47,7 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[Byte],
   }
   
   
-  def getJDBCFriendly(field : String) : Object = get
+  def jdbcFriendly(field : String) : Object = is
   
   def real_convertToJDBCFriendly(value: Array[Byte]): Object = value
   

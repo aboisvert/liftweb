@@ -22,9 +22,9 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.BOOLEAN
+  def targetSQLType = Types.BOOLEAN
 
-  protected def i_get_! = data match {case None => false; case Some(v) => v}
+  protected def i_is_! = data match {case None => false; case Some(v) => v}
   
   protected def real_i_set_!(value : Boolean) : Boolean = {
     if (data != None || value != data.get) {
@@ -38,7 +38,7 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
   
   def real_convertToJDBCFriendly(value: Boolean): Object = new java.lang.Integer(if (value) 1 else 0)
   
-  def getJDBCFriendly(field : String) = data match {case None => null; case _ => new java.lang.Integer(if (get) 1 else 0)}
+  def jdbcFriendly(field : String) = data match {case None => null; case _ => new java.lang.Integer(if (is) 1 else 0)}
 
   def ::=(in : Any) : Boolean = {
     in match {
@@ -88,6 +88,6 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
     /**
    * Create an input field for the item
    */
-  override def toForm = S.checkbox(get,this(_))
+  override def toForm = S.checkbox(is,this(_))
 }
 

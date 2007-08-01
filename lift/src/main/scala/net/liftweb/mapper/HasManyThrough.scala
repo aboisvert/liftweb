@@ -32,7 +32,7 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
 	st =>
 	  owner.getSingleton.indexedField(owner).map {
 	    indVal =>
-	      st.setObject(1, indVal.getJDBCFriendly, indVal.getTargetSQLType)
+	      st.setObject(1, indVal.jdbcFriendly, indVal.targetSQLType)
 	    DB.exec(st) {
 	      rs =>
 		otherSingleton.createInstances(owner.connectionIdentifier, rs, None, None)
@@ -53,28 +53,28 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
   }
 
   override def beforeDelete {
-    through.findAll(By[Through, ThroughType](throughFromField, owner.primaryKeyField.get)).foreach {
+    through.findAll(By(throughFromField, owner.primaryKeyField)).foreach {
       toDelete => toDelete.delete_!
     }
   }
   
   override def afterUpdate {
-    val current = through.findAll(By(throughFromField,owner.primaryKeyField.get))
+    val current = through.findAll(By(throughFromField,owner.primaryKeyField))
     
     val newKeys = new HashSet[ThroughType];
     
     theSetList.foreach(i => newKeys += i)
-    val toDelete = current.filter(c => !newKeys.contains(throughToField.getActualField(c).get))
+    val toDelete = current.filter(c => !newKeys.contains(throughToField.actualField(c).is))
     toDelete.foreach(_.delete_!)
     
     val oldKeys = new HashSet[ThroughType];
-    current.foreach(i => oldKeys += throughToField.getActualField(i).get)
+    current.foreach(i => oldKeys += throughToField.actualField(i))
 
     theSetList.toList.removeDuplicates.filter(i => !oldKeys.contains(i)).foreach {
       i =>
 	val toCreate = through.createInstance
-      throughFromField.getActualField(toCreate) := owner.primaryKeyField
-      throughToField.getActualField(toCreate) := i
+      throughFromField.actualField(toCreate) := owner.primaryKeyField
+      throughToField.actualField(toCreate) := i
       toCreate.save
     }
 
@@ -87,8 +87,8 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
     theSetList.toList.removeDuplicates.foreach {
       i =>
 	val toCreate = through.createInstance
-      throughFromField.getActualField(toCreate)(owner.primaryKeyField.get)
-      throughToField.getActualField(toCreate)(i)
+      throughFromField.actualField(toCreate)(owner.primaryKeyField)
+      throughToField.actualField(toCreate)(i)
       toCreate.save
     }
     theSetList = Nil

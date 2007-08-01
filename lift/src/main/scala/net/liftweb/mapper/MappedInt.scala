@@ -22,9 +22,9 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.BIGINT
+  def targetSQLType = Types.BIGINT
 
-  protected def i_get_! = data
+  protected def i_is_! = data
   
   protected def real_i_set_!(value: ENUM#Value): ENUM#Value = {
     if (value != data) {
@@ -38,11 +38,11 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM
   
   def real_convertToJDBCFriendly(value: ENUM#Value): Object = new java.lang.Integer(value.id)
   
- def toInt = i_get_!.id
+ def toInt = i_is_!.id
   def fromInt(in: Int): ENUM#Value = enum(in)
   
-  def getJDBCFriendly(field: String) = new java.lang.Integer(toInt)
-  override def getJDBCFriendly = new java.lang.Integer(toInt)
+  def jdbcFriendly(field: String) = new java.lang.Integer(toInt)
+  override def jdbcFriendly = new java.lang.Integer(toInt)
 
 
   def ::=(in : Any): ENUM#Value = {
@@ -105,9 +105,9 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
   
   override def defaultValue = -1
   
-  def defined_? = i_get_! != defaultValue
+  def defined_? = i_is_! != defaultValue
   
-  override def dbIndexFieldIndicatesSaved_? = {i_get_! != defaultValue}
+  override def dbIndexFieldIndicatesSaved_? = {i_is_! != defaultValue}
   
   def makeKeyJDBCFriendly(in : Int) = new java.lang.Integer(in)
   
@@ -151,16 +151,16 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 
 
 class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
-  private var data : int = defaultValue
+  private var data : Int = defaultValue
   def defaultValue = 0
   def dbFieldClass = classOf[Int]
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.INTEGER
+  def targetSQLType = Types.INTEGER
 
-  protected def i_get_! = data
+  protected def i_is_! = data
   
   protected def real_i_set_!(value : int) : int = {
     if (value != data) {
@@ -172,10 +172,12 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
   override def readPermission_? = true
   override def writePermission_? = true
   
+  def +(in: Int): Int = is + in
+      
   def real_convertToJDBCFriendly(value: int): Object = new Integer(value)
   
   
-  def getJDBCFriendly(field : String) = new Integer(get)
+  def jdbcFriendly(field : String) = new Integer(is)
 
   def ::=(in : Any) : int = {
     in match {

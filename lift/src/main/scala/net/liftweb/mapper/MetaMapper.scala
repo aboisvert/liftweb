@@ -165,7 +165,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     by match {
       case Nil => {}
       case Cmp(field, _, Some(value), _) :: xs =>
-        st.setObject(curPos, field.convertToJDBCFriendly(value), field.getTargetSQLType)
+        st.setObject(curPos, field.convertToJDBCFriendly(value), field.targetSQLType)
       setStatementFields(st, xs, curPos + 1)
 
       case BySql(query, params @ _*) :: xs => {
@@ -183,7 +183,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
           case List(d: Date) => 
             st.setDate(curPos, new java.sql.Date(d.getTime))
           setStatementFields(st, xs, curPos + 1)
-          case List(field: BaseMappedField) => st.setObject(curPos, field.getJDBCFriendly, field.getTargetSQLType)
+          case List(field: BaseMappedField) => st.setObject(curPos, field.jdbcFriendly, field.targetSQLType)
           setStatementFields(st, xs, curPos + 1)
           
           case p :: ps => 
@@ -227,7 +227,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	st =>
 	  val indVal = indexedField(toDelete)
 	indVal.map{indVal =>
-	  st.setObject(1, indVal.getJDBCFriendly(indexMap), indVal.getTargetSQLType(indexMap))
+	  st.setObject(1, indVal.jdbcFriendly(indexMap), indVal.targetSQLType(indexMap))
 
 		   st.executeUpdate == 1
 		 } getOrElse false
@@ -306,17 +306,17 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	    for (col <- mappedColumns.elements) {
 	      val colVal = ??(col._2, toSave)
 	      if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
-                colVal.getTargetSQLType(col._1) match {
-                  case Types.VARCHAR => st.setString(colNum, colVal.getJDBCFriendly(col._1).asInstanceOf[String])
+                colVal.targetSQLType(col._1) match {
+                  case Types.VARCHAR => st.setString(colNum, colVal.jdbcFriendly(col._1).asInstanceOf[String])
                   
-                  case _ => st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                  case _ => st.setObject(colNum, colVal.jdbcFriendly(col._1), colVal.targetSQLType(col._1))
                 }
 		colNum = colNum + 1
 	      }
 	    }
 	    
 	    val indVal = indexedField(toSave)
-	    st.setObject(colNum, indVal.get.getJDBCFriendly(indexMap), indVal.get.getTargetSQLType(indexMap))
+	    st.setObject(colNum, indVal.get.jdbcFriendly(indexMap), indVal.get.targetSQLType(indexMap))
 	    st.executeUpdate
 	    true
 	  }
@@ -331,10 +331,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	  for (col <- mappedColumns.elements) {
 	    if (!columnPrimaryKey_?(col._1)) {
 	      val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
-                colVal.getTargetSQLType(col._1) match {
-                  case Types.VARCHAR => st.setString(colNum, colVal.getJDBCFriendly(col._1).asInstanceOf[String])
+                colVal.targetSQLType(col._1) match {
+                  case Types.VARCHAR => st.setString(colNum, colVal.jdbcFriendly(col._1).asInstanceOf[String])
                   
-                  case _ => st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
+                  case _ => st.setObject(colNum, colVal.jdbcFriendly(col._1), colVal.targetSQLType(col._1))
                 }
               
 	      // st.setObject(colNum, colVal.getJDBCFriendly(col._1), colVal.getTargetSQLType(col._1))
@@ -699,14 +699,24 @@ case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
 object By {
   import OprEnum._
   
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, Eql, Some(value), None)
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, Eql, None, Some(otherField))
+  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, Eql, Some(value), None)
 }
 
 object NotBy {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <>, Some(value), None)
+  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <>, Some(value), None)
+}
+
+object ByRef {
+  import OprEnum._
+
+  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, Eql, None, Some(otherField))
+}
+
+object NotByRef {
+  import OprEnum._
+
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <>, None, Some(otherField))
 }
 
@@ -797,7 +807,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
             DB.prepareStatement("SELECT * FROM "+dbTableName+" WHERE "+field.dbColumnName+" = ?", conn) {
               st =>
-                st.setObject(1, field.makeKeyJDBCFriendly(key), field.getTargetSQLType(field.dbColumnName))
+                st.setObject(1, field.makeKeyJDBCFriendly(key), field.targetSQLType(field.dbColumnName))
               DB.exec(st) {
                 rs =>
                   val mi = buildMapper(rs)

@@ -292,7 +292,7 @@ class MappedPostalCode[T<:Mapper[T]](owner : T, country: MappedEnum[T, Countries
     }
   }
   
-  override def validations = country.get match {
+  override def validations = country.is match {
     case Countries.USA =>  valRegex(java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), "Invalid ZIP code") _ :: super.validations
     case _ => genericCheck _ :: super.validations
   }

@@ -134,9 +134,9 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
   def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
   def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
   
-  override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.get == other.primaryKeyField.get
+  override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.is == other.primaryKeyField.is
                                    
-  def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField.get)) getOrElse this    
+  def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField)) getOrElse this    
   
   override def equals(other: Any): Boolean = {
     other match {

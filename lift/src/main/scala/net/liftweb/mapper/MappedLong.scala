@@ -17,11 +17,11 @@ import S._
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, foreign: => KeyedMetaMapper[Long, O]) 
    extends MappedLong[T](owner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
-  def defined_? = /*i_get_! != defaultValue &&*/ i_get_! > 0L
+  def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
   
-  override def getJDBCFriendly(field : String) = if (defined_?) new java.lang.Long(i_get_!) else null
-  override def getJDBCFriendly = if (defined_?) new java.lang.Long(i_get_!) else null
-  private val _obj = Lazy(if(defined_?) foreign.find(i_get_!) else None)
+  override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
+  override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
+  private val _obj = Lazy(if(defined_?) foreign.find(i_is_!) else None)
   def obj: Option[O] = _obj.get
   
   def dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
@@ -39,11 +39,13 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
     
     override def toString = if (defined_?) super.toString else "NULL"
 
-      def :=(v : Option[O]) : Long = this.:=(v.map(_.primaryKeyField.get) getOrElse 0L)
-   def :=(v : O) : Long = this.:=(v.primaryKeyField.get)
+      def :=(v : Option[O]) : Long = this.:=(v.map(_.primaryKeyField.is) getOrElse 0L)
+   def :=(v : O) : Long = this.:=(v.primaryKeyField.is)
       
-   def apply(v: Option[O]): T = this(v.map(_.primaryKeyField.get) getOrElse 0L)
-   def apply(v: O): T = this(v.primaryKeyField.get)
+   def apply(v: Option[O]): T = this(v.map(_.primaryKeyField.is) getOrElse 0L)
+   def apply(v: O): T = this(v.primaryKeyField.is)
+   
+   def +(in: Long): Long = is + in
    
    /**
       * Given the driver type, return the string required to create the column in the database
@@ -61,14 +63,14 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   
   override def dbIndexed_? = true
 
-  def defined_? = i_get_! != defaultValue
+  def defined_? = i_is_! != defaultValue
   override def dbPrimaryKey_? = true
 
   override def defaultValue = -1L
   
-  override def dbIndexFieldIndicatesSaved_? = {i_get_! != defaultValue}
+  override def dbIndexFieldIndicatesSaved_? = {i_is_! != defaultValue}
   
-  def makeKeyJDBCFriendly(in : long) = new java.lang.Long(in)
+  def makeKeyJDBCFriendly(in : Long) = new java.lang.Long(in)
   
   def convertKey(in : String): Option[Long] = {
     if (in eq null) None
@@ -112,9 +114,9 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.BIGINT
+  def targetSQLType = Types.BIGINT
 
-  protected def i_get_! = data
+  protected def i_is_! = data
   
   protected def real_i_set_!(value: List[ENUM#Value]): List[ENUM#Value] = {
     if (value != data) {
@@ -129,13 +131,13 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: 
   def real_convertToJDBCFriendly(value: List[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
   
   private def toLong: Long = {
-    i_get_!.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
+    i_is_!.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
   }
   
   def fromLong(in: Long): List[ENUM#Value] = enum.Set64(in).toList
   
-  def getJDBCFriendly(field: String) = new java.lang.Long(toLong)
-  override def getJDBCFriendly = new java.lang.Long(toLong)
+  def jdbcFriendly(field: String) = new java.lang.Long(toLong)
+  override def jdbcFriendly = new java.lang.Long(toLong)
 
 
   def ::=(in : Any): List[ENUM#Value] = {
@@ -186,7 +188,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: 
    * Create an input field for the item
    */
   override def toForm : NodeSeq = 
-     S.checkbox[ENUM#Value](enum.elements.toList, get,this(_)).toForm
+     S.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm
 }
 
 
@@ -198,9 +200,9 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.BIGINT
+  def targetSQLType = Types.BIGINT
 
-  protected def i_get_! = data
+  protected def i_is_! = data
   
   protected def real_i_set_!(value : Long): Long = {
     if (value != data) {
@@ -215,8 +217,8 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
   def real_convertToJDBCFriendly(value: Long): Object = new java.lang.Long(value)
   
   
-  def getJDBCFriendly(field : String) = new java.lang.Long(i_get_!)
-  override def getJDBCFriendly = new java.lang.Long(i_get_!)
+  def jdbcFriendly(field : String) = new java.lang.Long(i_is_!)
+  override def jdbcFriendly = new java.lang.Long(i_is_!)
 
   def ::=(in : Any) : long = {
     in match {

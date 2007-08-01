@@ -26,7 +26,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   def dbFieldClass = classOf[Date]
 
   
-  def toLong: long = i_get_! match {
+  def toLong: Long = i_is_! match {
     case d: Date => d.getTime / 1000L
     case _ => 0L
   }
@@ -34,7 +34,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType = Types.TIMESTAMP
+  def targetSQLType = Types.TIMESTAMP
   
   def defaultValue: Date = null
   // private val defaultValue_i = new Date
@@ -42,7 +42,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   override def writePermission_? = true
   override def readPermission_? = true
 
-  protected def i_get_! = data.get
+  protected def i_is_! = data.get
 
   protected def i_obscure_!(in : Date) : Date = {
     new Date(0L)
@@ -53,7 +53,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
   }
   
   
-  def getJDBCFriendly(field : String) : Object = get match {
+  def jdbcFriendly(field : String) : Object = is match {
     case null => null
     case d => new java.sql.Date(d.getTime)
   }

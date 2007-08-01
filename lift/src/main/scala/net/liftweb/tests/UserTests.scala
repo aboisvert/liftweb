@@ -30,7 +30,7 @@ class UserTests extends TestCase("User Tests") {
           for (petCnt <- 1 to (1 + cnt/ 10)) {
             val p = new Pet
             p.name := ""+petCnt+" of "+u.lastName
-            p.owner := u.id.get
+            p.owner := u.id
             p.save
           }
         }
@@ -55,9 +55,9 @@ class UserTests extends TestCase("User Tests") {
     assert(User.find(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).isDefined)  
     assert(!User.find(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).isDefined)  
     val u = User.find(33).get
-    assert(User.find(BySql("email = ?", u.email)).get.id.get == u.id.get)
-    assert(User.find(BySql("id = ?", 33)).get.id.get == u.id.get)
-    assert(User.find(BySql("id = ?", u.id)).get.id.get == u.id.get)
+    assert(User.find(BySql("email = ?", u.email)).get.id == u.id)
+    assert(User.find(BySql("id = ?", 33)).get.id == u.id)
+    assert(User.find(BySql("id = ?", u.id)).get.id == u.id)
     
     for (uKey <- 1 to maxUsers) {
       val u = User.find(uKey)
@@ -81,8 +81,8 @@ class UserTests extends TestCase("User Tests") {
     assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)  
     val u = User.find(33).get
     assert(User.findAll(BySql("email = ?", u.email)).length == 1)
-    assert(User.findAll(OrderBy(User.firstName, true))(0).firstName.get == "1")
-    assert(User.findAll(OrderBy(User.firstName, false))(0).firstName.get == "99")
+    assert(User.findAll(OrderBy(User.firstName, true))(0).firstName == "1")
+    assert(User.findAll(OrderBy(User.firstName, false))(0).firstName == "99")
   }
   
   def countTest {
@@ -120,7 +120,7 @@ object User extends User with KeyedMetaMapper[long, User] {
 class User extends ProtoUser[User] {
   def getSingleton = User
   
-  def pets = Pet.findAll(By(Pet.owner, this.id.get))
+  def pets = Pet.findAll(By(Pet.owner, this.id))
   def primaryKeyField = id
 }
 

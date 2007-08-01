@@ -17,7 +17,7 @@ class MappedEmail[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](
   override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter 
     
   override def validate = {
-    (MappedEmail.emailPattern.matcher(i_get_!).matches match {
+    (MappedEmail.emailPattern.matcher(i_is_!).matches match {
       case true => Nil
       case false => List(ValidationIssue(this, "Invalid Email Address"))
     }) ::: super.validate

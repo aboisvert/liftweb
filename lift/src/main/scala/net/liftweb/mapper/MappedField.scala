@@ -15,19 +15,19 @@ import net.liftweb.http.S
 import net.liftweb.http.S._
 
 trait BaseMappedField {
-  def getJDBCFriendly(field : String) : Object
+  def jdbcFriendly(field : String) : Object
   
-  def getJDBCFriendly: Object
+  def jdbcFriendly: Object
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType(field : String): int
+  def targetSQLType(field : String): Int
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType : int
+  def targetSQLType : Int
   
   def validate: List[ValidationIssue]
   /**
@@ -83,7 +83,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   def defaultValue: T
   def dbFieldClass: Class
 
-  def getActualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
+  def actualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
 
   /**
    * Given the driver type, return the string required to create the column in the database
@@ -185,7 +185,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
    * Create an input field for the item
    */
   def toForm : NodeSeq = {
-    <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={get.toString}/>
+    <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={is.toString}/>
   }
   
   def set(value : T) : T = {
@@ -221,14 +221,12 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   def buildSetBooleanValue(accessor : Method, columnName : String) : (O, boolean, boolean) => unit 
   protected def getField(inst : O, meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[T,O]];
   
-  def get : T = {
-    if (safe_? || readPermission_?) i_get_!
-    else i_obscure_!(i_get_!)
+  def is : T = {
+    if (safe_? || readPermission_?) i_is_!
+    else i_obscure_!(i_is_!)
   }
   
-  protected def i_get_! : T
-  
-  // def changed_? = {i_get_! != defaultValue}
+  protected def i_is_! : T
   
   protected def i_obscure_!(in : T) : T
   
@@ -249,29 +247,29 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
          */
        def dbForeignKey_? : boolean = false
 
-  def getJDBCFriendly(field : String) : Object
+  def jdbcFriendly(field : String) : Object
   
-  def getJDBCFriendly: Object = getJDBCFriendly(dbColumnName)
+  def jdbcFriendly: Object = jdbcFriendly(dbColumnName)
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType(field : String) : int = getTargetSQLType
+  def targetSQLType(field : String) : Int = targetSQLType
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def getTargetSQLType : int
+  def targetSQLType : Int
   
   override def toString : String = {
-    val t = get
+    val t = is
     if (t == null) "" else t.toString
   }
   
   def validations: List[(T) => List[ValidationIssue]] = Nil
   
   def validate : List[ValidationIssue] = {
-    val cv = get
+    val cv = is
     validations.flatMap(_(cv))
   }
 
@@ -284,9 +282,9 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     */
   override def equals(other: Any): Boolean = {
     other match {
-      case mapped: MappedField[Any, Nothing] => this.get == mapped.get
-      case ov: AnyRef if (ov ne null) && dbFieldClass.isAssignableFrom(ov.getClass) => this.get == runFilters(ov.asInstanceOf[T], setFilter)
-      case ov => this.get == ov
+      case mapped: MappedField[Any, Nothing] => this.is == mapped.is
+      case ov: AnyRef if (ov ne null) && dbFieldClass.isAssignableFrom(ov.getClass) => this.is == runFilters(ov.asInstanceOf[T], setFilter)
+      case ov => this.is == ov
     }
   }
 
@@ -294,8 +292,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
 }
 
 object MappedField {
-  implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]) : T = in.get
-  // implicit def mapFromOption[T, A<:Mapper[A]](in : Option[MappedField[T, A]]) : MappedField[T,A] = in.get
+  implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]) : T = in.is
 }
 
 case class ValidationIssue(field : BaseMappedField, msg : String)

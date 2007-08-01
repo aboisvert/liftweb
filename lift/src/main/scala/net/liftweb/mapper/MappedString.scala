@@ -53,14 +53,14 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
   /**
   * Get the JDBC SQL Type for this field
   */
-  def getTargetSQLType = Types.VARCHAR
+  def targetSQLType = Types.VARCHAR
   
   def defaultValue = ""
 
   override def writePermission_? = true
   override def readPermission_? = true
 
-  protected def i_get_! = data.get
+  protected def i_is_! = data.get
 
   protected def i_obscure_!(in : String) : String = {
     ""
@@ -84,7 +84,7 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
     owner
   }
   
-  def getJDBCFriendly(field : String): String = data.get
+  def jdbcFriendly(field : String): String = data.get
   
   def real_convertToJDBCFriendly(value: String): Object = value
   
