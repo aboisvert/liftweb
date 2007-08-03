@@ -21,7 +21,7 @@ import scala.xml._
 object RequestState {
   object NilPath extends ParsePath(Nil, true, false)
   
-  def apply(request: HttpServletRequest, rewrite: Servlet.rewritePf, context: ServletContext, nanoStart: Long): RequestState = {
+  def apply(request: HttpServletRequest, rewrite: Servlet.RewritePf, context: ServletContext, nanoStart: Long): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"

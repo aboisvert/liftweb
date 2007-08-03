@@ -21,6 +21,9 @@ import Helpers._
  * local session info without passing a huge state construct around
  */
 object S {
+  case class RewriteHolder(name: String, rewrite: Servlet.RewritePf)
+  case class DispatchHolder(name: String, dispatch: Servlet.DispatchPf)
+
   /**
    * The current session
    */
@@ -46,6 +49,83 @@ object S {
    * @return the current session
    */
   def request = {_request.value}
+  
+  def sessionRewriter: List[RewriteHolder] = _servletRequest.value match {
+    case null => Nil
+    case r => r.getSession.getAttribute(Servlet.SessionRewriteTableName) match {
+      case rw: List[RewriteHolder] => rw
+      case _ => Nil
+    }
+  }
+  def sessionDispatcher: List[DispatchHolder] = _servletRequest.value match {
+  case null => Nil
+  case r => r.getSession.getAttribute(Servlet.SessionDispatchTableName) match {
+    case rw: List[DispatchHolder] => rw
+    case _ => Nil
+  }
+}
+  
+  private def reduxio(in: List[Servlet.DispatchPf]): Servlet.DispatchPf = in match {
+    case Nil => Map.empty
+    case x :: Nil => x
+    case x :: xs => x orElse reduxio(xs)
+  }
+  def highLevelSessionDispatcher: Servlet.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
+  def highLevelSessionDispatchList: List[DispatchHolder] = _servletRequest.value match {
+  case null => Nil
+  case r => r.getSession.getAttribute(HighLevelSessionDispatchTableName) match {
+    case null => Nil
+    case li: List[DispatchHolder] => println("The list is "+li);  li
+    case _ => Nil
+  }
+  }    
+  
+  val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
+  def addHighLevelSessionDispatcher(name: String, disp: Servlet.DispatchPf) {
+    println("Adding "+disp)
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name))
+    }    
+  }
+  
+  def removeHighLevelSessionDispatcher(name: String) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, highLevelSessionDispatchList.filter(_.name != name))
+    }    
+  }
+  
+  def addSessionRewriter(name: String, rw: Servlet.RewritePf) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(Servlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name))
+    }
+  }
+
+  def removeSessionRewriter(name: String) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(Servlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name))
+    }
+  }
+
+  def addSessionDispatcher(name: String, rw: Servlet.DispatchPf) {
+    _servletRequest.value match {
+    case null => 
+    case r => val newDisp = DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)
+        r.getSession.setAttribute(Servlet.SessionDispatchTableName, newDisp)
+    }
+  }
+
+  def removeSessionDispatcher(name: String) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(Servlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name))
+    }
+  }
+
+  
   
   /**
    * Test the current request to see if it's a POST

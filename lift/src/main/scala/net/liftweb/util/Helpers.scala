@@ -62,6 +62,8 @@ object Helpers {
     ret
   }
   
+  def ^ [T](i: T*): List[T] = i.toList
+  
   def goodPath_?(path : String) : boolean = {
     if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
     else {
@@ -258,14 +260,14 @@ object Helpers {
   * or by matching 'smartCaps(name)'
   */
   def findClass(name : String, where : List[String]) : Option[Class] =
-    findClass(name, where, List(smartCaps, n => n), s => true)
+    findClass(name, where, ^(smartCaps, n => n), s => true)
   
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
   def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Option[Class] = {
-    findClass(name, where, List(smartCaps, n => n), guard)
+    findClass(name, where, ^(smartCaps, n => n), guard)
   }
   
   def findClass(where : List[Pair[String, List[String]]]) : Option[Class] = {
@@ -286,7 +288,7 @@ object Helpers {
   */
   def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Option[Class] = {
     def findClass_s(name : String, where : String) : Option[Class] = {
-      tryo(List(classOf[ClassNotFoundException])) {
+      tryo(^(classOf[ClassNotFoundException])) {
         val clzName = where+"."+name
 	
         Class.forName(clzName)

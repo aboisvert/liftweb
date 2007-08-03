@@ -170,17 +170,17 @@ class Servlet extends HttpServlet {
    * Service the HTTP request
    */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType, start: Long) {
-    val session = RequestState(request, Servlet.rewriteTable, getServletContext, start)
+    val session = RequestState(request, Servlet.rewriteTable(request), getServletContext, start)
 
     val toMatch = RequestMatcher(session, session.path)
     
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
-      } else if (Servlet.dispatchTable.isDefinedAt(toMatch)) {
+      } else if (Servlet.dispatchTable(request).isDefinedAt(toMatch)) {
         val sessionActor = getActor(session, request.getSession)
          
 	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, None, false)) {
-	  val f = Servlet.dispatchTable(toMatch)
+	  val f = Servlet.dispatchTable(request)(toMatch)
 	  f(request) match {
             case None => session.createNotFound.toResponse
             case Some(v) => Servlet.convertResponse(v, session)
@@ -259,8 +259,11 @@ class Servlet extends HttpServlet {
 }
 
 object Servlet {
-  type dispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[Any]];
-  type rewritePf = PartialFunction[RewriteRequest, RewriteResponse]
+  val SessionDispatchTableName = "$lift$__DispatchTable__"
+  val SessionRewriteTableName = "$lift$__RewriteTable__"
+    
+  type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[ResponseIt]];
+  type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
@@ -354,14 +357,27 @@ object Servlet {
   
   var ending = false
   private case class Never
-  def dispatchTable = {
-    test_boot
-    dispatchTable_i
+  
+  private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
+    case Nil => last
+    case x :: xs => x orElse rpf(xs, last)
   }
   
-  def rewriteTable = {
+  def dispatchTable(req: HttpServletRequest): DispatchPf = {
     test_boot
-    rewriteTable_i
+    req.getSession.getAttribute(SessionDispatchTableName) match {
+      case dt: List[S.DispatchHolder] => rpf(dt.map(_.dispatch), dispatchTable_i)
+      case _ => dispatchTable_i
+    }
+  }
+  
+  def rewriteTable(req: HttpServletRequest): RewritePf = {
+    test_boot
+    req.getSession.getAttribute(SessionRewriteTableName) match {
+    case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
+    case _ => rewriteTable_i
+  }
+    
   }
 
   private var _context: ServletContext = _
@@ -375,9 +391,9 @@ object Servlet {
       }
   }
   
-  private var dispatchTable_i : dispatchPf = Map.empty
+  private var dispatchTable_i : DispatchPf = Map.empty
   
-  private var rewriteTable_i : rewritePf = Map.empty
+  private var rewriteTable_i : RewritePf = Map.empty
   
   private val test_boot = {
     try {
@@ -392,22 +408,22 @@ object Servlet {
     }
   }
 
-  def addRewriteBefore(pf: rewritePf) = {
+  def addRewriteBefore(pf: RewritePf) = {
     rewriteTable_i = pf orElse rewriteTable_i
     rewriteTable_i
   }
   
-  def addRewriteAfter(pf: rewritePf) = {
+  def addRewriteAfter(pf: RewritePf) = {
     rewriteTable_i = rewriteTable_i orElse pf
     rewriteTable_i
   }
   
-  def addDispatchBefore(pf: dispatchPf) = {
+  def addDispatchBefore(pf: DispatchPf) = {
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }
   
-  def addDispatchAfter(pf: dispatchPf) = {
+  def addDispatchAfter(pf: DispatchPf) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }

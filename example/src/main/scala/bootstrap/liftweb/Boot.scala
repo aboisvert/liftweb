@@ -27,7 +27,7 @@ class Boot {
      
     Schemifier.schemify(User, WikiEntry)
     
-    val dispatcher: Servlet.dispatchPf = {
+    val dispatcher: Servlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
       case RequestMatcher(_, ParsePath("showcities":: _, _, _)) => XmlServer.showCities
 
@@ -39,7 +39,7 @@ class Boot {
     }
     Servlet.addDispatchBefore(dispatcher)
     
-    val rewriter: Servlet.rewritePf = {
+    val rewriter: Servlet.RewritePf = {
       case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => 
          RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
           TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
@@ -48,8 +48,11 @@ class Boot {
     Servlet.addRewriteBefore(rewriter)
   }
   
-  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Option[Any] =
-      createInvoker(methodName, new WebServices(request, req)).map(_())
+  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Option[ResponseIt] =
+      createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
+      case ret: ResponseIt => Some(ret)
+      case _ => None
+    })
 }
 
 object XmlServer {

@@ -140,9 +140,21 @@ class Session(val uri: String,
       whenDone: AnswerHolder => Any) = {
     S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, None, true)) {
       try {
+        val sessionDispatch = S.highLevelSessionDispatcher
+        val toMatch = RequestMatcher(request, request.path)        
+        if (sessionDispatch.isDefinedAt(toMatch)) {
+          processParameters(request)
+          sessionDispatch(toMatch)(httpRequest) match {
+            case None => whenDone(AnswerHolder(request.createNotFound))
+            case Some(r) => whenDone(AnswerHolder(r))
+          }
+          if (!request.ajax_?) notices = Nil
+        } else {
+          // make sure we're okay, sitemap wise
         request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
         
         processParameters(request)
+
         findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(xml, request)) match {
           case None => whenDone(AnswerHolder(request.createNotFound))
           case Some(xml: NodeSeq) => {
@@ -160,6 +172,7 @@ class Session(val uri: String,
               if (!request.ajax_?) notices = Nil
             }
           }
+        }
         }
       } catch {
         case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
