@@ -50,7 +50,7 @@ class Boot {
   
   private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Option[ResponseIt] =
       createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
-      case ret: ResponseIt => Some(ret)
+      case Some(ret: ResponseIt) => Some(ret)
       case _ => None
     })
 }
