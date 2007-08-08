@@ -59,6 +59,11 @@ object S {
     }
   }
   
+  def action: String = request match {
+    case null => ""
+    case r => r.uri
+  }
+  
   def sessionRewriter: List[RewriteHolder] = _servletRequest.value match {
     case null => Nil
     case r => r.getSession.getAttribute(Servlet.SessionRewriteTableName) match {
@@ -350,7 +355,10 @@ object S {
     }
   }
   
-  def locateSnippet(name: String): Option[NodeSeq => NodeSeq] = snippetMap.value.get(name)
+  def locateSnippet(name: String): Option[NodeSeq => NodeSeq] = snippetMap.value.get(name) orElse {
+    val snippet = name.split(":").toList.map(_.trim).filter(_.length > 0)
+    if (Servlet.snippetTable.isDefinedAt(snippet)) Some(Servlet.snippetTable(snippet)) else None
+  }
   
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
 

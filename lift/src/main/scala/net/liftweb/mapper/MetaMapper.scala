@@ -239,9 +239,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
 
   
-  private def ??(meth : Method, inst :A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
+  private def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
   
-  def dirty_?(toTest : A) : boolean = {
+  def dirty_?(toTest: A) : boolean = {
     mappedFieldArray.foreach {
       mft =>      
 	if (??(mft._2, toTest).dirty_?) return true
@@ -397,9 +397,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     ret.toList
   }
   
-  def appendFieldToStrings(in : A) : String = {
-    (mappedFieldArray.elements.map{p => ??(p._2, in).asString}).toList.mkString("", ",", "")
-  }
+  def appendFieldToStrings(in : A) : String = mappedFieldArray.toList.map(p => ??(p._2, in).asString).mkString(",")
+  
   
   private val columnNameToMappee = new HashMap[String, Option[(ResultSet,int,A) => unit]]
   

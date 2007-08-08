@@ -109,17 +109,17 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
       <dependency>
    <groupId>net.liftweb</groupId>
    <artifactId>lift-core</artifactId>
-   <version>0.2.0</version>
+   <version>0.2.3</version>
   </dependency>
      <dependency>
     <groupId>scala</groupId>
     <artifactId>scala-compiler</artifactId>
-    <version>2.5.0</version>
+    <version>2.5.1</version>
    </dependency>
   <dependency>
    <groupId>scala</groupId>
    <artifactId>scala-library</artifactId>
-    <version>2.5.0</version>
+    <version>2.5.1</version>
   </dependency>
   <dependency>
      <groupId>org.apache.derby</groupId>

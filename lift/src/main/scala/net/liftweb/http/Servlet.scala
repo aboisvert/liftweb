@@ -266,6 +266,7 @@ object Servlet {
   type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Option[NodeSeq]]
+  type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
@@ -383,6 +384,8 @@ object Servlet {
   }
   }
   
+  def snippetTable: SnippetPf = snippetTable_i
+  
   def templateTable: TemplatePf = {
     S.sessionTemplater match {
       case Nil => templateTable_i
@@ -407,6 +410,8 @@ object Servlet {
   
   private var templateTable_i: TemplatePf = Map.empty
   
+  private var snippetTable_i: SnippetPf = Map.empty
+  
   private val test_boot = {
     try {
       val c = Class.forName("bootstrap.liftweb.Boot")
@@ -418,6 +423,16 @@ object Servlet {
     case e: java.lang.reflect.InvocationTargetException => Log.error("Failed to Boot", e); None
     case e => Log.error("Failed to Boot", e); None
     }
+  }
+  
+  def addSnippetBefore(pf: SnippetPf) = {
+    snippetTable_i = pf orElse snippetTable_i
+    snippetTable_i
+  }
+  
+  def addSnippetAfter(pf: SnippetPf) = {
+    snippetTable_i = snippetTable_i orElse pf
+    snippetTable_i
   }
   
   def addTemplateBefore(pf: TemplatePf) = {

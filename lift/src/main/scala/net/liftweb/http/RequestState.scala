@@ -10,7 +10,6 @@ import javax.servlet.http._
 import javax.servlet.ServletContext
 // import scala.collection.Map
 // import scala.collection.mutable.HashMap
-import scala.collection.immutable.{TreeMap, SortedMap}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Lazy, Log}
 import net.liftweb.sitemap._
@@ -28,7 +27,7 @@ object RequestState {
     val contextPath = request.getContextPath
     val tmpPath = parsePath(tmpUri)
 
-    def processRewrite(uri: String, path: ParsePath, params: SortedMap[String, String]): RewriteResponse = {
+    def processRewrite(uri: String, path: ParsePath, params: Map[String, String]): RewriteResponse = {
       val toMatch = RewriteRequest(uri, path, reqType, request)
       if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(uri, path, params)
       else {
@@ -48,20 +47,19 @@ object RequestState {
     }*/
     
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
-    val rewritten = processRewrite(tmpUri, tmpPath, TreeMap.empty)
+    val rewritten = processRewrite(tmpUri, tmpPath, Map.empty)
     
-    val localParams = TreeMap(rewritten.params.map(a => (a._1, List(a._2))).toList :_*)
-    
+    val localParams: Map[String, List[String]] = Map(rewritten.params.toList.map{case (name, value) => name -> List(value)} :_*)
+
     // val session = request.getSession
    //  val body = ()
-      
    val eMap = Map.empty[String, List[String]]
    
     val (paramNames, params: Map[String, List[String]], body) = if (reqType.post_? && request.getContentType == "text/xml") {
-      (Nil,eMap, readWholeStream(request.getInputStream))
+      (Nil,localParams, readWholeStream(request.getInputStream))
     } else if (reqType.get_?) {
         request.getQueryString match {
-          case null => (Nil, Map.empty, null)
+          case null => (Nil, localParams, null)
           case s =>
           val pairs = s.split("&").toList.map(_.trim).filter(_.length > 0).map(_.split("=").toList match {
             case name :: value :: Nil => (true, urlDecode(name), urlDecode(value))
@@ -75,7 +73,10 @@ object RequestState {
               case Some(xs) => a + b._1 -> (xs ::: List(b._2))
             }
           )
-          (names, params, null)
+          
+          val hereParams = localParams ++ params
+          
+          (names, hereParams, null)
         }
     } else {
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
@@ -83,7 +84,6 @@ object RequestState {
     val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
       (paramNames, params, null)
     }
-
     
     new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
 		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
@@ -116,7 +116,7 @@ case class ParsePath(path: List[String], absolute: boolean, endSlash: boolean) {
 
 
 class RequestState(val paramNames: List[String],
-		   val params: Map[String, List[String]],
+                   val params: Map[String, List[String]],
 		   val uri: String,
 		   val path: ParsePath,
 		   val contextPath: String,
@@ -219,4 +219,4 @@ class RequestState(val paramNames: List[String],
 
 case class RequestMatcher(request: RequestState, path: ParsePath)
 case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
-case class RewriteResponse(uri: String,path: ParsePath,params: SortedMap[String, String])
+case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])
