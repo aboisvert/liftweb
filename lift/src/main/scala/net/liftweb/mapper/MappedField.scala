@@ -9,7 +9,7 @@ package net.liftweb.mapper
 import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
-import scala.xml.{Elem, Text, Node, NodeSeq}
+import scala.xml.{Text, Node, NodeSeq}
 import java.util.Date
 import net.liftweb.http.S
 import net.liftweb.http.S._
@@ -184,9 +184,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
   /**
    * Create an input field for the item
    */
-  def toForm : NodeSeq = {
-    <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={is.toString}/>
-  }
+  def toForm : NodeSeq = <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={is.toString}/>
   
   def set(value : T) : T = {
     if (safe_? || writePermission_?) i_set_!(value)

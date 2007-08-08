@@ -603,14 +603,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     List(Text(" }"))
   }
   
-  def toForm(toMap : A) : NodeSeq = {
-    mappedFieldArray.filter{e => e._3.dbDisplay_?}.map {
+  def toForm(toMap: A): NodeSeq = {
+    mappedFieldArray.filter{e => e._3.dbDisplay_?}.toList.map {
       e =>
 	val field = ??(e._2, toMap)
       <tr>
       <td>{field.displayName}</td>
       <td>{field.toForm}</td>
-      </tr>}.toList
+      </tr>}
   }
   
   def getActualField[T <: Any](actual: A, protoField: MappedField[T, A]): MappedField[T, A] = {

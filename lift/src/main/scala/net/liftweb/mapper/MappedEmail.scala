@@ -12,14 +12,12 @@ object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")
 }
 
-class MappedEmail[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
+class MappedEmail[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[T](owner, maxLen) {
 
   override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter 
     
-  override def validate = {
-    (MappedEmail.emailPattern.matcher(i_is_!).matches match {
-      case true => Nil
-      case false => List(ValidationIssue(this, "Invalid Email Address"))
-    }) ::: super.validate
-  }
+  override def validate =
+    (if (MappedEmail.emailPattern.matcher(i_is_!).matches) Nil else List(ValidationIssue(this, "Invalid Email Address"))) :::
+    super.validate
+
 }

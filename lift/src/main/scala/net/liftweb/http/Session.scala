@@ -206,12 +206,18 @@ class Session(val uri: String,
   }
   
   private def findVisibleTemplate(path: ParsePath, session : RequestState) : Option[NodeSeq] = {
+    val toMatch = RequestMatcher(request, request.path)
+    val templ = Servlet.templateTable
+    (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else None) match {
+      case ns @ Some(_) => ns 
+      case _ =>
     val tpath = path.path
     val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
       case s @ _ if (!s.isEmpty) => s
       case _ => List("index")
     }
     findAnyTemplate(splits, session)
+    }
   }
   
   def currentVars: Map[String, String] = (this !? (500L, CurrentVars)) match {

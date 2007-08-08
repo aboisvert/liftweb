@@ -45,6 +45,13 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
     "*"
   }
   
+  def setList(in: List[String]): Boolean =
+    in match {
+    case x1 :: x2 :: Nil if x1 == x2 => this := x1 ; true
+    case _ => invalidPw = true; invalidMsg = "Passwords do not match"; false
+    }
+  
+  
   override def ::=(f : Any) : String = {
     f match {
       case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this := a(0)}

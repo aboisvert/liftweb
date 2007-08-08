@@ -23,7 +23,8 @@ import Helpers._
 object S {
   case class RewriteHolder(name: String, rewrite: Servlet.RewritePf)
   case class DispatchHolder(name: String, dispatch: Servlet.DispatchPf)
-
+  case class TemplateHolder(name: String, template: Servlet.TemplatePf)
+  
   /**
    * The current session
    */
@@ -49,6 +50,14 @@ object S {
    * @return the current session
    */
   def request = {_request.value}
+  
+  def sessionTemplater: List[TemplateHolder] = _servletRequest.value match {
+    case null => Nil
+    case r => r.getSession.getAttribute(Servlet.SessionTemplateTableName) match {
+      case rw: List[TemplateHolder] => rw
+      case _ => Nil
+    }
+  }
   
   def sessionRewriter: List[RewriteHolder] = _servletRequest.value match {
     case null => Nil
@@ -96,6 +105,13 @@ object S {
     }    
   }
   
+  def addSessionTemplater(name: String, rw: Servlet.TemplatePf) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(Servlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name))
+    }
+  }
+  
   def addSessionRewriter(name: String, rw: Servlet.RewritePf) {
     _servletRequest.value match {
     case null => 
@@ -109,6 +125,13 @@ object S {
     case r => r.getSession.setAttribute(Servlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name))
     }
   }
+  
+  def removeSessionTemplater(name: String) {
+    _servletRequest.value match {
+    case null => 
+    case r => r.getSession.setAttribute(Servlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name))
+    }
+  }  
 
   def addSessionDispatcher(name: String, rw: Servlet.DispatchPf) {
     _servletRequest.value match {
@@ -310,6 +333,16 @@ object S {
   
   def servletRequest = _servletRequest.value
   
+  def hostName: String = servletRequest match {
+    case null => "nowhere_123.com"
+    case r => r.getServerName 
+  }
+  
+  def hostAndPath: String = servletRequest match {
+    case null => ""
+    case r => r.getScheme+"://"+r.getServerName+":"+r.getServerPort+r.getContextPath
+  }
+  
   def getFunctionMap: scala.collection.Map[String, AFuncHolder] = {
     functionMap.value match {
       case null => Map.empty
@@ -461,27 +494,11 @@ object S {
     <input type="hidden" name={name} value="false"/> ++
       wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
   }
-    
-    /*
-    
-    private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): NodeSeq =
-      wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
-*/
-  /*
-  private def makeFormElementL(name: String, func: List[String] => boolean, params: Seq[FormElementPieces]): NodeSeq =
-    wrapFormElement(<input type={name} name={fL(func)}/>, params.toList)
-  */
-    
-  /*
-  def textL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("text", func, params)
-  def passwordL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("password", func, params)
-  def hiddenL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("hidden", func, params)
-  def submitL(func: List[String] => boolean, params: FormElementPieces*): NodeSeq = makeFormElementL("submit", func, params)
-  */
   
   // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
   implicit def toLFunc(in: List[String] => Boolean): AFuncHolder = LFuncHolder(in)
   implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in)
+  implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
   
   abstract class AFuncHolder {
     def apply(in: List[String]): Boolean
@@ -492,13 +509,16 @@ object S {
   case class LFuncHolder(func: List[String] => Boolean) extends AFuncHolder  {
     def apply(in: List[String]): Boolean = func(in)
   }
+  
+  case class L2FuncHolder(func: List[String] => AnyRef) extends AFuncHolder {
+    def apply(in: List[String]): Boolean = {func(in); true}
+  }
+  
   case class NFuncHolder(func: () => Any) extends AFuncHolder  {
     def apply(in: List[String]): Boolean = {in.foreach(s => func()); true}
   }
   
-  def f(in: AFuncHolder): String = {
-    f("F"+System.nanoTime+"_"+randomString(3), in)
-  }
+  def f(in: AFuncHolder): String = f("F"+System.nanoTime+"_"+randomString(3), in)
   
   def f(name: String, inf: AFuncHolder): String = {
     addFunctionMap(name, inf)

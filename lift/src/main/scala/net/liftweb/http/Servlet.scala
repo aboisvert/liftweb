@@ -261,9 +261,11 @@ class Servlet extends HttpServlet {
 object Servlet {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
+  val SessionTemplateTableName = "$lift$__TemplateTable__"
     
   type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
+  type TemplatePf = PartialFunction[RequestMatcher,() => Option[NodeSeq]]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
@@ -366,6 +368,7 @@ object Servlet {
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
     test_boot
     req.getSession.getAttribute(SessionDispatchTableName) match {
+      case null | Nil  => dispatchTable_i 
       case dt: List[S.DispatchHolder] => rpf(dt.map(_.dispatch), dispatchTable_i)
       case _ => dispatchTable_i
     }
@@ -374,10 +377,17 @@ object Servlet {
   def rewriteTable(req: HttpServletRequest): RewritePf = {
     test_boot
     req.getSession.getAttribute(SessionRewriteTableName) match {
+      case null | Nil => rewriteTable_i
     case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
     case _ => rewriteTable_i
   }
-    
+  }
+  
+  def templateTable: TemplatePf = {
+    S.sessionTemplater match {
+      case Nil => templateTable_i
+      case rt => rpf(rt.map(_.template), templateTable_i)
+    }
   }
 
   private var _context: ServletContext = _
@@ -395,6 +405,8 @@ object Servlet {
   
   private var rewriteTable_i : RewritePf = Map.empty
   
+  private var templateTable_i: TemplatePf = Map.empty
+  
   private val test_boot = {
     try {
       val c = Class.forName("bootstrap.liftweb.Boot")
@@ -406,6 +418,16 @@ object Servlet {
     case e: java.lang.reflect.InvocationTargetException => Log.error("Failed to Boot", e); None
     case e => Log.error("Failed to Boot", e); None
     }
+  }
+  
+  def addTemplateBefore(pf: TemplatePf) = {
+    templateTable_i = pf orElse templateTable_i
+    templateTable_i
+  }
+
+  def addTemplateAfter(pf: TemplatePf) = {
+    templateTable_i = templateTable_i orElse pf
+    templateTable_i
   }
 
   def addRewriteBefore(pf: RewritePf) = {
