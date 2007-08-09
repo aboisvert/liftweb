@@ -29,10 +29,8 @@ class LockManager extends Actor {
     loop {
       react {
         case Register(paragraph, editor) =>
-          Console.println(editor + " registered")
           register(paragraph, editor)
         case Unregister(paragraph, editor) =>
-          Console.println(editor + " unregistered")
           unregister(paragraph, editor)
         case Lock(paragraph, editor) =>
           Console.println(paragraph + " locked by " + editor)

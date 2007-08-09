@@ -89,14 +89,13 @@ object S {
   case null => Nil
   case r => r.getSession.getAttribute(HighLevelSessionDispatchTableName) match {
     case null => Nil
-    case li: List[DispatchHolder] => println("The list is "+li);  li
+    case li: List[DispatchHolder] => li
     case _ => Nil
   }
   }    
   
   val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
   def addHighLevelSessionDispatcher(name: String, disp: Servlet.DispatchPf) {
-    println("Adding "+disp)
     _servletRequest.value match {
     case null => 
     case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name))

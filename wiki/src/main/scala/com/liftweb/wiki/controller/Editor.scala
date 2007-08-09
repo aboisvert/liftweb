@@ -66,7 +66,6 @@ class Editor extends ControllerActor {
   }
 
   private def lock = {
-    Console.println(this + " try to lock")
     paragraph match {
       case Some(paragraph) =>
         manager ! Lock(paragraph, this)
