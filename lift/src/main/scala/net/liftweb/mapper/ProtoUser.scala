@@ -350,7 +350,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
       theDoc => 
 	val rw = new RewriteRule {
 	  override def transform(n: Node) = n match {
-            case <here /> => in
+            case e @ <bind /> if "lift" == e.prefix => in
             case _ => n
 	  }
 	}
