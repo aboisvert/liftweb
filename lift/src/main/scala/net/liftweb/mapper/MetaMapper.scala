@@ -699,13 +699,16 @@ object By {
   import OprEnum._
   
   def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, Eql, Some(value), None)
+  def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
+    Cmp[O,T](field, Eql, Some(value.primaryKeyField.is), None)
 }
 
 object NotBy {
   import OprEnum._
 
   def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <>, Some(value), None)
-}
+  def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
+    Cmp[O,T](field, <>, Some(value.primaryKeyField.is), None)}
 
 object ByRef {
   import OprEnum._
