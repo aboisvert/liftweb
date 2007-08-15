@@ -79,7 +79,7 @@
         <artifactId>maven-scala-plugin</artifactId>
         <version>1.1-ALT</version>
         <configuration>
-          <maxmemory>1024m</maxmemory>
+          <maxmemory>1524m</maxmemory>
         </configuration>
         <executions>
           <execution>
