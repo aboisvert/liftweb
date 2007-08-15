@@ -107,6 +107,23 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   def findAll(by: QueryParam[A]*): List[A] = findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Some(v))
   def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] = findMapDb(dbId, by :_*)(v => Some(v))
+  
+  def bulkDelete_!!(by: QueryParam[A]*): Boolean = bulkDelete_!!(dbDefaultConnectionIdentifier, by :_*)
+  def bulkDelete_!!(dbId: ConnectionIdentifier, by: QueryParam[A]*): Boolean = {
+    DB.use(dbId) {
+      conn =>
+      val bl = by.toList
+      val (query, start, max) = addEndStuffs(addFields("DELETE FROM "+dbTableName+" ", false, bl), bl, conn)
+      DB.prepareStatement(query, conn) {
+        st =>
+        setStatementFields(st, bl, 1)
+        DB.exec(st) {
+          rs =>
+          true
+        }
+      }
+    }
+  }
 
   def findMap[T](by: QueryParam[A]*)(f: A => Option[T]) = findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
