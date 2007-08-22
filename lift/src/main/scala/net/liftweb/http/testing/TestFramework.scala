@@ -32,12 +32,12 @@ trait TestFramework {
   def get(url: String, params: (String, Any)*): ReqRes = get(url, Nil, params :_*)
   def post(url: String, params: (String, Any)*): ReqRes = post(url, Nil, params :_*)
   
-  def getCookie(headers: List[(String, String)], respHeaders: Map[String, List[String]]): Option[String] = {
+  def getCookie(headers: List[(String, String)], respHeaders: Map[String, List[String]]): Can[String] = {
     val ret = (headers.filter{case ("Cookie", _) => true; case _ => false}.map(_._2) ::: respHeaders.get("Set-Cookie").toList.flatMap(x => x)) match {
-      case Nil => None
-      case "" :: Nil => None
-      case "" :: xs => Some(xs.mkString(","))
-      case xs => Some(xs.mkString(","))
+      case Nil => Empty
+      case "" :: Nil => Empty
+      case "" :: xs => Full(xs.mkString(","))
+      case xs => Full(xs.mkString(","))
     }
 
     ret
@@ -110,7 +110,7 @@ trait TestFramework {
     def assertTag(tag: String, msg:String) = assert((xml \\ tag).length > 0, msg)
     def code: Int = -1
     def msg: String = ""
-    def cookie: Option[String] = None
+    def cookie: Can[String] = Empty
     val body: Array[Byte] = new Array(0)
     def get(url: String, params: (String, Any)*) = TestFramework.this.get(url, cookie.map( ("Cookie", _) ).toList , params:_*)
 
@@ -120,7 +120,7 @@ trait TestFramework {
   }
   
   class HttpReqRes(override val code: Int,override val msg: String,override val headers: Map[String, List[String]],
-                   override val body: Array[Byte],override val values: Map[String, String],override val cookie: Option[String]) extends ReqRes {
+                   override val body: Array[Byte],override val values: Map[String, String],override val cookie: Can[String]) extends ReqRes {
                      
                      override def assertSuccess = assert(code == 200, "Not an HTTP success")
                      private val _body = Lazy(XML.load(new java.io.ByteArrayInputStream(body)))

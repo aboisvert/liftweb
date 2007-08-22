@@ -12,7 +12,7 @@ import scala.xml._
 import scala.collection.immutable.{TreeMap, ListMap}
 import scala.collection.mutable.{HashMap}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{ActorPing, Log}
+import net.liftweb.util.{ActorPing, Log, Can, Empty, Full, Failure}
 
 class Page(val theSession: Session) extends Actor {
   private var updates = new HashMap[String, AnswerRender]
@@ -36,7 +36,7 @@ class Page(val theSession: Session) extends Actor {
     
     case ajr : AjaxRerender =>
     if (pendingAjax.contains(ajr)) {
-      ajr.sendTo(AnswerHolder(XhtmlResponse(Unparsed(""),None,  List("Content-Type" -> "text/javascript"), 200)))
+      ajr.sendTo(AnswerHolder(XhtmlResponse(Unparsed(""), Empty,  List("Content-Type" -> "text/javascript"), 200)))
       pendingAjax = pendingAjax.remove(_ eq ajr)
     }
     
@@ -61,7 +61,7 @@ class Page(val theSession: Session) extends Actor {
       "try{$('"+uid+"').innerHTML = decodeURIComponent('"+urlEncode(html)+"'.replace(/\\+/g,'%20'))} catch (e) {}"
     }.mkString("", "\n", "")
     
-    XhtmlResponse(Unparsed(ret),None, List("Content-Type" -> "text/javascript"), 200)
+    XhtmlResponse(Unparsed(ret), Empty, List("Content-Type" -> "text/javascript"), 200)
   }
   
   private def performRender(state: RequestState, pageXml: NodeSeq,
@@ -102,7 +102,7 @@ class Page(val theSession: Session) extends Actor {
       v =>
         v match {
 	  case Group(nodes) => Group(processControllers(nodes, ctlMgr, request))
-          case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, attr.get("type"), attr.get("name"), attr.get("factory"), processControllers(kids, ctlMgr, request), request, attr)}
+          case Elem("lift", "controller", attr @ _, _, kids @ _*) => {executeController(ctlMgr, Can(attr.get("type")), Can(attr.get("name")), Can(attr.get("factory")), processControllers(kids, ctlMgr, request), request, attr)}
           case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processControllers(v.child, ctlMgr, request) : _*)}
           case _ => {v}
         }
@@ -110,9 +110,9 @@ class Page(val theSession: Session) extends Actor {
   }
   
   private def executeController(ctlMgr: ControllerManager, 
-				theType: Option[Seq[Node]], 
-				name: Option[Seq[Node]], 
-				factory: Option[Seq[Node]], kids: NodeSeq,
+				theType: Can[Seq[Node]], 
+				name: Can[Seq[Node]], 
+				factory: Can[Seq[Node]], kids: NodeSeq,
 				request: RequestState,
                                 attr: MetaData): NodeSeq = 
     {
@@ -120,7 +120,7 @@ class Page(val theSession: Session) extends Actor {
       val (myType, myName, myFactory) = (theType.map(_.text),name.map(_.text), factory.map(_.text))
       val ret = (ctlMgr !? (1500l, AskFindController(myType, myName, myFactory)) match {
 	  case Some(AnswerFoundController(controller)) => controller
-	  case _ => None
+	  case _ => Empty
 	}).map{
 	  controller => 
 	    // set up the controller
@@ -133,7 +133,7 @@ class Page(val theSession: Session) extends Actor {
 	      case _ => Comment("FIX"+"ME controller type "+myType+" name "+myName+" timeout") ++ kids
 	    }
 	  }</span>
-	} getOrElse {
+	} openOr {
 	  Comment("FIX"+"ME - Controller type: "+myType+" name: "+myName+" factory "+myFactory+" Not Found ") ++ kids
 	}
         
@@ -177,7 +177,7 @@ class Page(val theSession: Session) extends Actor {
     r.paramNames.filter{n => messageCallback.contains(n)}.foreach{
       n => 
     	val v = messageCallback(n)
-      (v.target !? (100L, ActionMessage(v.name, r.params(n), self, Some(this), r, sessionVars))) match {
+      (v.target !? (100L, ActionMessage(v.name, r.params(n), self, Full(this), r, sessionVars))) match {
               case Some(sv: Map[String, String]) => sessionVars = sv
               case _ =>
             }

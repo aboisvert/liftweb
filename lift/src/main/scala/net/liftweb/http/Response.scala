@@ -14,20 +14,20 @@ trait ToResponse extends ResponseIt {
   def out: Node
   def headers: List[(String, String)]
   def code: Int
-  def docType: Option[String]
+  def docType: Can[String]
   
   def toResponse = {
     val encoding = 
     (out, headers.ciGet("Content-Type")) match {
     case (up: Unparsed,  _) => ""
-    case (_, None) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    case (_, Some(s)) if (s.toLowerCase.startsWith("text/xml") ||
+    case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
                           s.toLowerCase.startsWith("text/html") ||
                           s.toLowerCase.startsWith("text/xhtml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     case _ => ""
     }
     
-    val doc = docType.map(_ + "\n") getOrElse ""
+    val doc = docType.map(_ + "\n") openOr ""
       
     Response((encoding + doc + AltXML.toXML(out, false)).getBytes("UTF-8"), headers, code)
     }
@@ -39,12 +39,12 @@ trait ResponseIt {
   def toResponse: Response
 }
 
-case class XhtmlResponse(out: Node, docType: Option[String], headers: List[(String, String)], code: Int) extends ToResponse
+case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], code: Int) extends ToResponse
 
 case class Response(data: Array[Byte], headers: List[(String, String)], code: Int) extends ResponseIt {
   def toResponse = this
 }
 
 object ResponseInfo {
-  val xhtmlTransitional = Some("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
+  val xhtmlTransitional = Full("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
 }

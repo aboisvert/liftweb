@@ -49,7 +49,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   /**
    * If the 
    */
-  def screenWrap: Option[Node] = None
+  def screenWrap: Can[Node] = Empty
   
   val BasePath = "user_mgt"
   val SignUp = "sign_up"
@@ -101,9 +101,9 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   def logUserIn(who: T) {S.set(LoggedInUserIdentifier, who.id.toString)}
   def logoutCurrentUser {S.unset(LoggedInUserIdentifier)}
   
-  def currentUserId: Option[String] = S.get(LoggedInUserIdentifier)
+  def currentUserId: Can[String] = S.get(LoggedInUserIdentifier)
   
-  def currentUser: Option[T] = currentUserId.flatMap(id => getSingleton.find(id))
+  def currentUser: Can[T] = currentUserId.flatMap(id => getSingleton.find(id))
   
   def signupXhtml(user: T) = <form method="POST" action={S.action}><table><tr><td colspan="2">Sign Up</td></tr>
   {localForm(user, false)}
@@ -171,7 +171,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
 
   
   def validateUser(id: String) = getSingleton.find(By(uniqueId, id)) match {
-    case Some(user) if !user.validated => 
+    case Full(user) if !user.validated => 
       user.validated(true).uniqueId.reset().save
     S.notice("You have been validated... please log into your account")
     S.redirectTo("/"+BasePath+"/"+Login)  
@@ -191,7 +191,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
 
     def testLogin(ignore: String) {
       getSingleton.find(By(email, username)) match {
-        case Some(user) if user.validated && user.password.match_?(pwd) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
+        case Full(user) if user.validated && user.password.match_?(pwd) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
         case _ => S.error("Invalid Username/Password")
       }
     }
@@ -214,7 +214,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
     
     def sendPasswordReset(ignore: String) {
       getSingleton.find(By(this.email, email), By(this.validated, true)) match {
-        case Some(user) =>
+        case Full(user) =>
           user.uniqueId.reset()
         val resetLink = S.hostAndPath+"/"+BasePath+"/"+PasswordReset+"/"+user.uniqueId
         val email: String = user.email
@@ -241,7 +241,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
         Mailer.sendMail(From("noreply@"+S.hostName),Subject("Reset Password Request"),  To(user.email), msgXml)        
         S.notice("Password Reset Email sent") 
         S.redirectTo(HomePage)
-        case None => S.error("Email address not found")
+        case _ => S.error("Email address not found")
       }
     }
     
@@ -257,8 +257,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   </form>
   
   def passwordReset(id: String) = getSingleton.find(By(uniqueId, id)) match {
-    case None => S.error("Password reset link invalid"); S.redirectTo(HomePage)
-    case Some(user) => 
+    case Full(user) => 
       def finishSet(ignore: String) {
 	user.validate match {
           case Nil => S.notice("Password Changed"); user.save; logUserIn(user); S.redirectTo(HomePage)
@@ -270,6 +269,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
     bind("user", passwordResetXhtml,
 	 "pwd" -> password_*("",(p: List[String]) => user.password.setList(p)),
          "submit" -> submit("Set Password", finishSet))
+    case _ => S.error("Password reset link invalid"); S.redirectTo(HomePage)
   }
   
   def changePasswordXhtml = <form method="POST" action={S.action}>
@@ -282,7 +282,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   </form>
   
   def changePassword = {
-    val user = currentUser.get // we can do this because the logged in test has happened
+    val user = currentUser.open // we can do this because the logged in test has happened
     var oldPassword = ""
     var newPassword: List[String] = Nil
     
@@ -311,7 +311,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   </form>
   
   def edit = {
-    val theUser: T = currentUser.get // we know we're logged in
+    val theUser: T = currentUser.open // we know we're logged in
     val theName = BasePath + Edit
 
     def testEdit(ignore: String) {
@@ -345,7 +345,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   })).
   map(f => <tr><td>{f.displayName}</td><td>{f.toForm}</td></tr>)
   
-  protected implicit def nodeSeqToOption(in: NodeSeq): Option[NodeSeq] = 
+  protected implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] = 
     screenWrap.map{
       theDoc => 
 	val rw = new RewriteRule {
@@ -355,5 +355,5 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
 	  }
 	}
       (new RuleTransformer(rw))(theDoc)
-    } orElse Some(in)
+    } or Full(in)
 }

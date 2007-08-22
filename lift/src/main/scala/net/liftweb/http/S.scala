@@ -11,7 +11,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper}
+import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure}
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
 
@@ -193,9 +193,9 @@ object S {
 
   }
   
-  def session: Option[Session] = _sessionInfo.value match {
-    case null => None
-    case s => Some(s)
+  def session: Can[Session] = _sessionInfo.value match {
+    case null => Empty
+    case s => Full(s)
   }
   
   def logQuery(query: String, time: Long) {
@@ -260,8 +260,8 @@ object S {
   }
   
   object state {
-    def apply(name: String): Option[String] = _stateInfo.value match {
-      case null => None
+    def apply(name: String): Can[String] = _stateInfo.value match {
+      case null => Empty
       case v => v(name)
     }
     def update(name: String, value: String) {_stateInfo.value match
@@ -279,7 +279,7 @@ object S {
   }
   
   object attr {
-    def apply(what: String): Option[String] = S._attrs.value.get(what)
+    def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
     def update(what: String, value: String) = S._attrs.value(what) = value
   }
   
@@ -304,17 +304,17 @@ object S {
     }
   }
   
-  def get(what: String): Option[String] = {
+  def get(what: String): Can[String] = {
     val sr = _servletRequest.value
-    if (sr eq null) None
+    if (sr eq null) Empty
     else {
       val ses = sr.getSession
-      if (ses eq null) None
+      if (ses eq null) Empty
       else {
       val ret = ses.getAttribute(what)
-      if (ret eq null) None
-      else if (ret.isInstanceOf[String]) Some(ret.toString)
-      else None
+      if (ret eq null) Empty
+      else if (ret.isInstanceOf[String]) Full(ret.toString)
+      else Empty
       }
     }
   }
@@ -354,9 +354,9 @@ object S {
     }
   }
   
-  def locateSnippet(name: String): Option[NodeSeq => NodeSeq] = snippetMap.value.get(name) orElse {
+  def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
     val snippet = name.split(":").toList.map(_.trim).filter(_.length > 0)
-    if (Servlet.snippetTable.isDefinedAt(snippet)) Some(Servlet.snippetTable(snippet)) else None
+    if (Servlet.snippetTable.isDefinedAt(snippet)) Full(Servlet.snippetTable(snippet)) else Empty
   }
   
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
@@ -428,13 +428,13 @@ object S {
   def submit(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
   // List[value, display]
-  def select(opts: List[(String, String)], deflt: Option[String], func: String => Any, params: FormElementPieces*): Elem = 
+  def select(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
     select_*(opts, deflt, SFuncHolder(func), params :_*)
     
     // FIXME wrap the select in a filter to insure that stuff received is in the set of things sent
-  def select_*(opts: List[(String, String)],deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): Elem =  
+  def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): Elem =  
     wrapFormElement(<select name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.filter(_ == o._1).isDefined))
+      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.filter((s: String) => s == o._1).isDefined))
     }</select>, params.toList)
     
     
@@ -454,13 +454,13 @@ object S {
     def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = 
       wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
     
-    def radio(opts: List[String], deflt: Option[String], func: String => Any, params: FormElementPieces*): ChoiceHolder[String] =
+    def radio(opts: List[String], deflt: Can[String], func: String => Any, params: FormElementPieces*): ChoiceHolder[String] =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
       
-    def radio_*(opts: List[String], deflt: Option[String], func: AFuncHolder, params: FormElementPieces*): ChoiceHolder[String] = {
+    def radio_*(opts: List[String], deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): ChoiceHolder[String] = {
       val name = f(func)
       val itemList = opts.map(v => ChoiceItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
-        checked(deflt.filter(_ == v).isDefined), params.toList)))
+        checked(deflt.filter((s: String) => s == v).isDefined), params.toList)))
       ChoiceHolder(itemList)
     }
     
@@ -534,7 +534,7 @@ object S {
   
   
   def params(n: String) = request.params(n)
-  def param(n: String): Option[String] = request.param(n)
+  def param(n: String): Can[String] = Can(request.param(n))
   
   def error(n: String) {error(Text(n))}
   def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n)}
@@ -558,23 +558,23 @@ object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
 }
 
-class VarStateHolder(val session: Session, initVars: Map[String, String],setter: Option[Map[String, String] => Any], val local: Boolean) {
+class VarStateHolder(val session: Session, initVars: Map[String, String],setter: Can[Map[String, String] => Any], val local: Boolean) {
   //def this(s: Session) = this(s, s.currentVars, false)
   
   private var vars = initVars
   
-  def apply(name: String): Option[String] = vars.get(name)
+  def apply(name: String): Can[String] = Can(vars.get(name))
   def -=(name: String) {
     vars = vars - name
     setter.foreach(_(vars))
     if (local) session.stateVar - name
-    else session ! UpdateState(name, None)
+    else session ! UpdateState(name, Empty)
   }
   def update(name: String, value: String) {
     vars = vars + name -> value
     setter.foreach(_(vars))
     if (local) session.stateVar(name) = value
-    else session ! UpdateState(name, Some(value))
+    else session ! UpdateState(name, Full(value))
   }
   
 }

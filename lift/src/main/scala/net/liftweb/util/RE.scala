@@ -56,8 +56,8 @@ class REMatcher(val str: String,val compiled: Pattern) {
   
   val matches = matcher.find
 
-  val matchStr: Option[String] = if (matches) Some(str.substring(matcher.start, matcher.end))
-                 else None
+  val matchStr: Can[String] = if (matches) Full(str.substring(matcher.start, matcher.end))
+                 else Empty
 
   def capture= map{s => s}
 

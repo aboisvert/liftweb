@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, Can, Empty, Full, Failure}
 import net.liftweb.http._
 import net.liftweb.mapper._
 import Helpers._
@@ -53,14 +53,14 @@ class Boot {
   * A singleton that vends a database connection to a Derby database
   */
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:skittr;create=true")
 
-      Some(dm)
+      Full(dm)
     } catch {
-      case e : Exception => e.printStackTrace; None
+      case e : Exception => e.printStackTrace; Empty
     }
   }
   def releaseConnection(conn: Connection) {conn.close}

@@ -11,7 +11,7 @@ import javax.servlet.ServletContext
 // import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Lazy, Log}
+import net.liftweb.util.{Lazy, Log, Can, Full, Empty, Failure}
 import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
@@ -140,27 +140,41 @@ class RequestState(val paramNames: List[String],
     case _ => None
   }
   
+  def xml: Can[Elem] = if (!xml_?) Empty
+  else {
+    try {
+    Full(XML.load(new java.io.ByteArrayInputStream(this.body)))
+    } catch {
+      case e => Failure(e.getMessage, Full(e), Nil)
+    }
+  }
+  
   private val _location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
   def location = _location.get 
   
-  def testLocation: Option[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) None
-     else location.map(_.testAccess) getOrElse Some(RedirectWithMessage("/", "Invalid URL"))
+  def testLocation: Can[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) Empty
+     else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", "Invalid URL"))
   
-  private val _buildMenu = Lazy(location.map(_.buildMenu) getOrElse CompleteMenu(Nil))
+  private val _buildMenu = Lazy(location.map(_.buildMenu) openOr CompleteMenu(Nil))
   
   def buildMenu: CompleteMenu = _buildMenu.get  
 
-  def finder(name: String): Option[InputStream] = {
+  def finder(name: String): Can[InputStream] = {
     context match {
-      case null => None
+      case null => Empty
       case c => c.getResourceAsStream(name) match {
-        case null => None
-        case s => Some(s)
+        case null => Empty
+        case s => Full(s)
       }
     }
   }
   
   def createNotFound = {
+    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,
+        ResponseInfo.xhtmlTransitional , Nil, 404)
+  }
+  
+  def createNotFound(failure: Failure) = { // FIXME do failure stuff
     XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,
         ResponseInfo.xhtmlTransitional , Nil, 404)
   }

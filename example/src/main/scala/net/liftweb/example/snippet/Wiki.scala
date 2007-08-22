@@ -19,7 +19,7 @@ class Wiki {
     * Display the Textile marked up wiki or an edit box
     */
   def main: NodeSeq = {
-    val pageName = S.param("wiki_page") getOrElse "HomePage" // set the name of the page
+    val pageName = S.param("wiki_page") openOr "HomePage" // set the name of the page
     
     def showAll = {
       WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
@@ -51,13 +51,13 @@ class Wiki {
     if (pageName == "all") showAll // if the page is "all" display all the pages
     else {
       // find the entry in the database or create a new one
-      val entry = WikiEntry.find(By(WikiEntry.name, pageName)) getOrElse WikiEntry.create.name -> pageName
+      val entry = WikiEntry.find(By(WikiEntry.name, pageName)) openOr WikiEntry.create.name -> pageName
       
       // is it a new entry?
       val isNew = !entry.saved_?
       
       // show edit or just display
-      val edit = isNew || (S.param("param1").map(_ == "edit") getOrElse false)
+      val edit = isNew || (S.param("param1").map(_ == "edit") openOr false)
       
       <span><a href="/wiki/all">Show All Pages</a><br/>{
 	if (edit) editEntry(entry, isNew)

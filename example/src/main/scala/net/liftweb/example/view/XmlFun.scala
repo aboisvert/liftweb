@@ -19,7 +19,7 @@ class XmlFun {
     addressNode("44 sheep st", "#1", "Liverpool", "", "GE1", "GB") :: 
     addressNode("74 nice st", "#1801", "Chicago", "IL", "60606", "US") :: Nil
 
-val toCount = param("country") getOrElse {"US"}
+val toCount = param("country") openOr {"US"}
     <lift:surround with="default" at="content">
 
 <p>The XML is 

@@ -169,15 +169,15 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
 
   protected def instantiate: MyType
 
-  def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, None)  
-  def createNewInstance(firstEvent: Meta#Event, setup: Option[(MyType) => Any]): MyType = {
+  def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, Empty)  
+  def createNewInstance(firstEvent: Meta#Event, setup: Can[(MyType) => Any]): MyType = {
     val state = instantiate
     setup.foreach(_(state))
     state.processEvent(firstEvent)
     state
   }
   
-  def createNewInstance(firstEvent: Meta#Event)( setup: (MyType) => Any): MyType = createNewInstance(firstEvent, Some(setup))
+  def createNewInstance(firstEvent: Meta#Event)( setup: (MyType) => Any): MyType = createNewInstance(firstEvent, Full(setup))
 
   
   
@@ -186,7 +186,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
     */
   protected def processEvent(who: MyType, what: Meta#Event) {
     val transitions = stateInfo(who.state) // get the transitions
-    val which = first(transitions.toList) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Some(t) else None}
+    val which = first(transitions.toList) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Full(t) else Empty}
     if (!which.isDefined) what.unmatchedEventHanlder(who, stateList(who.state))
     which.foreach {
       t =>
@@ -266,9 +266,9 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   case class On(override val on: PartialFunction[Meta#Event, Any], override val to: StV) extends ATransition(to, on)
   
   object Event {
-    def unmatchedHandler: Option[(MyType,State, Event) => Any] = None
+    def unmatchedHandler: Can[(MyType,State, Event) => Any] = Empty
     def unmatchedEventHanlder(who: MyType, state: State, event: Event) {
-      val f = unmatchedHandler getOrElse ((who: MyType,state: State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
+      val f = unmatchedHandler openOr ((who: MyType,state: State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
       f(who, state, event)
     }
   }

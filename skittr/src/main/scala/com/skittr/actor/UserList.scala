@@ -36,7 +36,7 @@ object UserList {
         val ua = new UserActor // create a new Actor
         ua.start // start it up
         ua !? Setup(u.id, u.name, u.wholeName) // tell it to set up
-        Some(ua) // return it 
+        Full(ua) // return it 
       }
       // load all the users
       User.findMap()(userToUserActor).foreach (_ !? ConfigFollowers) // for each of the UserActors, tell them to configure their followers
@@ -74,7 +74,7 @@ object UserList {
   def add(name: String, who: UserActor) = writeLock(set(name) = who)
   
   // find a user by name
-  def find(name: String): Option[UserActor] = readLock(set.get(name))
+  def find(name: String): Can[UserActor] = readLock(Can(set.get(name)))
   
   // remove a user
   def remove(name: String) = writeLock(set -= name)

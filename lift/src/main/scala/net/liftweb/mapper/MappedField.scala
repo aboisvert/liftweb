@@ -13,6 +13,7 @@ import scala.xml.{Text, Node, NodeSeq}
 import java.util.Date
 import net.liftweb.http.S
 import net.liftweb.http.S._
+import net.liftweb.util._
 
 trait BaseMappedField {
   def jdbcFriendly(field : String) : Object
@@ -64,12 +65,12 @@ trait BaseMappedField {
   /**
     * Called when a column has been added to the database via Schemifier
     */
-  def dbAddedColumn: Option[() => unit]
+  def dbAddedColumn: Can[() => Unit]
                             
                             /**
                                * Called when a column has indexed via Schemifier
                                */
-                             def dbAddedIndex: Option[() => unit]
+                             def dbAddedIndex: Can[() => unit]
                                                        
                             
 }
@@ -99,12 +100,12 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
       /**
          * Called when a column has been added to the database via Schemifier
          */
-       def dbAddedColumn: Option[() => unit] = None
+       def dbAddedColumn: Can[() => unit] = Empty
 
        /**
           * Called when a column has indexed via Schemifier
           */
-        def dbAddedIndex: Option[() => unit] = None                                 
+        def dbAddedIndex: Can[() => unit] = Empty                                 
   /**
    * override this method in indexed fields to indicate that the field has been saved
    */
@@ -126,7 +127,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     v
   }
   
-  def :?=(v: Option[T]) : Option[T] = {
+  def :?=(v: Can[T]) : Can[T] = {
     v.foreach(tv => this := tv)
     v
   }
@@ -191,7 +192,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
     else throw new Exception("Do not have permissions to set this field")
   }
 
-  def set_?(value: Option[T]): Option[T] = {
+  def set_?(value: Can[T]): Can[T] = {
     value.foreach(v => this.set(v))
     value
   }
@@ -296,10 +297,10 @@ object MappedField {
 case class ValidationIssue(field : BaseMappedField, msg : String)
 
 trait IndexedField[O] requires BaseMappedField extends BaseIndexedField {
-  def convertKey(in : String) : Option[O]
-  def convertKey(in : int) : Option[O]
-  def convertKey(in: long): Option[O]
-  def convertKey(in : AnyRef) : Option[O];
+  def convertKey(in : String) : Can[O]
+  def convertKey(in : Int) : Can[O]
+  def convertKey(in: Long): Can[O]
+  def convertKey(in : AnyRef) : Can[O]
   def makeKeyJDBCFriendly(in : O) : AnyRef
   def dbDisplay_? = false
 }
@@ -330,7 +331,7 @@ trait BaseForeignKey extends BaseMappedField {
     * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
     * is done with the schemification.
     */
-  def dbAddedForeignKey: Option[() => unit]
+  def dbAddedForeignKey: Can[() => Unit]
 }
 
 trait LifecycleCallbacks {

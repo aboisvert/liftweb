@@ -8,11 +8,12 @@ package net.liftweb.mapper
  \*                                                 */
 
 import java.sql.Connection
+import net.liftweb.util._
 
 /**
  * Vend JDBC connections
  */ 
 trait ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection]
+  def newConnection(name: ConnectionIdentifier): Can[Connection]
   def releaseConnection(conn: Connection)  
 }

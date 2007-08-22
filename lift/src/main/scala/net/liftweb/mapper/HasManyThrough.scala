@@ -6,7 +6,7 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.Lazy
+import net.liftweb.util.{Lazy, Can, Empty, Full, Failure}
 import scala.collection.mutable.HashSet
 
 class HasManyThrough[From <: KeyedMapper[ThroughType, From],
@@ -25,7 +25,7 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
       conn =>
 	val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+
       through.dbTableName+" WHERE "+
-      otherSingleton.dbTableName+"."+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).get.dbColumnName+" = "+
+      otherSingleton.dbTableName+"."+otherSingleton.indexedField(otherSingleton.asInstanceOf[To]).open.dbColumnName+" = "+
       through.dbTableName+"."+throughToField.dbColumnName+" AND "+
       through.dbTableName+"."+throughFromField.dbColumnName+" = ?"
       DB.prepareStatement(query, conn) {
@@ -35,9 +35,9 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
 	      st.setObject(1, indVal.jdbcFriendly, indVal.targetSQLType)
 	    DB.exec(st) {
 	      rs =>
-		otherSingleton.createInstances(owner.connectionIdentifier, rs, None, None)
+		otherSingleton.createInstances(owner.connectionIdentifier, rs, Empty, Empty)
 	    }
-	  } getOrElse Nil
+	  } openOr Nil
       }
     }
   }

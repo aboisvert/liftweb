@@ -111,11 +111,12 @@ class Session(val uri: String,
       sender(AnswerHolder(updatedPage))
     
     case SendEmptyTo(sender) =>
-      sender(AnswerHolder(XhtmlResponse(Unparsed(""),None, List("Content-Type" -> "text/javascript"), 200)))
+      sender(AnswerHolder(XhtmlResponse(Unparsed(""), Empty, List("Content-Type" -> "text/javascript"), 200)))
     
-    case UpdateState(name, None) => stateVar - name
 
-    case UpdateState(name, Some(value)) => stateVar(name) = value
+    case UpdateState(name, Full(value)) => stateVar(name) = value
+
+    case UpdateState(name, _) => stateVar - name
     
     case CurrentVars => reply(_state)
 
@@ -123,7 +124,7 @@ class Session(val uri: String,
   }
   
   object stateVar {
-    def apply(name: String): Option[String] = _state.get(name)
+    def apply(name: String): Can[String] = Can(_state.get(name))
     def -(name: String): Unit = _state = _state - name
     def update(name: String, value: String): Unit = _state = _state + name -> value
   }
@@ -138,15 +139,15 @@ class Session(val uri: String,
   
   private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long,
       whenDone: AnswerHolder => Any) = {
-    S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, None, true)) {
+    S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, Empty, true)) {
       try {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, request.path)        
         if (sessionDispatch.isDefinedAt(toMatch)) {
           processParameters(request)
           sessionDispatch(toMatch)(httpRequest) match {
-            case None => whenDone(AnswerHolder(request.createNotFound))
-            case Some(r) => whenDone(AnswerHolder(r))
+            case Full(r) => whenDone(AnswerHolder(r))
+            case _ => whenDone(AnswerHolder(request.createNotFound))
           }
           if (!request.ajax_?) notices = Nil
         } else {
@@ -156,8 +157,7 @@ class Session(val uri: String,
         processParameters(request)
 
         findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(xml, request)) match {
-          case None => whenDone(AnswerHolder(request.createNotFound))
-          case Some(xml: NodeSeq) => {
+          case Full(xml: NodeSeq) => {
             S.getFunctionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 
             if ((xml \\ "controller").filter(_.prefix == "lift").isEmpty) {
@@ -172,6 +172,8 @@ class Session(val uri: String,
               if (!request.ajax_?) notices = Nil
             }
           }
+          case _ => whenDone(AnswerHolder(request.createNotFound))
+          
         }
         }
       } catch {
@@ -205,11 +207,11 @@ class Session(val uri: String,
 	ret
   }
   
-  private def findVisibleTemplate(path: ParsePath, session : RequestState) : Option[NodeSeq] = {
+  private def findVisibleTemplate(path: ParsePath, session : RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(request, request.path)
     val templ = Servlet.templateTable
-    (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else None) match {
-      case ns @ Some(_) => ns 
+    (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
+      case ns @ Full(_) => ns 
       case _ =>
     val tpath = path.path
     val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
@@ -225,29 +227,26 @@ class Session(val uri: String,
     case _ => Map.empty
   }
   
-  private def findTemplate(name: String, session : RequestState) : Option[NodeSeq] = {
+  private def findTemplate(name: String, session : RequestState) : Can[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
-      case s @ _ if (!s.isEmpty) => s
-      case _ => List("index")
+      case Nil => List("index")
+      case s => s
     }
     
-    findAnyTemplate(splits, session) match {
-      case s @ Some(_) => s
-      case None => findAnyTemplate("templates-hidden" :: splits, session)
-    }
+    findAnyTemplate(splits, session) or findAnyTemplate("templates-hidden" :: splits, session)
   }
   
 
   private val suffixes = List("", "html", "xhtml", "htm")
   
-  private def findAnyTemplate(places : List[String], session : RequestState) : Option[NodeSeq] = {
+  private def findAnyTemplate(places : List[String], session : RequestState) : Can[NodeSeq] = {
     val pls = places.mkString("/","/", "")
     val toTry = suffixes.map(s => pls + (if (s.length > 0) "." + s else ""))
     
-    first(toTry)(session.finder(_).flatMap(PCDataXmlParser(_))) orElse lookForClasses(places)
+    first(toTry)(session.finder(_).flatMap(PCDataXmlParser(_))) or lookForClasses(places)
   }  
   
-  private def lookForClasses(places : List[String]) : Option[NodeSeq] = {
+  private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
     val controller: String = (places.take(1) orElse List("default_template"))(0)
     val action: String = (places.drop(1).take(1) orElse List("render"))(0)
     val trans = List((n:String) => n, (n:String) => smartCaps(n))
@@ -260,35 +259,30 @@ class Session(val uri: String,
             c =>
               val inst = c.newInstance
               c.getMethod(action, null).invoke(inst, null) match {
-                case null | None => None
-                case s : NodeSeq => Some(s)
-                case Some(n : NodeSeq) => Some(n)
-                case Some(n : Seq[Node]) => Some(n)
-                case _ => None
+                case null | Empty => Empty
+                case s : NodeSeq => Full(s)
+                case Full(n : NodeSeq) => Full(n)
+                case Full(n : Seq[Node]) => Full(n)
+                case _ => Empty
               }
             }
         } catch {
-          case _ => None
+          case _ => Empty
         }
     }
   }
   
   def couldBeHtml(in : List[(String, String)]) : boolean = {
     in match {
-      case null => true
-      case _ => {
-	in.ciGet("Content-Type") match {
-	  case Some(s) => {s.toLowerCase == "text/html"}
-	  case None => true
-	}
-      }
+      case null | Nil => true
+      case _ => in.ciGet("Content-Type").map(_.toLowerCase == "text/html") openOr true
     }
   }
   
   def fixResponse(resp: XhtmlResponse, request: RequestState): XhtmlResponse = {
     val newHeaders = fixHeaders(resp.headers, request)
     val (newXml, theType) = if (couldBeHtml(resp.headers) && request.contextPath.length > 0) (request.fixHtml(resp.out), ResponseInfo.xhtmlTransitional)
-       else (resp.out, None)
+       else (resp.out, Empty)
     XhtmlResponse(resp.out, theType, newHeaders, resp.code)
   }
   
@@ -305,51 +299,49 @@ class Session(val uri: String,
     }
   
   
-  private def findAndEmbed(templateName : Option[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
+  private def findAndEmbed(templateName : Can[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
     templateName match {
-      case None => Comment("FIX"+"ME No named specified for embedding") ++ kids
-      case Some(s) => {
+      case Full(s) => {
         findTemplate(s.text, session) match {
-          case None => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
-          case Some(s) => processSurroundAndInclude(s, session)
+          case Full(s) => processSurroundAndInclude(s, session)
+          case _ => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
         }
       }
+      case _ => Comment("FIX"+"ME No named specified for embedding") ++ kids
     }
   }
   
   
-  private def findControllerByType(contType: Option[Seq[Node]]): Option[ControllerActor] = {
-    if (contType == None) None
-    else {
-      findClass(contType.get.text, buildPackage("controller") ::: ("lift.app.controller" :: Nil), {c : Class => classOf[ControllerActor].isAssignableFrom(c)}) match {
-        case None => None
-        case Some(cls) => {
+  private def findControllerByType(contType: Can[Seq[Node]]): Can[ControllerActor] = {
+    contType.flatMap(ct =>
+      findClass(ct.text, buildPackage("controller") ::: ("lift.app.controller" :: Nil), {c : Class => classOf[ControllerActor].isAssignableFrom(c)}) match {
+        case Full(cls) => {
           try {
-            val ret = Some(cls.newInstance.asInstanceOf[ControllerActor])
+            val ret = Full(cls.newInstance.asInstanceOf[ControllerActor])
             ret
           } catch {
-            case _ => None
+            case _ => Empty
           }
         }
-      }
-    }
+        case _ => Empty
+      })
   }
   
-  private def findSnippetClass(name: String): Option[Class] = {
-    if (name == null) None
+  private def findSnippetClass(name: String): Can[Class] = {
+    if (name == null) Empty
     else findClass(name, buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
   
   private def findAttributeSnippet(name: String, request: RequestState, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
     findSnippetClass(cls) match {
-      case None => rest
-      case Some(clz) => {
+      case Full(clz) =>
         invokeMethod(clz, method) match {
-          case Some(md: MetaData) => md.copy(rest)
+          case Full(md: MetaData) => md.copy(rest)
           case _ => rest
         }
-      }
+      
+      case _ => rest
     }
   }
 
@@ -366,23 +358,23 @@ class Session(val uri: String,
     }
   }
   
-  private def processSnippet(snippetName: Option[Seq[Node]], attrs: MetaData, kids: NodeSeq, session : RequestState) : NodeSeq = {
+  private def processSnippet(snippetName: Can[Seq[Node]], attrs: MetaData, kids: NodeSeq, session : RequestState) : NodeSeq = {
     val ret = snippetName match {
-      case None => kids
-      case Some(ns) => {
-          S.locateSnippet(ns.text).map(_(kids)) getOrElse {
+      case Full(ns) => {
+          S.locateSnippet(ns.text).map(_(kids)) openOr {
             val (cls, method) = splitColonPair(ns.text, null, "render")
         findSnippetClass(cls) match {
-	  case None => kids
-	  case Some(clz) => {
-            ((invokeMethod(clz, method, Array(Group(kids)))) orElse invokeMethod(clz, method)) match {
-              case Some(md: NodeSeq) => processSurroundAndInclude(md, session)
+	  case Empty => kids
+	  case Full(clz) => {
+            ((invokeMethod(clz, method, Array(Group(kids)))) or invokeMethod(clz, method)) match {
+              case Full(md: NodeSeq) => processSurroundAndInclude(md, session)
               case _ => kids
             }
 	  }
         }
         }
       }
+      case _ => kids
     }
     
     attrs.get("form").map(ft => <form action={S.request.uri} method={ft.text}>{ret}</form>) getOrElse ret
@@ -394,9 +386,9 @@ class Session(val uri: String,
         v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes, session))
           case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
-          case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(attr.get("with"), attr.get("at"), processSurroundAndInclude(kids, session), session)
-          case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(attr.get("what"), processSurroundAndInclude(kids, session), session)
-          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => S.setVars(attr)(processSnippet(attr.get("type"), attr, processSurroundAndInclude(kids, session), session))
+          case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(Can(attr.get("with")),Can(attr.get("at")), processSurroundAndInclude(kids, session), session)
+          case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(Can(attr.get("what")), processSurroundAndInclude(kids, session), session)
+          case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => S.setVars(attr)(processSnippet(Can(attr.get("type")), attr, processSurroundAndInclude(kids, session), session))
           case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids, session)
           case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids, session))
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes, session), v.scope, processSurroundAndInclude(v.child, session) : _*)
@@ -405,15 +397,15 @@ class Session(val uri: String,
     }
   }
   
-  def findAndMerge(templateName : Option[Seq[Node]], at : Option[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
+  def findAndMerge(templateName : Can[Seq[Node]], at : Can[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
     val name : String = templateName match {
-      case None => "/templates-hidden/Default"
-      case Some(s) => if (s.text.startsWith("/")) s.text else "/"+ s.text
+      case Full(s) => if (s.text.startsWith("/")) s.text else "/"+ s.text
+      case _ => "/templates-hidden/Default"
     }
     
     findTemplate(name, session) match {
-      case None => kids
-      case Some(s) => processBind(processSurroundAndInclude(s, session), at.map(_.text) getOrElse "main", kids)
+      case Full(s) => processBind(processSurroundAndInclude(s, session), at.map(_.text) openOr "main", kids)
+      case _ => kids
     }
   }
 }
@@ -436,7 +428,7 @@ case class AskRenderPage(request: RequestState, xml: NodeSeq, sender: AnswerHold
 case class AnswerRenderPage(request: RequestState, thePage: XhtmlResponse,  sender: AnswerHolder => Any) extends SessionMessage
 case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
 case class SendEmptyTo(who: AnswerHolder => Any) extends SessionMessage
-case class UpdateState(name: String, value: Option[String]) extends SessionMessage
+case class UpdateState(name: String, value: Can[String]) extends SessionMessage
 case object CurrentVars extends SessionMessage
 case object ShutDown
 

@@ -20,7 +20,7 @@ object Props {
    *
    * @return the value of the property if defined
    */
-  def get(name: String): Option[String] = props.get(name)
+  def get(name: String): Can[String] = Can(props.get(name))
 
   def apply(name: String): String = props(name)
   
@@ -85,16 +85,17 @@ object Props {
                                                () => "/"+ modeName +"default.")
   val props = {
     // find the first property file that is available
-    first(toTry)(f => tryo(getClass.getResourceAsStream(f()+"props")) match {case None => None; case Some(s) if s eq null => None; case s => s}).map{s => val ret = new Properties; ret.load(s); ret} match {
-      case None => Map.empty[String, String] // if none, it's an empty map
+    first(toTry)(f => tryo(getClass.getResourceAsStream(f()+"props")).filter(_ ne null)).map{s => val ret = new Properties; ret.load(s); ret} match {
       
       // if we've got a propety file, create name/value pairs and turn them into a Map
-      case Some(prop) => 
+      case Full(prop) => 
         Map(prop.entrySet.toArray.map{
-	  s2 => 
-	    val s = s2.asInstanceOf[java.util.Map.Entry]
-	  (s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
-	} :_*)
+          s2 => 
+            val s = s2.asInstanceOf[java.util.Map.Entry]
+          (s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
+        } :_*)
+
+      case _ => Map.empty[String, String] // if none, it's an empty map
     }
   }
 }

@@ -49,7 +49,7 @@ class Misc {
        
        // if the was no ID or the user couldn't be found,
        // display an error and redirect
-     }) getOrElse {error("User not found"); redirectTo("/simple/index.html")}
+     }) openOr {error("User not found"); redirectTo("/simple/index.html")}
    }
 
   /**
@@ -110,6 +110,6 @@ class Misc {
        runContext(xhtml)
        
        // bail out if the ID is not supplied or the user's not found
-     }) getOrElse {error("User not found"); redirectTo("/simple/index.html")}
+     }) openOr {error("User not found"); redirectTo("/simple/index.html")}
   }
 }

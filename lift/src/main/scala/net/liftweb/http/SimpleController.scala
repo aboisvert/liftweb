@@ -8,6 +8,7 @@ package net.liftweb.http
 
 import scala.collection.immutable.TreeMap
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import net.liftweb.util._
 
 /**
  * The base trait of Controllers that handle pre-view requests
@@ -17,23 +18,23 @@ trait SimpleController {
   // private var session: TreeMap[String, Any] = _
   def httpRequest: HttpServletRequest
   
-  def param(name: String): Option[String] = {
+  def param(name: String): Can[String] = {
     request.params.get(name) match {
-      case None => None
+      case None => Empty
       case Some(nl) => nl.take(1) match {
-        case Nil => None
-        case l => Some(l.head)
+        case Nil => Empty
+        case l => Full(l.head)
       }
     }
   }
   
   def post_? : boolean = request.post_?
   
-  def get(name: String): Option[String] =
+  def get(name: String): Can[String] =
     httpRequest.getSession.getAttribute(name) match {
-        case null => None
-        case n: String => Some(n)
-        case _ => None
+        case null => Empty
+        case n: String => Full(n)
+        case _ => Empty
   }
   
   def set(name: String, value: String) {
@@ -43,11 +44,11 @@ trait SimpleController {
   def unset(name: String) {httpRequest.getSession.removeAttribute(name)}
       
   /*
-   def apply(name: String): Option[Any] = {
+   def apply(name: String): Can[Any] = {
    session.get(name)
    }*/
   
- /* def apply[T](name: String): Option[T] = {
+ /* def apply[T](name: String): Can[T] = {
     if (httpRequest == null) None
     else {
       httpRequest.getSession.getAttribute(name) match {

@@ -7,9 +7,10 @@ package net.liftweb.http
   \*                                                 */
     
 import scala.xml.Node
+import net.liftweb.util._
 
 case class XmlResponse(xml: Node) extends ToResponse {
-  def docType = None
+  def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> "text/xml")
   def out = xml

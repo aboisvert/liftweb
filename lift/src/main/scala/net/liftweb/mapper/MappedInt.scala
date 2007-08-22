@@ -94,7 +94,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM
    * Create an input field for the item
    */
   override def toForm : NodeSeq = 
-    S.select(enum.elements.toList.map(a => (a.id.toString, a.toString)), Some(toInt.toString),v => this(fromInt(Helpers.toInt(v))))
+    S.select(enum.elements.toList.map(a => (a.id.toString, a.toString)), Full(toInt.toString),v => this(fromInt(Helpers.toInt(v))))
 }
 
 class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {
@@ -111,34 +111,34 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
   
   def makeKeyJDBCFriendly(in : Int) = new java.lang.Integer(in)
   
-  def convertKey(in : String) : Option[int] = {
-    if (in eq null) None
+  def convertKey(in : String) : Can[Int] = {
+    if (in eq null) Empty
     try {
       val what = if (in.startsWith(name + "=")) in.substring((name + "=").length) else in
-      Some(Integer.parseInt(what))
+      Full(Integer.parseInt(what))
     } catch {
-      case _ => {None}
+      case _ => Empty
     }
   }
   
   override def dbDisplay_? = false
   
-  def convertKey(in : int) : Option[int] = {
-    if (in < 0) None
-    else Some(in)
+  def convertKey(in : Int) : Can[Int] = {
+    if (in < 0) Empty
+    else Full(in)
   }
   
-  def convertKey(in : long) : Option[int] = {
-    if (in < 0 || in > Integer.MAX_VALUE) None
-    else Some(in.asInstanceOf[int])
+  def convertKey(in : Long) : Can[Int] = {
+    if (in < 0 || in > Integer.MAX_VALUE) Empty
+    else Full(in.asInstanceOf[Int])
   }
   
-  def convertKey(in : AnyRef) : Option[int] = {
+  def convertKey(in : AnyRef) : Can[Int] = {
     if ((in eq null) || (in eq None)) None
     try {
       convertKey(in.toString)
     } catch {
-      case _ => {None}
+      case _ => Empty
     }                                         
   }
   

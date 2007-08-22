@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
 import net.liftweb.http._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
@@ -48,15 +48,15 @@ class Boot {
     Servlet.addRewriteBefore(rewriter)
   }
   
-  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Option[ResponseIt] =
+  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Can[ResponseIt] =
       createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
-      case Some(ret: ResponseIt) => Some(ret)
-      case _ => None
+      case Full(ret: ResponseIt) => Full(ret)
+      case _ => Empty
     })
 }
 
 object XmlServer {
-  def showStates(which: String)(req: HttpServletRequest): Option[XmlResponse] = Some(XmlResponse(
+  def showStates(which: String)(req: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(
       <states renderedAt={timeNow.toString}>{
       which match {
         case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
@@ -66,7 +66,7 @@ object XmlServer {
         case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
       } }</states>))
  
-  def showCities(ignore: HttpServletRequest): Option[XmlResponse] = Some(XmlResponse(<cities>
+  def showCities(ignore: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(<cities>
   <city name="Boston"/>
   <city name="New York"/>
   <city name="San Francisco"/>
@@ -77,13 +77,13 @@ object XmlServer {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
-      Some(dm)
+      Full(dm)
     } catch {
-      case e : Exception => e.printStackTrace; None
+      case e : Exception => e.printStackTrace; Empty
     }
   }
   def releaseConnection(conn: Connection) {conn.close}

@@ -30,13 +30,17 @@ object Log {
   </log4j:configuration>
 """
   
-  private def findTheFile: (Option[java.net.URL], Option[String]) = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
-  (name =>tryo(getClass.getResource(name)) match {case None => None; case Some(s) if s eq null => None; case Some(s) => Some( (s, name) )})) match {
+  private def findTheFile: Can[(java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
+  (name =>tryo(getClass.getResource(name)).filter(_ ne null).map(s => (s, name)))) 
+  /*(s, name match {case None => None; case Some(s) if s eq null => None; case Some(s) => Some( (s, name) )})) match {
     case None => (None, None)
     case Some((s, name)) => (Some(s), Some(name))
-  }
+  }*/
   
-  val (log4jUrl, fileName) = findTheFile
+  val (log4jUrl, fileName) = findTheFile match {
+    case Full((url, name)) => (Full(url), Full(name))
+    case _ => (Empty, Empty)
+  }
 
   for (url <- log4jUrl; name <- fileName) {
     if (name.endsWith(".xml")) {

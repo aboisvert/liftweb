@@ -7,10 +7,11 @@ package net.liftweb.http
 \*                                                 */
 
 import scala.xml.Node
-  
+import net.liftweb.util.Can
+
 /**
   * Constructs controllers
   */
 trait ControllerFactory {
-  def construct(contType: String): Option[ControllerActor]
+  def construct(contType: String): Can[ControllerActor]
 }

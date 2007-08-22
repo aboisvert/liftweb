@@ -39,12 +39,12 @@ class ControllerManager extends Actor {
     case s => Log.debug("Controller manager got message "+s); loop
   }
   
-  private def find(theType: Option[String],name: Option[String], factory: Option[String]): Option[ControllerActor] = {
+  private def find(theType: Can[String],name: Can[String], factory: Can[String]): Can[ControllerActor] = {
     theType.flatMap {
       myType: String => 
 	val lookFor = (myType, name, factory)
 	  // look in the cache for the controller or try to build one
-	  controllers.get(lookFor) orElse {
+	  Can(controllers.get(lookFor)) or {
             // build it and if we get one, put it in the cache
 	    searchFactoryForController(myType, factory).map{ctrl => controllers(lookFor) = ctrl;
             name.foreach(n => ctrl ! SetName(n))
@@ -53,13 +53,13 @@ class ControllerManager extends Actor {
     }
   }
   
-  private val controllers = new HashMap[(String, Option[String], Option[String]), ControllerActor]
+  private val controllers = new HashMap[(String, Can[String], Can[String]), ControllerActor]
   
-  private def searchFactoryForController(contType: String, factory: Option[String]): Option[ControllerActor] = {
-    findFactory(factory).flatMap{f => f.construct(contType)} orElse {findControllerByType(contType)}
+  private def searchFactoryForController(contType: String, factory: Can[String]): Can[ControllerActor] = {
+    findFactory(factory).flatMap{f => f.construct(contType)} or {findControllerByType(contType)}
   }
   
-  private def findFactory(factory: Option[String]) : Option[ControllerFactory] = {
+  private def findFactory(factory: Can[String]) : Can[ControllerFactory] = {
     for (factName <- factory;
          cls <- findClass(factName, buildPackage("factory") ::: ("lift.app.factory" :: Nil),
              {c : Class => classOf[ControllerFactory].isAssignableFrom(c)});
@@ -68,7 +68,7 @@ class ControllerManager extends Actor {
   }
 
   
-  private def findControllerByType(contType: String): Option[ControllerActor] = {
+  private def findControllerByType(contType: String): Can[ControllerActor] = {
     findClass(contType, buildPackage("controller") ::: ("lift.app.controller" :: Nil), 
               {c : Class => classOf[ControllerActor].isAssignableFrom(c)}).flatMap{
 		cls =>
@@ -83,7 +83,7 @@ class ControllerManager extends Actor {
 
   /*
    
-   private def findController(controllerType : Option[Seq[Node]], controllerName : Option[Seq[Node]], controllerFactory : Option[Seq[Node]], kids : NodeSeq) : NodeSeq = {
+   private def findController(controllerType : Can[Seq[Node]], controllerName : Can[Seq[Node]], controllerFactory : Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
    if (controllerType == None && controllerName == None) Comment("FIX"+"ME No controller name specified") concat kids
    else {
    val actualName = controllerName match {
@@ -115,5 +115,5 @@ class ControllerManager extends Actor {
 }
 
 abstract class ControllerManagerMessage
-case class AskFindController(theType: Option[String],name: Option[String], factory: Option[String]) extends ControllerManagerMessage
-case class AnswerFoundController(controller: Option[ControllerActor]) extends ControllerManagerMessage
+case class AskFindController(theType: Can[String],name: Can[String], factory: Can[String]) extends ControllerManagerMessage
+case class AnswerFoundController(controller: Can[ControllerActor]) extends ControllerManagerMessage

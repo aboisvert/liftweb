@@ -12,11 +12,12 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
 import net.liftweb.http.S
 import S._
+import net.liftweb.util.{Can, Empty, Full, Failure}
 
 trait Mapper[A<:Mapper[A]] {
   private val secure_# = Safe.next
   private var was_deleted_? = false
-  private var dbConnectionIdentifier:Option[ConnectionIdentifier] = None
+  private var dbConnectionIdentifier:Can[ConnectionIdentifier] = Empty
   
   def getSingleton : MetaMapper[A];
   final def safe_? : boolean = {
@@ -30,11 +31,11 @@ trait Mapper[A<:Mapper[A]] {
   }
   
   def connectionIdentifier(id: ConnectionIdentifier): A = {
-    if (id != getSingleton.dbDefaultConnectionIdentifier || dbConnectionIdentifier.isDefined) dbConnectionIdentifier = Some(id)
+    if (id != getSingleton.dbDefaultConnectionIdentifier || dbConnectionIdentifier.isDefined) dbConnectionIdentifier = Full(id)
     thisToMappee(this)
   }
   
-  def connectionIdentifier = dbConnectionIdentifier getOrElse calcDbId
+  def connectionIdentifier = dbConnectionIdentifier openOr calcDbId
   
   def dbCalculateConnectionIdentifier: PartialFunction[A, ConnectionIdentifier] = Map.empty
   
@@ -126,17 +127,13 @@ trait Mapper[A<:Mapper[A]] {
   def comparePrimaryKeys(other: A) = false
 }
 
-object Mapper {
-  // implicit def fromSome[T<:Mapper[T]](in : Option[T]) : T = in.get
-}
-
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
   def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
   def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
   
   override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.is == other.primaryKeyField.is
                                    
-  def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField)) getOrElse this    
+  def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField)) openOr this    
   
   override def equals(other: Any): Boolean = {
     other match {

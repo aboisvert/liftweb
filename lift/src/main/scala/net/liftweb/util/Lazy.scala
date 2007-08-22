@@ -12,7 +12,7 @@ package net.liftweb.util
  * @param f -- a function that evaluates to the default value of the instance
  */
 class Lazy[T](f: => T) {
-  private var value: Option[T] = None
+  private var value: Can[T] = Empty
   
   /**
    * Get the value of the instance.  If it's not yet been set, call f to calculate it
@@ -21,9 +21,9 @@ class Lazy[T](f: => T) {
    */
   def get: T = {
     value match {
-      case Some(v) => v
-      case None => value = Some(f)
-      value.get
+      case Full(v) => v
+      case _ => value = Full(f)
+      value.open
     }
   }
   
@@ -39,7 +39,7 @@ class Lazy[T](f: => T) {
    * @return v
    */
   def set(v: T): T = {
-    value = Some(v)
+    value = Full(v)
     v
   }
   
@@ -53,7 +53,7 @@ class Lazy[T](f: => T) {
    */
   def update(v: T): Unit = set(v)
   
-  def reset = value = None
+  def reset = value = Empty
   
   def calculated_? = value.isDefined
   

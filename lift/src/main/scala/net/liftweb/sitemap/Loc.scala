@@ -14,23 +14,23 @@ import Helpers._
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
     
-  def testAccess: Option[RedirectWithMessage] = {
+  def testAccess: Can[RedirectWithMessage] = {
     first(stuff)(s =>
      s match {
-       case Loc.If(test, msg) if (!test()) => Some(msg.msg())
-       case Loc.Unless(test, msg) if test() => Some(msg.msg())
-       case _ => None
+       case Loc.If(test, msg) if (!test()) => Full(msg.msg())
+       case Loc.Unless(test, msg) if test() => Full(msg.msg())
+       case _ => Empty
      }
-    ) orElse _menu.testParentAccess
+    ) or _menu.testParentAccess
   }
   
-  private def findTitle(lst: List[Loc.LocStuff]): Option[Loc.Title] = lst match {
-    case Nil => None
-    case (t : Loc.Title) :: xs => Some(t)
+  private def findTitle(lst: List[Loc.LocStuff]): Can[Loc.Title] = lst match {
+    case Nil => Empty
+    case (t : Loc.Title) :: xs => Full(t)
     case _ => findTitle(lst.tail)
   }
   
-  def title: String = findTitle(stuff).map(_.title()) getOrElse text.text()
+  def title: String = findTitle(stuff).map(_.title()) openOr text.text()
   
   def isRoot_? = link.isRoot_?
   private[sitemap] def setMenu(p: Menu) {_menu = p}
@@ -67,7 +67,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
   
   private[sitemap] def buildItem(current: boolean, path: boolean) = {
-    if (hidden || testAccess.isDefined) None
+    if (hidden || testAccess.isDefined) Empty
     else link.create(Nil).map(t => MenuItem(text.text(),t , current, path))
   }
   
@@ -88,7 +88,7 @@ object Loc {
   case class Test(test: ((ParsePath, RequestState, HttpServletRequest)) => boolean) extends LocStuff
   case class LinkText(text: () => String)
   case class Link(uri: String, test: ((ParsePath, RequestState, HttpServletRequest)) => boolean,
-                 create: (Seq[(String, String)]) => Option[String]) {
+                 create: (Seq[(String, String)]) => Can[String]) {
     val path = RequestState.parsePath(uri)
     
     def isRoot_? = uri == "/"
@@ -97,7 +97,7 @@ object Loc {
   case class FailMsg(msg: () => RedirectWithMessage)
   
   private def alwaysTrue(a: (ParsePath, RequestState, HttpServletRequest)) = true
-  private def retString(toRet: String)(other: Seq[(String, String)]) = Some(toRet)
+  private def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
   
   implicit def strToLinkText(in: String): LinkText = LinkText(f(in))
   implicit def strToLink(in: String): Link = Link(in, alwaysTrue _, retString(in) _)

@@ -41,7 +41,7 @@ object Helpers {
   
   def parseInternetDate(dateString: String): Date = tryo {
     internetDateFormatter.parse(dateString)
-  } getOrElse new Date(0L)
+  } openOr new Date(0L)
   
   def toInternetDate(in: Date): String = internetDateFormatter.format(in)
   def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
@@ -98,20 +98,20 @@ object Helpers {
     ret
   }
   
-  def first_? [B](in: List[B])(f: => B => Boolean): Option[B] =
+  def first_? [B](in: List[B])(f: => B => Boolean): Can[B] =
     in match {
-    case Nil => None
-    case x :: xs => if (f(x)) Some(x) else first_? (xs)(f)
+    case Nil => Empty
+    case x :: xs => if (f(x)) Full(x) else first_? (xs)(f)
   }
   
   
-  def first[B,C](in : List[B])(f : B => Option[C]): Option[C] = {
+  def first[B,C](in : List[B])(f : B => Can[C]): Can[C] = {
     in match {
-      case Nil => None
+      case Nil => Empty
       case x :: xs => {
 	f(x) match {
-          case s @ Some(_) =>  s
-          case None => first(xs)(f)
+          case s @ Full(_) =>  s
+          case _ => first(xs)(f)
 	}
       }
     }
@@ -126,6 +126,7 @@ object Helpers {
       case s: String => BindParam(p._1, Text(s))
       case n: NodeSeq => BindParam(p._1, n)
       case Some(s) => stringThingToBindParam((p._1, s))
+      case Full(s) => stringThingToBindParam((p._1, s))
       case v => BindParam(p._1, Text(p._2.toString))
     }
   }
@@ -178,13 +179,13 @@ object Helpers {
     }
   }
   
-  def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Option[NodeSeq] = {
+  def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Can[NodeSeq] = {
     def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
       case Nil => ret
       case vals :: rest => build(rest, ret ++ bind(vals, xml))
     }
-    if (listvals.length > 0) Some(build(listvals.drop(1), bind(listvals.head, xml)))
-    else None
+    if (listvals.length > 0) Full(build(listvals.drop(1), bind(listvals.head, xml)))
+    else Empty
   }
 
   def processBind(around: NodeSeq, at: String, what: NodeSeq) : NodeSeq = {
@@ -206,8 +207,8 @@ object Helpers {
   def insureField(toInsure: List[(String, String)], headers: List[(String, String)]): List[(String, String)] = {
     def insureField_inner(toInsure : List[(String, String)], field : (String, String)): List[(String, String)] =
       toInsure.ciGet(field._1) match {
-        case Some(_) => toInsure
-        case None => field :: toInsure
+        case Full(_) => toInsure
+        case _ => field :: toInsure
       }
 
     headers match {
@@ -217,12 +218,12 @@ object Helpers {
   }
   
   class ListMapish(val theList: List[(String, String)]) {
-    def ciGet(swhat: String): Option[String] = {
+    def ciGet(swhat: String): Can[String] = {
       val what = swhat.toLowerCase
-      def tGet(in: List[(String, String)]): Option[String] = 
+      def tGet(in: List[(String, String)]): Can[String] = 
 	in match {
-        case Nil => None
-        case x :: xs if (x._1.toLowerCase == what) => Some(x._2)
+        case Nil => Empty
+        case x :: xs if (x._1.toLowerCase == what) => Full(x._2)
         case x :: xs => tGet(xs)
       }
       tGet(theList)
@@ -259,24 +260,24 @@ object Helpers {
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String]) : Option[Class] =
+  def findClass(name : String, where : List[String]) : Can[Class] =
     findClass(name, where, ^(smartCaps, n => n), s => true)
   
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Option[Class] = {
+  def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Can[Class] = {
     findClass(name, where, ^(smartCaps, n => n), guard)
   }
   
-  def findClass(where : List[Pair[String, List[String]]]) : Option[Class] = {
+  def findClass(where : List[(String, List[String])]) : Can[Class] = {
     where match {
-      case Nil => None
+      case Nil => Empty
       case s :: rest => {
 	findClass(s._1, s._2) match {
-          case null => findClass(rest)
-          case s @ _ => s
+          case Full(s) => Full(s)
+          case _ => findClass(rest)
 	}
       }
     }
@@ -286,8 +287,8 @@ object Helpers {
   * Find a class with name given name in a list of packages, with a list of functions that modify
   * 'name' (e.g., leave it alone, make it camel case, etc.)
   */
-  def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Option[Class] = {
-    def findClass_s(name : String, where : String) : Option[Class] = {
+  def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Can[Class] = {
+    def findClass_s(name : String, where : String) : Can[Class] = {
       tryo(^(classOf[ClassNotFoundException])) {
         val clzName = where+"."+name
 	
@@ -296,16 +297,16 @@ object Helpers {
     }
     
     
-    def findClass_l(name : String, where : List[String]) : Option[Class] = {
+    def findClass_l(name : String, where : List[String]) : Can[Class] = {
       where match {
-        case Nil => None
-        case c :: rest => findClass_s(name, c) orElse findClass_l(name, rest)
+        case Nil => Empty
+        case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
       }
     }
     
     modifiers match {
-      case Nil => None
-      case c :: rest => findClass_l(c(name), where) orElse findClass(name, where, rest, guard)
+      case Nil => Empty
+      case c :: rest => findClass_l(c(name), where) or findClass(name, where, rest, guard)
     }
   }
   
@@ -314,12 +315,12 @@ object Helpers {
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return None.
   */
-  def tryo[T](ignore : List[Class])(f : => T) : Option[T] = {
+  def tryo[T](ignore : List[Class])(f : => T) : Can[T] = {
     try {
-      Some(f)
+      Full(f)
     } catch {
-      case c if (containsClass(c.getClass, ignore)) => None
-      case c if (ignore == null || ignore.isEmpty) => None
+      case c if (containsClass(c.getClass, ignore)) => Failure("tryo", Full(c), Nil)
+      case c if (ignore == null || ignore.isEmpty) => Failure("tryo", Full(c), Nil)
     }
   }
   
@@ -327,7 +328,7 @@ object Helpers {
   * Wraps a "try" block around the function f.  If f throws
   * an exception return None
   */
-  def tryo[T](f: => T): Option[T] = tryo(Nil)(f)
+  def tryo[T](f: => T): Can[T] = tryo(Nil)(f)
   
   def callableMethod_?(meth : Method) = {
     meth != null && meth.getParameterTypes.length == 0 && (meth.getModifiers & java.lang.reflect.Modifier.PUBLIC) != 0
@@ -355,7 +356,7 @@ object Helpers {
         case null => false
         case _ => callableMethod_?(clz.getMethod(methName, null))
       }
-    } getOrElse false
+    } openOr false
   }
 
   def invokeControllerMethod(clz : Class, meth : String) = {
@@ -370,28 +371,26 @@ object Helpers {
   * Invoke the given method for the given class, with the given params.
   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
   */
-  private def _invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Option[Array[Class]]): Option[Any] = {
+  private def _invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Can[Array[Class]]): Can[Any] = {
     /*
     * try to find a method matching the given parameters
     */
-    def findMethod : Option[Method] = {
+    def findMethod : Can[Method] = {
       /* try to find a method with the same name and the same number of arguments. Doesn't check the types.
       * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
       * add some extra $ for ex.
       */
-      def findAlternates : Option[Method] = {
+      def findAlternates : Can[Method] = {
         val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
 						&& Modifier.isPublic(m.getModifiers)
 						&& m.getParameterTypes.length == params.length)
-	if (t.length == 1) Some(t(0))
-	else None
+	if (t.length == 1) Full(t(0))
+	else Empty
       }
       try {
-        clz.getMethod(meth, ptypes match {
-          case None => params.map(_.getClass)
-	  case Some(a) => a }) match {
+        clz.getMethod(meth, ptypes openOr params.map(_.getClass)) match {
             case null => findAlternates
-	    case m => Some(m)
+	    case m => Full(m)
           }
       } catch {
         case e: java.lang.NoSuchMethodException => findAlternates
@@ -399,30 +398,25 @@ object Helpers {
     }
     
     try {
-      findMethod match {
-        case None => None
-        case Some(m) => {
-	  if (Modifier.isStatic(m.getModifiers)) Some(m.invoke(null, params))
-	  else Some(m.invoke(clz.newInstance, params))
-	}
-      }
+      findMethod.map(m => if (Modifier.isStatic(m.getModifiers)) m.invoke(null, params)
+	  else m.invoke(clz.newInstance, params))
     } catch {
-      case e: java.lang.IllegalAccessException => None
-      case e: java.lang.IllegalArgumentException => None
+      case e: java.lang.IllegalAccessException => Failure("invokeMethod "+meth, Full(e), Nil)
+      case e: java.lang.IllegalArgumentException => Failure("invokeMethod "+meth, Full(e), Nil)
     }
   }
 
-  def invokeMethod(clz: Class, meth: String, params: Array[Object]): Option[Any] = {
-    _invokeMethod(clz,meth, params, None) orElse _invokeMethod(clz, smartCaps(meth), params, None) orElse
-    _invokeMethod(clz, methodCaps(meth), params, None) orElse None
+  def invokeMethod(clz: Class, meth: String, params: Array[Object]): Can[Any] = {
+    _invokeMethod(clz,meth, params, Empty) or _invokeMethod(clz, smartCaps(meth), params, Empty) or
+    _invokeMethod(clz, methodCaps(meth), params, Empty)
   }
   
-  def invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Array[Class]): Option[Any] = {
-    _invokeMethod(clz,meth, params, Some(ptypes)) orElse _invokeMethod(clz, smartCaps(meth), params, Some(ptypes)) orElse
-    _invokeMethod(clz, methodCaps(meth), params, Some(ptypes)) orElse None
+  def invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
+    _invokeMethod(clz,meth, params, Full(ptypes)) or _invokeMethod(clz, smartCaps(meth), params, Full(ptypes)) or
+    _invokeMethod(clz, methodCaps(meth), params, Full(ptypes))
   }
 
-  def invokeMethod(clz: Class, meth: String): Option[Any] = invokeMethod(clz, meth, Array())
+  def invokeMethod(clz: Class, meth: String): Can[Any] = invokeMethod(clz, meth, Array())
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)
@@ -541,6 +535,8 @@ object Helpers {
         }
       }
       case None => false
+      case Empty | Failure(_, _, _) => false
+      case Full(n) => toBoolean(n)
       case Some(n) => toBoolean(n)
       case x :: xs => toBoolean(x)
       case o => toBoolean(o.toString)
@@ -555,7 +551,8 @@ object Helpers {
       case n : Number => n.intValue
       case (n: Number) :: _ => n.intValue
       case Some(n) => toInt(n)
-      case None => 0
+      case Full(n) => toInt(n)
+      case None | Empty | Failure(_, _, _) => 0
       case s : String => parseNumber(s).toInt
       case x :: xs => toInt(x)
       case o => toInt(o.toString)
@@ -570,7 +567,8 @@ object Helpers {
       case n : Number => n.longValue
       case (n: Number) :: _ => n.longValue
       case Some(n) => toLong(n)
-      case None => 0L
+      case Full(n) => toLong(n)
+      case None | Empty | Failure(_, _, _) => 0L
       case s : String => parseNumber(s)
       case x :: xs => toLong(x)
       case o => toLong(o.toString)
@@ -629,18 +627,18 @@ object Helpers {
     (millis - start, ret)
   }
   
-  def createInvoker(name: String, on: AnyRef): Option[() => Option[Any]] = {
+  def createInvoker(name: String, on: AnyRef): Can[() => Can[Any]] = {
     on match {
-      case null => None
+      case null => Empty
       case o => {
         o.getClass.getDeclaredMethods.filter{
           m => m.getName == name && 
 	  Modifier.isPublic(m.getModifiers) &&
 	  m.getParameterTypes.length == 0}.toList match {
-	    case Nil => None
-	    case x :: xs => Some(() => {
+	    case Nil => Empty
+	    case x :: xs => Full(() => {
 	      try {
-		Some(x.invoke(o, null))
+		Full(x.invoke(o, null))
 	      } catch {
 		case e : InvocationTargetException => throw e.getCause
 	      }
@@ -729,7 +727,7 @@ object Helpers {
     sb.toString
   }
     
-  implicit def nodeSeqToOptionString(in: NodeSeq): Option[String] = if (in.length == 0) None else Some(in.text)
+  implicit def nodeSeqToOptionString(in: NodeSeq): Can[String] = if (in.length == 0) Empty else Full(in.text)
   
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
   
@@ -788,9 +786,9 @@ object Helpers {
   /**
   * Looks for a named parameter in the XML element and return it if found
   */
-  def xmlParam(in: NodeSeq, param: String): Option[String] = {
+  def xmlParam(in: NodeSeq, param: String): Can[String] = {
     val tmp = (in \ ("@"+param))
-      if (tmp.length == 0) None else Some(tmp.text)
+      if (tmp.length == 0) Empty else Full(tmp.text)
   }
   
   class TimeSpan(val len: long) {
@@ -881,9 +879,9 @@ object Helpers {
   
   def resourceFinder = synchronized {_finder}
   
-  def getResource(name: String): Option[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => None; case s => Some(s)} ; case s => Some(s)} 
-  def getResourceAsStream(name: String): Option[java.io.InputStream] = getResource(name).map(_.openStream)
-  def loadResource(name: String): Option[Array[byte]] = getResourceAsStream(name).map{
+  def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)} 
+  def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
+  def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
       val buffer = new Array[byte](2048)
     val out = new ByteArrayOutputStream
@@ -897,8 +895,8 @@ object Helpers {
     stream.close
     out.toByteArray
   }
-  def loadResourceAsXml(name: String): Option[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
-  def loadResourceAsString(name: String): Option[String] = loadResource(name).map(s => new String(s, "UTF-8"))
+  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
+  def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   
   /**
    * Optional cons that implements the expression: expr ?> value ::: List
@@ -934,7 +932,7 @@ object Helpers {
  
  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
  
- implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
+ //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
  
  implicit def stringToSuper(in: String): SuperString = new SuperString(in)
 }
@@ -967,6 +965,7 @@ class SuperString(val what: String) {
   }
 }
 
+/*
 class DoubleOption[T](val what: Option[Option[T]]) {
   def flatten: Option[T] = what.flatMap(a => a)
-}
+}*/

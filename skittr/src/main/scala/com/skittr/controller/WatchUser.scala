@@ -10,7 +10,7 @@ import scala.actors._
 import scala.actors.Actor._
 import net.liftweb.http._
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
 import scala.xml._
 import com.skittr.actor._
 import S._
@@ -18,14 +18,14 @@ import com.skittr.model.{Friend, User}
 import net.liftweb.mapper._
 
 class WatchUser extends ControllerActor {
-  private var userActor: Option[UserActor] = None
+  private var userActor: Can[UserActor] = Empty
   private var messages: List[Message] = Nil
   
   def render: NodeSeq = {
     val inputName = uniqueId+"_msg"
     (for (ua <- userActor;
-          user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u)
-							      case _ => None}) yield {
+          user <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u)
+							      case _ => Empty}) yield {
 	    S.addFunctionMap(inputName,{in: List[String] => in.foreach(m =>  ua ! SendMessage(m, "web")); true})
 
 	    Helpers.bind("sk", defaultXml, "username" -> (user.name+" -> "+user.fullName), 
@@ -38,7 +38,7 @@ class WatchUser extends ControllerActor {
 	      Helpers.bind("sk", defaultXml,
 			   "username" -> (msg.who+" @ "+toInternetDate(msg.when)),
 			   "content" -> msg.text))
-	  }) getOrElse Helpers.bind("sk", defaultXml, "username" -> "N/A", "content" -> "N/A")
+	  }) openOr Helpers.bind("sk", defaultXml, "username" -> "N/A", "content" -> "N/A")
   }
   
   override def lowPriority : PartialFunction[Any, Unit] = {

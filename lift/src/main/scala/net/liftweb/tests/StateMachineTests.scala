@@ -37,7 +37,7 @@ class StateMachineTests extends TestCase("State Machine Tests") {
     assert(TestStateMachine.didExitFirst)
     assert(TestStateMachine.didEnterSecond)
     
-    val toTest2 = TestStateMachine.find(toTest.id).get
+    val toTest2 = TestStateMachine.find(toTest.id).open
     assert(toTest2.state == TestState.Second)
 
     toTest2.processEvent(TestStateMachine.TestEvent2)

@@ -63,19 +63,19 @@ class Servlet extends HttpServlet {
    * Forward the GET request to the POST handler
    */
   def doGet(request : HttpServletRequest , response : HttpServletResponse, start: Long) = {
-    isExistingFile_?(request).map(u => doServiceFile(u, request, response)) getOrElse
+    isExistingFile_?(request).map(u => doServiceFile(u, request, response)) openOr
       doService(request, response, RequestType(request ), start)
   }
 
   /**
    * Is the file an existing file in the WAR?
    */
-  private def isExistingFile_?(request : HttpServletRequest) : Option[URL] = {
-    if (!goodPath_?(request.getRequestURI)) return None
+  private def isExistingFile_?(request : HttpServletRequest) : Can[URL] = {
+    if (!goodPath_?(request.getRequestURI)) Empty else
     getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) match {
-      case null => None
-      case u : URL => Some(u)
-      case _ => None
+      case null => Empty
+      case u : URL => Full(u)
+      case _ => Empty
     }
   }
   
@@ -157,8 +157,8 @@ class Servlet extends HttpServlet {
     Servlet.checkJetty(req) match {
       case None => doIt
       case r if r eq null => doIt
-      case r: ResponseIt => sendResponse(r.toResponse, resp, None)
-      case Some(r: ResponseIt) => sendResponse(r.toResponse, resp, None)
+      case r: ResponseIt => sendResponse(r.toResponse, resp, Empty)
+      case Some(r: ResponseIt) => sendResponse(r.toResponse, resp, Empty)
           case _ => doIt
   }
     } catch {
@@ -179,11 +179,12 @@ class Servlet extends HttpServlet {
       } else if (Servlet.dispatchTable(request).isDefinedAt(toMatch)) {
         val sessionActor = getActor(session, request.getSession)
          
-	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, None, false)) {
+	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
 	  val f = Servlet.dispatchTable(request)(toMatch)
 	  f(request) match {
-            case None => session.createNotFound.toResponse
-            case Some(v) => Servlet.convertResponse(v, session)
+            case Full(v) => Servlet.convertResponse(v, session)
+            case Empty => session.createNotFound.toResponse
+            case f: Failure => session.createNotFound(f).toResponse 
 	  }
 	}
       } else {
@@ -209,8 +210,8 @@ class Servlet extends HttpServlet {
         
         drainTheSwamp
         
-        val timeout = (Servlet.calcRequestTimeout.map(_(session)) getOrElse (if (session.ajax_?) (Servlet.ajaxRequestTimeout getOrElse 120) 
-            else (Servlet.stdRequestTimeout getOrElse 10))) * 1000L        
+        val timeout = (Servlet.calcRequestTimeout.map(_(session)) openOr (if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
+            else (Servlet.stdRequestTimeout openOr 10))) * 1000L        
         
         if (session.ajax_? && Servlet.hasJetty_?) {
           sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
@@ -223,8 +224,8 @@ class Servlet extends HttpServlet {
           case AnswerHolder(r) => r.toResponse
           // if we failed allow the optional handler to process a request 
 	  case n @ TIMEOUT => Servlet.requestTimedOut.flatMap(_(session, n)) match {
-            case Some(r) => r
-            case None => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
+            case Full(r) => r
+            case _ => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
           }
 	}
         }
@@ -237,10 +238,10 @@ class Servlet extends HttpServlet {
         }
       }
     
-    sendResponse(resp, response, Some(session))
+    sendResponse(resp, response, Full(session))
   }
   
-  def sendResponse(resp: Response, response: HttpServletResponse, request: Option[RequestState]) {
+  def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
@@ -263,21 +264,21 @@ object Servlet {
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
     
-  type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Option[ResponseIt]];
+  type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePf = PartialFunction[RequestMatcher,() => Option[NodeSeq]]
+  type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
              
   private var _early: List[(HttpServletRequest) => Any] = Nil
-  private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
+  private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   
-  def appendBeforeSend(f: (Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any) {
+  def appendBeforeSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _beforeSend = _beforeSend ::: List(f)
   }
   
-  private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any] = Nil
+  private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   
-  def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Option[RequestState]) => Any) {
+  def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
   
@@ -285,24 +286,24 @@ object Servlet {
     * Put a function that will calculate the request timeout based on the
     * incoming request.
     */
-  var calcRequestTimeout: Option[RequestState => Int] = None
+  var calcRequestTimeout: Can[RequestState => Int] = Empty
   
   /**
     * If you want the standard (non-AJAX) request timeout to be something other than
     * 10 seconds, put the value here
     */
-  var stdRequestTimeout: Option[Int] = None
+  var stdRequestTimeout: Can[Int] = Empty
   
   /**
     * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
     */
-  var ajaxRequestTimeout: Option[Int] = None
+  var ajaxRequestTimeout: Can[Int] = Empty
   
   /**
     * If the request times out (or returns a non-Response) you can
     * intercept the response here and create your own response
     */
-  var requestTimedOut: Option[(RequestState, Any) => Option[Response]] = None
+  var requestTimedOut: Can[(RequestState, Any) => Can[Response]] = Empty
   
   def early = {
     test_boot
@@ -351,10 +352,10 @@ object Servlet {
     }
   }
   
-  private var _sitemap: Option[SiteMap] = None
+  private var _sitemap: Can[SiteMap] = Empty
   
-  def setSiteMap(sm: SiteMap) {_sitemap = Some(sm)}
-  def siteMap: Option[SiteMap] = _sitemap
+  def setSiteMap(sm: SiteMap) {_sitemap = Full(sm)}
+  def siteMap: Can[SiteMap] = _sitemap
     
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
   

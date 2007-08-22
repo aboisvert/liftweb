@@ -12,11 +12,11 @@ import net.liftweb.util._
 import Helpers._
 
 case class SiteMap(kids: Menu*) extends HasKids  {
-  kids.foreach(_._parent = Some(this))
+  kids.foreach(_._parent = Full(this))
   kids.foreach(_.init)
   kids.foreach(_.validate)
   
-  def findLoc(req: RequestState, httpReq: HttpServletRequest): Option[Loc] = {
+  def findLoc(req: RequestState, httpReq: HttpServletRequest): Can[Loc] = {
     val ret = first(kids.toList)(_.findLoc(req.path, req.path.path, req,httpReq))
     ret
   }
@@ -27,5 +27,5 @@ trait HasKids {
   def buildUpperLines: List[MenuLine] = Nil
   def isRoot_? = false
   def buildAboveLine(path: Menu): List[MenuLine] = Nil
-  private[sitemap] def testAccess: Option[RedirectWithMessage] = None  
+  private[sitemap] def testAccess: Can[RedirectWithMessage] = Empty  
 }

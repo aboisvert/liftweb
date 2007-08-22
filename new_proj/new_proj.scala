@@ -109,7 +109,7 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
       <dependency>
    <groupId>net.liftweb</groupId>
    <artifactId>lift-core</artifactId>
-   <version>0.2.3</version>
+   <version>0.2.4</version>
   </dependency>
      <dependency>
     <groupId>scala</groupId>
@@ -255,7 +255,7 @@ PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
 
 val boot = """package bootstrap.liftweb
 
-import net.liftweb.util.Helpers
+import net.liftweb.util._
 import net.liftweb.http._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
@@ -276,13 +276,13 @@ class Boot {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
-      Some(dm)
+      Full(dm)
     } catch {
-      case e : Exception => e.printStackTrace; None
+      case e : Exception => e.printStackTrace; Empty
     }
   }
   def releaseConnection(conn: Connection) {conn.close}

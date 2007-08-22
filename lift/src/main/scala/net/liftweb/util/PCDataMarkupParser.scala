@@ -77,23 +77,23 @@ class PCDataXmlParser(val input: Source) extends ConstructingHandler with PCData
 }
 
 object PCDataXmlParser {
-  def apply(in: InputStream): Option[NodeSeq] = {
+  def apply(in: InputStream): Can[NodeSeq] = {
     val source = Source.fromInputStream(in)
     val p = new PCDataXmlParser(source)
     while (p.ch != '<' && p.curInput.hasNext) p.nextch
     p.document match {
-      case null => None
-      case doc => Some(doc)
+      case null => Empty
+      case doc => Full(doc)
     }
   }
 
-  def apply(in: String): Option[NodeSeq] = {
+  def apply(in: String): Can[NodeSeq] = {
     val source = Source.fromString(in)
     val p = new PCDataXmlParser(source)
     while (p.ch != '<' && p.curInput.hasNext) p.nextch
     p.document match {
-      case null => None
-      case doc => Some(doc)
+      case null => Empty
+      case doc => Full(doc)
     }
   }
 }

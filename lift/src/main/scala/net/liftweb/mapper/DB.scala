@@ -18,7 +18,7 @@ object DB {
   private val envContext = Lazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   val logger = Log.logger(DB.getClass)
   
-  var queryTimeout: Option[Int] = None
+  var queryTimeout: Can[Int] = Empty
   
   private var logFuncs: List[(String, Long) => Any] = Nil
   
@@ -43,7 +43,7 @@ object DB {
     ret
   }
   
-  // var connectionManager: Option[ConnectionManager] = None
+  // var connectionManager: Can[ConnectionManager] = Empty
   private val connectionManagers = new HashMap[ConnectionIdentifier, ConnectionManager];
   
   def defineConnectionManager(name: ConnectionIdentifier, mgr: ConnectionManager) {
@@ -63,10 +63,7 @@ object DB {
   
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
-    val ret = (connectionManagers.get(name) match {
-      case Some(cm) => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c)))
-      case _ => None
-    }) getOrElse {
+    val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
       val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
       new SuperConnection(conn, () => conn.close)
     }

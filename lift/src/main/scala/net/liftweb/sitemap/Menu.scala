@@ -12,10 +12,10 @@ package net.liftweb.sitemap
    import Helpers._
    
 case class Menu(page: Loc, kids: Menu*) extends HasKids {
-  private[sitemap] var _parent: Option[HasKids] = None
+  private[sitemap] var _parent: Can[HasKids] = Empty
   
   private[sitemap] def init {
-    kids.foreach(_._parent = Some(this))
+    kids.foreach(_._parent = Full(this))
     kids.foreach(_.init)
     page.setMenu(this)
   }
@@ -25,26 +25,26 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
     kids.foreach(_.validate)
   }
   
-  private[sitemap] def testParentAccess: Option[RedirectWithMessage] = _parent.flatMap(_.testAccess)
-  override private[sitemap] def testAccess: Option[RedirectWithMessage] = page.testAccess
+  private[sitemap] def testParentAccess: Can[RedirectWithMessage] = _parent.flatMap(_.testAccess)
+  override private[sitemap] def testAccess: Can[RedirectWithMessage] = page.testAccess
   
   override def isRoot_? = page.isRoot_?
       
   def isAbsolute_? = page.isAbsolute_?
 
-  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState, httpReq: HttpServletRequest): Option[Loc] = {
-    if (page.doesMatch_?(path, req, httpReq)) Some(page)
+  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState, httpReq: HttpServletRequest): Can[Loc] = {
+    if (page.doesMatch_?(path, req, httpReq)) Full(page)
     else page.pathMatch(path) match {
       case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req, httpReq))
       case n =>
       val p2 = path.drop(n)
-      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req, httpReq)) orElse 
+      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req, httpReq)) or 
          first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req, httpReq))
     }
   }
   
   def buildThisLine(loc: Loc) = {
-    val menuList = _parent.map(_.kids.toList) getOrElse List(this)
+    val menuList = _parent.map(_.kids.toList) openOr List(this)
     MenuLine(menuList.flatMap{
       mi =>
       val p = mi.page
@@ -55,13 +55,13 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
   
   def buildChildLine = MenuLine(kids.toList.flatMap(m => m.page.buildItem(false, false).toList))
   override def buildUpperLines: List[MenuLine] = _parent match {
-    case None => Nil
-    case Some(p) => p.buildUpperLines ::: p.buildAboveLine(this)
+    case Full(p) => p.buildUpperLines ::: p.buildAboveLine(this)
+    case _ => Nil
   }
   
   override def buildAboveLine(path: Menu): List[MenuLine] = _parent match {
-    case None => Nil
-    case Some(p) => List(MenuLine(p.kids.toList.flatMap(m => m.page.buildItem(false, m eq path).toList)))
+    case Full(p) => List(MenuLine(p.kids.toList.flatMap(m => m.page.buildItem(false, m eq path).toList)))
+    case _ => Nil
   }
 }
 

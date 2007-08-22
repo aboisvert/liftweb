@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
-import net.liftweb.util.Lazy
+import net.liftweb.util.{Lazy, Can, Full, Empty, Failure}
 import net.liftweb.util.Lazy._
 import java.util.Date
 import java.util.regex._
@@ -79,7 +79,7 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
   }
   
   
-  def apply(ov: Option[String]): T = {
+  def apply(ov: Can[String]): T = {
     ov.foreach(v => this := v)
     owner
   }

@@ -21,7 +21,7 @@ class UserMgt {
            User.find(By(User.name, username)).filter(_.password.match_?(pwd)).map{
              u => S.set("user_name", u.name)
              S.redirectTo("/")
-           }.getOrElse(S.error("Invalid Username/Password"))
+           }.openOr(S.error("Invalid Username/Password"))
         }
       <form method="POST" action={S.request.uri}>
       <table>
@@ -81,23 +81,23 @@ class UserMgt {
     user.friends.map(f => <li><a href={"/user/"+f}>{f}</a></li>)}</ul> ++ (
       (for (curUser <- S.get("user_name");
             ua <- UserList.find(curUser);
-            userInfo <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None}) yield {
+            userInfo <- (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) ; case _ => Empty}) yield {
         if (userInfo.friends.contains(user.name)) <a href={"/unfriend/"+user.name}>Unfriend</a>
         else <a href={"/friend/"+user.name}>Befriend</a>
       }
-      ) getOrElse Text(""))
+      ) openOr Text(""))
   
   def show_user(xhtml: Group): NodeSeq = {
     (for (userName <- S.param("user");
           userActor <- UserList.find(userName);
-          user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Some(u) ; case _ => None};
-          messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Some(m.messages); case _ => None}) yield {
+          user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) ; case _ => Empty};
+          messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Full(m.messages); case _ => Empty}) yield {
       bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++ 
         messages.flatMap{
         msg => 
         Helpers.bind("sk", xhtml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
       }
-    }) getOrElse {S.error("User "+(S.param("user") getOrElse "")+" not found"); S.redirectTo("/")}
+    }) openOr {S.error("User "+(S.param("user") openOr "")+" not found"); S.redirectTo("/")}
   }
   
   def watch_or_show(xhtml: Group): NodeSeq = {
@@ -107,7 +107,7 @@ class UserMgt {
       xhtml.nodes
     }
     </lift:controller>
-    }) getOrElse {
+    }) openOr {
       Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>, 
           "content" -> <span>See what others are up to:<ul>{
             UserList.randomUsers(40).flatMap {
@@ -124,7 +124,7 @@ class UserMgt {
           toFriend <- S.param("user")) yield {
       S.notice("You've add "+toFriend+" your your list of friends")
        userActor ! AddFriend(toFriend)      
-    }) getOrElse {
+    }) openOr {
       S.error("Unable to friend")
     }
 
@@ -137,7 +137,7 @@ class UserMgt {
           toUnfriend <- S.param("user")) yield {
       S.notice("You've removed "+toUnfriend+" from your list of friends")
        userActor ! RemoveFriend(toUnfriend)      
-    }) getOrElse {
+    }) openOr {
       S.error("Unable to unfriend")
     }
 
@@ -154,7 +154,7 @@ class UserMgt {
         }</ul></span>)    
   }
   
-  def cur_name:  MetaData = new UnprefixedAttribute("name", S.param("user").getOrElse(""), Null)
+  def cur_name:  MetaData = new UnprefixedAttribute("name", S.param("user").openOr(""), Null)
   
   def logged_in_? = S.get("user_name").isDefined
 }

@@ -6,7 +6,7 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.{Helpers, Log}
+import net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
 import Helpers._
 import scala.testing.SUnit
 import SUnit._
@@ -132,14 +132,14 @@ object MySqlRunner extends Runner {
 }
 
 object MySQLVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("com.mysql.jdbc.Driver")
       
       val dm =  DriverManager.getConnection("jdbc:mysql://localhost:3306/lift_test?autoReconnect=true", "dpp", "")
-      Some(dm)
+      Full(dm)
     } catch {
-      case e : Exception => e.printStackTrace; None
+      case e : Exception => e.printStackTrace; Empty
     }
   }
   
@@ -147,14 +147,14 @@ object MySQLVendor extends ConnectionManager {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Option[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       
       val dm =  DriverManager.getConnection("jdbc:derby:lift_tests;create=true")
-      Some(dm)
+      Full(dm)
     } catch {
-      case e : Exception => e.printStackTrace; None
+      case e : Exception => e.printStackTrace; Empty
     }
   }
   def releaseConnection(conn: Connection) {conn.close}

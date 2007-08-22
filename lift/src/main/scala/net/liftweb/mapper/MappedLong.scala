@@ -21,8 +21,8 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
   
   override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
-  private val _obj = Lazy(if(defined_?) foreign.find(i_is_!) else None)
-  def obj: Option[O] = _obj.get
+  private val _obj = Lazy(if(defined_?) foreign.find(i_is_!) else Empty)
+  def obj: Can[O] = _obj.get
   
   def dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
@@ -35,14 +35,14 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
       * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
       * is done with the schemification.
       */
-    def dbAddedForeignKey: Option[() => unit] = None
+    def dbAddedForeignKey: Can[() => Unit] = Empty
     
     override def toString = if (defined_?) super.toString else "NULL"
 
-      def :=(v : Option[O]) : Long = this.:=(v.map(_.primaryKeyField.is) getOrElse 0L)
+      def :=(v : Can[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
    def :=(v : O) : Long = this.:=(v.primaryKeyField.is)
       
-   def apply(v: Option[O]): T = this(v.map(_.primaryKeyField.is) getOrElse 0L)
+   def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
    def apply(v: O): T = this(v.primaryKeyField.is)
    
    def +(in: Long): Long = is + in
@@ -72,31 +72,26 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
   
   def makeKeyJDBCFriendly(in : Long) = new java.lang.Long(in)
   
-  def convertKey(in : String): Option[Long] = {
-    if (in eq null) None
-    try {
-      val what = if (in.startsWith(name + "=")) in.substring((name + "=").length) else in
-      Some(toLong(what))
-    } catch {
-      case _ => {None}
-    }
+  def convertKey(in : String): Can[Long] = {
+    if (in eq null) Empty
+    else tryo(toLong(if (in.startsWith(name + "=")) in.substring((name + "=").length) else in))
   }
   
   override def dbDisplay_? = false
   
-  def convertKey(in : Long): Option[Long] = {
-    if (in < 0L) None
-    else Some(in)
+  def convertKey(in : Long): Can[Long] = {
+    if (in < 0L) Empty
+    else Full(in)
   }
   
-  def convertKey(in : Int): Option[Long] = {
-    if (in < 0) None
-    else Some(in)
+  def convertKey(in : Int): Can[Long] = {
+    if (in < 0) Empty
+    else Full(in)
   }
   
-  def convertKey(in : AnyRef): Option[Long] = {
-    if ((in eq null) || (in eq None)) None
-    else tryo(convertKey(in.toString)) getOrElse None
+  def convertKey(in : AnyRef): Can[Long] = {
+    if ((in eq null) || (in eq None)) Empty
+    else tryo(convertKey(in.toString)).flatMap(s => s)
   }
   
   override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
@@ -226,6 +221,8 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
       case n: Number => this := n.longValue
       case (n: Number) :: _ => this := n.longValue
       case Some(n: Number) => this := n.longValue
+      case Full(n: Number) => this := n.longValue
+      case Empty | Failure(_, _, _) => this := 0L
       case None => this := 0L
       case (s: String) :: _ => this := toLong(s)
       case null => this := 0L
