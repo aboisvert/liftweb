@@ -229,6 +229,9 @@ class RequestState(val paramNames: List[String],
 		   }
     }
   }
+  
+  def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
+  
 }
 
 case class RequestMatcher(request: RequestState, path: ParsePath)

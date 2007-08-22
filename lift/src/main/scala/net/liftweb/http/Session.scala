@@ -183,13 +183,13 @@ class Session(val uri: String,
         
         whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
                  ResponseInfo.xhtmlTransitional,
-                 List("Location" -> (request.contextPath+rd.to)),
+                 List("Location" -> (request.updateWithContextPath(rd.to))),
                  302)))
           case rd : net.liftweb.http.RedirectException => {   
             notices = S.getNotices
             
             whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
-                     List("Location" -> (request.contextPath+rd.to)),
+                     List("Location" -> (request.updateWithContextPath(rd.to))),
                      302)))
           }
 	case e  => whenDone(AnswerHolder(request.showException(e)))

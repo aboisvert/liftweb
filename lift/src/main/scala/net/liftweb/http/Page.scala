@@ -86,7 +86,7 @@ class Page(val theSession: Session) extends Actor {
             case rd : RedirectException => {   
               XhtmlResponse(Group(state.fixHtml(<html><body>{state.uri} Not Found</body></html>)),
                   ResponseInfo.xhtmlTransitional,
-                       List("Location" -> rd.to),
+                       List("Location" -> state.updateWithContextPath(rd.to)),
                        302)
             }
             case e  => state.showException(e)
