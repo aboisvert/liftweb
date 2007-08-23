@@ -9,7 +9,7 @@ object Can {
   implicit def can2Iterable[T](in: Can[T]): Iterable[T] = in.toList
 }
 
-abstract class Can[+A] extends Product {
+sealed abstract class Can[+A] extends Product {
     def isEmpty: Boolean
 
     def open: A
@@ -43,6 +43,17 @@ abstract class Can[+A] extends Product {
     def filterMsg(msg: String)(p: A => Boolean): Can[A] = filter(p) ?~ msg
         
     def run[T](in: T)(f: (T, A) => T) = in
+    
+    def pass(f: Can[A] => Any) = {f(this) ; this}
+    
+    def $(f: Can[A] => Any) = pass(f)
+    
+    def ??[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
+      case Full(x) => f1(x)
+      case _ => f2
+    }
+    
+    def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = ??(f1)(f2)
 }
 
 final case class Full[+A](value: A) extends Can[A] {
