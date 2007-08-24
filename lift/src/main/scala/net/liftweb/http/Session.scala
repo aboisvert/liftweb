@@ -386,7 +386,7 @@ class Session(val uri: String,
         v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes, session))
           case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
-          case Elem("lift", "surround", attr @ _, _, kids @ _*) => findAndMerge(Can(attr.get("with")),Can(attr.get("at")), processSurroundAndInclude(kids, session), session)
+          case Elem("lift", "surround", attr @ _, _, kids @ _*) => processSurroundElement(v.asInstanceOf[Elem], session)
           case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(Can(attr.get("what")), processSurroundAndInclude(kids, session), session)
           case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => S.setVars(attr)(processSnippet(Can(attr.get("type")), attr, processSurroundAndInclude(kids, session), session))
           case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids, session)
@@ -397,15 +397,48 @@ class Session(val uri: String,
     }
   }
   
-  def findAndMerge(templateName : Can[Seq[Node]], at : Can[Seq[Node]], kids : NodeSeq, session : RequestState) : NodeSeq = {
+  /** Split seq into two seqs: first matches p, second matches !p */
+  private def filter2[A](c: Seq[A])(p: A => Boolean): (Seq[A], Seq[A]) = {
+    val bufs = (new ArrayBuffer[A], new ArrayBuffer[A])
+    val i = c.elements
+    while (i.hasNext) {
+      val x = i.next
+      if (p(x)) bufs._1 += x
+      else bufs._2 += x
+    }
+    bufs
+  }
+  
+  private def processSurroundElement(in : Elem, session : RequestState) : NodeSeq = in match {
+    case Elem("lift", "surround", attr @ _, _, kids @ _*) =>
+      
+      val (otherKids, paramElements) = filter2(kids) {
+        case Elem("lift", "with-param", _, _, _) => false
+        case _ => true
+      }
+      
+      val params = paramElements.flatMap {
+        case Elem("lift", "with-param", attr @ _, _, kids @ _*) =>
+          val valueOption: Option[Seq[Node]] = attr.get("name")
+          val option: Option[(String, NodeSeq)] = valueOption.map((v: Seq[Node]) => (v.text, processSurroundAndInclude(kids, session)))
+          option
+      }
+      
+      val mainParam = (attr.get("at").map(_.text: String).getOrElse("main"),
+          processSurroundAndInclude(otherKids, session))
+      val paramsMap = collection.immutable.Map(params: _*) + mainParam
+      findAndMerge(attr.get("with"), paramsMap, session)
+  }
+  
+  private def findAndMerge(templateName : Can[Seq[Node]], atWhat : Map[String, NodeSeq], session : RequestState) : NodeSeq = {
     val name : String = templateName match {
       case Full(s) => if (s.text.startsWith("/")) s.text else "/"+ s.text
       case _ => "/templates-hidden/Default"
     }
     
     findTemplate(name, session) match {
-      case Full(s) => processBind(processSurroundAndInclude(s, session), at.map(_.text) openOr "main", kids)
-      case _ => kids
+      case Full(s) => processBind(processSurroundAndInclude(s, session), atWhat)
+      case _ => atWhat.values.flatMap(_.elements).toList
     }
   }
 }
@@ -433,3 +466,5 @@ case object CurrentVars extends SessionMessage
 case object ShutDown
 
 case class AnswerHolder(what: ResponseIt)
+
+// vim: set ts=2 sw=2 et:

@@ -7,6 +7,7 @@ object Can {
   }
   
   implicit def can2Iterable[T](in: Can[T]): Iterable[T] = in.toList
+  implicit def option2Can[T](in: Option[T]): Can[T] = Can(in)
 }
 
 sealed abstract class Can[+A] extends Product {
@@ -110,3 +111,5 @@ case class Failure(msg: String, exception: Can[Throwable], chain: List[Failure])
       
   def messageChain: String = (this :: chain).map(_.msg).mkString(" <- ")
 }
+
+// vim: set ts=2 sw=2 et:

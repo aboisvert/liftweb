@@ -188,13 +188,28 @@ object Helpers {
     else Empty
   }
 
-  def processBind(around: NodeSeq, at: String, what: NodeSeq) : NodeSeq = {
+  /**
+   * Bind parameters to XML.
+   * @param around XML with lift:bind elements
+   * @param atWhat data to bind
+   */
+  def processBind(around: NodeSeq, atWhat: Map[String, NodeSeq]) : NodeSeq = {
+    
+    /** Find element matched predicate f(x).isDefined, and return f(x) if found or None otherwise. */
+    def findMap[A, B](s: Iterable[A])(f: A => Option[B]): Option[B] =
+      s.projection.map(f).find(_.isDefined).getOrElse(None)
+    
     around.flatMap {
       v =>
-	v match {
-	  case Group(nodes) => Group(processBind(nodes, at, what))
-	  case Elem("lift", "bind", attr @ _, _, kids @ _*) if (attr("name").text == at) => {what}
-          case Elem(_,_,_,_,kids @ _*) => {Elem(v.prefix, v.label, v.attributes, v.scope, processBind(kids, at, what) : _*)}
+        v match {
+          case Group(nodes) => Group(processBind(nodes, atWhat))
+          case Elem("lift", "bind", attr @ _, _, kids @ _*) =>
+            findMap(atWhat) {
+	      case (at, what) if attr("name").text == at => Some({what})
+	      case _ => None
+            }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
+          
+          case e: Elem => {Elem(e.prefix, e.label, e.attributes, e.scope, processBind(e.child, atWhat): _*)}
           case _ => {v}
 	}
       
@@ -969,3 +984,5 @@ class SuperString(val what: String) {
 class DoubleOption[T](val what: Option[Option[T]]) {
   def flatten: Option[T] = what.flatMap(a => a)
 }*/
+
+// vim: set ts=2 sw=2 et:
