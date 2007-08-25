@@ -79,7 +79,9 @@ trait BaseMappedField {
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
 }
 
-trait MappedField[T <: Any,O<:Mapper[O]] extends BaseMappedField {
+trait BaseOwnedMappedField[O <: Mapper[O]] extends BaseMappedField
+
+trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   def ignoreField = false
   def defaultValue: T
   def dbFieldClass: Class

@@ -512,7 +512,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   def createInstance: A = rootClass.newInstance.asInstanceOf[A]
   
-  def fieldOrder : List[AnyRef] = Nil
+  def fieldOrder : List[BaseOwnedMappedField[ A]] = Nil
   
   protected val rootClass = this.getClass.getSuperclass
   
