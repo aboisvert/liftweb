@@ -86,7 +86,7 @@ object DerbyRunner extends Runner {
 
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     
-    Schemifier.schemify(User, Pet, TestStateMachine)
+    Schemifier.schemify(true, User, Pet, TestStateMachine)
     // Schemifier.schemify(User, Pet)
   }  
 }
@@ -126,7 +126,7 @@ object MySqlRunner extends Runner {
     }
     deleteAllTables
     
-    Schemifier.schemify(User, Pet, TestStateMachine)
+    Schemifier.schemify(true, User, Pet, TestStateMachine)
     // Schemifier.schemify(User, Pet)
   }
 }

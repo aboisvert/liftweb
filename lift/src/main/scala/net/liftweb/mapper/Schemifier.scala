@@ -21,30 +21,32 @@ import Helpers._
  * </ul>
  */
 object Schemifier {
-   /*
-  case class SuperConnection(connection: Connection) {
-    val driverType = calcDriver(connection.getMetaData.getDatabaseProductName)
-  }
+  /*
+   case class SuperConnection(connection: Connection) {
+   val driverType = calcDriver(connection.getMetaData.getDatabaseProductName)
+   }
    */
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
 
-  def schemify(stables: BaseMetaMapper*): unit = schemify(DefaultConnectionIdentifier, stables :_*)
+  def schemify(performWrite: Boolean, stables: BaseMetaMapper*): unit = schemify(performWrite, DefaultConnectionIdentifier, stables :_*)
 
-  def schemify(dbId: ConnectionIdentifier, stables: BaseMetaMapper*) {
+  def schemify(performWrite: Boolean, dbId: ConnectionIdentifier, stables: BaseMetaMapper*) {
     val tables = stables.toList
     DB.use(dbId) {
       con =>
 	val connection = con // SuperConnection(con)
       val driver = con.calcDriver(connection.getMetaData.getDatabaseProductName)
       val actualTableNames = new HashMap[String, String]
-      tables.foreach{t => t.beforeSchemifier}
-        val toRun = tables.flatMap(t => ensureTable(t, connection, actualTableNames) ) :::
-      tables.flatMap{t => ensureColumns(t, connection, actualTableNames)} :::
-      tables.flatMap{t => ensureIndexes(t, connection, actualTableNames)} :::
-      tables.flatMap{t => ensureConstraints(t, connection, actualTableNames)}
+      if (performWrite) tables.foreach(_.beforeSchemifier)
+      val toRun = tables.flatMap(t => ensureTable(performWrite, t, connection, actualTableNames) ) :::
+      tables.flatMap{t => ensureColumns(performWrite, t, connection, actualTableNames)} :::
+      tables.flatMap{t => ensureIndexes(performWrite, t, connection, actualTableNames)} :::
+      tables.flatMap{t => ensureConstraints(performWrite, t, connection, actualTableNames)}
       
-      tables.foreach{t => t.afterSchemifier}
-      toRun.foreach{f => f()}
+      if (performWrite) {
+	tables.foreach(_.afterSchemifier)
+	toRun.foreach(f => f())
+      }
     }
   }
   
@@ -56,20 +58,20 @@ object Schemifier {
     val th = new HashMap[String, String]()
     (DB.use(dbId) {
       conn =>
-      val sConn = conn // SuperConnection(conn)
+	val sConn = conn // SuperConnection(conn)
       val tables = stables.toList.filter(t => hasTable_?(t, sConn, th))
       
       tables.foreach{
         table =>
-        try {
-          val ct = "DROP TABLE "+table.dbTableName
-          val st = conn.createStatement
-          st.execute(ct)
-          Log.trace(ct)
-          st.close
-        } catch {
-          case e: Exception => // dispose... probably just an SQL Exception
-        }
+          try {
+            val ct = "DROP TABLE "+table.dbTableName
+            val st = conn.createStatement
+            st.execute(ct)
+            Log.trace(ct)
+            st.close
+          } catch {
+            case e: Exception => // dispose... probably just an SQL Exception
+          }
       }
       
       tables
@@ -94,20 +96,29 @@ object Schemifier {
     hasTable
   }
   
-  private def ensureTable(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Any] = {
+  private def ensureTable(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Any] = {
     val hasTable = hasTable_?(table, connection, actualTableNames)
     if (!hasTable) {
       val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+") "+connection.createTablePostpend
-      val st = connection.createStatement
-      Log.trace(ct)
-      st.execute(ct)
-      st.close
+      if (performWrite) {
+        Log.trace(ct)
+        val st = connection.createStatement
+        st.execute(ct)
+        st.close
+      } else {
+        Log.info(ct)
+      }
       table.mappedFields.filter{f => f.dbPrimaryKey_?}.foreach {
         pkField =>
-        val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
+          val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
+        if (performWrite) {
+          Log.trace(ct)
           val st = connection.createStatement
           st.execute(ct)
           st.close
+        } else {
+          Log.info(ct)
+        }
       }
       
       hasTable_?(table, connection, actualTableNames)
@@ -119,7 +130,7 @@ object Schemifier {
     table.mappedFields.flatMap(_.fieldCreatorString(connection.driverType))
   }
 
-  private def ensureColumns(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
+  private def ensureColumns(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => unit] = {
     table.mappedFields.toList.flatMap {
       field =>
 	var hasColumn = 0
@@ -143,15 +154,25 @@ object Schemifier {
         colName =>
           
           val ct = "ALTER TABLE "+table.dbTableName+" ADD COLUMN "+field.fieldCreatorString(connection.driverType, colName)
-        val st = connection.createStatement
-        st.execute(ct)
-        st.close
+        if (performWrite) {
+          Log.trace(ct)
+          val st = connection.createStatement
+          st.execute(ct)
+          st.close
+        } else {
+          Log.info(ct)
+        }
 
         if (field.dbPrimaryKey_?) {
           val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+field.dbColumnName+")"
+          if (performWrite) {
+            Log.trace(ct)            
             val st = connection.createStatement
             st.execute(ct)
             st.close
+          } else {
+            Log.info(ct)
+          }
         }
       }
       
@@ -161,18 +182,18 @@ object Schemifier {
     
   }
 
-  private def ensureIndexes(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Unit] = {
+  private def ensureIndexes(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Unit] = {
     
     // val byColumn = new HashMap[String, List[(String, String, Int)]]()
     val byName = new HashMap[String, List[String]]()
-                               
+    
     val md = connection.getMetaData
     val rs = md.getIndexInfo(null, null, actualTableNames(table.dbTableName), false, false)
     def quad(rs: ResultSet): List[(String, String, Int)] = {
       if (!rs.next) Nil else {
-      if (rs.getString(3).toLowerCase == table.dbTableName.toLowerCase)
-        (rs.getString(6).toLowerCase, rs.getString(9).toLowerCase, rs.getInt(8)) :: quad(rs)
-      else Nil
+	if (rs.getString(3).toLowerCase == table.dbTableName.toLowerCase)
+          (rs.getString(6).toLowerCase, rs.getString(9).toLowerCase, rs.getInt(8)) :: quad(rs)
+	else Nil
       }
     }
     
@@ -184,62 +205,74 @@ object Schemifier {
     
     val single = table.mappedFields.filter{f => f.dbIndexed_?}.toList.flatMap {
       field =>
-      if (!indexedFields.contains(List(field.dbColumnName.toLowerCase))) {
-        val ct = "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
-          Log.trace(ct)
-          val st = connection.createStatement
-          st.execute(ct)
-          st.close
+	if (!indexedFields.contains(List(field.dbColumnName.toLowerCase))) {
+          val ct = "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
+          if (performWrite) {
+            Log.trace(ct)
+            val st = connection.createStatement
+            st.execute(ct)
+            st.close
+          } else {
+            Log.info(ct)
+          }
           field.dbAddedIndex.toList
-      } else Nil
+	} else Nil
     }
     
     table.dbIndexes.foreach {
       index =>
-      val columns = index.columns.toList
+	val columns = index.columns.toList
       val fn = columns.map(_.field.dbColumnName.toLowerCase).sort(_ < _)
       if (!indexedFields.contains(fn)) {
-          val ct = "CREATE INDEX "+(table.dbTableName+"_"+columns.map(_.field.dbColumnName).mkString("_"))+" ON "+table.dbTableName+" ( "+columns.map(_.indexDesc).comma+" )"
+        val ct = "CREATE INDEX "+(table.dbTableName+"_"+columns.map(_.field.dbColumnName).mkString("_"))+" ON "+table.dbTableName+" ( "+columns.map(_.indexDesc).comma+" )"
+        if (performWrite) {
           Log.trace(ct)
           val st = connection.createStatement
           st.execute(ct)
           st.close
+        } else {
+          Log.info(ct)
+        }
       }
     }
     
     single
   }
 
-  private def ensureConstraints(table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Unit] = {
+  private def ensureConstraints(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): List[() => Unit] = {
     if (connection.supportsForeignKeys_?) {
-    table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.toList.flatMap {
-      field =>
+      table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.toList.flatMap {
+	field =>
 
-      val other = field.dbKeyToTable
-      val otherTable = actualTableNames(other.dbTableName)
-      val myTable = actualTableNames(table.dbTableName)
-      
-      val md = connection.getMetaData
-      // val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
-       val rs = md.getExportedKeys(null, null,myTable)
-      //val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
-      var foundIt = false
-      while (!foundIt && rs.next) {
-        val pkName = rs.getString(4)
-        val fkName = rs.getString(8)
-        foundIt = (field.dbColumnName.toLowerCase == fkName.toLowerCase && field.dbKeyToColumn.dbColumnName.toLowerCase == pkName.toLowerCase)
+	  val other = field.dbKeyToTable
+	val otherTable = actualTableNames(other.dbTableName)
+	val myTable = actualTableNames(table.dbTableName)
+	
+	val md = connection.getMetaData
+	// val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
+	val rs = md.getExportedKeys(null, null,myTable)
+	//val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
+	var foundIt = false
+	while (!foundIt && rs.next) {
+          val pkName = rs.getString(4)
+          val fkName = rs.getString(8)
+          foundIt = (field.dbColumnName.toLowerCase == fkName.toLowerCase && field.dbKeyToColumn.dbColumnName.toLowerCase == pkName.toLowerCase)
+	}
+	rs.close
+
+	if (!foundIt) {
+          val ct = "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
+          if (performWrite) {
+            Log.trace(ct)
+            val st = connection.createStatement
+            st.execute(ct)
+            st.close
+          } else {
+            Log.info(ct)
+          }
+          field.dbAddedForeignKey.toList
+	} else Nil
       }
-      rs.close
-
-      if (!foundIt) {
-        val ct = "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
-          Log.trace(ct)
-        val st = connection.createStatement
-        st.execute(ct)
-        st.close
-        field.dbAddedForeignKey.toList
-      } else Nil
-    }
     } else Nil
   }
 }
