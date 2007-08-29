@@ -49,12 +49,10 @@ sealed abstract class Can[+A] extends Product {
     
     def $(f: Can[A] => Any) = pass(f)
     
-    def ??[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
-      case Full(x) => f1(x)
-      case _ => f2
-    }
-    
-    def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = ??(f1)(f2)
+    def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
+    case Full(x) => f1(x)
+    case _ => f2
+  }
 }
 
 final case class Full[+A](value: A) extends Can[A] {
