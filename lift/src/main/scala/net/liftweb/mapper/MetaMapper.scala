@@ -227,13 +227,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     val start = params.foldRight(Empty.asInstanceOf[Can[Long]]){(a,b) => a match {case StartAt(n) => Full(n); case _ => b}}
 
     if (conn.brokenLimit_?.get) (tmp, start, max) else {
-      ((if (max.isDefined && start.isDefined) {
-	tmp + " LIMIT "+start.open+","+max.open
-      } else if (max.isDefined) {
-	tmp + " LIMIT "+max.open
-      } else if (start.isDefined) {
-	tmp + " LIMIT "+start.open+","+java.lang.Long.MAX_VALUE
-      } else tmp), Empty, Empty)}
+      val ret = (max, start) match {
+        case (Full(max), Full(start)) => tmp + " LIMIT "+start+","+max
+        case (Full(max), _) => tmp + " LIMIT "+max
+        case (_, Full(start)) => tmp + " LIMIT "+start+","+java.lang.Long.MAX_VALUE
+        case _ => tmp
+      }
+      (ret, Empty, Empty)
+    }
   }
   
   def delete_!(toDelete : A) : boolean = {
@@ -274,7 +275,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
   def saved_?(toSave : A) : boolean = {
     if (indexMap eq null) true else {
-      indexedField(toSave).open.dbIndexFieldIndicatesSaved_?
+      indexedField(toSave).map(_.dbIndexFieldIndicatesSaved_?) openOr true
     }
   }
   
@@ -332,8 +333,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 	      }
 	    }
 	    
-	    val indVal = indexedField(toSave)
-	    st.setObject(colNum, indVal.open.jdbcFriendly(indexMap), indVal.open.targetSQLType(indexMap))
+	    indexedField(toSave).foreach(indVal =>  st.setObject(colNum, indVal.jdbcFriendly(indexMap), indVal.targetSQLType(indexMap)))
 	    st.executeUpdate
 	    true
 	  }
@@ -368,9 +368,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 		val meta = rs.getMetaData
 		toSave.runSafe {
 		  findApplier(indexMap, rs.getObject(1)) match {
-		    case null => 
-		    case ap @ _ => ap.open.apply(toSave, rs.getObject(1))
-		    
+		    case Full(ap) => ap.apply(toSave, rs.getObject(1))
+                    case _ =>
 		  }
 		}
 	      }

@@ -144,7 +144,7 @@ case class TestResults(res: List[Tracker]) {
     val append = (failedTests, failedAsserts) match {
       case (ft,fa) if ft.length == 0 && fa.length == 0 => ""
       case (ft, fa) => 
-        "\n"+ft.length+" Failed Tests:\n"+ft.map(v => v.name+" "+v.exception.open.getMessage+" \n"+
+        "\n"+ft.length+" Failed Tests:\n"+ft.map(v => v.name+" "+v.exception.open_!.getMessage+" \n"+
           v.trace.map(st => "           "+st.toString).mkString("\n")).mkString("\n")
     }
     

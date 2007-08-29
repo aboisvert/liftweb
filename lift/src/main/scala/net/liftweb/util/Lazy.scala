@@ -23,7 +23,7 @@ class Lazy[T](f: => T) {
     value match {
       case Full(v) => v
       case _ => value = Full(f)
-      value.open
+      value.open_!
     }
   }
   

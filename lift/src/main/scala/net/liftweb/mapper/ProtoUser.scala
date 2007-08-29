@@ -282,7 +282,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   </form>
   
   def changePassword = {
-    val user = currentUser.open // we can do this because the logged in test has happened
+    val user = currentUser.open_! // we can do this because the logged in test has happened
     var oldPassword = ""
     var newPassword: List[String] = Nil
     
@@ -311,7 +311,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   </form>
   
   def edit = {
-    val theUser: T = currentUser.open // we know we're logged in
+    val theUser: T = currentUser.open_! // we know we're logged in
     val theName = BasePath + Edit
 
     def testEdit(ignore: String) {

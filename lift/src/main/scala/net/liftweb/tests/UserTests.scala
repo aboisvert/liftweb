@@ -12,7 +12,6 @@ import SUnit._
 import net.liftweb.util.RE
 import net.liftweb.util.RE._
 import net.liftweb.mapper._
-import net.liftweb.proto._
 
 class UserTests extends TestCase("User Tests") {
   val maxUsers = 100
@@ -54,15 +53,15 @@ class UserTests extends TestCase("User Tests") {
     assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9"), BySql("firstname = ?", 9)).isDefined)  
     assert(User.find(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).isDefined)  
     assert(!User.find(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).isDefined)  
-    val u = User.find(33).open
-    assert(User.find(BySql("email = ?", u.email)).open.id == u.id)
-    assert(User.find(BySql("id = ?", 33)).open.id == u.id)
-    assert(User.find(BySql("id = ?", u.id)).open.id == u.id)
+    val u = User.find(33).open_!
+    assert(User.find(BySql("email = ?", u.email)).open_!.id == u.id)
+    assert(User.find(BySql("id = ?", 33)).open_!.id == u.id)
+    assert(User.find(BySql("id = ?", u.id)).open_!.id == u.id)
     
     for (uKey <- 1 to maxUsers) {
       val u = User.find(uKey)
       assert(u.isDefined)
-      val user = u.open
+      val user = u.open_!
       val pl = user.pets.length
       assert(pl == (1 + uKey / 10), "Wanted "+pl+" got "+(1 + uKey / 10)) 
     }
@@ -79,7 +78,7 @@ class UserTests extends TestCase("User Tests") {
     assert(User.findAll(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)  
     assert(User.findAll(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).length == 1)  
     assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)  
-    val u = User.find(33).open
+    val u = User.find(33).open_!
     assert(User.findAll(BySql("email = ?", u.email)).length == 1)
     assert(User.findAll(OrderBy(User.firstName, true))(0).firstName == "1")
     assert(User.findAll(OrderBy(User.firstName, false))(0).firstName == "99")
@@ -96,14 +95,14 @@ class UserTests extends TestCase("User Tests") {
     assert(User.count(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")) == 1)  
     assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "33")) == 0)  
     assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "1")) == 1)  
-    val u = User.find(33).open
+    val u = User.find(33).open_!
     assert(User.count(BySql("email = ?", u.email)) == 1)
     assert(User.count(BySql("email = ? AND id = ?", u.email, u.id)) == 1)
   }
   
   def pwdTest {
     for (cnt <- 1 to maxUsers) {
-      val u = User.find(By(User.firstName, cnt.toString)).open
+      val u = User.find(By(User.firstName, cnt.toString)).open_!
       assert(u.password.match_?("password"+cnt))
       assert(!u.password.match_?("dog"+cnt))
     }

@@ -12,7 +12,6 @@ import SUnit._
 import net.liftweb.util.{Helpers, Log}
 import net.liftweb.util.Helpers._
 import net.liftweb.mapper._
-import net.liftweb.proto._
 import net.liftweb.machine._
 
 class StateMachineTests extends TestCase("State Machine Tests") {
@@ -37,7 +36,7 @@ class StateMachineTests extends TestCase("State Machine Tests") {
     assert(TestStateMachine.didExitFirst)
     assert(TestStateMachine.didEnterSecond)
     
-    val toTest2 = TestStateMachine.find(toTest.id).open
+    val toTest2 = TestStateMachine.find(toTest.id).open_!
     assert(toTest2.state == TestState.Second)
 
     toTest2.processEvent(TestStateMachine.TestEvent2)

@@ -13,7 +13,7 @@ object Can {
 sealed abstract class Can[+A] extends Product {
     def isEmpty: Boolean
 
-    def open: A
+    def open_! : A
 
     def openOr[B >: A](default: => B): B = default
 
@@ -60,7 +60,7 @@ sealed abstract class Can[+A] extends Product {
 final case class Full[+A](value: A) extends Can[A] {
   def isEmpty: Boolean = false 
 
-  def open: A = value
+  def open_! : A = value
 
   override def openOr[B >: A](default: => B): B = value
 
@@ -87,7 +87,7 @@ abstract class EmptyCan[+A] extends Can[A] {
 
   def isEmpty: Boolean = true 
 
-  def open  = throw new NullPointerException("Trying to open an empty can")
+  def open_!  = throw new NullPointerException("Trying to open an empty can")
 
   override def openOr[B >: A](default: => B): B = default
 

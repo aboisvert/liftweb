@@ -15,7 +15,6 @@ import net.liftweb.util.Mailer._
 import net.liftweb.util.Helpers
 import net.liftweb.util.Helpers._
 import net.liftweb.mapper._
-import net.liftweb.proto._
 
 class HelperTests extends TestCase("Helper Tests") {
   override def runTest() {

@@ -67,12 +67,11 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
       localSetup
     
     case r @ AskRender(request) =>
-      if (!askingWho.isEmpty) {
-      	askingWho.open forward r
-      } else {
-          S.init(request,theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
-	    reply(buildRendered(render))
-          }
+      askingWho match {
+        case Full(who) => who forward r
+        case _ => S.init(request,theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
+            reply(buildRendered(render))
+        }
       }
     
     case ActionMessage(name, value, _, replyTo, request, sv) =>
