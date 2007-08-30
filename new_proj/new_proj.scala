@@ -271,7 +271,7 @@ class Boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("""+"\""+pkg+"\""+""")
      
-    Schemifier.schemify(User)
+    Schemifier.schemify(true, User)
   }
 }
 
