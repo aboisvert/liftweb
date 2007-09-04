@@ -319,7 +319,7 @@ object Servlet {
     val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
     val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
     val resume = cci.getMethod("resume", null)
-    (true, (cc), (meth), (getObj), (setObj), (suspend), resume)
+    (true && false /* FIXME disable Jetty Support */, (cc), (meth), (getObj), (setObj), (suspend), resume)
     } catch {
       case e => (false, null, null, null, null, null, null)
     }
