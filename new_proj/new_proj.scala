@@ -25,6 +25,7 @@ def copy(src: File, dest: File) {
 if (args.length < 3) {
   println("usage: scala new_proj.scala project_name path package")
   println("eg: scala new_proj.scala Moose ~/scala/MooseProject com.mymoose")
+  println("NB: Be sure to run new_proj.scala from the new_proj directory")
 } else {
   val projName = args(0)
   val rootDir = new File(args(1))
