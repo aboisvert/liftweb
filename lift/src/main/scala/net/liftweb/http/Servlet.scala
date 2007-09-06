@@ -131,9 +131,9 @@ class Servlet extends HttpServlet {
   
   def getActor(request: RequestState, session: HttpSession) = {
     session.getValue(actorNameConst) match {
-      case r : Session => r
+      case r: Session => r
       case _ => 
-        val ret = Session(request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
+        val ret = Session(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
             request.contentType)
         ret.start
         session.putValue(actorNameConst, ret)
@@ -393,6 +393,8 @@ object Servlet {
       case rt => rpf(rt.map(_.template), templateTable_i)
     }
   }
+  
+  var ajaxPath = "ajax_request"
 
   private var _context: ServletContext = _
   

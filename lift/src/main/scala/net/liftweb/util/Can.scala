@@ -8,6 +8,7 @@ object Can {
   
   implicit def can2Iterable[T](in: Can[T]): Iterable[T] = in.toList
   implicit def option2Can[T](in: Option[T]): Can[T] = Can(in)
+  implicit def can2Option[T](in: Can[T]): Option[T] = in.toOption
 }
 
 sealed abstract class Can[+A] extends Product {
@@ -49,6 +50,8 @@ sealed abstract class Can[+A] extends Product {
     
     def $(f: Can[A] => Any) = pass(f)
     
+    def toOption: Option[A] = None
+    
     def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
     case Full(x) => f1(x)
     case _ => f2
@@ -77,6 +80,8 @@ final case class Full[+A](value: A) extends Can[A] {
   override def toList: List[A] = List(value)
   
   override def run[T](in: T)(f: (T, A) => T) = f(in, value)
+  
+  override def toOption: Option[A] = Some(value)
 }
 
 case object Empty extends EmptyCan[Nothing]

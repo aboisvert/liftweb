@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import scala.actors.Actor
 import scala.actors.Actor._
-import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent}
+import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.util._
@@ -20,7 +20,7 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, Http
 import net.liftweb.http.S._
 
 object Session {
-  def createSession( uri: String,
+  def createSession(session: HttpSession, uri: String,
       path: ParsePath,
        contextPath: String,
        requestType: RequestType,
@@ -29,12 +29,12 @@ object Session {
        
    var creator = createSession _
    
-   def apply(uri: String,
+   def apply(session: HttpSession, uri: String,
       path: ParsePath,
        contextPath: String,
        requestType: RequestType,
        webServices_? : boolean,
-       contentType: String) = creator(uri, path, contextPath, requestType, webServices_?, contentType)
+       contentType: String) = creator(session, uri, path, contextPath, requestType, webServices_?, contentType)
 }
 
 class Session(val uri: String,
@@ -391,10 +391,16 @@ class Session(val uri: String,
           case Elem("lift", "snippet", attr @ _, _, kids @ _*) if (!session.ajax_? || toBoolean(attr("ajax"))) => S.setVars(attr)(processSnippet(Can(attr.get("type")), attr, processSurroundAndInclude(kids, session), session))
           case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids, session)
           case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids, session))
+          case Elem("lift", "a", attr @ _, scope @ _, kids @ _*) => Elem(null, "a", addAjaxHREF(request, attr), scope, processSurroundAndInclude(kids, request): _*)
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes, session), v.scope, processSurroundAndInclude(v.child, session) : _*)
           case _ => {v}
         }
     }
+  }
+  
+  private def addAjaxHREF(request: RequestState, attr: MetaData): MetaData = {
+    val ajax = "try {alert('dude'); new Ajax.Request('"+request.contextPath+request.uri+"', {asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }}); return false;} catch (e) {alert(e);}"
+    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", attr))
   }
   
   /** Split seq into two seqs: first matches p, second matches !p */
