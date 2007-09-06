@@ -23,7 +23,9 @@ trait ToResponse extends ResponseIt {
     case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
                           s.toLowerCase.startsWith("text/html") ||
-                          s.toLowerCase.startsWith("text/xhtml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+                          s.toLowerCase.startsWith("text/xhtml") ||
+			  s.toLowerCase.startsWith("application/xml") ||
+			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     case _ => ""
     }
     

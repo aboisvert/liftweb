@@ -80,7 +80,8 @@ object Helpers {
       case null => true
       case n => {
 	n.get("Content-Type") match {
-	  case Some(s) => s.toLowerCase == "text/html"
+	  case Some(s) => { (s.toLowerCase == "text/html") ||
+			    (s.toLowerCase == "application/xhtml+xml") }
 	  case None => true
 	}
       }

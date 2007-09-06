@@ -275,7 +275,7 @@ class Session(val uri: String,
   def couldBeHtml(in : List[(String, String)]) : boolean = {
     in match {
       case null | Nil => true
-      case _ => in.ciGet("Content-Type").map(_.toLowerCase == "text/html") openOr true
+      case _ => in.ciGet("Content-Type").map(_.toLowerCase.contains("html")) openOr true
     }
   }
   

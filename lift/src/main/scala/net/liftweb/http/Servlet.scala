@@ -100,7 +100,7 @@ class Servlet extends HttpServlet {
         case "png" => "image/png"
         case "gif" => "image/gif"
         case "ico" => "image/x-icon"
-        case _ => "text/html"
+        case _ => Servlet.determineContentType(request)
       })
     }
     
@@ -245,7 +245,7 @@ class Servlet extends HttpServlet {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(resp.headers, List(("Content-Type", "text/html"),
+    val header = insureField(resp.headers, List(("Content-Type", Servlet.determineContentType(request)),
                                                 ("Content-Encoding", "UTF-8"),
                                                 ("Content-Length", len.toString)));
     
@@ -263,12 +263,12 @@ object Servlet {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
-    
+
   type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
-             
+
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   
@@ -281,7 +281,34 @@ object Servlet {
   def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
-  
+
+  /**
+   * Determine the proper Content-Type based on the browser's Accept HTTP Header.
+   */
+  def determineContentType(req: Can[RequestState]) : String = {
+    req match {
+      case Full(request) => determineContentType(request.request)
+      case _ => "text/html"
+    }
+  }
+
+  def determineContentType(request: HttpServletRequest) : String = {
+    request match {
+      case null => "text/html"
+      case request => determineContentType(request.getHeader("Accept"))
+    }
+  }
+
+  def determineContentType(accept: String) : String = {
+    // If application/xhtml+xml is explicitly listed then let's use that.
+    // TODO(stevej): convert this into a match somehow. (ask david)
+    if (accept != null && accept.contains("application/xhtml+xml")) {
+      "application/xhtml+xml"
+    } else {
+      "text/html"
+    }
+  }
+
   /**
     * Put a function that will calculate the request timeout based on the
     * incoming request.
