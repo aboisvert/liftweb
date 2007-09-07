@@ -80,7 +80,7 @@ trait ControllerActor extends Actor /*with HttpSessionActivationListener*/ {
 	Can(localFunctionMap.get(name)) match {
           case Full(f) => {
 
-            if (f(value)) reRender
+            if (toBoolean(f(value))) reRender
           }
           case _ => Empty
 	}

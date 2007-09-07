@@ -22,6 +22,7 @@ import net.liftweb.util.ActorPing
 import net.liftweb.sitemap.SiteMap
 import java.net.URL
 import net.liftweb.sitemap._
+import js._
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -166,6 +167,15 @@ class Servlet extends HttpServlet {
     }
   }
   
+  private def flatten(in: List[Any]): List[AnyRef] = in match {
+    case Nil => Nil
+    case Some(x: AnyRef) :: xs => x :: flatten(xs)
+    case Full(x: AnyRef) :: xs => x :: flatten(xs)
+    case (lst: Iterable[AnyRef]) :: xs => lst.toList ::: flatten(xs)
+    case (x: AnyRef) :: xs => x :: flatten(xs)
+    case x :: xs => flatten(xs)
+  }
+  
   /**
    * Service the HTTP request
    */ 
@@ -187,7 +197,23 @@ class Servlet extends HttpServlet {
             case f: Failure => session.createNotFound(f).toResponse 
 	  }
 	}
-      } else {
+      } else if (session.path.path.length == 1 && session.path.path.head == Servlet.ajaxPath) {
+        val sessionActor = getActor(session, request.getSession)
+        
+        S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
+            val what = flatten(session.paramNames.filter(n => sessionActor.callbacks.contains(n)).map(n => sessionActor.callbacks(n)(session.params(n))))
+            
+            val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
+
+            what2 match {
+              case (n: Node) :: _ => XmlResponse(n).toResponse
+              case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
+              case (r: ResponseIt) :: _ => r.toResponse
+              case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
+              case _ => Response("".getBytes("UTF-8"), Nil, 200)
+            }
+        }        
+  } else {
 	
         val sessionActor = getActor(session, request.getSession)
 	

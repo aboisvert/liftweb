@@ -401,7 +401,7 @@ object S {
     */
   def a(func: () => Any, body: NodeSeq): Elem = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
-    addFunctionMap(key, (a: List[String]) => {func(); true})
+    addFunctionMap(key, (a: List[String]) => func())
     <lift:a key={key}>{body}</lift:a>
   }
 
@@ -503,26 +503,26 @@ object S {
   }
   
   // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
-  implicit def toLFunc(in: List[String] => Boolean): AFuncHolder = LFuncHolder(in)
+  implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in)
   implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in)
   implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
   
   abstract class AFuncHolder {
-    def apply(in: List[String]): Boolean
+    def apply(in: List[String]): Any
   }
   case class SFuncHolder(func: String => Any) extends AFuncHolder {
-    def apply(in: List[String]): Boolean = {in.foreach(func(_)); true}
+    def apply(in: List[String]): Any = in.map(func(_))
   }
-  case class LFuncHolder(func: List[String] => Boolean) extends AFuncHolder  {
-    def apply(in: List[String]): Boolean = func(in)
+  case class LFuncHolder(func: List[String] => Any) extends AFuncHolder  {
+    def apply(in: List[String]): Any = func(in)
   }
   
-  case class L2FuncHolder(func: List[String] => AnyRef) extends AFuncHolder {
-    def apply(in: List[String]): Boolean = {func(in); true}
+  case class L2FuncHolder(func: List[String] => Any) extends AFuncHolder {
+    def apply(in: List[String]): Any = func(in)
   }
   
   case class NFuncHolder(func: () => Any) extends AFuncHolder  {
-    def apply(in: List[String]): Boolean = {in.foreach(s => func()); true}
+    def apply(in: List[String]): Any = in.map(s => func())
   }
   
   def f(in: AFuncHolder): String = f("F"+System.nanoTime+"_"+randomString(3), in)

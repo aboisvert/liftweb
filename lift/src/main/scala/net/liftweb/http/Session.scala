@@ -65,6 +65,8 @@ class Session(val uri: String,
 
   }
   
+  def callbacks = messageCallback
+  
   /**
    * What happens when this controller is bound to the HTTP session?
    */ 
@@ -399,8 +401,9 @@ class Session(val uri: String,
   }
   
   private def addAjaxHREF(request: RequestState, attr: MetaData): MetaData = {
-    val ajax = "try {alert('dude'); new Ajax.Request('"+request.contextPath+request.uri+"', {asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }}); return false;} catch (e) {alert(e);}"
-    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", attr))
+    // val ajax = "try {new Ajax.Request('"+request.contextPath+"/"+Servlet.ajaxPath+"', {method: 'get', asynchronous:true, parameters:'"+attr("key")+"=true', requestHeaders:{ Accept:'text/javascript' }});} catch (e) {alert(e);}"
+      val ajax = "try {new Ajax.Request('"+request.contextPath+"/"+Servlet.ajaxPath+"', {evalScripts:true, method: 'get', asynchronous:true, parameters:'"+attr("key")+"=true'});} catch (e) {alert(e);}"
+    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", Null))
   }
   
   /** Split seq into two seqs: first matches p, second matches !p */
