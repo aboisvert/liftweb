@@ -141,32 +141,32 @@ class UserActor extends Actor {
         // add someone who is watching the timeline.  This Actor will get updates each time
         // the local timeline updates.  We link to them so we can remove them if they exit
         case AddTimelineViewer =>
-          timelineViewers = sender :: timelineViewers
-          this.link(sender)
+          timelineViewers = sender.receiver :: timelineViewers
+          this.link(sender.receiver)
         
         // remove the timeline viewer
         case RemoveTimelineViewer =>
-          timelineViewers = timelineViewers.remove(_ == sender)
-          this.unlink(sender)
+          timelineViewers = timelineViewers.remove(_ == sender.receiver)
+          this.unlink(sender.receiver)
 
         // Add an Actor to the list of folks who want to see when we get a message
         // this might be an IM or SMS output
         case AddMessageViewer =>
-          messageViewers = sender :: messageViewers
-          this.link(sender)
+          messageViewers = sender.receiver :: messageViewers
+          this.link(sender.receiver)
         
         // removes the message viewer
         case RemoveMessageViewer =>
-          messageViewers = messageViewers.remove(_ == sender)
-          this.unlink(sender)
+          messageViewers = messageViewers.remove(_ == sender.receiver)
+          this.unlink(sender.receiver)
         
         // add someone who is following us
         case AddFollower =>
-          followers = sender :: followers // merge it in
-          sender ! MergeIntoTimeline(latestMsgs) // give the follower our messages to merge into his timeline
+          followers = sender.receiver :: followers // merge it in
+          sender.receiver ! MergeIntoTimeline(latestMsgs) // give the follower our messages to merge into his timeline
 
         // remove the follower
-        case RemoveFollower =>  followers = followers.remove(_ == sender) // filter out the sender of the message
+        case RemoveFollower =>  followers = followers.remove(_ == sender.receiver) // filter out the sender of the message
 
         // We get a message
         case msg : Message =>
