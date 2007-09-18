@@ -8,13 +8,12 @@ package net.liftweb.mapper
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
-import net.liftweb.util.{Lazy, Can, Full, Empty, Failure}
-import net.liftweb.util.Lazy._
+import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
 import java.util.Date
 import java.util.regex._
 
 class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedField[String, T] {
-  private val data : Lazy[String] =  Lazy(defaultValue) // defaultValue
+  private val data : FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
   def dbFieldClass = classOf[String]
 

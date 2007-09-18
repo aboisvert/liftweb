@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServletRequest}
 
-abstract class RequestType(val ajax_? : boolean) {
+abstract class RequestType(val ignore_ajax_? : boolean) {
   def post_? : boolean = false
   def get_? : boolean = false
   def head_? : boolean = false

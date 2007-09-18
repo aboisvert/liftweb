@@ -18,13 +18,13 @@ a template.  This allows a site-wide template to be used, but
 individual pages to have different contents.  Multiple <code>surround</code>
 tags can be used within a single document.</li>
 <li><code>&lt;lift:embed&gt;</code> -- embed a template in the XHTML.</li>
-<li><code>&lt;lift:controller&gt;</code> -- Insert the rendered output of
-a long-lived controller.  Also, the controller can notify a page that
+<li><code>&lt;lift:comet&gt;</code> -- Insert the rendered output of
+a long-lived comet widget.  Also, the comet widget can notify a page that
 content has changed and the next time the page services an AJAX request,
-it will update the controller's content in the browser.
-Controllers are handed "recommended" XHTML that they can "bind"
-to.  This is wicket's and TurboGears' approach.
-A controller may also choose to ignore the recommendation
+it will update the comet widget's content in the browser.
+Comet widgets are handed "recommended" XHTML that they can "bind"
+to.  This is Wicket's and TurboGears' approach.
+A comet widget may also choose to ignore the recommendation
 and render its own XHTML.</li>
 <li><code>&lt;lift:snippet&gt;</code> -- create a
 short-lived "snippet" (kind of like a Rails controller) and insert
@@ -33,7 +33,7 @@ the output of the snippet into the page.</li>
 </ul></p>
 
 <p>Once a page has composed its XHTML by getting renderings from each of
-controllers, links on the page are adjusted to the context page
+widgets, links on the page are adjusted to the context page
 of the request.  Additionally, if AJAX is enabled, forms marked
 as AJAX ready are re-written to use AJAX.</p>
 
@@ -52,11 +52,11 @@ as AJAX ready are re-written to use AJAX.</p>
     -->
     </style>
     <pre>
-&lt;<span class="function-name">lift:controller</span> type=<span class="string">"Clock"</span>&gt;Current Time: 
-&lt;<span class="function-name">lift:bind</span> name=<span class="string">"time"</span>&gt;Missing Clock&lt;<span class="function-name">/lift:bind</span>&gt;&lt;<span class="function-name">/lift:controller</span>&gt;
+&lt;<span class="function-name">lift:comet</span> type=<span class="string">"Clock"</span>&gt;Current Time: 
+&lt;<span class="function-name">clk:time</span>&gt;Missing Clock&lt;<span class="function-name">/clk:time</span>&gt;&lt;<span class="function-name">/lift:comet</span>&gt;
 </pre>
 
-<p>The Clock controller is:</p>
+<p>The Clock comet widget is:</p>
     <style type="text/css">
     <!--
       .function-name {
@@ -80,7 +80,7 @@ as AJAX ready are re-written to use AJAX.</p>
     -->
     </style>
     <pre>
-  <span class="keyword">def</span> <span class="function-name">render</span> = bind(Map(<span class="string">"time"</span> -&gt; Text(<span class="keyword">timeNow</span>.toString)))
+  <span class="keyword">def</span> <span class="function-name">render</span> = bind(<span class="string">"time"</span> -&gt; Text(<span class="keyword">timeNow</span>.toString))
 </pre>
 
 <p>Which binds a string containing the current time to the "time" part

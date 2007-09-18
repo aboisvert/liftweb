@@ -6,7 +6,7 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.{Lazy, Can, Empty, Full, Failure}
+import net.liftweb.util.{FatLazy, Can, Empty, Full, Failure}
 import scala.collection.mutable.HashSet
 
 class HasManyThrough[From <: KeyedMapper[ThroughType, From],
@@ -20,7 +20,7 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
 {
   private var theSetList: Seq[ThroughType] = Nil
   
-  private val others = Lazy[List[To]] { 
+  private val others = FatLazy[List[To]] { 
     DB.use(owner.connectionIdentifier) {
       conn =>
 	val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+

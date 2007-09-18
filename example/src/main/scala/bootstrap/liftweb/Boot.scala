@@ -11,7 +11,7 @@ import net.liftweb.http._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
-import net.liftweb.example.controller.WebServices
+import net.liftweb.example.comet.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.immutable.TreeMap
 import net.liftweb.example.model._

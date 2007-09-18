@@ -14,7 +14,6 @@ import net.liftweb.mapper._
 import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
-
 /**
   * A singleton the holds the map between user names and Actors that service
   * the users.  Right now, this assumes that the Actors are all local, but 

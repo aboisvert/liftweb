@@ -1,4 +1,4 @@
-package net.liftweb.example.controller
+package net.liftweb.example.comet
 
 /*                                                *\
   (c) 2007 WorldWide Conferencing, LLC
@@ -9,11 +9,12 @@ package net.liftweb.example.controller
 import net.liftweb.http._
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
-import scala.xml.{Text}
+import scala.xml._
 
+class Clock (theSession: Session, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
+      CometActor(theSession, name, defaultXml, attributes) {
 
-class Clock extends ControllerActor {
-
+  def defaultPrefix = "clk"
   ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
   
   def render = bind("time" -> Text(timeNow.toString))

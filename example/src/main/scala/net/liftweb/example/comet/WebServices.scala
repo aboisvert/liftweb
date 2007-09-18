@@ -1,4 +1,4 @@
-package net.liftweb.example.controller
+package net.liftweb.example.comet
 
 /*                                                *\
   (c) 2007 WorldWide Conferencing, LLC

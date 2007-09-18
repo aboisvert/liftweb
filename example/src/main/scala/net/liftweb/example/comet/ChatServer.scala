@@ -1,4 +1,4 @@
-package net.liftweb.example.controller
+package net.liftweb.example.comet
 
 /*                                                *\
   (c) 2007 WorldWide Conferencing, LLC
@@ -22,19 +22,18 @@ class ChatServer extends Actor {
   
   def loop(chat: List[ChatLine], sessions: List[Actor]) {
     react {
-    case ChatServerMsg(user, msg) => {
+    case ChatServerMsg(user, msg) => 
       val chatu = (ChatLine(user, msg, new Date) :: chat).take(500)
       val toDistribute = chatu.take(15)
-      sessions.foreach {a => a ! ChatServerUpdate(toDistribute)}
+      sessions.foreach (_ ! ChatServerUpdate(toDistribute))
       loop(chatu, sessions)
-    }
-    case ChatServerAdd(me) => {
+
+    case ChatServerAdd(me) => 
       reply(ChatServerUpdate(chat.take(15)))
       loop(chat, me :: sessions)
-    }
-    case ChatServerRemove(me) => {
-      loop(chat, sessions.remove{e => e == me})
-    }
+
+    case ChatServerRemove(me) => loop(chat, sessions.remove(_ == me))
+
     case _ => loop(chat, sessions)
   }
   }

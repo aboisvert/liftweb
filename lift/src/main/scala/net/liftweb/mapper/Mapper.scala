@@ -14,7 +14,7 @@ import net.liftweb.http.S
 import S._
 import net.liftweb.util.{Can, Empty, Full, Failure}
 
-trait Mapper[A<:Mapper[A]] {
+trait Mapper[A<:Mapper[A]] { self: A =>
   private val secure_# = Safe.next
   private var was_deleted_? = false
   private var dbConnectionIdentifier:Can[ConnectionIdentifier] = Empty
@@ -127,7 +127,7 @@ trait Mapper[A<:Mapper[A]] {
   def comparePrimaryKeys(other: A) = false
 }
 
-trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] {
+trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>
   def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
   def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
   

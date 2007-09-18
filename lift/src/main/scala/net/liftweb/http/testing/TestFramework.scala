@@ -123,8 +123,7 @@ trait TestFramework {
                    override val body: Array[Byte],override val values: Map[String, String],override val cookie: Can[String]) extends ReqRes {
                      
                      override def assertSuccess = assert(code == 200, "Not an HTTP success")
-                     private val _body = Lazy(XML.load(new java.io.ByteArrayInputStream(body)))
-                     override def xml = _body.get
+                     override lazy val xml = XML.load(new java.io.ByteArrayInputStream(body))
                    }
   
   class CompleteFailure(val serverName: String) extends ReqRes {

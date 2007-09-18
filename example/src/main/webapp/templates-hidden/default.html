@@ -1,4 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml">
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift='http://liftweb.net'>
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 	<meta name="description" content="" />
@@ -6,13 +6,9 @@
 
 	<title>Lift Web Framework<lift:bind name="title-suffix"/></title>
 	<link rel="stylesheet" href="/style/style.css" media="screen" />
-	<script src="/scripts/prototype.js" type="text/javascript"/>
-	<script src="/scripts/scriptaculous.js" type="text/javascript"/>
-	<script src="/scripts/builder.js" type="text/javascript"/>
-	<script src="/scripts/dragdrop.js" type="text/javascript"/>
-	<script src="/scripts/effects.js" type="text/javascript"/>
+	<script src="/scripts/jquery-1.2.min.js" type="text/javascript"/>
 </head>
-<body lift:snippet="comet_script:body_attr">
+<body>
 	<div id="container">
 		<div id="header">
 			<h1><i>lift</i> Web Framework</h1>
@@ -34,14 +30,11 @@
 				<li><a href="http://liftweb.net"><i>lift</i> project home</a></li>
 			</ul>
 			
-			<div class="widget">
-<lift:controller type="Clock">Current Time: 
-<lift:bind name="time">Missing Clock</lift:bind></lift:controller>
-			</div>
+			<div class="widget"><lift:comet type="Clock">Current Time: <clk:time>Missing Clock</clk:time></lift:comet></div>
 			
 			<div class="widget">
 			<center><b>Group Chat</b></center><br />
-				<lift:controller type="Chat">Chat Text</lift:controller>
+				<lift:comet type="Chat">Chat Text</lift:comet>
 			</div>
 			
 			<div><lift:snippet type="error_report"/>
@@ -50,7 +43,5 @@
 		<div id="footer"><a href='http://liftweb.net'><i>lift</i></a> is Copyright 2007 WorldWide Conferencing, LLC.  Distributed under an Apache 2.0 License.
 		Thanks to the support of <a href="http://circleshare.com">CircleShare</a>.</div>
 	</div>
-	
-	<lift:snippet type="comet_script:java_script"/>
 </body>
 </html>

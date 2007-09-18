@@ -11,11 +11,11 @@ import javax.sql.{ DataSource}
 import javax.naming.{Context, InitialContext}
 import scala.collection.mutable._
 import net.liftweb.util._
-import net.liftweb.util.Lazy._
+// import net.liftweb.util.Lazy._
 
 object DB {
   private val threadStore = new ThreadLocal
-  private val envContext = Lazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
+  private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   val logger = Log.logger(DB.getClass)
   
   var queryTimeout: Can[Int] = Empty
@@ -203,7 +203,7 @@ object DerbyDriver extends DriverType
 
 
 class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
-  val brokenLimit_? : Lazy[Boolean] = Lazy(connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
+  lazy val brokenLimit_? = (connection.getMetaData.getDatabaseProductName ==  "Apache Derby")
   def createTablePostpend: String = driverType match {
     case DerbyDriver => ""
     case MySqlDriver => " ENGINE = InnoDB "
@@ -214,9 +214,7 @@ class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
     case MySqlDriver => false
   }
   
-  private val _driverType = Lazy(calcDriver(connection.getMetaData.getDatabaseProductName))
-  
-  def driverType = _driverType.get
+ lazy val driverType = (calcDriver(connection.getMetaData.getDatabaseProductName))
     
   def calcDriver(name: String): DriverType = {
     name match {

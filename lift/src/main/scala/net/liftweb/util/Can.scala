@@ -12,6 +12,11 @@ object Can {
     case _ => Empty
   }
   
+  def apply[T](in: List[T]) = in match {
+    case x :: _ => Full(x)
+    case _ => Empty
+  }
+  
   implicit def can2Iterable[T](in: Can[T]): Iterable[T] = in.toList
   implicit def option2Can[T](in: Option[T]): Can[T] = Can(in)
   implicit def can2Option[T](in: Can[T]): Option[T] = in.toOption

@@ -135,7 +135,7 @@ class Servlet extends HttpServlet {
       case r: Session => r
       case _ => 
         val ret = Session(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
-            request.contentType)
+            request.contentType, Empty)
         ret.start
         session.putValue(actorNameConst, ret)
         ret
@@ -197,11 +197,40 @@ class Servlet extends HttpServlet {
             case f: Failure => session.createNotFound(f).toResponse 
 	  }
 	}
+      } else if (session.path.path.length == 1 && session.path.path.head == Servlet.cometPath) {
+        val sessionActor = getActor(session, request.getSession)
+        S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
+        val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+        
+        def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+          receiveWithin(len) {
+            case TIMEOUT => in
+            case ar: AnswerRender => drainTheSwamp(0, ar :: in)  
+            case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
+          }
+        }
+        
+        drainTheSwamp(0, Nil)
+        
+        actors.foreach{case (act, when) => act ! Listen(when)}
+
+        val ret = drainTheSwamp((Servlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
+        
+        actors.foreach{case (act, _) => act ! Unlisten}
+        
+        val ret2 = drainTheSwamp(100L, ret)
+        
+        val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
+        val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor))
+
+        (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+        }
+        // Response("".getBytes("UTF-8"), Nil, 200)
       } else if (session.path.path.length == 1 && session.path.path.head == Servlet.ajaxPath) {
         val sessionActor = getActor(session, request.getSession)
         
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
-            val what = flatten(session.paramNames.filter(n => sessionActor.callbacks.contains(n)).map(n => sessionActor.callbacks(n)(session.params(n))))
+            val what = flatten(sessionActor.runParams(session))
             
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
 
@@ -210,7 +239,7 @@ class Servlet extends HttpServlet {
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
               case (r: ResponseIt) :: _ => r.toResponse
               case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
-              case _ => Response("".getBytes("UTF-8"), Nil, 200)
+              case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
             }
         }        
   } else {
@@ -236,13 +265,13 @@ class Servlet extends HttpServlet {
         
         drainTheSwamp
         
-        val timeout = (Servlet.calcRequestTimeout.map(_(session)) openOr (if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
-            else (Servlet.stdRequestTimeout openOr 10))) * 1000L        
+        val timeout = (Servlet.calcRequestTimeout.map(_(session)) openOr (/*if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
+            else*/ (Servlet.stdRequestTimeout openOr 10))) * 1000L        
         
-        if (session.ajax_? && Servlet.hasJetty_?) {
+        /*if (session.ajax_? && Servlet.hasJetty_?) {
           sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
           Servlet.doContinuation(request)
-        } else {
+        } else*/ {
 	
         val thisSelf = self
 	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
@@ -448,6 +477,8 @@ object Servlet {
   }
   
   var ajaxPath = "ajax_request"
+
+  var cometPath = "comet_request"
 
   private var _context: ServletContext = _
   

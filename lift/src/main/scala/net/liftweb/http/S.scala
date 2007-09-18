@@ -30,7 +30,7 @@ object S {
    */
   private val _request = new ThreadGlobal[RequestState];
   private val _servletRequest = new ThreadGlobal[HttpServletRequest];
-  private val functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]];
+  private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]];
   private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]];
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = {
@@ -245,7 +245,7 @@ object S {
     snippetMap.doWith(new HashMap) {
       inS.doWith(true) {
           initNotice {
-            functionMap.doWith(new HashMap[String, AFuncHolder]) {
+            _functionMap.doWith(new HashMap[String, AFuncHolder]) {
               this._request.doWith(request) {
                 wrapQuery {
                 this.currCnt.doWith(0)(f)
@@ -347,10 +347,10 @@ object S {
     case r => r.getScheme+"://"+r.getServerName+":"+r.getServerPort+r.getContextPath
   }
   
-  def getFunctionMap: scala.collection.Map[String, AFuncHolder] = {
-    functionMap.value match {
+  def functionMap: Map[String, AFuncHolder] = {
+    _functionMap.value match {
       case null => Map.empty
-      case s => s
+      case s => Map(s.elements.toList :_*)
     }
   }
   
@@ -363,11 +363,12 @@ object S {
 
   
   def addFunctionMap(name: String, value: AFuncHolder) {
-    functionMap.value += (name -> value)
+    _functionMap.value += (name -> value)
   }
+  
   def mapFunction(name: String, f: AFuncHolder): String = {
     val ret = ""+nextCount()+"_"+name+"_"+randomString(5)
-    functionMap.value += (ret -> f)
+    _functionMap.value += (ret -> f)
     ret
   }
 
@@ -386,7 +387,6 @@ object S {
       case Nil => in
       case Id(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("id", name, Null), rs)
       case Cls(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("class", name, Null), rs)
-      // case Val(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("value", name, Null), rs)
     }
   }
   
@@ -427,6 +427,8 @@ object S {
   def hidden(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("hidden", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   def submit(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
+  def ajaxForm(func: => NodeSeq) = <lift:form>{func}</lift:form>
+  
   // List[value, display]
   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
     select_*(opts, deflt, SFuncHolder(func), params :_*)
@@ -449,10 +451,9 @@ object S {
     }</select>, params.toList)
     
 
-    def textarea(value: String, func: String => Any, params: FormElementPieces*): NodeSeq = textarea_*(value, SFuncHolder(func), params :_*)
+    def textarea(value: String, func: String => Any, params: FormElementPieces*): Elem = textarea_*(value, SFuncHolder(func), params :_*)
     
-    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): NodeSeq = 
-      wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
+    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
     
     def radio(opts: List[String], deflt: Can[String], func: String => Any, params: FormElementPieces*): ChoiceHolder[String] =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
@@ -503,26 +504,45 @@ object S {
   }
   
   // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
-  implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in)
-  implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in)
-  implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
+  implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
+  implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
+  // implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
   
   abstract class AFuncHolder {
+    def owner: Can[String]
     def apply(in: List[String]): Any
+    def duplicate(newOwner: String): AFuncHolder
   }
-  case class SFuncHolder(func: String => Any) extends AFuncHolder {
+
+  object SFuncHolder {
+    def apply(func: String => Any) = new SFuncHolder(func, Empty)
+    def apply(func: String => Any, owner: Can[String]) = new SFuncHolder(func, owner)
+  }
+  
+  class SFuncHolder(val func: String => Any,val owner: Can[String]) extends AFuncHolder {
+    def this(func: String => Any) = this(func, Empty)
     def apply(in: List[String]): Any = in.map(func(_))
-  }
-  case class LFuncHolder(func: List[String] => Any) extends AFuncHolder  {
-    def apply(in: List[String]): Any = func(in)
+    def duplicate(newOwner: String) = new SFuncHolder(func, Full(newOwner))    
   }
   
-  case class L2FuncHolder(func: List[String] => Any) extends AFuncHolder {
-    def apply(in: List[String]): Any = func(in)
+  object LFuncHolder {
+    def apply(func: List[String] => Any) = new LFuncHolder(func, Empty)
+    def apply(func: List[String] => Any, owner: Can[String]) = new LFuncHolder(func, owner)
   }
   
-  case class NFuncHolder(func: () => Any) extends AFuncHolder  {
+  class LFuncHolder(val func: List[String] => Any,val owner: Can[String]) extends AFuncHolder {
+    def apply(in: List[String]): Any = func(in)
+    def duplicate(newOwner: String) = new LFuncHolder(func, Full(newOwner))    
+  }
+  
+  object NFuncHolder {
+    def apply(func: () => Any) = new NFuncHolder(func, Empty)
+    def apply(func: () => Any, owner: Can[String]) = new NFuncHolder(func, owner)
+  }
+    
+  class NFuncHolder(val func: () => Any,val owner: Can[String]) extends AFuncHolder {
     def apply(in: List[String]): Any = in.map(s => func())
+    def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))        
   }
   
   def f(in: AFuncHolder): String = f("F"+System.nanoTime+"_"+randomString(3), in)

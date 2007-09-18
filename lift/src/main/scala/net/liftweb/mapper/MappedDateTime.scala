@@ -10,11 +10,10 @@ import java.sql.{ResultSet, Types}
 import java.util.Date
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Lazy
-import net.liftweb.util.Lazy._
+import net.liftweb.util.FatLazy
 
 class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
-  private var data : Lazy[Date] = Lazy(defaultValue)
+  private var data = FatLazy(defaultValue)
   protected def real_i_set_!(value : Date) : Date = {
     if (value != data.get) {
       data() = value

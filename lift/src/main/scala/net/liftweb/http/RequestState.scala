@@ -149,15 +149,13 @@ class RequestState(val paramNames: List[String],
     }
   }
   
-  private val _location = Lazy(Servlet.siteMap.flatMap(_.findLoc(this, request)))
-  def location = _location.get 
+  lazy val location = Servlet.siteMap.flatMap(_.findLoc(this, request))
   
   def testLocation: Can[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) Empty
      else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", "Invalid URL"))
   
-  private val _buildMenu = Lazy(location.map(_.buildMenu) openOr CompleteMenu(Nil))
-  
-  def buildMenu: CompleteMenu = _buildMenu.get  
+
+  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)
 
   def finder(name: String): Can[InputStream] = {
     context match {
@@ -203,7 +201,6 @@ class RequestState(val paramNames: List[String],
   def post_? = requestType.post_?
   def get_? = requestType.get_?
   def put_? = requestType.put_?
-  def ajax_? = requestType.ajax_?
   
   def fixHtml(in : NodeSeq) : NodeSeq = {
     def fixAttrs(tag: String, toFix : String, attrs : MetaData) : MetaData = {

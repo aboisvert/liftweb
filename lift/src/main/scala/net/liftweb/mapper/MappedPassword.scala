@@ -8,8 +8,7 @@ package net.liftweb.mapper
 
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Lazy
-import net.liftweb.util.Lazy._
+import net.liftweb.util.FatLazy
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import scala.xml.{Node, Text, NodeSeq}
@@ -29,8 +28,8 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
 
   def salt = this.salt_i
   
-  private var password = Lazy(defaultValue)
-  private val salt_i = Lazy(Safe.randomString(16))
+  private var password = FatLazy(defaultValue)
+  private val salt_i = FatLazy(Safe.randomString(16))
   private var invalidPw = false
   private var invalidMsg = ""
   

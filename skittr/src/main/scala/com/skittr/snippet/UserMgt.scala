@@ -102,11 +102,11 @@ class UserMgt {
   
   def watch_or_show(xhtml: Group): NodeSeq = {
    (for (userName <- S.get("user_name")) yield {
-    <lift:controller type="watch_user" name={userName}>
+    <lift:comet type="watch_user" name={userName}>
     {
       xhtml.nodes
     }
-    </lift:controller>
+    </lift:comet>
     }) openOr {
       Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>, 
           "content" -> <span>See what others are up to:<ul>{

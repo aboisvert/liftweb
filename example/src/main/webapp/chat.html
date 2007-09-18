@@ -1,15 +1,15 @@
 <lift:surround with="default" at="content">
 <div class="widget">
 	<center><b>Group Chat</b></center><br />
-	<lift:controller type="Chat" name="Other">Chat Text</lift:controller>
+	<lift:comet type="Chat" name="Other">Chat Text</lift:comet>
 </div>
 <p>The total chat app, including the ask/answer component for soliciting a name
-comments, etc. is 144 lines of code.  There is no special code to support AJAX/Comet
+comments, etc. is 68 lines of code.  There is no special code to support AJAX/Comet
 (all the wrapping is done automatically by <i>lift</i>.</p>
 
-<p>When the Chat controller is added to the page, it needs to solict the
-user for a "chat name".  It asks the "AskName" controller for the name.
-Until the AskName controller provides a name, all rendering messages
+<p>When the Chat comet widget is added to the page, it needs to solict the
+user for a "chat name".  It asks the "AskName" comet widget for the name.
+Until the AskName comet widget provides a name, all rendering messages
 are forwarded to AskName.
 Here's the code for the "AskName":</p>
 
@@ -44,34 +44,21 @@ Here's the code for the "AskName":</p>
     -->
     </style>
     <pre>
-<span class="keyword">class</span> <span class="type">AskName</span> <span class="keyword">extends</span> <span class="type">ControllerActor</span> {
-  <span class="keyword">def</span> <span class="function-name">render</span> = {
-    <span class="keyword">val</span> <span class="variable-name">inputName</span> = uniqueId+<span class="string">"_name"</span>
-
-    <span class="keyword">val</span> <span class="variable-name">ret</span> = &lt;div&gt;&lt;lift:form method=<span class="string">"POST"</span>&gt;
-    What is your username?
-    &lt;input name={inputName} <span class="keyword">type</span>=<span class="string">"text"</span> value=<span class="string">""</span>/&gt;&lt;input value=<span class="string">"Enter"</span> <span class="keyword">type</span>=<span class="string">"submit"</span>/&gt;
-    &lt;/lift:form&gt;&lt;/div&gt;
-
-    XmlAndMap(ret, TreeMap(inputName -&gt; {in:List[String] =&gt; answer(in.head); <span class="constant">false</span>}))
-  }
+<span class="keyword">class</span> <span class="type">AskName</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
+  <span class="keyword">def</span> <span class="function-name">render</span> = ajaxForm(&lt;div&gt;What is your username?&lt;/div&gt; ++ 
+                             text("",name => answer(name.trim)) ++ 
+                             submit("Enter", ignore => true))
 }
 </pre>
 
-<p>The &lt;lift:form&gt; is a form tag that indicates that if AJAX
-is available, the form should be submitted via Ajax.  This is
-the only thing a developer has to do to AJAX enable an application.</p>
-
-<p>The TreeMap that's returned as part of the rendering maps the
-field name to a function that's called when the form is submitted.
-When the user submits the form, the question asked by the Chat controller
+<p>When the user submits the form, the question asked by the Chat comet widget
 is answered with the value the user submitted.  This is
 similar to the ask/answer paradigm in Seaside, except that there's
 no need for continuations.</p>
 
 <p>Now, onto the heart of the chat app:</p>
     <pre>
-<span class="keyword">class</span> <span class="type">Chat</span> <span class="keyword">extends</span> <span class="type">ControllerActor</span> {
+<span class="keyword">class</span> <span class="type">Chat</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
   <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">userName</span> = <span class="string">""</span>
   <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">currentData</span>: <span class="type">List[ChatLine]</span> = Nil
   
@@ -137,19 +124,19 @@ no need for continuations.</p>
 </pre>
 
 <p><code>server</code> is a value (calculated at instantiation and unchanged) that
-contains the Chat server shared by all the Chat controller clients.</p>
+contains the Chat server shared by all the Chat comet clients.</p>
 
 <p><code>lowPriority</code> defines what happens when we receive a
 message from another Actor.  In this case, when the Chat server
-receives a new posting, it sends a message to all the Chat controllers.
-When the Chat controller receives the message, it notifies the containing
+receives a new posting, it sends a message to all the Chat comet wigets.
+When the Chat comet widget receives the message, it notifies the containing
 page (via <code>reRender</code>) of the new content.</p>
 
 <p><code>render</code> yields the XHTML and parameter to function map.</p>
 
-<p><code>localSetup</code> is called when the controller is instantiated
-or when it joins a new page (controllers can be shared across pages).
-Chat controller creates an AskName and askes it a question.  When
+<p><code>localSetup</code> is called when the comet widget is instantiated
+or when it joins a new page (comet widgets can be shared across pages).
+Chat comet widget creates an AskName and askes it a question.  When
 AskName "answers" the question, the attached function will be called
 with the Answer to the question.</p>
 

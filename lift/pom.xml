@@ -4,13 +4,13 @@
   <parent>
     <artifactId>lift</artifactId>
     <groupId>net.liftweb</groupId>
-    <version>0.2.5</version>
+    <version>0.3.0</version>
   </parent>
   <groupId>net.liftweb</groupId>
   <artifactId>lift-core</artifactId>
   <packaging>jar</packaging>
   <name>Lift Core</name>
-  <version>0.2.5</version>
+  <version>0.3.0</version>
   <dependencies>
     <dependency>
       <groupId>scala</groupId>

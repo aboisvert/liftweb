@@ -57,8 +57,9 @@ object Log {
   }
   def logger(clz: Class): LiftLogger = new LiftLogger(LogBoot.loggerByClass(clz))
   def logger(name: String): LiftLogger = new LiftLogger(LogBoot.loggerByName(name))
-  private val _rootLogger = Lazy(logger("lift"))
-  val rootLogger: LiftLogger = _rootLogger.get
+  //private val _rootLogger = Lazy(logger("lift"))
+  //val rootLogger: LiftLogger = _rootLogger.get
+  lazy val rootLogger: LiftLogger = logger("lift")
 
   def trace(msg: => AnyRef) = rootLogger.trace(msg)
    def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)

@@ -19,6 +19,7 @@ import net.liftweb.util._
 trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType], 
 			StateType <: Enumeration] extends KeyedMapper[long, MyType] 
 {
+  self: MyType =>
   /**
     * Shorthand for one of the states
     */
@@ -126,7 +127,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   */
 trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType], 
                              StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, StateType] {
-    
+    self: MyType =>
 
   /**
     * This method must be implemented.  It defines the states and legal state transitions

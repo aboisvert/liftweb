@@ -21,8 +21,8 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
   
   override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
-  private val _obj = Lazy(if(defined_?) foreign.find(i_is_!) else Empty)
-  def obj: Can[O] = _obj.get
+  // private val _obj = FatLazy(if(defined_?) foreign.find(i_is_!) else Empty)
+  lazy val obj: Can[O] = if(defined_?) foreign.find(i_is_!) else Empty
   
   def dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField

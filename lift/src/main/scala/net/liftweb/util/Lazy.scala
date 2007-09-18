@@ -6,12 +6,13 @@ package net.liftweb.util
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
+
 /**
  * A class that does lazy evaluation
  *
  * @param f -- a function that evaluates to the default value of the instance
  */
-class Lazy[T](f: => T) {
+class FatLazy[T](f: => T) {
   private var value: Can[T] = Empty
   
   /**
@@ -19,7 +20,7 @@ class Lazy[T](f: => T) {
    *
    * @return the value of the instance
    */
-  def get: T = {
+  def get: T = synchronized {
     value match {
       case Full(v) => v
       case _ => value = Full(f)
@@ -27,10 +28,11 @@ class Lazy[T](f: => T) {
     }
   }
   
-  def defined_? = {
+  def defined_? = synchronized {
     value != None
   }
   
+ 
   /**
    * Set the instance to a new value and return that value
    *
@@ -38,29 +40,25 @@ class Lazy[T](f: => T) {
    *
    * @return v
    */
-  def set(v: T): T = {
+  def set(v: T): T = synchronized {
     value = Full(v)
     v
   }
   
   /**
-   * The Pascal style setter
-   */
-  def :=(v: T): T = set(v)
-  
-  /**
    * and the lazy() = foo style of assignment
    */
   def update(v: T): Unit = set(v)
+    
+  def reset = synchronized {value = Empty}
   
-  def reset = value = Empty
-  
-  def calculated_? = value.isDefined
+  def calculated_? = synchronized {value.isDefined}
   
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
 }
 
-object Lazy {
+object FatLazy {
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
-  def apply[T](f: => T) = new Lazy(f)
+  def apply[T](f: => T) = new FatLazy(f)
 }
+

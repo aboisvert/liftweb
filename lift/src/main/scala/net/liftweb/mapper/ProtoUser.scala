@@ -15,7 +15,7 @@ import net.liftweb.util._
 import net.liftweb.util.Mailer._
 import S._
 
-trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
+trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] { self: T =>
   // the primary key for the database
   object id extends MappedLongIndex[T](this)
   
@@ -35,7 +35,7 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
   object password extends MappedPassword[T](this)
 }
 
-trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
+trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   object uniqueId extends MappedUniqueId[T](this, 32) {
     override def dbIndexed_? = true
   }
@@ -299,7 +299,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
     
     bind("user", changePasswordXhtml,
 	 "old_pwd" -> S.password("", oldPassword = _), 
-         "new_pwd" -> password_*("", L2FuncHolder(newPassword = _)), 
+         "new_pwd" -> password_*("", LFuncHolder(newPassword = _)), 
 	 "submit" -> testAndSet _)
   }
   

@@ -112,8 +112,8 @@ object Loc {
 case class RedirectWithMessage(to: String, msg: String)
 
 case class CompleteMenu(lines: List[MenuLine]) {
-  private val _breadCrumbs = Lazy(lines.flatMap(_.breadCrumbs))
-  def breadCrumbs: List[MenuItem] = _breadCrumbs.get
+  //private val _breadCrumbs = Lazy(lines.flatMap(_.breadCrumbs))
+  lazy val breadCrumbs: List[MenuItem] = lines.flatMap(_.breadCrumbs)
 }
 case class MenuLine(items: List[MenuItem]) {
   private[sitemap] def breadCrumbs: List[MenuItem] = items.filter(_.path)

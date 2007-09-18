@@ -298,7 +298,7 @@ object MappedField {
 
 case class ValidationIssue(field : BaseMappedField, msg : String)
 
-trait IndexedField[O] requires BaseMappedField extends BaseIndexedField {
+trait IndexedField[O] extends BaseIndexedField {
   def convertKey(in : String) : Can[O]
   def convertKey(in : Int) : Can[O]
   def convertKey(in: Long): Can[O]
@@ -307,7 +307,7 @@ trait IndexedField[O] requires BaseMappedField extends BaseIndexedField {
   def dbDisplay_? = false
 }
 
-trait BaseIndexedField requires BaseMappedField {
+trait BaseIndexedField extends BaseMappedField {
   
 }
 

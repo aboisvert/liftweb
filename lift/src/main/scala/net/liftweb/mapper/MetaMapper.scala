@@ -27,7 +27,7 @@ trait BaseMetaMapper {
   def dbIndexes: List[Index[RealType]]  
 }
 
-trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
+trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   type RealType = A
   
   def beforeValidation: List[A => Any] = Nil
@@ -226,7 +226,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     val max = params.foldRight(Empty.asInstanceOf[Can[Long]]){(a,b) => a match {case MaxRows(n) => Full(n); case _ => b}}
     val start = params.foldRight(Empty.asInstanceOf[Can[Long]]){(a,b) => a match {case StartAt(n) => Full(n); case _ => b}}
 
-    if (conn.brokenLimit_?.get) (tmp, start, max) else {
+    if (conn.brokenLimit_?) (tmp, start, max) else {
       val ret = (max, start) match {
         case (Full(max), Full(start)) => tmp + " LIMIT "+start+","+max
         case (Full(max), _) => tmp + " LIMIT "+max
@@ -747,7 +747,7 @@ object NotNullRef {
   def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNotNull, Empty, Empty)
 }
 
-trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] {
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] { self: A =>
  
   private def testProdArity(prod: Product): boolean = {
     var pos = 0
