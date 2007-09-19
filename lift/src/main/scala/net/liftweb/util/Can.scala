@@ -40,6 +40,8 @@ sealed abstract class Can[+A] extends Product {
     def or[B >: A](alternative: => Can[B]): Can[B] = alternative
     
     def elements: Iterator[A] = Iterator.empty
+    
+    def exists(func: A => Boolean): Boolean = false
 
     def toList: List[A] = Nil
       
@@ -63,6 +65,13 @@ sealed abstract class Can[+A] extends Product {
     
     def toOption: Option[A] = None
     
+    override def equals(other: Any): Boolean = (this, other) match {
+      case (Full(x), Full(y)) => x == y
+      case (Full(x), y) => x == y
+      case (x, y: AnyRef) => x eq y
+      case _ => false
+    }
+    
     def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
     case Full(x) => f1(x)
     case _ => f2
@@ -73,6 +82,8 @@ final case class Full[+A](value: A) extends Can[A] {
   def isEmpty: Boolean = false 
 
   def open_! : A = value
+  
+  override def exists(func: A => Boolean): Boolean = func(value)
 
   override def openOr[B >: A](default: => B): B = value
 

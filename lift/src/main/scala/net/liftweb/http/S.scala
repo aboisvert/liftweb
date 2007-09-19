@@ -14,6 +14,7 @@ import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure}
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
+import js._
 
 /**
  * An object representing the current state of the HTTP request and response
@@ -404,7 +405,25 @@ object S {
     addFunctionMap(key, (a: List[String]) => func())
     <lift:a key={key}>{body}</lift:a>
   }
+    
+    def a(body: NodeSeq)(func: => Any): Elem = a(() => func, body)
+    
+    def a(body: NodeSeq, cmd: JsCmd*): Elem = <a href="#" onclick={cmd.map(_.toJsCmd).mkString(" ") + "return false;"}>{body}</a>
 
+    def span(body: NodeSeq, cmd: JsCmd*): Elem = <span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>
+    
+    def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
+      ajaxSelect_*(opts, deflt, SFuncHolder(func), params :_*)
+      
+    def ajaxSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): Elem = {
+      val vals = opts.map(_._1)
+      val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
+      val funcName = f(testFunc)
+      
+      wrapFormElement(<select>{
+        opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
+      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+request.contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"= this.options[this.selectedIndex].value;', dataType: 'script'});"))
+    }
     
     /**
        * create an anchor tag around a body 
@@ -433,11 +452,14 @@ object S {
   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
     select_*(opts, deflt, SFuncHolder(func), params :_*)
     
-    // FIXME wrap the select in a filter to insure that stuff received is in the set of things sent
-  def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): Elem =  
-    wrapFormElement(<select name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.filter((s: String) => s == o._1).isDefined))
+  def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): Elem = {
+    val vals = opts.map(_._1)
+    val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
+    
+    wrapFormElement(<select name={f(testFunc)}>{
+      opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
     }</select>, params.toList)
+  }
     
     
     private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "true", Null) else Null
@@ -507,6 +529,9 @@ object S {
   implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
   implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
   // implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
+  
+  // implicit def stuffToUnpref(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
+  implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, in._2.toString, Null)
   
   abstract class AFuncHolder {
     def owner: Can[String]

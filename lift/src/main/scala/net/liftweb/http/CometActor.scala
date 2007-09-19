@@ -113,6 +113,8 @@ abstract class CometActor(val theSession: Session, val name: Can[String], val de
         reRender
         }
       }
+      
+    case ReRender => reRender
 
     case ShutDown =>
     theSession.removeCometActor(this)
@@ -194,4 +196,4 @@ case class Listen(when: Long) extends CometMessage
 case object Unlisten extends CometMessage
 case class ActionMessage(what: AFuncHolder, value: List[String], target: Actor, sessionVars: Map[String, String]) extends CometMessage
 case class ActionMessageSet(msg: List[ActionMessage], sessionVars: Map[String, String]) extends CometMessage
-
+case object ReRender extends CometMessage

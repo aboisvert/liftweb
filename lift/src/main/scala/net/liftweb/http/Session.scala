@@ -120,16 +120,17 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
   }
   
   /**
-   * The loop for the actor.  Dispatches messages using Scala's event-based Actors
-   */
-  /*final def loop {
-   react(dispatcher)
-   }*/
+    * Called just before the session exits.  If there's clean-up work, override this method 
+    */
+  def cleanUpSession() {
+     
+   }
   
   def dispatcher: PartialFunction[Any, Unit] = {
     case ShutDown =>
       Log.debug("Shutting down session")
     asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
+      cleanUpSession()
     self.exit
     
     case AskSessionToRender(request,httpRequest, timeout, whenDone) => processRequest(request, httpRequest, timeout, whenDone)
@@ -149,7 +150,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     def update(name: String, value: String): Unit = _state = _state + name -> value
   }
   
-  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long, whenDone: AnswerHolder => Any) = {
+  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long, whenDone: AnswerHolder => Any) = synchronized {
     S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, Empty, true)) {
       try {
 	val sessionDispatch = S.highLevelSessionDispatcher
@@ -317,7 +318,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     templateName match {
       case Full(s) => {
 	findTemplate(s.text, session) match {
-	  case Full(s) => processSurroundAndInclude(s, session)
+	  case Full(s) => synchronized {processSurroundAndInclude(s, session)}
 	  case _ => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
 	}
       }
@@ -415,6 +416,10 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
       case e => e.printStackTrace; kids
     }
   }  
+  
+  def findComet(theType: String): List[CometActor] = synchronized {
+    asyncComponents.elements.filter{case ((Full(name), _), _) => name == theType case _ => false}.toList.map{case (_, value) => value} 
+  }
   
   private def findComet(theType: Can[String], name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
     val what = (theType, name)
