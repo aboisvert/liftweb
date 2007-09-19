@@ -71,19 +71,22 @@ object JsCmds {
     def timeStr = time.map(_.toString) openOr ""
   }
 
-  case class Show(uid: String, time: Can[Int]) extends JsCmd with HasTime {
-    def this(uid: String) = this(uid, Empty)
-    def this(uid: String, time: Int) = this(uid, Full(time))
-    
+  object Show {
+    def apply(uid: String) = new Show(uid, Empty)
+    def apply(uid: String, time: Int) = new Show(uid, Full(time))
+  }
+  
+  class Show(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).esc+").show("+timeStr+");} catch (e) {}"
-    
   }
 
-  case class Hide(uid: String, time: Can[Int]) extends JsCmd with HasTime {
-    def this(uid: String) = this(uid, Empty)
-    def this(uid: String, time: Int) = this(uid, Full(time))
-    
-    def toJsCmd = "try{jQuery("+("#"+uid).esc+").hide("+timeStr+");} catch (e) {}"
+  object Hide {
+    def apply(uid: String) = new Hide(uid, Empty)
+    def apply(uid: String, time: Int) = new Hide(uid, Full(time))    
+  }
+  
+  class Hide(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
+     def toJsCmd = "try{jQuery("+("#"+uid).esc+").hide("+timeStr+");} catch (e) {}"
   }
 
   case class Alert(text: String) extends JsCmd {

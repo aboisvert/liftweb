@@ -461,7 +461,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
   
   
   private def addAjaxHREF(request: RequestState, attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+request.contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'};"
+    val ajax = "jQuery.ajax( {url: '"+request.contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
     new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", Null))
   }
 
