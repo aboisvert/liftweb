@@ -61,6 +61,8 @@ object DB {
     }
   }
   
+  // remove thread-local association
+  def clearThread: Unit = { threadStore.remove }  
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {

@@ -11,6 +11,7 @@ import scala.actors.Actor._
 import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
 import scala.collection.mutable.{HashMap, ArrayBuffer}
 import scala.xml.{NodeSeq, Unparsed, Text}
+import net.liftweb.mapper.DB
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -99,7 +100,13 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
    * When the session is unbound the the HTTP session, stop us
    */
   def valueUnbound(event: HttpSessionBindingEvent) {
+    try {
     if (running_?) this ! ShutDown
+    } finally {
+      // uncomment for Scala 2.6.1 to avoid memory leak 
+      // Actor.clearSelf
+      DB.clearThread
+    }
   }
   
   /**

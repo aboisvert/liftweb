@@ -15,6 +15,7 @@ import scala.xml.transform._
 import scala.actors._
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
+import net.liftweb.mapper.DB
 import net.liftweb.util._
 import java.io.InputStream
 import net.liftweb.util.Helpers
@@ -46,18 +47,26 @@ class Servlet extends HttpServlet {
     }
     Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
     ActorPing.snapshot
+    Scheduler.shutdown 
+    ActorPing.shutdown
     Log.debug("Destroyed servlet")
     super.destroy
     } catch {
       case e => Log.error("Servlet destruction failure",e)
+    } finally {
+      clearThread
     }
   }
   
   override def init = {
-    if (Scheduler.tasks ne null) {Log.debug("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
+    try {
+      if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
     ActorPing.start
     Servlet.ending = false
     super.init
+    } finally {
+      clearThread
+    }
   }
   
   /**
@@ -164,6 +173,8 @@ class Servlet extends HttpServlet {
   }
     } catch {
       case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw new Exception("Request failed", e)
+    } finally {
+      clearThread
     }
   }
   
@@ -312,6 +323,16 @@ class Servlet extends HttpServlet {
     response.getOutputStream.write(bytes)    
     Servlet._afterSend.foreach(_(resp, response, header, request))
   }
+
+  /**
+   * Remove any thread-local associations
+   */
+  def clearThread: Unit = {
+    // uncomment for Scala 2.6.1 to avoid memory leak 
+    // Actor.clearSelf
+    DB.clearThread
+  }
+  
 }
 
 object Servlet {

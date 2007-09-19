@@ -14,6 +14,8 @@ object ActorPing {
   
   def snapshot: Unit = {}
   
+  def shutdown: Unit = { service.shutdown }
+
   def schedule(to: Actor, msg: Any, delay: Long): ScheduledFuture = schedule(to, msg, delay, TimeUnit.MILLISECONDS)
   
   // Can be canceled by using the future returned.
@@ -31,6 +33,7 @@ private object TF extends ThreadFactory {
   val threadFactory = Executors.defaultThreadFactory()
   def newThread(r: Runnable) : Thread = {
     val d: Thread = threadFactory.newThread(r)
+    d setName "ActorPing"
     d setDaemon true
     d
   }
