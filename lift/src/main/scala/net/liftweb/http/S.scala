@@ -418,6 +418,15 @@ object S {
 
     def span(body: NodeSeq, cmd: JsCmd*): Elem = <span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>
     
+    def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
+      val funcName = f(func)
+      val (nk, id) = findOrAddId(kids)
+      val rnk = if (visible) nk else nk % ("style" -> "display: none") 
+      val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
+        session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+      nh ++ rnk
+    }
+    
     def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
       ajaxSelect_*(opts, deflt, SFuncHolder(func), params :_*)
       
@@ -430,6 +439,8 @@ object S {
         opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
       }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
+    
+    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
       case Nil => val id = "R"+randomString(12)
