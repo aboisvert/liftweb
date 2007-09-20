@@ -15,6 +15,7 @@ import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, F
 import net.liftweb.mapper.{Safe, ValidationIssue}
 import Helpers._
 import js._
+import java.io.InputStream
 
 /**
  * An object representing the current state of the HTTP request and response
@@ -79,6 +80,11 @@ object S {
     case _ => Nil
   }
 }
+  
+  def findFileInContext(name: String): Can[InputStream] = _request.value match {
+    case null => Empty
+    case req => req.finder(name)
+  }
   
   private def reduxio(in: List[Servlet.DispatchPf]): Servlet.DispatchPf = in match {
     case Nil => Map.empty
@@ -177,7 +183,7 @@ object S {
   def nextCount(): String = {
     val n = currCnt.value
     currCnt := n + 1
-    String.format("%06d", Array(new Integer(n)))
+    String.format("%06d", Array(new java.lang.Integer(n)))
   }
   
   private def initNotice[B](f: => B): B = {
@@ -206,9 +212,9 @@ object S {
     }
   }
   
-  private var _queryAnalyzer: List[(RequestState, Long, List[(String, Long)]) => Any] = Nil
+  private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
-  def addAnalyzer(f: (RequestState, Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
+  def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
   private def doAround[B](f:() => B, ar: List[LoanWrapper]): B = 
@@ -232,7 +238,7 @@ object S {
       f()
       } finally {
         val log = queryLog
-        val req = request
+        val req = request match{ case null => Empty case s => Full(s)}
         val time = millis - begin
         _queryAnalyzer.foreach(_(req, time, log))
       }
@@ -422,7 +428,25 @@ object S {
       
       wrapFormElement(<select>{
         opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
-      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+request.contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"= this.options[this.selectedIndex].value;', dataType: 'script'});"))
+      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+    }
+    
+    def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
+      case Nil => val id = "R"+randomString(12)
+      (in % ("id" -> id), id)
+      case x :: xs => (in, x.text)
+    }
+    
+    /**
+      *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
+      * the hidden element blurs, it swaps into the shown element.
+      */
+    def swapable(shown: Elem, hidden: Elem): Elem = {
+      val (rs, sid) = findOrAddId(shown)
+      val (rh, hid) = findOrAddId(hidden)
+      <span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
+        rh % ("style" -> "display: none") %
+        ("onblur" -> ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>
     }
     
     /**
@@ -533,6 +557,7 @@ object S {
   // implicit def stuffToUnpref(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
   implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, in._2.toString, Null)
   
+  @serializable
   abstract class AFuncHolder {
     def owner: Can[String]
     def apply(in: List[String]): Any
@@ -544,6 +569,7 @@ object S {
     def apply(func: String => Any, owner: Can[String]) = new SFuncHolder(func, owner)
   }
   
+  @serializable
   class SFuncHolder(val func: String => Any,val owner: Can[String]) extends AFuncHolder {
     def this(func: String => Any) = this(func, Empty)
     def apply(in: List[String]): Any = in.map(func(_))
@@ -555,6 +581,7 @@ object S {
     def apply(func: List[String] => Any, owner: Can[String]) = new LFuncHolder(func, owner)
   }
   
+  @serializable
   class LFuncHolder(val func: List[String] => Any,val owner: Can[String]) extends AFuncHolder {
     def apply(in: List[String]): Any = func(in)
     def duplicate(newOwner: String) = new LFuncHolder(func, Full(newOwner))    
@@ -564,7 +591,8 @@ object S {
     def apply(func: () => Any) = new NFuncHolder(func, Empty)
     def apply(func: () => Any, owner: Can[String]) = new NFuncHolder(func, owner)
   }
-    
+  
+  @serializable
   class NFuncHolder(val func: () => Any,val owner: Can[String]) extends AFuncHolder {
     def apply(in: List[String]): Any = in.map(s => func())
     def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))        

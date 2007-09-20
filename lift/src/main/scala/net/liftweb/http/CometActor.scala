@@ -18,8 +18,8 @@ import net.liftweb.http.js._
 
 // import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
-abstract class CometActor(val theSession: Session, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor /*with HttpSessionActivationListener*/ {
-  @serializable  
+@serializable 
+abstract class CometActor(val theSession: Session, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis
@@ -74,25 +74,26 @@ abstract class CometActor(val theSession: Session, val name: Can[String], val de
       localSetup
       reRender
     
-    case r @ AskRender(request) =>
+    case AskRender =>
       askingWho match {
-        case Full(who) => who forward r
+        case Full(who) => who forward AskRender
         case _ => reply(AnswerRender(lastRendering, whosAsking openOr this, lastRenderTime))
         }
     
     case ActionMessageSet(msgs, sv) =>
     this.sessionVars = sv
     S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
-      msgs.foreach(msg => msg.what((msg.value)))
-      reply(sessionVars)
+      val ret = msgs.map(msg => msg.what(msg.value))
+      theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
+      reply(ret)
     }    
     
     case ActionMessage(what, value, _, sv) => 
     this.sessionVars = sv
       S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
-        what(value)
-	// localFunctionMap.get(name).foreach(_(value))
-        reply(sessionVars)
+      val ret = what(value)
+      theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
+        reply(ret)
       }
 
     case AskQuestion(what, who) =>
@@ -187,7 +188,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]
   """)}</script>) openOr Text(""))
 }
 
-case class AskRender(request: RequestState) extends CometMessage
+case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long ) extends CometMessage
 case class PerformSetupComet(sessionVars: Map[String, String]) extends CometMessage
 case class AskQuestion(what: Any, who: CometActor) extends CometMessage

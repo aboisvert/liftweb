@@ -10,6 +10,7 @@ import java.util.regex._
 
 object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")
+  def validEmailAddr_?(email: String): Boolean = emailPattern.matcher(email).matches
 }
 
 class MappedEmail[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[T](owner, maxLen) {

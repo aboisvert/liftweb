@@ -6,7 +6,7 @@ package net.liftweb.http.js
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.xml.NodeSeq
+import scala.xml.{NodeSeq, Group}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
@@ -32,24 +32,28 @@ abstract class JsCmd {
 
 object JsCmds {
   class JsEscaper(val in: String) {
-    def esc = "'"+doEsc(in.toList).mkString("")+"'"
-    def doEsc(what: List[Char]): List[Char] = what match {
-      case Nil => Nil
-      case '\\' :: xs => escChar('\\') ::: doEsc(xs)
-      case '\'' :: xs => escChar('\'') ::: doEsc(xs)
-      case n :: xs if n < ' ' => escChar(n) ::: doEsc(xs)
-      case n :: xs if n > '~' => escChar(n) ::: doEsc(xs)
-      case n :: xs => n :: doEsc(xs)
-    }
-    
-    def escChar(in: Char): List[Char] = '\\' :: 'u' :: (
-      Integer.toString(in.toInt, 16).toList match {
-        case x :: Nil => '0' :: '0' :: '0' :: x :: Nil
-        case x1 :: x2 :: Nil => '0' :: '0' :: x1 :: x2 :: Nil
-        case x1 :: x2 :: x3 :: Nil => '0' :: x1 :: x2 :: x3 :: Nil
-        case xs => xs
+    def esc: String = {
+      val len = in.length
+      val sb = new StringBuilder(len * 2)
+      sb.append('\'')
+      var pos = 0
+      while (pos < len) {
+        in.charAt(pos) match {
+          case c @ ('\\' | '\'') => sb.append(escChar(c))
+          case c if c < ' ' || c > '~' => sb.append(escChar(c))
+          case c => sb.append(c) 
+        }
+        pos += 1
       }
-    )
+      sb.append('\'')
+      sb.toString
+    }
+
+    
+    def escChar(in: Char): String = {
+      val ret = Integer.toString(in.toInt, 16)
+      "\\u"+("0000".substring(ret.length))+ret
+    }
   }
   
   implicit def strToJsEsc(in: String): JsEscaper = new JsEscaper(in)
@@ -92,12 +96,20 @@ object JsCmds {
   case class Alert(text: String) extends JsCmd {
     def toJsCmd = "alert("+text.esc+");"
   }
+  
+  case class ModalDialog(html: NodeSeq) extends JsCmd {
+    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(html), false).esc+");"
+  }
 
   case class Run(text: String) extends JsCmd {
     def toJsCmd = text
   }
 
-  case class Noop extends JsCmd {
+  case object Noop extends JsCmd {
     def toJsCmd = ""
+  }
+  
+  case object Unblock extends JsCmd {
+    def toJsCmd = "$.unblockUI();"
   }
 }
