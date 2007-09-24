@@ -193,12 +193,13 @@ class Servlet extends HttpServlet {
   def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType, start: Long) {
     val session = RequestState(request, Servlet.rewriteTable(request), getServletContext, start)
 
-    val toMatch = RequestMatcher(session, session.path)
+    val sessionActor = getActor(session, request.getSession)    
+    val toMatch = RequestMatcher(session, session.path, sessionActor)
     
       val resp: Response = if (Servlet.ending) {
         session.createNotFound.toResponse
       } else if (Servlet.dispatchTable(request).isDefinedAt(toMatch)) {
-        val sessionActor = getActor(session, request.getSession)
+        
          
 	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
 	  val f = Servlet.dispatchTable(request)(toMatch)
@@ -209,7 +210,6 @@ class Servlet extends HttpServlet {
 	  }
 	}
       } else if (session.path.path.length == 1 && session.path.path.head == Servlet.cometPath) {
-        val sessionActor = getActor(session, request.getSession)
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
         val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
         
@@ -238,7 +238,6 @@ class Servlet extends HttpServlet {
         }
         // Response("".getBytes("UTF-8"), Nil, 200)
       } else if (session.path.path.length == 1 && session.path.path.head == Servlet.ajaxPath) {
-        val sessionActor = getActor(session, request.getSession)
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
             val what = flatten(sessionActor.runParams(session))
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
@@ -251,9 +250,6 @@ class Servlet extends HttpServlet {
             }
         }        
   } else {
-	
-        val sessionActor = getActor(session, request.getSession)
-	
         try {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1

@@ -154,7 +154,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, Empty, true)) {
       try {
 	val sessionDispatch = S.highLevelSessionDispatcher
-	val toMatch = RequestMatcher(request, request.path)        
+	val toMatch = RequestMatcher(request, request.path, this)        
 	if (sessionDispatch.isDefinedAt(toMatch)) {
 	  runParams(request)
 	  sessionDispatch(toMatch)(httpRequest) match {
@@ -220,7 +220,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
   
   
   private def findVisibleTemplate(path: ParsePath, session : RequestState) : Can[NodeSeq] = {
-    val toMatch = RequestMatcher(session, session.path)
+    val toMatch = RequestMatcher(session, session.path, this)
     val templ = Servlet.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
       case ns @ Full(_) => ns 

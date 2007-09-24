@@ -233,6 +233,6 @@ class RequestState(val paramNames: List[String],
   
 }
 
-case class RequestMatcher(request: RequestState, path: ParsePath)
+case class RequestMatcher(request: RequestState, path: ParsePath, session: Session)
 case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
 case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])
