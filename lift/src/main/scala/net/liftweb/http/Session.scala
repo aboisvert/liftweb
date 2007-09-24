@@ -538,7 +538,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
    function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
    function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
    function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+Servlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
-   $(document).ready(function(){lift_cometEntry();});
+   jQuery(document).ready(function(){lift_cometEntry();});
    // ]]>
    """)}</script>) :_*)
       case _ => n

@@ -110,6 +110,6 @@ object JsCmds {
   }
   
   case object Unblock extends JsCmd {
-    def toJsCmd = "$.unblockUI();"
+    def toJsCmd = "jQuery.unblockUI();"
   }
 }
