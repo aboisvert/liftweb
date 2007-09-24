@@ -83,7 +83,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
       val f = toRun.filter(_._3 == w);
       w match {
 	// if it's going to a CometActor, batch up the commands
-	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1),a, _state)), _state) match {case Some(li: List[Any]) => li case li: List[Any] => print("My li is "+li); li case other => Nil})
+	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1),a, _state)), _state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
 	case _ => f.map(i => i._2(state.params(i._1)))
 	}
       }
@@ -538,7 +538,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
    function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
    function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
    function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+Servlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
-   jQuery(document).ready(function(){lift_cometEntry();});
+   jQuery(document).ready(function(){lift_handlerSuccessFunc();});
    // ]]>
    """)}</script>) :_*)
       case _ => n
