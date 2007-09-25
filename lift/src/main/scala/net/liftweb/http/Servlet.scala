@@ -140,7 +140,7 @@ class Servlet extends HttpServlet {
   
   
   def getActor(request: RequestState, session: HttpSession) = {
-    session.getValue(actorNameConst) match {
+    val ret = session.getValue(actorNameConst) match {
       case r: Session => r
       case _ => 
         val ret = Session(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
@@ -149,6 +149,8 @@ class Servlet extends HttpServlet {
         session.putValue(actorNameConst, ret)
         ret
     }
+    ret.breakOutComet()
+    ret
   }
   
   override def service(req: HttpServletRequest,resp: HttpServletResponse) {
@@ -210,13 +212,16 @@ class Servlet extends HttpServlet {
 	  }
 	}
       } else if (session.path.path.length == 1 && session.path.path.head == Servlet.cometPath) {
+        sessionActor.enterComet(self)
+        try {
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
         val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
         
         def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
           receiveWithin(len) {
             case TIMEOUT => in
-            case ar: AnswerRender => drainTheSwamp(0, ar :: in)  
+            case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
+            case BreakOut => drainTheSwamp(0, in)
             case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
           }
         }
@@ -235,6 +240,9 @@ class Servlet extends HttpServlet {
         val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor))
 
         (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+        }
+        } finally {
+          sessionActor.exitComet(self)
         }
         // Response("".getBytes("UTF-8"), Nil, 200)
       } else if (session.path.path.length == 1 && session.path.path.head == Servlet.ajaxPath) {
@@ -576,3 +584,4 @@ object Servlet {
   }
 }
 
+case object BreakOut

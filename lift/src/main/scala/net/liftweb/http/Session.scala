@@ -56,6 +56,20 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     
   }
   
+  private var cometList: List[Actor] = Nil
+  
+  private[http] def breakOutComet(): Unit = synchronized {
+    cometList.foreach(_ ! BreakOut)
+  }
+  
+  private[http] def enterComet(what: Actor): Unit = synchronized {
+    cometList = what :: cometList
+  }
+  
+  private[http] def exitComet(what: Actor): Unit = synchronized {
+    cometList = cometList.remove(_ eq what)
+  }
+  
   // def callbacks = messageCallback
   
   /**
