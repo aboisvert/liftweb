@@ -126,7 +126,7 @@ abstract class CometActor(val theSession: Session, val name: Can[String], val de
   
   def compute: Map[String, Any] = Map.empty[String, Any]
   
-  final def reRender: AnswerRender = {
+  final def reRender(): AnswerRender = {
     lastRenderTime = millis
     S.initIfUninitted(theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
       lastRendering = render
