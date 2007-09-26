@@ -174,10 +174,10 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
   
   def +(in: Int): Int = is + in
       
-  def real_convertToJDBCFriendly(value: int): Object = new Integer(value)
+  def real_convertToJDBCFriendly(value: int): Object = new java.lang.Integer(value)
   
   
-  def jdbcFriendly(field : String) = new Integer(is)
+  def jdbcFriendly(field : String) = new java.lang.Integer(is)
 
   def ::=(in : Any) : int = {
     in match {

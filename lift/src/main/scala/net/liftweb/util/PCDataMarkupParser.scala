@@ -47,7 +47,7 @@ object HtmlEntities {
 /**
  * Extends the Markup Parser to do the right thing (tm) with PCData blocks
  */
-trait PCDataMarkupParser requires (MarkupParser with MarkupHandler) extends MarkupParser {
+trait PCDataMarkupParser[PCM <: MarkupParser with MarkupHandler] extends MarkupParser { self: PCM =>
   /** '&lt;! CharData ::= [CDATA[ ( {char} - {char}"]]&gt;"{char} ) ']]&gt;'
    *
    * see [15]
@@ -70,7 +70,7 @@ trait PCDataMarkupParser requires (MarkupParser with MarkupHandler) extends Mark
   }
 }
 
-class PCDataXmlParser(val input: Source) extends ConstructingHandler with PCDataMarkupParser with ExternalSources  {
+class PCDataXmlParser(val input: Source) extends ConstructingHandler with PCDataMarkupParser[PCDataXmlParser] with ExternalSources  {
   val preserveWS = true
   ent ++= HtmlEntities()
   // val input = from

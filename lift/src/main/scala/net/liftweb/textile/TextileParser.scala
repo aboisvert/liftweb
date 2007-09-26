@@ -4,466 +4,305 @@ package net.liftweb.textile
  (c) 2006-7 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ \*                                                 */
 
-import scala.util.parsing.Parsers
+import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
 import scala.xml.{MetaData, NodeSeq, Elem, Null, Text, TopScope, Unparsed, UnprefixedAttribute}
 import scala.collection.mutable.HashMap
 
-
 /**
- * A parser that deals with 1 character at a time
- * Based on the Scala parser example code
- */
-trait CharParsers extends Parsers {
-  def any: Parser[char]
-  def chr(ch: char) = {
-    for (c <- any; if c == ch) yield c
-  }
-  def chr(p: char => boolean) =
-    for (c <- any; if p(c)) yield c
-  
+ * The textile parser
+ *
+ * ported to the scala.util.parsing.combinator style of parsing by Adriaan Moors
+ */ 
+object TextileParser extends Application {
+
   /**
-   * Match a list of characters
+   * Take a string and return the parsed value.
+   * Lst is a list of Textile parsed elements.  You can do a .toHtml on the Lst
+   * to get the XHTML result to send to the browser.
+   * int will be the number of characters parsed.
    */
-  def str(in : List[char]) : Parser[char] = {
-    (in: @unchecked) match {
-      case c :: Nil => chr(c)
-      case c :: rest => chr(c) &&& str(rest)
+  def parse(toParse : String) : Option[Lst] = {
+    def findRefs(in : List[Textile]) : List[Pair[String,String]] = in match {
+      case (s : ARef) :: rest => {Pair(s.name, s.href) :: findRefs(rest)}
+      case (s : ATextile) :: rest => {findRefs(s.theElems) ::: findRefs(rest)}
+      case x :: rest => {findRefs(rest)}
+      case _ => Nil
     }
-  }
-  
-  /**
-   * Match a string
-   */
-  def str(in : String) : Parser[char] = {
-    if (in.length == 1) chr(in.charAt(0))
-    else chr(in.charAt(0)) &&& str(in.substring(1))
-  }
+    
 
-}
+    def fixRefs(in : List[Textile], refs : HashMap[String, String]) : unit = in match {
+      case (s : RefAnchor) :: rest => {refs.get(s.ref) match {case Some(tr) => {s.href = tr} case None => {s.href = "#"}}; fixRefs(rest, refs)}
+      case (s : ATextile) :: rest => {fixRefs(s.theElems, refs); fixRefs(rest, refs)}
+      case s :: rest => {fixRefs(rest, refs)}
+      case _ => {}
+    }
+    
+    val parser = new TextileParsers
+    val lst = parser.document(new scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
 
-/**
-* The textile parser
-*/ 
-object TextileParser {
+    lst map { it =>
+      val tr = findRefs(List(it))
+	     val refs = new HashMap[String,String];
+	     tr.foreach{b => refs(b._1) = b._2}
 
-  /**
-  * Take a string and return the parsed value.
-  * Lst is a list of Textile parsed elements.  You can do a .toHtml on the Lst
-  * to get the XHTML result to send to the browser.
-  * int will be the number of characters parsed.
-  */
-  def parse(toParse : String) : Option[Pair[Lst, int]] = {
-    val prep = prepare(toParse)
-    val parser = new ParseString(prep) with TextileParsers
-    parser.parseAsTextile
+	     fixRefs(List(it), refs)
+
+	     Some(it)
+	   } getOrElse None
   }
   
   def toHtml(toParse: String): NodeSeq = {
-    parse(toParse).map(_._1.toHtml) getOrElse Text("")
+    parse(toParse).map(_.toHtml) getOrElse Text("")
   }
 
-  /**
-  * a class that will parse a string.  Based on
-  * the scala parser example code.
-  */
-  class ParseString(s : String) extends Parsers {
-    type inputType = int
-    
-    def input = 0
-    def any = new Parser[char] {
-      def apply(in: int): Parser[char]#Result =
-        if (in < s.length()) Some(Pair(s charAt in, in + 1)) else None
-    }
-  }
   
   /**
-  * the thing that actually does the textile parsing
-  */
-  trait TextileParsers extends CharParsers {
-    def input : inputType
+   * the thing that actually does the textile parsing
+   */
+  class TextileParsers extends Parsers with ImplicitConversions {
+    type Elem = char
+    
+    def document : Parser[Lst] = rep(paragraph) ^^ Lst
+    // final val EofCh = '\032'
+    private def chrExcept(cs: Char*): Parser[char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
+    private def mkString(cs: List[Any]) = cs.mkString("")
+
+    implicit def str2chars(s: String): List[Char] = stringWrapper(s).toList
+    
+    def num = rep1(elem("digit", Character.isDigit)) ^^ mkString
+
+    def enclosed(delim: Char, what: String, pred: Char => Boolean) = delim ~ str(what, {c => c != delim && pred(c)}) ~ delim
+    def str(what: String, pred: Char => Boolean) = rep(elem(what, pred)) ^^ mkString
+    def str1(what: String, pred: Char => Boolean) = rep1(elem(what, pred)) ^^ mkString
+    def chrsExcept(cs: Char*): Parser[String] = rep1(chrExcept(cs : _*)) ^^ mkString
+    
+    
+    val beginl: UnitParser = new UnitParser {
+      def apply(in: Input) = if(in.pos.column==1) Success((), in) else Failure("at column "+in.pos.column+", not beginning of line", in)
+    }
+
+    val beginlS = beginl ~ rep(' ')
     
     /**
-    * is it a blank line?  Start of line, some spaces, and an end of line
-    */
-    def blankLine: Parser[Textile] = {
-      for (
-        c: char <- chr('\0');
-        spaces <- rep(chr(' '));
-        cs: char <- chr('\n')
-      ) yield BlankLine
-    }
+     * is it a blank line?  Start of line, some spaces, and an end of line
+     */
+    def blankLine: Parser[Textile] = beginlS ~ '\n' ^^ BlankLine
+    
 
     /**
-    * Line elements make up paragraphs and block elements
-    */
+     * Line elements make up paragraphs and block elements
+     */
     def lineElem : Parser[Textile] = {
-      not(blankLine) &&& (beginingOfLine ||| endOfLine ||| image ||| footnote_def ||| 
-			  anchor ||| dimension ||| elipsis  ||| 
-			  copyright ||| trademark ||| registered ||| emDash ||| 
-			  enDash ||| italic ||| emph ||| bold  ||| 
-			  cite |||  span ||| code ||| delete ||| insert ||| 
-			  sup ||| sub ||| strong ||| html ||| single_quote ||| quote ||| acronym ||| charBlock)
+      not(discard(blankLine)) ~ (endOfLine | image | footnote_def | 
+                        anchor | dimension | elipsis  | 
+                        copyright | trademark | registered | emDash | 
+                        enDash | italic | emph | bold  | 
+                        cite |  span | code | delete | insert | 
+                        sup | sub | strong | html | single_quote | quote | acronym | charBlock)
     }
 
     /**
-    * If we've got an italic (__text__), the parser doesn't do well with a single underscore, so
-    * we exclude looking for _emph_
-    */
+     * If we've got an italic (__text__), the parser doesn't do well with a single underscore, so
+     * we exclude looking for _emph_
+     */
     def lineElem_notEmph : Parser[Textile] = {
-      not(blankLine) &&& (beginingOfLine ||| endOfLine ||| image ||| footnote_def ||| anchor ||| 
-			  dimension ||| elipsis ||| 
-			  copyright ||| trademark ||| registered ||| emDash ||| enDash ||| italic ||| 
-			  bold  ||| 
-			  cite |||  span||| code ||| delete ||| insert||| sup ||| sub ||| strong  ||| 
-			  html||| single_quote ||| quote ||| acronym ||| charBlock)        
+      not(discard(blankLine)) ~ (endOfLine | image | footnote_def | anchor | 
+                          dimension | elipsis | 
+                          copyright | trademark | registered | emDash | enDash | italic | 
+                          bold  | 
+                          cite |  span| code | delete | insert| sup | sub | strong  | 
+                          html| single_quote | quote | acronym | charBlock)        
     }
 
     /**
     * Don't look for *strong* if we're currently in a **bold** element
     */
     def lineElem_notStrong : Parser[Textile] = {
-      not(blankLine) &&& (beginingOfLine ||| endOfLine ||| image ||| footnote_def ||| anchor ||| 
-			  dimension ||| elipsis ||| 
-			  copyright ||| trademark ||| registered ||| emDash ||| enDash ||| italic ||| 
-			  emph ||| 
-			  cite |||  span ||| code ||| delete ||| insert  ||| sup ||| 
-			  sub ||| bold  ||| html||| single_quote ||| quote ||| acronym  ||| charBlock)
+      not(discard(blankLine)) ~ (endOfLine | image | footnote_def | anchor | 
+                          dimension | elipsis | 
+                          copyright | trademark | registered | emDash | enDash | italic | 
+                          emph | 
+                          cite |  span | code | delete | insert  | sup | 
+                          sub | bold  | html| single_quote | quote | acronym  | charBlock)
     }
     
 
     /**
     * Look for an acronym, but don't mistake registered, copyright, and trademarks
     */
-    def acronym : Parser[Textile] = {
-      for (
-        thing : List[char] <- rep1(chr(acro_thing _));
-        op <- not(copyright ||| trademark ||| registered) &&& str("(");
-        acro <- rep1(chr(acro _));
-        cp <- str(")")
-      ) yield Acronym(thing.mkString(""), acro.mkString(""))
-    }
-    
-    
-    private def acro(c : char) : boolean = c != ')' && c != '\n';
-    
-    private def acro_thing(c : char) : boolean = c != '\n' && c != ' ' && c != '('
+    def acronym : Parser[Textile] =  chrsExcept(' ', '(', '\n') ~ not(discard(copyright | trademark | registered)) ~ '(' ~ chrsExcept(')', '\n') ~ ')' ^^ flatten2(Acronym)
     
     /**
     * is it an !image!
     */
-    def image : Parser[Textile] = {
-      for (
-        c1 <- chr('!');
-        fl <- opt(chr('<'));
-        fr <- opt(chr('>'));
-        img_url : List[char] <- rep1(not(chr('!')) &&& chr(validUrlChar));
-        alt : List[List[char]] <- opt(img_alt);
-        ce <- chr('!');
-        link <- opt(img_link)
-      ) yield Image(img_url.mkString(""), if (alt.length > 0) alt.head.mkString("") else "",
-		    if (link.length > 0) link.head.href else null, 
-		    if (fl.length > 0) List(AnyAttribute("style", "float:left"))
-		    else if (fr.length > 0) List(AnyAttribute("style", "float:right"))
-		    else Nil)
-    }
-    
-    private def img_alt  = {
-      for (
-        c1 <- str("(");
-        ret <- rep1(not(str(")")) &&& chr(not_eol _));
-        c2 <- str(")")
-      ) yield ret
-    }
-    
-    private def img_link : Parser[Anchor] = 
-      for (
-        c <- chr(':');
-        anchor : Textile <- url;
-        if anchor.isInstanceOf[Anchor]
-      ) yield anchor.asInstanceOf[Anchor]
+    def image : Parser[Textile] = '!' ~  opt('<') ~ opt('>') ~ (rep1(not('!') ~ elem("", validUrlChar)) ^^ mkString) ~ 
+       opt('(' ~ chrsExcept(')', '\n') ~ ')') ~ '!' ~
+       opt(':' ~ url ^? {case a: Anchor => a}) ^^ { case fl ~ fr ~ img_url ~ alt ~ link => 
+               Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null, 
+                    if (fl) List(AnyAttribute("style", "float:left"))
+                    else if (fr) List(AnyAttribute("style", "float:right"))
+                    else Nil)} 
 
     
     /**
     * [footnote]
     */
-    def footnote_def : Parser[Textile] = {
-      for (
-        c1 <- chr('[');
-        nr : List[char] <- rep1(chr(isDigit));
-        c2 <- chr(']')
-      ) yield FootnoteDef((nr).mkString(""))
-    }
-    
-    def isUpper : (char) => boolean = Character.isUpperCase
-    def isLower : (char) => boolean = Character.isLowerCase
-    def isLowerOrNumber : (char) => boolean = _isLowerOrNumber
-    def _isLowerOrNumber(c : char) = Character.isLowerCase(c) || Character.isDigit(c)
-    
+    def footnote_def : Parser[Textile] = '[' ~ num ~ ']' ^^ FootnoteDef 
     
     /**
     * various things that make up an anchor (a tag)
     */
-    def anchor = url ||| quote_url ||| quote_ref ||| a_ref ||| escCamelUrl ||| camelUrl
-    
+    def anchor = url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
+
+
+    def upper: Parser[Char] = elem("Uppercase character", Character.isUpperCase)
+    def lower: Parser[Char] = elem("Lowercase character", Character.isLowerCase)
+    def lowerOrNumber: Parser[Char] = elem("Lowercase character or digit", c => Character.isLowerCase(c) || Character.isDigit(c))
+
     /**
     * Don't use the CamelCase thing for a wikiword if it's prefixed by
     * a backslash
     */
-    def escCamelUrl : Parser[Textile] = {
-      for (
-        esc : char <- chr('\\');
-        fc1 : char <- chr(isUpper);
-        fc2 : char <- chr(isLower);
-        fcr : List[char] <- rep(chr(isLowerOrNumber));
-        
-        sc1 : char <- chr(isUpper);
-        sc2 : char <- chr(isLower);
-        scr : List[char] <- rep(chr(isLowerOrNumber));
-        
-        sc3 : List[List[char]] <- rep(chr(isUpper) &&& chr(isLower) &&& rep(chr(isLowerOrNumber)))
-      ) yield CharBlock(((esc :: fc1 :: fc2 :: fcr) ::: (sc1 :: sc2 :: scr) ::: 
-			 (sc3.flatMap{a => a})).mkString(""))
-    }
+    def escCamelUrl : Parser[CharBlock] = (('\\' ^^ '\\') ~ upper ~ lower ~ rep(lowerOrNumber) ~ 
+        upper ~ lower ~ rep(lowerOrNumber) ~
+        rep(upper ~ lower ~ rep(lowerOrNumber) ^^ {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^ 
+          {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8 => CharBlock(mkString(List(c1, c2, c3)) + mkString(s4) + mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
+    
+      // combine chars to string
+      /*
+      // the ~~ combinator together with these conversions would work nicely, were it not for the covariance of Parser's first type param :-(
+      implicit def c2s(c: Char): String = c + ""
+      implicit def cs2s(cs: List[Char]): String = cs.mkString("")
+      implicit def ss2s(ss: List[String]): String = ss.mkString("")
+      implicit def combine[C <% String, D <% String](c: C, d: D): String = c + d*/
+      
+   
     
     /**
     * is the work camelized?
     */
-    def camelizedWord : Parser[CharBlock] = {
-      for (
-        fc1 : char <- chr(isUpper);
-        fc2 <- chr(isLower);
-        fcr <- rep(chr(isLowerOrNumber))
-      ) yield CharBlock((fc1 :: fc2 :: fcr).mkString(""))
-      
-    }
+    def camelizedWord : Parser[CharBlock] = upper ~ lower ~ rep(lowerOrNumber) ^^ { case u ~ l ~ cs => CharBlock(mkString(u :: (l :: cs))) }
     
     /**
     * a WikiWord
     */
-    def camelUrl : Parser[Textile] = {
-      for (
-        fc1 <- camelizedWord;
-        sc1 <- camelizedWord;
-        sc3 : List[CharBlock] <- rep(camelizedWord)
-      ) yield WikiAnchor(Nil, ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString("") ,
-			 ((fc1 :: sc1 :: sc3).map{a => a.s}).mkString(""), Nil)
-      
-    }
+    def camelUrl : Parser[Textile] = camelizedWord ~ rep1(camelizedWord) ^^ { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(Nil, ss, ss, Nil)}
+    
+    def urlStr = (rep1(elem("", validUrlChar))^^ mkString)
     
     /**
     * "reference":reference
     */
-    def quote_ref : Parser[Textile] = {
-      for (
-        qt : char <- chr('"');
-        fs : List[char] <- rep1(not(chr('"')) &&& chr(not_eol _));
-        eq <- str("\":");          
-        rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield RefAnchor(Nil, (rc).mkString(""),
-			(fs).mkString(""), Nil)      
-    }
+    def quote_ref : Parser[Textile] = '"' ~ chrsExcept('"', '\n') ~ '"' ~ ':' ~ urlStr ^^
+      {case fs ~ rc => RefAnchor(Nil, rc, fs, Nil)}
+    
+    
+    def httpStr = accept("http") ~ opt('s') ~ accept("://") ~ urlStr ^^ { case secure ~ rc => (if(secure) "https://" else "http://") + rc }
     
     /**
     * "google":http://google.com
     */
-    def quote_url : Parser[Textile] = {
-      for (
-        qt : char <- chr('"');
-        fs : List[char] <- rep1(not(chr('"')) &&& chr(not_eol _));
-        eq <- str("\":");          
-        http : char <- str("http");
-        s : List[char] <- opt(chr('s'));
-        css : char <- str("://");
-        rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield Anchor(Nil, "http" + s.mkString("") + "://"+ (rc).mkString("","",""),
-		     (fs).mkString(""), Nil)      
-    }
+    def quote_url : Parser[Textile] = '"' ~ chrsExcept('"', '\n') ~ '"' ~ ':' ~ httpStr ^^
+      { case fs ~ url => Anchor(Nil, url, fs, Nil) }
     
     /**
     * [reference]:http://reference.com
     */
 
-    def a_ref : Parser[Textile] = {
-      for (
-        c1 : char <- chr('[');
-        fr : List[char] <- rep1(chr(validUrlChar));
-        c2 : char <- chr(']');
-        url <- url
-      ) yield ARef((fr).mkString(""), url.asInstanceOf[Anchor].href)
-    }
+    def a_ref : Parser[Textile] = '[' ~ urlStr ~ ']' ~ url ^^ {case  fr ~ (url: Anchor) => ARef(fr, url.href) }
 
     /**
     * http://google.com
     */
-    def url : Parser[Textile] = {
-      for (
-        http : char <- str("http");
-        s : List[char] <- opt(chr('s'));
-        css : char <- str("://");
-        rc : List[char] <- rep1(chr(validUrlChar))
-      ) yield Anchor(Nil, "http" + s.mkString("") + "://"+ (rc).mkString("","",""),
-		     "http" + s.mkString("") + "://"+ (rc).mkString("","",""), Nil)
-    }
+    def url : Parser[Textile] = httpStr ^^ { u => Anchor(Nil, u, u, Nil) }
     
     /**
     * a valid character in a URL
     */
-    def _validUrlChar(c : char) : boolean = {
+    def validUrlChar(c : char) : boolean = {
       Character.isLetterOrDigit(c) || c == '/' || c == '%' || c == '&' || c == '?' || c == '#' || 
       c == '$' || c == '.' ||
       c == '-' || c == ':' || c == '_'
     }
     
-    def validUrlChar : (char) => boolean = _validUrlChar
     
     /**
     * an EOL character
     */
-    def endOfLine : Parser[Textile] = 
-      for (
-        s1 <- chr('\n')
-      ) yield EOL
+    def endOfLine : Parser[Textile] = '\n' ^^ EOL
+    
+    // replaced by checking the position of the current input (not that beginl does not consume any input, 
+    // so repeatedly calling beginningOfLine is not a good idea -- that will either loop forever or fail immediately)
+    //def beginningOfLine : Parser[Textile] = beginl ^^ BOL
+    
     
     /**
     * if we're in a &lt;pre&gt; block, an end of line is just an end of line.  We 
     * pass the '\n' on though.
     */
-    def preEndOfLine : Parser[Textile] = 
-      for (
-        s1 <- chr('\n')
-      ) yield CharBlock("\n")
+    def preEndOfLine : Parser[Textile] = '\n' ^^ CharBlock("\n")
     
     
     /**
     * a &lt;pre&gt; block.  Just send text of through, unmolested.
     */
-    def preBlock : Parser[Textile] = {
-      for (
-        c1  <- chr('\0');
-        c2 <- rep(chr(' '));
-        s1 <- str("<pre");
-        c3 <- rep(chr(' '));
-	c4 <- chr('>');
-        elms <- rep(not(str("</pre")) &&& (preEndOfLine ||| beginingOfLine ||| charBlock ));
-        c5 <- str("</pre");
-        c6 <- rep(chr(' '));
-        c7 <- chr('>');
-        c8 <- rep(chr(' '));
-        c9 <- chr('\n')
-      ) yield Pre(reduceCharBlocks(elms), Nil)
-    }      
-    
-    /**
-    * Begining of a line
-    */
-    def beginingOfLine : Parser[Textile] = 
-      for (
-        s1 <- chr('\0')
-      ) yield BOL
+    def preBlock : Parser[Textile] = beginlS ~ accept("<pre") ~ rep(' ') ~ '>' ~
+      rep(not(accept("</pre")) ~ (preEndOfLine | charBlock )) ~ accept("</pre") ~ rep(' ') ~ '>' ~ rep(' ') ~ '\n' ^^ { 
+        case elms => Pre(reduceCharBlocks(elms), Nil) }
     
     /**
     * (c)
     */
-    def copyright : Parser[Textile] = 
-      for (
-        s1 <- chr('(');
-        s2 <- (chr('c') ||| chr('C'));
-        s3 <- chr(')')
-      ) yield Copyright
+    def copyright : Parser[Textile] = '(' ~ (accept('c') | 'C') ~ ')' ^^ Copyright  // accept necesary because of clash with | on char's
     
     
-    def _validTagChar(c : char) = {
-      Character.isDigit(c) || Character.isLetter(c) || c == '_'
-    }
-    
-    def validTagChar : (char) => boolean = _validTagChar
-    
-    def _validStyleChar(c : char) = {
-      Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
-    }
+    def validTagChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
+    def validStyleChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
+    def validClassChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.'
 
-    def validStyleChar : (char) => boolean = _validStyleChar
-
-    def _validClassChar(c : char) = {
-      Character.isDigit(c) || Character.isLetter(c) || c == '.'
-    }
-
-    def validClassChar : (char) => boolean = _validClassChar
-
-    def validTag : List[Parser[char]] = {
-      chr(validTagChar) :: validTag
-    }
+    def validTag = rep1(elem("valid tag character", validTagChar)) ^^ mkString ^? {case s if isValidTag(s) => s}
     
     /**
     * An HTML block is made up of single HTML tag (e.g., &lt;br /&gt;) and 
     * tags that contain other stuff
     */
-    def html = single_html ||| multi_html
+    def html = single_html | multi_html
+    
+    def closingTag(tag: String) = accept("</") ~ accept(tag) ~ rep(' ') ~ '>'
     
     /**
     * an HTML tag that contains other stuff
     */
-    def multi_html : Parser[Textile] = 
-      for (
-        c1 <- str("<") ;
-        tag : List[char] <- rep1(chr(validTagChar));
-
-        attrs : List[Attribute] <- rep(tag_attr);
-        c2 : char <- chr('>');
-        body <- rep(not((str("</") &&& str(tag) &&& rep(chr(' ')) &&& chr('>'))) &&& (lineElem ||| paragraph));
-        e1 <- str("</");
-        et <- str(tag);
-        sp2 <- rep(chr(' '));
-        e2 <- chr('>');
-        if isValidTag((tag).mkString("")) // && showBody("body ", body) && showBody("body2 ",body2)
-      ) yield HTML((tag).mkString(""), reduceCharBlocks(body), attrs)
-    
+    def multi_html : Parser[Textile] = '<' ~ validTag >> { tag => success(tag) ~ 
+      rep(tag_attr) ~ '>' ~ 
+       rep(not(closingTag(tag)) ~ (lineElem | paragraph)) ~ 
+      closingTag(tag) } ^^ {case tag ~ attrs ~ body => HTML(tag, reduceCharBlocks(body), attrs)}
+      
     /**
     * A stand-alone tag
     */
-    def single_html : Parser[Textile] = 
-      for (
-        c1 <- str("<") ;
-        tag : List[char] <- rep1(chr(validTagChar));
-        attrs : List[Attribute] <- rep(tag_attr);
-        c2 : char <- str("/>");
-        if isValidTag((tag).mkString(""))
-      ) yield HTML((tag).mkString(""), Nil, attrs)
+    def single_html : Parser[Textile] = '<' ~ validTag ~ rep(tag_attr) ~ accept("/>") ^^ { case tag ~ attrs => HTML(tag, Nil, attrs) }
 
-    def tag_attr = single_quote_attr ||| double_quote_attr
+    def tag_attr = single_quote_attr | double_quote_attr
     
     def attr_name(c : char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
 
     def attr_value(c : char) = {c >= ' '}
 
-
+    
     /**
     * an attribute with single quotes
     */
-    def single_quote_attr : Parser[Attribute] = {
-      for (
-        sp <- rep(chr(' '));
-        name : List[char] <- rep1(chr(attr_name _));
-        eq <- str("='");
-        value : List[char] <- rep(not(chr('\'')) &&& chr(attr_value _));
-        end <- chr('\'')
-      ) yield AnyAttribute((name).mkString(""), value.mkString(""))
-    }
+    def single_quote_attr : Parser[Attribute] =  rep(' ') ~ str1("attribute name", attr_name) ~ '=' ~ 
+      enclosed('\'', "attribute value", attr_value _) ^^ flatten2(AnyAttribute)
     
     /**
     * an attribute with double quotes
     */
-    def double_quote_attr : Parser[Attribute] = {
-      for (
-        sp <- rep(chr(' '));
-        name : List[char] <- rep1(chr(attr_name _));
-        eq <- str("=\"");
-        value : List[char] <- rep(not(chr('"')) &&& chr(attr_value _));
-        end <- chr('"')
-      ) yield AnyAttribute((name).mkString(""), value.mkString(""))
-    }
+    def double_quote_attr : Parser[Attribute] = rep(' ') ~ str1("attribute name", attr_name) ~ '=' ~ 
+      enclosed('"', "attribute value", attr_value(_)) ^^ flatten2(AnyAttribute)
     
     /**
     * is it a valid HTML tag?  This list should be expanded
@@ -474,472 +313,158 @@ object TextileParser {
     /**
     * A "dimension" pretty printer
     */
-    def dimension : Parser[Textile] = 
-      for (
-        s1 <- str(" x ")
-      ) yield Dimension
+    def dimension : Parser[Textile] = accept(" x ") ^^ Dimension
 
-    def registered : Parser[Textile] = 
-      for (
-        s1 <- chr('(');
-        s2 <- (chr('r') ||| chr('R'));
-        s3 <- chr(')')
-      ) yield Register
+    def registered : Parser[Textile] = '(' ~ (accept('r') | 'R') ~ ')' ^^ Register
 
-    def trademark : Parser[Textile] = 
-      for (
-        s1 <- str("(");
-        s2 <- (chr('t') ||| chr('T'));
-        s2a <- (chr('m') ||| chr('M'));
-        s3 <- str(")")
-      ) yield Trademark
+    def trademark : Parser[Textile] = '(' ~ (accept('t') | 'T') ~ (accept('m') | 'M') ~ ')' ^^ Trademark
     
-    def elipsis : Parser[Textile] = 
-      for (
-        s1 <- str("...")
-      ) yield Elipsis
+    def elipsis : Parser[Textile] = accept("...") ^^ Elipsis
 
-    def emDash : Parser[Textile] = 
-      for (
-        s1 <- str(" -- ")
-      ) yield EmDash
+    def emDash : Parser[Textile] = accept(" -- ") ^^ EmDash
 
-    def enDash : Parser[Textile] = 
-      for (
-        s1 <- str(" - ")
-      ) yield EnDash
+    def enDash : Parser[Textile] = accept(" - ") ^^ EnDash
 
-    def single_quote : Parser[Textile] = 
-      for (
-        s1 <- str("'")
-      ) yield SingleQuote
+    def single_quote : Parser[Textile] = '\'' ^^ SingleQuote
 
-    def bold : Parser[Textile] = 
-      for (
-        s1 <- str("**");
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(str("**")) &&& lineElem_notStrong); 
-        s2 <- str("**")
-      ) yield Bold(reduceCharBlocks(ln), attrs)
     
     def bullet(depth : int, numbered : boolean) : Parser[Textile] = {
-      for (
-        fbl <- bullet_line(depth, numbered);
-        sbl <- bullet(depth + 1, numbered) ||| bullet_line(depth, numbered);
-        abl <- rep(bullet(depth + 1, numbered) ||| bullet_line(depth, numbered))
-      ) yield Bullet(fbl :: sbl :: abl, numbered)
+      val oneBullet: UnitParser = if (numbered) '#' else '*'
+        
+      def bullet_line(depth : int, numbered : boolean) : Parser[Textile] =  beginlS ~ repN(depth+1, oneBullet) ~ rep(not('\n') ~ lineElem) ~ '\n' ^^ {
+        case elms => BulletLine(reduceCharBlocks(elms), Nil) }
+    
+      bullet_line(depth, numbered) ~
+        (rep1(bullet(depth + 1, numbered) | bullet_line(depth, numbered))) ^^ {case fbl ~ abl => Bullet(fbl :: abl, numbered)}
     }
     
-    def begin_bullet(depth : int, numbered: boolean) : Parser[char] = {
-      if (depth == 0) (rep(chr(' ')) &&& chr(if (numbered) '#' else '*'))
-					     else (rep(chr(' ')) &&& chr(if (numbered) '#' else '*')) &&& begin_bullet(depth - 1, numbered)
-    }
+    def formattedLineElem[Q <% UnitParser](m: Q): Parser[List[Textile] ~ List[Attribute]] = formattedLineElem(m, rep(attribute))
+    def formattedLineElem[Q <% UnitParser](m: Q, p: Parser[List[Attribute]]): Parser[List[Textile] ~ List[Attribute]] = m ~ p ~  rep1(not(m) ~ lineElem) ~ m ^^ { 
+      case attrs ~ ln => mkTilde(reduceCharBlocks(ln), attrs) }
 
-    def bullet_line(depth : int, numbered : boolean) : Parser[Textile] = {
-      for (
-        bol <- chr('\0');
-        sp <- begin_bullet(depth, numbered);
-        elms : List[Textile] <- rep(not(chr('\n')) &&& lineElem);
-        eol <- chr('\n')
-      ) yield BulletLine(reduceCharBlocks(elms), Nil)
-    }
+    // TODO: generalize formattedLineElem some more
+    def bold : Parser[Textile] = accept("**") ~ rep(attribute) ~ rep1(not(accept("**")) ~ lineElem_notStrong) ~ accept("**") ^^ { 
+      case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
     
+    def strong : Parser[Textile] = formattedLineElem('*') ^^ flatten2(Strong)
     
-    def strong : Parser[Textile] = {
-      for (
-        s1 <- chr('*');
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(chr('*')) &&& lineElem); 
-        s4 <- chr('*')
-      ) yield Strong(reduceCharBlocks(ln), attrs)
-    }
+    def cite : Parser[Textile] = formattedLineElem(accept("??")) ^^ flatten2(Cite)
     
-    def cite : Parser[Textile] = {
-      for (
-        s1 <- str("??");
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(str("??")) &&& lineElem); 
-        s4 <- str("??")
-      ) yield Cite(reduceCharBlocks(ln), attrs)
-    }
+    def code : Parser[Textile] = formattedLineElem('@') ^^ flatten2(Code)
     
-    def code : Parser[Textile] = {
-      for (
-        s1 <- chr('@');
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(chr('@')) &&& lineElem); 
-        s4 <- chr('@')
-      ) yield Code(reduceCharBlocks(ln), attrs)
-    }
+    def styleElem : Parser[StyleElem] = str1("style", validStyleChar) ~ ':' ~ str1("style", validStyleChar) ^^ flatten2(StyleElem)
     
-    def styleElem : Parser[StyleElem] = {
-      for (
-        ncl : List[char] <- rep1(chr(validStyleChar));
-        c <- chr(':');
-        vcl : List[char] <- rep1(chr(validStyleChar))
-      )
-      yield StyleElem((ncl).mkString(""), (vcl).mkString(""))
-    }
+    def attribute = style | class_id | the_class | the_id | the_lang 
     
-    def attribute = style ||| class_id ||| the_class ||| the_id ||| the_lang 
+    def para_attribute = attribute | fill_align | left_align | right_align |
+    center_align | top_align | bottom_align | em_left | em_right;
     
-    def para_attribute = attribute ||| fill_align ||| left_align ||| right_align |||
-    center_align ||| top_align ||| bottom_align ||| em_left ||| em_right;
+    def left_align : Parser[Attribute] = elem('<') ^^ Align
     
-    def left_align : Parser[Attribute] = for (ac : char <- chr('<')) yield Align(ac)
+    def right_align : Parser[Attribute] = elem('>') ^^ Align
     
-    def right_align : Parser[Attribute] = for (ac : char <- chr('>')) yield Align(ac)
+    def center_align : Parser[Attribute] = elem('=') ^^ Align
     
-    def center_align : Parser[Attribute] = for (ac : char <- chr('=')) yield Align(ac)
+    def top_align : Parser[Attribute] = elem('^') ^^ Align
     
-    def top_align : Parser[Attribute] = for (ac : char <- chr('^')) yield Align(ac)
+    def bottom_align : Parser[Attribute] = elem('~') ^^ Align
     
-    def bottom_align : Parser[Attribute] = for (ac : char <- chr('~')) yield Align(ac)
+    def fill_align : Parser[Attribute] = accept("<>") ^^ Align('f')
     
-    def fill_align : Parser[Attribute] = for (ac <- str("<>")) yield Align('f')
-    
-    def em_left : Parser[Attribute] = {
-      for (ac : char <- chr('(');
-           acl : List[char] <- rep(chr('('))
-	 ) yield Em(1 + acl.length)
-    }
+    def em_left : Parser[Attribute] = rep1(elem('(')) ^^ {xs => Em(xs.length)}
 
-    def em_right : Parser[Attribute] = {
-      for (ac : char <- chr(')');
-           acl : List[char] <- rep(chr(')'))
-         ) yield Em((1 + acl.length) * -1)
-    }
+    def em_right : Parser[Attribute] = rep1(elem(')')) ^^ {xs => Em(-xs.length)}
     
-    def class_id : Parser[Attribute] = {
-      for (
-        cc <- chr('(');
-        rc : List[char] <- rep1(chr(validClassChar));
-        ps <- chr('#');
-        ri : List[char] <- rep1(chr(validClassChar));
-        c2 <- chr(')')
-      ) yield ClassAndId((rc).mkString(""), (ri).mkString(""))
-    }
+    def class_id : Parser[Attribute] = '(' ~ str1("class", validClassChar) ~ '#' ~ str1("class", validClassChar) ~ ')' ^^ flatten2(ClassAndId)
 
-    def the_id : Parser[Attribute] = {
-      for (
-        cc <- chr('(');
-        ps <- chr('#');
-        ri : List[char] <- rep1(chr(validClassChar));
-        cc2 <- chr(')')
-      ) yield ClassAndId(null, (ri).mkString(""))
-    }
+    def the_id : Parser[Attribute] = '(' ~ '#' ~ str1("class", validClassChar) ~ ')' ^^ {ri => ClassAndId(null, ri)}
 
-    def the_lang : Parser[Attribute] = {
-      for (
-        ps <- chr('[');
-        ri : List[char] <- rep1(chr(validClassChar));
-        ps2 <- chr(']')
-      ) yield Lang( (ri).mkString(""))
-    }
+    def the_lang : Parser[Attribute] = '[' ~ str1("class", validClassChar) ~ ']' ^^ Lang
 
-    def the_class : Parser[Attribute] = {
-      for (
-        cc <- chr('(');
-        rc : List[char] <- rep1(chr(validClassChar));
-        cc2 <- chr(')')
-      ) yield ClassAndId((rc).mkString(""),null)
-    }
+    def the_class : Parser[Attribute] = '(' ~ str1("class", validClassChar) ~ ')' ^^ {rc => ClassAndId(rc, null)}
     
     
+    def style : Parser[Attribute] = '{' ~ repsep(styleElem, ';') ~ '}' ^^ Style
     
-    def style : Parser[Attribute] = {
-      for (
-        cb1 <- str("{");
-        se : StyleElem <- styleElem;
-        sel : List[StyleElem] <- rep(chr(';') &&& styleElem);
-        cb2 <- str("}")
-      ) yield Style(se :: sel)
-    }
+    def span : Parser[Textile] = formattedLineElem('%', opt(style) ^^ {s => s.toList}) ^^ flatten2(Span)
     
-    def span : Parser[Textile] = {
-      for (
-        s1 <- chr('%');
-        style : List[Attribute] <- opt(style); 
-        ln <-  rep1(not(chr('%')) &&& lineElem); 
-        s4 <- chr('%')
-      ) yield Span(reduceCharBlocks(ln), style)
-    }
+    def delete : Parser[Textile] = formattedLineElem('-') ^^ flatten2(Delete)
+
     
-    def delete : Parser[Textile] = {
-      for (
-        s1 <- str("-");
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(str("-")) &&& lineElem); 
-        s4 <- str("-")
-      ) yield Delete(reduceCharBlocks(ln), attrs)
-    }
+    def insert : Parser[Textile] = formattedLineElem('+') ^^ flatten2(Ins) 
     
-    def insert : Parser[Textile] = {
-      for (
-        s1 <- str("+");
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(str("+")) &&& lineElem); 
-        s4 <- str("+")
-      ) yield Ins(reduceCharBlocks(ln), attrs)
-    }
+    def sup : Parser[Textile] = formattedLineElem('^') ^^ flatten2(Super) 
     
-    def sup : Parser[Textile] = {
-      for (
-        s1 <- chr('^');
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(chr('^')) &&& lineElem); 
-        s4 <- chr('^')
-      ) yield Super(reduceCharBlocks(ln), attrs)
-    }
+    def sub : Parser[Textile] =  formattedLineElem('~') ^^ flatten2(Sub) 
+
+    def italic : Parser[Textile] = formattedLineElem(accept("__")) ^^ flatten2(Italic) 
     
-    def sub : Parser[Textile] =
-      for (
-        s1 <- chr('~');
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(chr('~')) &&& lineElem); 
-        s4 <- chr('~')
-      ) yield Sub(reduceCharBlocks(ln), attrs)
+    def emph : Parser[Textile] = formattedLineElem('_') ^^ flatten2(Emph)
     
-    def italic : Parser[Textile] = 
-      for (
-        s1 <- str("__");
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(str("__")) &&& lineElem_notStrong); 
-        s2 <- str("__")
-      ) yield Italic(reduceCharBlocks(ln), attrs)
-    
-    def emph : Parser[Textile] = {
-      for (
-        s1 <- chr('_');
-        attrs : List[Attribute] <- rep(attribute);
-        ln <-  rep1(not(chr('_')) &&& lineElem); 
-        s4 <- chr('_')
-      ) yield Emph(reduceCharBlocks(ln), attrs)
-    }
-    
-    def quote : Parser[Textile] =
-      for (
-        s1 <- chr('"');
-        ln <-  rep1(not(chr('"')) &&& lineElem); 
-        s4 <- chr('"')
-      ) yield Quoted(reduceCharBlocks(ln))
+    def quote : Parser[Textile] = formattedLineElem('"', success(Nil)) ^^ flatten2((x, y) => Quoted(x))
     
     def reduceCharBlocks(in : List[Textile]) : List[Textile] = 
       (in: @unchecked) match {
-        case Nil => {Nil}
-        case EOL() :: BOL() :: rest => {EOL :: reduceCharBlocks(rest)}
-        case EOL() :: rest => {reduceCharBlocks(rest)}
-        case CharBlock(s1) :: CharBlock(s2) :: rest => {reduceCharBlocks(CharBlock(s1 + s2) :: rest)}
-        case x :: xs => {x :: reduceCharBlocks(xs)}
+        case Nil => Nil
+        // this is now done (hacked) in flattenAndDropLastEOL
+//        case EOL() :: BOL() :: rest => EOL :: reduceCharBlocks(rest)
+//        case EOL() :: rest => reduceCharBlocks(rest)
+        case CharBlock(s1) :: CharBlock(s2) :: rest => reduceCharBlocks(CharBlock(s1 + s2) :: rest)
+        case x :: xs => x :: reduceCharBlocks(xs)
       }
-
-    def not_eol(c : char) = c != '\n'
     
-    def charBlock : Parser[Textile] = 
-      for (
-        c : char <- chr(not_eol _)
-      ) yield CharBlock(c.toString)
+    def charBlock : Parser[Textile] = chrExcept('\n') ^^ {c => CharBlock(c.toString)}
 
     
     
-    def blankPara : Parser[Textile] =
-      for (
-        b1 <- blankLine;
-        bls <- rep(blankLine)
-      ) yield BlankLine
+    def blankPara : Parser[Textile] = discard(rep1(blankLine)) ^^ BlankLine
     
-    def not_blank_line : Parser[Textile] = not(blankLine) &&& lineElem
+    def not_blank_line : Parser[Textile] = not(discard(blankLine)) ~ lineElem
     
-    def head_line : Parser[Textile] =
-      for (sc : char <- chr('\0') ;
-	   h : char <- chr('h') ;
-	   n : char <- (chr('1') ||| chr('2') ||| chr('3')) ;
-	   attrs : List[Attribute] <- rep(para_attribute);
-	   dot <- str(". ") ;
-           ln <- rep1(not_blank_line);
-           bl <- blankLine
-	 ) yield Header(n - '0', reduceCharBlocks(ln), attrs)
+    def head_line : Parser[Textile] = beginl ~ 'h' ~ elem("1, 2 or 3", {c => c == '1' | c == '2' | c == '3'}) ~ rep(para_attribute) ~ accept(". ") ~ rep1(not_blank_line) ~ blankLine ^^ {
+      case n ~ attrs ~ ln ~ _ => Header(n - '0', reduceCharBlocks(ln), attrs) }
     
-    def blockquote : Parser[Textile] =
-      for (sc   <- str("\0bq");
-           attrs : List[Attribute] <- rep(para_attribute);
-           sc2 <- str(". ");
-           ln <- rep1(not_blank_line);
-           bl <- blankLine
-	 ) yield BlockQuote(reduceCharBlocks(ln), attrs)
+    def blockquote : Parser[Textile] = beginl ~ accept("bq") ~ rep(para_attribute) ~ accept(". ") ~ rep1(not_blank_line) ~ blankLine ^^ {
+      case attrs ~ ln ~ _ => BlockQuote(reduceCharBlocks(ln), attrs)}
 
     
-    def footnote : Parser[Textile] = {
-      for (sc   <- str("\0fn");
-           dr <- rep1(chr(isDigit));
-           attrs : List[Attribute] <- rep(para_attribute);
-           sc2 <- str(". ");
-           ln <- rep1(not_blank_line);
-           bl <- blankLine
-	 ) yield Footnote(reduceCharBlocks(ln), attrs, (dr).mkString(""))
-    }
+    def footnote : Parser[Textile] = beginl ~ accept("fn") ~ num ~ rep(para_attribute) ~ accept(". ") ~ rep1(not_blank_line) ~ blankLine ^^ {
+      case dr ~ attrs ~ ln ~ _ => Footnote(reduceCharBlocks(ln), attrs, dr)}
     
-    def first_paraAttrs : Parser[TableDef] = {
-      for (
-        fc <- chr('\0');
-        sp1 <- rep(chr(' '));
-        table <- str("p");
-        style <- rep(para_attribute);
-        dot <- chr('.')
-      ) yield TableDef(style)
-    }
+    def first_paraAttrs : Parser[TableDef] = beginlS ~ 'p' ~ rep(para_attribute) ~ '.' ^^ TableDef
     
-    def normPara : Parser[Textile] =
-      for (
-        td : List[TableDef] <- opt(first_paraAttrs);
-        fp <- rep1(not_blank_line);
-        bl <- blankLine
-      ) yield Paragraph(reduceCharBlocks(fp), if (td == Nil) Nil else td.head.attrs)
+    def normPara : Parser[Textile] = opt(first_paraAttrs) ~ rep1(not_blank_line) ~ blankLine ^^ {
+      case td ~ fp ~ _ => Paragraph(reduceCharBlocks(fp), td.map(_.attrs) getOrElse(Nil))}
     
-    def table_attribute = para_attribute ||| row_span ||| col_span
+    def table_attribute = para_attribute | row_span | col_span
     
-    def isDigit : (char) => boolean = Character.isDigit
     
-    def row_span : Parser[Attribute] = {
-      for (
-        c <- chr('/');
-        dr : List[char] <- rep1(chr(isDigit))
-      ) yield AnyAttribute("rowspan", (dr).mkString(""))
-    }
+    
+    def row_span : Parser[Attribute] = '/' ~ num ^^ {s => AnyAttribute("rowspan", s )}
+    
+    def col_span : Parser[Attribute] = '\\' ~ num ^^ {s => AnyAttribute("colspan", s )}
+    
+    def table : Parser[Textile] = opt(table_def) ~ opt(table_header) ~ rep1(table_row) ^^ {
+      case td ~ th ~ tr => Table(th.toList ::: tr, td.map(_.attrs) getOrElse Nil)  }
+    
+    def table_def : Parser[TableDef] = beginlS ~ accept("table") ~ rep(para_attribute) ~ '.' ~ rep(' ') ~ '\n' ^^ TableDef
+    
+    def row_def : Parser[TableDef] = rep1(table_attribute) ~ '.' ^^ TableDef
 
-    
-    def col_span : Parser[Attribute] = {
-      for (
-        c <- chr('\\');
-        dr : List[char] <- rep1(chr(isDigit))
-      ) yield AnyAttribute("colspan", (dr).mkString(""))
-    }
+    def table_row : Parser[Textile] = beginlS ~ opt(row_def) ~ rep(' ') ~ '|' ~ rep1(table_element(false)) ~ rep(' ') ~ '\n' ^^ {
+      case td ~ re => TableRow(re, td.map(_.attrs) getOrElse Nil)}
 
-    def table : Parser[Textile] = {
-      for (
-        td <- opt(table_def);
-        th <- opt(table_header);
-        tr1 <- table_row;
-        trr <- rep(table_row)
-      ) yield Table(th ::: tr1 :: trr, if (td == Nil) Nil else td.head.attrs)
-    }
+    def table_header : Parser[Textile] = beginlS ~ opt(row_def) ~ rep(' ') ~ accept("|_.") ~ rep1sep(table_element(true), accept("_.")) ~ rep(' ') ~ '\n' ^^ {
+      case td ~ re => TableRow(re, td.map(_.attrs) getOrElse Nil)}
     
-    def table_def : Parser[TableDef] = {
-      for (
-        fc <- chr('\0');
-        sp1 <- rep(chr(' '));
-        table <- str("table");
-        style <- rep(para_attribute);
-        dot <- chr('.');
-        sp <- rep(chr(' '));
-        ec <- chr('\n')
-      ) yield TableDef(style)
-    }
-    
-    def row_def : Parser[TableDef] =
-      for (
-        sr <- rep1(table_attribute);
-        dot <- chr('.')
-      ) yield TableDef(sr)
-
-    def table_row : Parser[Textile] =
-      for (
-        bol <- chr('\0');
-        sp <- rep(chr(' '));
-        td <- opt(row_def);
-        sp <- rep(chr(' '));
-        fb <- chr('|');
-        re <- rep1(table_element(false));
-        spe <- rep(chr(' '));
-        eol <- chr('\n')
-      ) yield TableRow(re, if (td == Nil) Nil else td.head.attrs)
-
-    def table_header : Parser[Textile] = 
-      for (
-        bol <- chr('\0');
-        sp <- rep(chr(' '));
-        td <- opt(row_def);
-        sp <- rep(chr(' '));
-        fb <- str("|_.");
-        
-        fe <- table_element(true);
-        re <- rep(str("_.") &&& table_element(true));
-        spe <- rep(chr(' '));
-        eol <- chr('\n')
-      ) yield TableRow(fe :: re, if (td == Nil) Nil else td.head.attrs)
-    
-    def table_element(isHeader : boolean) : Parser[Textile] =
-      for (
-        td <- opt(row_def);
-        el <- rep(not(chr('|') ||| chr('\n')) &&& lineElem);
-        pipe <- chr('|')
-      ) yield TableElement(reduceCharBlocks(el), isHeader, if (td == Nil) Nil else td.head.attrs)
-
+    def table_element(isHeader : boolean) : Parser[Textile] = opt(row_def) ~ rep(not(accept('|') | '\n') ~ lineElem) ~ '|' ^^ {
+      case td ~ el => TableElement(reduceCharBlocks(el), isHeader, td.map(_.attrs) getOrElse Nil)}
 
     def paragraph : Parser[Textile] = 
-      preBlock ||| footnote ||| table ||| bullet(0, false) ||| bullet(0, true) ||| blockquote ||| head_line ||| blankPara ||| normPara
-    
-    def parseAsTextile : Option[Pair[Lst, inputType]] = {
-      val ret : Parser[Lst] = for (pl <- rep(paragraph)) yield Lst(pl)
-      
-      def findRefs(in : List[Textile]) : List[Pair[String,String]] = {
-
-        in match {
-          case (s : ARef) :: rest => {Pair(s.name, s.href) :: findRefs(rest)}
-          case (s : ATextile) :: rest => {findRefs(s.theElems) ::: findRefs(rest)}
-          case x :: rest => {findRefs(rest)}
-          case _ => Nil
-        }
-      }
-
-      def fixRefs(in : List[Textile], refs : HashMap[String, String]) : unit = {
-        in match {
-          case (s : RefAnchor) :: rest => {refs.get(s.ref) match {case Some(tr) => {s.href = tr} case None => {s.href = "#"}}; fixRefs(rest, refs)}
-          case (s : ATextile) :: rest => {fixRefs(s.theElems, refs); fixRefs(rest, refs)}
-          case s :: rest => {fixRefs(rest, refs)}
-          case _ => {}
-        }
-        
-      }
-
-      val realRet = ret(this.input)
-      val it = ret(this.input).get._1
-      val tr = findRefs(List(it))
-
-      val refs = new HashMap[String,String];
-      tr.foreach{b => refs(b._1) = b._2}
-
-      fixRefs(List(it), refs)
-
-      // System.exit(0)
-      Some(Pair(it,realRet.get._2))
-    }
-  }
-  
-  def prepare(in : String) : String = {
-    def loop(x : List[Char]) : List[Char] = x match {
-      case '\n' :: rest => '\n' :: '\0' :: loop(rest)
-      case '\r' :: rest => loop(rest)
-      case '\0' :: rest => loop(rest)
-      case c :: rest => c :: loop(rest)
-      case Nil => Nil
-    }
-
-    List.toString('\0' :: loop(List.fromString(in +'\n'+'\n'))) +'\n'
+      preBlock | footnote | table | bullet(0, false) | bullet(0, true) | blockquote | head_line | blankPara | normPara
   }
   
 
-  
-  
-  def tryit = {
-    val prep = prepare(example)
-
-    val ps = new ParseString(prep) with TextileParsers
-    ps.parseAsTextile match {
-      case Some(p) => {p._1.performOnWikiAnchor{a => a.rootUrl = "/foo/"}; p._1.toHtml}
-      case _ => ""
-    }
-  }
 
   abstract class Textile {
     def toHtml : NodeSeq
@@ -959,10 +484,10 @@ object TextileParser {
       var ret : List[Pair[String,String]] = Nil
       var cnt = fieldCnt
       while (cnt > 0) {
-	cnt = cnt -1
-	val tn = name(cnt)
-	val tv = value(cnt)
-	if ((tn ne null) && (tv ne null)) ret = Pair(tn,tv) :: ret
+        cnt = cnt -1
+        val tn = name(cnt)
+        val tv = value(cnt)
+        if ((tn ne null) && (tv ne null)) ret = Pair(tn,tv) :: ret
       }
       ret
     }
@@ -977,14 +502,14 @@ object TextileParser {
     override def fieldCnt = 2
     def name(which : int) : String = {
       which match {
-	case 0 => if ((className ne null) && className.length > 0) "class" else null
-	case 1 => if ((idName ne null) && idName.length > 0) "id" else null
+        case 0 => if ((className ne null) && className.length > 0) "class" else null
+        case 1 => if ((idName ne null) && idName.length > 0) "id" else null
       }
     }
     def value(which : int) : String = {
       which match {
-	case 0 => if ((className ne null) && className.length > 0) className else null
-	case 1 => if ((idName ne null) && idName.length > 0) idName else null
+        case 0 => if ((className ne null) && className.length > 0) className else null
+        case 1 => if ((idName ne null) && idName.length > 0) idName else null
       }
     }
     
@@ -999,12 +524,12 @@ object TextileParser {
     def name(which : int) : String = "style"
     def value(which : int) : String = {
       align match {
-	case '<' => "text-align:left";
-	case '>' => "text-align:right";
-	case '=' => "text-align:center";
-	case '^' => "vertical-align:top";
-	case '~' => "vertical-align:bottom";
-	case 'f' | 'j' => "text-align:justify";
+        case '<' => "text-align:left";
+        case '>' => "text-align:right";
+        case '=' => "text-align:center";
+        case '^' => "vertical-align:top";
+        case '~' => "vertical-align:bottom";
+        case 'f' | 'j' => "text-align:justify";
         
       }
     }
@@ -1049,7 +574,7 @@ object TextileParser {
     }
     
     def toHtml :NodeSeq = {
-      theElems.flatMap{e => e.toHtml.toList}
+      flattenAndDropLastEOL(theElems)
     }
   }
   
@@ -1071,9 +596,13 @@ object TextileParser {
     }
   }
   
+  // drop the last EOL to prevent needless <br />
+  // TODO: find a better solution.. it's not quite clear to me where newlines are meaningful
+  private def flattenAndDropLastEOL(elems : List[Textile]) = (elems.last match { case EOL() => elems.init case _ => elems}).flatMap{e => e.toHtml.toList}
+
   case class Paragraph(elems : List[Textile], attrs: List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "p", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, "p", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
     
   }
@@ -1102,7 +631,7 @@ object TextileParser {
 
   case class Quoted(elems : List[Textile]) extends ATextile(elems, Nil) {
     override def toHtml : NodeSeq = {
-      (Unparsed("&#8220;") ++ elems.flatMap{e => e.toHtml.toList}) ++ Unparsed("&#8221;")
+      (Unparsed("&#8220;") ++ flattenAndDropLastEOL(elems)) ++ Unparsed("&#8221;")
     }
   }
 
@@ -1110,15 +639,15 @@ object TextileParser {
     def toHtml : NodeSeq = Unparsed(" &#8212; ")
   }
 
+/*  case class BOL extends Textile  {
+    def toHtml : NodeSeq = Text("")
+  }*/
+  
   case class EOL extends Textile  {
     // return the characters because Scala's XML library returns <br></br> in the
     // toString for the element and this causes 2 line breaks in some browsers
     // def toHtml :NodeSeq = Elem(null, "br", null, TopScope, Nil : _*) concat Text("\n")
     def toHtml :NodeSeq = Unparsed("<br />\n")
-  }
-
-  case class BOL extends Textile  {
-    def toHtml : NodeSeq = Text("")
   }
 
   case class EnDash extends Textile  {
@@ -1153,13 +682,13 @@ object TextileParser {
 
   case class BlockQuote(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      val par : NodeSeq = Elem(null, "p", null, TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      val par : NodeSeq = Elem(null, "p", null, TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
       Elem(null, "blockquote", fromStyle(attrs), TopScope, par : _*)  ++ Text("\n")
     }
   }
   case class HTML(tag : String, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, tag, fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+      Elem(null, tag, fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
     }}
   case class FootnoteDef(num : String) extends ATextile(null, Nil) {
     override def toHtml : NodeSeq = {
@@ -1173,18 +702,18 @@ object TextileParser {
   case class Footnote(elems : List[Textile], attrs : List[Attribute], num : String) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
       Elem(null, "p", fromStyle(AnyAttribute("id", "fn"+num) :: attrs), TopScope, 
-           (Elem(null, "sup", null, TopScope, Text(num) : _*) :: elems.flatMap{e => e.toHtml.toList}) : _*) ++ Text("\n")
+           (Elem(null, "sup", null, TopScope, Text(num) : _*) :: flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
   case class Emph(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "em", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+      Elem(null, "em", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
     }
   }
   case class Strong(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "strong", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+      Elem(null, "strong", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
     }
   }
 
@@ -1194,67 +723,67 @@ object TextileParser {
 
   case class Table(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "table", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, "table", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
   }
 
   case class TableRow(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "tr", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, "tr", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
   }
 
   case class TableElement(elems : List[Textile], isHeader : boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else elems.flatMap{e => e.toHtml.toList}) : _*) ++ Text("\n")
+      Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
   case class Bullet(elems : List[Textile], numbered : boolean) extends ATextile(elems, Nil) {
     override def toHtml : NodeSeq = {
-      Elem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
   }
 
   case class BulletLine(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "li", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+      Elem(null, "li", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
   }
 
   case class Italic(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "i", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+      Elem(null, "i", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
     }
   }
   case class Bold(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      Elem(null, "b", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+      Elem(null, "b", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
     }
   }
   case class Cite(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs){
-    override def toHtml : NodeSeq = Elem(null, "cite", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "cite", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Code(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "code", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "code", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Delete(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "del", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "del", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Ins(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "ins", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "ins", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Super(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "sup", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "sup", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Sub(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "sub", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "sub", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
   case class Pre(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "pre", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*) ++ Text("\n")
+    override def toHtml : NodeSeq = Elem(null, "pre", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
   }  
   case class Span(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = Elem(null, "span", fromStyle(attrs), TopScope, elems.flatMap{e => e.toHtml.toList} : _*)
+    override def toHtml : NodeSeq = Elem(null, "span", fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
   }  
 
 
@@ -1282,228 +811,236 @@ object TextileParser {
     override def toHtml : NodeSeq = Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)
   }
   
-  val example = """I am <em>very</em> serious
+  val example = 
+"""I am <em>very</em> serious
 
-  Observe -- very nice!
+Observe -- very nice!
 
-  Observe - tiny and brief.
+Observe - tiny and brief.
 
-  "Observe!"
+"Observe!"
+
+Hello Dude
+
+**Bold * Not Strong**
+
+
+my bold line **bold**
+
+**strong* Not Bold
+
+
+*strong*
+
+This is a single paragraph
+
+This is another paragraph
+
+I am <b>very</b> serious.
+
+This
+is a paragraph
+
+<pre>
+I am <b>very</b> serious.
+
+Oh, yes I am!!
+</pre>
+
+I spoke.
+And none replied.
+
+
+
+
+Observe...
+
+Observe: 2 x 2.
+
+one(TM), two(R), three(C).  
+
+h1. Header 1
+second line of header 1
+
+h2. Header 2
+
+h3. Header 3
+
+An old text
+
+bq. A block quotation.
+
+Any old text
+
+This is covered elsewhere[1].
+
+fn1. Down here, in fact.
+
+I _believe_ every word.
+
+And then? She *fell*!
+
+I __know__.
+I **really** __know__.
+
+??Cat's Cradle?? by Vonnegut  
+
+Convert with @r.to_html@
+
+I'm -sure- not sure.
+
+You are a +pleasant+ child.
+
+a ^2^ + b ^2^ = c ^2^
+
+log ~2~ x
+
+I'm %unaware% of most soft drinks.
+
+I'm %{color:red}unaware%
+of most soft drinks.
+
+http://hobix.com/textile/#attributes  
+
+I searched "Google":http://google.com.
+
+CamelCase
+
+\\CamelCase
+
+ThreeHumpCamel
+
+Four4FourHumpCamel
+
+
+I am crazy about "Hobix":hobix
+and "it's":hobix "all":hobix I ever
+"link to":hobix!
+
+[hobix]http://hobix.com
+
+# A first item
+# A second item
+# A third
+
+# Fuel could be:
+## Coal
+## Gasoline
+## Electricity
+# Humans need only:
+## Water
+## Protein
+
+* A first item
+* A second item
+* A third
+
+* Fuel could be:
+** Coal
+** Gasoline
+** Electricity
+* Humans need only:
+** Water
+** Protein
+
+| name | age | sex |
+| joan | 24 | f |
+| archie | 29 | m |
+| bella | 45 | f |
+
+|_. name |_. age |_. sex |
+| joan | 24 | f |
+| archie | 29 | m |
+| bella | 45 | f |
+
+|_. attribute list |
+|<. align left |
+|>. align right|
+|=. center |
+|<>. justify this block |
+|^. valign top |
+|~. bottom |
+
+|\2. spans two cols |
+| col 1 | col 2 |
+
+|/3. spans 3 rows | a |
+| b |
+| c |
+
+|{background:#ddd}. Grey cell|
+
+table{border:1px solid black}.
+|This|is|a|row|
+|This|is|a|row|
+
+|This|is|a|row|
+{background:#ddd}. |This|is|grey|row|
+
+p<. align left
+
+p>. align right
+
+p=. centered
+
+p<>. justified
+
+p(. left ident 1em
+
+p((. left ident 2em
+
+p))). right ident 3em
+
+h2()>. Bingo.
+
+h3()>[no]{color:red}. Bingo
+
+<pre>
+<code>
+a.gsub!( /</, '' )
+</code>
+</pre>
+
+
+<div style='float:right;'>
+float right
+</div>
+
+<div style='float:right;'>
+
+h3. Sidebar
+
+"Hobix":http://hobix.com/
+"Ruby":http://ruby-lang.org/
+
+</div>
+
+The main text of the
+page goes here and will 
+stay to the left of the 
+sidebar.
+
+!http://hobix.com/sample.jpg!
+
+!http://hobix.com/sa.jpg(Bunny.)!
+
+!http://hobix.com/sample.jpg!:http://hobix.com/
+
+!>http://hobix.com/sample.jpg!
+
+And others sat all round the small
+machine and paid it to sing to them.
+
+We use CSS(Cascading Style Sheets).
+
+
+"""
   
-  Hello Dude
-
-  **Bold * Not Strong**
-
   
-  my bold line **bold**
-
-  **strong* Not Bold
-
-
-  *strong*
-
-  This is a single paragraph
-  
-  This is another paragraph
-
-  I am <b>very</b> serious.
-
-  This
-  is a paragraph
-
-  <pre>
-  I am <b>very</b> serious.
-  
-  Oh, yes I am!!
-  </pre>
-  
-  I spoke.
-  And none replied.
-  
-
-
-
-  Observe...
-  
-  Observe: 2 x 2.
-
-  one(TM), two(R), three(C).  
-  
-  h1. Header 1
-  second line of header 1
-
-  h2. Header 2
-
-  h3. Header 3
-
-  An old text
-
-  bq. A block quotation.
-
-  Any old text
-
-  This is covered elsewhere[1].
-  
-  fn1. Down here, in fact.
-
-  I _believe_ every word.
-  
-  And then? She *fell*!
-  
-  I __know__.
-  I **really** __know__.
-
-  ??Cat's Cradle?? by Vonnegut  
-
-  Convert with @r.to_html@
-  
-  I'm -sure- not sure.
-  
-  You are a +pleasant+ child.
-  
-  a ^2^ + b ^2^ = c ^2^
-  
-  log ~2~ x
-
-  I'm %unaware% of most soft drinks.
-  
-  I'm %{color:red}unaware%
-  of most soft drinks.
-
-  http://hobix.com/textile/#attributes  
-
-  I searched "Google":http://google.com.
-
-  CamelCase
-
-  \\CamelCase
-
-  ThreeHumpCamel
-
-  Four4FourHumpCamel
-  
-
-  I am crazy about "Hobix":hobix
-  and "it's":hobix "all":hobix I ever
-  "link to":hobix!
-
-  [hobix]http://hobix.com
-
-  # A first item
-  # A second item
-  # A third
-
-  # Fuel could be:
-  ## Coal
-  ## Gasoline
-  ## Electricity
-  # Humans need only:
-  ## Water
-  ## Protein
-
-  * A first item
-  * A second item
-  * A third
-
-  * Fuel could be:
-  ** Coal
-  ** Gasoline
-  ** Electricity
-  * Humans need only:
-  ** Water
-  ** Protein
-
-  | name | age | sex |
-  | joan | 24 | f |
-  | archie | 29 | m |
-  | bella | 45 | f |
-
-  |_. name |_. age |_. sex |
-  | joan | 24 | f |
-  | archie | 29 | m |
-  | bella | 45 | f |
-
-  |_. attribute list |
-  |<. align left |
-  |>. align right|
-  |=. center |
-  |<>. justify this block |
-  |^. valign top |
-  |~. bottom |
-
-  |\2. spans two cols |
-  | col 1 | col 2 |
-
-  |/3. spans 3 rows | a |
-  | b |
-  | c |
-
-  |{background:#ddd}. Grey cell|
-  
-  table{border:1px solid black}.
-  |This|is|a|row|
-  |This|is|a|row|
-  
-  |This|is|a|row|
-  {background:#ddd}. |This|is|grey|row|
-
-  p<. align left
-
-  p>. align right
-
-  p=. centered
-
-  p<>. justified
-
-  p(. left ident 1em
-  
-  p((. left ident 2em
-  
-  p))). right ident 3em
-
-  h2()>. Bingo.
-  
-  h3()>[no]{color:red}. Bingo
-
-  <pre>
-  <code>
-  a.gsub!( /</, '' )
-  </code>
-  </pre>
-
-
-  <div style='float:right;'>
-  float right
-  </div>
-
-  <div style='float:right;'>
-
-  h3. Sidebar
-
-  "Hobix":http://hobix.com/
-  "Ruby":http://ruby-lang.org/
-
-  </div>
-
-  The main text of the
-  page goes here and will 
-  stay to the left of the 
-  sidebar.
-  
-  !http://hobix.com/sample.jpg!
-
-  !http://hobix.com/sa.jpg(Bunny.)!
-  
-  !http://hobix.com/sample.jpg!:http://hobix.com/
-
-  !>http://hobix.com/sample.jpg!
-
-  And others sat all round the small
-  machine and paid it to sing to them.
-  
-  We use CSS(Cascading Style Sheets).
-  
-
-  """
-  
+  def tryit = (for (res <- parse(example)) yield {
+    res.performOnWikiAnchor{a => a.rootUrl = "/foo/"}
+    res.toHtml
+  }) getOrElse ""
+    
+  println(tryit)
 }
