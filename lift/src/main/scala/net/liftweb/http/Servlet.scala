@@ -304,8 +304,22 @@ class Servlet extends HttpServlet {
           }
         }
       }
+    logIfDump(session, resp)
     
     sendResponse(resp, response, Full(session))
+  }
+  
+  val dumpRequestResponse = Props.getBool("dump.request.response")
+  
+  private def logIfDump(request: RequestState, response: Response) {
+    if (dumpRequestResponse) {
+      val toDump = request.uri+"\n"+
+        request.params + "\n"+
+        response.headers+"\n"+
+        new String(response.data)
+        
+      Log.info(toDump)
+    }
   }
   
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
