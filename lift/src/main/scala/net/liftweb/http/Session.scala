@@ -305,6 +305,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     }
   }
   
+  /*
   def fixResponse(resp: XhtmlResponse, request: RequestState): XhtmlResponse = {
     val newHeaders = fixHeaders(resp.headers, request)
     val (newXml, theType) = 
@@ -312,7 +313,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
       else (resp.out, Empty)
 	
       XhtmlResponse(resp.out, theType, newHeaders, resp.code)
-  }
+  }*/
   
   /**
    * Update any "Location" headers to add the Context path
@@ -392,12 +393,18 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     attrs.get("form").map(ft => <form action={S.request.uri} method={ft.text}>{ret}</form>) getOrElse ret
   }
   
+  /*
   def processXHTML(in: NodeSeq): NodeSeq = synchronized {
-    RequestState.fixHtml(contextPath, processSurroundAndInclude(in))
+    val intm = processSurroundAndInclude(in)
+    println("in "+in+" intm "+intm)
+    println("contextPath "+contextPath)
+    RequestState.fixHtml(contextPath, intm)
   }
-    
+    */
+      
+  def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
-  private def processSurroundAndInclude(in : NodeSeq) : NodeSeq = {
+  def processSurroundAndInclude(in : NodeSeq) : NodeSeq = {
     in.flatMap{
       v => 
 	v match {

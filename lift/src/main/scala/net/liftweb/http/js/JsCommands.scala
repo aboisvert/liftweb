@@ -98,7 +98,7 @@ object JsCmds {
   }
   
   case class ModalDialog(html: NodeSeq) extends JsCmd {
-    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(html), false).esc+");"
+    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map{s => s.fixHtml(s.processSurroundAndInclude(html))}.openOr(html)), false).esc+");"
   }
 
   case class Run(text: String) extends JsCmd {

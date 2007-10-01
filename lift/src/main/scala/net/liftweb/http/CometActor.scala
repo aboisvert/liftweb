@@ -172,7 +172,7 @@ abstract class CometActor(val theSession: Session, val name: Can[String], val de
 sealed abstract class CometMessage
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]) {
-  def toJavaScript(session: Session): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, /*session.processXHTML*/(xml))).openOr( JsCmds.Noop))
+  def toJavaScript(session: Session): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, session.processSurroundAndInclude(xml))).openOr( JsCmds.Noop))
   def asXhtml = xml openOr (javaScript.map(js =>
   <script>
   //  {Unparsed("""<![CDATA[
@@ -180,7 +180,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]
   // ]]>
   """)}</script>) openOr Text(""))
   
-  def toXhtml(session: Session) = xml.map(xml => session.processXHTML(xml)) openOr (javaScript.map(js =>
+  def toXhtml(session: Session) = xml.map(xml => session.processSurroundAndInclude(xml)) openOr (javaScript.map(js =>
   <script>
   //  {Unparsed("""<![CDATA[
                 """+js.toJsCmd+"""

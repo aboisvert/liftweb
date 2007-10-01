@@ -30,7 +30,7 @@ class Chat(theSession: Session, name: Can[String], defaultXml: NodeSeq, attribut
       reRender
     } 
   
-  def render = <span>Hello "{userName}"
+  def render = <span>Hello "{userName}" <a href="/chat">Try</a>
     <ul>{currentData.reverse.flatMap(cl => <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)}</ul>
     {ajaxForm(text("",msg => sendMessage(msg)) ++ submit("Send", ignore => true))}</span>
   

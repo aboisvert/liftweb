@@ -15,6 +15,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 
+
+
 /**
  * All the "current state" and logic necessary to deal with messages between users
  */
@@ -103,6 +105,7 @@ class UserActor extends Actor {
           // if the "autogen" property is set, then have each of the actors
           // randomly generate a message 
           if (User.shouldAutogen_? || System.getProperty("autogen") != null) autoGen
+          
           reply("Done")
         
         // if we add a friend, 
@@ -323,3 +326,5 @@ case class RemoveFriend(name: String) extends UserMsg
  * @param fullName the full name of the user 
  */
 case class UserIdInfo(id: long, name: String, fullName: String, friends: List[String])
+
+case object SendRandomMessage

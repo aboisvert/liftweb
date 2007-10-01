@@ -103,34 +103,34 @@ object RequestState {
   
   var fixHref = _fixHref _
   
-  private def _fixHref(contextPath: String, tag: String, v : Seq[Node]) : String = {
+  private def _fixHref(contextPath: String, v : Seq[Node]) : String = {
     val hv = v.text
     if (hv.startsWith("/")) contextPath+hv
     else hv
   }
   
   def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
-    def fixAttrs(tag: String, toFix : String, attrs : MetaData) : MetaData = {
-      if (attrs == Null) Null else
-        if (attrs.key == toFix) new UnprefixedAttribute(toFix,RequestState.fixHref(contextPath, tag, attrs.value),fixAttrs(tag, toFix, attrs.next))
-        else attrs.copy(fixAttrs(tag, toFix, attrs.next))
+    if (contextPath.length == 0) in
+    else {
+    def fixAttrs(toFix : String, attrs : MetaData) : MetaData = {
+      if (attrs == Null) Null 
+      else if (attrs.key == toFix) new UnprefixedAttribute(toFix,RequestState.fixHref(contextPath, attrs.value),fixAttrs(toFix, attrs.next))
+      else attrs.copy(fixAttrs(toFix, attrs.next))
     }
+
     in.map{
       v => 
         v match {
           case Group(nodes) => Group(fixHtml(contextPath, nodes))
-          case <form>{ _* }</form> => {Elem(v.prefix, v.label, fixAttrs("form", "action", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )}
-          case <script>{ _* }</script> => {Elem(v.prefix, v.label, fixAttrs("script", "src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )}
-          case <img>{ _* }</img> => {Elem(v.prefix, v.label, fixAttrs("img", "src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )}
-          case <a>{ _* }</a> => {Elem(v.prefix, v.label, fixAttrs("a", "href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* );}
-          case <link/> => {Elem(v.prefix, v.label, fixAttrs("link", "href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )}
-          /*
-           case <input>{ _* }</input> | <textarea>{ _* }</textarea> => 
-           {v.attribute("name") match {case null => {} ; case s @ _ => {inputNames += s.elements.next.text}}; Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(v.child) : _*)}
-           */
-          case Elem(_,_,_,_,_*) => {Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(contextPath, v.child) : _*)}
-          case _ => {v}
-                   }
+          case <form>{ _* }</form> => Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case <script>{ _* }</script> => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case <img>{ _* }</img> => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case <a>{ _* }</a> => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case <link/> => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(contextPath, v.child) : _*)
+          case _ => v
+       }
+    }
     }
   }  
 }
