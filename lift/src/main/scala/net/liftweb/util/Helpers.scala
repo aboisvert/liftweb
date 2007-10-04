@@ -7,8 +7,8 @@ package net.liftweb.util
  \*                                                 */
 
 import java.net.{URLDecoder, URLEncoder}
-import scala.collection.mutable.{HashSet}
-import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null}
+import scala.collection.mutable.{HashSet, ListBuffer}
+import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -16,7 +16,7 @@ import java.util.Date
 import java.text.SimpleDateFormat
 import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
-import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream}
+import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
 import java.security.{SecureRandom, MessageDigest}
 import scala.actors.Actor
 import scala.actors.Actor._
@@ -72,6 +72,37 @@ object Helpers {
       if (lastPoint <= lastSlash) false else {
 	validSuffixes.contains(path.substring(lastPoint + 1))
       }
+    }
+  }
+  
+  def exec(cmds: String*): Can[String] = {
+    try {
+      class ReadItAll(in: InputStream, done: String => Unit) extends Runnable {
+        def run {
+          val br = new BufferedReader(new InputStreamReader(in))
+          val lines = new ListBuffer[String]
+          var line = ""
+          while (line != null) {
+            line = br.readLine
+            if (line != null) lines += line
+          }
+          done(lines.mkString("\n"))
+        }
+      }
+      
+      var stdOut = ""
+      var stdErr = ""
+      val proc = Runtime.getRuntime.exec(cmds.toArray)
+      val t1 = new Thread(new ReadItAll(proc.getInputStream, stdOut = _))
+      t1.start
+      val t2 = new Thread(new ReadItAll(proc.getErrorStream, stdErr = _))
+      val res = proc.waitFor
+      t1.join
+      t2.join
+      if (res == 0) Full(stdOut)
+      else Failure(stdErr, Empty, Nil)
+    } catch {
+      case e => Failure(e.getMessage, Full(e), Nil)
     }
   }
   
@@ -914,6 +945,12 @@ object Helpers {
   def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   
+  def script(theScript: String): NodeSeq = (<script>
+  // {Unparsed("""<![CDATA[
+  """+theScript+"""
+  // ]]>
+  """)}</script>)
+  
   /**
    * Optional cons that implements the expression: expr ?> value ::: List
    */
@@ -963,6 +1000,11 @@ class SuperList[T](val what: List[T]) {
 }
 
 class SuperString(val what: String) {
+  def roboSplit(spl: String): List[String] = what.split(spl).toList.map(_.trim).filter(_.length > 0)
+  def splitAt(chr: String): List[(String, String)] = what.indexOf(chr) match {
+    case -1 => Nil
+    case n => List((what.substring(0, n).trim, what.substring(n + chr.length).trim))
+  }
   def commafy: String = {
     if (what eq null) null
     else {
