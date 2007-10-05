@@ -24,6 +24,8 @@ import net.liftweb.sitemap.SiteMap
 import java.net.URL
 import net.liftweb.sitemap._
 import js._
+import javax.servlet._
+import javax.servlet.http._
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -31,14 +33,16 @@ import js._
  * ta-da, you've got a scala-powered Servlet
  * 
  */
-class Servlet extends HttpServlet {
+private[http] class LiftServlet(val getServletContext: ServletContext) extends AnyRef /* HttpServlet */ {
   private val actorNameConst = "the_actor"
   private var requestCnt = 0
   private val selves = new ListBuffer[Actor]
   
-  override def destroy = {
+  
+  
+  def destroy = {
     try {
-    Servlet.ending = true
+    LiftServlet.ending = true
     this.synchronized {
       while (requestCnt > 0) {
         selves.foreach(s => s ! None)
@@ -50,7 +54,7 @@ class Servlet extends HttpServlet {
     Scheduler.shutdown 
     ActorPing.shutdown
     Log.debug("Destroyed servlet")
-    super.destroy
+    // super.destroy
     } catch {
       case e => Log.error("Servlet destruction failure",e)
     } finally {
@@ -58,12 +62,12 @@ class Servlet extends HttpServlet {
     }
   }
   
-  override def init = {
+  def init = {
     try {
       if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
     ActorPing.start
-    Servlet.ending = false
-    super.init
+    LiftServlet.ending = false
+    // super.init
     } finally {
       clearThread
     }
@@ -72,10 +76,11 @@ class Servlet extends HttpServlet {
   /**
    * Forward the GET request to the POST handler
    */
+     /*
   def doGet(request : HttpServletRequest , response : HttpServletResponse, start: Long) = {
     isExistingFile_?(request).map(u => doServiceFile(u, request, response)) openOr
-      doService(request, response, RequestType(request ), start)
-  }
+      doService(request, response, RequestType(request ))
+  }*/
 
   /**
    * Is the file an existing file in the WAR?
@@ -110,7 +115,7 @@ class Servlet extends HttpServlet {
         case "png" => "image/png"
         case "gif" => "image/gif"
         case "ico" => "image/x-icon"
-        case _ => Servlet.determineContentType(request)
+        case _ => LiftServlet.determineContentType(request)
       })
     }
     
@@ -153,20 +158,21 @@ class Servlet extends HttpServlet {
     ret
   }
   
-  override def service(req: HttpServletRequest,resp: HttpServletResponse) {
+  /* override */ def service(req: HttpServletRequest,resp: HttpServletResponse, session: RequestState) {
     try {
     def doIt {
       logTime("Service request "+req.getRequestURI) {
-        Servlet.early.foreach(_(req))
-        Servlet.setContext(getServletContext)
-        val start = System.nanoTime
+        LiftServlet.early.foreach(_(req))
+        // FIXME need to do for normal servlet Servlet.setContext(getServletContext)
+        doService(req, resp, session)
+        /*
         req.getMethod.toUpperCase match {
           case "GET" => doGet(req, resp, start)
           case _ => doService(req, resp, RequestType(req), start)
-        }
+        }*/
         }      
     }
-    Servlet.checkJetty(req) match {
+    LiftServlet.checkJetty(req) match {
       case None => doIt
       case r if r eq null => doIt
       case r: ResponseIt => sendResponse(r.toResponse, resp, Empty)
@@ -192,26 +198,26 @@ class Servlet extends HttpServlet {
   /**
    * Service the HTTP request
    */ 
-  def doService(request:HttpServletRequest , response: HttpServletResponse, requestType: RequestType, start: Long) {
-    val session = RequestState(request, Servlet.rewriteTable(request), getServletContext, start)
+  def doService(request:HttpServletRequest , response: HttpServletResponse, session: RequestState) {
+    
 
     val sessionActor = getActor(session, request.getSession)    
     val toMatch = RequestMatcher(session, session.path, sessionActor)
     
-      val resp: Response = if (Servlet.ending) {
+      val resp: Response = if (LiftServlet.ending) {
         session.createNotFound.toResponse
-      } else if (Servlet.dispatchTable(request).isDefinedAt(toMatch)) {
+      } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
         
          
 	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
-	  val f = Servlet.dispatchTable(request)(toMatch)
+	  val f = LiftServlet.dispatchTable(request)(toMatch)
 	  f(request) match {
-            case Full(v) => Servlet.convertResponse(v, session)
+            case Full(v) => LiftServlet.convertResponse(v, session)
             case Empty => session.createNotFound.toResponse
             case f: Failure => session.createNotFound(f).toResponse 
 	  }
 	}
-      } else if (session.path.path.length == 1 && session.path.path.head == Servlet.cometPath) {
+      } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
         sessionActor.enterComet(self)
         try {
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
@@ -230,7 +236,7 @@ class Servlet extends HttpServlet {
         
         actors.foreach{case (act, when) => act ! Listen(when)}
 
-        val ret = drainTheSwamp((Servlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
+        val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
         
         actors.foreach{case (act, _) => act ! Unlisten}
         
@@ -245,7 +251,7 @@ class Servlet extends HttpServlet {
           sessionActor.exitComet(self)
         }
         // Response("".getBytes("UTF-8"), Nil, 200)
-      } else if (session.path.path.length == 1 && session.path.path.head == Servlet.ajaxPath) {
+      } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
             val what = flatten(sessionActor.runParams(session))
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
@@ -277,8 +283,8 @@ class Servlet extends HttpServlet {
         
         drainTheSwamp
         
-        val timeout = (Servlet.calcRequestTimeout.map(_(session)) openOr (/*if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
-            else*/ (Servlet.stdRequestTimeout openOr 10))) * 1000L        
+        val timeout = (LiftServlet.calcRequestTimeout.map(_(session)) openOr (/*if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
+            else*/ (LiftServlet.stdRequestTimeout openOr 10))) * 1000L        
         
         /*if (session.ajax_? && Servlet.hasJetty_?) {
           sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
@@ -290,7 +296,7 @@ class Servlet extends HttpServlet {
         receiveWithin(timeout) {
           case AnswerHolder(r) => r.toResponse
           // if we failed allow the optional handler to process a request 
-	  case n @ TIMEOUT => Servlet.requestTimedOut.flatMap(_(session, n)) match {
+	  case n @ TIMEOUT => LiftServlet.requestTimedOut.flatMap(_(session, n)) match {
             case Full(r) => r
             case _ => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
           }
@@ -326,17 +332,17 @@ class Servlet extends HttpServlet {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(resp.headers, List(("Content-Type", Servlet.determineContentType(request)),
+    val header = insureField(resp.headers, List(("Content-Type", LiftServlet.determineContentType(request)),
                                                 ("Content-Encoding", "UTF-8"),
                                                 ("Content-Length", len.toString)));
     
-    Servlet._beforeSend.foreach(_(resp, response, header, request))
+    LiftServlet._beforeSend.foreach(_(resp, response, header, request))
     
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
     response.getOutputStream.write(bytes)    
-    Servlet._afterSend.foreach(_(resp, response, header, request))
+    LiftServlet._afterSend.foreach(_(resp, response, header, request))
   }
 
   /**
@@ -350,7 +356,7 @@ class Servlet extends HttpServlet {
   
 }
 
-object Servlet {
+object LiftServlet {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
@@ -444,14 +450,14 @@ object Servlet {
   }
   
   def resumeRequest(what: AnyRef, req: HttpServletRequest) {
-    val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+    val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
     setObject.invoke(cont, Array(what))
     resume.invoke(cont, null)
   }
   
   def doContinuation(req: HttpServletRequest): Nothing = {
     try {
-    val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+    val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
     Log.trace("About to suspend continuation")
     suspend.invoke(cont, Array(new java.lang.Long(200000L)))
     throw new Exception("Bail")
@@ -463,7 +469,7 @@ object Servlet {
   def checkJetty(req: HttpServletRequest) = {
     if (!hasJetty_?) None
     else {
-      val cont = getContinuation.invoke(contSupport, Array(req, Servlet))
+      val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
       val ret = getObject.invoke(cont, null)
       setObject.invoke(cont, Array(null))
       ret
@@ -520,12 +526,23 @@ object Servlet {
   
   def context: ServletContext = synchronized {_context}
   
-  def setContext(in: ServletContext): unit =  synchronized {
+  def setContext(in: ServletContext): Unit =  synchronized {
     if (in ne _context) {
       Helpers.setResourceFinder(in.getResource)
       _context = in
       }
   }
+  
+
+  def finder(name: String): Can[InputStream] = {
+    LiftServlet.context match {
+      case null => Empty
+      case c => c.getResourceAsStream(name) match {
+        case null => Empty
+        case s => Full(s)
+      }
+    }
+  }  
   
   private var dispatchTable_i : DispatchPf = Map.empty
   
@@ -599,3 +616,53 @@ object Servlet {
 }
 
 case object BreakOut
+
+class LiftFilter extends Filter 
+{
+  //The variable holds the current ServletContext (we need it for request URI - handling
+   private var context : ServletContext = null
+   private var actualServlet: LiftServlet = _
+   
+    def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
+    {      
+    
+      (req, res) match {
+        case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
+        val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq))
+        if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
+        else chain.doFilter(req, res)
+        
+        case _ => chain.doFilter(req, res)
+      }
+    }
+  
+    //We need to capture the ServletContext on init
+    def init(config:FilterConfig) {
+      context = config.getServletContext
+      actualServlet = new LiftServlet(context)
+      actualServlet.init
+      LiftServlet.setContext(context) 
+    }
+    
+    //And throw it away on destruction
+    def destroy {
+      context = null
+      actualServlet.destroy
+      actualServlet = null 
+      }
+ 
+    private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
+    {
+       actualServlet.service(req, res, session)
+    }
+ 
+    //This function tells you wether a resource exists or not, could probably be better
+    private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
+      in.endsWith(".htm") ||
+      in.endsWith(".xml") 
+    
+    private def isLiftRequest_?(session: RequestState): Boolean = {
+      session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) || 
+        context.getResource(session.uri) == null
+    }
+}

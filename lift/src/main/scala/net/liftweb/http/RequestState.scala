@@ -20,7 +20,7 @@ import scala.xml._
 object RequestState {
   object NilPath extends ParsePath(Nil, true, false)
   
-  def apply(request: HttpServletRequest, rewrite: Servlet.RewritePf, context: ServletContext, nanoStart: Long): RequestState = {
+  def apply(request: HttpServletRequest, rewrite: LiftServlet.RewritePf): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
@@ -87,12 +87,12 @@ object RequestState {
     
     new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
 		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
-		     body, request.getContentType, request, context, nanoStart, System.nanoTime)
+		     body, request.getContentType, request)
   }
   
  
   
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, null, "", null, null, System.nanoTime, System.nanoTime)
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, null, "", null,)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -135,7 +135,7 @@ object RequestState {
   }  
 }
 
-case class ParsePath(path: List[String], absolute: boolean, endSlash: boolean) {
+case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
   def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
 }
 
@@ -146,13 +146,10 @@ class RequestState(val paramNames: List[String],
 		   val path: ParsePath,
 		   val contextPath: String,
 		   val requestType: RequestType,
-		   val webServices_? : boolean,
-		   val body: Array[byte],
+		   val webServices_? : Boolean,
+		   val body: Array[Byte],
                    val contentType: String,
-                   val request: HttpServletRequest,
-                   val context: ServletContext,
-                   val nanoStart: Long,
-                   val nanoAfter: Long) 
+                   val request: HttpServletRequest) 
 {
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
   val section = path(0) match {case null => "default"; case s => s}
@@ -174,23 +171,14 @@ class RequestState(val paramNames: List[String],
     }
   }
   
-  lazy val location = Servlet.siteMap.flatMap(_.findLoc(this, request))
+  lazy val location = LiftServlet.siteMap.flatMap(_.findLoc(this, request))
   
-  def testLocation: Can[RedirectWithMessage] = if (Servlet.siteMap.isEmpty) Empty
+  def testLocation: Can[RedirectWithMessage] = if (LiftServlet.siteMap.isEmpty) Empty
      else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", "Invalid URL"))
   
 
   lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)
 
-  def finder(name: String): Can[InputStream] = {
-    context match {
-      case null => Empty
-      case c => c.getResourceAsStream(name) match {
-        case null => Empty
-        case s => Full(s)
-      }
-    }
-  }
   
   def createNotFound = {
     XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,

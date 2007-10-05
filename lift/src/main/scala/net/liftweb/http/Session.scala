@@ -235,7 +235,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
   
   private def findVisibleTemplate(path: ParsePath, session : RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, session.path, this)
-    val templ = Servlet.templateTable
+    val templ = LiftServlet.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
       case ns @ Full(_) => ns 
       case _ =>
@@ -269,7 +269,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     val pls = places.mkString("/","/", "")
     val toTry = suffixes.map(s => pls + (if (s.length > 0) "." + s else ""))
     
-    first(toTry)(S.findFileInContext(_).flatMap(PCDataXmlParser(_))) or lookForClasses(places)
+    first(toTry)(LiftServlet.finder(_).flatMap(PCDataXmlParser(_))) or lookForClasses(places)
   }  
   
   private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
@@ -486,13 +486,13 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
   
   
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
     new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", Null))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
     val id = "F"+randomString(15)
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+Servlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); return false;"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); return false;"
     new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, Null))) //  new UnprefixedAttribute("method", "POST", Null)))
   }
   
@@ -558,7 +558,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
    """+cometVar+"""
    function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
    function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-   function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+Servlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
+   function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+LiftServlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
    jQuery(document).ready(function(){lift_handlerSuccessFunc();});
    // ]]>
    """)}</script>) :_*)

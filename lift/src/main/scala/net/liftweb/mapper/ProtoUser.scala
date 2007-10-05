@@ -83,7 +83,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   MenuItem("", PasswordReset, false) :: MenuItem("Change Password", ChangePassword, true) :: 
   MenuItem("Log Out", Logout, true) :: MenuItem("Edit Profile", Edit, true) :: MenuItem("", ValidateUser, false) :: Nil
   
-  def templates: Servlet.TemplatePf = {
+  def templates: LiftServlet.TemplatePf = {
     case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _), _) if testLoggedIn(w) => () => signup
     case RequestMatcher(_, ParsePath(BasePath :: (w @ Login) :: _, _, _), _) if testLoggedIn(w) => () => login
     case RequestMatcher(_, ParsePath(BasePath :: (w @ LostPassword) :: _, _, _), _) if testLoggedIn(w) => () => lostPassword

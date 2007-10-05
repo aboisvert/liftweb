@@ -23,9 +23,9 @@ import java.io.InputStream
  * local session info without passing a huge state construct around
  */
 object S {
-  case class RewriteHolder(name: String, rewrite: Servlet.RewritePf)
-  case class DispatchHolder(name: String, dispatch: Servlet.DispatchPf)
-  case class TemplateHolder(name: String, template: Servlet.TemplatePf)
+  case class RewriteHolder(name: String, rewrite: LiftServlet.RewritePf)
+  case class DispatchHolder(name: String, dispatch: LiftServlet.DispatchPf)
+  case class TemplateHolder(name: String, template: LiftServlet.TemplatePf)
   
   /**
    * The current session
@@ -55,7 +55,7 @@ object S {
   
   def sessionTemplater: List[TemplateHolder] = _servletRequest.value match {
     case null => Nil
-    case r => r.getSession.getAttribute(Servlet.SessionTemplateTableName) match {
+    case r => r.getSession.getAttribute(LiftServlet.SessionTemplateTableName) match {
       case rw: List[TemplateHolder] => rw
       case _ => Nil
     }
@@ -68,30 +68,26 @@ object S {
   
   def sessionRewriter: List[RewriteHolder] = _servletRequest.value match {
     case null => Nil
-    case r => r.getSession.getAttribute(Servlet.SessionRewriteTableName) match {
+    case r => r.getSession.getAttribute(LiftServlet.SessionRewriteTableName) match {
       case rw: List[RewriteHolder] => rw
       case _ => Nil
     }
   }
   def sessionDispatcher: List[DispatchHolder] = _servletRequest.value match {
   case null => Nil
-  case r => r.getSession.getAttribute(Servlet.SessionDispatchTableName) match {
+  case r => r.getSession.getAttribute(LiftServlet.SessionDispatchTableName) match {
     case rw: List[DispatchHolder] => rw
     case _ => Nil
   }
 }
+
   
-  def findFileInContext(name: String): Can[InputStream] = _request.value match {
-    case null => Empty
-    case req => req.finder(name)
-  }
-  
-  private def reduxio(in: List[Servlet.DispatchPf]): Servlet.DispatchPf = in match {
+  private def reduxio(in: List[LiftServlet.DispatchPf]): LiftServlet.DispatchPf = in match {
     case Nil => Map.empty
     case x :: Nil => x
     case x :: xs => x orElse reduxio(xs)
   }
-  def highLevelSessionDispatcher: Servlet.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
+  def highLevelSessionDispatcher: LiftServlet.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
   def highLevelSessionDispatchList: List[DispatchHolder] = _servletRequest.value match {
   case null => Nil
   case r => r.getSession.getAttribute(HighLevelSessionDispatchTableName) match {
@@ -102,7 +98,7 @@ object S {
   }    
   
   val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
-  def addHighLevelSessionDispatcher(name: String, disp: Servlet.DispatchPf) {
+  def addHighLevelSessionDispatcher(name: String, disp: LiftServlet.DispatchPf) {
     _servletRequest.value match {
     case null => 
     case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name))
@@ -116,46 +112,46 @@ object S {
     }    
   }
   
-  def addSessionTemplater(name: String, rw: Servlet.TemplatePf) {
+  def addSessionTemplater(name: String, rw: LiftServlet.TemplatePf) {
     _servletRequest.value match {
     case null => 
-    case r => r.getSession.setAttribute(Servlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name))
+    case r => r.getSession.setAttribute(LiftServlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name))
     }
   }
   
-  def addSessionRewriter(name: String, rw: Servlet.RewritePf) {
+  def addSessionRewriter(name: String, rw: LiftServlet.RewritePf) {
     _servletRequest.value match {
     case null => 
-    case r => r.getSession.setAttribute(Servlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name))
+    case r => r.getSession.setAttribute(LiftServlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name))
     }
   }
 
   def removeSessionRewriter(name: String) {
     _servletRequest.value match {
     case null => 
-    case r => r.getSession.setAttribute(Servlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name))
+    case r => r.getSession.setAttribute(LiftServlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name))
     }
   }
   
   def removeSessionTemplater(name: String) {
     _servletRequest.value match {
     case null => 
-    case r => r.getSession.setAttribute(Servlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name))
+    case r => r.getSession.setAttribute(LiftServlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name))
     }
   }  
 
-  def addSessionDispatcher(name: String, rw: Servlet.DispatchPf) {
+  def addSessionDispatcher(name: String, rw: LiftServlet.DispatchPf) {
     _servletRequest.value match {
     case null => 
     case r => val newDisp = DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)
-        r.getSession.setAttribute(Servlet.SessionDispatchTableName, newDisp)
+        r.getSession.setAttribute(LiftServlet.SessionDispatchTableName, newDisp)
     }
   }
 
   def removeSessionDispatcher(name: String) {
     _servletRequest.value match {
     case null => 
-    case r => r.getSession.setAttribute(Servlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name))
+    case r => r.getSession.setAttribute(LiftServlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name))
     }
   }
 
@@ -363,7 +359,7 @@ object S {
   
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
     val snippet = name.split(":").toList.map(_.trim).filter(_.length > 0)
-    if (Servlet.snippetTable.isDefinedAt(snippet)) Full(Servlet.snippetTable(snippet)) else Empty
+    if (LiftServlet.snippetTable.isDefinedAt(snippet)) Full(LiftServlet.snippetTable(snippet)) else Empty
   }
   
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
@@ -423,7 +419,7 @@ object S {
       val (nk, id) = findOrAddId(kids)
       val rnk = if (visible) nk else nk % ("style" -> "display: none") 
       val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-        session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+        session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
       nh ++ rnk
     }
     
@@ -437,10 +433,10 @@ object S {
       
       wrapFormElement(<select>{
         opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
-      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+Servlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
+    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
       case Nil => val id = "R"+randomString(12)

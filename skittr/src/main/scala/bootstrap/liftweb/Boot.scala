@@ -33,7 +33,7 @@ class Boot {
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     
     // map certain urls to the right place
-    val rewriter: Servlet.RewritePf = {
+    val rewriter: LiftServlet.RewritePf = {
     case RewriteRequest(_, ParsePath("user" :: user :: _, _,_), _, _) => 
        RewriteResponse("/user", ParsePath("user" :: Nil, true, false), TreeMap("user" -> user))
     case RewriteRequest(_, ParsePath("friend" :: user :: _, _,_), _, _) => 
@@ -42,7 +42,7 @@ class Boot {
        RewriteResponse("/unfriend", ParsePath("unfriend" :: Nil, true, false), TreeMap("user" -> user))
   }
   
-  Servlet.addRewriteBefore(rewriter)
+  LiftServlet.addRewriteBefore(rewriter)
   
   // load up the list of user actors
   UserList.create
