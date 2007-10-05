@@ -19,7 +19,7 @@ import net.liftweb.http.js._
 // import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
 @serializable 
-abstract class CometActor(val theSession: Session, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
+abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis
@@ -172,7 +172,7 @@ abstract class CometActor(val theSession: Session, val name: Can[String], val de
 sealed abstract class CometMessage
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]) {
-  def toJavaScript(session: Session): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, session.processSurroundAndInclude(xml))).openOr( JsCmds.Noop))
+  def toJavaScript(session: LiftSession): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, session.processSurroundAndInclude(xml))).openOr( JsCmds.Noop))
   def asXhtml = xml openOr (javaScript.map(js =>
   (<script>
   //  {Unparsed("""<![CDATA[
@@ -180,7 +180,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]
   // ]]>
   """)}</script>) ) openOr Text(""))
   
-  def toXhtml(session: Session) = xml.map(xml => session.processSurroundAndInclude(xml)) openOr (javaScript.map(js =>
+  def toXhtml(session: LiftSession) = xml.map(xml => session.processSurroundAndInclude(xml)) openOr (javaScript.map(js =>
   (<script>
   //  {Unparsed("""<![CDATA[
                 """+js.toJsCmd+"""

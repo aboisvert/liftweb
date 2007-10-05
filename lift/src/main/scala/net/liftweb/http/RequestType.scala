@@ -8,7 +8,7 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServletRequest}
 
-abstract class RequestType(val ignore_ajax_? : boolean) {
+abstract class RequestType {
   def post_? : boolean = false
   def get_? : boolean = false
   def head_? : boolean = false
@@ -16,35 +16,36 @@ abstract class RequestType(val ignore_ajax_? : boolean) {
   def delete_? : boolean = false
 }
 
-case class GetRequest(aj: boolean) extends RequestType(aj) {
+case object GetRequest extends RequestType {
   override def get_? = true
 }
-case class PostRequest(aj: boolean) extends RequestType(aj) {
+case object PostRequest extends RequestType {
   override def post_? = true
 }
-case class HeadRequest(aj: boolean) extends RequestType(aj) {
+case object HeadRequest extends RequestType {
   override def head_? = true
 }
-case class PutRequest(aj: boolean) extends RequestType(aj) {
+case object PutRequest extends RequestType {
   override def put_? = true
 }
-case class DeleteRequest(aj: boolean) extends RequestType(aj) {
+case object DeleteRequest extends RequestType {
   override def delete_? = true
 }
 
 object RequestType {
   def apply(req: HttpServletRequest): RequestType = {
+    /*
     val ajax = req.getHeader("x-requested-with") match {
       case null => false
       case s @ _ => s.toUpperCase == "XMLHttpRequest".toUpperCase
-    }
+    }*/
     
     req.getMethod.toUpperCase match {
-      case "GET" => GetRequest(ajax)
-      case "POST" => PostRequest(ajax)
-      case "HEAD" => HeadRequest(ajax)
-      case "PUT" => PutRequest(ajax)
-      case "DELETE" => DeleteRequest(ajax)
+      case "GET" => GetRequest
+      case "POST" => PostRequest
+      case "HEAD" => HeadRequest
+      case "PUT" => PutRequest
+      case "DELETE" => DeleteRequest
     }
   }
 }

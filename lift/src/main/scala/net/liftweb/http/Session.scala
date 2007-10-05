@@ -21,14 +21,14 @@ import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, Http
 // import net.liftweb.http.S._
 import scala.xml.transform._
 
-object Session {
+object LiftSession {
 
   def createSession[T](session: HttpSession, uri: String,
 		       path: ParsePath,
 		       contextPath: String,
 		       requestType: RequestType,
 		       webServices_? : boolean,
-		       contentType: String, opts: Can[T]) = {new Session(uri, path, contextPath, requestType, webServices_?, contentType)}
+		       contentType: String, opts: Can[T]) = {new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType)}
   
   var creator = createSession _
   
@@ -41,7 +41,7 @@ object Session {
 }
 
 @serializable
-class Session(val uri: String,val path: ParsePath,val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
@@ -155,7 +155,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     
     case CurrentVars => reply(_state)
 
-    case unknown => Log.debug("Session Got a message "+unknown)
+    case unknown => Log.debug("LiftSession Got a message "+unknown)
   }
   
   object stateVar {
@@ -473,7 +473,7 @@ class Session(val uri: String,val path: ParsePath,val contextPath: String, val r
     findClass(contType, buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo {
-	  val constr = cls.getConstructor(Array(classOf[Session], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
+	  val constr = cls.getConstructor(Array(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
 	  ret.link(this)

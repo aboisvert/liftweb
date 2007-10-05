@@ -144,11 +144,11 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   }
   
   
-  def getActor(request: RequestState, session: HttpSession) = {
+  def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getValue(actorNameConst) match {
-      case r: Session => r
+      case r: LiftSession => r
       case _ => 
-        val ret = Session(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
+        val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
             request.contentType, Empty)
         ret.start
         session.putValue(actorNameConst, ret)

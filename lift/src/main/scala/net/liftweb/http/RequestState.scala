@@ -90,9 +90,7 @@ object RequestState {
 		     body, request.getContentType, request)
   }
   
- 
-  
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest(false), false, null, "", null,)
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest, false, null, "", null)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -219,6 +217,6 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
   
 }
 
-case class RequestMatcher(request: RequestState, path: ParsePath, session: Session)
+case class RequestMatcher(request: RequestState, path: ParsePath, session: LiftSession)
 case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
 case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])
