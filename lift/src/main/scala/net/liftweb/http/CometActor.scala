@@ -174,18 +174,18 @@ sealed abstract class CometMessage
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]) {
   def toJavaScript(session: Session): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, session.processSurroundAndInclude(xml))).openOr( JsCmds.Noop))
   def asXhtml = xml openOr (javaScript.map(js =>
-  <script>
+  (<script>
   //  {Unparsed("""<![CDATA[
                 """+js.toJsCmd+"""
   // ]]>
-  """)}</script>) openOr Text(""))
+  """)}</script>) ) openOr Text(""))
   
   def toXhtml(session: Session) = xml.map(xml => session.processSurroundAndInclude(xml)) openOr (javaScript.map(js =>
-  <script>
+  (<script>
   //  {Unparsed("""<![CDATA[
                 """+js.toJsCmd+"""
   // ]]>
-  """)}</script>) openOr Text(""))
+  """)}</script>) ) openOr Text(""))
 }
 
 case object AskRender extends CometMessage

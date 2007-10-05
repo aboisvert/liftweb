@@ -64,7 +64,7 @@ object Helpers {
   
   def ^ [T](i: T*): List[T] = i.toList
   
-  def goodPath_?(path : String) : boolean = {
+  def goodPath_?(path : String): Boolean = {
     if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
     else {
       val lastPoint = path.lastIndexOf('.')

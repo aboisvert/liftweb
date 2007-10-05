@@ -17,7 +17,7 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
   
   def dbFieldClass = classOf[String]
 
-  final def crop(in: String): String = in.substring(0,Math.min(in.length, maxLen))
+  final def crop(in: String): String = in.substring(0, Math.min(in.length, maxLen))
   
   final def removeRegExChars(regEx: String)(in: String): String = in.replaceAll(regEx, "")
   

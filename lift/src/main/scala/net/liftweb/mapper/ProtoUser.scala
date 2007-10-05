@@ -75,7 +75,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   
   def userMenu: List[Node] = {
     val li = loggedIn_?
-    ItemList.filter(i => i.display && i.loggedIn == li).map(i => <a href={i.path}>{i.name}</a>)
+    ItemList.filter(i => i.display && i.loggedIn == li).map(i => (<a href={i.path}>{i.name}</a>))
   }
   
   val ItemList: List[MenuItem] = MenuItem("Sign Up", SignUp, false) :: MenuItem("Log In", Login, false) :: 
@@ -105,10 +105,10 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   
   def currentUser: Can[T] = currentUserId.flatMap(id => getSingleton.find(id))
   
-  def signupXhtml(user: T) = <form method="POST" action={S.action}><table><tr><td colspan="2">Sign Up</td></tr>
+  def signupXhtml(user: T) = (<form method="POST" action={S.action}><table><tr><td colspan="2">Sign Up</td></tr>
   {localForm(user, false)}
   <tr><td>&nbsp;</td><td><user:submit/></td></tr>
-  </table></form>
+  </table></form>)
   
   def signup = {
     val theUser: T = getSingleton.create
@@ -126,7 +126,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
 
 
           val msgXml =
-            <html>
+            (<html>
           <head>
           <title>Sign Up Confirmation</title>
           </head>
@@ -141,7 +141,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
           Thanks
           </p>
           </body>
-          </html>
+          </html>)
 
           Mailer.sendMail(From("noreply@"+S.hostName),Subject("Sign up confirmation"),  To(user.email), msgXml)                
           S.notice("You have signed up.  A validation email message will be sent to you.")
@@ -179,11 +179,11 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     case _ => S.error("Validation link invalid"); S.redirectTo(HomePage)
   }
   
-  def loginXhtml = <form method="POST" action={S.action}><table><tr><td colspan="2">Log In</td></tr>
+  def loginXhtml = (<form method="POST" action={S.action}><table><tr><td colspan="2">Log In</td></tr>
   <tr><td>EMail Address</td><td><user:email /></td></tr>
   <tr><td>Password</td><td><user:password /></td></tr>
   <tr><td><a href={"/"+BasePath+"/"+LostPassword}>Recover Password</a></td><td><user:submit /></td></tr></table>
-  </form>
+  </form>)
   
   def login = {
     var username = ""
@@ -202,12 +202,12 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
 	 "submit" -> submit("Log In", testLogin))
   }
   
-  def lostPasswordXhtml = <form method="POST" action={S.action}>
+  def lostPasswordXhtml = (<form method="POST" action={S.action}>
   <table><tr><td colspan="2">Enter your email address and we'll email you a link to reset your password</td></tr>
   <tr><td>Email address</td><td><user:email /></td></tr>
   <tr><td>&nbsp;</td><td><user:submit /></td></tr>
   </table>
-  </form>
+  </form>)
   
   def lostPassword = {
     var email = ""
@@ -221,7 +221,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
 
 
         val msgXml =
-          <html>
+          (<html>
         <head>
         <title>Reset Password Confirmation</title>
         </head>
@@ -236,7 +236,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
         Thanks
         </p>
         </body>
-        </html>
+        </html>)
 
         Mailer.sendMail(From("noreply@"+S.hostName),Subject("Reset Password Request"),  To(user.email), msgXml)        
         S.notice("Password Reset Email sent") 
@@ -248,13 +248,13 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     bind("user", lostPasswordXhtml, "email" -> text("", email = _), "submit" -> submit("Send It", sendPasswordReset))
   }
   
-  def passwordResetXhtml = <form method="POST" action={S.action}>
+  def passwordResetXhtml = (<form method="POST" action={S.action}>
   <table><tr><td colspan="2">Reset your password</td></tr>
   <tr><td>Enter your new password</td><td><user:pwd/></td></tr>
   <tr><td>Enter your new password (repeat)</td><td><user:pwd/></td></tr>
   <tr><td>&nbsp;</td><td><user:submit/></td></tr>
   </table>
-  </form>
+  </form>)
   
   def passwordReset(id: String) = getSingleton.find(By(uniqueId, id)) match {
     case Full(user) => 
@@ -272,14 +272,14 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     case _ => S.error("Password reset link invalid"); S.redirectTo(HomePage)
   }
   
-  def changePasswordXhtml = <form method="POST" action={S.action}>
+  def changePasswordXhtml = (<form method="POST" action={S.action}>
   <table><tr><td colspan="2">Change Password</td></tr>
   <tr><td>Old Password</td><td><user:old_pwd /></td></tr>
   <tr><td>New Password</td><td><user:new_pwd /></td></tr>
   <tr><td>New Password (repeat)</td><td><user:new_pwd /></td></tr>
   <tr><td>&nbsp;</td><td><user:submit /></td></tr>
   </table>
-  </form>
+  </form>)
   
   def changePassword = {
     val user = currentUser.open_! // we can do this because the logged in test has happened
@@ -303,12 +303,12 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
 	 "submit" -> testAndSet _)
   }
   
-  def editXhtml(user: T) = <form method="POST" action={S.action}>
+  def editXhtml(user: T) = (<form method="POST" action={S.action}>
   <table><tr><td colspan="2">Edit</td></tr>
   {localForm(user, true)}
   <tr><td>&nbsp;</td><td><user:submit/></td></tr>
   </table>
-  </form>
+  </form>)
   
   def edit = {
     val theUser: T = currentUser.open_! // we know we're logged in
@@ -343,14 +343,14 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     case f: MappedPassword[T] => false
     case _ => true
   })).
-  map(f => <tr><td>{f.displayName}</td><td>{f.toForm}</td></tr>)
+  map(f => (<tr><td>{f.displayName}</td><td>{f.toForm}</td></tr>) )
   
   protected implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] = 
     screenWrap.map{
       theDoc => 
 	val rw = new RewriteRule {
 	  override def transform(n: Node) = n match {
-            case e @ <bind /> if "lift" == e.prefix => in
+            case e @ (<bind />) if "lift" == e.prefix => in
             case _ => n
 	  }
 	}

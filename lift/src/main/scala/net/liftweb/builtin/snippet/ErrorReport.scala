@@ -19,9 +19,9 @@ class ErrorReport {
     case (msg, titleList, defaultTitle, styleList) =>
       val title: String = titleList.toList.filter(_.prefix == "lift").map(_.text.trim).filter(_.length > 0) headOr defaultTitle
       
-      msg.toList.map(e => <li>{e}</li>) match {
+      msg.toList.map(e => (<li>{e}</li>) ) match {
         case Nil => Nil
-        case msgList => val ret = <div>{title}:<ul>{msgList}</ul></div>
+        case msgList => val ret = (<div>{title}:<ul>{msgList}</ul></div>)
         styleList.toList.filter(_.prefix == "lift").map(_.text.trim).foldLeft(ret)((xml, style) => xml % new UnprefixedAttribute("class", style, Null))
       }
     }

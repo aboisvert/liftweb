@@ -8,8 +8,8 @@ package net.liftweb.mapper
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
-import net.liftweb.util.Helpers._
 import net.liftweb.util._
+import Helpers._
 import java.util.Date
 import net.liftweb.http._
 import scala.xml.NodeSeq

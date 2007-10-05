@@ -123,7 +123,7 @@ class User extends ProtoUser[User] {
   def primaryKeyField = id
 }
 
-class Pet extends KeyedMapper[long, Pet] {
+class Pet extends KeyedMapper[Long, Pet] {
   def getSingleton = Pet
   def primaryKeyField = id
   

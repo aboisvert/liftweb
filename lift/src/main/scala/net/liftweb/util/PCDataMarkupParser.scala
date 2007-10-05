@@ -105,7 +105,7 @@ case class PCData(_data: String) extends Atom[String](_data) {
 
   final override def equals(x: Any) = x match {
     case s:String  => s.equals(data.toString())
-    case s:Atom[Any]    => data == s.data
+    case s:Atom[Any] => data == s.data
     case _ => false
   }
 

@@ -122,11 +122,12 @@ object RequestState {
       v => 
         v match {
           case Group(nodes) => Group(fixHtml(contextPath, nodes))
-          case <form>{ _* }</form> => Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case <script>{ _* }</script> => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case <img>{ _* }</img> => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case <a>{ _* }</a> => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case <link/> => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+
+          case (<form>{ _* }</form>) => Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<script>{ _* }</script>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<img>{ _* }</img>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<a>{ _* }</a>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<link/>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(contextPath, v.child) : _*)
           case _ => v
        }
@@ -139,15 +140,12 @@ case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
   def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
 }
 
-
-class RequestState(val paramNames: List[String],
-                   val params: Map[String, List[String]],
-		   val uri: String,
-		   val path: ParsePath,
-		   val contextPath: String,
-		   val requestType: RequestType,
-		   val webServices_? : Boolean,
-		   val body: Array[Byte],
+class RequestState(val paramNames: List[String], val params: Map[String, List[String]], val uri: String,
+		           val path: ParsePath,
+		           val contextPath: String,
+		           val requestType: RequestType,
+		           val webServices_? : Boolean,
+		           val body: Array[Byte],
                    val contentType: String,
                    val request: HttpServletRequest) 
 {
@@ -181,12 +179,12 @@ class RequestState(val paramNames: List[String],
 
   
   def createNotFound = {
-    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,
+    XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
         ResponseInfo.xhtmlTransitional , Nil, 404)
   }
   
   def createNotFound(failure: Failure) = { // FIXME do failure stuff
-    XhtmlResponse(<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>,
+    XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
         ResponseInfo.xhtmlTransitional , Nil, 404)
   }
   
@@ -204,11 +202,11 @@ class RequestState(val paramNames: List[String],
       ret + also
     }
     val et = _showException(e)
-    XhtmlResponse(<html><body>Exception occured while processing {this.uri} 
+    XhtmlResponse((<html><body>Exception occured while processing {this.uri} 
 	     <pre>{
 	       
 	       et      
-	     }</pre></body></html>,ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
+	     }</pre></body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
   }
   
   def post_? = requestType.post_?

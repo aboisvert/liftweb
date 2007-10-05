@@ -14,7 +14,7 @@ class CometScript {
   def javaScript: NodeSeq = {
     val uri = S.request.contextPath + S.request.uri
     
-    <script type="text/javascript">
+    (<script type="text/javascript">
     // {Unparsed(
     """<![CDATA[
       function lift_handlerSuccessFunc(foo) {
@@ -30,7 +30,7 @@ class CometScript {
       new Ajax.Request('"""+uri+"""', { asynchronous:true, onSuccess:lift_handlerSuccessFunc, onFailure:lift_handlerFailureFunc, method: 'put', requestHeaders:{ Accept:'text/javascript' }});
     }
     // ]]>""")}
-</script>
+</script>)
   }
   
   def bodyAttr: MetaData = new UnprefixedAttribute("onload", "lift_cometEntry();", Null)

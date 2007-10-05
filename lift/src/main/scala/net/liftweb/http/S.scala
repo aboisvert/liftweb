@@ -30,10 +30,10 @@ object S {
   /**
    * The current session
    */
-  private val _request = new ThreadGlobal[RequestState];
-  private val _servletRequest = new ThreadGlobal[HttpServletRequest];
-  private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]];
-  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]];
+  private val _request = new ThreadGlobal[RequestState]
+  private val _servletRequest = new ThreadGlobal[HttpServletRequest]
+  private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
+  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]]
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = {
     val ret = new ThreadGlobal[Boolean];
@@ -394,7 +394,7 @@ object S {
   }
   
   private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): Elem =
-    wrapFormElement(<input type={name} name={f(func)}/>, params.toList)
+    wrapFormElement( (<input type={name} name={f(func)}/>) , params.toList)
  
   /**
     * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -405,14 +405,14 @@ object S {
   def a(func: () => Any, body: NodeSeq): Elem = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(key, (a: List[String]) => func())
-    <lift:a key={key}>{body}</lift:a>
+    (<lift:a key={key}>{body}</lift:a>)
   }
     
     def a(body: NodeSeq)(func: => Any): Elem = a(() => func, body)
     
-    def a(body: NodeSeq, cmd: JsCmd*): Elem = <a href="#" onclick={cmd.map(_.toJsCmd).mkString(" ") + "return false;"}>{body}</a>
+    def a(body: NodeSeq, cmd: JsCmd*): Elem = (<a href="#" onclick={cmd.map(_.toJsCmd).mkString(" ") + "return false;"}>{body}</a>)
 
-    def span(body: NodeSeq, cmd: JsCmd*): Elem = <span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>
+    def span(body: NodeSeq, cmd: JsCmd*): Elem = (<span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>)
     
     def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
       val funcName = f(func)
@@ -431,9 +431,9 @@ object S {
       val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
       val funcName = f(testFunc)
       
-      wrapFormElement(<select>{
-        opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
-      }</select>, params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+      wrapFormElement((<select>{
+        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
+      }</select>), params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
     def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
@@ -442,7 +442,7 @@ object S {
       case Nil => val id = "R"+randomString(12)
       (in % ("id" -> id), id)
       case x :: xs => (in, x.text)
-    }
+    } 
     
     /**
       *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
@@ -451,9 +451,9 @@ object S {
     def swapable(shown: Elem, hidden: Elem): Elem = {
       val (rs, sid) = findOrAddId(shown)
       val (rh, hid) = findOrAddId(hidden)
-      <span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
+      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
         rh % ("style" -> "display: none") %
-        ("onblur" -> ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>
+        ("onblur" -> ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
     }
     
     /**
@@ -465,7 +465,7 @@ object S {
      def link(to: String, func: () => Any, body: NodeSeq): Elem = {
        val key = "F"+System.nanoTime+"_"+randomString(3)
        addFunctionMap(key, (a: List[String]) => {func(); true})
-       <a href={to+"?"+key+"=_"}>{body}</a>
+       (<a href={to+"?"+key+"=_"}>{body}</a>)
      }
     
     def text_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = makeFormElement("text", func, params) % new UnprefixedAttribute("value", value, Null)
@@ -477,7 +477,7 @@ object S {
   def hidden(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("hidden", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   def submit(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
-  def ajaxForm(func: => NodeSeq) = <lift:form>{func}</lift:form>
+  def ajaxForm(func: => NodeSeq) = (<lift:form>{func}</lift:form>)
   
   // List[value, display]
   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
@@ -487,9 +487,9 @@ object S {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
     
-    wrapFormElement(<select name={f(testFunc)}>{
-      opts.flatMap{case (value, text) => <option value={value}>{text}</option> % selected(deflt.exists(_ == value))}
-    }</select>, params.toList)
+    wrapFormElement((<select name={f(testFunc)}>{
+      opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
+    }</select>), params.toList)
   }
     
     
@@ -499,21 +499,21 @@ object S {
        multiSelect_*(opts, deflt, SFuncHolder(func), params :_*)
 
      def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): Elem =  
-    wrapFormElement(<select multiple="true" name={f(func)}>{
-      opts.flatMap(o => <option value={o._1}>{o._2}</option> % selected(deflt.contains(o._1)))
-    }</select>, params.toList)
+    wrapFormElement((<select multiple="true" name={f(func)}>{
+      opts.flatMap(o => (<option value={o._1}>{o._2}</option>) % selected(deflt.contains(o._1)))
+    }</select>), params.toList)
     
 
     def textarea(value: String, func: String => Any, params: FormElementPieces*): Elem = textarea_*(value, SFuncHolder(func), params :_*)
     
-    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = wrapFormElement(<textarea name={f(func)}>{value}</textarea>, params.toList) 
+    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = wrapFormElement((<textarea name={f(func)}>{value}</textarea>), params.toList) 
     
     def radio(opts: List[String], deflt: Can[String], func: String => Any, params: FormElementPieces*): ChoiceHolder[String] =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
       
     def radio_*(opts: List[String], deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): ChoiceHolder[String] = {
       val name = f(func)
-      val itemList = opts.map(v => ChoiceItem(v, wrapFormElement(<input type="radio" name={name} value={v}/> % 
+      val itemList = opts.map(v => ChoiceItem(v, wrapFormElement((<input type="radio" name={name} value={v}/>) % 
         checked(deflt.filter((s: String) => s == v).isDefined), params.toList)))
       ChoiceHolder(itemList)
     }
@@ -526,7 +526,7 @@ object S {
       def map[A](f: ChoiceItem[T] => A) = items.map(f)
       def flatMap[A](f: ChoiceItem[T] => Iterable[A]) = items.flatMap(f)
       def filter(f: ChoiceItem[T] => Boolean) = items.filter(f)
-      def toForm: NodeSeq = flatMap(c => <span>{c.xhtml}&nbsp;{c.key.toString}<br /></span>)
+      def toForm: NodeSeq = flatMap(c => (<span>{c.xhtml}&nbsp;{c.key.toString}<br /></span>))
     }
   
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
@@ -537,8 +537,8 @@ object S {
     // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     
     ChoiceHolder(possible.zipWithIndex.map(p => 
-      ChoiceItem(p._1, wrapFormElement(<input type="checkbox" name={name} value={p._2.toString}/> % checked(actual.contains(p._1)),
-          params.toList) ++ (if (p._2 == 0) <input type="hidden" name={name} value="-1"/> else Nil))))
+      ChoiceItem(p._1, wrapFormElement((<input type="checkbox" name={name} value={p._2.toString}/>) % checked(actual.contains(p._1)),
+          params.toList) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
   }
   
   def checkbox(value: Boolean, func: Boolean => Any, params: FormElementPieces*): NodeSeq = {
@@ -552,8 +552,8 @@ object S {
   def checkbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
     val name = f(func)
     // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
-    <input type="hidden" name={name} value="false"/> ++
-      wrapFormElement(<input type="checkbox" name={name} value="true" /> % checked(value), params.toList)
+    (<input type="hidden" name={name} value="false"/>) ++
+      wrapFormElement((<input type="checkbox" name={name} value="true" />) % checked(value), params.toList)
   }
   
   // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
@@ -623,7 +623,7 @@ object S {
   def warning(n: String) {warning(Text(n))}
   def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n)}
   
-  def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, <span><b>{i.field.name}</b>: {i.msg}</span>)}}
+  def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, (<span><b>{i.field.name}</b>: {i.msg}</span>) )}}
   
   def getNotices = _notice.value.toList
   
