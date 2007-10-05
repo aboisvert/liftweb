@@ -17,7 +17,7 @@ import S._
 import com.skittr.model.{Friend, User}
 import net.liftweb.mapper._
 
-class WatchUser(theSession: Session, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
+class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
       CometActor(theSession, name, defaultXml, attributes) {
   private var userActor: Can[UserActor] = Empty
   private var messages: List[Message] = Nil

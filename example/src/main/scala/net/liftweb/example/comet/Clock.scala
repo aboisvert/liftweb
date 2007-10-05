@@ -11,7 +11,7 @@ import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import scala.xml._
 
-class Clock (theSession: Session, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
+class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
       CometActor(theSession, name, defaultXml, attributes) {
 
   def defaultPrefix = "clk"

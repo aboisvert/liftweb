@@ -9,7 +9,7 @@ import scala.xml._
 import S._
 import net.liftweb.util._
 
-class Chat(theSession: Session, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
+class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
       CometActor(theSession, name, defaultXml, attributes) {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
