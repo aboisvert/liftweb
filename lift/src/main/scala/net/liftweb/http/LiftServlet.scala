@@ -628,7 +628,7 @@ class LiftFilter extends Filter
     
       (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-        val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq))
+        val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq), System.nanoTime)
         if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
         else chain.doFilter(req, res)
         
