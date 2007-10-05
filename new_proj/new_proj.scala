@@ -228,24 +228,19 @@ PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN"
 "http://java.sun.com/j2ee/dtds/web-app_2_3.dtd">
 
 <web-app>
-<servlet>
-    <servlet-name>LiftDispatcher</servlet-name>
-    <servlet-class>net.liftweb.http.Servlet</servlet-class>
-    <init-param>
-      <param-name>debug</param-name>
-      <param-value>0</param-value>
-    </init-param>
-    <init-param>
-      <param-name>listings</param-name>
-      <param-value>true</param-value>
-    </init-param>
-    <!--load-on-startup>1</load-on-startup-->
-  </servlet>
-  
-  <servlet-mapping>
-    <servlet-name>LiftDispatcher</servlet-name>
-    <url-pattern>/*</url-pattern>
-  </servlet-mapping>
+<filter>
+  <filter-name>LiftFilter</filter-name>
+  <display-name>Lift Filter</display-name>
+  <description>The Filter that intercepts lift calls</description>
+  <filter-class>net.liftweb.http.LiftFilter</filter-class>
+</filter>
+  	
+
+<filter-mapping>
+  <filter-name>LiftFilter</filter-name>
+  <url-pattern>/*</url-pattern>
+</filter-mapping>
+
 </web-app>
 """
 
