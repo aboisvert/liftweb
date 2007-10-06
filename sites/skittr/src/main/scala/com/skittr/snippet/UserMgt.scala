@@ -39,7 +39,7 @@ class UserMgt {
       val invokedAs = S.invokedAs
       val theUser = new User
       def newAccount(ignore: NodeSeq): NodeSeq = {
-        def saveMe(in: List[String]): boolean = {
+        def saveMe(in: User) {
           // validate the user
           val issues = theUser.validate
           
@@ -58,11 +58,10 @@ class UserMgt {
           
           // whoops... we have issues, display them to the user and continue loading this page
           error(issues)          
-          true
         }
         <form method="POST" action={S.request.uri}>
         <table>{
-          theUser.toForm(saveMe)
+          theUser.toForm(Empty, saveMe _)
         }
         <tr><td>&nbsp;</td><td><input type="submit" value="Create New Account"/></td></tr></table>
         </form>

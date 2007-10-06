@@ -176,11 +176,12 @@ object S {
   /**
     * A string with the "next count"
     */
+      /*
   def nextCount(): String = {
     val n = currCnt.value
     currCnt := n + 1
     String.format("%06d", Array(new java.lang.Integer(n)))
-  }
+  }*/
   
   private def initNotice[B](f: => B): B = {
     _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq)])(f)
@@ -371,11 +372,12 @@ object S {
     _functionMap.value += (name -> value)
   }
   
+  /*
   def mapFunction(name: String, f: AFuncHolder): String = {
     val ret = ""+nextCount()+"_"+name+"_"+randomString(5)
     _functionMap.value += (ret -> f)
     ret
-  }
+  }*/
 
   private def booster(lst: List[String], func: String => Any): Boolean  = {
     lst.foreach(v => func(v))
@@ -396,7 +398,7 @@ object S {
   }
   
   private def makeFormElement(name: String, func: AFuncHolder, params: Seq[FormElementPieces]): Elem =
-    wrapFormElement( (<input type={name} name={f(func)}/>) , params.toList)
+    wrapFormElement( (<input type={name} name={mapFunc(func)}/>) , params.toList)
  
   /**
     * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -417,7 +419,7 @@ object S {
     def span(body: NodeSeq, cmd: JsCmd*): Elem = (<span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>)
     
     def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
-      val funcName = f(func)
+      val funcName = mapFunc(func)
       val (nk, id) = findOrAddId(kids)
       val rnk = if (visible) nk else nk % ("style" -> "display: none") 
       val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
@@ -431,14 +433,15 @@ object S {
     def ajaxSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): Elem = {
       val vals = opts.map(_._1)
       val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
-      val funcName = f(testFunc)
+      val funcName = mapFunc(testFunc)
       
       wrapFormElement((<select>{
         opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
       }</select>), params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
+    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+      mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
       case Nil => val id = "R"+randomString(12)
@@ -489,7 +492,7 @@ object S {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
     
-    wrapFormElement((<select name={f(testFunc)}>{
+    wrapFormElement((<select name={mapFunc(testFunc)}>{
       opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
     }</select>), params.toList)
   }
@@ -501,20 +504,20 @@ object S {
        multiSelect_*(opts, deflt, SFuncHolder(func), params :_*)
 
      def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder, params: FormElementPieces*): Elem =  
-    wrapFormElement((<select multiple="true" name={f(func)}>{
+    wrapFormElement((<select multiple="true" name={mapFunc(func)}>{
       opts.flatMap(o => (<option value={o._1}>{o._2}</option>) % selected(deflt.contains(o._1)))
     }</select>), params.toList)
     
 
     def textarea(value: String, func: String => Any, params: FormElementPieces*): Elem = textarea_*(value, SFuncHolder(func), params :_*)
     
-    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = wrapFormElement((<textarea name={f(func)}>{value}</textarea>), params.toList) 
+    def textarea_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = wrapFormElement((<textarea name={mapFunc(func)}>{value}</textarea>), params.toList) 
     
     def radio(opts: List[String], deflt: Can[String], func: String => Any, params: FormElementPieces*): ChoiceHolder[String] =
       radio_*(opts, deflt, SFuncHolder(func), params :_*)
       
     def radio_*(opts: List[String], deflt: Can[String], func: AFuncHolder, params: FormElementPieces*): ChoiceHolder[String] = {
-      val name = f(func)
+      val name = mapFunc(func)
       val itemList = opts.map(v => ChoiceItem(v, wrapFormElement((<input type="radio" name={name} value={v}/>) % 
         checked(deflt.filter((s: String) => s == v).isDefined), params.toList)))
       ChoiceHolder(itemList)
@@ -535,7 +538,7 @@ object S {
   
   def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any, params: FormElementPieces*): ChoiceHolder[T] = {
     val len = possible.length
-    val name = f(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
+    val name = mapFunc(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
     // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     
     ChoiceHolder(possible.zipWithIndex.map(p => 
@@ -552,7 +555,7 @@ object S {
   }
     
   def checkbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): NodeSeq = {
-    val name = f(func)
+    val name = mapFunc(func)
     // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
     (<input type="hidden" name={name} value="false"/>) ++
       wrapFormElement((<input type="checkbox" name={name} value="true" />) % checked(value), params.toList)
@@ -607,9 +610,9 @@ object S {
     def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))        
   }
   
-  def f(in: AFuncHolder): String = f("F"+System.nanoTime+"_"+randomString(3), in)
+  def mapFunc(in: AFuncHolder): String = mapFunc("F"+System.nanoTime+"_"+randomString(3), in)
   
-  def f(name: String, inf: AFuncHolder): String = {
+  def mapFunc(name: String, inf: AFuncHolder): String = {
     addFunctionMap(name, inf)
     name
   }

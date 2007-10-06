@@ -85,11 +85,35 @@ trait Mapper[A<:Mapper[A]] { self: A =>
       }
   }
   
-  def toForm(f : (List[String]) => boolean): NodeSeq = {
-    getSingleton.toForm(this) ++ <input type='hidden' name={S.mapFunction("submit", f)} value="n/a" />
-  }
+   
+   /**
+     * Present the model as a form and execute the function on submission of the form
+     *
+     * @param button - If it's Full, put a submit button on the form with the value of the parameter
+     * @param onSuccess - redirect to the URL if the model validates, otherwise display the errors
+     *
+     * @return the form
+     */
+  def toForm(button: Can[String], onSuccess: String): NodeSeq =
+    toForm(button, (what: A) => {what.validate match {
+      case Nil => what.save ; S.redirectTo(onSuccess)
+      case xs => S.error(xs)
+    }})
+
+   
+    /**
+      * Present the model as a form and execute the function on submission of the form
+      *
+      * @param button - If it's Full, put a submit button on the form with the value of the parameter
+      * @param f - the function to execute on form submission
+      *
+      * @return the form
+      */
+  def toForm(button: Can[String], f: A => Any): NodeSeq =
+    getSingleton.toForm(this) ++ (<input type='hidden' name={S.mapFunc((ignore: List[String]) => f(this))} value="n/a" />) ++
+      (button.map(b => (<tr><td>&nbsp;</td><td><input type="submit" value={b}/></td></tr>)) openOr scala.xml.Text(""))
   
-  def saved_? : boolean = getSingleton.saved_?(this)
+  def saved_? : Boolean = getSingleton.saved_?(this)
   
   def db_can_delete_? : boolean = {
     getSingleton.saved_?(this) && !was_deleted_?

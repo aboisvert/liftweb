@@ -91,7 +91,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
      * Create an input field for the item
      */
     override def toForm : NodeSeq = {
-       val funcName = S.mapFunction(name, {s: List[String] => this ::= s; true})
+       val funcName = S.mapFunc({s: List[String] => this ::= s; true})
        <span><input type='password' name={funcName} value={is.toString}/>&nbsp;
        repeat<input type='password' name={funcName} value={is.toString}/></span>
     }

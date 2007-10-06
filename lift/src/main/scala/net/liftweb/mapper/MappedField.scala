@@ -187,7 +187,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   /**
    * Create an input field for the item
    */
-  def toForm : NodeSeq = <input type='text' name={S.mapFunction(name, {s: List[String] => this ::= s; true})} value={is.toString}/>
+  def toForm : NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this ::= s; true})} value={is.toString}/>
   
   def set(value : T) : T = {
     if (safe_? || writePermission_?) i_set_!(value)

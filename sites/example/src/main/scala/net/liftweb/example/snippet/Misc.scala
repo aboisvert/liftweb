@@ -12,6 +12,7 @@ import net.liftweb.http.S
 import net.liftweb.mapper._
 import net.liftweb.http.S._
 import net.liftweb.util.Helpers._
+import net.liftweb.util._
 
 class Misc {
   /**
@@ -68,7 +69,7 @@ class Misc {
        def runContext(xhtml: NodeSeq): NodeSeq = {
 
 	 // called when the form is submitted
-         def saveUser(ignore: List[String]): boolean = {
+         def saveUser(ignore: User) {
 	   user.validate match {
 	     // no validation errors, save the user, and go
 	     // back to the "list" page
@@ -84,7 +85,6 @@ class Misc {
 	     // state based on the prior form submissions
 	     case x => error(x) ; mapSnippet(invokedAs, runContext)
 	   }
-	   true
          }
 
 	 // get the form data for the user and when the form
@@ -94,7 +94,7 @@ class Misc {
 	 // "user" and "saveUser" will be called.  The
 	 // form fields are bound to the model's fields by this
 	 // call.
-         user.toForm(saveUser) ++ <tr>
+         user.toForm(Empty, saveUser _) ++ <tr>
            <td><a href="/simple/index.html">Cancel</a></td>
            <td><input type="submit" value="Save"/></td>
          </tr>

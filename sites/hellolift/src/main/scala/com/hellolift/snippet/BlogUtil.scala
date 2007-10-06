@@ -21,9 +21,5 @@ class BlogUtil {
     case MenuItem(text, uri, _, _) => (<li><a href={uri}>{text}</a></li>)
   }
 
-  def entry = {
-    val e = new Entry()
-    e.toForm(ignore => e.save) // saves the model object when you submit the form.
-  }
-
+  def entry = (new Entry).toForm(Full("Post"), (t: Entry) => t.save) // saves the model object when you submit the form.
 }
