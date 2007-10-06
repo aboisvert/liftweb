@@ -1005,6 +1005,30 @@ class SuperString(val what: String) {
     case -1 => Nil
     case n => List((what.substring(0, n).trim, what.substring(n + chr.length).trim))
   }
+  
+  def encJs: String = {
+    val len = what.length
+    val sb = new StringBuilder(len * 2)
+    sb.append('\'')
+    var pos = 0
+    while (pos < len) {
+      what.charAt(pos) match {
+        case c @ ('\\' | '\'') => sb.append(escChar(c))
+        case c if c < ' ' || c > '~' => sb.append(escChar(c))
+        case c => sb.append(c) 
+      }
+      pos += 1
+    }
+    sb.append('\'')
+    sb.toString
+  }
+
+  
+  def escChar(in: Char): String = {
+    val ret = Integer.toString(in.toInt, 16)
+    "\\u"+("0000".substring(ret.length))+ret
+  }
+  
   def commafy: String = {
     if (what eq null) null
     else {

@@ -31,40 +31,13 @@ abstract class JsCmd {
 }
 
 object JsCmds {
-  class JsEscaper(val in: String) {
-    def esc: String = {
-      val len = in.length
-      val sb = new StringBuilder(len * 2)
-      sb.append('\'')
-      var pos = 0
-      while (pos < len) {
-        in.charAt(pos) match {
-          case c @ ('\\' | '\'') => sb.append(escChar(c))
-          case c if c < ' ' || c > '~' => sb.append(escChar(c))
-          case c => sb.append(c) 
-        }
-        pos += 1
-      }
-      sb.append('\'')
-      sb.toString
-    }
-
-    
-    def escChar(in: Char): String = {
-      val ret = Integer.toString(in.toInt, 16)
-      "\\u"+("0000".substring(ret.length))+ret
-    }
-  }
-  
-  implicit def strToJsEsc(in: String): JsEscaper = new JsEscaper(in)
-  
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
     def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
   }
   case class Set(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
       val html = S.request.fixHtml(content).toString 
-      val ret = "try{jQuery("+("#"+uid).esc+").each(function(i) {this.innerHTML = "+html.esc+";});} catch (e) {}"
+      val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
       ret
     }
   }
@@ -81,7 +54,7 @@ object JsCmds {
   }
   
   class Show(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
-    def toJsCmd = "try{jQuery("+("#"+uid).esc+").show("+timeStr+");} catch (e) {}"
+    def toJsCmd = "try{jQuery("+("#"+uid).encJs+").show("+timeStr+");} catch (e) {}"
   }
 
   object Hide {
@@ -90,15 +63,15 @@ object JsCmds {
   }
   
   class Hide(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
-     def toJsCmd = "try{jQuery("+("#"+uid).esc+").hide("+timeStr+");} catch (e) {}"
+     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
   }
 
   case class Alert(text: String) extends JsCmd {
-    def toJsCmd = "alert("+text.esc+");"
+    def toJsCmd = "alert("+text.encJs+");"
   }
   
   case class ModalDialog(html: NodeSeq) extends JsCmd {
-    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map{s => s.fixHtml(s.processSurroundAndInclude(html))}.openOr(html)), false).esc+");"
+    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map{s => s.fixHtml(s.processSurroundAndInclude(html))}.openOr(html)), false).encJs+");"
   }
 
   case class Run(text: String) extends JsCmd {

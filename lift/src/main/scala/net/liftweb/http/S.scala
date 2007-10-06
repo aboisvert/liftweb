@@ -357,6 +357,8 @@ object S {
     }
   }
   
+  def contextPath = session.map(_.contextPath).openOr("")  
+  
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
     val snippet = name.split(":").toList.map(_.trim).filter(_.length > 0)
     if (LiftServlet.snippetTable.isDefinedAt(snippet)) Full(LiftServlet.snippetTable(snippet)) else Empty
@@ -419,7 +421,7 @@ object S {
       val (nk, id) = findOrAddId(kids)
       val rnk = if (visible) nk else nk % ("style" -> "display: none") 
       val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-        session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+        contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
       nh ++ rnk
     }
     
@@ -433,10 +435,10 @@ object S {
       
       wrapFormElement((<select>{
         opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>), params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+      }</select>), params.toList) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+session.map(_.contextPath).openOr("")+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
+    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+f(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
       case Nil => val id = "R"+randomString(12)
