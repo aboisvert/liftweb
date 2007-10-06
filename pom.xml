@@ -21,8 +21,9 @@
 
  <modules>
   <module>lift</module>
-  <module>example</module>
-  <module>skittr</module>
+  <module>sites/example</module>
+  <module>sites/skittr</module>
+  <module>sites/hellolift</module>
  </modules>
 
  <properties>
