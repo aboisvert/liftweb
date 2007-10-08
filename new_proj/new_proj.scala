@@ -50,7 +50,7 @@ if (args.length < 3) {
   foreach(sd => (new File(tmain, sd)).mkdirs)
 
   val xDir = new File(new File(System.getProperty(("user.dir"))).
-		       getParentFile, "example")
+		       getParentFile, "sites/example")
   List("scripts", "style", "images").
   foreach(sd => copy(new File(xDir, "src/main/webapp/"+sd),
 		     new File(tmain, sd)))
