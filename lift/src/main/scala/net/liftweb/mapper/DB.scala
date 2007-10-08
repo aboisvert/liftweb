@@ -66,8 +66,11 @@ object DB {
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
+      Helpers.tryo {
       val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
       new SuperConnection(conn, () => conn.close)
+      } openOr {throw new NullPointerException("Looking for Connection Identifier "+name+" but failed to find either a JNDI data source "+
+        "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
     }
     ret.setAutoCommit(false)
     ret
