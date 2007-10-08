@@ -463,7 +463,7 @@ object Helpers {
     _invokeMethod(clz, methodCaps(meth), params, Full(ptypes))
   }
 
-  def invokeMethod(clz: Class, meth: String): Can[Any] = invokeMethod(clz, meth, Array())
+  def invokeMethod(clz: Class, meth: String): Can[Any] = invokeMethod(clz, meth, Nil.toArray)
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)
