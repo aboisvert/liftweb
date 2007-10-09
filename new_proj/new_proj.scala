@@ -352,11 +352,7 @@ val template = """<html xmlns="http://www.w3.org/1999/xhtml">
 
 	<title>Lift Web Framework</title>
 	<link rel="stylesheet" href="/style/style.css" media="screen" />
-	<script src="/scripts/prototype.js" type="text/javascript"/>
-	<script src="/scripts/scriptaculous.js" type="text/javascript"/>
-	<script src="/scripts/builder.js" type="text/javascript"/>
-	<script src="/scripts/dragdrop.js" type="text/javascript"/>
-	<script src="/scripts/effects.js" type="text/javascript"/>
+	<script src="/scripts/jquery-cur.min.js" type="text/javascript"/>
 </head>
 <body>
 	<div id="container">
