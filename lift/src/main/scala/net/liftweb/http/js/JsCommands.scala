@@ -47,6 +47,10 @@ object JsCmds {
     
     def timeStr = time.map(_.toString) openOr ""
   }
+  
+  case class After(millis: Int)(toDo: JsCmd) extends JsCmd {
+    def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis+");"
+  }
 
   object Show {
     def apply(uid: String) = new Show(uid, Empty)

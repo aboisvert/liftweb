@@ -380,6 +380,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	    case Empty => kids
 	    case Full(clz) => {
               val ar: Array[Object] = List(Group(kids)).toArray
+              // val ar: Array[Object] = Array(Group(kids))
 	      ((invokeMethod(clz, method, ar)) or invokeMethod(clz, method)) match {
 		case Full(md: NodeSeq) => processSurroundAndInclude(md)
 		case _ => kids
@@ -393,15 +394,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     
     attrs.get("form").map(ft => <form action={S.request.uri} method={ft.text}>{ret}</form>) getOrElse ret
   }
-  
-  /*
-  def processXHTML(in: NodeSeq): NodeSeq = synchronized {
-    val intm = processSurroundAndInclude(in)
-    println("in "+in+" intm "+intm)
-    println("contextPath "+contextPath)
-    RequestState.fixHtml(contextPath, intm)
-  }
-    */
+
       
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
@@ -410,7 +403,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       v => 
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes))
-	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text)), Can(attr.get("name").map(_.text)), processSurroundAndInclude(kids), attr))       
+	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), processSurroundAndInclude(kids), attr))       
 	  case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
 	  case Elem("lift", "surround", attr @ _, _, kids @ _*) => processSurroundElement(v.asInstanceOf[Elem])
 	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(Can(attr.get("what")), processSurroundAndInclude(kids))
@@ -429,7 +422,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     try {
       findComet(theType, name, kids, Map.empty ++ attr.flatMap{case u: UnprefixedAttribute => List((u.key, u.value.text)) case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) case _ => Nil}.toList).
       map(c =>
-	(c !? (600, AskRender)) match {
+	(c !? (2600, AskRender)) match {
 	  case Some(AnswerRender(response, _, when)) => <span id={c.uniqueId} lift:when={when.toString}>{response.asXhtml}</span>
 	  case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
 	}) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids
@@ -474,6 +467,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     findClass(contType, buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo {
+        println("cat")
 	  val constr = cls.getConstructor(List(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]).toArray)
 	  val ret = constr.newInstance(List(this, name, defaultXml, attributes).toArray).asInstanceOf[CometActor];
 	  ret.start

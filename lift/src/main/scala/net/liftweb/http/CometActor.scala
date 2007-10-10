@@ -23,7 +23,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis
-  private var lastRendering = defaultXml
+  private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty)
   private val listeners = new ListBuffer[Actor]()
   // private var globalState: Map[String, Any] = _
 
@@ -66,7 +66,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       case Full(who) => who forward l
       case _ =>
         if (when >= lastRenderTime) listeners += sender.receiver
-        else sender.receiver ! AnswerRender(lastRendering, whosAsking openOr this, lastRenderTime)
+        else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime)
     }
     
     case PerformSetupComet(sessionVars) =>
@@ -77,7 +77,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case AskRender =>
       askingWho match {
         case Full(who) => who forward AskRender
-        case _ => reply(AnswerRender(lastRendering, whosAsking openOr this, lastRenderTime))
+        case _ => reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime))
         }
     
     case ActionMessageSet(msgs, sv) =>
@@ -122,7 +122,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     self.exit("Politely Asked to Exit")
   }
   
-  def render: NodeSeq
+  def render: RenderOut
   
   def compute: Map[String, Any] = Map.empty[String, Any]
   
@@ -131,7 +131,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     S.initIfUninitted(theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
       lastRendering = render
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
-      val rendered: AnswerRender = AnswerRender(lastRendering, this, lastRenderTime)// buildRendered(lastRendering, lastRenderTime)
+      val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), this, lastRenderTime)// buildRendered(lastRendering, lastRenderTime)
       listeners.toList.foreach(_ ! rendered)
       listeners.clear
       rendered
@@ -165,27 +165,28 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     reRender
   }
   
-  implicit def xmlToXmlOrJsCmd(in: NodeSeq): XmlOrJsCmd = new XmlOrJsCmd(uniqueId, Full(in), Empty)
-  implicit def jsToXmlOrJsCmd(in: JsCmd): XmlOrJsCmd = new XmlOrJsCmd(uniqueId, Empty, Full(in))
+  implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(in)
+  implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Full(in), Empty)
 }
 
 sealed abstract class CometMessage
 
-class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]) {
-  def toJavaScript(session: LiftSession): JsCmd = javaScript openOr (xml.map(xml => JsCmds.Set(id, session.processSurroundAndInclude(xml))).openOr( JsCmds.Noop))
-  def asXhtml = xml openOr (javaScript.map(js =>
-  (<script>
-  //  {Unparsed("""<![CDATA[
-                """+js.toJsCmd+"""
-  // ]]>
-  """)}</script>) ) openOr Text(""))
+class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd], val destroy: Can[JsCmd]) {
+  def this(id: String, ro: RenderOut) = this(id, ro.xhtml, ro.script, ro.destroyScript)
+  def toJavaScript(session: LiftSession): JsCmd = JsCmds.Run("destroy_"+id+"();") + 
+    ((xml, javaScript) match {
+    case (Full(xml), Full(js)) => JsCmds.Set(id, session.processSurroundAndInclude(xml)) + js
+    case (Full(xml), _) => JsCmds.Set(id, session.processSurroundAndInclude(xml))
+    case (_, Full(js)) => js
+    case _ => JsCmds.Noop
+  }) + JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};")
   
-  def toXhtml(session: LiftSession) = xml.map(xml => session.processSurroundAndInclude(xml)) openOr (javaScript.map(js =>
-  (<script>
-  //  {Unparsed("""<![CDATA[
-                """+js.toJsCmd+"""
-  // ]]>
-  """)}</script>) ) openOr Text(""))
+  def asXhtml: NodeSeq = ((xml, javaScript) match {
+  case (Full(xml), Full(js)) => xml ++ script(js.toJsCmd)
+  case (Full(xml), _) => xml
+  case (_, Full(js)) => script(js.toJsCmd)
+  case _ => Text("")
+  }) ++ script("function destroy_"+id+"() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")
 }
 
 case object AskRender extends CometMessage
@@ -198,3 +199,8 @@ case object Unlisten extends CometMessage
 case class ActionMessage(what: AFuncHolder, value: List[String], target: Actor, sessionVars: Map[String, String]) extends CometMessage
 case class ActionMessageSet(msg: List[ActionMessage], sessionVars: Map[String, String]) extends CometMessage
 case object ReRender extends CometMessage
+case class RenderOut(xhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd]) {
+  def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty)
+  def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Full(js), Empty)
+  def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Full(js), Full(destroy)) 
+}
