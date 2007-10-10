@@ -10,7 +10,7 @@ import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
-import scala.xml.{NodeSeq, Text, Elem, Unparsed}
+import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
 import S._
@@ -166,6 +166,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(in)
+  // implicit def xmlNsToXmlOrJsCmd(in: Seq[Node]): RenderOut = new RenderOut(in)
   implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Full(in), Empty)
 }
 

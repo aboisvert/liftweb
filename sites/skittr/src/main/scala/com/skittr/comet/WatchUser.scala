@@ -25,8 +25,8 @@ class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq,
     
   private def getUser(ua: UserActor) = (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) case _ => Empty}
     
-  def render: NodeSeq = {
-    (for (ua <- userActor;
+  def render = {
+    val ret: NodeSeq = (for (ua <- userActor;
           user <- getUser(ua)) yield {
 	    bind("username" -> Text(user.name+" -> "+user.fullName), 
 		 "content" -> <span>{friendList(user) ++
@@ -35,6 +35,7 @@ class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq,
                               }</span>) ++ 
 	    messages.flatMap(msg => bind("username" -> Text(msg.who+" @ "+toInternetDate(msg.when)), "content" -> Text(msg.text)))
 	  }) openOr bind("username" -> Text("N/A"), "content" -> Text("N/A"))
+    ret
   }
   
   override def lowPriority : PartialFunction[Any, Unit] = {
