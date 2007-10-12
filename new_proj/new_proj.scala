@@ -253,6 +253,8 @@ val boot = """package bootstrap.liftweb
 
 import net.liftweb.util._
 import net.liftweb.http._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
@@ -266,8 +268,11 @@ class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("""+"\""+pkg+"\""+""")
-     
-    Schemifier.schemify(true, User)
+    Schemifier.schemify(true, (msg: String) => Log.info(msg), User)
+    LiftServlet.addTemplateBefore(User.templates)
+
+    val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap
+    LiftServlet.setSiteMap(SiteMap(entries:_*))
   }
 }
 
@@ -275,7 +280,7 @@ object DBVendor extends ConnectionManager {
   def newConnection(name: ConnectionIdentifier): Can[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
-      val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
+      val dm = DriverManager.getConnection("jdbc:derby:lift_example;create=true")
       Full(dm)
     } catch {
       case e : Exception => e.printStackTrace; Empty
@@ -293,24 +298,24 @@ object DBVendor extends ConnectionManager {
   val user = """package """+pkg+""".model
 
 import net.liftweb.mapper._
+import net.liftweb.util._
 
 /**
  * The singleton that has methods for accessing the database
  */
 object User extends User with KeyedMetaMapper[long, User] {
   override def dbTableName = "users" // define the DB table name
-  
+  override def screenWrap = Full(<lift:surround with="default" at="content">
+			       <lift:bind /></lift:surround>)
   // define the order fields will appear in forms and output
   override def fieldOrder = id :: firstName :: lastName :: email :: 
   password :: textArea :: Nil
-  
-
 }
 
 /**
  * An O-R mapped "User" class that includes first name, last name, password and we add a "Personal Essay" to it
  */
-class User extends ProtoUser[User] {
+class User extends MegaProtoUser[User] {
   def getSingleton = User // what's the "meta" server
   def primaryKeyField = id
   
@@ -364,13 +369,8 @@ val template = """<html xmlns="http://www.w3.org/1999/xhtml">
 		<lift:bind name="content" />
 		</div>
 		<div id="sidebar">
-			<ul>
-				<li><a href="/">Home</a></li>
-				<li><a href="http://liftweb.net"><i>lift</i> project home</a></li>
-			</ul>
-			
-			<div><lift:snippet type="error_report"/>
-			</div>
+                  <lift:snippet type="Menu:builder" />	
+		  <div><lift:snippet type="error_report"/></div>
 		</div>
 		<div id="footer"><a href='http://liftweb.net'><i>lift</i></a> is Copyright 2007 WorldWide Conferencing, LLC.  Distributed under an Apache 2.0 License.
 		Thanks to the support of <a href="http://circleshare.com">CircleShare</a>.</div>

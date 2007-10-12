@@ -10,6 +10,8 @@ import net.liftweb.mapper._
 import net.liftweb.http._
 import scala.xml.{NodeSeq, Node, Group}
 import scala.xml.transform._
+import net.liftweb.sitemap._
+import net.liftweb.sitemap.Loc._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import net.liftweb.util.Mailer._
@@ -71,6 +73,20 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     }
   }
   
+  def notLoggedIn_? = !loggedIn_?
+
+  val sitemap : List[Menu] = List(
+    Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))),
+    Menu(Loc("Logout", "/user_mgt/logout", "Logout", If(loggedIn_? _, "You must be logged in to Logout."))),
+    Menu(Loc("CreateUser", "/user_mgt/sign_up", "Create New User", If(notLoggedIn_? _, "Please logout first."))),
+    Menu(Loc("LostPassword", "/user_mgt/lost_password", "Lost Password", If(notLoggedIn_? _, "Please logout first."))), // not logged in
+    Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first."))), //not Logged in
+    Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", If(loggedIn_? _, "Please login first."))), // Logged in
+    Menu(Loc("ChangePassword", "/user_mgt/change_password", "Change Password", If(loggedIn_? _, "Please login first."))), // Logged in
+    Menu(Loc("ValidateUser", "/user_mgt/validate_user", "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))), // Not Logged in
+    )
+
+
   def skipEmailValidation = false
   
   def userMenu: List[Node] = {

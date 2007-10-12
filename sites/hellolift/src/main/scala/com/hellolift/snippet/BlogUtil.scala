@@ -2,24 +2,44 @@ package com.hellolift.snippet
 
 import net.liftweb.util._
 import net.liftweb.http._
+import net.liftweb.mapper._
+import net.liftweb.util.Helpers._
 import net.liftweb.sitemap._
 import scala.xml._
 import com.hellolift.model.Entry
+import com.hellolift.model.User
 
 class BlogUtil {
+  def entry = (new Entry).author(User.currentUser).toForm(Full("Post"), 
+				 (t: Entry) => { 
+				   t.save
+				   S.redirectTo("/view?id=" + t.id)})
 
-  def menu = {
-    S.request.buildMenu.lines match {
-      case Nil => Text("No Navigation Defined.")
-      case x :: xs => <ul>{x.items.flatMap(buildANavItem(_))}</ul>
+  def viewentry(xhtml : Group) : NodeSeq = {
+    val t = Entry.find(S.param("id"))
+    t.map(t => 
+      bind("entry", xhtml,
+	   'name -> t.title,
+	   'body -> t.body)) openOr <span>Not found!</span>
+  }
+
+  def _entryview(e : Entry) : Node = {
+    <div>
+    <strong>{e.title}</strong><br />
+    <span>{e.body}</span>
+    </div>
+  }
+
+  def viewblog(xhtml : Group) : NodeSeq = {
+    // Find all Entries by author using the parameter 
+    val t = Entry.findAll(By(Entry.author, toLong(S.param("id"))), 
+			OrderBy(Entry.id, false), MaxRows(20))
+    t match {
+      // If no 'id' was requested, then show a listing of all users.
+      case Nil => User.findAll().map(u => <span><a href={"/blog?id=" + u.id}> 
+				      {u.firstName + " " + u.lastName}</a>
+				      <br /></span>)
+      case entries => entries.map(e => _entryview(e))
     }
   }
-
-  private def buildANavItem(i: MenuItem) = i match {  
-    case MenuItem(text, uri, true, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, true) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, _) => (<li><a href={uri}>{text}</a></li>)
-  }
-
-  def entry = (new Entry).toForm(Full("Post"), (t: Entry) => t.save) // saves the model object when you submit the form.
 }

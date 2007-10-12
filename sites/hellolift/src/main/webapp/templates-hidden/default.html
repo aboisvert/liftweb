@@ -5,12 +5,8 @@
 	<meta name="keywords" content="" />
 
 	<title>Lift Web Framework</title>
-	<link rel="stylesheet" href="/style/style.css" media="screen" />
-	<script src="/scripts/prototype.js" type="text/javascript"/>
-	<script src="/scripts/scriptaculous.js" type="text/javascript"/>
-	<script src="/scripts/builder.js" type="text/javascript"/>
-	<script src="/scripts/dragdrop.js" type="text/javascript"/>
-	<script src="/scripts/effects.js" type="text/javascript"/>
+        <link rel="stylesheet" href="/style/style.css" media="screen" />
+	<script src="/scripts/jquery-cur.min.js" type="text/javascript"/>
 </head>
 <body>
 	<div id="container">
@@ -22,7 +18,7 @@
 		<lift:bind name="content" />
 		</div>
 		<div id="sidebar">
-		  <lift:snippet type="BlogUtil:menu" />
+		  <lift:snippet type="Menu:builder" />
 			<div><lift:snippet type="error_report"/>
 			</div>
 		</div>
