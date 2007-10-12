@@ -127,7 +127,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
   def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) = findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
-  def findMapDb[T](dbId: ConnectionIdentifier, by: QueryParam[A]*)(f: A => Can[T]) : List[T] = {
+  def findMapDb[T](dbId: ConnectionIdentifier, by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
     DB.use(dbId) {
       conn =>
 	val bl = by.toList

@@ -20,6 +20,8 @@ import net.liftweb.http.js._
 
 @serializable 
 abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
+  
+  @serializable
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis

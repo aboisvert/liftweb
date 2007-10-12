@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import java.sql.{Connection, ResultSet}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import net.liftweb.util.{Log, Helpers}
+import net.liftweb.util.{Helpers}
 import Helpers._
 
 /**
@@ -28,13 +28,13 @@ object Schemifier {
    */
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
 
-  def schemify(performWrite: Boolean, stables: BaseMetaMapper*): List[String] = schemify(performWrite, DefaultConnectionIdentifier, stables :_*)
+  def schemify(performWrite: Boolean, logFunc: String => Any, stables: BaseMetaMapper*): List[String] = schemify(performWrite, logFunc, DefaultConnectionIdentifier, stables :_*)
 
    case class Collector(funcs: List[() => Any], cmds: List[String]) {
      def +(other: Collector) = Collector(funcs ::: other.funcs, cmds ::: other.cmds)
    }
   
-  def schemify(performWrite: Boolean, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
+  def schemify(performWrite: Boolean, logFunc: String => Any, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
     val tables = stables.toList
     DB.use(dbId) {
       con =>
@@ -43,10 +43,10 @@ object Schemifier {
       val actualTableNames = new HashMap[String, String]
       if (performWrite) tables.foreach(_.beforeSchemifier)
       val toRun = 
-      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureTable(performWrite, t, connection, actualTableNames)) +
-      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureColumns(performWrite, t, connection, actualTableNames)) +
-      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureIndexes(performWrite, t, connection, actualTableNames)) +
-      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureConstraints(performWrite, t, connection, actualTableNames)) 
+      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureTable(performWrite, logFunc, t, connection, actualTableNames)) +
+      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureColumns(performWrite, logFunc, t, connection, actualTableNames)) +
+      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureIndexes(performWrite, logFunc, t, connection, actualTableNames)) +
+      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureConstraints(performWrite, logFunc, t, connection, actualTableNames)) 
 
       /*
       val toRun = tables.flatMap(t => ensureTable(performWrite, t, connection, actualTableNames) ) :::
@@ -64,11 +64,12 @@ object Schemifier {
     }
   }
   
-  def destroyTables_!!(stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, stables :_*)
+  def destroyTables_!!(logFunc: String => Any, stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, logFunc, stables :_*)
 
-  def destroyTables_!!(dbId: ConnectionIdentifier, stables: BaseMetaMapper*): Unit = destroyTables_!!(dbId, 0, stables.toList)
+  def destroyTables_!!(dbId: ConnectionIdentifier, logFunc: String => Any, stables: BaseMetaMapper*): Unit = 
+    destroyTables_!!(dbId, 0, logFunc,  stables.toList)
 
-  def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, stables: List[BaseMetaMapper]) {
+  def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, logFunc: String => Any, stables: List[BaseMetaMapper]) {
     val th = new HashMap[String, String]()
     (DB.use(dbId) {
       conn =>
@@ -81,7 +82,7 @@ object Schemifier {
             val ct = "DROP TABLE "+table.dbTableName
             val st = conn.createStatement
             st.execute(ct)
-            Log.trace(ct)
+            logFunc(ct)
             st.close
           } catch {
             case e: Exception => // dispose... probably just an SQL Exception
@@ -90,7 +91,7 @@ object Schemifier {
       
       tables
     }) match {
-      case t if t.length > 0 && cnt < 1000 => destroyTables_!!(dbId, cnt + 1, t)
+      case t if t.length > 0 && cnt < 1000 => destroyTables_!!(dbId, cnt + 1, logFunc, t)
       case _ =>
     }
   }
@@ -110,14 +111,14 @@ object Schemifier {
     hasTable
   }
   
-  private def ensureTable(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureTable(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val hasTable = hasTable_?(table, connection, actualTableNames)
     val cmds = new ListBuffer[String]()
     if (!hasTable) {
       val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+") "+connection.createTablePostpend
       cmds += ct
       if (performWrite) {
-        Log.trace(ct)
+        logFunc(ct)
         val st = connection.createStatement
         st.execute(ct)
         st.close
@@ -127,7 +128,7 @@ object Schemifier {
           val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
             cmds += ct
         if (performWrite) {
-          Log.trace(ct)
+          logFunc(ct)
           val st = connection.createStatement
           st.execute(ct)
           st.close
@@ -143,7 +144,7 @@ object Schemifier {
     table.mappedFields.flatMap(_.fieldCreatorString(connection.driverType))
   }
 
-  private def ensureColumns(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureColumns(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]()
     val rc = table.mappedFields.toList.flatMap {
       field =>
@@ -170,7 +171,7 @@ object Schemifier {
           val ct = "ALTER TABLE "+table.dbTableName+" ADD COLUMN "+field.fieldCreatorString(connection.driverType, colName)
           cmds += ct
         if (performWrite) {
-          Log.trace(ct)
+          logFunc(ct)
           val st = connection.createStatement
           st.execute(ct)
           st.close
@@ -180,7 +181,7 @@ object Schemifier {
           val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+field.dbColumnName+")"
             cmds += ct
           if (performWrite) {
-            Log.trace(ct)            
+            logFunc(ct)            
             val st = connection.createStatement
             st.execute(ct)
             st.close
@@ -196,7 +197,7 @@ object Schemifier {
     
   }
 
-  private def ensureIndexes(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureIndexes(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]() 
     // val byColumn = new HashMap[String, List[(String, String, Int)]]()
     val byName = new HashMap[String, List[String]]()
@@ -223,7 +224,7 @@ object Schemifier {
           val ct = "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
           cmds += ct
           if (performWrite) {
-            Log.trace(ct)
+            logFunc(ct)
             val st = connection.createStatement
             st.execute(ct)
             st.close
@@ -240,7 +241,7 @@ object Schemifier {
         val ct = "CREATE INDEX "+(table.dbTableName+"_"+columns.map(_.field.dbColumnName).mkString("_"))+" ON "+table.dbTableName+" ( "+columns.map(_.indexDesc).comma+" )"
           cmds += ct
         if (performWrite) {
-          Log.trace(ct)
+          logFunc(ct)
           val st = connection.createStatement
           st.execute(ct)
           st.close
@@ -251,7 +252,7 @@ object Schemifier {
     Collector(single, cmds.toList)
   }
 
-  private def ensureConstraints(performWrite: Boolean, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureConstraints(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]()
     val ret = if (connection.supportsForeignKeys_?) {
       table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.toList.flatMap {
@@ -277,7 +278,7 @@ object Schemifier {
           val ct = "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
             cmds += ct
           if (performWrite) {
-            Log.trace(ct)
+            logFunc(ct)
             val st = connection.createStatement
             st.execute(ct)
             st.close
