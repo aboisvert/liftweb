@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.util.{Helpers, Can, Empty, Full, Failure}
+import net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log}
 import net.liftweb.http._
 import net.liftweb.mapper._
 import Helpers._
@@ -28,7 +28,7 @@ class Boot {
     addToPackages("com.skittr")
      
     // make sure the database is up to date
-    Schemifier.schemify(true, modelList :_*)
+    Schemifier.schemify(true, (msg: String) => Log.info(msg), modelList :_*)
     
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     

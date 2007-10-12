@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
+import net.liftweb.util.{Helpers, Can, Full, Empty, Failure, Log}
 import net.liftweb.http._
 import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
@@ -25,7 +25,7 @@ class Boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("net.liftweb.example")
      
-    Schemifier.schemify(true, User, WikiEntry)
+    Schemifier.schemify(true, (msg: String) => Log.info(msg), User, WikiEntry)
     
     val dispatcher: LiftServlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
