@@ -11,7 +11,7 @@ import javax.servlet.ServletContext
 // import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Lazy, Log, Can, Full, Empty, Failure}
+import net.liftweb.util.{Log, Can, Full, Empty, Failure}
 import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
