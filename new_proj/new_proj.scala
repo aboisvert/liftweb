@@ -349,7 +349,7 @@ val index = """<lift:surround with="default" at="content">
   pw.flush
   pw.close
 
-val template = """<html xmlns="http://www.w3.org/1999/xhtml">
+val template = """<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://liftweb.net/">
 <head>
 	<meta http-equiv="content-type" content="text/html; charset=UTF-8" />
 	<meta name="description" content="" />
