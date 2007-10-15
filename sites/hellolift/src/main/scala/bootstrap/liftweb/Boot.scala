@@ -18,7 +18,7 @@ class Boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("com.hellolift")
      
-    Schemifier.schemify(true, (msg: String) => Log.info(msg), User, Entry)
+    Schemifier.schemify(true, Log.infoF _, User, Entry)
     LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
 
     // Build SiteMap

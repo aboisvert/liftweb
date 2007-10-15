@@ -55,7 +55,7 @@ object Props {
   val propFileName = "lift.props"
   val fileName = "lift.props"
 
-  val mode = System.getProperty("run.mode") match {
+  val mode = (System.getProperty("run.mode") match {case null => null case s => s.toLowerCase}) match {
     case "test" => Test
     case "production" => Production
     case "staging" => Staging

@@ -28,13 +28,13 @@ object Schemifier {
    */
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
 
-  def schemify(performWrite: Boolean, logFunc: String => Any, stables: BaseMetaMapper*): List[String] = schemify(performWrite, logFunc, DefaultConnectionIdentifier, stables :_*)
+  def schemify(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): List[String] = schemify(performWrite, logFunc, DefaultConnectionIdentifier, stables :_*)
 
    case class Collector(funcs: List[() => Any], cmds: List[String]) {
      def +(other: Collector) = Collector(funcs ::: other.funcs, cmds ::: other.cmds)
    }
   
-  def schemify(performWrite: Boolean, logFunc: String => Any, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
+  def schemify(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
     val tables = stables.toList
     DB.use(dbId) {
       con =>
@@ -64,12 +64,12 @@ object Schemifier {
     }
   }
   
-  def destroyTables_!!(logFunc: String => Any, stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, logFunc, stables :_*)
+  def destroyTables_!!(logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, logFunc, stables :_*)
 
-  def destroyTables_!!(dbId: ConnectionIdentifier, logFunc: String => Any, stables: BaseMetaMapper*): Unit = 
+  def destroyTables_!!(dbId: ConnectionIdentifier, logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): Unit = 
     destroyTables_!!(dbId, 0, logFunc,  stables.toList)
 
-  def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, logFunc: String => Any, stables: List[BaseMetaMapper]) {
+  def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, logFunc: (=> AnyRef) => Unit, stables: List[BaseMetaMapper]) {
     val th = new HashMap[String, String]()
     (DB.use(dbId) {
       conn =>
@@ -111,7 +111,7 @@ object Schemifier {
     hasTable
   }
   
-  private def ensureTable(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureTable(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val hasTable = hasTable_?(table, connection, actualTableNames)
     val cmds = new ListBuffer[String]()
     if (!hasTable) {
@@ -144,7 +144,7 @@ object Schemifier {
     table.mappedFields.flatMap(_.fieldCreatorString(connection.driverType))
   }
 
-  private def ensureColumns(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureColumns(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]()
     val rc = table.mappedFields.toList.flatMap {
       field =>
@@ -197,7 +197,7 @@ object Schemifier {
     
   }
 
-  private def ensureIndexes(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureIndexes(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]() 
     // val byColumn = new HashMap[String, List[(String, String, Int)]]()
     val byName = new HashMap[String, List[String]]()
@@ -252,7 +252,7 @@ object Schemifier {
     Collector(single, cmds.toList)
   }
 
-  private def ensureConstraints(performWrite: Boolean, logFunc: String => Any, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
+  private def ensureConstraints(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val cmds = new ListBuffer[String]()
     val ret = if (connection.supportsForeignKeys_?) {
       table.mappedFields.flatMap{f => f match {case f: BaseMappedField with BaseForeignKey => List(f); case _ => Nil}}.toList.flatMap {

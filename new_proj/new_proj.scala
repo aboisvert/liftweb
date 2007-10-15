@@ -268,7 +268,7 @@ class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("""+"\""+pkg+"\""+""")
-    Schemifier.schemify(true, (msg: String) => Log.info(msg), User)
+    Schemifier.schemify(true, Log.infoF _, User)
     LiftServlet.addTemplateBefore(User.templates)
 
     val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap

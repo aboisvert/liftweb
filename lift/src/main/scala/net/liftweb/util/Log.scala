@@ -68,13 +68,16 @@ object Log {
    
    def isDebugEnabled = rootLogger.isDebugEnabled
    def debug(msg: => AnyRef) = rootLogger.debug(msg)
+   def debugF(msg: => AnyRef) = debug(msg)
    def debug(msg: => AnyRef, t: => Throwable) = rootLogger.debug(msg, t)
    
    def isErrorEnabled = rootLogger.isEnabledFor(Level.ERROR)
    def error(msg: => AnyRef) = rootLogger.error(msg)
+   def errorF(msg: => AnyRef) = error(msg)
    def error(msg: => AnyRef, t: => Throwable) = rootLogger.error(msg, t)
 
    def fatal(msg: AnyRef) = rootLogger.fatal(msg)
+   def fatalF(msg: AnyRef) = fatal(msg)
    def fatal(msg: AnyRef, t: Throwable) = rootLogger.fatal(msg, t)
    
    def level = rootLogger.level
@@ -84,6 +87,7 @@ object Log {
    
    def isInfoEnabled = rootLogger.isInfoEnabled
    def info(msg: => AnyRef) = rootLogger.info(msg)
+   def infoF(msg: => AnyRef) = info(msg)
    def info(msg: => AnyRef, t: => Throwable) = rootLogger.info(msg, t)
 
 
@@ -91,7 +95,12 @@ object Log {
    
    def isWarnEnabled = rootLogger.isWarnEnabled
    def warn(msg: => AnyRef) = rootLogger.warn(msg)
+   def warnF(msg: => AnyRef) = warn(msg)
    def warn(msg: => AnyRef, t: => Throwable) = rootLogger.warn(msg, t)
+   
+   def never(msg: => AnyRef) {}
+  def neverF(msg: => AnyRef) {}
+  def never(msg: => AnyRef, t: => Throwable) {}
 }
 
 object LogBoot {

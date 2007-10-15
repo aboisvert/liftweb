@@ -365,7 +365,13 @@ object LiftServlet {
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
-
+  
+  /**
+    * A partial function that allows the application to define requests that should be
+    * handled by lift rather than the default servlet handler
+    */
+  type LiftRequestPf = PartialFunction[RequestState, Boolean]
+  
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   
@@ -544,6 +550,20 @@ object LiftServlet {
     }
   }  
   
+  /**
+    * Get the partial function that defines if a request should be handled by
+    * the application (rather than the default servlet handler)
+    */
+  def isLiftRequest_? : LiftRequestPf = i_isLiftRequest_?
+      
+  /**
+    * Append a partial function to the list of interceptors to test
+    * if the request should be handled by lift
+    */
+  def addLiftRequest(what: LiftRequestPf) {i_isLiftRequest_? = i_isLiftRequest_? orElse what}
+  
+  private var i_isLiftRequest_? : LiftRequestPf = Map.empty
+  
   private var dispatchTable_i : DispatchPf = Map.empty
   
   private var rewriteTable_i : RewritePf = Map.empty
@@ -659,10 +679,11 @@ class LiftFilter extends Filter
     //This function tells you wether a resource exists or not, could probably be better
     private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
       in.endsWith(".htm") ||
-      in.endsWith(".xml") 
+      in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
     
     private def isLiftRequest_?(session: RequestState): Boolean = {
-      session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) || 
+      if (LiftServlet.isLiftRequest_?.isDefinedAt(session)) LiftServlet.isLiftRequest_?(session)
+      else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) || 
         context.getResource(session.uri) == null
     }
 }

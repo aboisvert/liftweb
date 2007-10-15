@@ -28,7 +28,7 @@ class Boot {
     addToPackages("com.skittr")
      
     // make sure the database is up to date
-    Schemifier.schemify(true, (msg: String) => Log.info(msg), modelList :_*)
+    Schemifier.schemify(true, Log.infoF _, modelList :_*)
     
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     

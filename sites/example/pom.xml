@@ -91,7 +91,7 @@
    <plugin>
         <groupId>scala</groupId>
         <artifactId>maven-scala-plugin</artifactId>
-        <version>1.1-ALT</version>
+        <version>1.1.1-ALT</version>
         <configuration>
           <maxmemory>1524m</maxmemory>
         </configuration>
@@ -100,6 +100,7 @@
       <phase>compile</phase>
       <goals>
        <goal>compile</goal>
+       <goal>doc</goal>
       </goals>
      </execution>
     </executions>

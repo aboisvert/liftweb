@@ -25,7 +25,7 @@ class Boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("net.liftweb.example")
      
-    Schemifier.schemify(true, (msg: String) => Log.info(msg), User, WikiEntry)
+    Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
     
     val dispatcher: LiftServlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
