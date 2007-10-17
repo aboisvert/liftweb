@@ -47,8 +47,8 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     new Date(0L)
   }
   
-  def ::=(f : Any) : Date = {
-    this := toDate(f)
+  override def setFromAny(f : Any): Date = {
+    this.set(toDate(f))
   }
   
   

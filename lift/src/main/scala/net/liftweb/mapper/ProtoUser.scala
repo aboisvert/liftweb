@@ -19,16 +19,16 @@ import S._
 
 trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] { self: T =>
   // the primary key for the database
-  object id extends MappedLongIndex[T](this)
+  object id extends MappedLongIndex(this)
   
   // First Name
-  object firstName extends MappedString[T](this, 32)
+  object firstName extends MappedString(this, 32)
 
   // Last Name
-  object lastName extends MappedString[T](this, 32)
+  object lastName extends MappedString(this, 32)
 
   // Email
-  object email extends MappedEmail[T](this, 48) {
+  object email extends MappedEmail(this, 48) {
     override def dbIndexed_? = true
     override def validations = valUnique("The email address must be unique") _ :: super.validations
   }
@@ -38,12 +38,12 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] { self: T =>
 }
 
 trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
-  object uniqueId extends MappedUniqueId[T](this, 32) {
+  object uniqueId extends MappedUniqueId(this, 32) {
     override def dbIndexed_? = true
   }
   
-  object validated extends MappedBoolean[T](this) {
-    override def defaultValue: Boolean = false
+  object validated extends MappedBoolean(this) {
+    override def defaultValue = false
   }
   
   def signupFields = firstName :: lastName :: email :: password :: Nil
@@ -305,7 +305,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     def testAndSet(ignore: String) {
       if (!user.password.match_?(oldPassword)) S.error("Wrong old password")
       else {
-        user.password ::= newPassword
+        user.password.setFromAny(newPassword)
         user.validate match {
           case Nil => user.save; S.notice("Password Changed"); S.redirectTo(HomePage)
           case xs => S.error(xs)

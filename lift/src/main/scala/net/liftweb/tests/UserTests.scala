@@ -21,15 +21,15 @@ class UserTests extends TestCase("User Tests") {
       
         for (cnt <- 1 to maxUsers) {
           val u = new User
-          u.firstName := cnt.toString
-          u.lastName := "Name "+cnt
-          u.email := "mr"+cnt+"@foo.com"
-          u.password := "password"+cnt
+          u.firstName(cnt.toString)
+          u.lastName("Name "+cnt)
+          u.email("mr"+cnt+"@foo.com")
+          u.password("password"+cnt)
           u.save
           for (petCnt <- 1 to (1 + cnt/ 10)) {
             val p = new Pet
-            p.name := ""+petCnt+" of "+u.lastName
-            p.owner := u.id
+            p.name(""+petCnt+" of "+u.lastName)
+            p.owner(u.id)
             p.save
           }
         }

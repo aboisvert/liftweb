@@ -12,9 +12,9 @@ class ThreadGlobal[T]
   
   def value : T = threadLocal.get.asInstanceOf[T];
   
-  def :=(v : T) : T = {
+  def set(v: T): ThreadGlobal[T] = {
     threadLocal.set(v)
-    v
+    this
   }
   
   def doWith[R](x : T)(f : => R) : R = {

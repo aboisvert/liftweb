@@ -47,7 +47,7 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
   def get: List[To] = this()
   
 
-  def :=(what: Seq[ThroughType]): Seq[ThroughType] = {
+  def set(what: Seq[ThroughType]): Seq[ThroughType] = {
     theSetList = what
     theSetList
   }
@@ -73,8 +73,8 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
     theSetList.toList.removeDuplicates.filter(i => !oldKeys.contains(i)).foreach {
       i =>
 	val toCreate = through.createInstance
-      throughFromField.actualField(toCreate) := owner.primaryKeyField
-      throughToField.actualField(toCreate) := i
+      throughFromField.actualField(toCreate).set(owner.primaryKeyField)
+      throughToField.actualField(toCreate).set(i)
       toCreate.save
     }
 

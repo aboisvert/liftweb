@@ -58,13 +58,13 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   object timedEventAt extends MappedLong[MyType](this) 
   
   object nextTransitionAt extends MappedLong[MyType](this) with LifecycleCallbacks {
-    override def beforeSave {if (this.is < System.currentTimeMillis) this := -1L}
+    override def beforeSave {if (this.is < System.currentTimeMillis) this.set(-1L)}
     override def dbIndexed_?  = true
   }
   
   def setupTime(when: TimeSpan) {
     val trigger = timedEventAt.is + when.len
-    if (trigger >= System.currentTimeMillis && (nextTransitionAt.is <= 0L || trigger < nextTransitionAt.is)) nextTransitionAt := trigger
+    if (trigger >= System.currentTimeMillis && (nextTransitionAt.is <= 0L || trigger < nextTransitionAt.is)) nextTransitionAt.set(trigger)
   }
   
   /**
@@ -171,14 +171,14 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   protected def instantiate: MyType
 
   def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, Empty)  
-  def createNewInstance(firstEvent: Meta#Event, setup: Can[(MyType) => Any]): MyType = {
+  def createNewInstance(firstEvent: Meta#Event, setup: Can[MyType => Unit]): MyType = {
     val state = instantiate
     setup.foreach(_(state))
     state.processEvent(firstEvent)
     state
   }
   
-  def createNewInstance(firstEvent: Meta#Event)( setup: (MyType) => Any): MyType = createNewInstance(firstEvent, Full(setup))
+  def createNewInstance(firstEvent: Meta#Event)(setup: MyType => Unit): MyType = createNewInstance(firstEvent, Full(setup))
 
   
   
@@ -195,8 +195,8 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
       val old = who.state
       stateList.get(old).foreach(_.performExit(who, old, to, what))
       t.performAction(who, old, to, what)
-      who.timedEventAt := System.currentTimeMillis
-      who.nextTransitionAt := -1L
+      who.timedEventAt(System.currentTimeMillis)
+      who.nextTransitionAt(-1L)
       stateList.get(to).foreach(_.performSetup(who))
       who.transition(old, to, what)
       stateList.get(to).foreach(_.performEntry(who, old, to, what))
@@ -249,7 +249,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        * something else
        */
      override def unmatchedEventHanlder(who: MyType, state: State) {
-       who.nextTransitionAt := -1L
+       who.nextTransitionAt(-1L)
        state.trans.foreach {
          to =>
          to match {

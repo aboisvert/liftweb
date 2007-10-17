@@ -16,7 +16,7 @@ import net.liftweb.util._
 
 class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)
-  def defaultValue = false
+  def defaultValue: Boolean = false
 
   def dbFieldClass = classOf[Boolean]
   
@@ -39,16 +39,17 @@ class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T]
   
   def jdbcFriendly(field : String) = data.map(v => new java.lang.Integer(if(v) 1 else 0)) openOr null
 
-  def ::=(in : Any) : Boolean = {
+  override def setFromAny(in: Any): Boolean = {
     in match {
-      case b: Boolean => this := b
-      case (b: Boolean) :: _ => this := b
-      case Some(b: Boolean) => this := b
-      case None => this := false
-      case (s: String) :: _ => this := toBoolean(s)
-      case null => this := false
-      case s: String => this := toBoolean(s)
-      case o => this := toBoolean(o)
+      case b: Boolean => this.set(b)
+      case (b: Boolean) :: _ => this.set(b)
+      case Some(b: Boolean) => this.set(b)
+      case Full(b: Boolean) => this.set(b)
+      case Empty | Failure(_, _, _) | None => this.set(false)
+      case (s: String) :: _ => this.set(toBoolean(s))
+      case null => this.set(false)
+      case s: String => this.set(toBoolean(s))
+      case o => this.set(toBoolean(o))
     }
   }
 

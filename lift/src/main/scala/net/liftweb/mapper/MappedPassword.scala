@@ -46,15 +46,15 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
   
   def setList(in: List[String]): Boolean =
     in match {
-    case x1 :: x2 :: Nil if x1 == x2 => this := x1 ; true
+    case x1 :: x2 :: Nil if x1 == x2 => this.set(x1) ; true
     case _ => invalidPw = true; invalidMsg = "Passwords do not match"; false
     }
   
   
-  override def ::=(f : Any) : String = {
+  override def setFromAny(f: Any): String = {
     f match {
-      case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this := a(0)}
-      case l : List[String] if (l.length == 2 && l.head == l(1)) => {this := l.head}
+      case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this.set(a(0))}
+      case l : List[String] if (l.length == 2 && l.head == l(1)) => {this.set(l.head)}
       case _ => {invalidPw = true; invalidMsg = "Passwords do not match"}
     }
     is
@@ -91,7 +91,7 @@ class MappedPassword[T<:Mapper[T]](val owner : T) extends MappedField[String, T]
      * Create an input field for the item
      */
     override def toForm : NodeSeq = {
-       val funcName = S.mapFunc({s: List[String] => this ::= s; true})
+       val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
        <span><input type='password' name={funcName} value={is.toString}/>&nbsp;
        repeat<input type='password' name={funcName} value={is.toString}/></span>
     }

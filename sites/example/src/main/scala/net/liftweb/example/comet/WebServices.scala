@@ -24,11 +24,9 @@ class WebServices (val request: RequestState,val httpRequest: HttpServletRequest
          lastname <- param("lastname");
          email <- param("email")) {
       val u = new User
-      u.firstName := firstname
-      u.lastName := lastname
-      u.email := email
-      param("textarea").map{v => u.textArea := v}
-      param("password").map{v => u.password := v}
+      u.firstName(firstname).lastName(lastname).email(email)
+      param("textarea").map{v => u.textArea(v)}
+      param("password").map{v => u.password(v)}
       success = u.save
     }
     

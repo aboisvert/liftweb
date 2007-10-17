@@ -39,12 +39,10 @@ class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[Byte],
     new Array[Byte](0)
   }
   
-  def ::=(f : Any) : Array[Byte] = {
-    this := (if (f == null) null
+  override def setFromAny(f: Any): Array[Byte] =
+    this.set((if (f == null) null
 	     else if (f.isInstanceOf[Array[Byte]]) f.asInstanceOf[Array[Byte]];
-	     else f.toString.getBytes("UTF-8"))
-  }
-  
+	     else f.toString.getBytes("UTF-8")))
   
   def jdbcFriendly(field : String) : Object = is
   

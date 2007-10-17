@@ -39,9 +39,11 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
     
     override def toString = if (defined_?) super.toString else "NULL"
 
+      /*
       def :=(v : Can[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
    def :=(v : O) : Long = this.:=(v.primaryKeyField.is)
-      
+      */
+        
    def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
    def apply(v: O): T = this(v.primaryKeyField.is)
    
@@ -135,18 +137,18 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: 
   override def jdbcFriendly = new java.lang.Long(toLong)
 
 
-  def ::=(in : Any): List[ENUM#Value] = {
+  override def setFromAny(in: Any): List[ENUM#Value] = {
     in match {
-      case n: Long => this := fromLong(n)
-      case n: Number => this := fromLong(n.longValue)
-      case (n: Number) :: _ => this := fromLong(n.longValue)
-      case Some(n: Number) => this := fromLong(n.longValue)
-      case None => this := Nil
-      case (s: String) :: _ => this := fromLong(Helpers.toLong(s))
-      case vs: List[ENUM#Value] => this := vs
-      case null => this := Nil
-      case s: String => this := fromLong(Helpers.toLong(s))
-      case o => this := fromLong(Helpers.toLong(o))
+      case n: Long => this.set( fromLong(n))
+      case n: Number => this.set(fromLong(n.longValue))
+      case (n: Number) :: _ => this.set(fromLong(n.longValue))
+      case Some(n: Number) => this.set(fromLong(n.longValue))
+      case None => this.set(Nil)
+      case (s: String) :: _ => this.set(fromLong(Helpers.toLong(s)))
+      case vs: List[ENUM#Value] => this.set(vs)
+      case null => this.set(Nil)
+      case s: String => this.set(fromLong(Helpers.toLong(s)))
+      case o => this.set(fromLong(Helpers.toLong(o)))
     }
   }
   
@@ -215,19 +217,19 @@ class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
   def jdbcFriendly(field : String) = new java.lang.Long(i_is_!)
   override def jdbcFriendly = new java.lang.Long(i_is_!)
 
-  def ::=(in : Any) : long = {
+  override def setFromAny(in: Any): Long = {
     in match {
-      case n: Long => this := n
-      case n: Number => this := n.longValue
-      case (n: Number) :: _ => this := n.longValue
-      case Some(n: Number) => this := n.longValue
-      case Full(n: Number) => this := n.longValue
-      case Empty | Failure(_, _, _) => this := 0L
-      case None => this := 0L
-      case (s: String) :: _ => this := toLong(s)
-      case null => this := 0L
-      case s: String => this := toLong(s)
-      case o => this := toLong(o)
+      case n: Long => this.set(n)
+      case n: Number => this.set(n.longValue)
+      case (n: Number) :: _ => this.set(n.longValue)
+      case Some(n: Number) => this.set(n.longValue)
+      case Full(n: Number) => this.set(n.longValue)
+      case Empty | Failure(_, _, _) => this.set(0L)
+      case None => this.set(0L)
+      case (s: String) :: _ => this.set(toLong(s))
+      case null => this.set(0L)
+      case s: String => this.set(toLong(s))
+      case o => this.set(toLong(o))
     }
   }
 

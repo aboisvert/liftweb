@@ -15,89 +15,154 @@ import net.liftweb.http.S
 import net.liftweb.http.S._
 import net.liftweb.util._
 
+/**
+  * The base (not Typed) trait that defines a field that is mapped to a column or more than 1 column
+  * (e.g., MappedPassword) in the database
+  */
 trait BaseMappedField {
-  def jdbcFriendly(field : String) : Object
+  /**
+    * Get a JDBC friendly representation of the named field (this is used for MappedFields that correspond to more than 
+    * 1 column in the database.)
+    * @param field -- the name of the field being mapped to
+    */
+  def jdbcFriendly(field : String): AnyRef
   
-  def jdbcFriendly: Object
+  /**
+    * Get a JDBC friendly object for the part of this field that maps to the first
+    * column in the database 
+    */
+  def jdbcFriendly: AnyRef
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def targetSQLType(field : String): Int
+  def targetSQLType(field: String): Int
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def targetSQLType : Int
+  def targetSQLType: Int
   
+  /**
+    * Validate this field and return a list of Validation Issues
+    */
   def validate: List[ValidationIssue]
+  
   /**
    * Given the driver type, return the string required to create the column in the database
    */
   def fieldCreatorString(dbType: DriverType, colName: String): String
   
+  /**
+    * Given the driver type, return a list of statements to create the columns in the database
+    */
   def fieldCreatorString(dbType: DriverType): List[String]
+  
+  /**
+    * The human name of this field
+    */
   def name: String
   
+  /**
+    * Convert the field to its name/value pair (e.g., name=David)
+    */
   def asString: String
   
-  def dbColumnCount: int
+  /**
+    * The number of database columns that this field represents
+    */  
+  def dbColumnCount: Int
   
-  def dbColumnNames(in : String): List[String]
+  
+  def dbColumnNames(in: String): List[String]
   
   def dbColumnName: String
   
   /**
     * Should the field be indexed?
     */
-  def dbIndexed_? : boolean
+  def dbIndexed_? : Boolean
       
   /**
     * Is the field the table's primary key
     */
-  def dbPrimaryKey_? : boolean
+  def dbPrimaryKey_? : Boolean
       
   /**
     * Is the field a foreign key reference
     */
-  def dbForeignKey_? : boolean
+  def dbForeignKey_? : Boolean
       
   /**
     * Called when a column has been added to the database via Schemifier
     */
   def dbAddedColumn: Can[() => Unit]
                             
-                            /**
-                               * Called when a column has indexed via Schemifier
-                               */
-                             def dbAddedIndex: Can[() => unit]
-                                                       
-                            
+   /**
+     * Called when a column has indexed via Schemifier
+     */
+  def dbAddedIndex: Can[() => Unit]
 }
 
-
+/**
+  * The Trait that defines a field that is mapped to a foreign key
+  */
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
 }
 
-trait BaseOwnedMappedField[O <: Mapper[O]] extends BaseMappedField
+trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField
 
-trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
-  def ignoreField = false
-  def defaultValue: T
+/**
+  * The strongly typed field that's mapped to a column (or many columns) in the database.
+  * FieldType is the type of the field and OwnerType is the Owner of the field 
+  */
+trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseOwnedMappedField[OwnerType] {
+  /**
+    * Should the field be ignored by the OR Mapper?
+    */
+  def ignoreField_? = false
+      
+  /**
+    * The default value for the field
+    */
+  def defaultValue: FieldType
+  
+  /**
+    * What is the real class that corresponds to FieldType 
+    */
   def dbFieldClass: Class
 
-  def actualField(actual: O): MappedField[T, O] = actual.getSingleton.getActualField(actual, this)
+  /**
+    * Get the field that this prototypical field represents
+    *
+    * @param actual the object to find the field on
+    */
+  def actualField(actual: OwnerType): MappedField[FieldType, OwnerType] = actual.getSingleton.getActualField(actual, this)
 
   /**
    * Given the driver type, return the string required to create the column in the database
    */
   def fieldCreatorString(dbType: DriverType, colName: String): String
   
+  /**
+    * Given the driver type, return a list of SQL creation strings for the columns represented by this field
+    */
   def fieldCreatorString(dbType: DriverType): List[String] = dbColumnNames(name).map{c => fieldCreatorString(dbType, c)}
   
+  /**
+    * Is the field dirty
+    */
   private var _dirty_? = false
+      
+  /**
+    * Is the field dirty (has it been changed since the record was loaded from the database
+    */
   def dirty_? = !dbPrimaryKey_? && _dirty_?
-  protected def dirty_?(b : boolean) = _dirty_? = b
+      
+  /**
+    * Make the field dirty
+    */
+  protected def dirty_?(b: Boolean) = _dirty_? = b
 
       /**
          * Called when a column has been added to the database via Schemifier
@@ -111,28 +176,46 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   /**
    * override this method in indexed fields to indicate that the field has been saved
    */
-  def dbIndexFieldIndicatesSaved_? = false
+  def dbIndexFieldIndicatesSaved_? = false;
   
-  def owner : O
-  final def safe_? : boolean = {
+  /**
+    * Return the owner of this field
+    */
+  def owner: OwnerType
+  
+  /**
+    * Are we in "safe" mode (i.e., the value of the field can be read or written without any security checks.)
+    */
+  final def safe_? : Boolean = {
     owner.safe_?
   }
   
+  /**
+    * Given the current execution state, can the field be written?
+    */
   def writePermission_? = false
+      
+  /**
+    * Given the current execution state, can the field be read?
+    */
   def readPermission_? = false
   
   /**
    * pascal-style assignment for syntactic sugar
    */
-  def :=(v : T) : T = {
+  /*
+  def :=(v: FieldType): FieldType = {
     if (safe_? || writePermission_?) i_set_!(v)
     v
   }
   
-  def :?=(v: Can[T]) : Can[T] = {
+  /**
+    * pascal style assignment for Can[FieldType]
+    */
+  def :?=(v: Can[FieldType]): Can[FieldType] = {
     v.foreach(tv => this := tv)
     v
-  }
+  }*/
   
   /**
    * Assignment from the underlying type.  It's ugly, but:<br />
@@ -142,35 +225,50 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
    * field.set(new_value) <br />
    * are all the same
    */
-  def update(v: T) {
-    this := v
+  def update(v: FieldType) {
+    this.set(v)
   }
   
-  def apply(v: T): O = {
-    this := v
+  def apply(v: FieldType): OwnerType = {
+    this.set(v)
     owner
   }
     
-    def ->(v: T): O = {
+  /*
+    def ->(v: FieldType): O = {
       this := v
       owner
     }
-  
+  */
+    
   private var _name : String = null
   
-  final def i_name_! = {_name}
+  /**
+    * The internal name of this field.  Use name
+    */
+  private[mapper] final def i_name_! = _name
   
+  /**
+    * The name of this field
+    */
   final def name = synchronized {
     if (_name eq null) {
       owner.checkNames
     }
     _name
   }
-  final def setName_!(newName : String) : String = {
+  
+  /**
+    * Set the name of this field
+    */
+  private[mapper] final def setName_!(newName : String) : String = {
     if(safe_?) _name = newName.toLowerCase
     _name
   }
   
+  /**
+    * The display name of this field (e.g., "First Name")
+    */
   def displayName = name
   
   def resetDirty {
@@ -182,55 +280,91 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   /**
    * pascal-style assignment for syntactic sugar
    */
+  /*
   def ::=(v : Any) : T
-  
+  */
+    
+  /**
+    *  Attempt to figure out what the incoming value is and set the field to that value.  Return true if
+    * the value could be assigned
+    */
+  def setFromAny(value: Any): FieldType
+     
+    
   /**
    * Create an input field for the item
    */
-  def toForm : NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this ::= s; true})} value={is.toString}/>
+  def toForm : NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is.toString}/>
   
-  def set(value : T) : T = {
+  /**
+    * Set the field to the value
+    */
+  def set(value: FieldType): FieldType = {
     if (safe_? || writePermission_?) i_set_!(value)
     else throw new Exception("Do not have permissions to set this field")
   }
 
-  def set_?(value: Can[T]): Can[T] = {
+  /**
+    * Set the field to the Can value if the Can is Full
+    */
+  def set_?(value: Can[FieldType]): Can[FieldType] = {
     value.foreach(v => this.set(v))
     value
   }
   
-  protected def setFilter: List[T => T] = Nil
+  /**
+    * A list of functions that transform the value before it is set.  The transformations
+    * are also applied before the value is used in a query.  Typical applications
+    * of this are trimming and/or toLowerCase-ing strings
+    */
+  protected def setFilter: List[FieldType => FieldType] = Nil
   
-  protected final def i_set_!(value : T) : T = {
+  protected final def i_set_!(value: FieldType): FieldType = {
     real_i_set_!(runFilters(value, setFilter))
   }
   
-  def runFilters(in: T, filter: List[(T) => T]): T = {
+  def runFilters(in: FieldType, filter: List[FieldType => FieldType]): FieldType =
     filter match {
       case Nil => in
       case x :: xs => runFilters(x(in), xs)
     }
-  }
   
+  /**
+    * Must be implemented to store the value of the field
+    */
+  protected def real_i_set_!(value: FieldType): FieldType
   
-  protected def real_i_set_!(value: T) : T
+  def buildSetActualValue(accessor: Method, inst : AnyRef, columnName : String) : (OwnerType, AnyRef) => Unit 
+  def buildSetLongValue(accessor: Method, columnName: String): (OwnerType, Long, Boolean) => Unit 
+  def buildSetStringValue(accessor: Method, columnName: String): (OwnerType, String) => Unit 
+  def buildSetDateValue(accessor: Method, columnName: String): (OwnerType, Date) => Unit 
+  def buildSetBooleanValue(accessor: Method, columnName: String) : (OwnerType, Boolean, Boolean) => Unit 
+  protected def getField(inst: OwnerType, meth: Method) = meth.invoke(inst, null).asInstanceOf[MappedField[FieldType,OwnerType]];
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (O, AnyRef) => unit 
-  def buildSetLongValue(accessor : Method, columnName : String) : (O, long, boolean) => unit 
-  def buildSetStringValue(accessor : Method, columnName : String) : (O, String) => unit 
-  def buildSetDateValue(accessor : Method, columnName : String) : (O, Date) => unit 
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (O, boolean, boolean) => unit 
-  protected def getField(inst : O, meth : Method) = meth.invoke(inst, null).asInstanceOf[MappedField[T,O]];
-  
-  def is : T = {
+  /**
+    * Convert the field to its "context free" type (e.g., String, Int, Long, etc.)
+    * If there are no read permissions, the value will be obscured
+    */
+  def is: FieldType = {
     if (safe_? || readPermission_?) i_is_!
     else i_obscure_!(i_is_!)
   }
   
-  protected def i_is_! : T
+  /**
+    * The actual value of the field
+    */
+  protected def i_is_! : FieldType
   
-  protected def i_obscure_!(in : T) : T
+  /**
+    * Obscure the incoming value to a "safe" value (e.g., if there are
+    * not enough rights to view the entire social security number 123-45-5678, this
+    * method might return ***-**-*678
+    */
+  protected def i_obscure_!(in : FieldType): FieldType
   
+  /**
+    * Return the field name and field value, delimited by an '='
+    */
   def asString = displayName + "=" + toString
   
   def dbColumnCount = 1
@@ -239,14 +373,14 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   
   def dbColumnName = name.toLowerCase
 
-  def dbIndexed_? : boolean = false
+  def dbIndexed_? : Boolean = false
 
-  def dbPrimaryKey_? : boolean = false
+  def dbPrimaryKey_? : Boolean = false
       
       /**
          * Is the field a foreign key reference
          */
-       def dbForeignKey_? : boolean = false
+       def dbForeignKey_? : Boolean = false
 
   def jdbcFriendly(field : String) : Object
   
@@ -255,28 +389,28 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   /**
    * Get the JDBC SQL Type for this field
    */
-  def targetSQLType(field : String) : Int = targetSQLType
+  def targetSQLType(field : String): Int = targetSQLType
 
   /**
    * Get the JDBC SQL Type for this field
    */
-  def targetSQLType : Int
+  def targetSQLType: Int
   
   override def toString : String = {
     val t = is
     if (t == null) "" else t.toString
   }
   
-  def validations: List[(T) => List[ValidationIssue]] = Nil
+  def validations: List[FieldType => List[ValidationIssue]] = Nil
   
   def validate : List[ValidationIssue] = {
     val cv = is
     validations.flatMap(_(cv))
   }
 
-  final def convertToJDBCFriendly(value: T): Object = real_convertToJDBCFriendly(runFilters(value, setFilter))
+  final def convertToJDBCFriendly(value: FieldType): Object = real_convertToJDBCFriendly(runFilters(value, setFilter))
 
-  protected def real_convertToJDBCFriendly(value: T): Object
+  protected def real_convertToJDBCFriendly(value: FieldType): Object
   
   /**
     * Does the "right thing" comparing mapped fields 
@@ -284,7 +418,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
   override def equals(other: Any): Boolean = {
     other match {
       case mapped: MappedField[Any, Nothing] => this.is == mapped.is
-      case ov: AnyRef if (ov ne null) && dbFieldClass.isAssignableFrom(ov.getClass) => this.is == runFilters(ov.asInstanceOf[T], setFilter)
+      case ov: AnyRef if (ov ne null) && dbFieldClass.isAssignableFrom(ov.getClass) => this.is == runFilters(ov.asInstanceOf[FieldType], setFilter)
       case ov => this.is == ov
     }
   }
@@ -293,7 +427,7 @@ trait MappedField[T <: Any,O<:Mapper[O]] extends BaseOwnedMappedField[O] {
 }
 
 object MappedField {
-  implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]) : T = in.is
+  implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]): T = in.is
 }
 
 case class ValidationIssue(field : BaseMappedField, msg : String)
@@ -318,7 +452,7 @@ trait BaseForeignKey extends BaseMappedField {
   /**
    * Is the key defined?
    */
-  def defined_? : boolean
+  def defined_? : Boolean
   //def dbIndexed_? = true
           
   //def dbForeignKey_? = true

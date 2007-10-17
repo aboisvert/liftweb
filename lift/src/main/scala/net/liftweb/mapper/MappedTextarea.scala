@@ -9,7 +9,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[
      * Create an input field for the item
      */
     override def toForm : NodeSeq = {
-       val funcName = S.mapFunc({s: List[String] => this ::= s; true})
+       val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
        <textarea name={funcName} rows={textareaRows.toString} cols={textareaCols.toString}>{is.toString}</textarea>
     }
   /*

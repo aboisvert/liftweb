@@ -35,11 +35,7 @@ object S {
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
   private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]]
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
-  private val inS = {
-    val ret = new ThreadGlobal[Boolean];
-    ret := false
-    ret           
-  }
+  private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[HashMap[String, String]]
   private val _stateInfo = new ThreadGlobal[VarStateHolder]

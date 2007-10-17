@@ -542,7 +542,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     
     for (v <- this.getClass.getSuperclass.getMethods  if isMagicObject(v) && isMappedField(v)) {
       v.invoke(this, null) match {
-        case mf: MappedField[AnyRef, A] if !mf.ignoreField =>
+        case mf: MappedField[AnyRef, A] if !mf.ignoreField_? =>
           mf.setName_!(v.getName)
         tArray += ((mf.name, v, mf))
         for (colName <- mf.dbColumnNames(v.getName)) {

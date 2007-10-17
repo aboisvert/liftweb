@@ -45,19 +45,20 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM
   override def jdbcFriendly = new java.lang.Integer(toInt)
 
 
-  def ::=(in : Any): ENUM#Value = {
+  override def setFromAny(in: Any): ENUM#Value = {
     in match {
-      case n: Int => this := fromInt(n)
-      case n: Long => this := fromInt(n.toInt)
-      case n: Number => this := fromInt(n.intValue)
-      case (n: Number) :: _ => this := fromInt(n.intValue)
-      case Some(n: Number) => this := fromInt(n.intValue)
-      case None => this := defaultValue
-      case (s: String) :: _ => this := fromInt(Helpers.toInt(s))
-      case vs: ENUM#Value => this := vs
-      case null => this := defaultValue
-      case s: String => this := fromInt(Helpers.toInt(s))
-      case o => this := fromInt(Helpers.toInt(o))
+      case n: Int => this.set(fromInt(n))
+      case n: Long => this.set(fromInt(n.toInt))
+      case n: Number => this.set(fromInt(n.intValue))
+      case (n: Number) :: _ => this.set(fromInt(n.intValue))
+      case Some(n: Number) => this.set(fromInt(n.intValue))
+      case Full(n: Number) => this.set(fromInt(n.intValue))
+      case None | Empty | Failure(_, _, _) => this.set(defaultValue)
+      case (s: String) :: _ => this.set(fromInt(Helpers.toInt(s)))
+      case vs: ENUM#Value => this.set(vs)
+      case null => this.set(defaultValue)
+      case s: String => this.set(fromInt(Helpers.toInt(s)))
+      case o => this.set(fromInt(Helpers.toInt(o)))
     }
   }
   
@@ -179,17 +180,18 @@ class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
   
   def jdbcFriendly(field : String) = new java.lang.Integer(is)
 
-  def ::=(in : Any) : int = {
+  override def setFromAny(in: Any): Int = {
     in match {
-      case n: int => this := n
-      case n: Number => this := n.intValue
-      case (n: Number) :: _ => this := n.intValue
-      case Some(n: Number) => this := n.intValue
-      case None => this := 0
-      case (s: String) :: _ => this := toInt(s)
-      case null => this := 0
-      case s: String => this := toInt(s)
-      case o => this := toInt(o)
+      case n: Int => this.set(n)
+      case n: Number => this.set(n.intValue)
+      case (n: Number) :: _ => this.set(n.intValue)
+      case Some(n: Number) => this.set(n.intValue)
+      case Full(n: Number) => this.set(n.intValue)
+      case None | Empty | Failure(_, _, _) => this.set(0)
+      case (s: String) :: _ => this.set(toInt(s))
+      case null => this.set(0)
+      case s: String => this.set(toInt(s))
+      case o => this.set(toInt(o))
     }
   }
   

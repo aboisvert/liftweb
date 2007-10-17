@@ -65,21 +65,21 @@ class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedFi
     ""
   }
   
-  def ::=(in : Any) : String = {
+  override def setFromAny(in : Any) : String = {
     in match {
-      case (s: String) :: _ => this := s
-      case null => this := null
-      case s: String => this := s
-      case Some(s: String) => this := s
-      case None => this := null
-      case o => this := o.toString
+      case (s: String) :: _ => this.set(s)
+      case null => this.set(null)
+      case s: String => this.set(s)
+      case Some(s: String) => this.set(s)
+      case Full(s: String) => this.set(s)
+      case None | Empty | Failure(_, _, _) => this.set(null)
+      case o => this.set(o.toString)
     }
-    //     this := (if (f != null) f.toString else null)
   }
   
   
   def apply(ov: Can[String]): T = {
-    ov.foreach(v => this := v)
+    ov.foreach(v => this.set(v))
     owner
   }
   
