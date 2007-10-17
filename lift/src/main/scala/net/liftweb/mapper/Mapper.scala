@@ -149,6 +149,14 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   }
   
   def comparePrimaryKeys(other: A) = false
+  
+  /**
+    * Find the field by name
+    * @param fieldName -- the name of the field to find
+    *
+    * @return Can[MappedField]
+    */ 
+  def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>

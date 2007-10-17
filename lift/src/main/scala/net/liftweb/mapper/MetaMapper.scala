@@ -142,7 +142,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
   def create: A = createInstance
 
-  private[mapper] def addFields(what: String,whereAdded: boolean, by: List[QueryParam[A]]): String = {
+  private[mapper] def addFields(what: String, whereAdded: Boolean, by: List[QueryParam[A]]): String = {
 
     var wav = whereAdded
 
@@ -508,10 +508,18 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
   }
   
+  /**
+    * Get a field by the field name
+    * @param fieldName -- the name of the field to get
+    * @param actual -- the instance to get the field on
+    *
+    * @return Can[The Field] (Empty if the field is not found)
+    */
+  def fieldByName[T](fieldName: String, actual: A):Can[MappedField[T, A]] = Can(_mappedFields.get(fieldName)).map(meth => ??(meth, actual).asInstanceOf[MappedField[T,A]])
   
   def createInstance: A = rootClass.newInstance.asInstanceOf[A]
   
-  def fieldOrder : List[BaseOwnedMappedField[ A]] = Nil
+  def fieldOrder: List[BaseOwnedMappedField[A]] = Nil
   
   protected val rootClass = this.getClass.getSuperclass
   
