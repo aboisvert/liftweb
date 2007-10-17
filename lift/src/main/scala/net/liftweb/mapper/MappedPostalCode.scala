@@ -174,6 +174,7 @@ object Countries extends Enumeration {
   val C165 = Value(165, "Suriname")
   val C166 = Value(166, "Swaziland")
   val C167 = Value(167, "Sweden")
+  val Sweden = C167
   val C168 = Value(168, "Switzerland")
   val C169 = Value(169, "Syria")
   val C170 = Value(170, "Tajikistan")
@@ -294,6 +295,7 @@ class MappedPostalCode[T<:Mapper[T]](owner : T, country: MappedEnum[T, Countries
   
   override def validations = country.is match {
     case Countries.USA =>  valRegex(java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), "Invalid ZIP code") _ :: super.validations
+    case Countries.Sweden => valRegex(java.util.regex.Pattern.compile("[0-9]{3}[ ]?[0-9]{2}"), "Invalid Postal Code") _ :: super.validations
     case _ => genericCheck _ :: super.validations
   }
 }
