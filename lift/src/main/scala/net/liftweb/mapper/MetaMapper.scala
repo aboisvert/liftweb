@@ -516,6 +516,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     * @return Can[The Field] (Empty if the field is not found)
     */
   def fieldByName[T](fieldName: String, actual: A):Can[MappedField[T, A]] = Can(_mappedFields.get(fieldName)).map(meth => ??(meth, actual).asInstanceOf[MappedField[T,A]])
+
+  /**
+    * A partial function that takes an instance of A and a field name and returns the mapped field
+    */
+  lazy val fieldMatcher: PartialFunction[(A, String), MappedField[Any, A]] = {
+    case (actual, fieldName) if _mappedFields.contains(fieldName) => fieldByName[Any](fieldName, actual).open_! // we know this is defined
+  }
   
   def createInstance: A = rootClass.newInstance.asInstanceOf[A]
   
