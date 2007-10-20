@@ -148,7 +148,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
   
-  def bind(prefix: String, vals: (String, NodeSeq)*): NodeSeq = Helpers.bind(prefix, defaultXml, vals.map(a => BindParam(a._1, a._2)) :_*)
+  def bind(prefix: String, vals: (String, NodeSeq)*): NodeSeq = Helpers.bind(prefix, defaultXml, vals.map(a => TheBindParam(a._1, a._2)) :_*)
   def bind(vals: (String, NodeSeq)*): NodeSeq = bind(defaultPrefix, vals :_*)
   
   def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
