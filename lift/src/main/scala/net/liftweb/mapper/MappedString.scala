@@ -12,7 +12,26 @@ import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
 import java.util.Date
 import java.util.regex._
 
-class MappedString[T<:Mapper[T]](val owner : T,val maxLen: Int) extends MappedField[String, T] {
+/*
+trait NiceLength[MyType <: MappedString[_]] {self: MyType =>
+/**
+   * A list of functions that transform the value before it is set.  The transformations
+   * are also applied before the value is used in a query.  Typical applications
+   * of this are trimming and/or toLowerCase-ing strings
+   */
+ override protected def setFilter = crop _ :: super.setFilter	
+}*/
+  
+/**
+  * Just like MappedString, except it's defaultValue is "" and the length is auto-cropped to
+  * fit in the column
+  */
+class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends MappedString[T](towner, theMaxLen) {
+  override def defaultValue = ""
+  override protected def setFilter = crop _ :: super.setFilter  
+}
+
+class MappedString[T<:Mapper[T]](val owner: T,val maxLen: Int) extends MappedField[String, T] {
   private val data : FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
   def dbFieldClass = classOf[String]

@@ -262,7 +262,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def dirty_?(toTest: A) : boolean = {
     mappedFieldArray.foreach {
       mft =>      
-	if (??(mft._2, toTest).dirty_?) return true
+	if (??(mft.method, toTest).dirty_?) return true
     }
     false
   }
@@ -290,7 +290,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     
     var ret : List[ValidationIssue] = Nil
     
-    mappedFieldArray.foreach{f => ret = ret ::: ??(f._2, toValidate).validate}
+    mappedFieldArray.foreach{f => ret = ret ::: ??(f.method, toValidate).validate}
 
     _afterValidation(toValidate)
     if (saved_?) _afterValidationOnUpdate(toValidate) else _afterValidationOnCreate(toValidate)
@@ -303,8 +303,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def toXml(what: A): NodeSeq = {
     
     Elem(null,elemName,
-         mappedFieldArray.elements.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p._2, what)
-									   new UnprefixedAttribute(p._1, fld.toString, md)}
+         mappedFieldArray.elements.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
+									   new UnprefixedAttribute(p.name, fld.toString, md)}
          ,TopScope)
     //    Elem("", 
     //    (mappedFieldArray.elements.map{p => ??(p._2, in).asString}).toList.mkString("", ",", "")
@@ -408,7 +408,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     ret.toList
   }
   
-  def appendFieldToStrings(in : A) : String = mappedFieldArray.toList.map(p => ??(p._2, in).asString).mkString(",")
+  def appendFieldToStrings(in: A): String = mappedFieldArray.map(p => ??(p.method, in).asString).mkString(",")
   
   
   private val columnNameToMappee = new HashMap[String, Can[(ResultSet, Int, A) => Unit]]
@@ -494,20 +494,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
   }
   
-  
-  def checkFieldNames(in: A) {
-    var pos = 0
-    var len = mappedFieldArray.length
-    while (pos < len) {
-      val f = mappedFieldArray(pos)
-      ??(f._2, in) match {
-        case field if (field.i_name_! eq null) => field.setName_!(f._1)
-        case _ => 
-      }
-      pos = pos + 1
-    }
-  }
-  
+  def checkFieldNames(in: A): Unit = mappedFieldArray.foreach(f =>
+    ??(f.method, in) match {
+      case field if (field.i_name_! eq null) => field.setName_!(f.name)
+      case _ =>
+    })
+    
   /**
     * Get a field by the field name
     * @param fieldName -- the name of the field to get
@@ -533,7 +525,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   private val mappedAppliers = new HashMap[(String, Can[Class]), (A, AnyRef) => unit];
   
   private val _mappedFields  = new HashMap[String, Method];
-  private var mappedFieldArray : Array[(String, Method, MappedField[AnyRef,A])] = null; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
+  
+  private var mappedFieldArray: List[FieldHolder[A]] = Nil; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
   private var mappedCallbacks: List[(String, Method)] = Nil
   
@@ -547,7 +540,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   private var indexMap : String = null
   
   this.runSafe {
-    val tArray = new ListBuffer[(String, Method, MappedField[AnyRef,A])]
+    val tArray = new ListBuffer[FieldHolder[A]]
     
     def isMagicObject(m: Method) = m.getReturnType.getName.endsWith("$"+m.getName+"$") && m.getParameterTypes.length == 0
     def isMappedField(m: Method) = classOf[MappedField[Nothing, A]].isAssignableFrom(m.getReturnType)
@@ -559,7 +552,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
       v.invoke(this, null) match {
         case mf: MappedField[AnyRef, A] if !mf.ignoreField_? =>
           mf.setName_!(v.getName)
-        tArray += ((mf.name, v, mf))
+        tArray += FieldHolder(mf.name, v, mf)
         for (colName <- mf.dbColumnNames(v.getName)) {
           mappedColumnInfo(colName) = mf
           mappedColumns(colName) = v
@@ -573,20 +566,20 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
     
     def findPos(in : AnyRef) : Can[Int] = {
-      tArray.toList.zipWithIndex.filter(mft => in eq mft._1._3) match {
+      tArray.toList.zipWithIndex.filter(mft => in eq mft._1.field) match {
         case Nil => Empty
         case x :: xs => Full(x._2)
       }
     }
     
-    val resArray = new ListBuffer[(String, Method, MappedField[AnyRef,A])];
+    val resArray = new ListBuffer[FieldHolder[A]];
     
     fieldOrder.foreach(f => findPos(f).foreach(pos => resArray += tArray.remove(pos)))
     
     tArray.foreach(mft => resArray += mft)      
     
-    mappedFieldArray = resArray.toArray
-    mappedFieldArray.foreach(ae => _mappedFields(ae._1) = ae._2)
+    mappedFieldArray = resArray.toList
+    mappedFieldArray.foreach(ae => _mappedFields(ae.name) = ae.method)
   }
 
   val columnNamesForInsert = (mappedColumnInfo.elements.filter(!_._2.dbPrimaryKey_?).map(_._1)).toList.mkString(",")
@@ -600,44 +593,71 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   private def internalTableName_$_$ = getClass.getSuperclass.getName.split("\\.").toList.last
   
   def htmlHeaders : NodeSeq = {
-    mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {mft => <th>{mft._3.displayName}</th>}.toList
+    mappedFieldArray.filter{mft => mft.field.dbDisplay_?}.map {mft => <th>{mft.field.displayName}</th>}.toList
     // mappedFieldInfo.elements.filter{e => e._2.db_display_?}. map {e => <th>{e._1}</th>}.toList
   }
   
-  def mappedFields: Seq[BaseMappedField] = mappedFieldArray.map(f => f._3)
+  def mappedFields: Seq[BaseMappedField] = mappedFieldArray.map(f => f.field)
   
-  def doHtmlLine(toLine : A) : NodeSeq = {
-    mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {mft => <td>{??(mft._2, toLine).asHtml}</td>}.toList
+  def doHtmlLine(toLine: A): NodeSeq = mappedFieldArray.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
+  
+  /**
+    *
+    */
+  def asJSON(actual: A, sb: StringBuilder): StringBuilder = {
+    sb.append('{')
+    mappedFieldArray.foreach{
+      f => 
+      sb.append(f.name)
+      sb.append(':')
+      ??(f.method, actual).is
+      // FIXME finish JSON
+      }
+    sb.append('}')
+    sb
   }
   
-  def asHtml(toLine : A) : NodeSeq = {
+  def asHtml(toLine: A): NodeSeq = {
     Text(internalTableName_$_$) :: Text("={ ") :: 
-    mappedFieldArray.filter{mft => mft._3.dbDisplay_?}.map {
+    mappedFieldArray.filter(_.field.dbDisplay_?).map{
       mft => 
-	val field = ??(mft._2, toLine)
-      <span>{field.displayName}={field.asHtml}&nbsp;</span>}.toList :::
+	val field = ??(mft.method, toLine)
+      <span>{field.displayName}={field.asHtml}&nbsp;</span>} :::
     List(Text(" }"))
   }
   
-  def toForm(toMap: A): NodeSeq = {
-    mappedFieldArray.filter{e => e._3.dbDisplay_?}.toList.map {
+  def toForm(toMap: A): NodeSeq = 
+    mappedFieldArray.filter(_.field.dbDisplay_?).map {
       e =>
-	val field = ??(e._2, toMap)
+	val field = ??(e.method, toMap)
       <tr>
       <td>{field.displayName}</td>
       <td>{field.toForm}</td>
       </tr>}
-  }
   
-  def getActualField[T <: Any](actual: A, protoField: MappedField[T, A]): MappedField[T, A] = {
+  /**
+   * Given the prototype field (the field on the Singleton), get the field from the instance
+   * @param actual -- the Mapper instance
+   * @param protoField -- the field from the MetaMapper (Singleton)
+   *
+   * @return the field from the actual object
+   */
+  def getActualField[T](actual: A, protoField: MappedField[T, A]): MappedField[T, A] =
     ??(_mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
-  }
 
+  /**
+   * The name of the database table.  Override this method if you
+   * want to change the table to something other than the name of the Mapper class
+   */
   def dbTableName = _dbTableName
   
+  private lazy val _dbTableName = fixTableName(internalTableName_$_$)
+
+  /*
   private val _dbTableName: String = {
     fixTableName(internalTableName_$_$)
   }
+  */
   
   private def eachField(what: A, toRun: List[(A) => Any])(f: (LifecycleCallbacks) => Any) {
     mappedCallbacks.foreach (e =>
@@ -857,3 +877,5 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   }
    
 }
+
+case class FieldHolder[T](name: String, method: Method, field: MappedField[_, T]) 

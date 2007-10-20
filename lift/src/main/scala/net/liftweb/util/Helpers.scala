@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed}
+import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -149,26 +149,46 @@ object Helpers {
     }
   }
   
-  case class BindParam(name: String, value: NodeSeq)
+  sealed abstract class BindParam {
+    def name: String
+    def value: NodeSeq
+  }
+  
+case class TheBindParam(name: String, value: NodeSeq) extends BindParam
+case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam
   
   implicit def stringThingToBindParam[T](p: (String, T)): BindParam = {
     p._2 match {
-      case null => BindParam(p._1, Text("null"))
-      case s: Symbol => BindParam(p._1, Text(s.name))
-      case s: String => BindParam(p._1, Text(s))
-      case n: NodeSeq => BindParam(p._1, n)
+      case null => TheBindParam(p._1, Text("null"))
+      case s: Symbol => TheBindParam(p._1, Text(s.name))
+      case s: String => TheBindParam(p._1, Text(s))
+      case n: NodeSeq => TheBindParam(p._1, n)
       case Some(s) => stringThingToBindParam((p._1, s))
       case Full(s) => stringThingToBindParam((p._1, s))
-      case v => BindParam(p._1, Text(p._2.toString))
+      case v => TheBindParam(p._1, Text(p._2.toString))
     }
   }
-  
+
   def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
   implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
   
+  /**
+    * Bind a set of values to parameters and attributes in a block of XML 
+    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
-    val map: scala.collection.immutable.Map[String, NodeSeq] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p.value))
+    val map: scala.collection.immutable.Map[String, BindParam] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
+    
+    def attrBind(attr: MetaData): MetaData = attr match {
+      case Null => Null
+      case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
+      case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
+        case None => new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
+        case Some(AttrBindParam(_, value, newAttr)) => new UnprefixedAttribute(newAttr, value, attrBind(pa.next))
+        case Some(TheBindParam(_, value)) => new PrefixedAttribute(pa.pre, pa.key, value, attrBind(pa.next))
+      }
+      case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
+    }
     
     def in_bind(xml:NodeSeq): NodeSeq = {
       xml.flatMap {
@@ -177,11 +197,11 @@ object Helpers {
             case s : Elem if (node.prefix == namespace) => {
               map.get(node.label) match {
 		case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
-            case Some(ns) => ns
+                case Some(ns) => ns.value
               }
             }
 	    case Group(nodes) => Group(in_bind(nodes))
-            case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, in_bind(node.child) : _*)
+            case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
             case n => node
           }
       }
@@ -916,6 +936,29 @@ object Helpers {
     m.appendTail(ret)
     ret.toString
   }
+  
+  private def capify(in: String, pos: Int, max: Int, lastLetter: Boolean, lastSymbol: Boolean, out: StringBuilder): Unit = if (pos >= max || pos >= in.length) return
+  else {
+    in.charAt(pos) match {
+      case c if Character.isDigit(c) => out.append(c); capify(in, pos + 1, max, false, false, out)
+      case c if Character.isLetter(c) => out.append(if (lastLetter) c else Character.toUpperCase(c)) ; capify(in, pos + 1, max, true, false, out)
+      case c if (c == ' ' || c == '_') && !lastSymbol => out.append(c) ; capify(in, pos + 1, max, false, true, out)
+      case _ => capify(in, pos + 1, max, false, true, out)
+    }
+  }
+  
+  def capify(in: String): String = {
+    val tmp = ((in match {
+      case null => ""
+    case s => s
+  }).trim match {
+    case "" => "n/a"
+    case s => s
+  }).toLowerCase
+  val sb = new StringBuilder
+  capify(tmp, 0, 250, false, false, sb)
+  sb.toString
+  }  
   
   private val defaultFinder = getClass.getResource _
   private var _finder = defaultFinder

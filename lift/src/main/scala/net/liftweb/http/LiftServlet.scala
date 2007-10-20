@@ -38,8 +38,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   private var requestCnt = 0
   private val selves = new ListBuffer[Actor]
   
-  
-  
   def destroy = {
     try {
     LiftServlet.ending = true
