@@ -151,12 +151,25 @@ object Helpers {
   
   sealed abstract class BindParam {
     def name: String
-    def value: NodeSeq
+    // def value: NodeSeq
+    def calcValue(in: NodeSeq): NodeSeq
   }
   
-case class TheBindParam(name: String, value: NodeSeq) extends BindParam
-case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam
-  
+case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
+  def calcValue(in: NodeSeq): NodeSeq = value
+}
+
+case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
+  def calcValue(in: NodeSeq): NodeSeq = value
+}  
+
+case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends BindParam {
+  def calcValue(in: NodeSeq): NodeSeq = value(in)
+}
+case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
+  def calcValue(in: NodeSeq): NodeSeq = value(in)
+}
+
   implicit def stringThingToBindParam[T](p: (String, T)): BindParam = {
     p._2 match {
       case null => TheBindParam(p._1, Text("null"))
@@ -184,8 +197,10 @@ case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends 
       case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
       case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
         case None => new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
-        case Some(AttrBindParam(_, value, newAttr)) => new UnprefixedAttribute(newAttr, value, attrBind(pa.next))
-        case Some(TheBindParam(_, value)) => new PrefixedAttribute(pa.pre, pa.key, value, attrBind(pa.next))
+        case Some(abp @ AttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+        case Some(abp @ FuncAttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+        case Some(bp: TheBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+        case Some(bp: FuncBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
       }
       case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
     }
@@ -197,7 +212,7 @@ case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends 
             case s : Elem if (node.prefix == namespace) => {
               map.get(node.label) match {
 		case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
-                case Some(ns) => ns.value
+                case Some(ns) => ns.calcValue(s.child)
               }
             }
 	    case Group(nodes) => Group(in_bind(nodes))
