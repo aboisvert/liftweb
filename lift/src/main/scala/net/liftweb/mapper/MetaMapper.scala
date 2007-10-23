@@ -494,6 +494,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
   }
   
+  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq)):
+  PartialFunction[String, NodeSeq => NodeSeq] = {
+     Map.empty ++ mappedFieldArray.map { mf =>
+       (mf.name, ((ignore: NodeSeq) => transform(mf.field)))
+     }
+   }  
+  
   def checkFieldNames(in: A): Unit = mappedFieldArray.foreach(f =>
     ??(f.method, in) match {
       case field if (field.i_name_! eq null) => field.setName_!(f.name)
@@ -565,7 +572,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
       }
     }
     
-    def findPos(in : AnyRef) : Can[Int] = {
+    def findPos(in: AnyRef) : Can[Int] = {
       tArray.toList.zipWithIndex.filter(mft => in eq mft._1.field) match {
         case Nil => Empty
         case x :: xs => Full(x._2)

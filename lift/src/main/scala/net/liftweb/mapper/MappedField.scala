@@ -102,6 +102,13 @@ trait BaseMappedField {
      * Called when a column has indexed via Schemifier
      */
   def dbAddedIndex: Can[() => Unit]
+  
+   /**
+    * Create an input field for the item
+    */
+  def toForm: NodeSeq   
+  
+  def asHtml: Node  
 }
 
 /**
@@ -296,7 +303,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
    * Create an input field for the item
    */
-  def toForm: NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>
+  override def toForm: NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>
   
   /**
     * Set the field to the value
@@ -425,7 +432,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     }
   }
 
-  def asHtml : Node = Text(toString)
+  override def asHtml : Node = Text(toString)
 }
 
 object MappedField {

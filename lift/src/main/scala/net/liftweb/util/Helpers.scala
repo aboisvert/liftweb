@@ -865,7 +865,41 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     bos.toString
   }
   
+  /**
+    * Given the input date, what's the month (0 based)?
+    */
+  def month(in: java.util.Date): Int = {
+    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    cal.setTimeInMillis(in.getTime)
+    cal.get(Calendar.MONTH)
+  }
+  
+  /**
+     * Given the input date, what's the year?
+     */
+   def year(in: java.util.Date): Int =  {
+     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+     cal.setTimeInMillis(in.getTime)
+     cal.get(Calendar.YEAR)
+   }
+   
+  /**
+     * Given the input date, what's the day (1 based)?
+     */
+   def day(in: java.util.Date): Int =  {
+     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+     cal.setTimeInMillis(in.getTime)
+     cal.get(Calendar.DAY_OF_MONTH)
+   }
+   
+  /**
+    * The current time as a Date object
+    */
   def timeNow = new java.util.Date
+  
+  /**
+    * The current Day as a Date object
+    */
   def dayNow: java.util.Date = 0.seconds.later.noTime
   def time(when: long) = new java.util.Date(when)
   
@@ -899,18 +933,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def date = new java.util.Date(len)
     
     def noTime = {
-      /*
-      val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-      cal.setTimeInMillis(len)
-      cal.set(Calendar.HOUR_OF_DAY, 12)
-      cal.set(Calendar.SECOND, 0)
-      cal.set(Calendar.MINUTE, 0)
-      cal.set(Calendar.MILLISECOND, 0)
-      new Date(cal.getTimeInMillis)
-      */
       val div = (12L * 60L * 60L * 1000L)
       val ret = (len - div) / (div * 2L)
-      println("Snarping to "+(new java.util.Date((ret * (div * 2L)) + div)))
       new java.util.Date((ret * (div * 2L)) + div)
     }
     
