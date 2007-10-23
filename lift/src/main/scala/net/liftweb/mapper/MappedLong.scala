@@ -15,8 +15,8 @@ import scala.xml.{NodeSeq, Text, Unparsed}
 import net.liftweb.http.S
 import S._
 
-class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, foreign: => KeyedMetaMapper[Long, O]) 
-   extends MappedLong[T](owner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
+class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, foreign: => KeyedMetaMapper[Long, O]) 
+   extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
   
   override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
@@ -59,7 +59,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](owner: T, forei
         
 }
 
-class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with IndexedField[Long] {
+class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner) with IndexedField[Long] {
 
   override def writePermission_? = false // not writable
   
@@ -103,7 +103,7 @@ class MappedLongIndex[T<:Mapper[T]](owner : T) extends MappedLong[T](owner) with
 
 }
 
-class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM) extends MappedField[List[ENUM#Value], T] {
+class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[List[ENUM#Value], T] {
   private var data: List[ENUM#Value] = defaultValue
   def defaultValue: List[ENUM#Value] = Nil
   def dbFieldClass = classOf[List[ENUM#Value]]
@@ -189,7 +189,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: 
 }
 
 
-class MappedLong[T<:Mapper[T]](val owner : T) extends MappedField[Long, T] {
+class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   private var data : Long = defaultValue
   def defaultValue: Long = 0L
   def dbFieldClass = classOf[Long]

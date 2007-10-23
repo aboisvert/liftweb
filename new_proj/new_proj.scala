@@ -40,7 +40,7 @@ if (args.length < 3) {
   var tmain = new File(rootDir, "src/main/scala")
   (new File(tmain, "bootstrap/liftweb")).mkdirs
   tmain = new File(tmain, slashPack)
-  List("controller", "model", "snippet", "view").
+  List("comet", "model", "snippet", "view").
   foreach(sd => (new File(tmain, sd)).mkdirs)
 
   // make web app directories

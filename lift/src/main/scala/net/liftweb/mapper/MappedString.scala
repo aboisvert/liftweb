@@ -31,7 +31,7 @@ class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends Mapp
   override protected def setFilter = crop _ :: super.setFilter  
 }
 
-class MappedString[T<:Mapper[T]](val owner: T,val maxLen: Int) extends MappedField[String, T] {
+class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] {
   private val data : FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
   def dbFieldClass = classOf[String]
@@ -99,7 +99,7 @@ class MappedString[T<:Mapper[T]](val owner: T,val maxLen: Int) extends MappedFie
   
   def apply(ov: Can[String]): T = {
     ov.foreach(v => this.set(v))
-    owner
+    fieldOwner
   }
   
   def jdbcFriendly(field : String): String = data.get
@@ -146,8 +146,8 @@ class MappedString[T<:Mapper[T]](val owner: T,val maxLen: Int) extends MappedFie
    * Make sure that the field is unique in the database
    */
   def valUnique(msg: String)(value: String): List[ValidationIssue] =
-    owner.getSingleton.findAll(By(this,value)).
-      filter(!_.comparePrimaryKeys(this.owner)).
+    fieldOwner.getSingleton.findAll(By(this,value)).
+      filter(!_.comparePrimaryKeys(this.fieldOwner)).
       map(x =>ValidationIssue(this, msg))
 
   /**

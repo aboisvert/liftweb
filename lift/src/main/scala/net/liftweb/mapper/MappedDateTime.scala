@@ -12,7 +12,7 @@ import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
 import net.liftweb.util.FatLazy
 
-class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
+class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, T] {
   private var data = FatLazy(defaultValue)
   protected def real_i_set_!(value : Date) : Date = {
     if (value != data.get) {
@@ -47,10 +47,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     new Date(0L)
   }
   
-  override def setFromAny(f : Any): Date = {
-    this.set(toDate(f))
-  }
-  
+  override def setFromAny(f : Any): Date = toDate(f).map(d => this.set(d)).openOr(this.is)
   
   def jdbcFriendly(field : String) : Object = is match {
     case null => null
@@ -64,7 +61,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
       case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(null.asInstanceOf[java.util.Date]); tv.resetDirty}}
       case d : java.util.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(v.asInstanceOf[Date]); tv.resetDirty}}
       // case d : java.sql.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v)); tv.resetDirty}}
+      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v).openOr(null)); tv.resetDirty}}
     }
   }
   
@@ -72,7 +69,7 @@ class MappedDateTime[T<:Mapper[T]](val owner : T) extends MappedField[Date, T] {
     {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = if (isNull) null else new Date(v)}}
   }
   def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = toDate(v)}}
+    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = toDate(v).openOr(null)}}
   }
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
     {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = v}}

@@ -14,7 +14,7 @@ import java.util.Date
 import net.liftweb.http._
 import scala.xml.NodeSeq
 
-class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val owner: T, val enum: ENUM) extends MappedField[ENUM#Value, T] {
+class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[ENUM#Value, T] {
   private var data: ENUM#Value = defaultValue
   def defaultValue: ENUM#Value = enum(0)
   def dbFieldClass = classOf[List[ENUM#Value]]
@@ -151,7 +151,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 }
 
 
-class MappedInt[T<:Mapper[T]](val owner : T) extends MappedField[Int, T] {
+class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   private var data : Int = defaultValue
   def defaultValue = 0
   def dbFieldClass = classOf[Int]

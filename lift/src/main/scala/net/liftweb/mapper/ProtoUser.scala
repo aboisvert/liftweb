@@ -40,9 +40,10 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] { self: T =>
 trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   object uniqueId extends MappedUniqueId(this, 32) {
     override def dbIndexed_? = true
+    override def writePermission_?  = true
   }
   
-  object validated extends MappedBoolean(this) {
+  object validated extends MappedBoolean[T](this) {
     override def defaultValue = false
   }
   
@@ -79,11 +80,11 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))),
     Menu(Loc("Logout", "/user_mgt/logout", "Logout", If(loggedIn_? _, "You must be logged in to Logout."))),
     Menu(Loc("CreateUser", "/user_mgt/sign_up", "Create New User", If(notLoggedIn_? _, "Please logout first."))),
-    Menu(Loc("LostPassword", "/user_mgt/lost_password", "Lost Password", If(notLoggedIn_? _, "Please logout first."))), // not logged in
+    Menu(Loc("LostPassword", ("/user_mgt/lost_password", true), "Lost Password", If(notLoggedIn_? _, "Please logout first."))), // not logged in
     Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first."))), //not Logged in
     Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", If(loggedIn_? _, "Please login first."))), // Logged in
     Menu(Loc("ChangePassword", "/user_mgt/change_password", "Change Password", If(loggedIn_? _, "Please login first."))), // Logged in
-    Menu(Loc("ValidateUser", "/user_mgt/validate_user", "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))), // Not Logged in
+    Menu(Loc("ValidateUser", ("/user_mgt/validate_user", true), "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))) // Not Logged in
     )
 
 
@@ -202,20 +203,25 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   </form>)
   
   def login = {
-    var username = ""
-    var pwd = ""
-
+    /*
     def testLogin(ignore: String) {
       getSingleton.find(By(email, username)) match {
         case Full(user) if user.validated && user.password.match_?(pwd) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
         case _ => S.error("Invalid Username/Password")
       }
+    }*/
+      
+    if (S.post_?) {
+      S.param("username").flatMap(username => getSingleton.find(By(email, username))) match {
+        case Full(user) if user.validated && user.password.match_?(S.param("password").openOr("*")) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
+        case _ => S.error("Invalid Username/Password")
+      }
     }
     
     bind("user", loginXhtml,
-	 "email" -> text("", username = _),
-	 "password" -> S.password("", pwd = _),
-	 "submit" -> submit("Log In", testLogin))
+	 "email" -> (<input type="text" name="username"/>),
+	 "password" -> (<input type="password" name="password"/>),
+	 "submit" -> (<input type="submit" value="Log In"/>))
   }
   
   def lostPasswordXhtml = (<form method="POST" action={S.action}>
@@ -316,7 +322,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     bind("user", changePasswordXhtml,
 	 "old_pwd" -> S.password("", oldPassword = _), 
          "new_pwd" -> password_*("", LFuncHolder(newPassword = _)), 
-	 "submit" -> testAndSet _)
+	 "submit" -> submit("Change", testAndSet _))
   }
   
   def editXhtml(user: T) = (<form method="POST" action={S.action}>

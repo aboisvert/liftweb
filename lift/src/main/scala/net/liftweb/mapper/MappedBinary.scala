@@ -11,7 +11,7 @@ import java.lang.reflect.Method
 import java.util.Date
 import net.liftweb.util.FatLazy 
 
-class MappedBinary[T<:Mapper[T]](val owner : T) extends MappedField[Array[Byte], T] {
+class MappedBinary[T<:Mapper[T]](val fieldOwner : T) extends MappedField[Array[Byte], T] {
   private val data : FatLazy[Array[Byte]] =  FatLazy(defaultValue)
   
   protected def real_i_set_!(value : Array[Byte]) : Array[Byte] = {

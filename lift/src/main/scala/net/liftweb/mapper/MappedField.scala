@@ -108,6 +108,10 @@ trait BaseMappedField {
   * The Trait that defines a field that is mapped to a foreign key
   */
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
+  override def equals(other: Any) = other match {
+    case km: KeyedMapper[KeyType, Other] => this.is == km.primaryKeyField.is
+    case _ => super.equals(other)
+  }
 }
 
 trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField
@@ -181,14 +185,12 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
     * Return the owner of this field
     */
-  def owner: OwnerType
+  def fieldOwner: OwnerType
   
   /**
     * Are we in "safe" mode (i.e., the value of the field can be read or written without any security checks.)
     */
-  final def safe_? : Boolean = {
-    owner.safe_?
-  }
+  final def safe_? : Boolean = fieldOwner.safe_?
   
   /**
     * Given the current execution state, can the field be written?
@@ -231,7 +233,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   
   def apply(v: FieldType): OwnerType = {
     this.set(v)
-    owner
+    fieldOwner
   }
     
   /*
@@ -253,7 +255,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     */
   final def name = synchronized {
     if (_name eq null) {
-      owner.checkNames
+      fieldOwner.checkNames
     }
     _name
   }
@@ -294,7 +296,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
    * Create an input field for the item
    */
-  def toForm : NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is.toString}/>
+  def toForm: NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>
   
   /**
     * Set the field to the value

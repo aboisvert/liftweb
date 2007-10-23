@@ -14,7 +14,7 @@ import net.liftweb.http.S
 import java.util.Date
 import net.liftweb.util._
 
-class MappedBoolean[T<:Mapper[T]](val owner : T) extends MappedField[Boolean, T] {
+class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)
   def defaultValue: Boolean = false
 

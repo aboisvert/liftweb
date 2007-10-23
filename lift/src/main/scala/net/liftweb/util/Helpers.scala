@@ -21,7 +21,7 @@ import java.security.{SecureRandom, MessageDigest}
 import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.regex._
-import java.util.TimeZone
+import java.util.{TimeZone, Calendar}
 import java.lang.Character._
 import javax.crypto._
 import javax.crypto.spec._
@@ -176,6 +176,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case s: Symbol => TheBindParam(p._1, Text(s.name))
       case s: String => TheBindParam(p._1, Text(s))
       case n: NodeSeq => TheBindParam(p._1, n)
+      case f: (NodeSeq => NodeSeq) => FuncBindParam(p._1, f)
       case Some(s) => stringThingToBindParam((p._1, s))
       case Full(s) => stringThingToBindParam((p._1, s))
       case v => TheBindParam(p._1, Text(p._2.toString))
@@ -671,16 +672,24 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
-  def toDate(in: String): Date = new Date(in)
+  //def toDate(in: String): Date = new Date(in)
   
-  def toDate(in: Any): Date = {
+  def toDate(in: Any): Can[Date] = {
+    try {
     in match {
-      case null => null
-      case d : java.util.Date => d
-      case lng : java.lang.Long => new Date(lng.longValue)
-      case lng : long => new Date(lng)
-      case s : String => toDate(s)
+      case null => Empty
+      case d: java.util.Date => Full(d)
+      case lng: Number => Full(new Date(lng.longValue))
+      case lng: Long => Full(new Date(lng))
+      case Nil | Empty | None | Failure(_, _, _) => Empty
+      case Full(v) => toDate(v)
+      case Some(v) => toDate(v)
+      case v :: vs => toDate(v)
+      case s : String => Full(new Date(s))
       case o => toDate(o.toString)
+    }
+    } catch {
+      case e => Log.debug("Error parsing date "+in, e); Failure("Bad date: "+in, Full(e), Nil)
     }
   }
   
@@ -857,6 +866,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   
   def timeNow = new java.util.Date
+  def dayNow: java.util.Date = 0.seconds.later.noTime
   def time(when: long) = new java.util.Date(when)
   
   def seconds(in: long): long = in * 1000L
@@ -873,7 +883,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       if (tmp.length == 0) Empty else Full(tmp.text)
   }
   
-  class TimeSpan(val len: long) {
+  class TimeSpan(val len: Long) {
     def seconds = TimeSpan(Helpers.seconds(len))
     def second = seconds
     def minutes = TimeSpan(Helpers.minutes(len))
@@ -887,6 +897,22 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def later = TimeSpan(len + millis)
     def ago = TimeSpan(millis - len)
     def date = new java.util.Date(len)
+    
+    def noTime = {
+      /*
+      val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+      cal.setTimeInMillis(len)
+      cal.set(Calendar.HOUR_OF_DAY, 12)
+      cal.set(Calendar.SECOND, 0)
+      cal.set(Calendar.MINUTE, 0)
+      cal.set(Calendar.MILLISECOND, 0)
+      new Date(cal.getTimeInMillis)
+      */
+      val div = (12L * 60L * 60L * 1000L)
+      val ret = (len - div) / (div * 2L)
+      println("Snarping to "+(new java.util.Date((ret * (div * 2L)) + div)))
+      new java.util.Date((ret * (div * 2L)) + div)
+    }
     
     override def equals(cmp: Any) = {
       cmp match {

@@ -37,6 +37,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def defaultPrefix: String
   
+  /**
+    * Set to 'true' if we should run "render" on every page load
+    */
+  protected def devMode = false
+  
   def act = {
     this.trapExit = true
     loop {
@@ -79,7 +84,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case AskRender =>
       askingWho match {
         case Full(who) => who forward AskRender
-        case _ => reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime))
+        case _ => if (devMode) reRender; reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime))
         }
     
     case ActionMessageSet(msgs, sv) =>

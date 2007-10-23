@@ -36,7 +36,7 @@ object DB {
     val ret = try {
       (envContext.get.lookup(DefaultConnectionIdentifier.jndiName).asInstanceOf[DataSource].getConnection) != null
     } catch {
-      case e => false
+      case e => Log.info("JNDI Lookup Failure for "+DefaultConnectionIdentifier.jndiName, e); false
     }
         
     if (!touchedEnv) envContext.reset

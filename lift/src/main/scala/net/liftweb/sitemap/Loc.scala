@@ -48,8 +48,8 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     }
   }
   
-  def doesMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): boolean = 
-    link.path.path == path && link.test(req.path, req, httpReq) && testAllStuff(stuff, req.path, req, httpReq)
+  def doesMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): Boolean = 
+    link.matchPath(path) && link.test(req.path, req, httpReq) && testAllStuff(stuff, req.path, req, httpReq)
   
   /*
   def doesPathlessMatch_?(path: List[String], req: RequestState, httpReq: HttpServletRequest): boolean = {
@@ -57,19 +57,20 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   }*/
   
   def isAbsolute_? = link.isAbsolute_?  
-  def pathMatch(path: List[String]): int = {
+  def pathMatch(path: List[String]): Int = {
     val mod = if (link.path.endSlash) 1 else 0
+    if (link.matchOnPrefix) {if (path.take(link.path.path.length) == link.path.path) path.length else 0}
+    else {
     val len = link.path.path.length - mod
     val p2 = path.take(len)
-    if (p2 == link.path.path.dropRight(mod)) len else 0
+    if (p2 == link.path.path.dropRight(mod)) len else 0}
   }
   
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
   
-  private[sitemap] def buildItem(current: boolean, path: boolean) = {
+  private[sitemap] def buildItem(current: Boolean, path: Boolean) =
     if (hidden || testAccess.isDefined) Empty
     else link.create(Nil).map(t => MenuItem(text.text(),t , current, path))
-  }
   
   private def hidden = stuff.contains(Loc.Hidden)
 }
@@ -85,14 +86,19 @@ object Loc {
   case object Hidden extends LocStuff
   case class If(test: () => boolean, failMsg: FailMsg) extends LocStuff
   case class Unless(test: () => boolean, failMsg: FailMsg) extends LocStuff
-  case class Test(test: ((ParsePath, RequestState, HttpServletRequest)) => boolean) extends LocStuff
+  case class Test(test: ((ParsePath, RequestState, HttpServletRequest)) => Boolean) extends LocStuff
   case class LinkText(text: () => String)
-  case class Link(uri: String, test: ((ParsePath, RequestState, HttpServletRequest)) => boolean,
+  case class Link(uri: String, matchOnPrefix: Boolean, test: ((ParsePath, RequestState, HttpServletRequest)) => Boolean,
                  create: (Seq[(String, String)]) => Can[String]) {
     val path = RequestState.parsePath(uri)
     
     def isRoot_? = uri == "/"
     def isAbsolute_? = path.absolute
+        
+    def matchPath(toMatch: List[String]): Boolean = if (!matchOnPrefix) path.path == toMatch else {
+      val ret = toMatch.take(path.path.length) == path.path
+      ret
+    }
   }
   case class FailMsg(msg: () => RedirectWithMessage)
   
@@ -100,7 +106,8 @@ object Loc {
   private def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
   
   implicit def strToLinkText(in: String): LinkText = LinkText(f(in))
-  implicit def strToLink(in: String): Link = Link(in, alwaysTrue _, retString(in) _)
+  implicit def strToLink(in: String): Link = Link(in, false, alwaysTrue _, retString(in) _)
+  implicit def strPairToLink(in: (String, Boolean)): Link = Link(in._1, in._2, alwaysTrue _, retString(in._1) _)
   implicit def strToFailMsg(in: String): FailMsg = FailMsg(f(RedirectWithMessage("/", in)))
   implicit def redirectToFailMsg(in: RedirectWithMessage): FailMsg = FailMsg(f(in))
   
