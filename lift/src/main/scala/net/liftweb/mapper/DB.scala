@@ -50,14 +50,16 @@ object DB {
     connectionManagers(name) = mgr
   }
   
-  private def info : HashMap[ConnectionIdentifier, (SuperConnection, Int)] = {
+  case class ConnectionHolder(conn: SuperConnection, cnt: Int, postCommit: List[() => Unit]) 
+  
+  private def info : HashMap[ConnectionIdentifier, ConnectionHolder] = {
     threadStore.get match {
       case null =>
-	val tinfo = new HashMap[ConnectionIdentifier, (SuperConnection, Int)];
+	val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder];
 	threadStore.set(tinfo)
 	tinfo
 
-      case v: HashMap[ConnectionIdentifier, (SuperConnection, Int)] => v
+      case v: HashMap[ConnectionIdentifier, ConnectionHolder] => v
     }
   }
   
@@ -82,17 +84,27 @@ object DB {
   
   private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
     var ret = info.get(name) match {
-      case None => (newConnection(name), 1)
-      case Some((conn, cnt)) => (conn, cnt + 1)
+      case None => ConnectionHolder(newConnection(name), 1, Nil)
+      case Some(ConnectionHolder(conn, cnt, post)) => ConnectionHolder(conn, cnt + 1, post)
     }
     info(name) = ret
-    ret._1
+    ret.conn
   }
   
-  def releaseConnectionNamed(name : ConnectionIdentifier) {
+  private def releaseConnectionNamed(name: ConnectionIdentifier) {
     info.get(name) match {
-      case Some((c, 1)) => c.commit; c.releaseFunc() ; info -= name; logger.trace("Released connection "+name)
-      case Some((c, n)) => info(name) = (c, n - 1)
+      case Some(ConnectionHolder(c, 1, post)) => c.commit; c.releaseFunc(); info -= name; post.reverse.foreach(_()); logger.trace("Released connection "+name)
+      case Some(ConnectionHolder(c, n, post)) => info(name) = ConnectionHolder(c, n - 1, post)
+      case _ =>
+    }
+  }
+  
+  /**
+    *  Append a function to be invoked after the commit has taken place for the given connection identifier
+    */
+  def appendPostFunc(name: ConnectionIdentifier, func: () => Unit) {
+    info.get(name) match {
+      case Some(ConnectionHolder(c, n, post)) => info(name) = ConnectionHolder(c, n, func :: post)
       case _ =>
     }
   }

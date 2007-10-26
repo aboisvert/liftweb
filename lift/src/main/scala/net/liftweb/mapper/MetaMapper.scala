@@ -280,7 +280,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   }
   
   def whatToSet(toSave : A) : String = {
-    mappedColumns.elements.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
+    mappedColumns.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
   
   def validate(toValidate : A) : List[ValidationIssue] = {
@@ -303,15 +303,21 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def toXml(what: A): NodeSeq = {
     
     Elem(null,elemName,
-         mappedFieldArray.elements.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
+         mappedFieldArray.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
 									   new UnprefixedAttribute(p.name, fld.toString, md)}
          ,TopScope)
     //    Elem("", 
     //    (mappedFieldArray.elements.map{p => ??(p._2, in).asString}).toList.mkString("", ",", "")
   }
   
-  def save(toSave : A) : Boolean = {
-    DB.use(toSave.connectionIdentifier) { 
+  /**
+    * Returns true if none of the fields are dirty
+    */
+  def clean_?(toCheck: A): Boolean = mappedColumns.foldLeft(true)((bool, ptr) => bool && !(??(ptr._2, toCheck).dirty_?))
+  
+  def save(toSave: A): Boolean = {
+    if (saved_?(toSave) && clean_?(toSave)) true else {
+    val ret = DB.use(toSave.connectionIdentifier) { 
       conn =>
 	_beforeSave(toSave)
       val ret = if (saved_?(toSave)) {
@@ -321,7 +327,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	    st =>
 	      var colNum = 1
 	    
-	    for (col <- mappedColumns.elements) {
+	    for (col <- mappedColumns) {
 	      val colVal = ??(col._2, toSave)
 	      if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
                 colVal.targetSQLType(col._1) match {
@@ -346,7 +352,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	val ret = DB.prepareStatement("INSERT INTO "+dbTableName+" ("+columnNamesForInsert+") VALUES ("+columnQueriesForInsert+")", Statement.RETURN_GENERATED_KEYS, conn) {
 	  st =>
 	    var colNum = 1
-	  for (col <- mappedColumns.elements) {
+	  for (col <- mappedColumns) {
 	    if (!columnPrimaryKey_?(col._1)) {
 	      val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
                 colVal.targetSQLType(col._1) match {
@@ -384,6 +390,18 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
       }
       _afterSave(toSave)
       ret
+    }
+    
+    // clear dirty and get rid of history
+    for (col <- mappedColumns) {
+      val colVal = ??(col._2, toSave)
+      if (!columnPrimaryKey_?(col._1) && colVal.dirty_?) {
+        colVal.resetDirty
+        colVal.doneWithSave
+      }
+    }
+    
+    ret
     }
   }
   
@@ -589,10 +607,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     mappedFieldArray.foreach(ae => _mappedFields(ae.name) = ae.method)
   }
 
-  val columnNamesForInsert = (mappedColumnInfo.elements.filter(!_._2.dbPrimaryKey_?).map(_._1)).toList.mkString(",")
+  val columnNamesForInsert = (mappedColumnInfo.filter(!_._2.dbPrimaryKey_?).map(_._1)).toList.mkString(",")
   
   val columnQueriesForInsert = {
-    (mappedColumnInfo.elements.filter(!_._2.dbPrimaryKey_?).map(p => "?")).toList.mkString(",")
+    (mappedColumnInfo.filter(!_._2.dbPrimaryKey_?).map(p => "?")).toList.mkString(",")
   }
   
   private def fixTableName(name : String) = clean(name.toLowerCase)

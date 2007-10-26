@@ -74,12 +74,17 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     }
   }
   
+  /**
+    * Return the URL of the "login" page
+    */
+  def loginPageURL = "/"+BasePath+"/"+Login
+  
   def notLoggedIn_? = !loggedIn_?
 
   val sitemap : List[Menu] = List(
     Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))),
     Menu(Loc("Logout", "/user_mgt/logout", "Logout", If(loggedIn_? _, "You must be logged in to Logout."))),
-    Menu(Loc("CreateUser", "/user_mgt/sign_up", "Create New User", If(notLoggedIn_? _, "Please logout first."))),
+    Menu(Loc("CreateUser", "/user_mgt/sign_up", "Sign Up", If(notLoggedIn_? _, "Please logout first."))),
     Menu(Loc("LostPassword", ("/user_mgt/lost_password", true), "Lost Password", If(notLoggedIn_? _, "Please logout first."))), // not logged in
     Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first."))), //not Logged in
     Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", If(loggedIn_? _, "Please login first."))), // Logged in
@@ -91,7 +96,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   def skipEmailValidation = false
   
   def userMenu: List[Node] = {
-    val li = loggedIn_?
+    val li = getSingleton.loggedIn_?
     ItemList.filter(i => i.display && i.loggedIn == li).map(i => (<a href={i.path}>{i.name}</a>))
   }
   
@@ -116,7 +121,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   def loggedIn_? : Boolean = currentUserId.isDefined
   
   def logUserIn(who: T) {S.set(LoggedInUserIdentifier, who.id.toString)}
-  def logoutCurrentUser {S.unset(LoggedInUserIdentifier)}
+  def logoutCurrentUser {S.unset(LoggedInUserIdentifier); S.request.request.getSession.invalidate}
   
   def currentUserId: Can[String] = S.get(LoggedInUserIdentifier)
   
@@ -127,6 +132,35 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   <tr><td>&nbsp;</td><td><user:submit/></td></tr>
   </table></form>)
   
+  def signupMailBody(user: T, validationLink: String) =  (<html>
+  <head>
+  <title>Sign Up Confirmation</title>
+  </head>
+  <body>
+  <p>Dear {user.firstName},
+  <br/>
+  <br/>
+  Click on this link to complete signup
+  <br/><a href={validationLink}>{validationLink}</a>
+  <br/>
+  <br/>
+  Thanks
+  </p>
+  </body>
+  </html>)
+  
+  def signupMailSubject = "Sign up confirmation"
+  
+  def sendValidationEmail(user: T) {
+    val resetLink = S.hostAndPath+"/"+BasePath+"/"+ValidateUser+"/"+user.uniqueId
+    val email: String = user.email
+
+    val msgXml = signupMailBody(user, resetLink)
+
+    Mailer.sendMail(From(emailFrom),Subject(signupMailSubject), 
+        (To(user.email) :: xmlToMailBodyType(msgXml) :: (bccEmail.toList.map(BCC(_)))) :_* )  
+  }
+    
   def signup = {
     val theUser: T = getSingleton.create
     val theName = BasePath + SignUp
@@ -134,37 +168,14 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     def testSignup(ignore: String) {
       theUser.validate match {
         case Nil => S.removeSessionTemplater(theName)
-        val user = theUser
-        user.validated(skipEmailValidation).uniqueId.reset()
+        theUser.validated(skipEmailValidation).uniqueId.reset()
         theUser.save
         if (!skipEmailValidation) {
-          val resetLink = S.hostAndPath+"/"+BasePath+"/"+ValidateUser+"/"+user.uniqueId
-          val email: String = user.email
-
-
-          val msgXml =
-            (<html>
-          <head>
-          <title>Sign Up Confirmation</title>
-          </head>
-          <body>
-          <p>Dear {user.firstName},
-          <br/>
-          <br/>
-          Click on this link to complete signup
-          <br/><a href={resetLink}>{resetLink}</a>
-          <br/>
-          <br/>
-          Thanks
-          </p>
-          </body>
-          </html>)
-
-          Mailer.sendMail(From("noreply@"+S.hostName),Subject("Sign up confirmation"),  To(user.email), msgXml)                
+          sendValidationEmail(theUser)              
           S.notice("You have signed up.  A validation email message will be sent to you.")
 	} else {
 	  S.notice("Welcome")
-	  logUserIn(theUser)
+	  getSingleton.logUserIn(theUser)
 	}
 
         S.redirectTo(HomePage)
@@ -180,6 +191,10 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     innerSignup
   }
   
+  def emailFrom = "noreply@"+S.hostName
+  
+  def bccEmail: Can[String] = Empty
+  
   def testLoggedIn(page: String): Boolean =
     ItemList.filter(_.endOfPath == page) match {
       case x :: xs if x.loggedIn == loggedIn_? => true
@@ -190,8 +205,9 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   def validateUser(id: String) = getSingleton.find(By(uniqueId, id)) match {
     case Full(user) if !user.validated => 
       user.validated(true).uniqueId.reset().save
-    S.notice("You have been validated... please log into your account")
-    S.redirectTo("/"+BasePath+"/"+Login)  
+    S.notice("Account Validated")
+    logUserIn(user)
+    S.redirectTo(HomePage)  
     
     case _ => S.error("Validation link invalid"); S.redirectTo(HomePage)
   }
@@ -213,7 +229,8 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
       
     if (S.post_?) {
       S.param("username").flatMap(username => getSingleton.find(By(email, username))) match {
-        case Full(user) if user.validated && user.password.match_?(S.param("password").openOr("*")) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
+        case Full(user) if user.validated && user.password.match_?(S.param("password").openOr("*")) => getSingleton.logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
+        case Full(user) if !user.validated => S.error("Your account has not been validated.  Please check your email for a validation link.")        
         case _ => S.error("Invalid Username/Password")
       }
     }
@@ -231,43 +248,50 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   </table>
   </form>)
   
-  def lostPassword = {
-    var email = ""
+   def passwordResetMailBody(user: T, resetLink: String) = (<html>
+    <head>
+    <title>Reset Password Confirmation</title>
+    </head>
+    <body>
+    <p>Dear {user.firstName},
+    <br/>
+    <br/>
+    Click on this link to reset your password
+    <br/><a href={resetLink}>{resetLink}</a>
+    <br/>
+    <br/>
+    Thanks
+    </p>
+    </body>
+    </html>)
     
-    def sendPasswordReset(ignore: String) {
-      getSingleton.find(By(this.email, email), By(this.validated, true)) match {
-        case Full(user) =>
+    def passwordResetEmailSubject = "Reset Password Request"  
+  
+      def sendPasswordReset(email: String) {
+      getSingleton.find(By(this.email, email)) match {
+        case Full(user) if this.validated =>
           user.uniqueId.reset()
         val resetLink = S.hostAndPath+"/"+BasePath+"/"+PasswordReset+"/"+user.uniqueId
         val email: String = user.email
 
+        val msgXml = passwordResetMailBody(user, resetLink)
 
-        val msgXml =
-          (<html>
-        <head>
-        <title>Reset Password Confirmation</title>
-        </head>
-        <body>
-        <p>Dear {user.firstName},
-        <br/>
-        <br/>
-        Click on this link to reset your password
-        <br/><a href={resetLink}>{resetLink}</a>
-        <br/>
-        <br/>
-        Thanks
-        </p>
-        </body>
-        </html>)
-
-        Mailer.sendMail(From("noreply@"+S.hostName),Subject("Reset Password Request"),  To(user.email), msgXml)        
+        Mailer.sendMail(From(emailFrom),Subject(passwordResetEmailSubject),  
+            (To(user.email) :: xmlToMailBodyType(msgXml) :: (bccEmail.toList.map(BCC(_)))) :_*)
         S.notice("Password Reset Email sent") 
         S.redirectTo(HomePage)
+        
+        case Full(user) => 
+          
+          S.notice("Account Validation Re-sent")
+          S.redirectTo(HomePage)
+        
         case _ => S.error("Email address not found")
       }
-    }
-    
-    bind("user", lostPasswordXhtml, "email" -> text("", email = _), "submit" -> submit("Send It", sendPasswordReset))
+    }      
+      
+  def lostPassword = {
+    bind("user", lostPasswordXhtml, "email" -> text("", sendPasswordReset _), "submit" -> <input type="Submit" value="Send It" />)
   }
   
   def passwordResetXhtml = (<form method="POST" action={S.action}>
@@ -282,7 +306,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
     case Full(user) => 
       def finishSet(ignore: String) {
 	user.validate match {
-          case Nil => S.notice("Password Changed"); user.save; logUserIn(user); S.redirectTo(HomePage)
+          case Nil => S.notice("Password Changed"); user.save; getSingleton.logUserIn(user); S.redirectTo(HomePage)
           case xs => S.error(xs)
 	}
       }
@@ -355,7 +379,7 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] { self: T =>
   }
   
   def logout = {
-    logoutCurrentUser
+    getSingleton.logoutCurrentUser
     S.redirectTo(HomePage)
   }
   

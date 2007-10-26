@@ -32,7 +32,8 @@ class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends Mapp
 }
 
 class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] {
-  private val data : FatLazy[String] =  FatLazy(defaultValue) // defaultValue
+  private val data: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
+  private val orgData: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
   def dbFieldClass = classOf[String]
 
@@ -79,7 +80,15 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   override def readPermission_? = true
 
   protected def i_is_! = data.get
+  protected def i_was_! = orgData.get
 
+  /**
+     * Called after the field is saved to the database
+     */
+  override protected[mapper] def doneWithSave() {
+    orgData.setFrom(data)
+  }
+  
   protected def i_obscure_!(in : String) : String = {
     ""
   }
@@ -106,25 +115,25 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   
   def real_convertToJDBCFriendly(value: String): Object = value
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
-    inst match {
-      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = null}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
-    }
+  private def wholeSet(in: String) {
+    this.data() = in
+    this.orgData() = in
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = v}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (v == null) null else v.toString}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedString[T]]; tv.data() = if (isNull) null else v.toString}}
-  }
+  def buildSetActualValue(accessor: Method, inst: AnyRef, columnName: String): (T, AnyRef) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (v eq null) null else v.toString)})
+  
+  def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (isNull) null else v.toString)})
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (v eq null) null else v)})
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (v eq null) null else v.toString)})
+
+  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit = 
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (isNull) null else v.toString)})
   
   /**
    * A validation helper.  Make sure the string is at least a particular

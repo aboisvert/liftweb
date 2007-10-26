@@ -109,6 +109,11 @@ trait BaseMappedField {
   def toForm: NodeSeq   
   
   def asHtml: Node  
+  
+  /**
+    * Called after the field is saved to the database
+    */
+  protected[mapper] def doneWithSave()
 }
 
 /**
@@ -349,7 +354,10 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   def buildSetDateValue(accessor: Method, columnName: String): (OwnerType, Date) => Unit 
   def buildSetBooleanValue(accessor: Method, columnName: String) : (OwnerType, Boolean, Boolean) => Unit 
   protected def getField(inst: OwnerType, meth: Method) = meth.invoke(inst, null).asInstanceOf[MappedField[FieldType,OwnerType]];
-  
+  protected def doField(inst: OwnerType, meth: Method, func: PartialFunction[MappedField[FieldType, OwnerType], Unit]) {
+    val f = getField(inst, meth)
+    if (func.isDefinedAt(f)) func(f)
+  }
   /**
     * Convert the field to its "context free" type (e.g., String, Int, Long, etc.)
     * If there are no read permissions, the value will be obscured
@@ -360,9 +368,22 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   }
   
   /**
+    * What value was the field's value when it was pulled from the DB?
+    */
+  def was: FieldType = {
+    if (safe_? || readPermission_?) i_was_!
+    else i_obscure_!(i_was_!)
+  }
+  
+  /**
     * The actual value of the field
     */
   protected def i_is_! : FieldType
+  
+  /**
+    * The value of the field when it was pulled from the DB
+    */
+  protected def i_was_! : FieldType
   
   /**
     * Obscure the incoming value to a "safe" value (e.g., if there are

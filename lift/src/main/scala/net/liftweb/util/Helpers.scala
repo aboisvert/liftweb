@@ -629,14 +629,15 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def toInt(in: Any): Int = {
     in match {
       case null => 0
-      case n: int => n
-      case lo: long => lo.toInt
+      case n: Int => n
+      case lo: Long => lo.toInt
       case n : Number => n.intValue
       case (n: Number) :: _ => n.intValue
       case Some(n) => toInt(n)
       case Full(n) => toInt(n)
       case None | Empty | Failure(_, _, _) => 0
-      case s : String => parseNumber(s).toInt
+      case s: String => parseNumber(s).toInt
+      case d: java.util.Date => (d.getTime / 1000L).toInt
       case x :: xs => toInt(x)
       case o => toInt(o.toString)
     }
@@ -645,14 +646,15 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def toLong(in: Any): Long = {
     in match {
       case null => 0L
-      case i: int => i
-      case n: long => n
+      case i: Int => i
+      case n: Long => n
+      case d: java.util.Date => d.getTime
       case n : Number => n.longValue
       case (n: Number) :: _ => n.longValue
       case Some(n) => toLong(n)
       case Full(n) => toLong(n)
       case None | Empty | Failure(_, _, _) => 0L
-      case s : String => parseNumber(s)
+      case s: String => parseNumber(s)
       case x :: xs => toLong(x)
       case o => toLong(o.toString)
     }
@@ -679,8 +681,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     in match {
       case null => Empty
       case d: java.util.Date => Full(d)
-      case lng: Number => Full(new Date(lng.longValue))
       case lng: Long => Full(new Date(lng))
+      case lng: Number => Full(new Date(lng.longValue))
       case Nil | Empty | None | Failure(_, _, _) => Empty
       case Full(v) => toDate(v)
       case Some(v) => toDate(v)

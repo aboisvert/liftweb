@@ -84,7 +84,13 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   override def readPermission_? = true
 
   protected def i_is_! = MappedPassword.blankPw
-
+  protected def i_was_! = MappedPassword.blankPw
+  /**
+    * Called after the field is saved to the database
+    */
+  override protected[mapper] def doneWithSave() {
+  }
+  
   protected def i_obscure_!(in : String) : String = in
   
   /**

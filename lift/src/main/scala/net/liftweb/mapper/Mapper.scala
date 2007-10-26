@@ -42,6 +42,13 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   private def calcDbId = if (dbCalculateConnectionIdentifier.isDefinedAt(this)) dbCalculateConnectionIdentifier(this)
   else getSingleton.dbDefaultConnectionIdentifier
 
+  /**
+    * Append a function to perform after the commit happens
+    * @param func - the function to perform after the commit happens
+    */
+  def doPostCommit(func: () => Unit) {
+    DB.appendPostFunc(connectionIdentifier, func)
+  }
   
   /**
     * Save the instance and return the instance

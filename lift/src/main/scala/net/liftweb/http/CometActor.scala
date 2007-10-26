@@ -126,6 +126,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
     case ShutDown =>
     theSession.removeCometActor(this)
+    localShutdown()
     self.exit("Politely Asked to Exit")
   }
   
@@ -147,7 +148,15 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def startQuestion(what: Any) {}
   
-  def localSetup {}
+  /**
+    * This method will be called after the Actor has started.  Do any setup here
+    */
+  def localSetup(): Unit = {}
+  
+  /**
+    * This method will be called as part of the shut-down of the actor.  Release any resources here.
+    */
+  def localShutdown(): Unit = {}
   
   def composeFunction = composeFunction_i
   
@@ -181,13 +190,13 @@ sealed abstract class CometMessage
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd], val destroy: Can[JsCmd]) {
   def this(id: String, ro: RenderOut) = this(id, ro.xhtml, ro.script, ro.destroyScript)
-  def toJavaScript(session: LiftSession): JsCmd = JsCmds.Run("destroy_"+id+"();") + 
+  def toJavaScript(session: LiftSession): JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();")) + 
     ((xml, javaScript) match {
-    case (Full(xml), Full(js)) => JsCmds.Set(id, session.processSurroundAndInclude(xml)) + js
+    case (Full(xml), Full(js)) => JsCmds.Set(id, session.processSurroundAndInclude(xml)) + JsCmds.JsTry(js)
     case (Full(xml), _) => JsCmds.Set(id, session.processSurroundAndInclude(xml))
     case (_, Full(js)) => js
     case _ => JsCmds.Noop
-  }) + JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};")
+  }) + JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"))
   
   def asXhtml: NodeSeq = ((xml, javaScript) match {
   case (Full(xml), Full(js)) => xml ++ script(js.toJsCmd)
@@ -195,6 +204,8 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]
   case (_, Full(js)) => script(js.toJsCmd)
   case _ => Text("")
   }) ++ script("function destroy_"+id+"() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")
+    
+  //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 
 case object AskRender extends CometMessage

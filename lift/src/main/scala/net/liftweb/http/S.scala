@@ -423,6 +423,24 @@ object S {
       nh ++ rnk
     }
     
+    def ajaxText(value: String, func: String => Any, params: FormElementPieces*): Elem =
+      ajaxText_*(value, SFuncHolder(func), params :_*)
+      
+    def ajaxText_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = {
+      val funcName = mapFunc(func) 
+      wrapFormElement(<input type="text" value={value}/>, params.toList) %
+        ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.value, dataType: 'script'});"))
+    }
+    
+    def ajaxCheckbox(value: Boolean, func: String => Any, params: FormElementPieces*): Elem =
+      ajaxCheckbox_*(value, SFuncHolder(func), params :_*)
+      
+    def ajaxCheckbox_*(value: Boolean, func: AFuncHolder, params: FormElementPieces*): Elem = {
+      val funcName = mapFunc(func)
+      wrapFormElement(<input type="checkbox"/>, params.toList) % checked(value) %
+        ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
+    }
+    
     def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
       ajaxSelect_*(opts, deflt, SFuncHolder(func), params :_*)
       
@@ -453,10 +471,27 @@ object S {
       val (rs, sid) = findOrAddId(shown)
       val (rh, hid) = findOrAddId(hidden)
       (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
-        rh % ("style" -> "display: none") %
-        ("onblur" -> ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
+        dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
     }
     
+    def swapable(shown: Elem, hidden: String => Elem): Elem = {
+      val (rs, sid) = findOrAddId(shown)
+      val hid = "S"+randomString(10)
+      val rh = <span id={hid}>{hidden("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();")}</span>
+      
+      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show();}); return false;"))}{
+        (rh % ("style" -> "display: none"))}</span>)      
+    }
+    
+    private def dealWithBlur(elem: Elem, blurCmd: String): Elem = {
+      (elem \ "@onblur").toList match {
+        case Nil => elem % ("onblur" -> blurCmd)
+        case x :: xs => val attrs = elem.attributes.filter(_.key != "onblur")
+        Elem(elem.prefix, elem.label, new UnprefixedAttribute("onblur", Text(blurCmd + x.text), attrs), elem.scope, elem.child :_*)
+      }
+    }
+    
+
     /**
        * create an anchor tag around a body 
        *

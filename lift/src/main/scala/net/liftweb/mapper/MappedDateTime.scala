@@ -10,10 +10,12 @@ import java.sql.{ResultSet, Types}
 import java.util.Date
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-import net.liftweb.util.FatLazy
+import net.liftweb.util._
 
 class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, T] {
-  private var data = FatLazy(defaultValue)
+  private val data = FatLazy(defaultValue)
+  private val orgData = FatLazy(defaultValue)
+  
   protected def real_i_set_!(value : Date) : Date = {
     if (value != data.get) {
       data() = value
@@ -25,7 +27,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   def dbFieldClass = classOf[Date]
 
   
-  def toLong: Long = i_is_! match {
+  def toLong: Long = is match {
     case d: Date => d.getTime / 1000L
     case _ => 0L
   }
@@ -42,6 +44,8 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   override def readPermission_? = true
 
   protected def i_is_! = data.get
+  protected def i_was_! = orgData.get
+  protected[mapper] def doneWithSave() {orgData.setFrom(data)}
 
   protected def i_obscure_!(in : Date) : Date = {
     new Date(0L)
@@ -56,28 +60,27 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   
   def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new java.sql.Date(value.getTime)
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
-    inst match {
-      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(null.asInstanceOf[java.util.Date]); tv.resetDirty}}
-      case d : java.util.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(v.asInstanceOf[Date]); tv.resetDirty}}
-      // case d : java.sql.Date => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(new Date(v.asInstanceOf[java.sql.Date].getTime)); tv.resetDirty}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor); tv.set(toDate(v).openOr(null)); tv.resetDirty}}
+  private def st(in: Can[Date]): Unit = 
+    in match {
+      case Full(d) => data.set(d); orgData.set(d)
+      case _ => data.set(null); orgData.set(null)
     }
-  }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = if (isNull) null else new Date(v)}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = toDate(v).openOr(null)}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = v}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedDateTime[T]]; tv.data() = null}}
-  }
+  def buildSetActualValue(accessor: Method, v: AnyRef, columnName: String): (T, AnyRef) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})
   
+  def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit = 
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(if (isNull) Empty else Full(new Date(v)))})
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})  
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Full(v))})   
+
+  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit = 
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Empty)})  
+
   /**
    * Given the driver type, return the string required to create the column in the database
    */

@@ -467,9 +467,8 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     findClass(contType, buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo {
-        println("cat")
-	  val constr = cls.getConstructor(List(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]).toArray)
-	  val ret = constr.newInstance(List(this, name, defaultXml, attributes).toArray).asInstanceOf[CometActor];
+	  val constr = cls.getConstructor(Array(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
+	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
 	  ret.link(this)
 	  ret ! PerformSetupComet(_state)

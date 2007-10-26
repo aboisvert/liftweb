@@ -45,6 +45,10 @@ class FatLazy[T](f: => T) {
     v
   }
   
+  def setFrom(other: FatLazy[T]): Unit = synchronized {
+    value = other.value
+  }
+  
   /**
    * and the lazy() = foo style of assignment
    */

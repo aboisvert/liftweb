@@ -16,6 +16,8 @@ import net.liftweb.util._
 
 class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)
+  private var orgData: Can[Boolean] = Full(defaultValue)
+  
   def defaultValue: Boolean = false
 
   def dbFieldClass = classOf[Boolean]
@@ -26,6 +28,8 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   def targetSQLType = Types.BOOLEAN
 
   protected def i_is_! = data openOr false
+  protected def i_was_! = orgData openOr false
+  protected[mapper] def doneWithSave() {orgData = data}
   
   protected def real_i_set_!(value : Boolean) : Boolean = {
     dirty_?(data.map(_ != value) openOr true)
@@ -62,18 +66,23 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
-    {(inst : T, v: long, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedBoolean[T]]; tv.data = if (isNull) Empty else Full(v != 0L)}}
+  private def allSet(in: Can[Boolean]) {
+    this.data = in
+    this.orgData = in
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedBoolean[T]]; tv.data = if (v == null) Empty else Full(toBoolean(v))}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedBoolean[T]]; tv.data = if (v == null) Empty else Full(true)}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
-    {(inst : T, v: Boolean, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedBoolean[T]]; tv.data = if (isNull) Empty else Full(v)}}
-  }
+  
+  def buildSetLongValue(accessor : Method, columnName : String): (T, Long, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case tv: MappedBoolean[T] => tv.allSet(if (isNull) Empty else Full(v != 0L))})
+
+  def buildSetStringValue(accessor : Method, columnName : String): (T, String) => Unit = 
+    (inst, v) => doField(inst, accessor, {case tv: MappedBoolean[T] => tv.allSet(if (v == null) Empty else Full(toBoolean(v)))})    
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
+    (inst, v) => doField(inst, accessor, {case tv: MappedBoolean[T] => tv.allSet(if (v == null) Empty else Full(true))})
+
+  def buildSetBooleanValue(accessor: Method, columnName : String) : (T, Boolean, Boolean) => Unit   = 
+    (inst, v, isNull) => doField(inst, accessor, {case tv: MappedBoolean[T] => tv.allSet(if (isNull) Empty else Full(v))})
+
   
   /**
    * Given the driver type, return the string required to create the column in the database

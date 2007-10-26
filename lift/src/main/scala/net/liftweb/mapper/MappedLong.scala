@@ -105,6 +105,8 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
 
 class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[List[ENUM#Value], T] {
   private var data: List[ENUM#Value] = defaultValue
+  private var orgData: List[ENUM#Value] = defaultValue
+  
   def defaultValue: List[ENUM#Value] = Nil
   def dbFieldClass = classOf[List[ENUM#Value]]
 
@@ -114,6 +116,13 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   def targetSQLType = Types.BIGINT
 
   protected def i_is_! = data
+  protected def i_was_! = orgData
+  /**
+     * Called after the field is saved to the database
+     */
+  override protected[mapper] def doneWithSave() {
+    orgData = data
+  }
   
   protected def real_i_set_!(value: List[ENUM#Value]): List[ENUM#Value] = {
     if (value != data) {
@@ -127,9 +136,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   
   def real_convertToJDBCFriendly(value: List[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
   
-  private def toLong: Long = {
-    i_is_!.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
-  }
+  private def toLong: Long = is.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
   
   def fromLong(in: Long): List[ENUM#Value] = enum.Set64(in).toList
   
@@ -154,25 +161,25 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   
   protected def i_obscure_!(in : List[ENUM#Value]) = Nil
   
-  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
-    data match {
-      case null => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = Nil
-      case n : Number => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = fromLong(if (v == null) 0L else v.asInstanceOf[Number].longValue)
-      case _ => (inst : T, v : AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]].data = fromLong(Helpers.toLong(v.toString))
-    }
+  private def st(in: List[ENUM#Value]) {
+    data = in
+    orgData = in
+  }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(v)}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(Helpers.toLong(v.toString))}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(if (v == null) 0L else v.getTime)}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnumList[T, ENUM]]; tv.data = fromLong(if (v && !isNull) 1L else 0L)}}
-  }
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String): (T, AnyRef) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+  
+  def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (isNull) defaultValue else fromLong(v))})  
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+
+  def buildSetBooleanValue(accessor : Method, columnName : String): (T, Boolean, Boolean) => Unit = 
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(defaultValue)})
   
   /**
    * Given the driver type, return the string required to create the column in the database
@@ -190,7 +197,9 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
 
 
 class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
-  private var data : Long = defaultValue
+  private var data: Long = defaultValue
+  private var orgData: Long = defaultValue
+  
   def defaultValue: Long = 0L
   def dbFieldClass = classOf[Long]
 
@@ -200,6 +209,13 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   def targetSQLType = Types.BIGINT
 
   protected def i_is_! = data
+  protected def i_was_! = orgData
+  /**
+     * Called after the field is saved to the database
+     */
+  override protected[mapper] def doneWithSave() {
+    orgData = data
+  }  
   
   protected def real_i_set_!(value : Long): Long = {
     if (value != data) {
@@ -233,27 +249,26 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
     }
   }
 
-  protected def i_obscure_!(in : Long) = 0L
+  protected def i_obscure_!(in : Long) = defaultValue
   
-  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
-    data match {
-      case null => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = 0L
-      case n : Number => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = if (v == null) 0L else v.asInstanceOf[Number].longValue
-      case _ => (inst : T, v : AnyRef) => getField(inst, accessor).asInstanceOf[MappedLong[T]].data = toLong(v.toString)
-    }
+  private def st(in: Long) {
+    data = in
+    orgData = in
+  }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = v}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = toLong(v.toString)}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v == null) 0L else v.getTime}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedLong[T]]; tv.data = if (v && !isNull) 1L else 0L}}
-  }
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
+  
+  def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (isNull) defaultValue else v)})
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
+
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (v == null) defaultValue else v.getTime)})
+
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit = null
   
   /**
    * Given the driver type, return the string required to create the column in the database

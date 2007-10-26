@@ -16,7 +16,8 @@ import scala.xml.NodeSeq
 
 class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[ENUM#Value, T] {
   private var data: ENUM#Value = defaultValue
-  def defaultValue: ENUM#Value = enum(0)
+  private var orgData: ENUM#Value = defaultValue
+  def defaultValue: ENUM#Value = enum.elements.next
   def dbFieldClass = classOf[List[ENUM#Value]]
 
   /**
@@ -25,6 +26,13 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   def targetSQLType = Types.BIGINT
 
   protected def i_is_! = data
+  protected def i_was_! = orgData
+  /**
+     * Called after the field is saved to the database
+     */
+  override protected[mapper] def doneWithSave() {
+    orgData = data
+  }
   
   protected def real_i_set_!(value: ENUM#Value): ENUM#Value = {
     if (value != data) {
@@ -38,7 +46,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   
   def real_convertToJDBCFriendly(value: ENUM#Value): Object = new java.lang.Integer(value.id)
   
- def toInt = i_is_!.id
+  def toInt = is.id
   def fromInt(in: Int): ENUM#Value = enum(in)
   
   def jdbcFriendly(field: String) = new java.lang.Integer(toInt)
@@ -64,25 +72,25 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   
   protected def i_obscure_!(in : ENUM#Value) = defaultValue
   
-  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
-    data match {
-      case null => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]].data = defaultValue
-      case n : Number => (inst: T, v: AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]].data = fromInt(if (v == null) 0 else v.asInstanceOf[Number].intValue)
-      case _ => (inst : T, v : AnyRef) => getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]].data = fromInt(Helpers.toInt(v.toString))
-    }
+  private def st(in: ENUM#Value) {
+    data = in
+    orgData = in
+  }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
-    {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]]; tv.data = fromInt(v.toInt)}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]]; tv.data = fromInt(Helpers.toInt(v.toString))}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]]; tv.data = fromInt(if (v == null) 0 else v.getTime.toInt)}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
-    {(inst : T, v: boolean, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedEnum[T, ENUM]]; tv.data = fromInt(if (v && !isNull) 1 else 0)}}
-  }
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedEnum[T, ENUM] => f.st(if (v eq null) defaultValue else fromInt(Helpers.toInt(v.toString)))})
+  
+  def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnum[T, ENUM] => f.st(if (isNull) defaultValue else fromInt(v.toInt))})  
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedEnum[T, ENUM] => f.st(if (v eq null) defaultValue else fromInt(Helpers.toInt(v)))})
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedEnum[T, ENUM] => f.st(if (v eq null) defaultValue else fromInt(Helpers.toInt(v)))})
+
+  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnum[T, ENUM] => f.st(defaultValue)})
   
   /**
    * Given the driver type, return the string required to create the column in the database
@@ -91,11 +99,17 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
     case _ => "BIGINT"
   })  
   
+  /**
+    * Build a list for the select.  Return a tuple of (String, String) where the first string
+    * is the id.string of the Value and the second string is the Text name of the Value.
+    */
+  def buildDisplayList: List[(String, String)] = enum.elements.toList.map(a => (a.id.toString, a.toString))
+  
     /**
    * Create an input field for the item
    */
   override def toForm : NodeSeq = 
-    S.select(enum.elements.toList.map(a => (a.id.toString, a.toString)), Full(toInt.toString),v => this(fromInt(Helpers.toInt(v))))
+    S.select(buildDisplayList, Full(toInt.toString),v => this(fromInt(Helpers.toInt(v))))
 }
 
 class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {
@@ -152,7 +166,9 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 
 
 class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
-  private var data : Int = defaultValue
+  private var data: Int = defaultValue
+  private var orgData: Int = defaultValue
+  
   def defaultValue = 0
   def dbFieldClass = classOf[Int]
 
@@ -162,6 +178,13 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   def targetSQLType = Types.INTEGER
 
   protected def i_is_! = data
+  protected def i_was_! = orgData
+  /**
+     * Called after the field is saved to the database
+     */
+  override protected[mapper] def doneWithSave() {
+    orgData = data
+  }
   
   protected def real_i_set_!(value : int) : int = {
     if (value != data) {
@@ -197,26 +220,25 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   
   protected def i_obscure_!(in : int) = 0
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
-    inst match {
-      case null => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = 0;}}
-      case _ if (inst.isInstanceOf[Number]) => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.asInstanceOf[Number].intValue}}
-      case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = toInt(v.toString)}}
-    }
+  private def st(in: Int) {
+    data = in
+    orgData = in
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => unit = {
-    {(inst : T, v: Long, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = v.asInstanceOf[int]}}
-  }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
-    {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = toInt(v.toString)}}
-  }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
-    {(inst : T, v: Date ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v == null) 0 else v.getTime.asInstanceOf[int]}}
-  }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => unit   = {
-    {(inst : T, v: Boolean, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedInt[T]]; tv.data = if (v && !isNull) 1 else 0}}
-  }
+  def buildSetActualValue(accessor: Method, v: AnyRef, columnName: String): (T, AnyRef) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedInt[T] => f.st(toInt(v))})
+  
+  def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit = 
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedInt[T] => f.st(if (isNull) 0 else v.toInt)})
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
+    (inst, v) => doField(inst, accessor, {case f: MappedInt[T] => f.st(toInt(v))})
+
+  def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit = 
+    (inst, v) => doField(inst, accessor, {case f: MappedInt[T] => f.st(toInt(v))})  
+
+  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit =
+    (inst, v, isNull) => doField(inst, accessor, {case f: MappedInt[T] => f.st(if (isNull || !v) 0 else 1)})  
   
   /**
    * Given the driver type, return the string required to create the column in the database

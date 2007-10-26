@@ -232,6 +232,9 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         
         drainTheSwamp(0, Nil)
         
+        if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
+        else {
+        
         actors.foreach{case (act, when) => act ! Listen(when)}
 
         val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
@@ -244,6 +247,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor))
 
         (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+        }
         }
         } finally {
           sessionActor.exitComet(self)
@@ -410,6 +414,11 @@ object LiftServlet {
     }
   }
 
+  /**
+    * Where to send the user if there's no comet session
+    */
+  var noCometSessionPage = "/"
+  
   /**
     * Put a function that will calculate the request timeout based on the
     * incoming request.
