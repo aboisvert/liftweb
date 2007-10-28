@@ -25,6 +25,7 @@ import java.util.{TimeZone, Calendar}
 import java.lang.Character._
 import javax.crypto._
 import javax.crypto.spec._
+import net.liftweb.mapper.{Mapper, MappedField}
 
 /**
  *  A bunch of helper functions
@@ -130,13 +131,30 @@ object Helpers {
     ret
   }
   
+  /**
+   * Returns a Full can with the first element x of the list in
+   * for which f(x) evaluates to true. If f(x) evaluates to false
+   * for every x, then an Empty can is returned.
+   *
+   * @param in  a list of elements to which f can be applied
+   * @param f   a function that can be applied to elements of in
+   */
   def first_? [B](in: List[B])(f: => B => Boolean): Can[B] =
     in match {
     case Nil => Empty
     case x :: xs => if (f(x)) Full(x) else first_? (xs)(f)
   }
   
-  
+  /**
+   * Returns the first application of f to an element of in that
+   * results in a Full can. If f applied to an element of in results
+   * in an Empty can, then f will be applied to the rest of the
+   * elements of in until a Full can results. If the list runs out
+   * then an Empty can is returned.
+   * 
+   * @param in  a list of elements to which f can be applied
+   * @param f   a function that can be applied to elements of in
+   */  
   def first[B,C](in : List[B])(f : B => Can[C]): Can[C] = {
     in match {
       case Nil => Empty
@@ -186,6 +204,44 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
   implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
+
+  /**
+   * Experimental template bind. Adopts the approach detailed in my "Template by Example" e-mail to the
+   * liftweb discussion list.
+   * 
+   * @author jorge.ortiz
+   */
+  def tbind[T<:Mapper[T]](namespace: String, xml: NodeSeq, objs: Seq[T])(transform: T => PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
+    val templates = xml.theSeq.headOption.get.child
+    
+    (for (obj <- objs;
+      template <- templates)
+        yield xbind(namespace, template)(transform(obj))
+    ).flatMap(_.theSeq)
+  }
+  
+  /**
+   * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform 
+   * function, which can be used to format the returned NodeSeq.
+   */
+  def xbind(namespace: String, xml: NodeSeq)(transform: PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
+    def rec_xbind(xml: NodeSeq): NodeSeq = {
+      xml.flatMap {
+        node => node match {
+          case s: Elem if (node.prefix == namespace) =>
+            if (transform.isDefinedAt(node.label))
+              transform(node.label)(node)
+            else
+              Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+          case Group(nodes) => Group(rec_xbind(nodes))
+          case s: Elem => Elem(node.prefix, node.label, node.attributes, node.scope, rec_xbind(node.child) : _*)
+          case n => node
+        }
+      }
+    }
+    
+    rec_xbind(xml)
+  }
   
   /**
     * Bind a set of values to parameters and attributes in a block of XML 

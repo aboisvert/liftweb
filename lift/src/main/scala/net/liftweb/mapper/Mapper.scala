@@ -179,7 +179,27 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     *
     * @return Can[MappedField]
     */ 
-  def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
+  def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)  
+  
+  type FieldPf = PartialFunction[String, NodeSeq => NodeSeq]
+  
+  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq)): FieldPf = {
+    getSingleton.fieldMapperPf(transform, this)
+  }
+
+  private var fieldPf_i: FieldPf = Map.empty
+  
+  def fieldPf = fieldPf_i
+  
+  def addFieldAfter(pf: FieldPf) {
+    fieldPf_i = fieldPf_i orElse pf
+    fieldPf_i
+  }
+  
+  def addFieldBefore(pf: FieldPf) {
+    fieldPf_i = pf orElse fieldPf_i
+    fieldPf_i
+  }
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>

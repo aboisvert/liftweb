@@ -12,6 +12,7 @@ import java.sql.{ResultSet, Types, PreparedStatement, Statement}
 import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Full, Failure}
+import net.liftweb.http.{LiftServlet, S}
 import java.util.Date
 
 trait BaseMetaMapper {
@@ -512,12 +513,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
   }
   
-  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq)):
-  PartialFunction[String, NodeSeq => NodeSeq] = {
-     Map.empty ++ mappedFieldArray.map { mf =>
-       (mf.name, ((ignore: NodeSeq) => transform(mf.field)))
-     }
-   }  
+  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq), actual: A): PartialFunction[String, NodeSeq => NodeSeq] = {
+    Map.empty ++ mappedFieldArray.map { mf => 
+      (mf.name, ((ignore: NodeSeq) => transform(??(mf.method, actual))))
+    }
+  }
   
   def checkFieldNames(in: A): Unit = mappedFieldArray.foreach(f =>
     ??(f.method, in) match {
@@ -551,7 +551,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   private val _mappedFields  = new HashMap[String, Method];
   
-  private var mappedFieldArray: List[FieldHolder[A]] = Nil; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
+  private[mapper] var mappedFieldArray: List[FieldHolder[A]] = Nil; // new Array[Triple[String, Method, MappedField[Any,Any]]]();
   
   private var mappedCallbacks: List[(String, Method)] = Nil
   
@@ -676,7 +676,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
    */
   def dbTableName = _dbTableName
   
-  private lazy val _dbTableName = fixTableName(internalTableName_$_$)
+  private[mapper] lazy val _dbTableName = fixTableName(internalTableName_$_$)
 
   /*
   private val _dbTableName: String = {
@@ -900,7 +900,140 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
       }
     }
   }
-   
+  
+  override def afterSchemifier {
+    if (crudSnippets_?) {
+      LiftServlet.addSnippetAfter(crudSnippets)
+    }
+  }  
+  
+  /**
+   * Override this definition in your model to enable CRUD snippets
+   * for that model. Set to false by default.
+   *
+   * Remember to override editSnippetSetup and viewSnippetSetup as well,
+   * as the defaults are broken.
+   *
+   * @return false
+   */
+  def crudSnippets_? = false
+  
+  /**
+   * Defines the default CRUD snippets. Override if you want to change
+   * the names of the snippets. Defaults are "add", "edit", and "view".
+   *
+   * (No, there's no D in CRUD.)
+   */
+  def crudSnippets: LiftServlet.SnippetPf = {
+    val Name = _dbTableName
+    
+    {
+      case Name :: "add"  :: _ => addSnippet
+      case Name :: "edit" :: _ => editSnippet
+      case Name :: "view" :: _ => viewSnippet
+    }
+  }
+    
+  /**
+   * Default snippet for modification. Used by the default add and edit snippets.
+   */
+  def modSnippet(xhtml: NodeSeq, obj: A, cleanup: (A => Unit)): NodeSeq = {
+    val Name = _dbTableName
+
+    def callback(ignore: String) {
+      cleanup(obj)
+    }
+    
+    xbind(Name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm) orElse {
+      case "submit" => label => S.submit(label.text, callback)
+    })
+  }
+
+  /**
+   * Default add snippet. Override to change behavior of the add snippet.
+   */
+  def addSnippet(xhtml: NodeSeq): NodeSeq = {
+    modSnippet(xhtml, addSnippetSetup, addSnippetCallback _)
+  }
+
+  /**
+   * Default edit snippet. Override to change behavior of the edit snippet.
+   */
+  def editSnippet(xhtml: NodeSeq): NodeSeq = {
+    modSnippet(xhtml, editSnippetSetup, editSnippetCallback _)
+  }
+  
+  /**
+   * Default view snippet. Override to change behavior of the view snippet.
+   */
+  def viewSnippet(xhtml: NodeSeq): NodeSeq = {
+    val Name = _dbTableName
+    val obj: A = viewSnippetSetup
+    
+    xbind(Name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.asHtml))
+  }
+  
+  /**
+   * Lame attempt at automatically getting an object from the HTTP parameters.
+   * BROKEN! DO NOT USE! Only here so that existing sub-classes KeyedMetaMapper
+   * don't have to implement new methods when I commit the CRUD snippets code.
+   */
+  def objFromIndexedParam: Can[A] = {
+    val found = for (
+      (param, value :: _) <- S.request.params;
+      fh <- mappedFieldArray if fh.field.dbIndexed_? == true && fh.name.equals(param)
+    ) yield find(value)
+    
+    found.filter(obj => obj match {
+      case Full(obj) => true
+      case _         => false
+    }) match {
+      case obj :: _ => obj
+      case _        => Empty
+    }
+  }
+  
+  /**
+   * Default setup behavior for the add snippet. Creates a new mapped object.
+   *
+   * @return new mapped object
+   */
+  def addSnippetSetup: A = {
+    this.create
+  }
+  
+  /**
+   * Default setup behavior for the edit snippet. BROKEN! MUST OVERRIDE IF
+   * USING CRUD SNIPPETS!
+   *
+   * @return a mapped object of this metamapper's type
+   */
+  def editSnippetSetup: A = {
+    objFromIndexedParam.open_!
+  }
+  /**
+   * Default setup behavior for the view snippet. BROKEN! MUST OVERRIDE IF
+   * USING CRUD SNIPPETS!
+   *
+   * @return a mapped object of this metamapper's type
+   */
+  def viewSnippetSetup: A = {
+    objFromIndexedParam.open_!
+  }
+  /**
+   * Default callback behavior of the edit snippet. Called when the user
+   * presses submit. Saves the passed in object.
+   *
+   * @param obj mapped object of this metamapper's type
+   */
+  def editSnippetCallback(obj: A) { obj.save }
+  /**
+   * Default callback behavior of the add snippet. Called when the user
+   * presses submit. Saves the passed in object.
+   *
+   * @param obj mapped object of this metamapper's type
+   */
+  def addSnippetCallback(obj: A) { obj.save } 
 }
 
 case class FieldHolder[T](name: String, method: Method, field: MappedField[_, T]) 
