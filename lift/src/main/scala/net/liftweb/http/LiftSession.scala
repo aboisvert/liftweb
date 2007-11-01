@@ -281,7 +281,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     first(toTry) {
       clsName => 
 	try {
-	  tryo(List(classOf[ClassNotFoundException])) (Class.forName(clsName)).flatMap{
+	  tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName)).flatMap{
 	    c =>
 	      val inst = c.newInstance
 	    c.getMethod(action, null).invoke(inst, null) match {
@@ -466,7 +466,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
     findClass(contType, buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
-	tryo {
+	tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
 	  val constr = cls.getConstructor(Array(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start

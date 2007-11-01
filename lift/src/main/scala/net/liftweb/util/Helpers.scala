@@ -428,7 +428,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   */
   def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Can[Class] = {
     def findClass_s(name : String, where : String) : Can[Class] = {
-      tryo(^(classOf[ClassNotFoundException])) {
+      tryo(^(classOf[ClassNotFoundException]), Empty) {
         val clzName = where+"."+name
 	
         Class.forName(clzName)
@@ -454,12 +454,12 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return None.
   */
-  def tryo[T](ignore : List[Class])(f : => T) : Can[T] = {
+  def tryo[T](ignore : List[Class],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
     try {
       Full(f)
     } catch {
-      case c if (containsClass(c.getClass, ignore)) => Failure("tryo", Full(c), Nil)
-      case c if (ignore == null || ignore.isEmpty) => Failure("tryo", Full(c), Nil)
+      case c if (containsClass(c.getClass, ignore)) => onError.foreach(_(c)); Failure("tryo", Full(c), Nil)
+      case c if (ignore == null || ignore.isEmpty) => onError.foreach(_(c)); Failure("tryo", Full(c), Nil)
     }
   }
   
@@ -467,7 +467,14 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * Wraps a "try" block around the function f.  If f throws
   * an exception return None
   */
-  def tryo[T](f: => T): Can[T] = tryo(Nil)(f)
+  def tryo[T](f: => T): Can[T] = tryo(Nil, Empty)(f)
+  
+  
+  /**
+  * Wraps a "try" block around the function f.  If f throws
+  * an exception return None
+  */
+  def tryo[T](onError: Throwable => Unit)(f: => T): Can[T] = tryo(Nil, Full(onError))(f)  
   
   def callableMethod_?(meth : Method) = {
     meth != null && meth.getParameterTypes.length == 0 && (meth.getModifiers & java.lang.reflect.Modifier.PUBLIC) != 0
