@@ -382,7 +382,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
               val ar: Array[Object] = List(Group(kids)).toArray
               // val ar: Array[Object] = Array(Group(kids))
 	      ((invokeMethod(clz, method, ar)) or invokeMethod(clz, method)) match {
-		case Full(md: NodeSeq) => processSurroundAndInclude(md)
+		case Full(md: NodeSeq) => md
 		case _ => kids
 	      }
 	    }
@@ -403,11 +403,11 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       v => 
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes))
-	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), processSurroundAndInclude(kids), attr))       
+	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), kids, attr))       
 	  case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
 	  case Elem("lift", "surround", attr @ _, _, kids @ _*) => processSurroundElement(v.asInstanceOf[Elem])
-	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => findAndEmbed(Can(attr.get("what")), processSurroundAndInclude(kids))
-	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSnippet(Can(attr.get("type")), attr, processSurroundAndInclude(kids)))
+	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => processSurroundAndInclude(findAndEmbed(Can(attr.get("what")), kids))
+	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
 	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
 	  case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids))
 	  case Elem("lift", "a", attr @ _, scope @ _, kids @ _*) => Elem(null, "a", addAjaxHREF(attr), scope, processSurroundAndInclude(kids): _*)
