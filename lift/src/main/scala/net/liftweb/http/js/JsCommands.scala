@@ -43,30 +43,30 @@ object JsCmds {
   }
 
   trait HasTime {
-    def time: Can[Int]
+    def time: Can[Long]
     
     def timeStr = time.map(_.toString) openOr ""
   }
   
-  case class After(millis: Int)(toDo: JsCmd) extends JsCmd {
+  case class After(millis: Long, toDo: JsCmd) extends JsCmd {
     def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis+");"
   }
 
   object Show {
     def apply(uid: String) = new Show(uid, Empty)
-    def apply(uid: String, time: Int) = new Show(uid, Full(time))
+    def apply(uid: String, time: Long) = new Show(uid, Full(time))
   }
   
-  class Show(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
+  class Show(val uid: String,val time: Can[Long]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").show("+timeStr+");} catch (e) {}"
   }
 
   object Hide {
     def apply(uid: String) = new Hide(uid, Empty)
-    def apply(uid: String, time: Int) = new Hide(uid, Full(time))    
+    def apply(uid: String, time: Long) = new Hide(uid, Full(time))    
   }
   
-  class Hide(val uid: String,val time: Can[Int]) extends JsCmd with HasTime {
+  class Hide(val uid: String,val time: Can[Long]) extends JsCmd with HasTime {
      def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
   }
 
@@ -97,5 +97,9 @@ object JsCmds {
   case class RedirectTo(where: String) extends JsCmd {
     private val context = S.contextPath
     def toJsCmd = "window.location = "+(context + where).encJs+";"
+  }
+  
+  case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
+    def toJsCmd = (Show(where) + Set(where, msg) + After(duration, Hide(where, fadeTime))).toJsCmd
   }
 }

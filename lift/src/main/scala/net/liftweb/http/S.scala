@@ -467,19 +467,19 @@ object S {
       *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
       * the hidden element blurs, it swaps into the shown element.
       */
-    def swapable(shown: Elem, hidden: Elem): Elem = {
+    def swappable(shown: Elem, hidden: Elem): Elem = {
       val (rs, sid) = findOrAddId(shown)
       val (rh, hid) = findOrAddId(hidden)
       (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
         dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
     }
     
-    def swapable(shown: Elem, hidden: String => Elem): Elem = {
+    def swappable(shown: Elem, hidden: String => Elem): Elem = {
       val (rs, sid) = findOrAddId(shown)
       val hid = "S"+randomString(10)
       val rh = <span id={hid}>{hidden("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();")}</span>
       
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show();}); return false;"))}{
+      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show(); return false;"))}{
         (rh % ("style" -> "display: none"))}</span>)      
     }
     
