@@ -1,0 +1,20 @@
+#!/bin/sh
+# Run from the root of your project directory (where your pom.xml file resides)
+# It will give you a scala interpreter with all of your project's classfiles 
+# loaded and ready to go.
+#
+# Author: Steve Jenson (stevej@pobox.com) Nov 1, 2007
+#
+
+THE_CLASSPATH=
+for i in `find ./ -name "*.jar" -print`
+do
+  THE_CLASSPATH=${THE_CLASSPATH}:${i}
+done
+
+for i in `find ~/.m2 -name "*.jar" -print`
+do
+  THE_CLASSPATH=${THE_CLASSPATH}:${i}
+done
+
+CLASSPATH=$THE_CLASSPATH:target/classes scala
