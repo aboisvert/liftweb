@@ -114,6 +114,11 @@ trait BaseMappedField {
     * Called after the field is saved to the database
     */
   protected[mapper] def doneWithSave()
+  
+  /**
+     * The display name of this field (e.g., "First Name")
+     */
+   def displayName: String  
 }
 
 /**
@@ -283,7 +288,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
     * The display name of this field (e.g., "First Name")
     */
-  def displayName = name
+  override def displayName: String = name
   
   def resetDirty {
     if (safe_?) dirty_?(false)

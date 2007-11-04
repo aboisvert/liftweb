@@ -132,6 +132,8 @@ object DB {
       }) match {case (time, res) => runLogger(query, time); res}
   }
   
+  
+  
   def runQuery(query: String): (List[String], List[List[String]]) = {
     import java.sql.Types._
     
@@ -192,7 +194,7 @@ object DB {
       }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
-  def prepareStatement[T](statement : String,keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
+  def prepareStatement[T](statement : String, keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     Helpers.calcTime{
         val st = conn.prepareStatement(statement, keys)
         queryTimeout.foreach(to => st.setQueryTimeout(to))

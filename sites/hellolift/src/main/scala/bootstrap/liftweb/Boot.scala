@@ -24,6 +24,7 @@ class Boot {
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap ::: Entry.sitemap
     LiftServlet.setSiteMap(SiteMap(entries:_*))
+    S.addAround(User.requestLoans)    
   }
 }
 

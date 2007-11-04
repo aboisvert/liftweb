@@ -200,6 +200,15 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     fieldPf_i = pf orElse fieldPf_i
     fieldPf_i
   }
+  
+  /**
+    * If there's a field in this record that defines the locale, return it
+    */
+  def localeField: Can[MappedLocale[A]] = Empty
+  
+  def timeZoneField: Can[MappedTimeZone[A]] = Empty
+  
+  def countryField: Can[MappedCountry[A]] = Empty
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>

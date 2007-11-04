@@ -66,3 +66,37 @@ object FatLazy {
   def apply[T](f: => T) = new FatLazy(f)
 }
 
+object ThreadLazy {
+  def apply[T](f: => T) = new ThreadLazy(f)
+  
+  implicit def what[T](in: ThreadLazy[T]): T = in.get
+}
+
+class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
+  private val calced = new ThreadGlobal[Boolean]
+  private val value = new ThreadGlobal[TheType]
+  
+  def apply[T](f: => T): T = {
+    val old = value.value
+    calced.set(false)
+    try {
+      f
+    } finally {
+      calced.set(false)
+      value.set(old)
+    }
+  }
+  
+  def reset(): Unit = calced.set(false)
+  
+  def get: TheType = {
+    if (calced.value) value.value
+    else {
+      value.set(theFunc)
+      calced.set(true)
+      value.value
+    }
+  }
+  
+}
+

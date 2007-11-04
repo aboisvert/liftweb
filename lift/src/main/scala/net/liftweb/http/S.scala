@@ -210,14 +210,13 @@ object S {
   def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
-  private def doAround[B](f:() => B, ar: List[LoanWrapper]): B = 
+  private def doAround[B](ar: List[LoanWrapper], f: => B): B = 
     ar match {
-    case Nil => f()
-    case x :: xs => x(doAround(f, xs))
+    case Nil => f
+    case x :: xs => x(doAround(xs, f))
   }
   
-  def addAround(lw: LoanWrapper): Unit = aroundRequest = lw :: aroundRequest 
-  
+  def addAround(lw: List[LoanWrapper]): Unit = aroundRequest = lw ::: aroundRequest 
   
   def queryLog: List[(String, Long)] = _queryLog.value match {
     case null => Nil
@@ -239,6 +238,7 @@ object S {
   }
   
   private def _init[B](request: RequestState, session: LiftSession, vsh: VarStateHolder)(f: () => B): B = {
+    doAround(aroundRequest,
     _sessionInfo.doWith(session) (
     _stateInfo.doWith(vsh) {
     _attrs.doWith(new HashMap) {
@@ -256,7 +256,8 @@ object S {
         }
       }
     }
-    })
+    }) )
+    
   }
   
   object state {

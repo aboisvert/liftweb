@@ -266,13 +266,14 @@ import """+pkg+""".model._
   */
 class Boot {
   def boot {
-    DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     addToPackages("""+"\""+pkg+"\""+""")
     Schemifier.schemify(true, Log.infoF _, User)
     LiftServlet.addTemplateBefore(User.templates)
 
     val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap
     LiftServlet.setSiteMap(SiteMap(entries:_*))
+    S.addAround(User.requestLoans)
   }
 }
 
@@ -303,12 +304,13 @@ import net.liftweb.util._
 /**
  * The singleton that has methods for accessing the database
  */
-object User extends User with KeyedMetaMapper[long, User] {
+object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[Long, User]] {
   override def dbTableName = "users" // define the DB table name
   override def screenWrap = Full(<lift:surround with="default" at="content">
 			       <lift:bind /></lift:surround>)
   // define the order fields will appear in forms and output
   override def fieldOrder = id :: firstName :: lastName :: email :: 
+  locale :: timezone ::
   password :: textArea :: Nil
 }
 

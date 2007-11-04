@@ -4,6 +4,7 @@ import scala.xml.{NodeSeq}
 import net.liftweb.http.S
 import net.liftweb.http.S._
 import net.liftweb.util._
+import java.util.{Locale, TimeZone}
 
 object Countries extends Enumeration {
   val C1 = Value(1, "United States")
@@ -283,7 +284,39 @@ object Countries extends Enumeration {
   val C272 = Value(272, "British Antarctic Territory")
 }
 
-class MappedPostalCode[T<:Mapper[T]](owner : T, country: MappedEnum[T, Countries.type]) extends MappedString[T](owner, 32) {
+class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) {
+  override def defaultValue = Locale.getDefault.toString
+  
+  def isAsLocale: Locale = Locale.getAvailableLocales.filter(_.toString == is).toList match {
+    case Nil => Locale.getDefault
+    case x :: xs => x
+  }
+  
+  override def toForm = S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
+    map(lo => (lo.toString, lo.getDisplayName)), Full(this.is), v => set(v))
+}
+
+class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32) {
+  override def defaultValue = TimeZone.getDefault.getID
+  
+  def isAsTimeZone: TimeZone = TimeZone.getTimeZone(is) match {
+    case null => TimeZone.getDefault
+    case x => x
+  }
+  
+  override def toForm = S.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v))
+}
+
+object MappedTimeZone {
+  lazy val timeZoneList = TimeZone.getAvailableIDs.toList.filter(!_.startsWith("SystemV/")).filter(!_.startsWith("Etc/")).filter(_.length > 3).
+    sort(_ < _).map(tz => (tz, tz))
+}
+
+class MappedCountry[T <: Mapper[T]](owner: T) extends MappedEnum[T, Countries.type](owner, Countries) {
+  
+}
+
+class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) extends MappedString[T](owner, 32) {
   override def setFilter = notNull _ :: toUpper _ :: trim _ :: super.setFilter
   
   private def genericCheck(zip: String): List[ValidationIssue] = {

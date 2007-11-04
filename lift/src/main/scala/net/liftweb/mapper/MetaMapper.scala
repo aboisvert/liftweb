@@ -670,6 +670,17 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def getActualField[T](actual: A, protoField: MappedField[T, A]): MappedField[T, A] =
     ??(_mappedFields(protoField.name), actual).asInstanceOf[MappedField[T,A]]
 
+        
+        /**
+         * Given the prototype field (the field on the Singleton), get the field from the instance
+         * @param actual -- the Mapper instance
+         * @param protoField -- the field from the MetaMapper (Singleton)
+         *
+         * @return the field from the actual object
+         */
+        def getActualBaseField(actual: A, protoField: BaseOwnedMappedField[A]): BaseOwnedMappedField[A] =
+          ??(_mappedFields(protoField.name), actual) // .asInstanceOf[MappedField[T,A]]        
+        
   /**
    * The name of the database table.  Override this method if you
    * want to change the table to something other than the name of the Mapper class
