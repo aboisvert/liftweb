@@ -319,6 +319,11 @@ object S {
       }
     }
   }
+  
+  def servletSession: Can[HttpSession] = _servletRequest.value match {
+    case null => Empty
+    case r => Full(r.getSession)
+  }
 
   
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
@@ -694,4 +699,41 @@ class VarStateHolder(val session: LiftSession, initVars: Map[String, String],set
     else session ! UpdateState(name, Full(value))
   }
   
+}
+
+/**
+  * Keep session information around without the nastiness of naming session variables
+  * or the type-unsafety of casting the results
+  *
+  * @param dflt - the default value of the session variable
+  */
+class SessionVar[T](dflt: => T) {
+  private val name = "V"+randomString(10)
+  
+  /**
+    * The current value of the session variable
+    */
+  def is: T = {
+    S.servletSession match {
+      case Full(s) => s.getAttribute(name) match {
+        case Full(v: T) => v
+        case _ => this(dflt) ; this.is
+      }
+      case _ => dflt
+    }
+  }
+  
+  /**
+    * Set the session variable
+    *
+    * @param what -- the value to set the session variable to
+    */
+  def apply(what: T): SessionVar[T] = {
+    S.servletSession.foreach(_.setAttribute(name, Full(what)))
+    this
+  }
+}
+
+object SessionVar {
+  implicit def whatIs[T](in: SessionVar[T]): T = in.is
 }

@@ -23,7 +23,13 @@ object TextileParser extends Application {
    * to get the XHTML result to send to the browser.
    * int will be the number of characters parsed.
    */
-  def parse(toParse : String) : Option[Lst] = {
+  def parse(_toParse: String, urlRewrite: String => String) : Option[Lst] = {
+    val toParse = _toParse match {
+      case null => "null\n\n"
+      case s if s.indexOf("\n") == -1 => s + "\n\n"
+      case s => s
+    }
+    
     def findRefs(in : List[Textile]) : List[Pair[String,String]] = in match {
       case (s : ARef) :: rest => {Pair(s.name, s.href) :: findRefs(rest)}
       case (s : ATextile) :: rest => {findRefs(s.theElems) ::: findRefs(rest)}
@@ -39,7 +45,7 @@ object TextileParser extends Application {
       case _ => {}
     }
     
-    val parser = new TextileParsers
+    val parser = new TextileParsers(urlRewrite)
     val lst = parser.document(new scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
 
     lst map { it =>
@@ -53,15 +59,15 @@ object TextileParser extends Application {
 	   } getOrElse None
   }
   
-  def toHtml(toParse: String): NodeSeq = {
-    parse(toParse).map(_.toHtml) getOrElse Text("")
+  def toHtml(toParse: String, wikiUrlFunc: String => String): NodeSeq = {
+    parse(toParse, wikiUrlFunc).map(_.toHtml) getOrElse Text("")
   }
 
   
   /**
    * the thing that actually does the textile parsing
    */
-  class TextileParsers extends Parsers with ImplicitConversions {
+  class TextileParsers(wikiUrlFunc: String => String) extends Parsers with ImplicitConversions {
     type Elem = char
     
     def document : Parser[Lst] = rep(paragraph) ^^ Lst
@@ -188,7 +194,7 @@ object TextileParser extends Application {
     /**
     * a WikiWord
     */
-    def camelUrl : Parser[Textile] = camelizedWord ~ rep1(camelizedWord) ^^ { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(Nil, ss, ss, Nil)}
+    def camelUrl : Parser[Textile] = camelizedWord ~ rep1(camelizedWord) ^^ { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(Nil, ss, ss, Nil, wikiUrlFunc)}
     
     def urlStr = (rep1(elem("", validUrlChar))^^ mkString)
     
@@ -583,6 +589,7 @@ object TextileParser extends Application {
   }
 
   case class Lst(elems : List[Textile]) extends ATextile(elems, Nil) {
+    /*
     def performOnWikiAnchor(f : (WikiAnchor) => Any) : unit = {
       def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : unit = {
         in match {
@@ -593,12 +600,12 @@ object TextileParser extends Application {
         }
       }
       findWikiAnchor(List(this), f)
-    }
+    }*/
   }
   
   // drop the last EOL to prevent needless <br />
   // TODO: find a better solution.. it's not quite clear to me where newlines are meaningful
-  private def flattenAndDropLastEOL(elems : List[Textile]) = (elems.last match { case EOL() => elems.init case _ => elems}).flatMap{e => e.toHtml.toList}
+  private def flattenAndDropLastEOL(elems : List[Textile]) = ((elems match {case Nil => Nil case x => (x.last match { case EOL() => elems.init case _ => elems})})).flatMap{e => e.toHtml.toList}
 
   case class Paragraph(elems : List[Textile], attrs: List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
@@ -805,9 +812,9 @@ object TextileParser extends Application {
     override def toHtml : NodeSeq = Text("")
   }
 
-  case class WikiAnchor(elems : List[Textile], href : String, alt : String, attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    var rootUrl = ""
-    def allAttrs = AnyAttribute("href", rootUrl + href) :: attrs 
+  case class WikiAnchor(elems : List[Textile], href : String, alt : String, attrs : List[Attribute], wikiFunc: String => String) extends ATextile(elems, attrs) {
+    // var rootUrl = ""
+    def allAttrs = AnyAttribute("href", wikiFunc(href)) :: attrs 
     override def toHtml : NodeSeq = Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)
   }
   
@@ -1036,11 +1043,12 @@ We use CSS(Cascading Style Sheets).
 
 """
   
-  
-  def tryit = (for (res <- parse(example)) yield {
-    res.performOnWikiAnchor{a => a.rootUrl = "/foo/"}
+  /*
+  def tryit = (for (res <- parse(example, a => "/foo/"+a)) yield {
+    // res.performOnWikiAnchor{a => a.rootUrl = "/foo/"}
     res.toHtml
   }) getOrElse ""
     
   println(tryit)
+  */
 }

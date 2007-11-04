@@ -61,7 +61,7 @@ class Wiki {
       
       <span><a href="/wiki/all">Show All Pages</a><br/>{
 	if (edit) editEntry(entry, isNew)
-        else TextileParser.toHtml(entry.entry) ++ 
+        else TextileParser.toHtml(entry.entry, a => a) ++ 
              <br/><a href={S.request.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
       }</span>
     }

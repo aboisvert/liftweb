@@ -17,7 +17,7 @@ class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, at
   def defaultPrefix = "clk"
   ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
   
-  def render = bind("time" -> Text(timeNow.toString))
+  def render = bind("time" -> timeNow)
   
   override def lowPriority : PartialFunction[Any, Unit] = {
     case Tick => 

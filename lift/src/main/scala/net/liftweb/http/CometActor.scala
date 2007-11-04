@@ -184,6 +184,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(in)
   // implicit def xmlNsToXmlOrJsCmd(in: Seq[Node]): RenderOut = new RenderOut(in)
   implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Full(in), Empty)
+  implicit def pairToPair(in: (String, Any)): (String, NodeSeq) = (in._1, Text(in._2 match {case null => "null" case s => s.toString}))
 }
 
 sealed abstract class CometMessage

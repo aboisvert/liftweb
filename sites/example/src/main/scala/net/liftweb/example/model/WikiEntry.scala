@@ -23,7 +23,7 @@ object WikiEntry extends WikiEntry with KeyedMetaMapper[long, WikiEntry] {
 /**
  * An O-R mapped wiki entry
  */
-class WikiEntry extends KeyedMapper[long, WikiEntry] {
+class WikiEntry extends KeyedMapper[Long, WikiEntry] {
   def getSingleton = WikiEntry // what's the "meta" object
   def primaryKeyField = id
 

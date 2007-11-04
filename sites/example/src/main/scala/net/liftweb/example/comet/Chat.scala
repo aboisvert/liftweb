@@ -24,11 +24,7 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
     ret
   }
 
-  override def lowPriority : PartialFunction[Any, Unit] = {
-      case ChatServerUpdate(value) => 
-      currentData = value
-      reRender
-    } 
+  override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender} 
   
   def render = <span>Hello "{userName}"
     <ul>{currentData.reverse.flatMap(cl => <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)}</ul>
