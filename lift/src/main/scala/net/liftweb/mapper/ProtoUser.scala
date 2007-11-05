@@ -78,18 +78,52 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       */
     def loginPageURL = "/"+BasePath+"/"+Login
     
-    def notLoggedIn_? = !loggedIn_?
+    def notLoggedIn_? = !loggedIn_? ;
 
-    val sitemap : List[Menu] = List(
-      Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))),
-      Menu(Loc("Logout", "/user_mgt/logout", "Logout", If(loggedIn_? _, "You must be logged in to Logout."))),
-      Menu(Loc("CreateUser", "/user_mgt/sign_up", "Sign Up", If(notLoggedIn_? _, "Please logout first."))),
-      Menu(Loc("LostPassword", ("/user_mgt/lost_password", true), "Lost Password", If(notLoggedIn_? _, "Please logout first."))), // not logged in
-      Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first."))), //not Logged in
-      Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", If(loggedIn_? _, "Please login first."))), // Logged in
-      Menu(Loc("ChangePassword", "/user_mgt/change_password", "Change Password", If(loggedIn_? _, "Please login first."))), // Logged in
-      Menu(Loc("ValidateUser", ("/user_mgt/validate_user", true), "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))) // Not Logged in
-      )
+    lazy val testLogginIn = If(loggedIn_? _, "You must be logged in")
+      
+    /**
+      * The menu item for login (make this "Empty" to disable)
+      */
+    def loginMenuLoc: Can[Menu] = Full(Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))))
+    
+    /**
+      * The menu item for logout (make this "Empty" to disable)
+      */
+    def logoutMenuLoc: Can[Menu] = Full(Menu(Loc("Logout", "/user_mgt/logout", "Logout", testLogginIn)))
+    
+    /**
+      * The menu item for creating the user/sign up (make this "Empty" to disable)
+      */
+    def createUserMenuLoc: Can[Menu] = Full(Menu(Loc("CreateUser", "/user_mgt/sign_up", "Sign Up", If(notLoggedIn_? _, "Please logout first."))))
+    
+    /**
+      * The menu item for lost password (make this "Empty" to disable)
+      */
+    def lostPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("LostPassword", ("/user_mgt/lost_password", true), "Lost Password", If(notLoggedIn_? _, "Please logout first.")))) // not logged in
+    
+    /**
+       * The menu item for resetting the password (make this "Empty" to disable)
+       */
+    def resetPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first.")))) //not Logged in
+    
+    /**
+       * The menu item for editing the user (make this "Empty" to disable)
+       */
+    def editUserMenuLoc: Can[Menu] = Full(Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", testLogginIn)))
+    
+    /**
+      * The menu item for changing password (make this "Empty" to disable)
+      */
+    def changePasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ChangePassword", "/user_mgt/change_password", "Change Password", testLogginIn)))
+    
+    /**
+      * The menu item for validating a user (make this "Empty" to disable)
+      */
+    def validateUserMenuLoc: Can[Menu] = Full(Menu(Loc("ValidateUser", ("/user_mgt/validate_user", true), "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))))     
+        
+    lazy val sitemap : List[Menu] = List(loginMenuLoc, logoutMenuLoc, createUserMenuLoc, lostPasswordMenuLoc, resetPasswordMenuLoc,
+        editUserMenuLoc, changePasswordMenuLoc, validateUserMenuLoc).flatten(a => a)
 
 
     def skipEmailValidation = false
