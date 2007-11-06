@@ -267,7 +267,7 @@ import """+pkg+""".model._
 class Boot {
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    addToPackages("""+"\""+pkg+"\""+""")
+    LiftServlet.addToPackages("""+"\""+pkg+"\""+""")
     Schemifier.schemify(true, Log.infoF _, User)
     LiftServlet.addTemplateBefore(User.templates)
 
