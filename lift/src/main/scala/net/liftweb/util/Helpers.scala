@@ -673,7 +673,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case lo: long => lo != 0
       case n : Number => n.intValue != 0
       case s : String => {
-     	var sl = s.toLowerCase
+     	val sl = s.toLowerCase
         if (sl.length == 0) false
         else {
           if (sl.charAt(0) == 't') true
@@ -1090,6 +1090,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   sb.toString
   }  
   
+  /*
   private val defaultFinder = getClass.getResource _
   private var _finder = defaultFinder
   
@@ -1117,7 +1118,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
-  
+  */
+    
   def script(theScript: String): NodeSeq = (<script>
   // {Unparsed("""<![CDATA[
   """+theScript+"""

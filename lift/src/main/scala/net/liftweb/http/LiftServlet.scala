@@ -26,6 +26,7 @@ import net.liftweb.sitemap._
 import js._
 import javax.servlet._
 import javax.servlet.http._
+import java.io.ByteArrayOutputStream
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -443,7 +444,7 @@ object LiftServlet {
   var requestTimedOut: Can[(RequestState, Any) => Can[Response]] = Empty
   
   def early = {
-    test_boot
+    // test_boot
     _early
   }
   
@@ -505,7 +506,7 @@ object LiftServlet {
   }
   
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
-    test_boot
+    // test_boot
     req.getSession.getAttribute(SessionDispatchTableName) match {
       case null | Nil  => dispatchTable_i 
       case dt: List[S.DispatchHolder] => rpf(dt.map(_.dispatch), dispatchTable_i)
@@ -514,7 +515,7 @@ object LiftServlet {
   }
   
   def rewriteTable(req: HttpServletRequest): RewritePf = {
-    test_boot
+    // test_boot
     req.getSession.getAttribute(SessionRewriteTableName) match {
       case null | Nil => rewriteTable_i
     case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
@@ -541,10 +542,34 @@ object LiftServlet {
   
   def setContext(in: ServletContext): Unit =  synchronized {
     if (in ne _context) {
-      Helpers.setResourceFinder(in.getResource)
+      // Helpers.setResourceFinder(in.getResource)
       _context = in
+      
       }
   }
+  
+  private val defaultFinder = getClass.getResource _
+  private def resourceFinder(name: String): java.net.URL = _context.getResource(name)
+  
+  def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)} 
+  def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
+  def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
+    stream =>
+      val buffer = new Array[byte](2048)
+    val out = new ByteArrayOutputStream
+    def reader {
+      val len = stream.read(buffer)
+      if (len < 0) return
+      else if (len > 0) out.write(buffer, 0, len)
+      reader
+    }
+    reader
+    stream.close
+    out.toByteArray
+  }
+  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
+  def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
+
   
 
   def finder(name: String): Can[InputStream] = {
@@ -579,7 +604,7 @@ object LiftServlet {
   
   private var snippetTable_i: SnippetPf = Map.empty
   
-  private val test_boot = {
+  private def performBoot(context: ServletContext) = {
     try {
       val c = Class.forName("bootstrap.liftweb.Boot")
       val i = c.newInstance
@@ -666,9 +691,9 @@ class LiftFilter extends Filter
     //We need to capture the ServletContext on init
     def init(config:FilterConfig) {
       context = config.getServletContext
+      LiftServlet.setContext(context) 
       actualServlet = new LiftServlet(context)
       actualServlet.init
-      LiftServlet.setContext(context) 
     }
     
     //And throw it away on destruction
