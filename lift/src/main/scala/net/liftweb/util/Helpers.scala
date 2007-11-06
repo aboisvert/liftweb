@@ -31,8 +31,6 @@ import net.liftweb.mapper.{Mapper, MappedField}
  *  A bunch of helper functions
  */
 object Helpers {
-  private var otherPackages: List[String] = Nil
-  
   val utc = TimeZone.getTimeZone("UTC")
   def internetDateFormatter = {
     val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
@@ -47,10 +45,10 @@ object Helpers {
   def toInternetDate(in: Date): String = internetDateFormatter.format(in)
   def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
   
-  def buildPackage(end: String)  = synchronized {otherPackages.map{op => op+"."+end}}
-  
-  def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}
-  
+  /*
+
+  */
+    
   /**
   * URL decode the string.  A pass-through to Java's URL decode with UTF-8
   */

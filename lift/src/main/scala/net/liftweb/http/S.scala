@@ -708,7 +708,8 @@ class VarStateHolder(val session: LiftSession, initVars: Map[String, String],set
   * @param dflt - the default value of the session variable
   */
 class SessionVar[T](dflt: => T) {
-  private val name = "V"+randomString(10)
+  private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
+  println("Instantiated a session var named "+name)
   
   /**
     * The current value of the session variable

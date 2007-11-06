@@ -11,7 +11,7 @@ import java.lang.reflect.Method
 import java.util.Date
 import net.liftweb.util.FatLazy 
 
-class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[Byte], T] {
+class MappedBinary[T<:Mapper[T]](val fieldOwner: T, val maxLen: Int) extends MappedField[Array[Byte], T] {
   private val data : FatLazy[Array[Byte]] =  FatLazy(defaultValue)
   private val orgData: FatLazy[Array[Byte]] = FatLazy(defaultValue)
   
@@ -30,7 +30,6 @@ class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[By
   def targetSQLType = Types.BINARY
   
   def defaultValue = null
-  def maxLen = 1024
   override def writePermission_? = true
   override def readPermission_? = true
 

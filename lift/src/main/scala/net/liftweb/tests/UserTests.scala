@@ -130,9 +130,7 @@ class Pet extends KeyedMapper[Long, Pet] {
   object id extends MappedLongIndex(this)
   object name extends MappedString(this, 32)
   object owner extends MappedLongForeignKey(this, User)
-  object icon extends MappedBinary(this) {
-    override def maxLen = 65536
-  }
+  object icon extends MappedBinary(this, 65536)
 }
 
 object Pet extends Pet with KeyedMetaMapper[long, Pet] {

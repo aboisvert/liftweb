@@ -276,7 +276,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     val controller: String = (places.take(1) orElse List("default_template"))(0)
     val action: String = (places.drop(1).take(1) orElse List("render"))(0)
     val trans = List((n:String) => n, (n:String) => smartCaps(n))
-    val toTry = trans.flatMap(f => (buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
+    val toTry = trans.flatMap(f => (LiftServlet.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
 
     first(toTry) {
       clsName => 
@@ -342,7 +342,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
   
   private def findSnippetClass(name: String): Can[Class] = {
     if (name == null) Empty
-    else findClass(name, buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
+    else findClass(name, LiftServlet.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
   
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
@@ -464,7 +464,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
   
   
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
+    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
 	  val constr = cls.getConstructor(Array(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))

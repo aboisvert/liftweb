@@ -25,7 +25,7 @@ class Boot {
   def modelList = List[BaseMetaMapper](User, Friend, MsgStore)
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    addToPackages("com.skittr")
+    LiftServlet.addToPackages("com.skittr")
      
     // make sure the database is up to date
     Schemifier.schemify(true, Log.infoF _, modelList :_*)

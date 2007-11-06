@@ -23,7 +23,7 @@ import net.liftweb.example.model._
 class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    addToPackages("net.liftweb.example")
+    LiftServlet.addToPackages("net.liftweb.example")
      
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
     

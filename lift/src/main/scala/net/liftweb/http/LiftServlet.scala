@@ -544,9 +544,15 @@ object LiftServlet {
     if (in ne _context) {
       // Helpers.setResourceFinder(in.getResource)
       _context = in
-      
+      performBoot(in)
       }
   }
+  
+  private var otherPackages: List[String] = Nil
+  
+  def buildPackage(end: String)  = synchronized (otherPackages.map(_+"."+end))
+  
+  def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}  
   
   private val defaultFinder = getClass.getResource _
   private def resourceFinder(name: String): java.net.URL = _context.getResource(name)

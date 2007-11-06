@@ -16,7 +16,7 @@ import com.hellolift.model._
 class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    addToPackages("com.hellolift")
+    LiftServlet.addToPackages("com.hellolift")
      
     Schemifier.schemify(true, Log.infoF _, User, Entry)
     LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
