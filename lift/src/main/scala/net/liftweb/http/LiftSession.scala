@@ -467,7 +467,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
-	  val constr = cls.getConstructor(Array(classOf[LiftSession], classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
+	  val constr = cls.getConstructor(Array(this.getClass /*classOf[LiftSession]*/, classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
 	  ret.link(this)
