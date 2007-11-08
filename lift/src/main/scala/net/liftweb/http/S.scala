@@ -39,6 +39,7 @@ object S {
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[HashMap[String, String]]
   private val _stateInfo = new ThreadGlobal[VarStateHolder]
+  private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
 
@@ -241,6 +242,7 @@ object S {
     doAround(aroundRequest,
     _sessionInfo.doWith(session) (
     _stateInfo.doWith(vsh) {
+      _requestVar.doWith(new HashMap) {
     _attrs.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
       inS.doWith(true) {
@@ -256,8 +258,25 @@ object S {
         }
       }
     }
+      }
     }) )
     
+  }
+  
+  private[http] object requestState {
+    def apply[T](name: String): Can[T] = _requestVar.value match {
+      case null => Empty
+      case v => v.get(name) match {
+        case Some(v: T) => Full(v)
+        case _ => Empty
+      }
+    }
+    
+    def update[T](name: String, value: T) {_requestVar.value match {
+      case null =>
+      case v => v(name) = value
+    }
+    }
   }
   
   object state {
@@ -701,40 +720,55 @@ class VarStateHolder(val session: LiftSession, initVars: Map[String, String],set
   
 }
 
-/**
-  * Keep session information around without the nastiness of naming session variables
-  * or the type-unsafety of casting the results
-  *
-  * @param dflt - the default value of the session variable
-  */
-class SessionVar[T](dflt: => T) {
+abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
   private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
-  println("Instantiated a session var named "+name)
+  protected def findFunc: Can[String => Can[T]]
+  protected def setFunc: Can[(String, T) => Unit]
   
   /**
     * The current value of the session variable
     */
-  def is: T = {
-    S.servletSession match {
-      case Full(s) => s.getAttribute(name) match {
-        case Full(v: T) => v
-        case _ => this(dflt) ; this.is
-      }
-      case _ => dflt
+  def is: T = findFunc.flatMap(_(name)).openOr{
+      val ret = dflt
+      this(ret)
+      ret
     }
-  }
   
   /**
     * Set the session variable
     *
     * @param what -- the value to set the session variable to
     */
-  def apply(what: T): SessionVar[T] = {
-    S.servletSession.foreach(_.setAttribute(name, Full(what)))
+  def apply(what: T): MyType = {
+    setFunc.foreach(_(name, what))
     this
-  }
+  }  
 }
 
-object SessionVar {
+/**
+  * Keep session information around without the nastiness of naming session variables
+  * or the type-unsafety of casting the results
+  *
+  * @param dflt - the default value of the session variable
+  */
+abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
+  override protected def findFunc: Can[String => Can[T]] = S.servletSession.map(s => in => s.getAttribute(in) match {case Full(v: T) => Full(v) case _ => Empty})
+  override protected def setFunc: Can[(String, T) => Unit] = S.servletSession.map(s => (in, what) => s.setAttribute(in, Full(what)))
+}
+
+/**
+   * Keep request-local information around without the nastiness of naming session variables
+   * or the type-unsafety of casting the results
+   *
+   * @param dflt - the default value of the session variable
+   */
+abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
+  override protected def findFunc: Can[String => Can[T]] = Full(name => S.requestState.apply[T](name))
+  override protected def setFunc: Can[(String, T) => Unit] = Full((name, value) => S.requestState(name) = value)
+}
+
+
+
+object AnyVar {
   implicit def whatIs[T](in: SessionVar[T]): T = in.is
 }

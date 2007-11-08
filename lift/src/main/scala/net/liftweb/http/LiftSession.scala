@@ -177,11 +177,11 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	  }
 	  /*if (!request.ajax_?)*/ notices = Nil
 	} else {
-	  // make sure we're okay, sitemap wise
+          runParams(request)
+
+          // make sure we're okay, sitemap wise
 	  request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
 	  
-	  runParams(request)
-
 	  def idAndWhen(in: Node): Can[(String, String)] = 
 	    ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
 	      case (x :: _, y :: _) => Full((x.text,y.value.text))
