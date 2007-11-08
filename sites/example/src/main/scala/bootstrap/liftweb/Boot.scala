@@ -39,13 +39,22 @@ class Boot {
     }
     LiftServlet.addDispatchBefore(dispatcher)
     
-    val rewriter: LiftServlet.RewritePf = {
+    val wiki_rewriter: LiftServlet.RewritePf = {
       case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => 
          RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
           TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     
-    LiftServlet.addRewriteBefore(rewriter)
+    LiftServlet.addRewriteBefore(wiki_rewriter)
+
+    val wikibind_rewriter: LiftServlet.RewritePf = {
+      case RewriteRequest(_, path @ ParsePath("wikibind" :: page :: _, _,_), _, _) => 
+         RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false), 
+          TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+    }
+    
+    LiftServlet.addRewriteBefore(wikibind_rewriter)
+
   }
   
   private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Can[ResponseIt] =

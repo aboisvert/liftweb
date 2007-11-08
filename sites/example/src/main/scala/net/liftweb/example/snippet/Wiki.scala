@@ -14,6 +14,9 @@ import net.liftweb.http.S._
 import net.liftweb.util.Helpers._
 import net.liftweb.textile._
 
+// show determines which one is used. bind hooks the content into the lift view
+case class BindChoice(show: boolean, bind: () => NodeSeq)
+
 class Wiki {
   /**
     * Display the Textile marked up wiki or an edit box
@@ -25,29 +28,7 @@ class Wiki {
       WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
       <div><a href={"/wiki/"+entry.name}>{entry.name}</a></div>)
     }
-    
-    def editEntry(entry: WikiEntry, isNew: boolean) = {
-      val action = S.request.uri+"/"+pageName
-      
-      val message = if (isNew) Text("Create Entry named "+pageName) else Text("Edit entry named "+pageName)
-      
-      val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
-      
-      val cancelLink = <a href={S.request.uri+"/"+pageName}>Cancel</a>
-      
-      val submitButton = S.submit(isNew ? "Add" | "Edit", s => entry.save)
-      
-      <form method="POST" action={action}>{ // the form tag
-            message ++ 
-            hobixLink ++ 
-            entry.entry.toForm ++ // display the form  
-            <br /> ++ 
-            cancelLink ++ 
-            Text(" ") ++ 
-            submitButton  
-        }</form>
-    }
-    
+
     if (pageName == "all") showAll // if the page is "all" display all the pages
     else {
       // find the entry in the database or create a new one
@@ -60,10 +41,59 @@ class Wiki {
       val edit = isNew || (S.param("param1").map(_ == "edit") openOr false)
       
       <span><a href="/wiki/all">Show All Pages</a><br/>{
-	if (edit) editEntry(entry, isNew)
+	if (edit) editEntry(entry, isNew, pageName)
         else TextileParser.toHtml(entry.entry, a => a) ++ 
              <br/><a href={S.request.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
       }</span>
     }
+  }
+
+  def choosebind(xhtml : NodeSeq) = {
+    def pageName = S.param("wiki_page") openOr "HomePage" // set the name of the page
+
+    def showAll = BindChoice((pageName == "all"), () => bind("pages", 
+      (xhtml \\ "showAll").filter(_.prefix == "wiki").toList.head.child, 
+      TheBindParam("all", WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      <div><a href={"/wikibind/"+entry.name}>{entry.name}</a></div>))))
+
+    // find the entry in the database or create a new one
+    def entry = WikiEntry.find(By(WikiEntry.name, pageName)) openOr WikiEntry.create.name(pageName)
+
+    // is it a new entry?
+    def isNew = !entry.saved_?
+    def toEdit = isNew || (S.param("param1").map(_ == "edit") openOr false)
+
+    def edit = BindChoice(toEdit, () => bind("edit", 
+      (xhtml \\ "editting").filter(_.prefix == "wiki").toList.head.child, 
+      "form" -> editEntry(entry, isNew, pageName)))
+
+    def view = BindChoice(!toEdit, () => bind("view", 
+      (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child, 
+      TheBindParam("name", Text(pageName)),
+      TheBindParam("value", (TextileParser.toHtml(entry.entry, a => a) ++ 
+		  <br/><a href={S.request.uri+"/"+pageName+"/edit"}>Edit</a>))))
+    
+    (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {
+      case Some(x) => x
+      case _ => println("nothing!"); <span />
+    }
+  }
+
+  private def editEntry(entry: WikiEntry, isNew: boolean, pageName: String) = {
+    val action = S.request.uri+"/"+pageName
+    val message = if (isNew) Text("Create Entry named "+pageName) else Text("Edit entry named "+pageName)    
+    val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
+    val cancelLink = <a href={S.request.uri+"/"+pageName}>Cancel</a>
+    val textarea = entry.entry.toForm
+    val submitButton = S.submit(isNew ? "Add" | "Edit", s => {println("saving the entry: " + entry); entry.save})  
+    <form method="GET" action={action}>{ // the form tag
+          message ++ 
+          hobixLink ++ 
+          textarea ++ // display the form  
+          <br /> ++ 
+          cancelLink ++ 
+          Text(" ") ++ 
+          submitButton  
+    }</form>
   }
 }
