@@ -385,9 +385,56 @@ val template = """<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lift="http://
   pw.println(template)
   pw.flush
   pw.close
+
+  (new File(rootDir, "script")).mkdirs
   
+
+  val liftrepl = """import bootstrap.liftweb.Boot
+import scala.tools.nsc.MainGenericRunner
+
+// Instantiate your project's Boot file
+val b = new Boot(); 
+// Boot your project
+b.boot;
+// Now run the MainGenericRunner to get your repl
+MainGenericRunner.main(args)
+// After the repl exits, then exit the scala script
+exit(0)
+"""
+  pw = new PrintWriter(new FileWriter(new File(rootDir, "script/liftrepl.scala")))
+  pw.println(liftrepl)
+  pw.flush
+  pw.close
+
+  val console = """#!/bin/sh
+# Run from the root of your project directory (where your pom.xml file resides)
+# It will give you a scala interpreter with all of your project's classfiles 
+# loaded and ready to go.
+#
+# Author: Steve Jenson (stevej@pobox.com) Nov 1, 2007
+#
+
+THE_CLASSPATH=
+for i in `find ./ -name "*.jar" -print`
+do
+  THE_CLASSPATH=${THE_CLASSPATH}:${i}
+done
+
+for i in `find ~/.m2 -name "*.jar" -print`
+do
+  THE_CLASSPATH=${THE_CLASSPATH}:${i}
+done
+
+CLASSPATH=$THE_CLASSPATH:target/classes scala ./script/liftrepl.scala
+"""
+  pw = new PrintWriter(new FileWriter(new File(rootDir, "script/console")))
+  pw.println(console)
+  pw.flush
+  pw.close
+
   println(projName+" created at "+rootDir)
-  println("cd "+rootDir+", type 'mvn install jetty:run'")
+  println("Run cd "+rootDir+"; mvn install jetty:run")
   println("then point your brower to http://localhost:8888")
+  println("to use script/console, you must chmod +x it first")
 }
 
