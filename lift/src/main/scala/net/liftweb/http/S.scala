@@ -439,6 +439,26 @@ object S {
 
     def span(body: NodeSeq, cmd: JsCmd*): Elem = (<span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>)
     
+    /**
+      * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
+      * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
+      * @param func -- the function to call when the data is sent
+      *
+      * @return the JavaScript that makes the call
+      */
+    def ajaxCall(jsCalcValue: String, func: String => Any): String = ajaxCall_*(jsCalcValue, SFuncHolder(func))
+    
+    /**
+      * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
+      * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
+      * @param func -- the function to call when the data is sent
+      *
+      * @return the JavaScript that makes the call
+      */
+    def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
+      "jQuery.ajax( {url: '"+
+        contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+    
     def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
       val funcName = mapFunc(func)
       val (nk, id) = findOrAddId(kids)

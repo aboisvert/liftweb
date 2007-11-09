@@ -100,6 +100,18 @@ object JsCmds {
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def toJsCmd = (Show(where) + Set(where, msg) + After(duration, Hide(where, fadeTime))).toJsCmd
+    def realFadeTime: Long = fadeTime.toLong match {
+      case x if x <= 0 => 0
+      case x if x < 100 => x * 1000L
+      case x => x
+    }
+    
+    def realDuration: Long = duration.toLong match {
+      case x if x <= 0 => 10.seconds.toLong
+      case x if x < 100 => x * 1000L
+      case x => x
+    }
+    
+    def toJsCmd = (Show(where) + Set(where, msg) + After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }
 }

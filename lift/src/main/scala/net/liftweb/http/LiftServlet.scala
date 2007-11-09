@@ -258,6 +258,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
             val what = flatten(sessionActor.runParams(session))
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
+
             what2 match {
               case (n: Node) :: _ => XmlResponse(n).toResponse
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse

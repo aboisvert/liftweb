@@ -756,9 +756,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
-  def currentYear:Int = {
+  def currentYear: Int =
     java.util.Calendar.getInstance.get(java.util.Calendar.YEAR)
-  }
   
   def millis = System.currentTimeMillis
   
@@ -1016,7 +1015,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       def moof(in: long, scales: List[(long, String)]): List[long] = {
         val hd = scales.head
         val sc = hd._1
-        if (sc == -1L) List(in)
+        if (sc >= 10000L) List(in)
         else (in % sc) :: moof(in / sc, scales.tail)
       }
       
@@ -1046,8 +1045,16 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   object TimeSpan {
     def apply(in: long) = new TimeSpan(in)
     implicit def timeSpanToLong(in: TimeSpan): long = in.len
+    def format(in: Long): String = {
+      scales.foldLeft[(Long, List[(Long, String)])]((in, Nil)){(total, div) =>
+      (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
+      }._2.filter(_._1 > 0).map{case (amt, measure) if amt == 1 => amt+" "+measure
+      case (amt, measure) => amt+" "+measure+"s"
+      }.mkString(" ")
+      
+    }
     
-    val scales = List((1000L, "ms"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (-1L, "week"))
+    val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (1000000000L, "week"))
   }
   
   implicit def intToTimeSpan(in: long): TimeSpan = TimeSpan(in)
@@ -1181,7 +1188,7 @@ class SuperList[T](val what: List[T]) {
 }
 
 class SuperString(val what: String) {
-  def roboSplit(spl: String): List[String] = what.split(spl).toList.map(_.trim).filter(_.length > 0)
+  def roboSplit(spl: String): List[String] = what match {case null => Nil case s => s.split(spl).toList.map(_.trim).filter(_.length > 0)}
   def splitAt(chr: String): List[(String, String)] = what.indexOf(chr) match {
     case -1 => Nil
     case n => List((what.substring(0, n).trim, what.substring(n + chr.length).trim))
