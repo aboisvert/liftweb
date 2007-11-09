@@ -12,10 +12,11 @@ import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure}
-import net.liftweb.mapper.{Safe, ValidationIssue}
+import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
 import Helpers._
 import js._
 import java.io.InputStream
+import java.util.Locale
 
 /**
  * An object representing the current state of the HTTP request and response
@@ -71,14 +72,41 @@ object S {
     }
   }
   def sessionDispatcher: List[DispatchHolder] = _servletRequest.value match {
-  case null => Nil
-  case r => r.getSession.getAttribute(LiftServlet.SessionDispatchTableName) match {
-    case rw: List[DispatchHolder] => rw
-    case _ => Nil
+    case null => Nil
+    case r => r.getSession.getAttribute(LiftServlet.SessionDispatchTableName) match {
+      case rw: List[DispatchHolder] => rw
+      case _ => Nil
+    }
   }
-}
 
+  /**
+   * Returns the Locale for this request based on the HTTP request's 
+   * Accept-Language header. If that header corresponds to a Locale
+   * that's installed on this JVM then return it, otherwise return the
+   * default Locale for this JVM.
+   */
+  def locale: Locale = request match {
+    case null => Locale.getDefault()
+    case r => {
+      r.request.getLocale() match {
+	case l : Locale => l
+	case _ => Locale.getDefault()
+      }
+    }
+  }
   
+  /**
+   * Return this User's Locale if they have one, otherwise return
+   * the HTTP request's Locale if available.
+   */
+  def locale[T <: net.liftweb.mapper.MegaProtoUser[T]](user : MegaProtoUser[T]): Locale = {
+    user.locale.isAsLocale match {
+      case l: Locale => l
+      case _ => locale
+    }
+  }
+
+
   private def reduxio(in: List[LiftServlet.DispatchPf]): LiftServlet.DispatchPf = in match {
     case Nil => Map.empty
     case x :: Nil => x

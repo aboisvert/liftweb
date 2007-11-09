@@ -22,7 +22,10 @@ class Boot {
     LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
 
     // Build SiteMap
-    val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap ::: Entry.sitemap
+    val entries = Menu(Loc("Home", "/", "Home")) :: 
+    Menu(Loc("Request Details", "/request", "Request Details")) :: 
+    User.sitemap ::: Entry.sitemap
+
     LiftServlet.setSiteMap(SiteMap(entries:_*))
     S.addAround(User.requestLoans)    
   }

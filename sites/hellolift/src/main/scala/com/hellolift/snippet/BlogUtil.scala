@@ -42,4 +42,18 @@ class BlogUtil {
       case entries => entries.map(e => _entryview(e))
     }
   }
+
+  def requestDetails: NodeSeq = {
+    <span>
+    <p>
+    Request's Locale: {S.locale}
+    </p>
+    <p>
+    Request(User): Locale : {User.currentUser match {
+      case Full(u: User) => S.locale(u)
+      case _ => "No User logged in."
+    }}
+    </p>
+    </span>
+  }
 }
