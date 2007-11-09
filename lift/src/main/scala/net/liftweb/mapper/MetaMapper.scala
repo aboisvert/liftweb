@@ -613,7 +613,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     (mappedColumnInfo.filter(!_._2.dbPrimaryKey_?).map(p => "?")).toList.mkString(",")
   }
   
-  private def fixTableName(name : String) = clean(name.toLowerCase)
+  private def fixTableName(name: String) = clean(name.toLowerCase) match {
+    case name if DB.reservedWords.contains(name) => name+"_t"
+    case name => name
+  }
 
   private def internalTableName_$_$ = getClass.getSuperclass.getName.split("\\.").toList.last
   

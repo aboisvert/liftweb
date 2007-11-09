@@ -406,7 +406,11 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   
   def dbColumnNames(in : String) = if (dbColumnCount == 1) List(dbColumnName) else List(in.toLowerCase)
   
-  def dbColumnName = name.toLowerCase
+  def dbColumnName = name.toLowerCase match {
+    case name if DB.reservedWords.contains(name) => name+"_c"
+    case name => name
+  }
+    
 
   def dbIndexed_? : Boolean = false
 

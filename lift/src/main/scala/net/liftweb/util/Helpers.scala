@@ -1170,6 +1170,14 @@ class SuperList[T](val what: List[T]) {
   def comma: String = what.mkString(", ")
   def join(str: String) = what.mkString(str)
   def ? : Boolean = !what.isEmpty
+  def replace(pos: Int, withWhat: T): List[T] = {
+    def repl(pos: Int, withWhat: T, rest: List[T]): List[T] = rest match {
+      case Nil => Nil
+      case x :: xs if pos <= 0 => withWhat :: xs
+      case x :: xs => x :: repl(pos - 1, withWhat, xs)
+    }
+    repl(pos, withWhat, what)
+  }
 }
 
 class SuperString(val what: String) {
