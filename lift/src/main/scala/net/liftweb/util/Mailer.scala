@@ -41,6 +41,9 @@ case class MessageInfo(from: From, subject: Subject, info: List[MailTypes])
 implicit def addressToAddress(in: AddressType): Address = new InternetAddress(in.adr)
 implicit def adListToAdArray(in: List[AddressType]): Array[Address] = in.map(a => new InternetAddress(a.adr)).toArray
 
+def host = System.getProperty("mail.smtp.host")
+def host_=(hostname: String) = System.setProperty("mail.smtp.host", hostname)
+
 private class MsgSender extends Actor {
   def act = {
     loop {

@@ -157,10 +157,10 @@ object Helpers {
     in match {
       case Nil => Empty
       case x :: xs => {
-	f(x) match {
+        f(x) match {
           case s @ Full(_) =>  s
           case _ => first(xs)(f)
-	}
+	    }
       }
     }
   }
