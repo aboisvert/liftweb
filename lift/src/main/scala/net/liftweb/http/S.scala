@@ -818,5 +818,6 @@ abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) 
 
 
 object AnyVar {
-  implicit def whatIs[T](in: SessionVar[T]): T = in.is
+  implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
+  implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
 }
