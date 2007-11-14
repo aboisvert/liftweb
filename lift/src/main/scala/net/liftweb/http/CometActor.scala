@@ -13,7 +13,7 @@ import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
 import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
-import S._
+// import S._
 import net.liftweb.http.js._
 
 // import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
@@ -87,7 +87,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
         case _ => if (devMode) reRender; reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime))
         }
     
-    case ActionMessageSet(msgs, sv) =>
+    case ActionMessageSet(msgs, sv, request) =>
     this.sessionVars = sv
     S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
       val ret = msgs.map(msg => msg.what(msg.value))
@@ -95,7 +95,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       reply(ret)
     }    
     
-    case ActionMessage(what, value, _, sv) => 
+    case ActionMessage(what, value, /* _, */ sv, request) => 
     this.sessionVars = sv
       S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
       val ret = what(value)
@@ -216,8 +216,8 @@ case class AskQuestion(what: Any, who: CometActor) extends CometMessage
 case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
 case class Listen(when: Long) extends CometMessage
 case object Unlisten extends CometMessage
-case class ActionMessage(what: AFuncHolder, value: List[String], target: Actor, sessionVars: Map[String, String]) extends CometMessage
-case class ActionMessageSet(msg: List[ActionMessage], sessionVars: Map[String, String]) extends CometMessage
+case class ActionMessage(what: S.AFuncHolder, value: List[String], /* target: Actor, */ sessionVars: Map[String, String], request: RequestState) extends CometMessage
+case class ActionMessageSet(msg: List[ActionMessage], sessionVars: Map[String, String], request: RequestState) extends CometMessage
 case object ReRender extends CometMessage
 case class RenderOut(xhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd]) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty)

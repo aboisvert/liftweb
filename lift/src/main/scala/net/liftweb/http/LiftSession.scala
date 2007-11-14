@@ -97,7 +97,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       val f = toRun.filter(_._3 == w);
       w match {
 	// if it's going to a CometActor, batch up the commands
-	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1),a, _state)), _state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
+	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1), _state, state)), _state, state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
 	case _ => f.map(i => i._2(state.params(i._1)))
 	}
       }
@@ -285,14 +285,18 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	    c =>
 	      val inst = c.newInstance
 	    c.getMethod(action, null).invoke(inst, null) match {
-	      case null | Empty => Empty
+	      case null | Empty | None => Empty
 	      case s : NodeSeq => Full(s)
+              case Some(n: NodeSeq) => Full(n)
+              case Some(n: Seq[Node]) => Full(n)
 	      case Full(n : NodeSeq) => Full(n)
 	      case Full(n : Seq[Node]) => Full(n)
 	      case _ => Empty
 	    }
 	  }
 	} catch {
+          case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) => throw ite.getCause
+          case re: RedirectException => throw re
 	  case _ => Empty
 	}
     }

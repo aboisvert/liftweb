@@ -216,10 +216,11 @@ object S {
    * Initialize the current request session
    */
   def init[B](request : RequestState, session: LiftSession, vsh: VarStateHolder)(f: => B) : B = {
+    _servletRequest.doWith(request.request) {
     _oldNotice.doWith(Nil) {
       _init(request,session, vsh)(() => f)
     }
-
+    }
   }
   
   def session: Can[LiftSession] = _sessionInfo.value match {

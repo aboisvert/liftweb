@@ -137,12 +137,13 @@ trait Mapper[A<:Mapper[A]] { self: A =>
       (button.map(b => (<tr><td>&nbsp;</td><td><input type="submit" value={b}/></td></tr>)) openOr scala.xml.Text(""))
   
   def saved_? : Boolean = getSingleton.saved_?(this)
-  
-  def db_can_delete_? : boolean = {
-    getSingleton.saved_?(this) && !was_deleted_?
-  }
 
-  def dirty_? : boolean = getSingleton.dirty_?(this)
+      /**
+        * Can this model object be deleted?
+        */
+  def db_can_delete_? : Boolean =  getSingleton.saved_?(this) && !was_deleted_?
+
+  def dirty_? : Boolean = getSingleton.dirty_?(this)
   
   override def toString = {
     val ret = new StringBuilder
