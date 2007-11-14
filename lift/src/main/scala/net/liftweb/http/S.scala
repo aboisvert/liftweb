@@ -503,6 +503,7 @@ object S {
     def ajaxText_*(value: String, func: AFuncHolder, params: FormElementPieces*): Elem = {
       val funcName = mapFunc(func) 
       wrapFormElement(<input type="text" value={value}/>, params.toList) %
+        ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
         ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.value, dataType: 'script'});"))
     }
     
@@ -544,7 +545,7 @@ object S {
     def swappable(shown: Elem, hidden: Elem): Elem = {
       val (rs, sid) = findOrAddId(shown)
       val (rh, hid) = findOrAddId(hidden)
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {this.focus();}); return false;"))}{
+      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}); return false;"))}{
         dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
     }
     
@@ -588,7 +589,7 @@ object S {
   def submit(value: String, func: String => Any, params: FormElementPieces*): Elem = makeFormElement("submit", SFuncHolder(func), params) % new UnprefixedAttribute("value", value, Null)
   
   def ajaxForm(func: => NodeSeq) = (<lift:form>{func}</lift:form>)
-  
+  def ajaxForm(onSubmit: JsCmd, func: => NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{func}</lift:form>)
   // List[value, display]
   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any, params: FormElementPieces*): Elem = 
     select_*(opts, deflt, SFuncHolder(func), params :_*)

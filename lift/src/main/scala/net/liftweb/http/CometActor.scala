@@ -135,7 +135,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   def compute: Map[String, Any] = Map.empty[String, Any]
   
   final def reRender(): AnswerRender = {
-    lastRenderTime = millis
+    lastRenderTime = Math.max(millis, lastRenderTime + 1)
     S.initIfUninitted(theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
       lastRendering = render
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)

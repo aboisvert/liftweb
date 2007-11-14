@@ -490,8 +490,12 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 
   private def addAjaxForm(attr: MetaData): MetaData = {
     val id = "F"+randomString(15)
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); return false;"
-    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, Null))) //  new UnprefixedAttribute("method", "POST", Null)))
+    val pre = attr.filter(_.key == "onsubmit").toList match {
+      case Nil => ""
+      case x :: xs => x.value.text +";"
+    }
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
+    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, Null)))
   }
   
   
