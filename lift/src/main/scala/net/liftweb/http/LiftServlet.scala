@@ -27,6 +27,7 @@ import js._
 import javax.servlet._
 import javax.servlet.http._
 import java.io.ByteArrayOutputStream
+import java.util.Locale
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -448,6 +449,14 @@ object LiftServlet {
     // test_boot
     _early
   }
+  
+  /**
+    * A function that takes the current HTTP request and returns the current 
+    */
+  var localeCalculator: Can[HttpServletRequest] => Locale = defaultLocaleCalculator _
+  
+  def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case l: Locale => Full(l) case _ => Empty}).openOr(Locale.getDefault())
+
   
   val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {

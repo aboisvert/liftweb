@@ -41,8 +41,22 @@ case class MessageInfo(from: From, subject: Subject, info: List[MailTypes])
 implicit def addressToAddress(in: AddressType): Address = new InternetAddress(in.adr)
 implicit def adListToAdArray(in: List[AddressType]): Array[Address] = in.map(a => new InternetAddress(a.adr)).toArray
 
-def host = System.getProperty("mail.smtp.host")
-def host_=(hostname: String) = System.setProperty("mail.smtp.host", hostname)
+/**
+  * What host should be used to send mail
+  */
+def host = hostFunc()
+
+/**
+  * To change the way the host is calculated, set this to the function that calcualtes the host name.
+  * By default: System.getProperty("mail.smtp.host")
+  */
+var hostFunc: () => String = _host _
+
+private def _host = System.getProperty("mail.smtp.host") match {
+  case null => "localhost"
+  case s => s
+}
+// def host_=(hostname: String) = System.setProperty("mail.smtp.host", hostname)
 
 private class MsgSender extends Actor {
   def act = {

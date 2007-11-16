@@ -170,7 +170,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     def loggedIn_? : Boolean = currentUserId.isDefined
     
     def logUserIn(who: ModelType) {S.set(LoggedInUserIdentifier, who.id.toString); curUser.reset()}
-    def logoutCurrentUser {S.unset(LoggedInUserIdentifier); curUser.reset(); S.request.request.getSession.invalidate}
+    def logoutCurrentUser {S.unset(LoggedInUserIdentifier); curUser.reset(); S.request.foreach(_.request.getSession.invalidate)}
     
     def currentUserId: Can[String] = S.get(LoggedInUserIdentifier)
     

@@ -5,11 +5,11 @@ import net.liftweb.sitemap._
 import scala.xml._
 
 class Menu {
-  def builder = {
-    S.request.buildMenu.lines match {
+  def builder: NodeSeq = {
+    S.request.map(_.buildMenu.lines match {
       case Nil => Text("No Navigation Defined.")
       case x :: xs => <ul>{x.items.flatMap(buildANavItem(_))}</ul>
-    }
+    }).openOr(Text("No Navigation Defined."))
   }
 
   private def buildANavItem(i: MenuItem) = i match {

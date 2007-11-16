@@ -20,6 +20,8 @@ class Boot {
      
     Schemifier.schemify(true, Log.infoF _, User, Entry)
     LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
+    
+    LiftServlet.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftServlet.defaultLocaleCalculator(r))
 
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) :: 

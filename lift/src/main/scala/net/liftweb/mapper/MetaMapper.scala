@@ -994,7 +994,8 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
    */
   def objFromIndexedParam: Can[A] = {
     val found = for (
-      (param, value :: _) <- S.request.params;
+        req <- S.request.toList;
+      (param, value :: _) <- req.params;
       fh <- mappedFieldArray if fh.field.dbIndexed_? == true && fh.name.equals(param)
     ) yield find(value)
     

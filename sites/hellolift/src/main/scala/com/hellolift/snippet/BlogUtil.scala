@@ -49,10 +49,7 @@ class BlogUtil {
     Request's Locale: {S.locale}
     </p>
     <p>
-    Request(User): Locale : {User.currentUser match {
-      case Full(u: User) => S.locale(u)
-      case _ => "No User logged in."
-    }}
+    Request(User): Locale : {User.currentUser.map(ignore => S.locale.toString).openOr("No User logged in.")}
     </p>
     </span>
   }

@@ -176,7 +176,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   def answer(answer: Any) {
-    whosAsking.foreach(_ !? AnswerQuestion(answer, S.request))
+    whosAsking.foreach(_ !? AnswerQuestion(answer, S.request.open_!))
     whosAsking = Empty
     reRender
   }

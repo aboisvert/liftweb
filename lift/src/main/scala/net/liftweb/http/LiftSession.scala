@@ -396,7 +396,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       case _ => kids
     }
     
-    attrs.get("form").map(ft => <form action={S.request.uri} method={ft.text}>{ret}</form>) getOrElse ret
+    attrs.get("form").map(ft => <form action={S.uri} method={ft.text}>{ret}</form>) getOrElse ret
   }
 
       

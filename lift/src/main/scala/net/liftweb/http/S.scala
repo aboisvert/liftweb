@@ -49,7 +49,7 @@ object S {
    *
    * @return the current session
    */
-  def request = {_request.value}
+  def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
   
   def sessionTemplater: List[TemplateHolder] = _servletRequest.value match {
     case null => Nil
@@ -59,10 +59,7 @@ object S {
     }
   }
   
-  def action: String = request match {
-    case null => ""
-    case r => r.uri
-  }
+  def action: String = request.map(_.uri).openOr("")
   
   def sessionRewriter: List[RewriteHolder] = _servletRequest.value match {
     case null => Nil
@@ -85,7 +82,9 @@ object S {
    * that's installed on this JVM then return it, otherwise return the
    * default Locale for this JVM.
    */
-  def locale: Locale = request match {
+  def locale: Locale = LiftServlet.localeCalculator(request.map(_.request))
+  
+  /*match {
     case null => Locale.getDefault()
     case r => {
       r.request.getLocale() match {
@@ -93,18 +92,19 @@ object S {
 	case _ => Locale.getDefault()
       }
     }
-  }
+  }*/
   
   /**
    * Return this User's Locale if they have one, otherwise return
    * the HTTP request's Locale if available.
    */
+     /*
   def locale[T <: net.liftweb.mapper.MegaProtoUser[T]](user : MegaProtoUser[T]): Locale = {
     user.locale.isAsLocale match {
       case l: Locale => l
       case _ => locale
     }
-  }
+  }*/
 
 
   private def reduxio(in: List[LiftServlet.DispatchPf]): LiftServlet.DispatchPf = in match {
@@ -185,12 +185,14 @@ object S {
   /**
    * Test the current request to see if it's a POST
    */
-  def post_? = request.post_?
+  def post_? = request.map(_.post_?).openOr(false)
       
   /**
-   * Test the current request to see if it's a POST
+   * Test the current request to see if it's a GET
    */
-  def get_? = request.get_?
+  def get_? = request.map(_.get_?).openOr(false)
+      
+  def uri: String = request.map(_.uri).openOr("/")
   
   def redirectTo[T](where: String): T = {throw new RedirectException("Not Found", where)}
   
@@ -259,10 +261,8 @@ object S {
       try {
       f()
       } finally {
-        val log = queryLog
-        val req = request match{ case null => Empty case s => Full(s)}
         val time = millis - begin
-        _queryAnalyzer.foreach(_(req, time, log))
+        _queryAnalyzer.foreach(_(request, time, queryLog))
       }
     }
   }
@@ -724,8 +724,8 @@ object S {
   }
   
   
-  def params(n: String) = request.params(n)
-  def param(n: String): Can[String] = Can(request.param(n))
+  def params(n: String): List[String] = request.map(_.params(n)).openOr(Nil)
+  def param(n: String): Can[String] = request.flatMap(r => Can(r.param(n)))
   
   def error(n: String) {error(Text(n))}
   def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n)}

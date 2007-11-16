@@ -43,7 +43,7 @@ class Wiki {
       <span><a href="/wiki/all">Show All Pages</a><br/>{
 	if (edit) editEntry(entry, isNew, pageName)
         else TextileParser.toHtml(entry.entry, a => a) ++ 
-             <br/><a href={S.request.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
+             <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
       }</span>
     }
   }
@@ -71,7 +71,7 @@ class Wiki {
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child, 
       TheBindParam("name", Text(pageName)),
       TheBindParam("value", (TextileParser.toHtml(entry.entry, a => a) ++ 
-		  <br/><a href={S.request.uri+"/"+pageName+"/edit"}>Edit</a>))))
+		  <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a>))))
     
     (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {
       case Some(x) => x
@@ -80,10 +80,10 @@ class Wiki {
   }
 
   private def editEntry(entry: WikiEntry, isNew: boolean, pageName: String) = {
-    val action = S.request.uri+"/"+pageName
+    val action = S.uri+"/"+pageName
     val message = if (isNew) Text("Create Entry named "+pageName) else Text("Edit entry named "+pageName)    
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
-    val cancelLink = <a href={S.request.uri+"/"+pageName}>Cancel</a>
+    val cancelLink = <a href={S.uri+"/"+pageName}>Cancel</a>
     val textarea = entry.entry.toForm
     val submitButton = S.submit(isNew ? "Add" | "Edit", s => {println("saving the entry: " + entry); entry.save})  
     <form method="GET" action={action}>{ // the form tag

@@ -36,7 +36,7 @@ object JsCmds {
   }
   case class Set(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
-      val html = S.request.fixHtml(content).toString 
+      val html = S.request.map(_.fixHtml(content)).openOr(content).toString 
       val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
       ret
     }
