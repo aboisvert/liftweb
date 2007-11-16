@@ -960,6 +960,16 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def timeNow = new java.util.Date
   
   /**
+    * Convert the incoming millis to days since epoch
+    */
+  def millisToDays(millis: Long): Long = millis / (1000L * 60L * 60L * 24L)
+  
+  /**
+    * The number of days since epoche
+    */
+  def daysSinceEpoche: Long = millisToDays(millis)
+  
+  /**
     * The current Day as a Date object
     */
   def dayNow: java.util.Date = 0.seconds.later.noTime
