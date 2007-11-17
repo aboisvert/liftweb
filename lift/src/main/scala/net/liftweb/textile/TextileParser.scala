@@ -26,7 +26,7 @@ object TextileParser extends Application {
   def parse(_toParse: String, urlRewrite: String => String) : Option[Lst] = {
     val toParse = _toParse match {
       case null => "null\n\n"
-      case s if s.indexOf("\n") == -1 => s + "\n\n"
+      case s if !s.endsWith("\n\n") => s + "\n\n"
       case s => s
     }
     
