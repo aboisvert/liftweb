@@ -27,13 +27,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private var lastRenderTime = millis
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty)
   private val listeners = new ListBuffer[Actor]()
-  // private var globalState: Map[String, Any] = _
-
-  /// private var localFunctionMap: Map[String, AFuncHolder] = Map.empty
   private var askingWho: Can[CometActor] = Empty
   private var whosAsking: Can[CometActor] = Empty
   private var answerWith: Can[Any => Any] = Empty
-  private var sessionVars: Map[String, String] = Map.empty
   
   def defaultPrefix: String
   
@@ -76,8 +72,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
         else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime)
     }
     
-    case PerformSetupComet(sessionVars) =>
-      this.sessionVars = sessionVars
+    case PerformSetupComet =>
       localSetup
       reRender
     
@@ -87,17 +82,15 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
         case _ => if (devMode) reRender; reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime))
         }
     
-    case ActionMessageSet(msgs, sv, request) =>
-    this.sessionVars = sv
-    S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
+    case ActionMessageSet(msgs, request) =>
+    S.init(request, theSession) {
       val ret = msgs.map(msg => msg.what(msg.value))
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       reply(ret)
     }    
     
-    case ActionMessage(what, value, /* _, */ sv, request) => 
-    this.sessionVars = sv
-      S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
+    case ActionMessage(what, value, request) => 
+      S.init(request, theSession) {
       val ret = what(value)
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
         reply(ret)
@@ -108,7 +101,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       whosAsking = Full(who)
     
     case AnswerQuestion(what, request) =>
-      S.init(request, theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
+      S.init(request, theSession) {
         askingWho.foreach {
           askingWho =>
         reply("A null message to release the actor from its send and await reply... do not delete this message")
@@ -136,7 +129,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   final def reRender(): AnswerRender = {
     lastRenderTime = Math.max(millis, lastRenderTime + 1)
-    S.initIfUninitted(theSession, new VarStateHolder(theSession, sessionVars, Full(sessionVars_= _), false)) {
+    S.initIfUninitted(theSession) {
       lastRendering = render
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), this, lastRenderTime)// buildRendered(lastRendering, lastRenderTime)
@@ -169,7 +162,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     who.start
     theSession.addCometActor(who)
     who.link(self)
-    who ! PerformSetupComet(sessionVars)
+    who ! PerformSetupComet
     askingWho = Full(who)
     this.answerWith = Full(answerWith)
     who ! AskQuestion(what, this)
@@ -211,13 +204,13 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd]
 
 case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long ) extends CometMessage
-case class PerformSetupComet(sessionVars: Map[String, String]) extends CometMessage
+case object PerformSetupComet extends CometMessage
 case class AskQuestion(what: Any, who: CometActor) extends CometMessage
 case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
 case class Listen(when: Long) extends CometMessage
 case object Unlisten extends CometMessage
-case class ActionMessage(what: S.AFuncHolder, value: List[String], /* target: Actor, */ sessionVars: Map[String, String], request: RequestState) extends CometMessage
-case class ActionMessageSet(msg: List[ActionMessage], sessionVars: Map[String, String], request: RequestState) extends CometMessage
+case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
+case class ActionMessageSet(msg: List[ActionMessage], request: RequestState) extends CometMessage
 case object ReRender extends CometMessage
 case class RenderOut(xhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd]) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty)

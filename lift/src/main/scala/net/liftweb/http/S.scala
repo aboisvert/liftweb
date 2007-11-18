@@ -39,15 +39,14 @@ object S {
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[HashMap[String, String]]
-  private val _stateInfo = new ThreadGlobal[VarStateHolder]
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
 
   /**
-   * Get the current HttpServletSession
+   * Get the current RequestState
    *
-   * @return the current session
+   * @return the current RequestState
    */
   def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
   
@@ -217,10 +216,10 @@ object S {
   /**
    * Initialize the current request session
    */
-  def init[B](request : RequestState, session: LiftSession, vsh: VarStateHolder)(f: => B) : B = {
+  def init[B](request : RequestState, session: LiftSession)(f: => B) : B = {
     _servletRequest.doWith(request.request) {
     _oldNotice.doWith(Nil) {
-      _init(request,session, vsh)(() => f)
+      _init(request,session)(() => f)
     }
     }
   }
@@ -267,10 +266,9 @@ object S {
     }
   }
   
-  private def _init[B](request: RequestState, session: LiftSession, vsh: VarStateHolder)(f: () => B): B = {
+  private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     doAround(aroundRequest,
     _sessionInfo.doWith(session) (
-    _stateInfo.doWith(vsh) {
       _requestVar.doWith(new HashMap) {
     _attrs.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
@@ -284,7 +282,6 @@ object S {
               }
             }
           }
-        }
       }
     }
       }
@@ -308,6 +305,7 @@ object S {
     }
   }
   
+/*
   object state {
     def apply(name: String): Can[String] = _stateInfo.value match {
       case null => Empty
@@ -326,7 +324,8 @@ object S {
       }
     }
   }
-  
+  */
+
   object attr {
     def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
     def update(what: String, value: String) = S._attrs.value(what) = value
@@ -340,15 +339,15 @@ object S {
     _attrs.doWith(ht)(f)
   }
   
-  def initIfUninitted[B](session: LiftSession, vsh: VarStateHolder)(f: => B) : B = {
+  def initIfUninitted[B](session: LiftSession)(f: => B) : B = {
     if (inS.value) f
-    else init(RequestState.nil,session, vsh)(f)
+    else init(RequestState.nil,session)(f)
   }
   
-  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: LiftSession, vsh: VarStateHolder)(f : => B) : B = {
+  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: LiftSession)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
       this._servletRequest.doWith(servletRequest) {
-        _init(request, session, vsh)(() => f)
+        _init(request, session)(() => f)
       }
     }
   }
@@ -368,10 +367,11 @@ object S {
     }
   }
   
-  def servletSession: Can[HttpSession] = _servletRequest.value match {
+  def servletSession: Can[HttpSession] = session.map(_.httpSession).or(_servletRequest.value match {
     case null => Empty
     case r => Full(r.getSession)
-  }
+  })
+
 
   
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
@@ -749,6 +749,7 @@ object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
 }
 
+/*
 class VarStateHolder(val session: LiftSession, initVars: Map[String, String],setter: Can[Map[String, String] => Any], val local: Boolean) {
   //def this(s: LiftSession) = this(s, s.currentVars, false)
   
@@ -769,6 +770,7 @@ class VarStateHolder(val session: LiftSession, initVars: Map[String, String],set
   }
   
 }
+*/
 
 abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
   private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)

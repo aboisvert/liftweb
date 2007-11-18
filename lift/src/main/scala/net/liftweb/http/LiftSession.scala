@@ -23,29 +23,29 @@ import scala.xml.transform._
 
 object LiftSession {
 
-  def createSession[T](session: HttpSession, uri: String,
+  def createSession(session: HttpSession, uri: String,
 		       path: ParsePath,
 		       contextPath: String,
 		       requestType: RequestType,
 		       webServices_? : boolean,
-		       contentType: String, opts: Can[T]) = {new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType)}
+		       contentType: String) = {new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType, session)}
   
   var creator = createSession _
   
-  def apply[T](session: HttpSession, uri: String,
+  def apply(session: HttpSession, uri: String,
 	       path: ParsePath,
 	       contextPath: String,
 	       requestType: RequestType,
 	       webServices_? : boolean,
-	       contentType: String, opts: Can[T]) = creator(session, uri, path, contextPath, requestType, webServices_?, contentType, opts)
+	       contentType: String) = creator(session, uri, path, contextPath, requestType, webServices_?, contentType)
 }
 
 @serializable
-class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String, val httpSession: HttpSession) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
-  private var _state: Map[String, String] = Map.empty
+  //  private var _state: Map[String, String] = Map.empty
   private val asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
   private val asyncById = new HashMap[String, CometActor]()
   
@@ -97,7 +97,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       val f = toRun.filter(_._3 == w);
       w match {
 	// if it's going to a CometActor, batch up the commands
-	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1), _state, state)), _state, state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
+	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1), state)), state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
 	case _ => f.map(i => i._2(state.params(i._1)))
 	}
       }
@@ -149,23 +149,27 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     
     case AskSessionToRender(request,httpRequest, timeout, whenDone) => processRequest(request, httpRequest, timeout, whenDone)
 
+    /*
     case UpdateState(name, Full(value)) => stateVar(name) = value
 
     case UpdateState(name, _) => stateVar - name
     
     case CurrentVars => reply(_state)
+*/
 
     case unknown => Log.debug("LiftSession Got a message "+unknown)
   }
   
+/*
   object stateVar {
     def apply(name: String): Can[String] = Can(_state.get(name))
     def -(name: String): Unit = _state = _state - name
     def update(name: String, value: String): Unit = _state = _state + name -> value
   }
-  
+  */
+
   private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long, whenDone: AnswerHolder => Any) = synchronized {
-    S.init(request, httpRequest, notices,this, new VarStateHolder(this, this._state, Empty, true)) {
+    S.init(request, httpRequest, notices,this) {
       try {
 	val sessionDispatch = S.highLevelSessionDispatcher
 	val toMatch = RequestMatcher(request, request.path, this)        
@@ -248,10 +252,11 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     }
   }
   
+  /*
   def currentVars: Map[String, String] = (this !? (500L, CurrentVars)) match {
     case Some(s: Map[String, String]) => s
     case _ => Map.empty
-  }
+  }*/
   
   private def findTemplate(name: String) : Can[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
@@ -475,7 +480,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
 	  ret.link(this)
-	  ret ! PerformSetupComet(_state)
+	  ret ! PerformSetupComet
 	  ret
 	}
     }
@@ -576,8 +581,8 @@ abstract class SessionMessage
  * The response from a page saying that it's been rendered
  */
 case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
-case class UpdateState(name: String, value: Can[String]) extends SessionMessage
-case object CurrentVars extends SessionMessage
+// case class UpdateState(name: String, value: Can[String]) extends SessionMessage
+// case object CurrentVars extends SessionMessage
 case object ShutDown
 
 case class AnswerHolder(what: ResponseIt)

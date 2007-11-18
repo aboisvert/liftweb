@@ -149,7 +149,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       case r: LiftSession => r
       case _ => 
         val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
-            request.contentType, Empty)
+            request.contentType)
         ret.start
         session.putValue(actorNameConst, ret)
         ret
@@ -209,7 +209,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
         
          
-	S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
+	S.init(session, sessionActor) {
 	  val f = LiftServlet.dispatchTable(request)(toMatch)
 	  f(request) match {
             case Full(v) => LiftServlet.convertResponse(v, session)
@@ -220,7 +220,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
         sessionActor.enterComet(self)
         try {
-        S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
+        S.init(session, sessionActor) {
         val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
         
         def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
@@ -256,7 +256,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         }
         // Response("".getBytes("UTF-8"), Nil, 200)
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
-        S.init(session, sessionActor, new VarStateHolder(sessionActor, sessionActor.currentVars, Empty, false)) {
+        S.init(session, sessionActor) {
             val what = flatten(sessionActor.runParams(session))
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
 
