@@ -216,7 +216,7 @@ object S {
   /**
    * Initialize the current request session
    */
-  def init[B](request : RequestState, session: LiftSession)(f: => B) : B = {
+  def init[B](request: RequestState, session: LiftSession)(f: => B) : B = {
     _servletRequest.doWith(request.request) {
     _oldNotice.doWith(Nil) {
       _init(request,session)(() => f)
@@ -352,7 +352,8 @@ object S {
     }
   }
   
-  def get(what: String): Can[String] = {
+  def get(what: String): Can[String] = session.flatMap(_.httpSession.getAttribute(what) match {case null => Empty case s: String => Full(s) case _ => Empty}) 
+/*{
     val sr = _servletRequest.value
     if (sr eq null) Empty
     else {
@@ -366,7 +367,8 @@ object S {
       }
     }
   }
-  
+  */
+
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(_servletRequest.value match {
     case null => Empty
     case r => Full(r.getSession)
@@ -377,18 +379,22 @@ object S {
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
-  def set(name: String, value: String) {
+  def set(name: String, value: String) = session.foreach(_.httpSession.setAttribute(name, value)) 
+  /*{
     if (_servletRequest.value ne null) {
       _servletRequest.value.getSession.setAttribute(name, value)
     }
-  }
+  }*/
   
-  def unset(name: String) {
+  def unset(name: String) = session.foreach(_.httpSession.removeAttribute(name))
+/*
+{
     if (_servletRequest.value ne null) {
       _servletRequest.value.getSession.removeAttribute(name)
     }
   }
-  
+  */
+
   def servletRequest = _servletRequest.value
   
   def hostName: String = servletRequest match {
