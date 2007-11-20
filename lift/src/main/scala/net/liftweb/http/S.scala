@@ -803,6 +803,12 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
     */
   def apply(what: T): Unit = setFunc(name, what)
   
+  def apply(what: Can[T]): Unit = what match {
+    case Full(w) => setFunc(name, w)
+    case Failure(_, _, _) => ()        // no-op (or clear?)
+    case Empty => clearFunc(name)      // clear (or no-op?)
+  }
+  
   def remove(): Unit = clearFunc(name)    
 }
 
