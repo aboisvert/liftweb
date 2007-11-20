@@ -15,7 +15,13 @@ import net.liftweb.util.{Log, Can, Full, Empty, Failure}
 import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
+import org.apache.commons.fileupload.servlet._
 
+sealed abstract class ParamHolder {
+  def name: String
+}
+case class NormalParamHolder(name: String, value: String) extends ParamHolder
+case class FileParamHolder(name: String, mimeType: String, fileName: String, file: Array[Byte]) extends ParamHolder
 
 object RequestState {
   object NilPath extends ParsePath(Nil, true, false)
@@ -36,15 +42,7 @@ object RequestState {
         rewrite(toMatch)
       }
     }
-    
-    /*
-    def xlateIfGet(in: List[String]): List[String] = {
-      if (!reqType.get_? || !Servlet.getXLator.isDefined) in
-      else {
-        val xl = Servlet.getXLator.get
-        in.map(s => xl(s))
-      }
-    }*/
+
     
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
     val rewritten = processRewrite(tmpUri, tmpPath, Map.empty)
@@ -55,11 +53,30 @@ object RequestState {
    //  val body = ()
    val eMap = Map.empty[String, List[String]]
    
-    val (paramNames, params: Map[String, List[String]], body) = if (reqType.post_? && request.getContentType == "text/xml") {
-      (Nil,localParams, readWholeStream(request.getInputStream))
+    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Can[Array[Byte]]) = if (reqType.post_? && request.getContentType == "text/xml") {
+      (Nil,localParams, Nil, Full(readWholeStream(request.getInputStream)))
+    } else if (ServletFileUpload.isMultipartContent(request)) {
+      val allInfo = (new Iterator[ParamHolder] {
+        private val what = (new ServletFileUpload).getItemIterator(request)
+        def hasNext = what.hasNext
+        def next = what.next match {
+          case f if (f.isFormField) => NormalParamHolder(f.getFieldName, new String(readWholeStream(f.openStream), "UTF-8"))
+          case f => FileParamHolder(f.getFieldName, f.getContentType, f.getName, readWholeStream(f.openStream)) 
+        }
+      }).toList
+      
+      val normal: List[NormalParamHolder] = allInfo.flatMap{case v: NormalParamHolder => List(v) case _ => Nil}
+      val files: List[FileParamHolder] = allInfo.flatMap{case v: FileParamHolder => List(v) case _ => Nil}
+
+      val params = normal.foldLeft(eMap)((a,b) => a.get(b.name) match {
+        case None => a + b.name -> List(b.value)
+        case Some(v) => a + b.name -> (v ::: List(b.value))
+      })
+      
+      (normal.map(_.name).removeDuplicates, localParams ++ params, files, Empty)
     } else if (reqType.get_?) {
         request.getQueryString match {
-          case null => (Nil, localParams, null)
+          case null => (Nil, localParams, Nil, Empty)
           case s =>
           val pairs = s.split("&").toList.map(_.trim).filter(_.length > 0).map(_.split("=").toList match {
             case name :: value :: Nil => (true, urlDecode(name), urlDecode(value))
@@ -76,21 +93,22 @@ object RequestState {
           
           val hereParams = localParams ++ params
           
-          (names, hereParams, null)
+          (names, hereParams, Nil, Empty)
         }
     } else {
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
     // val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
     val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
-      (paramNames, params, null)
+      (paramNames, params, Nil, Empty)
     }
     
     new RequestState(paramNames, params,rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
 		     rewritten.path.path.take(1) match {case List("rest") | List("soap") => true; case _ => false},
-		     body, request.getContentType, request, nanoStart, System.nanoTime)
+		     body, request.getContentType, request, nanoStart, System.nanoTime,
+                     files)
   }
   
-  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest, false, null, "", null, System.nanoTime, System.nanoTime)
+  def nil = new RequestState(Nil, Map.empty, "", NilPath, "", GetRequest, false, null, "", null, System.nanoTime, System.nanoTime, Nil)
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -143,11 +161,12 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
 		           val contextPath: String,
 		           val requestType: RequestType,
 		           val webServices_? : Boolean,
-		           val body: Array[Byte],
+		           val body: Can[Array[Byte]],
                    val contentType: String,
                    val request: HttpServletRequest,
                    val nanoStart: Long,
-                   val nanoEnd: Long) 
+                   val nanoEnd: Long,
+                   val uploadedFiles: List[FileParamHolder]) 
 {
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
   val section = path(0) match {case null => "default"; case s => s}
@@ -160,10 +179,10 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
     case _ => None
   }
   
-  def xml: Can[Elem] = if (!xml_?) Empty
+  lazy val xml: Can[Elem] = if (!xml_?) Empty
   else {
     try {
-    Full(XML.load(new java.io.ByteArrayInputStream(this.body)))
+    body.map(b => XML.load(new java.io.ByteArrayInputStream(b)))
     } catch {
       case e => Failure(e.getMessage, Full(e), Nil)
     }

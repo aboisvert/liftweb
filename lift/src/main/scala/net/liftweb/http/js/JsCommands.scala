@@ -90,8 +90,8 @@ object JsCmds {
     def toJsCmd = "jQuery.unblockUI();"
   }
   
-  case class JsTry(what: JsCmd) extends JsCmd {
-    def toJsCmd = "try { "+what.toJsCmd+" } catch (e) {alert(e);}"
+  case class JsTry(what: JsCmd, alert: Boolean) extends JsCmd {
+    def toJsCmd = "try { "+what.toJsCmd+" } catch (e) {"+(if (alert) "alert(e);" else "")+"}"
   }
   
   case class RedirectTo(where: String) extends JsCmd {

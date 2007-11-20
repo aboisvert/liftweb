@@ -122,7 +122,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     response.setDateHeader("Last-Modified", uc.getLastModified)
 
     val out = response.getOutputStream
-    val ba = new Array[byte](2048)
+    val ba = new Array[Byte](2048)
 
     def readAndWrite {
       val len = in.read(ba)
@@ -571,7 +571,7 @@ object LiftServlet {
   def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
-      val buffer = new Array[byte](2048)
+      val buffer = new Array[Byte](2048)
     val out = new ByteArrayOutputStream
     def reader {
       val len = stream.read(buffer)

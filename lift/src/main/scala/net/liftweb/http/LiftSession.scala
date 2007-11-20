@@ -79,26 +79,37 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     
   }
   
+  private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Can[String]) 
+  
   def runParams(state: RequestState): List[Any] = {
     val toRun = synchronized {
       // get all the commands, sorted by owner, 
-      state.paramNames.filter(n => messageCallback.contains(n)).map{n => val mcb = messageCallback(n);  (n, mcb, mcb.owner)}.
+      (state.uploadedFiles.map(_.name) ::: state.paramNames).filter(n => messageCallback.contains(n)).
+        map{n => val mcb = messageCallback(n);  RunnerHolder(n, mcb, mcb.owner)}.
       sort{
-	case ( (_, _, Full(a)) , (_, _, Full(b))) if a < b => true 
-	case ((_, _, Full(a)), (_, _, Full(b))) if a > b => false 
-	case ((an, _, Full(a)), (bn, _, Full(b))) if a == b => an < bn
-	case ((_,_, Full(_)), _) => false
-	case (_, (_, _, Full(_))) => true
-	case ((a, _, _), (b, _, _)) => a < b
+	case ( RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a < b => true 
+	case (RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a > b => false 
+	case (RunnerHolder(an, _, Full(a)), RunnerHolder(bn, _, Full(b))) if a == b => an < bn
+	case (RunnerHolder(_,_, Full(_)), _) => false
+	case (_, RunnerHolder(_, _, Full(_))) => true
+	case (RunnerHolder(a, _, _), RunnerHolder(b, _, _)) => a < b
       }
     }
     
-    val ret = toRun.map(_._3).removeDuplicates.flatMap{w => 
-      val f = toRun.filter(_._3 == w);
+
+    def buildFunc(i: RunnerHolder): () => Any = i.func match {
+    case bfh: S.BinFuncHolder => () => state.uploadedFiles.filter(_.name == i.name).map(v => bfh(v))
+    case normal => () => normal(state.params.getOrElse(i.name, state.uploadedFiles.filter(_.name == i.name).map(_.fileName)))
+    }
+    
+    val ret = toRun.map(_.owner).removeDuplicates.flatMap{w => 
+      val f = toRun.filter(_.owner == w);
       w match {
 	// if it's going to a CometActor, batch up the commands
-	case Full(id) => asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(tf => ActionMessage(tf._2, state.params(tf._1), state)), state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
-	case _ => f.map(i => i._2(state.params(i._1)))
+	case Full(id) => 
+        
+        asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
+	case _ => f.map(i => buildFunc(i).apply())
 	}
       }
     
@@ -401,7 +412,12 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       case _ => kids
     }
     
-    attrs.get("form").map(ft => <form action={S.uri} method={ft.text}>{ret}</form>) getOrElse ret
+    def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
+      case Nil => Null
+      case x => new UnprefixedAttribute("enctype", "multipart/form-data", Null)
+    }
+    
+    attrs.get("form").map(ft => <form action={S.uri} method={ft.text}>{ret}</form> % checkMultiPart(attrs)) getOrElse ret
   }
 
       

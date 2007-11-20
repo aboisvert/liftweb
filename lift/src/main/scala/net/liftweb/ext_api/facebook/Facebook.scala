@@ -5,7 +5,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Failure, Full}
 
 object Facebook {
-  object API extends SessionVar[Can[FacebookClient]](sessionKey.map(k => new FacebookClient(k)))
+  object API extends SessionVar[FacebookClient](sessionKey.map(k => new FacebookClient(k)))
   
   def canvasPage_? : boolean = S.param("fb_sig_in_canvas") match {
     case Full(num) if toInt(num) == 1 => true

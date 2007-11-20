@@ -19,8 +19,8 @@ class BlogUtil {
     val t = Entry.find(S.param("id"))
     t.map(t => 
       bind("entry", xhtml,
-	   'name -> t.title,
-	   'body -> t.body)) openOr <span>Not found!</span>
+	   'name --> t.title.toString,
+	   'body --> t.body.toString)) openOr <span>Not found!</span>
   }
 
   def _entryview(e : Entry) : Node = {

@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
- xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
- xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
- <modelVersion>4.0.0</modelVersion>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <modelVersion>4.0.0</modelVersion>
 
  <!-- 
   mvn install (in the root folder)
@@ -11,68 +9,242 @@
   then open http://localhost:8888/
  -->
 
- <groupId>net.liftweb</groupId>
- <artifactId>lift</artifactId>
- <packaging>pom</packaging>
- <name>Lift</name>
- <version>0.3.0</version>
- <url>http://liftweb.net</url>
- <inceptionYear>2007</inceptionYear>
+  <groupId>net.liftweb</groupId>
+  <artifactId>lift</artifactId>
+  <packaging>pom</packaging>
+  <name>Lift</name>
+  <version>0.3.0-SNAPSHOT</version>
+  <url>http://liftweb.net</url>
+  <inceptionYear>2007</inceptionYear>
+  <description>Lift is an expressive and elegant framework for writing web applications. Lift stresses the importance of security, maintainability, scalability and performance, while allowing for high levels of developer productivity.Lift is a scala web framework.</description>
+  <licenses>
+    <license>
+      <name>the Apache License, ASL Version 2.0</name>
+      <url>http://www.apache.org/licenses/LICENSE-2.0</url>
+      <distribution>repo</distribution>
+    </license>
+  </licenses>
 
- <modules>
-  <module>lift</module>
-  <module>sites/example</module>
-  <module>sites/skittr</module>
-  <module>sites/hellolift</module>
- </modules>
+  <developers>
+    <developer>
+      <name>David Pollak</name>
+      <roles>
+        <role>Lead</role>
+      </roles>
+    </developer>
+    <developer>
+      <name>Burak.Emir</name>
+    </developer>
+    <developer>
+      <name>philipp.schmidt</name>
+    </developer>
+    <developer>
+      <name>cwilkes</name>
+    </developer>
+    <developer>
+      <name>julien.wetterwald</name>
+    </developer>
+    <developer>
+      <name>leppoc</name>
+    </developer>
+    <developer>
+      <name>stepan.koltsov</name>
+    </developer>
+    <developer>
+      <name>jorge.ortiz</name>
+    </developer>
+    <developer>
+      <name>stevej</name>
+    </developer>
+    <developer>
+      <name>alex.boisvert</name>
+    </developer>
+    <developer>
+      <name>OctoberDan</name>
+    </developer>
+  </developers>
+  <contributors>
+    <contributor>
+      <name>David Bernard</name>
+      <timezone>+1</timezone>
+      <roles>
+        <role>maven support</role>
+      </roles>
+    </contributor>
+  </contributors>
 
- <properties>
-  <final-name>${artifactId}-${version}</final-name>
- </properties>
+  <mailingLists>
+    <mailingList>
+      <name>User and Dev</name>
+      <archive>http://code.google.com/p/liftweb/</archive>
+      <post>http://code.google.com/p/liftweb/</post>
+    </mailingList>
+  </mailingLists>
 
- <pluginRepositories>
-  <pluginRepository>
-   <id>maven2.iodp.usio</id>
-   <name>IODP Maven2 Repository</name>
-   <url>http://millstone.iodp.tamu.edu/maven2</url>
-   <layout>default</layout>
-  </pluginRepository>
-  <pluginRepository>
-   <id>maven.liftweb.net</id>
-   <name>Lift Maven2 Repository</name>
-   <url>http://maven.liftweb.net/</url>
-   <layout>default</layout>
-  </pluginRepository>
- </pluginRepositories>
+  <scm>
+    <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/</connection>
+    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/</developerConnection>
+    <url>http://www.google.com/codesearch?hl=en&amp;q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;sa=N&amp;ct=rdl&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
+  </scm>
 
- <repositories>
-  <repository>
-   <id>maven.liftweb.net</id>
-   <name>Lift Maven2 Repository</name>
-   <url>http://maven.liftweb.net/</url>
-  </repository>
+  <modules>
+    <module>lift</module>
+    <module>sites/example</module>
+    <module>sites/skittr</module>
+    <module>sites/hellolift</module>
+  </modules>
 
-  <repository>
-   <id>maven2.iodp.usio</id>
-   <name>ODP Maven2 Repository</name>
-   <url>http://millstone.iodp.tamu.edu/maven2</url>
-  </repository>
+  <pluginRepositories>
+    <pluginRepository>
+      <id>scala-tools.org</id>
+      <name>Scala Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </pluginRepository>
+  </pluginRepositories>
 
- </repositories>
+  <repositories>
+    <repository>
+      <id>scala-tools.org</id>
+      <name>Scala Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
+  </repositories>
 
- <dependencyManagement>
-  <dependencies>
-   <dependency>
-    <groupId>scala</groupId>
-    <artifactId>scala-compiler</artifactId>
-    <version>2.6.0</version>
-   </dependency>
-   <dependency>
-    <groupId>scala</groupId>
-    <artifactId>scala-library</artifactId>
-    <version>2.6.0</version>
-   </dependency>
-  </dependencies>
- </dependencyManagement>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.scala-lang</groupId>
+        <artifactId>scala-library</artifactId>
+        <version>2.6.0</version>
+      </dependency>
+      <dependency>
+        <groupId>javax.servlet</groupId>
+        <artifactId>servlet-api</artifactId>
+        <version>2.4</version>
+        <scope>provided</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
+  <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <jvmArgs>
+            <jvmArg>-Xmx1524m</jvmArg>
+          </jvmArgs>
+          <args>
+            <!--arg>-unchecked</arg--></args>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-eclipse-plugin</artifactId>
+        <configuration>
+          <downloadSources>true</downloadSources>
+          <buildcommands>
+            <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
+          </buildcommands>
+          <additionalProjectnatures>
+            <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
+          </additionalProjectnatures>
+          <classpathContainers>
+            <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
+            <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
+          </classpathContainers>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <artifactId>maven-project-info-reports-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+      </plugin>                       
+    </plugins>
+  </reporting>
+
+  <distributionManagement>
+    <snapshotRepository>
+      <id>scala-tools.org</id>
+      <url>scp://trazio.com/home/trazioco/scala-tools.org/repo-snapshots</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+  </distributionManagement>
+
+  <profiles>
+    <profile>
+      <id>release</id>
+      <build>
+        <plugins>
+          <!--
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>rat-maven-plugin</artifactId>
+            <version>1.0-alpha-3</version>
+            <executions>
+              <execution>
+                <phase>validate</phase>
+                <goals>
+                  <goal>check</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <excludes>
+                <exclude>**/*.xml</exclude>
+                <exclude>src/site/**</exclude>
+                <exclude>src/main/resources/META-INF/**</exclude>
+                <exclude>src/main/resources/archetype*/**</exclude>
+                <exclude>src/test/**</exclude>
+              </excludes>
+            </configuration>
+          </plugin>
+          -->
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <configuration>
+              <descriptorRefs>
+                <descriptorRef>project</descriptorRef>
+              </descriptorRefs>
+            </configuration>
+            <executions>
+              <execution>
+                <id>make-assembly</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>attached</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <distributionManagement>
+        <repository>
+          <id>scala-tools.org</id>
+          <url>scp://trazio.com/home/trazioco/scala-tools.org/repo-releases</url>
+        </repository>
+        <site>
+          <id>scala-tools.org</id>
+          <url>scp://trazio.com/home/trazioco/scala-tools.org/mvnsites/liftweb</url>
+        </site>
+      </distributionManagement>
+    </profile>
+  </profiles>
 </project>

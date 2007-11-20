@@ -13,6 +13,7 @@ import net.liftweb.util._
 /**
  * The base trait of Controllers that handle pre-view requests
  */
+
 trait SimpleController {
   def request: RequestState
   // private var session: TreeMap[String, Any] = _
@@ -28,7 +29,7 @@ trait SimpleController {
     }
   }
   
-  def post_? : boolean = request.post_?
+  def post_? : Boolean = request.post_?
   
   def get(name: String): Can[String] =
     httpRequest.getSession.getAttribute(name) match {
@@ -42,30 +43,5 @@ trait SimpleController {
   }
   
   def unset(name: String) {httpRequest.getSession.removeAttribute(name)}
-      
-  /*
-   def apply(name: String): Can[Any] = {
-   session.get(name)
-   }*/
-  
- /* def apply[T](name: String): Can[T] = {
-    if (httpRequest == null) None
-    else {
-      httpRequest.getSession.getAttribute(name) match {
-	case null => None
-	case n => {
-          if (n.isInstanceOf[T]) Some(n.asInstanceOf[T])
-          else None
-	}
-      }
-    }
-  }
-  
-  def update(name: String, value: Any) {
-    value match {
-      case null => httpRequest.getSession.removeAttribute(name)
-      case _ => {httpRequest.getSession.setAttribute(name, value)}
-    }
-  }
-  */
 }
+

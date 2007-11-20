@@ -235,7 +235,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
         }
       }
       
-      def innerSignup = bind("user", signupXhtml(theUser), "submit" -> submit("Sign Up", testSignup))
+      def innerSignup = bind("user", signupXhtml(theUser), "submit" --> submit("Sign Up", testSignup))
 
       S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _), _) if testLoggedIn(w) => 
         () => innerSignup})
@@ -287,9 +287,9 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       }
       
       bind("user", loginXhtml,
-           "email" -> (<input type="text" name="username"/>),
-           "password" -> (<input type="password" name="password"/>),
-           "submit" -> (<input type="submit" value="Log In"/>))
+           "email" --> (<input type="text" name="username"/>),
+           "password" --> (<input type="password" name="password"/>),
+           "submit" --> (<input type="submit" value="Log In"/>))
     }
     
     def lostPasswordXhtml = (<form method="POST" action={S.action}>
@@ -342,7 +342,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       }      
         
     def lostPassword = {
-      bind("user", lostPasswordXhtml, "email" -> text("", sendPasswordReset _), "submit" -> <input type="Submit" value="Send It" />)
+      bind("user", lostPasswordXhtml, "email" --> text("", sendPasswordReset _), "submit" --> <input type="Submit" value="Send It" />)
     }
     
     def passwordResetXhtml = (<form method="POST" action={S.action}>
@@ -364,8 +364,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       user.uniqueId.reset().save
       
       bind("user", passwordResetXhtml,
-           "pwd" -> password_*("",(p: List[String]) => user.password.setList(p)),
-           "submit" -> submit("Set Password", finishSet))
+           "pwd" --> password_*("",(p: List[String]) => user.password.setList(p)),
+           "submit" --> submit("Set Password", finishSet))
       case _ => S.error("Password reset link invalid"); S.redirectTo(HomePage)
     }
     
@@ -395,9 +395,9 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       }
       
       bind("user", changePasswordXhtml,
-           "old_pwd" -> S.password("", oldPassword = _), 
-           "new_pwd" -> password_*("", LFuncHolder(newPassword = _)), 
-           "submit" -> submit("Change", testAndSet _))
+           "old_pwd" --> S.password("", oldPassword = _), 
+           "new_pwd" --> password_*("", LFuncHolder(newPassword = _)), 
+           "submit" --> submit("Change", testAndSet _))
     }
     
     def editXhtml(user: ModelType) = (<form method="POST" action={S.action}>
@@ -422,7 +422,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
         }
       }
       
-      def innerEdit = bind("user", editXhtml(theUser), "submit" -> submit("Edit", testEdit))
+      def innerEdit = bind("user", editXhtml(theUser), "submit" --> submit("Edit", testEdit))
 
       S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ Edit) :: _, _, _), _) if testLoggedIn(w) => 
         () => innerEdit})

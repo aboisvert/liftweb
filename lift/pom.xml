@@ -4,66 +4,66 @@
   <parent>
     <artifactId>lift</artifactId>
     <groupId>net.liftweb</groupId>
-    <version>0.3.0</version>
+    <version>0.3.0-SNAPSHOT</version>
   </parent>
-  <groupId>net.liftweb</groupId>
   <artifactId>lift-core</artifactId>
   <packaging>jar</packaging>
   <name>Lift Core</name>
-  <version>0.3.0</version>
   <dependencies>
     <dependency>
-      <groupId>scala</groupId>
+      <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
-  <dependency>
-     <groupId>log4j</groupId>
-   <artifactId>log4j</artifactId>
-   <version>1.2.12</version>
-  </dependency>
+    <dependency>
+      <groupId>log4j</groupId>
+      <artifactId>log4j</artifactId>
+      <version>1.2.12</version>
+    </dependency>
 
 
-  <dependency>
-     <groupId>org.apache.derby</groupId>
-   <artifactId>derby</artifactId>
-   <version>10.2.2.0</version>
-  </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+      <version>10.2.2.0</version>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
-      <version>2.4</version>
-      <scope>provided</scope>
     </dependency>
     <dependency>
-      <groupId>scala</groupId>
-      <artifactId>scala-compiler</artifactId>
-      <version>2.6.0</version>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <version>1.4</version>
+      <optional>true</optional>
     </dependency>
-   <dependency>
-    <groupId>javax.mail</groupId>
-    <artifactId>mail</artifactId>
-    <version>1.4</version>
-   </dependency>
-   <dependency>
-    <groupId>javax.activation</groupId>
-    <artifactId>activation</artifactId>
-    <version>1.1</version>
-   </dependency>
-   <dependency>
-    <groupId>mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
-    <version>5.0.4</version>
-   </dependency>
-   <dependency>
+    <dependency>
+      <groupId>javax.activation</groupId>
+      <artifactId>activation</artifactId>
+      <version>1.1</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.0.4</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
       <groupId>commons-httpclient</groupId>
       <artifactId>commons-httpclient</artifactId>
       <version>3.0.1</version>
-    </dependency>  
+    </dependency>
+    <dependency>
+      <groupId>commons-fileupload</groupId>
+      <artifactId>commons-fileupload</artifactId>
+      <version>1.2</version>
+    </dependency>
     <dependency>
       <groupId>commons-collections</groupId>
       <artifactId>commons-collections</artifactId>
       <version>3.2</version>
-    </dependency>  
+    </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
@@ -71,43 +71,4 @@
       <scope>provided</scope>
     </dependency>
   </dependencies>
-  <build>
-    <sourceDirectory>src/main/scala</sourceDirectory>
-    <plugins>
-      <plugin>
-        <groupId>scala</groupId>
-        <artifactId>maven-scala-plugin</artifactId>
-        <version>1.1.1-ALT</version>
-        <configuration>
-          <maxmemory>1524m</maxmemory>
-        </configuration>
-        <executions>
-          <execution>
-            <phase>compile</phase>
-            <goals>
-              <goal>compile</goal>
-              <goal>doc</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-eclipse-plugin</artifactId>
-        <configuration>
-          <downloadSources>true</downloadSources>
-          <buildcommands>
-            <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
-          </buildcommands>
-          <additionalProjectnatures>
-            <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
-          </additionalProjectnatures>
-          <classpathContainers>
-            <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
-            <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
-          </classpathContainers>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
 </project>

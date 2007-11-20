@@ -165,6 +165,21 @@ object Helpers {
     }
   }
   
+  /**
+    * Choose one of many templates from the children.  Looking for the
+    * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
+    *
+    * @param prefix the prefix (e.g., "choose")
+    * @param tag the tag to choose (e.g., "stuff")
+    * @param xhtml the incoming node sequence
+    *
+    * @return the first matching node sequence
+    */
+  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+      case Nil => Nil
+      case x :: xs => x.child
+    }
+  
   sealed abstract class BindParam {
     def name: String
     // def value: NodeSeq
@@ -186,22 +201,28 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def calcValue(in: NodeSeq): NodeSeq = value(in)
 }
 
-  implicit def stringThingToBindParam[T](p: (String, T)): BindParam = {
-    p._2 match {
-      case null => TheBindParam(p._1, Text("null"))
-      case s: Symbol => TheBindParam(p._1, Text(s.name))
-      case s: String => TheBindParam(p._1, Text(s))
-      case n: NodeSeq => TheBindParam(p._1, n)
-      case f: (NodeSeq => NodeSeq) => FuncBindParam(p._1, f)
-      case Some(s) => stringThingToBindParam((p._1, s))
-      case Full(s) => stringThingToBindParam((p._1, s))
-      case v => TheBindParam(p._1, Text(p._2.toString))
-    }
-  }
 
+   object BindParamAssoc {
+     implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
+       case null => Text("null")
+       case v => Text(v.toString)
+     })
+   }
+
+    class BindParamAssoc(val name: String) {
+    def -->(value: String): BindParam = TheBindParam(name, Text(value))
+    def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
+    def -->(value: Symbol): BindParam = TheBindParam(name, Text(value.name))
+    def -->(func: NodeSeq => NodeSeq): BindParam = FuncBindParam(name, func)
+    def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))    
+  }
+  
+  implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
+  implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
+    
   def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
-  implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
+  //implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
 
   /**
    * Experimental template bind. Adopts the approach detailed in my "Template by Example" e-mail to the
@@ -833,7 +854,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
 
   
-  def md5(in: Array[Byte]) = (MessageDigest.getInstance("MD5")).digest(in)
+  def md5(in: Array[Byte]): Array[Byte] = (MessageDigest.getInstance("MD5")).digest(in)
   
   def hash(in: String) : String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
@@ -853,16 +874,16 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
 
   
-  def hash256(in : String) : String = {
+  def hash256(in : String): String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA-256")).digest(in.getBytes("UTF-8")))
   }
   
-  def hexDigest256(in: Array[byte]): String = {
+  def hexDigest256(in: Array[Byte]): String = {
     val binHash = (MessageDigest.getInstance("SHA-256")).digest(in)
     hexEncode(binHash)
   }
 
-  def hexEncode(in: Array[byte]): String = {
+  def hexEncode(in: Array[Byte]): String = {
     val sb = new StringBuilder
     val len = in.length
     def addDigit(in: Array[byte], pos: int, len: int, sb: StringBuilder) {

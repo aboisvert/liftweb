@@ -84,18 +84,20 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     
     case ActionMessageSet(msgs, request) =>
     S.init(request, theSession) {
-      val ret = msgs.map(msg => msg.what(msg.value))
+      val ret = msgs.map(_())
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       reply(ret)
     }    
     
+    /*
     case ActionMessage(what, value, request) => 
       S.init(request, theSession) {
       val ret = what(value)
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
         reply(ret)
       }
-
+    */
+      
     case AskQuestion(what, who) =>
       startQuestion(what)
       whosAsking = Full(who)
@@ -184,20 +186,20 @@ sealed abstract class CometMessage
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val javaScript: Can[JsCmd], val destroy: Can[JsCmd]) {
   def this(id: String, ro: RenderOut) = this(id, ro.xhtml, ro.script, ro.destroyScript)
-  def toJavaScript(session: LiftSession): JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();")) + 
+  def toJavaScript(session: LiftSession): JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) + 
     ((xml, javaScript) match {
-    case (Full(xml), Full(js)) => JsCmds.Set(id, session.processSurroundAndInclude(xml)) + JsCmds.JsTry(js)
+    case (Full(xml), Full(js)) => JsCmds.Set(id, session.processSurroundAndInclude(xml)) + JsCmds.JsTry(js, false)
     case (Full(xml), _) => JsCmds.Set(id, session.processSurroundAndInclude(xml))
     case (_, Full(js)) => js
     case _ => JsCmds.Noop
-  }) + JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"))
+  }) + JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
   
   def asXhtml: NodeSeq = ((xml, javaScript) match {
   case (Full(xml), Full(js)) => xml ++ script(js.toJsCmd)
   case (Full(xml), _) => xml
   case (_, Full(js)) => script(js.toJsCmd)
   case _ => Text("")
-  }) ++ script("function destroy_"+id+"() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")
+  }) ++ script("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")
     
   //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
@@ -209,8 +211,8 @@ case class AskQuestion(what: Any, who: CometActor) extends CometMessage
 case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
 case class Listen(when: Long) extends CometMessage
 case object Unlisten extends CometMessage
-case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
-case class ActionMessageSet(msg: List[ActionMessage], request: RequestState) extends CometMessage
+// case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
+case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
 case object ReRender extends CometMessage
 case class RenderOut(xhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd]) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty)
