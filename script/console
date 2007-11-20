@@ -17,4 +17,6 @@ do
   THE_CLASSPATH=${THE_CLASSPATH}:${i}
 done
 
-CLASSPATH=$THE_CLASSPATH:target/classes scala
+echo $CWD
+
+CLASSPATH=$THE_CLASSPATH:target/classes scala ./scripts/liftrepl.scala
