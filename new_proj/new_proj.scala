@@ -68,122 +68,87 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
  <version>0.1.0</version>
  <pluginRepositories>
   <pluginRepository>
-   <id>maven2.iodp.usio</id>
-   <name>IODP Maven2 Repository</name>
-   <url>http://millstone.iodp.tamu.edu/maven2</url>
-   <layout>default</layout>
-  </pluginRepository>
-  <pluginRepository>
-   <id>maven.liftweb.net</id>
-   <name>Lift Maven2 Repository</name>
-   <url>http://maven.liftweb.net/</url>
-   <layout>default</layout>
+   <id>scala-tools.org</id>
+   <name>Scala Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-releases</url>
   </pluginRepository>
  </pluginRepositories>
- <properties>
-  <final-name>${artifactId}-${version}</final-name>
- </properties>
- <repositories>
-  <repository>
-   <id>maven.liftweb.net</id>
-   <name>Lift Maven2 Repository</name>
-   <url>http://maven.liftweb.net/</url>
-  </repository>
 
-  <repository>
-   <id>maven2.iodp.usio</id>
-   <name>ODP Maven2 Repository</name>
-   <url>http://millstone.iodp.tamu.edu/maven2</url>
-  </repository>
-
- </repositories>
-
-
-
- <dependencies>
+  <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <version>2.4</version>
       <scope>provided</scope>
     </dependency>
-      <dependency>
-   <groupId>net.liftweb</groupId>
-   <artifactId>lift-core</artifactId>
-   <version>0.3.0</version>
-  </dependency>
-     <dependency>
-    <groupId>scala</groupId>
-    <artifactId>scala-compiler</artifactId>
-    <version>2.6.0</version>
-   </dependency>
-  <dependency>
-   <groupId>scala</groupId>
-   <artifactId>scala-library</artifactId>
-    <version>2.6.0</version>
-  </dependency>
-  <dependency>
-     <groupId>org.apache.derby</groupId>
-   <artifactId>derby</artifactId>
-   <version>10.2.2.0</version>
-  </dependency>
-   <dependency>
-   <groupId>javax.mail</groupId>
-    <artifactId>mail</artifactId>
-    <version>1.4</version>
-   </dependency>
-   <dependency>
-    <groupId>javax.activation</groupId>
-    <artifactId>activation</artifactId>
-    <version>1.1</version>
-   </dependency>
-   <dependency>
-    <groupId>mysql</groupId>
-    <artifactId>mysql-connector-java</artifactId>
-    <version>5.0.4</version>
-   </dependency>
- </dependencies>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-core</artifactId>
+      <version>0.3.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>scala</groupId>
+      <artifactId>scala-library</artifactId>
+      <version>2.6.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.derby</groupId>
+      <artifactId>derby</artifactId>
+      <version>10.2.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.mail</groupId>
+      <artifactId>mail</artifactId>
+      <version>1.4</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.activation</groupId>
+      <artifactId>activation</artifactId>
+      <version>1.1</version>
+    </dependency>
+    <dependency>
+      <groupId>mysql</groupId>
+      <artifactId>mysql-connector-java</artifactId>
+      <version>5.0.4</version>
+    </dependency>
+  </dependencies>
 
- <build>
-  <sourceDirectory>src/main/scala</sourceDirectory>
-  <plugins>
-   <plugin>
-    <groupId>org.mortbay.jetty</groupId>
-    <artifactId>maven-jetty-plugin</artifactId>
-    <version>6.1.3</version>
-    <configuration>
-     <systemProperties>
-      <systemProperty>
-       <name>org.apache.cocoon.log4j.loglevel</name>
-       <value>WARN</value>
-      </systemProperty>
-     </systemProperties>
-     <connectors>
-      <connector
-       implementation="org.mortbay.jetty.nio.SelectChannelConnector">
-       <port>8888</port>
-       <maxIdleTime>30000</maxIdleTime>
-      </connector>
-     </connectors>
-     <webAppSourceDirectory>
-      ${project.build.directory}/${final-name}
-     </webAppSourceDirectory>
-     <contextPath>/</contextPath>
-     <scanIntervalSeconds>5</scanIntervalSeconds>
-    </configuration>
-   </plugin>
-   <plugin>
-    <groupId>iodp.usio</groupId>
-    <artifactId>maven-scala-plugin</artifactId>
-    <executions>
-     <execution>
-      <phase>compile</phase>
-      <goals>
-       <goal>compile</goal>
-      </goals>
-     </execution>
-    </executions>
-   </plugin>
+  <build>
+    <sourceDirectory>src/main/scala</sourceDirectory>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+        <version>2.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.mortbay.jetty</groupId>
+        <artifactId>maven-jetty-plugin</artifactId>
+        <version>6.1.3</version>
+        <configuration>
+          <systemProperties>
+            <systemProperty>
+              <name>org.apache.cocoon.log4j.loglevel</name>
+              <value>WARN</value>
+            </systemProperty>
+          </systemProperties>
+          <connectors>
+            <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
+              <port>8888</port>
+              <maxIdleTime>30000</maxIdleTime>
+            </connector>
+          </connectors>
+          <contextPath>/</contextPath>
+          <scanIntervalSeconds>5</scanIntervalSeconds>
+        </configuration>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
@@ -201,8 +166,18 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
           </classpathContainers>
         </configuration>
       </plugin>
-  </plugins>
- </build>
+    </plugins>
+  </build>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>org.scala-tools</groupId>
+        <artifactId>maven-scala-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </reporting>
+
 </project>"""
   var pw = new PrintWriter(new FileWriter(new File(rootDir, "pom.xml")))
   pw.println(pom)
