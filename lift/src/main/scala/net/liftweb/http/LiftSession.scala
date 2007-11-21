@@ -41,7 +41,7 @@ object LiftSession {
 }
 
 @serializable
-class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String, val httpSession: HttpSession) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String, val httpSession: HttpSession) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
@@ -160,24 +160,8 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     
     case AskSessionToRender(request,httpRequest, timeout, whenDone) => processRequest(request, httpRequest, timeout, whenDone)
 
-    /*
-    case UpdateState(name, Full(value)) => stateVar(name) = value
-
-    case UpdateState(name, _) => stateVar - name
-    
-    case CurrentVars => reply(_state)
-*/
-
     case unknown => Log.debug("LiftSession Got a message "+unknown)
   }
-  
-/*
-  object stateVar {
-    def apply(name: String): Can[String] = Can(_state.get(name))
-    def -(name: String): Unit = _state = _state - name
-    def update(name: String, value: String): Unit = _state = _state + name -> value
-  }
-  */
 
   private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long, whenDone: AnswerHolder => Any) = synchronized {
     S.init(request, httpRequest, notices,this) {
@@ -248,7 +232,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
   }
   
   
-  private def findVisibleTemplate(path: ParsePath, session : RequestState) : Can[NodeSeq] = {
+  private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, session.path, this)
     val templ = LiftServlet.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
@@ -281,7 +265,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 
   private val suffixes = List("", "html", "xhtml", "htm")
   
-  private def findAnyTemplate(places : List[String]) : Can[NodeSeq] = {
+  def findAnyTemplate(places : List[String]) : Can[NodeSeq] = {
     val pls = places.mkString("/","/", "")
     val toTry = suffixes.map(s => pls + (if (s.length > 0) "." + s else ""))
     
@@ -302,11 +286,17 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	      val inst = c.newInstance
 	    c.getMethod(action, null).invoke(inst, null) match {
 	      case null | Empty | None => Empty
-	      case s : NodeSeq => Full(s)
+              case n: Group => Full(n)
+              case n: Elem => Full(n)
+	      case s: NodeSeq => Full(s)
+              case Some(n: Group) => Full(n)
+              case Some(n: Elem) => Full(n)
               case Some(n: NodeSeq) => Full(n)
               case Some(n: Seq[Node]) => Full(n)
-	      case Full(n : NodeSeq) => Full(n)
-	      case Full(n : Seq[Node]) => Full(n)
+              case Full(n: Group) => Full(n)
+              case Full(n: Elem) => Full(n)
+	      case Full(n: NodeSeq) => Full(n)
+	      case Full(n: Seq[Node]) => Full(n)
 	      case _ => Empty
 	    }
 	  }
@@ -348,11 +338,11 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     }
   
   
-  private def findAndEmbed(templateName : Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
+  private def findAndEmbed(templateName: Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
     templateName match {
       case Full(s) => {
 	findTemplate(s.text) match {
-	  case Full(s) => synchronized {processSurroundAndInclude(s)}
+	  case Full(s) => processSurroundAndInclude(s)
 	  case _ => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
 	}
       }
@@ -423,7 +413,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
-  def processSurroundAndInclude(in : NodeSeq) : NodeSeq = {
+  private[http] def processSurroundAndInclude(in: NodeSeq): NodeSeq = {
     in.flatMap{
       v => 
 	v match {
@@ -434,7 +424,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
 	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => processSurroundAndInclude(findAndEmbed(Can(attr.get("what")), kids))
 	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
 	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
-	  case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids))
+	  // case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids))
 	  case Elem("lift", "a", attr @ _, scope @ _, kids @ _*) => Elem(null, "a", addAjaxHREF(attr), scope, processSurroundAndInclude(kids): _*)
 	  case Elem("lift", "form", attr @ _, scope @ _, kids @ _*) => Elem(null, "form", addAjaxForm(attr), scope, processSurroundAndInclude(kids): _*)
 	  case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(v.child) : _*)
@@ -448,7 +438,12 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
       findComet(theType, name, kids, Map.empty ++ attr.flatMap{case u: UnprefixedAttribute => List((u.key, u.value.text)) case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) case _ => Nil}.toList).
       map(c =>
 	(c !? (6600, AskRender)) match {
-	  case Some(AnswerRender(response, _, when)) => <span id={c.uniqueId} lift:when={when.toString}>{response.asXhtml}</span>
+	  case Some(AnswerRender(response, _, when, _)) => 
+          val ret = <span id={c.uniqueId+"_outer"}><span id={c.uniqueId} lift:when={when.toString}>{
+            response.inSpan}</span>{response.outSpan}</span>
+
+          ret
+          
 	  case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
 	}) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids
     } catch {
@@ -532,7 +527,7 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     bufs
   }
   
-  private def processSurroundElement(in : Elem) : NodeSeq = in match {
+  private def processSurroundElement(in: Elem): NodeSeq = in match {
     case Elem("lift", "surround", attr @ _, _, kids @ _*) =>
       
       val (otherKids, paramElements) = filter2(kids) {
@@ -553,16 +548,11 @@ class LiftSession(val uri: String,val path: ParsePath,val contextPath: String, v
     findAndMerge(attr.get("with"), paramsMap)
   }
   
-  private def findAndMerge(templateName : Can[Seq[Node]], atWhat : Map[String, NodeSeq]) : NodeSeq = {
-    val name : String = templateName match {
-      case Full(s) => if (s.text.startsWith("/")) s.text else "/"+ s.text
-      case _ => "/templates-hidden/Default"
-    }
+  private def findAndMerge(templateName: Can[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
+    val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
     
-    findTemplate(name) match {
-      case Full(s) => processBind(processSurroundAndInclude(s), atWhat)
-      case _ => atWhat.values.flatMap(_.elements).toList
-    }
+    findTemplate(name).map(s => processBind(processSurroundAndInclude(s), atWhat)).
+      openOr(atWhat.values.flatMap(_.elements).toList)
   }
   
   class AddScriptTag extends RewriteRule {

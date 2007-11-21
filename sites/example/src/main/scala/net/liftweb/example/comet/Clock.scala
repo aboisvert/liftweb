@@ -21,7 +21,7 @@ class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, at
   
   override def lowPriority : PartialFunction[Any, Unit] = {
     case Tick => 
-    reRender // tell the component to redraw itself
+    reRender(false) // tell the component to redraw itself
     ActorPing.schedule(this, Tick, 10000L) // schedule an update in 10 seconds
   }
 }

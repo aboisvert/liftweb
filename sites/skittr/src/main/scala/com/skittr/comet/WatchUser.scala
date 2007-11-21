@@ -41,7 +41,7 @@ class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq,
   override def lowPriority : PartialFunction[Any, Unit] = {
       case Timeline(msg) =>
       messages = msg
-      reRender
+      reRender(false)
   } 
 
   

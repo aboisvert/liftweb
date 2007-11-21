@@ -9,5 +9,6 @@ class AskName(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, a
       CometActor(theSession, name, defaultXml, attributes) {
   def defaultPrefix = "ask_name"
     
-  def render = ajaxForm(<div>What is your username?</div> ++ text("",name => answer(name.trim)) ++ submit("Enter", ignore => true))
+  def render = ajaxForm(<div>What is your username?</div> ++ text("",name => answer(name.trim)) ++ 
+    <input type="submit" value="Enter"/>)
 }

@@ -8,6 +8,8 @@ import scala.collection.immutable.TreeMap
 import scala.xml._
 import S._
 import net.liftweb.util._
+import net.liftweb.http.js._
+import JsCmds._
 
 class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
       CometActor(theSession, name, defaultXml, attributes) {
@@ -24,17 +26,24 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
     ret
   }
 
-  override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender} 
+  override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender(false)} 
   
-  def render = <span>Hello "{userName}"
+  override lazy val fixedRender: Can[NodeSeq] = {
+    val n = "id"+randomString(10)
+    val text = S.text("", in => in.trim match {case in if in.length > 0 => sendMessage(in) case _ =>}) % ("id" -> n)
+    Full(ajaxForm(Run("setTimeout(function() {jQuery('#"+n+"').attr('value', ''); document.getElementById("+n.encJs+").focus();}, 100);"), text ++ <input type="submit" value="Chat"/> ))
+  }
+  
+  
+  override def render = RenderOut(Full(<span>Hello "{userName}"
     <ul>{currentData.reverse.flatMap(cl => <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)}</ul>
-    {ajaxForm(text("",msg => sendMessage(msg)) ++ submit("Send", ignore => true))}</span>
+    </span>), fixedRender, Empty, Empty)
   
   override def localSetup {
     if (userName.length == 0) {
       ask(new AskName(theSession, name, defaultXml, attributes), "what's your username") {
-            case s: String if (s.trim.length > 2) => userName = s.trim; reRender
-            case s => localSetup; reRender
+            case s: String if (s.trim.length > 2) => userName = s.trim; reRender(true)
+            case s => localSetup; reRender(false)
       }
     }
   }
@@ -44,7 +53,7 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
   def sendMessage(msg: String) {
     server ! ChatServerMsg(userName, msg)
     waitForUpdate match {
-      case Some(l : List[ChatLine]) => currentData = l ; reRender
+      case Some(l : List[ChatLine]) => currentData = l ; reRender(false)
       case _ => 
     }
   }

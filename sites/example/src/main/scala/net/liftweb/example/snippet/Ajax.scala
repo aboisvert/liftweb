@@ -21,7 +21,8 @@ class Ajax {
 
     <span>
     {
-      a(() => {cnt = cnt + 1; Set("cnt_id", Text( cnt.toString))}, <span>Click me to increase the count (currently <span id='cnt_id'>0</span>)</span>) // a link that does AJAX to increment a counter server-side and displays the result on the client
+      a(() => {cnt = cnt + 1; Set("cnt_id", Text( cnt.toString))},
+          <span>Click me to increase the count (currently <span id='cnt_id'>0</span>)</span>) // a link that does AJAX to increment a counter server-side and displays the result on the client
     } <br />
 
     <div id="messages"></div>

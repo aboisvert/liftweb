@@ -246,7 +246,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         val ret2 = drainTheSwamp(100L, ret)
         
         val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
-        val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor))
+        val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
 
         (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
         }

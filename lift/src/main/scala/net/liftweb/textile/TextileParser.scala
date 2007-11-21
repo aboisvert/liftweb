@@ -23,7 +23,7 @@ object TextileParser extends Application {
    * to get the XHTML result to send to the browser.
    * int will be the number of characters parsed.
    */
-  def parse(_toParse: String, urlRewrite: String => String) : Option[Lst] = {
+  def parse(_toParse: String, urlRewrite: String => String): Option[Lst] = {
     val toParse = _toParse match {
       case null => "null\n\n"
       case s if !s.endsWith("\n\n") => s + "\n\n"
