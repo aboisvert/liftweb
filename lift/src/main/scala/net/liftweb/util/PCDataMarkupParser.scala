@@ -164,7 +164,7 @@ object AltXML {
         if (x.attributes ne null) x.attributes.toString(sb)
         x.scope.toString(sb, pscope)
         sb.append('>')
-        sequenceToXML(x.child, pscope, sb, stripComment)
+        sequenceToXML(x.child, x.scope, sb, stripComment)
         sb.append("</")
         x.nameToString(sb)
         sb.append('>')
@@ -185,14 +185,14 @@ object AltXML {
     else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
-      toXML(f, f.scope, sb, stripComment)
+      toXML(f, pscope, sb, stripComment)
       while (it.hasNext) {
         val x = it.next
         sb.append(' ')
-        toXML(x, x.scope, sb, stripComment)
+        toXML(x, pscope, sb, stripComment)
       }
     } else {
-      for (c <- children) toXML(c, c.scope, sb, stripComment)
+      for (c <- children) toXML(c, pscope, sb, stripComment)
     }
   }
   
