@@ -123,30 +123,39 @@ object S {
   /**
    * Test the current request to see if it's a POST
    */
-  def post_? = request.map(_.post_?).openOr(false)
+  def post_? = request.map(_.post_?).openOr(false);
+      
+  /**
+     * Localize the incoming string based on a resource bundle for the current locale
+     * @param str the string or ID to localize (the default value is the 
+     *
+     * @return the localized XML or Empty if there's no way to do localization
+     */
+   def loc(str: String): Can[NodeSeq] = {
+     val rb = _resBundle.value match {
+     case null => val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
+     _resBundle.set(rb)
+     rb
+     case s => s
+   }
+   rb.flatMap(r => tryo(r.getObject(str) match {
+     case null => Empty
+     case s: String => Full(Text(s))
+     case g: Group => Full(g)
+     case e: Elem => Full(e)
+     case ns: NodeSeq => Full(ns)
+     case x => Full(Text(x.toString))
+   }).flatMap(s => s))
+ }
       
   /**
     * Localize the incoming string based on a resource bundle for the current locale
     * @param str the string or ID to localize
     * @param dflt the default string to return if localization fails
     *
-    * @return the localized string
+    * @return the localized XHTML or default value
     */
-  def loc(str: String, dflt: NodeSeq): NodeSeq = {
-      val rb = _resBundle.value match {
-        case null => val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
-        _resBundle.set(rb)
-        rb
-        case s => s
-      }
-      rb.flatMap(r => tryo(r.getObject(str) match {
-        case s: String => Full(Text(s))
-        case g: Group => Full(g)
-        case e: Elem => Full(e)
-        case ns: NodeSeq => Full(ns)
-        case _ => Empty
-      }).flatMap(s => s)).openOr(dflt)
-    }
+  def loc(str: String, dflt: NodeSeq): NodeSeq = loc(str).openOr(dflt)
       
   /**
    * Test the current request to see if it's a GET
