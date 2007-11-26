@@ -31,7 +31,7 @@ trait ToResponse extends ResponseIt {
     
     val doc = docType.map(_ + "\n") openOr ""
       
-    Response((encoding + doc + AltXML.toXML(out, false)).getBytes("UTF-8"), headers, code)
+    Response((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, code)
     }
 }
 

@@ -36,7 +36,7 @@ object JsCmds {
   }
   case class Set(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
-      val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(content))).openOr(content)), false) 
+      val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(content))).openOr(content)), false, true) 
       val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
       ret
     }
@@ -75,7 +75,7 @@ object JsCmds {
   }
   
   case class ModalDialog(html: NodeSeq) extends JsCmd {
-    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(html))).openOr(html)), false).encJs+");"
+    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(html))).openOr(html)), false, true).encJs+");"
   }
 
   case class Run(text: String) extends JsCmd {
@@ -92,6 +92,10 @@ object JsCmds {
   
   case class JsTry(what: JsCmd, alert: Boolean) extends JsCmd {
     def toJsCmd = "try { "+what.toJsCmd+" } catch (e) {"+(if (alert) "alert(e);" else "")+"}"
+  }
+  
+  case class SetValueAndFocus(id: String, value: String) extends JsCmd {
+    def toJsCmd = "jQuery('#"+id+"').attr('value', "+value.encJs+"); document.getElementById("+id.encJs+").focus();"
   }
   
   case class RedirectTo(where: String) extends JsCmd {

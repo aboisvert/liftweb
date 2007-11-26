@@ -25,10 +25,12 @@ class Ajax {
           <span>Click me to increase the count (currently <span id='cnt_id'>0</span>)</span>) // a link that does AJAX to increment a counter server-side and displays the result on the client
     } <br />
 
+    <div id="dogs"></div>
+
     <div id="messages"></div>
     {
       val opts = (1 to 50).toList.map(i => (i.toString, i.toString)) // build the options
-      ajaxSelect(opts, Full(1.toString), v => DisplayMessage("messages", Text("You selected "+v), 5 seconds, 1 second))
+      ajaxSelect(opts, Full(1.toString), v => DisplayMessage("messages", Text("You selected "+v) ++ <span>&nbsp;From the select box</span>, 5 seconds, 1 second))
     } <br />
     {
       ajaxText("", v => DisplayMessage("messages", Text("You entered some text: "+v), 4 seconds, 1 second))

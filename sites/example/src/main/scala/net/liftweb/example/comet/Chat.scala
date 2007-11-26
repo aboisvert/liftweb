@@ -11,12 +11,13 @@ import net.liftweb.util._
 import net.liftweb.http.js._
 import JsCmds._
 
+
 class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
       CometActor(theSession, name, defaultXml, attributes) {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
   def defaultPrefix = "chat"
-
+    
   private val server = {
     val ret = ChatServer.server
     (ret !? ChatServerAdd(this)) match {
@@ -28,10 +29,10 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
 
   override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender(false)} 
   
-  override lazy val fixedRender = {
+  override lazy val fixedRender: Can[NodeSeq] = {
     val n = "id"+randomString(10)
-    val text = S.text("", in => in.trim match {case in if in.length > 0 => sendMessage(in) case _ =>}) % ("id" -> n)
-    Full(ajaxForm(Run("setTimeout(function() {jQuery('#"+n+"').attr('value', ''); document.getElementById("+n.encJs+").focus();}, 100);"), text ++ <input type="submit" value="Chat"/> ))
+    ajaxForm(After(100, SetValueAndFocus(n, "")), 
+        (S.text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )
   }
   
   
@@ -50,11 +51,13 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
   
   def waitForUpdate : Option[List[ChatLine]] = receiveWithin(100) {case ChatServerUpdate(l) => Some(l) case TIMEOUT => None}
   
-  def sendMessage(msg: String) {
+  def sendMessage(msg: String) = msg.trim match {
+    case msg if msg.length > 0 => 
     server ! ChatServerMsg(userName, msg)
     waitForUpdate match {
       case Some(l : List[ChatLine]) => currentData = l ; reRender(false)
       case _ => 
     }
+    case _ =>
   }
 }

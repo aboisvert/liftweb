@@ -8,12 +8,12 @@ package net.liftweb.util
 
 import scala.xml.parsing.{MarkupParser, MarkupHandler, FatalError, ConstructingHandler, ExternalSources}
 import scala.xml.dtd._
-import scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, NamespaceBinding, Node, SpecialNode, Text, TopScope}
+import scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, NamespaceBinding, Node, SpecialNode, Text, TopScope, EntityRef}
 import scala.io.{Source}
 import java.io.{InputStream}
 
 object HtmlEntities {
-  val entities = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),
+  val entList = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),
       ("euro",8364), ("brvbar",166), ("sect",167), ("uml",168), ("copy",169), ("ordf",170), ("laquo",171), ("shy",173), ("reg",174), ("trade",8482), 
       ("macr",175), ("deg",176), ("plusmn",177), ("sup2",178), ("sup3",179), ("acute",180), ("micro",181), ("para",182), ("middot",183), ("cedil",184), 
       ("sup1",185), ("ordm",186), ("raquo",187), ("frac14",188), ("frac12",189), ("frac34",190), ("iquest",191), ("times",215), ("divide",247), 
@@ -39,7 +39,11 @@ object HtmlEntities {
       ("Sigma",931), ("Tau",932), ("Upsilon",933), ("Phi",934), ("Chi",935), ("Psi",936), ("Omega",937), ("alpha",945), ("beta",946), ("gamma",947), 
       ("delta",948), ("epsilon",949), ("zeta",950), ("eta",951), ("theta",952), ("iota",953), ("kappa",954), ("lambda",955), ("mu",956), ("nu",957), 
       ("xi",958), ("omicron",959), ("pi",960), ("rho",961), ("sigmaf",962), ("sigma",963), ("tau",964), ("upsilon",965), ("phi",966), ("chi",967), 
-      ("psi",968), ("omega",969), ("thetasym",977), ("upsih",978), ("piv",982)).
+      ("psi",968), ("omega",969), ("thetasym",977), ("upsih",978), ("piv",982))
+   
+  val entMap: Map[String, Char] = Map.empty ++ entList.map{ case (name, value) => (name, value.toChar)}
+  
+  val entities = entList.
         map{case (name, value) => (name, new ParsedEntityDecl(name, new IntDef(value.toChar.toString)))}
    def apply() = entities
 }
@@ -123,12 +127,13 @@ case class PCData(_data: String) extends Atom[String](_data) {
 }
 
 object AltXML {
-  def toXML(n: Node, stripComment: Boolean): String = {
+  def toXML(n: Node, stripComment: Boolean, convertAmp: Boolean): String = {
     val sb = new StringBuilder()
-    toXML(n, TopScope, sb, stripComment)
+    toXML(n, TopScope, sb, stripComment, convertAmp)
     sb.toString()
   }
 
+  // val amper = RE("&([a-zA-Z0-9]+);")
 
   /** 
    * Appends a tree to the given stringbuffer within given namespace scope.
@@ -138,17 +143,23 @@ object AltXML {
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean): Unit = {
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, stripComment: Boolean, convertAmp: Boolean): Unit = {
     x match {
 
       case c: Comment if !stripComment =>
         c.toString(sb)
 
+      case er: EntityRef if convertAmp =>
+        HtmlEntities.entMap.get(er.entityName) match {
+          case Some(chr) if chr.toInt >= 128 => sb.append(chr)
+          case _ => er.toString(sb)
+        }
+      
       case x: SpecialNode =>
         x.toString(sb)
 
       case g: Group =>
-        for (c <- g.nodes) toXML(c, x.scope, sb, stripComment)
+        for (c <- g.nodes) toXML(c, x.scope, sb, stripComment, convertAmp)
 
       case _  =>
         if (((x.child eq null) || (x.child.length == 0)) && x.label != "div" && x.label != "script" && x.label != "textarea") {
@@ -164,7 +175,7 @@ object AltXML {
         if (x.attributes ne null) x.attributes.toString(sb)
         x.scope.toString(sb, pscope)
         sb.append('>')
-        sequenceToXML(x.child, x.scope, sb, stripComment)
+        sequenceToXML(x.child, x.scope, sb, stripComment, convertAmp)
         sb.append("</")
         x.nameToString(sb)
         sb.append('>')
@@ -179,20 +190,20 @@ object AltXML {
    * @param stripComment ...
    */
   def sequenceToXML(children: Seq[Node], pscope: NamespaceBinding,
-                    sb: StringBuilder, stripComment: Boolean): Unit = {
+                    sb: StringBuilder, stripComment: Boolean, convertAmp: Boolean): Unit = {
     if (children.isEmpty)
       return
     else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
-      toXML(f, pscope, sb, stripComment)
+      toXML(f, pscope, sb, stripComment, convertAmp)
       while (it.hasNext) {
         val x = it.next
         sb.append(' ')
-        toXML(x, pscope, sb, stripComment)
+        toXML(x, pscope, sb, stripComment, convertAmp)
       }
     } else {
-      for (c <- children) toXML(c, pscope, sb, stripComment)
+      for (c <- children) toXML(c, pscope, sb, stripComment, convertAmp)
     }
   }
   

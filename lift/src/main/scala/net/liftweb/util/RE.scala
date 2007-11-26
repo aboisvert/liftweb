@@ -65,12 +65,24 @@ object REMatcher {
 class REMatcher(val str: String,val compiled: Pattern) {
   private val matcher = compiled.matcher(str)
   
-  val matches = matcher.find
+  lazy val matches = matcher.find
 
-  val matchStr: Can[String] = if (matches) Full(str.substring(matcher.start, matcher.end))
+  lazy val matchStr: Can[String] = if (matches) Full(str.substring(matcher.start, matcher.end))
                  else Empty
 
-  lazy val capture = map{s => s}
+  lazy val capture = map(s => s)
+  
+  def foreach(func: (String, List[String]) => Unit): Unit = 
+  {
+     var pos = 0
+     matcher.reset
+     val m = matcher
+     while (matcher.find) {
+       func(str.substring(pos, m.start), (0 to m.groupCount).toList.map(i => m.group(i)))
+       pos = matcher.end
+     }
+     func(str.substring(pos), Nil)
+  }
 
   def map[T](f : (String) => T): List[T] = synchronized {
     val ab = new ListBuffer[T]
