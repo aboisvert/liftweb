@@ -530,7 +530,7 @@ object S {
       val funcName = mapFunc(func) 
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.value, dataType: 'script'});"))
+        ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
     }
     
     def ajaxCheckbox(value: Boolean, func: String => Any): Elem = ajaxCheckbox_*(value, SFuncHolder(func))

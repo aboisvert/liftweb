@@ -28,16 +28,16 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
 
   override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender(false)} 
   
-  override lazy val fixedRender: Can[NodeSeq] = {
+  override lazy val fixedRender = {
     val n = "id"+randomString(10)
     val text = S.text("", in => in.trim match {case in if in.length > 0 => sendMessage(in) case _ =>}) % ("id" -> n)
     Full(ajaxForm(Run("setTimeout(function() {jQuery('#"+n+"').attr('value', ''); document.getElementById("+n.encJs+").focus();}, 100);"), text ++ <input type="submit" value="Chat"/> ))
   }
   
   
-  override def render = RenderOut(Full(<span>Hello "{userName}"
+  override def render = (<span>Hello "{userName}"
     <ul>{currentData.reverse.flatMap(cl => <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)}</ul>
-    </span>), fixedRender, Empty, Empty)
+    </span>)
   
   override def localSetup {
     if (userName.length == 0) {
