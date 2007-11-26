@@ -29,13 +29,13 @@ class Boot {
     
     val dispatcher: LiftServlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
-      case RequestMatcher(_, ParsePath("showcities":: _, _, _), _) => XmlServer.showCities
+      case RequestMatcher(_, ParsePath("showcities":: _, _, _),_,  _) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestMatcher(_, ParsePath("showstates":: xs, _, _), _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+      case RequestMatcher(_, ParsePath("showstates":: xs, _, _),_,  _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
       
       // if it's a web service, pass it to the web services invoker
-      case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_), _) => invokeWebService(r, c)
+      case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_),_, _) => invokeWebService(r, c)
     }
     LiftServlet.addDispatchBefore(dispatcher)
     

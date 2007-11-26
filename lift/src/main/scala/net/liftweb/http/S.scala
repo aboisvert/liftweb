@@ -9,14 +9,14 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
 import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
 import Helpers._
 import js._
 import java.io.InputStream
-import java.util.Locale
+import java.util.{Locale, ResourceBundle}
 
 /**
  * An object representing the current state of the HTTP request and response
@@ -42,7 +42,8 @@ object S {
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
-
+  private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
+  
   /**
    * Get the current RequestState
    *
@@ -69,27 +70,11 @@ object S {
   case rw: List[RewriteHolder] => rw
   case _ => Nil
 })
-/*_servletRequest.value match {
-    case null => Nil
-    case r => r.getSession.getAttribute(LiftServlet.SessionRewriteTableName) match {
-      case rw: List[RewriteHolder] => rw
-      case _ => Nil
-    }
-  }
-  */
     
   def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionDispatchTableName) match {
   case rw: List[DispatchHolder] => rw
   case _ => Nil
 })
-  /*
-  _servletRequest.value match {
-    case null => Nil
-    case r => r.getSession.getAttribute(LiftServlet.SessionDispatchTableName) match {
-      case rw: List[DispatchHolder] => rw
-      case _ => Nil
-    }
-  }*/
 
   /**
    * Returns the Locale for this request based on the HTTP request's 
@@ -109,102 +94,59 @@ object S {
     case li: List[DispatchHolder] => li
     case _ => Nil
   })
-/*  _servletRequest.value match {
-  case null => Nil
-  case r => r.getSession.getAttribute(HighLevelSessionDispatchTableName) match {
-    case null => Nil
-    case li: List[DispatchHolder] => li
-    case _ => Nil
-  }
-  }    
-  */
     
   val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
   def addHighLevelSessionDispatcher(name: String, disp: LiftServlet.DispatchPf) = 
     servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name)))
-  /*{
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name))
-    }    
-  }*/
   
   def removeHighLevelSessionDispatcher(name: String) =
     servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, highLevelSessionDispatchList.filter(_.name != name)))
-  /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(HighLevelSessionDispatchTableName, highLevelSessionDispatchList.filter(_.name != name))
-    }    
-  }*/
   
   def addSessionTemplater(name: String, rw: LiftServlet.TemplatePf) =
     servletSession.foreach(_.setAttribute(LiftServlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
-  /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(LiftServlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name))
-    }
-  }*/
   
   def addSessionRewriter(name: String, rw: LiftServlet.RewritePf) =
   servletSession.foreach(_.setAttribute(LiftServlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name)))
-    /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(LiftServlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name))
-    }
-  }*/
 
   def removeSessionRewriter(name: String) =
     servletSession.foreach(_.setAttribute(LiftServlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name)))
-    /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(LiftServlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name))
-    }
-  }*/
   
   def removeSessionTemplater(name: String) =
   servletSession.foreach(_.setAttribute(LiftServlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
-  /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(LiftServlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name))
-    }
-  }  */
 
   def addSessionDispatcher(name: String, rw: LiftServlet.DispatchPf) =
     servletSession.foreach(_.setAttribute(LiftServlet.SessionDispatchTableName, DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)))
-    /*
-    
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => val newDisp = DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)
-        r.getSession.setAttribute(LiftServlet.SessionDispatchTableName, newDisp)
-    }
-  }*/
 
   def removeSessionDispatcher(name: String) =
   servletSession.foreach(_.setAttribute(LiftServlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name)))
-  /*
-  {
-    _servletRequest.value match {
-    case null => 
-    case r => r.getSession.setAttribute(LiftServlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name))
-    }
-  }*/
   
   /**
    * Test the current request to see if it's a POST
    */
   def post_? = request.map(_.post_?).openOr(false)
+      
+  /**
+    * Localize the incoming string based on a resource bundle for the current locale
+    * @param str the string or ID to localize
+    * @param dflt the default string to return if localization fails
+    *
+    * @return the localized string
+    */
+  def loc(str: String, dflt: NodeSeq): NodeSeq = {
+      val rb = _resBundle.value match {
+        case null => val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
+        _resBundle.set(rb)
+        rb
+        case s => s
+      }
+      rb.flatMap(r => tryo(r.getObject(str) match {
+        case s: String => Full(Text(s))
+        case g: Group => Full(g)
+        case e: Elem => Full(e)
+        case ns: NodeSeq => Full(ns)
+        case _ => Empty
+      }).flatMap(s => s)).openOr(dflt)
+    }
       
   /**
    * Test the current request to see if it's a GET
@@ -244,10 +186,10 @@ object S {
     }
   }
   
-  def session: Can[LiftSession] = _sessionInfo.value match {
+  def session: Can[LiftSession] = _sessionInfo.value /* match {
     case null => Empty
     case s => Full(s)
-  }
+  }*/
   
   def logQuery(query: String, time: Long) {
     _queryLog.value match {
@@ -292,6 +234,7 @@ object S {
       _requestVar.doWith(new HashMap) {
     _attrs.doWith(new HashMap) {
     snippetMap.doWith(new HashMap) {
+      _resBundle.doWith(null) {
       inS.doWith(true) {
           initNotice {
             _functionMap.doWith(new HashMap[String, AFuncHolder]) {
@@ -303,6 +246,7 @@ object S {
             }
           }
       }
+      }
     }
       }
     }) )
@@ -310,7 +254,7 @@ object S {
   }
   
   private[http] object requestState {
-    private def rv: Can[HashMap[String, Any]] = _requestVar.value match {case null => Empty case v => Full(v)}
+    private def rv: Can[HashMap[String, Any]] = _requestVar.value //  match {case null => Empty case v => Full(v)}
     
     def apply[T](name: String): Can[T] = rv.flatMap(r => Can(r.get(name).asInstanceOf[Option[T]]))
     
@@ -319,27 +263,6 @@ object S {
     def clear(name: String): Unit = rv.foreach(_ -= name) 
   }
   
-/*
-  object state {
-    def apply(name: String): Can[String] = _stateInfo.value match {
-      case null => Empty
-      case v => v(name)
-    }
-    def update(name: String, value: String) {_stateInfo.value match
-      {
-      case null => 
-      case v => v(name) = value
-      }
-    }
-    def -=(name: String) {
-      _stateInfo.value match {
-        case null =>
-        case v => v -= name
-      }
-    }
-  }
-  */
-
   object attr {
     def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
     def update(what: String, value: String) = S._attrs.value(what) = value
@@ -367,21 +290,7 @@ object S {
   }
   
   def get(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty}) 
-/*{
-    val sr = _servletRequest.value
-    if (sr eq null) Empty
-    else {
-      val ses = sr.getSession
-      if (ses eq null) Empty
-      else {
-      val ret = ses.getAttribute(what)
-      if (ret eq null) Empty
-      else if (ret.isInstanceOf[String]) Full(ret.toString)
-      else Empty
-      }
-    }
-  }
-  */
+
 
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(_servletRequest.value match {
     case null => Empty
@@ -394,37 +303,19 @@ object S {
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
   def set(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value)) 
-  /*{
-    if (_servletRequest.value ne null) {
-      _servletRequest.value.getSession.setAttribute(name, value)
-    }
-  }*/
+
   
   def unset(name: String) = servletSession.foreach(_.removeAttribute(name))
-/*
-{
-    if (_servletRequest.value ne null) {
-      _servletRequest.value.getSession.removeAttribute(name)
-    }
-  }
-  */
 
-  def servletRequest: Can[HttpServletRequest] = _servletRequest.value match {
+  def servletRequest: Can[HttpServletRequest] = _servletRequest.value /* match {
     case null => Empty
     case r => Full(r)
-  }
+  }*/
   
   def hostName: String = servletRequest.map(_.getServerName).openOr("nowhere_123.com")
-  /*match {
-    case null => "nowhere_123.com"
-    case r => r.getServerName 
-  }*/
+
   
   def hostAndPath: String = servletRequest.map(r => r.getScheme + "://"+r.getServerName+":"+r.getServerPort+r.getContextPath).openOr("")
-  /*  match {
-    case null => ""
-    case r => r.getScheme+"://"+r.getServerName+":"+r.getServerPort+r.getContextPath
-  }*/
   
   def functionMap: Map[String, AFuncHolder] = {
     _functionMap.value match {

@@ -94,6 +94,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     }
   }
   
+  /*
   private def doServiceFile(url: URL, request : HttpServletRequest , response : HttpServletResponse) {
     val uc = url.openConnection
     val mod = request.getHeader("if-modified-since")
@@ -142,7 +143,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       in.close
     }
   }
-  
+  */
   
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getValue(actorNameConst) match {
@@ -202,7 +203,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     
 
     val sessionActor = getActor(session, request.getSession)    
-    val toMatch = RequestMatcher(session, session.path, sessionActor)
+    val toMatch = RequestMatcher(session, session.path, RequestType(request), sessionActor)
     
       val resp: Response = if (LiftServlet.ending) {
         session.createNotFound.toResponse
@@ -416,6 +417,11 @@ object LiftServlet {
       "text/html"
     }
   }
+  
+  /**
+    * The base name of the resource bundle
+    */
+  var resourceName = "lift"
 
   /**
     * Where to send the user if there's no comet session

@@ -167,7 +167,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     S.init(request, httpRequest, notices,this) {
       try {
 	val sessionDispatch = S.highLevelSessionDispatcher
-	val toMatch = RequestMatcher(request, request.path, this)        
+	val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), this)        
 	if (sessionDispatch.isDefinedAt(toMatch)) {
 	  runParams(request)
 	  sessionDispatch(toMatch)(httpRequest) match {
@@ -233,7 +233,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
-    val toMatch = RequestMatcher(session, session.path, this)
+    val toMatch = RequestMatcher(session, session.path, session.requestType, this)
     val templ = LiftServlet.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
       case ns @ Full(_) => ns 
@@ -247,12 +247,6 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     }
   }
   
-  /*
-  def currentVars: Map[String, String] = (this !? (500L, CurrentVars)) match {
-    case Some(s: Map[String, String]) => s
-    case _ => Map.empty
-  }*/
-  
   private def findTemplate(name: String) : Can[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
       case Nil => List("index")
@@ -265,11 +259,16 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 
   private val suffixes = List("", "html", "xhtml", "htm")
   
+  private def locales: List[String] = {
+    val locale = S.locale
+    "_"+locale.toString :: "_"+locale.getLanguage :: "" :: Nil
+  }
+  
   def findAnyTemplate(places : List[String]) : Can[NodeSeq] = {
     val pls = places.mkString("/","/", "")
-    val toTry = suffixes.map(s => pls + (if (s.length > 0) "." + s else ""))
-    
-    first(toTry)(LiftServlet.finder(_).flatMap(PCDataXmlParser(_))) or lookForClasses(places)
+    val toTry = for (s <- suffixes; p <- locales) yield p + pls + p + (if (s.length > 0) "." + s else "")
+
+    first(toTry)(v => LiftServlet.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
   }  
   
   private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
@@ -424,7 +423,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => processSurroundAndInclude(findAndEmbed(Can(attr.get("what")), kids))
 	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
 	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
-	  // case Elem("lift", "vars", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(kids))
+          case Elem("lift", "loc", attr @ _, _, kids @ _ *) => attr.filter(_.key == "id").toList match {case id :: _ => S.loc(id.value.text, kids) case _ => S.loc(kids.text, kids)}
 	  case Elem("lift", "a", attr @ _, scope @ _, kids @ _*) => Elem(null, "a", addAjaxHREF(attr), scope, processSurroundAndInclude(kids): _*)
 	  case Elem("lift", "form", attr @ _, scope @ _, kids @ _*) => Elem(null, "form", addAjaxForm(attr), scope, processSurroundAndInclude(kids): _*)
 	  case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(v.child) : _*)

@@ -32,6 +32,8 @@ case object DeleteRequest extends RequestType {
   override def delete_? = true
 }
 
+case class UnkownRequest(method: String) extends RequestType
+
 object RequestType {
   def apply(req: HttpServletRequest): RequestType = {
     /*
@@ -46,6 +48,7 @@ object RequestType {
       case "HEAD" => HeadRequest
       case "PUT" => PutRequest
       case "DELETE" => DeleteRequest
+      case meth => UnkownRequest(meth)
     }
   }
 }

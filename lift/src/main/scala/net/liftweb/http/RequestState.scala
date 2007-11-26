@@ -238,6 +238,6 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
   
 }
 
-case class RequestMatcher(request: RequestState, path: ParsePath, session: LiftSession)
+case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: LiftSession)
 case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
 case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])

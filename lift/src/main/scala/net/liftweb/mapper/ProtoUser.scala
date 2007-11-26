@@ -153,14 +153,14 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     MenuItem("Log Out", Logout, true) :: MenuItem("Edit Profile", Edit, true) :: MenuItem("", ValidateUser, false) :: Nil
     
     def templates: LiftServlet.TemplatePf = {
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _), _) if testLoggedIn(w) => () => signup
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ Login) :: _, _, _), _) if testLoggedIn(w) => () => login
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ LostPassword) :: _, _, _), _) if testLoggedIn(w) => () => lostPassword
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ PasswordReset) :: id :: _, _, _), _) if testLoggedIn(w) => () => passwordReset(id)
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ ChangePassword) :: _, _, _), _) if testLoggedIn(w) => () => changePassword
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ Logout) :: _, _, _), _) if testLoggedIn(w) => () => logout
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ Edit) :: _, _, _), _) if testLoggedIn(w) => () => edit
-      case RequestMatcher(_, ParsePath(BasePath :: (w @ ValidateUser) :: id :: _, _, _), _) if testLoggedIn(w) => () => validateUser(id)
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _), _, _) if testLoggedIn(w) => () => signup
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ Login) :: _, _, _), _, _) if testLoggedIn(w) => () => login
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ LostPassword) :: _, _, _), _, _) if testLoggedIn(w) => () => lostPassword
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ PasswordReset) :: id :: _, _, _),_ ,_) if testLoggedIn(w) => () => passwordReset(id)
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ ChangePassword) :: _, _, _),_ ,_) if testLoggedIn(w) => () => changePassword
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ Logout) :: _, _, _), _, _) if testLoggedIn(w) => () => logout
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ Edit) :: _, _, _), _, _) if testLoggedIn(w) => () => edit
+      case RequestMatcher(_, ParsePath(BasePath :: (w @ ValidateUser) :: id :: _, _, _), _, _) if testLoggedIn(w) => () => validateUser(id)
     }
     
     def requestLoans: List[LoanWrapper] = List(curUser)
@@ -237,7 +237,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       
       def innerSignup = bind("user", signupXhtml(theUser), "submit" --> submit("Sign Up", testSignup))
 
-      S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _), _) if testLoggedIn(w) => 
+      S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _, _, _),_ ,_) if testLoggedIn(w) => 
         () => innerSignup})
       innerSignup
     }
@@ -424,7 +424,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       
       def innerEdit = bind("user", editXhtml(theUser), "submit" --> submit("Edit", testEdit))
 
-      S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ Edit) :: _, _, _), _) if testLoggedIn(w) => 
+      S.addSessionTemplater(theName, {case RequestMatcher(_, ParsePath(BasePath :: (w @ Edit) :: _, _, _),_ ,_) if testLoggedIn(w) => 
         () => innerEdit})
       innerEdit
     }
