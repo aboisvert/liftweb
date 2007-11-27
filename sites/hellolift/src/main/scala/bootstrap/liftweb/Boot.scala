@@ -15,12 +15,22 @@ import com.hellolift.model._
   */
 class Boot {
   def boot {
-    DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
+    // add the connection manager if there's not already a JNDI connection defined
+    if (DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
+    
+    // add the com.hellolift package to the list packages
+    // searched for Snippets, CometWidgets, etc.
     LiftServlet.addToPackages("com.hellolift")
      
+    // Update the database schema to be in sync
     Schemifier.schemify(true, Log.infoF _, User, Entry)
+    
+    // Add a template handler to requests that come in for User related
+    // function (e.g., log in, log out, etc.) are handled appropriately
     LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
     
+    // The locale is either calculated based on the incoming user or
+    // based on the http request
     LiftServlet.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftServlet.defaultLocaleCalculator(r))
 
     // Build SiteMap
@@ -29,6 +39,8 @@ class Boot {
     User.sitemap ::: Entry.sitemap
 
     LiftServlet.setSiteMap(SiteMap(entries:_*))
+    
+    // lazily load the current user on a request-by-request basis
     S.addAround(User.requestLoans)    
   }
 }

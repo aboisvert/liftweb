@@ -178,7 +178,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     
     def currentUser: Can[ModelType] = curUser.get
     
-    def signupXhtml(user: ModelType) = (<form method="POST" action={S.action}><table><tr><td colspan="2">Sign Up</td></tr>
+    def signupXhtml(user: ModelType) = (<form method="POST" action={S.uri}><table><tr><td colspan="2">Sign Up</td></tr>
     {localForm(user, false)}
     <tr><td>&nbsp;</td><td><user:submit/></td></tr>
     </table></form>)
@@ -263,7 +263,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       case _ => S.error("Validation link invalid"); S.redirectTo(HomePage)
     }
     
-    def loginXhtml = (<form method="POST" action={S.action}><table><tr><td colspan="2">Log In</td></tr>
+    def loginXhtml = (<form method="POST" action={S.uri}><table><tr><td colspan="2">Log In</td></tr>
     <tr><td>EMail Address</td><td><user:email /></td></tr>
     <tr><td>Password</td><td><user:password /></td></tr>
     <tr><td><a href={"/"+BasePath+"/"+LostPassword}>Recover Password</a></td><td><user:submit /></td></tr></table>
@@ -292,7 +292,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
            "submit" --> (<input type="submit" value="Log In"/>))
     }
     
-    def lostPasswordXhtml = (<form method="POST" action={S.action}>
+    def lostPasswordXhtml = (<form method="POST" action={S.uri}>
     <table><tr><td colspan="2">Enter your email address and we'll email you a link to reset your password</td></tr>
     <tr><td>Email address</td><td><user:email /></td></tr>
     <tr><td>&nbsp;</td><td><user:submit /></td></tr>
@@ -345,7 +345,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       bind("user", lostPasswordXhtml, "email" --> text("", sendPasswordReset _), "submit" --> <input type="Submit" value="Send It" />)
     }
     
-    def passwordResetXhtml = (<form method="POST" action={S.action}>
+    def passwordResetXhtml = (<form method="POST" action={S.uri}>
     <table><tr><td colspan="2">Reset your password</td></tr>
     <tr><td>Enter your new password</td><td><user:pwd/></td></tr>
     <tr><td>Enter your new password (repeat)</td><td><user:pwd/></td></tr>
@@ -369,7 +369,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       case _ => S.error("Password reset link invalid"); S.redirectTo(HomePage)
     }
     
-    def changePasswordXhtml = (<form method="POST" action={S.action}>
+    def changePasswordXhtml = (<form method="POST" action={S.uri}>
     <table><tr><td colspan="2">Change Password</td></tr>
     <tr><td>Old Password</td><td><user:old_pwd /></td></tr>
     <tr><td>New Password</td><td><user:new_pwd /></td></tr>
@@ -400,7 +400,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
            "submit" --> submit("Change", testAndSet _))
     }
     
-    def editXhtml(user: ModelType) = (<form method="POST" action={S.action}>
+    def editXhtml(user: ModelType) = (<form method="POST" action={S.uri}>
     <table><tr><td colspan="2">Edit</td></tr>
     {localForm(user, true)}
     <tr><td>&nbsp;</td><td><user:submit/></td></tr>

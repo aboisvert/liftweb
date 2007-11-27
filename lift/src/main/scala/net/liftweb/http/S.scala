@@ -24,6 +24,9 @@ import java.util.{Locale, ResourceBundle}
  * local session info without passing a huge state construct around
  */
 object S {
+  /**
+    * Holds the partial function that re-write an incoming request
+    */
   case class RewriteHolder(name: String, rewrite: LiftServlet.RewritePf)
   case class DispatchHolder(name: String, dispatch: LiftServlet.DispatchPf)
   case class TemplateHolder(name: String, template: LiftServlet.TemplatePf)
@@ -52,23 +55,36 @@ object S {
    */
   def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
   
+  /**
+    * Gets the list of templaters (partial functions that match and return a template rather than
+    * loading a template from a file or a class)
+    */
   def sessionTemplater: List[TemplateHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionTemplateTableName) match {
     case rw: List[TemplateHolder] => rw
     case _ => Nil
   })
 
   
-  def action: String = request.map(_.uri).openOr("")
+  /**
+    * Returns the Action (uri) for the current render scope
+    */
+  // def action: String = request.map(_.uri).openOr("")
   
+  /**
+    * Returns session-specific request re-writers
+    */
   def sessionRewriter: List[RewriteHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionRewriteTableName) match {
   case rw: List[RewriteHolder] => rw
   case _ => Nil
-})
+  })
     
+  /**
+    * Returns a list of session-specific dispatchers
+    */
   def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionDispatchTableName) match {
   case rw: List[DispatchHolder] => rw
   case _ => Nil
-})
+  })
 
   /**
    * Returns the Locale for this request based on the HTTP request's 
@@ -83,6 +99,7 @@ object S {
     case x :: Nil => x
     case x :: xs => x orElse reduxio(xs)
   }
+  
   def highLevelSessionDispatcher: LiftServlet.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
   def highLevelSessionDispatchList: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(HighLevelSessionDispatchTableName) match {
     case li: List[DispatchHolder] => li
@@ -125,7 +142,7 @@ object S {
      *
      * @return the localized XML or Empty if there's no way to do localization
      */
-   def loc(str: String): Can[NodeSeq] = {
+   def loc(str: String): Can[NodeSeq] =
        resourceBundle.flatMap(r => tryo(r.getObject(str) match {
      case null => LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
      case s: String => Full(Text(s))
@@ -134,7 +151,6 @@ object S {
      case ns: NodeSeq => Full(ns)
      case x => Full(Text(x.toString))
    }).flatMap(s => s))
-  }
 
      /**
        * Get the resource bundle for the current locale
@@ -175,24 +191,20 @@ object S {
    * Test the current request to see if it's a GET
    */
   def get_? = request.map(_.get_?).openOr(false)
-      
+
+   /**
+     * The URI of the current request (not re-written)
+     */
   def uri: String = request.map(_.uri).openOr("/")
   
-  def redirectTo[T](where: String): T = {throw new RedirectException("Not Found", where)}
+  /**
+    * Redirect the browser to a given URL
+    */
+  def redirectTo[T](where: String): T = throw new RedirectException("Not Found", where)
   
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
   
   private val currCnt = new ThreadGlobal[Int]
-  
-  /**
-    * A string with the "next count"
-    */
-      /*
-  def nextCount(): String = {
-    val n = currCnt.value
-    currCnt := n + 1
-    String.format("%06d", Array(new java.lang.Integer(n)))
-  }*/
   
   private def initNotice[B](f: => B): B = {
     _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq)])(f)
@@ -208,18 +220,17 @@ object S {
     }
     }
   }
+
+  /**
+    * The current LiftSession
+    */
+  def session: Can[LiftSession] = _sessionInfo.value
   
-  def session: Can[LiftSession] = _sessionInfo.value /* match {
-    case null => Empty
-    case s => Full(s)
-  }*/
-  
-  def logQuery(query: String, time: Long) {
-    _queryLog.value match {
-      case null =>
-      case lb => lb += (query, time)
-    }
-  }
+  /**
+    * Log a query for the given request.  The query log can be tested to see
+    * if queries for the particular page rendering took too long
+    */
+  def logQuery(query: String, time: Long) = Can(_queryLog.value).foreach(_ += (query, time))
   
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
     Can(_stateSnip.value).flatMap(_.get(cls))
@@ -228,7 +239,10 @@ object S {
     Can(_stateSnip.value).foreach(_(cls) = inst)
   
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
-  
+
+  /**
+    * Add a query analyzer (passed queries for analysis or logging)
+    */
   def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
@@ -238,12 +252,17 @@ object S {
     case x :: xs => x(doAround(xs, f))
   }
   
+  /**
+    * You can wrap the handling of an HTTP request with your own wrapper.  The wrapper can
+    * execute code before and after the request is processed (but still have S scope).
+    * This allows for query analysis, etc.
+    */  
   def addAround(lw: List[LoanWrapper]): Unit = aroundRequest = lw ::: aroundRequest 
   
-  def queryLog: List[(String, Long)] = _queryLog.value match {
-    case null => Nil
-    case lb => lb.toList
-  }
+  /**
+    * Get a list of the logged queries
+    */
+  def queryLog: List[(String, Long)] = Can(_queryLog.value).map(_.toList).openOr(Nil)
   
   private def wrapQuery[B](f:() => B): B = {
     _queryLog.doWith(new ListBuffer) {
@@ -338,23 +357,29 @@ object S {
   
   def unset(name: String) = servletSession.foreach(_.removeAttribute(name))
 
-  def servletRequest: Can[HttpServletRequest] = _servletRequest.value /* match {
-    case null => Empty
-    case r => Full(r)
-  }*/
+  /**
+    * The current servlet request
+    */
+  def servletRequest: Can[HttpServletRequest] = Can(_servletRequest.value)
   
+  /**
+    * The host that the request was made on
+    */
   def hostName: String = servletRequest.map(_.getServerName).openOr("nowhere_123.com")
 
-  
+  /**
+    * The host and path of the quest
+    */
   def hostAndPath: String = servletRequest.map(r => r.getScheme + "://"+r.getServerName+":"+r.getServerPort+r.getContextPath).openOr("")
+
+  /**
+    * Get a map of the name/functions
+    */
+  def functionMap: Map[String, AFuncHolder] = Can(_functionMap.value).map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
   
-  def functionMap: Map[String, AFuncHolder] = {
-    _functionMap.value match {
-      case null => Map.empty
-      case s => Map(s.elements.toList :_*)
-    }
-  }
-  
+  /**
+    * The current context path
+    */
   def contextPath = session.map(_.contextPath).openOr("")  
   
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
@@ -365,15 +390,10 @@ object S {
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
 
   
-  def addFunctionMap(name: String, value: AFuncHolder) {
-    _functionMap.value += (name -> value)
-  }
+  def addFunctionMap(name: String, value: AFuncHolder) = _functionMap.value += (name -> value)
 
 
-  private def booster(lst: List[String], func: String => Any): Boolean  = {
-    lst.foreach(v => func(v))
-    true
-  }
+  private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
   
   private def makeFormElement(name: String, func: AFuncHolder): Elem = (<input type={name} name={mapFunc(func)}/>)
  
@@ -391,9 +411,15 @@ object S {
     
     def a(body: NodeSeq)(func: => Any): Elem = a(() => func, body)
     
-    def a(body: NodeSeq, cmd: JsCmd*): Elem = (<a href="#" onclick={cmd.map(_.toJsCmd).mkString(" ") + "return false;"}>{body}</a>)
+    /**
+      * Create an anchor that will run a JavaScript command when clicked
+      */
+    def a(body: NodeSeq, cmd: JsCmd): Elem = (<a href="#" onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)
 
-    def span(body: NodeSeq, cmd: JsCmd*): Elem = (<span onclick={cmd.map(_.toJsCmd).mkString(" ")}>{body}</span>)
+    /**
+      * Create a span that will run a JavaScript command when clicked
+      */
+    def span(body: NodeSeq, cmd: JsCmd): Elem = (<span onclick={cmd.toJsCmd}>{body}</span>)
     
     /**
       * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
