@@ -56,14 +56,7 @@ object S {
     case rw: List[TemplateHolder] => rw
     case _ => Nil
   })
-  /*
-  _servletRequest.value match {
-    case null => Nil
-    case r => r.getSession.getAttribute(LiftServlet.SessionTemplateTableName) match {
-      case rw: List[TemplateHolder] => rw
-      case _ => Nil
-    }
-  }*/
+
   
   def action: String = request.map(_.uri).openOr("")
   
@@ -125,30 +118,49 @@ object S {
    * Test the current request to see if it's a POST
    */
   def post_? = request.map(_.post_?).openOr(false);
-      
+
   /**
      * Localize the incoming string based on a resource bundle for the current locale
-     * @param str the string or ID to localize (the default value is the 
+     * @param str the string or ID to localize (the default value is the
      *
      * @return the localized XML or Empty if there's no way to do localization
      */
    def loc(str: String): Can[NodeSeq] = {
-     val rb = _resBundle.value match {
-     case null => val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
-     _resBundle.set(rb)
-     rb
-     case s => s
-   }
-   rb.flatMap(r => tryo(r.getObject(str) match {
-     case null => Empty
+       resourceBundle.flatMap(r => tryo(r.getObject(str) match {
+     case null => LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
      case s: String => Full(Text(s))
      case g: Group => Full(g)
      case e: Elem => Full(e)
      case ns: NodeSeq => Full(ns)
      case x => Full(Text(x.toString))
    }).flatMap(s => s))
- }
-      
+  }
+
+     /**
+       * Get the resource bundle for the current locale
+       */
+     def resourceBundle: Can[ResourceBundle] = Can(_resBundle.value).openOr {
+     val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
+     _resBundle.set(rb)
+     rb
+     }
+
+     /**
+       * Get a localized string or return the original string
+       *
+       * @param str the string to localize
+       *
+       * @return the localized version of the string
+       */
+     def ?(str: String): String = resourceBundle.flatMap(r => tryo(r.getObject(str) match 
+         {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
+           openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str}
+     
+     def ?(str: String, params: Any *): String = if (params.length == 0) 
+       ?(str)
+     else
+       String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray) 
+
   /**
     * Localize the incoming string based on a resource bundle for the current locale
     * @param str the string or ID to localize
@@ -157,6 +169,7 @@ object S {
     * @return the localized XHTML or default value
     */
   def loc(str: String, dflt: NodeSeq): NodeSeq = loc(str).openOr(dflt)
+
       
   /**
    * Test the current request to see if it's a GET

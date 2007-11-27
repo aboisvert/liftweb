@@ -94,57 +94,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     }
   }
   
-  /*
-  private def doServiceFile(url: URL, request : HttpServletRequest , response : HttpServletResponse) {
-    val uc = url.openConnection
-    val mod = request.getHeader("if-modified-since")
-    if (mod != null) {
-      val md = parseInternetDate(mod)
-      if (uc.getLastModified <= md.getTime) {
-        response.sendError(304)
-        return
-      }
-    }
-    val in = uc.getInputStream
-    
-    try {
-    val li = request.getRequestURI.lastIndexOf('.')
-    if (li != -1) {
-      response.setContentType(request.getRequestURI.substring(li + 1) match {
-        case "js" => "text/javascript"
-        case "css" => "text/css"
-        case "png" => "image/png"
-        case "gif" => "image/gif"
-        case "ico" => "image/x-icon"
-        case _ => LiftServlet.determineContentType(request)
-      })
-    }
-    
-    response.setDateHeader("Last-Modified", uc.getLastModified)
-
-    val out = response.getOutputStream
-    val ba = new Array[Byte](2048)
-
-    def readAndWrite {
-      val len = in.read(ba)
-      if (len >= 0) {
-        if (len > 0) {
-          out.write(ba, 0, len)
-        }
-        readAndWrite
-      }
-    }
-    
-    // a "while-less" read and write loop
-    readAndWrite
-    
-    out.flush
-    } finally {
-      in.close
-    }
-  }
-  */
-  
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getValue(actorNameConst) match {
       case r: LiftSession => r
@@ -164,13 +113,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     def doIt {
       logTime("Service request "+req.getRequestURI) {
         LiftServlet.early.foreach(_(req))
-        // FIXME need to do for normal servlet Servlet.setContext(getServletContext)
         doService(req, resp, session)
-        /*
-        req.getMethod.toUpperCase match {
-          case "GET" => doGet(req, resp, start)
-          case _ => doService(req, resp, RequestType(req), start)
-        }*/
         }      
     }
     LiftServlet.checkJetty(req) match {
@@ -400,6 +343,12 @@ object LiftServlet {
       case _ => "text/html"
     }
   }
+  
+  
+  /**
+    * The function referenced here is called if there's a localization lookup failure
+    */
+  var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
 
   def determineContentType(request: HttpServletRequest) : String = {
     request match {

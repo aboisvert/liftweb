@@ -49,6 +49,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def beforeDelete: List[(A) => Any] = Nil
   def afterDelete: List[(A) => Any] = Nil
   
+  def afterCommit: List[A => Unit] = Nil
+  
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
   
   def findAll: List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Full(v))
@@ -697,6 +699,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     fixTableName(internalTableName_$_$)
   }
   */
+    
+    
+   private def setupInstanceForPostCommit(inst: A) {
+    if (!inst.addedPostCommit) {
+    DB.appendPostFunc(inst.connectionIdentifier, () => afterCommit.foreach(_(inst)))
+    inst.addedPostCommit = true
+    }
+  }
   
   private def eachField(what: A, toRun: List[(A) => Any])(f: (LifecycleCallbacks) => Any) {
     mappedCallbacks.foreach (e =>
@@ -706,22 +716,22 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
       })
     toRun.foreach{tf => tf(what)}
   }
-  private def _beforeValidation(what: A) {eachField(what, beforeValidation) {field => field.beforeValidation}  }
+  private def _beforeValidation(what: A) {setupInstanceForPostCommit(what); eachField(what, beforeValidation) {field => field.beforeValidation}  }
   private def _beforeValidationOnCreate(what: A) {eachField(what, beforeValidationOnCreate) {field => field.beforeValidationOnCreate}  }
   private def _beforeValidationOnUpdate(what: A) {eachField(what, beforeValidationOnUpdate) {field => field.beforeValidationOnUpdate}  }
-  private def _afterValidation(what: A) {eachField(what, afterValidation) {field => field.afterValidation}  }
+  private def _afterValidation(what: A) { eachField(what, afterValidation) {field => field.afterValidation}  }
   private def _afterValidationOnCreate(what: A) {eachField(what, afterValidationOnCreate) {field => field.afterValidationOnCreate}  }
   private def _afterValidationOnUpdate(what: A) {eachField(what, afterValidationOnUpdate) {field => field.afterValidationOnUpdate}  }
 
-  private def _beforeSave(what: A) {eachField(what, beforeSave) {field => field.beforeSave}  }
-  private def _beforeCreate(what: A) {eachField(what, beforeCreate) {field => field.beforeCreate}  }
-  private def _beforeUpdate(what: A) {eachField(what, beforeUpdate) {field => field.beforeUpdate}  }
+  private def _beforeSave(what: A) {setupInstanceForPostCommit(what); eachField(what, beforeSave) {field => field.beforeSave}  }
+  private def _beforeCreate(what: A) { eachField(what, beforeCreate) {field => field.beforeCreate}  }
+  private def _beforeUpdate(what: A) { eachField(what, beforeUpdate) {field => field.beforeUpdate}  }
 
   private def _afterSave(what: A) {eachField(what, afterSave) {field => field.afterSave}  }
   private def _afterCreate(what: A) {eachField(what, afterCreate) {field => field.afterCreate}  }
   private def _afterUpdate(what: A) {eachField(what, afterUpdate) {field => field.afterUpdate}  }
 
-  private def _beforeDelete(what: A) {eachField(what, beforeDelete) {field => field.beforeDelete}  }
+  private def _beforeDelete(what: A) {setupInstanceForPostCommit(what); eachField(what, beforeDelete) {field => field.beforeDelete}  }
   private def _afterDelete(what: A) {eachField(what, afterDelete) {field => field.afterDelete}  }
 
   def beforeSchemifier {}
