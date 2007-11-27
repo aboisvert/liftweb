@@ -75,7 +75,7 @@ class Wiki {
     
     (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {
       case Some(x) => x
-      case _ => println("nothing!"); <span />
+      case _ => <span />
     }
   }
 
@@ -85,7 +85,7 @@ class Wiki {
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
     val cancelLink = <a href={S.uri+"/"+pageName}>Cancel</a>
     val textarea = entry.entry.toForm
-    val submitButton = S.submit(isNew ? "Add" | "Edit", s => {println("saving the entry: " + entry); entry.save})  
+    val submitButton = S.submit(isNew ? "Add" | "Edit", s => {entry.save})  
     <form method="GET" action={action}>{ // the form tag
           message ++ 
           hobixLink ++ 

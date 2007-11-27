@@ -12,7 +12,9 @@ import Helpers._
 import scala.xml.{NodeSeq, Elem}
   
 trait StatefulSnippet {
-  def dispatch(name: String): Can[NodeSeq => NodeSeq]
+  type DispatchIt = PartialFunction[String, NodeSeq => NodeSeq]
+  
+  def dispatch: DispatchIt
   
   private[http] var snippetName: String = ""
     

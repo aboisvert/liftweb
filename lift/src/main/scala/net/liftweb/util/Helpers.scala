@@ -213,6 +213,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
     def -->(value: Symbol): BindParam = TheBindParam(name, Text(value.name))
+    def -->(value: Any): BindParam = TheBindParam(name, Text(if (value == null) "null" else value.toString))
     def -->(func: NodeSeq => NodeSeq): BindParam = FuncBindParam(name, func)
     def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))    
   }

@@ -208,9 +208,11 @@ object S {
     }
   }
   
-  private[http] def snippetForClass(cls: String): Can[StatefulSnippet] = Can(_stateSnip.value).flatMap(_.get(cls))
+  private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
+    Can(_stateSnip.value).flatMap(_.get(cls))
   
-  private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = Can(_stateSnip.value).foreach(_(cls) = inst)
+  private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = 
+    Can(_stateSnip.value).foreach(_(cls) = inst)
   
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
@@ -490,11 +492,11 @@ object S {
     
     def text_*(value: String, func: AFuncHolder): Elem = makeFormElement("text", func) % new UnprefixedAttribute("value", value, Null)
     def password_*(value: String, func: AFuncHolder): Elem = makeFormElement("password", func) % new UnprefixedAttribute("value", value, Null)
-    def hidden_*(func: AFuncHolder): Elem = makeFormElement("hidden", func)
+    def hidden_*(func: AFuncHolder): Elem = makeFormElement("hidden", func) % ("value" -> "true")
     def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", value, Null)
   def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
   def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
-  def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func))
+  def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func)) % ("value" -> "true")
   def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
   
   def ajaxForm(func: => NodeSeq) = (<lift:form>{func}</lift:form>)
