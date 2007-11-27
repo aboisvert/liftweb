@@ -39,7 +39,10 @@ class BlogUtil {
       case Nil => User.findAll().map(u => <span><a href={"/blog?id=" + u.id}> 
 				      {u.firstName + " " + u.lastName}</a>
 				      <br /></span>)
-      case entries => entries.map(e => _entryview(e))
+      case entries => 
+	<lift:comet type="DynamicBlogView" name={toLong(S.param("id")).toString}>
+          <blog:view>Loading...</blog:view>
+        </lift:comet> 
     }
   }
 

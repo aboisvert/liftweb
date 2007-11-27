@@ -5,12 +5,20 @@ import net.liftweb.util._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 
+import com.hellolift.controller.BlogCache
+import com.hellolift.controller.BlogCache._
+import com.hellolift.controller.AddEntry
+
 object Entry extends Entry with KeyedMetaMapper[Long, Entry] {
   override def dbTableName = "entries"
   // sitemap entry
   val sitemap = List(Menu(Loc("CreateEntry", "/entry", "Create An Entry", If(User.loggedIn_? _, "Please login"))), 
 		     Menu(Loc("ViewEntry", "/view", "View An Entry", Hidden)), 
 		     Menu(Loc("ViewBlog", "/blog", "View Blog")))
+
+  // Once the transaction is committed, fill in the blog cache with this entry.
+  override def afterCommit = 
+    ((entry: Entry) => {BlogCache.cache ! AddEntry(entry, entry.author.is)}) :: Nil
 }
 
 class Entry extends KeyedMapper[Long, Entry] {
