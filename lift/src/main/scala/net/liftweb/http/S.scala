@@ -43,6 +43,7 @@ object S {
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
+  private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   
   /**
    * Get the current RequestState
@@ -207,6 +208,10 @@ object S {
     }
   }
   
+  private[http] def snippetForClass(cls: String): Can[StatefulSnippet] = Can(_stateSnip.value).flatMap(_.get(cls))
+  
+  private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = Can(_stateSnip.value).foreach(_(cls) = inst)
+  
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
   def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
@@ -245,6 +250,7 @@ object S {
     snippetMap.doWith(new HashMap) {
       _resBundle.doWith(null) {
       inS.doWith(true) {
+        _stateSnip.doWith(new HashMap) {
           initNotice {
             _functionMap.doWith(new HashMap[String, AFuncHolder]) {
               this._request.doWith(request) {
@@ -256,6 +262,7 @@ object S {
           }
       }
       }
+    }
     }
       }
     }) )
@@ -346,34 +353,12 @@ object S {
   def addFunctionMap(name: String, value: AFuncHolder) {
     _functionMap.value += (name -> value)
   }
-  
-  /*
-  def mapFunction(name: String, f: AFuncHolder): String = {
-    val ret = ""+nextCount()+"_"+name+"_"+randomString(5)
-    _functionMap.value += (ret -> f)
-    ret
-  }*/
+
 
   private def booster(lst: List[String], func: String => Any): Boolean  = {
     lst.foreach(v => func(v))
     true
   }
-  
-  /*
-  sealed abstract class FormElementPieces
-  case class Id(name: String) extends FormElementPieces
-  case class Cls(name: String) extends FormElementPieces
-  */
-  // case class Val(value: String) extends FormElementPieces
-  
-  /*
-  private def wrapFormElement(in: Elem): Elem = {
-    params match {
-      case Nil => in
-      case Id(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("id", name, Null), rs)
-      case Cls(name) :: rs => wrapFormElement(in % new UnprefixedAttribute("class", name, Null), rs)
-    }
-  }*/
   
   private def makeFormElement(name: String, func: AFuncHolder): Elem = (<input type={name} name={mapFunc(func)}/>)
  

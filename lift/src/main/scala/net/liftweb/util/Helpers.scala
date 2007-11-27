@@ -536,7 +536,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * Invoke the given method for the given class, with the given params.
   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
   */
-  private def _invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Can[Array[Class]]): Can[Any] = {
+  private def _invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Can[Array[Class]]): Can[Any] = {
     /*
     * try to find a method matching the given parameters
     */
@@ -564,24 +564,31 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     
     try {
       findMethod.map(m => if (Modifier.isStatic(m.getModifiers)) m.invoke(null, params)
-	  else m.invoke(clz.newInstance, params))
+	  else m.invoke(inst, params))
     } catch {
       case e: java.lang.IllegalAccessException => Failure("invokeMethod "+meth, Full(e), Nil)
       case e: java.lang.IllegalArgumentException => Failure("invokeMethod "+meth, Full(e), Nil)
     }
   }
+  
+  def instantiate(clz: Class): Can[AnyRef] = tryo{clz.newInstance}
 
-  def invokeMethod(clz: Class, meth: String, params: Array[Object]): Can[Any] = {
-    _invokeMethod(clz,meth, params, Empty) or _invokeMethod(clz, smartCaps(meth), params, Empty) or
-    _invokeMethod(clz, methodCaps(meth), params, Empty)
+  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
+    _invokeMethod(clz, inst, meth, params, Empty) or _invokeMethod(clz, inst, smartCaps(meth), params, Empty) or
+    _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
   }
   
-  def invokeMethod(clz: Class, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
-    _invokeMethod(clz,meth, params, Full(ptypes)) or _invokeMethod(clz, smartCaps(meth), params, Full(ptypes)) or
-    _invokeMethod(clz, methodCaps(meth), params, Full(ptypes))
+  def runMethod(inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = { Empty
+  }
+  
+  def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
+  
+  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
+    _invokeMethod(clz, inst, meth, params, Full(ptypes)) or _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
+    _invokeMethod(clz, inst, methodCaps(meth), params, Full(ptypes))
   }
 
-  def invokeMethod(clz: Class, meth: String): Can[Any] = invokeMethod(clz, meth, Nil.toArray)
+  def invokeMethod(clz: Class, inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)

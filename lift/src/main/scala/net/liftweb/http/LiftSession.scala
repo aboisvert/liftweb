@@ -356,16 +356,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
-    findSnippetClass(cls) match {
-      case Full(clz) =>
-	invokeMethod(clz, method) match {
-	  case Full(md: MetaData) => md.copy(rest)
-	  case _ => rest
-	}
-      
-      case _ => rest
-    }
+    findSnippetClass(cls).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
+      case Full(md: MetaData) => Full(md.copy(rest))
+      case _ => Empty
+    }).flatMap(s => s))).openOr(rest)
   }
+
 
   private def processAttributes(in: MetaData) : MetaData = {
     in match {
@@ -380,26 +376,34 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     }
   }
   
-  private def processSnippet(snippetName: Can[Seq[Node]], attrs: MetaData, kids: NodeSeq) : NodeSeq = {
-    val ret = snippetName match {
-      case Full(ns) => {
-	S.locateSnippet(ns.text).map(_(kids)) openOr {
-	  val (cls, method) = splitColonPair(ns.text, null, "render")
-	  findSnippetClass(cls) match {
-	    case Empty => kids
-	    case Full(clz) => {
+  private val snippetClasses: HashMap[String, Class] = new HashMap
+  
+  private def findSnippetInstance(cls: String): Can[AnyRef] = S.snippetForClass(cls) or (findSnippetClass(cls).map(c => instantiate(c)) match {
+    case ret @ Full(inst: StatefulSnippet) => inst.snippetName = cls; S.setSnippetForClass(cls, inst); ret
+    case ret => ret
+  })
+  
+  private def processSnippet(snippetName: Can[Seq[Node]], attrs: MetaData, kids: NodeSeq): NodeSeq = {
+    val isForm = !attrs.get("form").toList.isEmpty
+    val ret = snippetName.map(_.text).map(snippet => 
+	S.locateSnippet(snippet).map(_(kids)) openOr {
+	  val (cls, method) = splitColonPair(snippet, null, "render")
+	  findSnippetInstance(cls) match {
+            
+            case Full(inst: StatefulSnippet) => (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
+              inst.dispatch(method).map(_(kids)).openOr(kids)
+              
+	    case Full(inst) => {
               val ar: Array[Object] = List(Group(kids)).toArray
               // val ar: Array[Object] = Array(Group(kids))
-	      ((invokeMethod(clz, method, ar)) or invokeMethod(clz, method)) match {
+	      ((invokeMethod(inst.getClass, inst, method, ar)) or runMethod(inst, method)) match {
 		case Full(md: NodeSeq) => md
 		case _ => kids
 	      }
 	    }
+            case _ => kids
 	  }
-	}
-      }
-      case _ => kids
-    }
+	}).openOr(kids)
     
     def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
       case Nil => Null
