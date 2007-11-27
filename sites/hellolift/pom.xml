@@ -22,6 +22,11 @@
       <name>Scala Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
+    <repository>
+      <id>scala-tools.org.snapshots</id>
+      <name>Scala Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-snapshots</url>
+    </repository>
   </repositories>
 
   <dependencies>
@@ -126,4 +131,21 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <distributionManagement>
+    <repository>
+      <id>tmp</id>
+      <url>file://${java.io.tmpdir}/</url>
+    </repository>
+    <snapshotRepository>
+      <id>tmp</id>
+      <url>file://${java.io.tmpdir}/</url>
+      <uniqueVersion>false</uniqueVersion>
+    </snapshotRepository>
+    <site>
+      <id>tmp</id>
+      <url>file://${java.io.tmpdir}/</url>
+    </site>
+  </distributionManagement>
+
 </project>

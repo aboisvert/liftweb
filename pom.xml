@@ -1,14 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-
- <!-- 
+  <!-- 
   mvn install (in the root folder)
   mvn scala:compile install (in the lift folder)
   mvn scala:compile install jetty:run  (in the example folder)
   then open http://localhost:8888/
  -->
-
   <groupId>net.liftweb</groupId>
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
@@ -24,7 +22,6 @@
       <distribution>repo</distribution>
     </license>
   </licenses>
-
   <developers>
     <developer>
       <name>David Pollak</name>
@@ -72,7 +69,6 @@
       </roles>
     </contributor>
   </contributors>
-
   <mailingLists>
     <mailingList>
       <name>User and Dev</name>
@@ -80,20 +76,17 @@
       <post>http://code.google.com/p/liftweb/</post>
     </mailingList>
   </mailingLists>
-
   <scm>
-    <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/</connection>
-    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/</developerConnection>
+    <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/liftweb</connection>
+    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
     <url>http://www.google.com/codesearch?hl=en&amp;q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;sa=N&amp;ct=rdl&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
   </scm>
-
   <modules>
     <module>lift</module>
     <module>sites/example</module>
     <module>sites/skittr</module>
     <module>sites/hellolift</module>
   </modules>
-
   <pluginRepositories>
     <pluginRepository>
       <id>scala-tools.org</id>
@@ -101,15 +94,18 @@
       <url>http://scala-tools.org/repo-releases</url>
     </pluginRepository>
   </pluginRepositories>
-
   <repositories>
     <repository>
       <id>scala-tools.org</id>
       <name>Scala Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </repository>
+    <repository>
+      <id>scala-tools.org.snapshots</id>
+      <name>Scala Tools Maven2 Repository</name>
+      <url>http://scala-tools.org/repo-snapshots</url>
+    </repository>    
   </repositories>
-
   <dependencyManagement>
     <dependencies>
       <dependency>
@@ -125,9 +121,15 @@
       </dependency>
     </dependencies>
   </dependencyManagement>
-
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.wagon</groupId>
+        <artifactId>wagon-webdav</artifactId>
+        <version>1.0-beta-2</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <groupId>org.scala-tools</groupId>
@@ -166,7 +168,6 @@
       </plugin>
     </plugins>
   </build>
-
   <reporting>
     <plugins>
       <plugin>
@@ -175,47 +176,21 @@
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
-      </plugin>                       
+      </plugin>
     </plugins>
   </reporting>
-
   <distributionManagement>
     <snapshotRepository>
       <id>scala-tools.org</id>
-      <url>scp://trazio.com/home/trazioco/scala-tools.org/repo-snapshots</url>
+      <url>dav:http://dav.scala-tools.org/repo-snapshots</url>
       <uniqueVersion>false</uniqueVersion>
     </snapshotRepository>
   </distributionManagement>
-
   <profiles>
     <profile>
       <id>release</id>
       <build>
         <plugins>
-          <!--
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>rat-maven-plugin</artifactId>
-            <version>1.0-alpha-3</version>
-            <executions>
-              <execution>
-                <phase>validate</phase>
-                <goals>
-                  <goal>check</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <excludes>
-                <exclude>**/*.xml</exclude>
-                <exclude>src/site/**</exclude>
-                <exclude>src/main/resources/META-INF/**</exclude>
-                <exclude>src/main/resources/archetype*/**</exclude>
-                <exclude>src/test/**</exclude>
-              </excludes>
-            </configuration>
-          </plugin>
-          -->
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <configuration>
@@ -238,11 +213,11 @@
       <distributionManagement>
         <repository>
           <id>scala-tools.org</id>
-          <url>scp://trazio.com/home/trazioco/scala-tools.org/repo-releases</url>
+          <url>dav:http://dav.scala-tools.org/repo-releases</url>
         </repository>
         <site>
           <id>scala-tools.org</id>
-          <url>scp://trazio.com/home/trazioco/scala-tools.org/mvnsites/liftweb</url>
+          <url>dav:http://dav.scala-tools.org/mvnsites/liftweb</url>
         </site>
       </distributionManagement>
     </profile>
