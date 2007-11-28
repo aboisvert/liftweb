@@ -777,7 +777,9 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
     case Empty => clearFunc(name)      // clear (or no-op?)
   }
   
-  def remove(): Unit = clearFunc(name)    
+  def remove(): Unit = clearFunc(name)   
+  
+  override def toString = is.map(_.toString).openOr("Undefined")
 }
 
 /**
