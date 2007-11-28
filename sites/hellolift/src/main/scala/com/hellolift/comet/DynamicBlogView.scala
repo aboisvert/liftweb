@@ -35,7 +35,6 @@ CometActor(theSession, name, defaultXml, attributes) {
   override def localSetup {
     name match {
       case Full(t) => this.blogid = Helpers.toLong(t)
-      case _ => S.redirectTo("/") // if they don't request a blog, send them away.
     }
 
     // Let the BlogCache know that we are watching for updates for this blog.
