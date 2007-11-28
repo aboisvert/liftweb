@@ -202,15 +202,18 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
         S.init(session, sessionActor) {
             val what = flatten(sessionActor.runParams(session))
+
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
 
-            what2 match {
+            val ret = what2 match {
               case (n: Node) :: _ => XmlResponse(n).toResponse
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
               case (r: ResponseIt) :: _ => r.toResponse
               case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
               case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
             }
+
+            ret
         }        
   } else {
         try {

@@ -21,31 +21,46 @@ class Ajax {
 
     <span>
     {
-      a(() => {cnt = cnt + 1; Set("cnt_id", Text( cnt.toString))},
-          <span>Click me to increase the count (currently <span id='cnt_id'>0</span>)</span>) // a link that does AJAX to increment a counter server-side and displays the result on the client
+      a(() => {cnt = cnt + 1; SetHtml("cnt_id", Text( cnt.toString))},
+          <span>Click me to increase the count 
+	   (currently <span id='cnt_id'>0</span>)</span>)
+      // a link that does AJAX to increment a counter server-side 
+      // and displays the result on the client
     } <br />
-
-    <div id="dogs"></div>
 
     <div id="messages"></div>
     {
-      val opts = (1 to 50).toList.map(i => (i.toString, i.toString)) // build the options
-      ajaxSelect(opts, Full(1.toString), v => DisplayMessage("messages", Text("You selected "+v) ++ <span>&nbsp;From the select box</span>, 5 seconds, 1 second))
+      val opts = (1 to 50).toList.map(i => (i.toString, i.toString)) 
+      // build the options
+      ajaxSelect(opts, Full(1.toString), 
+		 v => DisplayMessage("messages", 
+				     Text("You selected "+v) ++
+				     <span>&nbsp;From the select box</span>,
+				     5 seconds, 1 second))
     } <br />
     {
-      ajaxText("", v => DisplayMessage("messages", Text("You entered some text: "+v), 4 seconds, 1 second))
+      ajaxText("", v => DisplayMessage("messages", 
+				       Text("You entered some text: "+v),
+				       4 seconds, 1 second))
     } <br />
     {
       swappable(<span>Click to edit: <span id='the_text'></span></span>,
-		ajaxText("", v => DisplayMessage("messages", Text("You entered some text: "+v), 4 seconds, 1 second) + Set("the_text", Text(v))))
+		ajaxText("", 
+			 v => DisplayMessage("messages", 
+					     Text("You entered some text: "+v),
+					     4 seconds, 1 second)
+			 + SetHtml("the_text", Text(v))))
     } <br />
 
     <textarea id="the_area" cols="50" rows="10"></textarea>
     <br />
 
-    <a href="#" onclick={ajaxCall("document.getElementById('the_area').value",
-				  text => DisplayMessage("messages", <pre>{text}</pre>, 4 seconds, 200))}>Enter text above and click me</a>
-
+    <a href="#" onclick={
+      ajaxCall("document.getElementById('the_area').value",
+	       text => DisplayMessage("messages", 
+				      <pre>{text}</pre>, 
+				      4 seconds, 200))
+    }>Enter text above and click me</a>
 
     </span>
   }

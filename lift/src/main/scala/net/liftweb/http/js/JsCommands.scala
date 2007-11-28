@@ -34,7 +34,7 @@ object JsCmds {
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
     def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
   }
-  case class Set(uid: String, content: NodeSeq) extends JsCmd {
+  case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
       val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(content))).openOr(content)), false, true) 
       val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
@@ -116,6 +116,6 @@ object JsCmds {
       case x => x
     }
     
-    def toJsCmd = (Show(where) + Set(where, msg) + After(realDuration, Hide(where, realFadeTime))).toJsCmd
+    def toJsCmd = (Show(where) + SetHtml(where, msg) + After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }
 }

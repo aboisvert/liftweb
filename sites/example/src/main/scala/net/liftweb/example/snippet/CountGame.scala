@@ -18,14 +18,23 @@ import net.liftweb.util._
 
 class CountGame extends StatefulSnippet {
   val dispatch: DispatchIt = {
-    case "run" if lastGuess == number => xhtml => win(chooseTemplate("choose", "win", xhtml))
-    case "run" => xhtml => nextGuess(chooseTemplate("choose", "guess", xhtml))
+    case "run" if lastGuess == number => 
+      xhtml => win(chooseTemplate("choose", "win", xhtml))
+    
+    case "run" => 
+      xhtml => nextGuess(chooseTemplate("choose", "guess", xhtml))
   }
   
-  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number, "count" --> count)
+  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number, 
+				 "count" --> count)
   
-  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml, "input" --> text("", guess _),
-        "last" --> lastGuess.map(v => if (v < number) v+" is low" else v+" is high").openOr("Make first Guess"))
+  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml, 
+					"input" --> text("", guess _),
+					"last" --> 
+					lastGuess.map(v => 
+					  if (v < number) v+" is low" 
+					  else v+" is high").
+					openOr("Make first Guess"))
   
   private def guess(in: String) {
     count += 1
