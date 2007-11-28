@@ -102,6 +102,22 @@ object JsCmds {
     private val context = S.contextPath
     def toJsCmd = "window.location = "+(context + where).encJs+";"
   }
+
+
+  /**
+    * Update a Select with new Options
+    */
+  case class ReplaceOptions(select: String, opts: List[(String, String)], dflt: Can[String]) extends JsCmd {
+    def toJsCmd = """var x=document.getElementById("""+select.encJs+""");
+    while (x.length > 0) {x.remove(0);}
+    var y = null;
+    """+
+      opts.map{case (value, text) => "y=document.createElement('option'); "+
+      "y.text = "+text.encJs+"; "+
+      "y.value = "+value.encJs+"; "+
+      (if (value == dflt) "y.selected = true; " else "") + "x.add(y, null); "
+      }.mkString("\n")
+  }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
     def realFadeTime: Long = fadeTime.toLong match {

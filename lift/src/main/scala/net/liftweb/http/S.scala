@@ -403,13 +403,13 @@ object S {
     * @param func - the function to invoke when the link is clicked
     * @param body - the NodeSeq to wrap in the anchor tag
     */
-  def a(func: () => Any, body: NodeSeq): Elem = {
+  def a(func: () => JsCmd, body: NodeSeq): Elem = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(key, (a: List[String]) => func())
     (<lift:a key={key}>{body}</lift:a>)
   }
     
-    def a(body: NodeSeq)(func: => Any): Elem = a(() => func, body)
+    def a(body: NodeSeq)(func: => JsCmd): Elem = a(() => func, body)
     
     /**
       * Create an anchor that will run a JavaScript command when clicked
@@ -428,7 +428,7 @@ object S {
       *
       * @return the JavaScript that makes the call
       */
-    def ajaxCall(jsCalcValue: String, func: String => Any): String = ajaxCall_*(jsCalcValue, SFuncHolder(func))
+    def ajaxCall(jsCalcValue: String, func: String => JsCmd): String = ajaxCall_*(jsCalcValue, SFuncHolder(func))
     
     /**
       * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
@@ -437,7 +437,7 @@ object S {
       *
       * @return the JavaScript that makes the call
       */
-    def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
+    private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
       "jQuery.ajax( {url: '"+
         contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
     
@@ -450,26 +450,26 @@ object S {
       nh ++ rnk
     }
     
-    def ajaxText(value: String, func: String => Any): Elem = ajaxText_*(value, SFuncHolder(func))
+    def ajaxText(value: String, func: String => JsCmd): Elem = ajaxText_*(value, SFuncHolder(func))
       
-    def ajaxText_*(value: String, func: AFuncHolder): Elem = {
+    private def ajaxText_*(value: String, func: AFuncHolder): Elem = {
       val funcName = mapFunc(func) 
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
         ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
     }
     
-    def ajaxCheckbox(value: Boolean, func: String => Any): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
+    def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
       
-    def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
+    private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
       val funcName = mapFunc(func)
       (<input type="checkbox"/>) % checked(value) %
         ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
     }
     
-    def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
+    def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
       
-    def ajaxSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
+    private def ajaxSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
       val vals = opts.map(_._1)
       val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
       val funcName = mapFunc(testFunc)
@@ -479,7 +479,7 @@ object S {
       }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => Any): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
       mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
@@ -538,20 +538,62 @@ object S {
   def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func)) % ("value" -> "true")
   def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
   
-  def ajaxForm(func: => NodeSeq) = (<lift:form>{func}</lift:form>)
-  def ajaxForm(onSubmit: JsCmd, func: => NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{func}</lift:form>)
-  // List[value, display]
-  def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = select_*(opts, deflt, SFuncHolder(func))
-    
-  def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
-    val vals = opts.map(_._1)
-    val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
-    
-    (<select name={mapFunc(testFunc)}>{
-      opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>)
-  }
-    
+  def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
+  def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
+
+  /**
+     * Create a select box based on the list with a default value and the function to be executed on
+     * form submission
+     *
+     * @param opts -- the options.  A list of value and text pairs
+     * @param deflt -- the default value (or Empty if no default value)
+     * @param func -- the function to execute on form submission
+     */
+   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = select_*(opts, deflt, SFuncHolder(func))
+     
+   /**
+      * Create a select box based on the list with a default value and the function to be executed on
+      * form submission
+      *
+      * @param opts -- the options.  A list of value and text pairs
+      * @param deflt -- the default value (or Empty if no default value)
+      * @param func -- the function to execute on form submission
+      */
+   def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
+     val vals = opts.map(_._1)
+     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
+     
+     (<select name={mapFunc(testFunc)}>{
+       opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
+     }</select>)
+   }
+     
+    /**
+       * Create a select box based on the list with a default value and the function to be executed on
+       * form submission.  No check is made to see if the resulting value was in the original list.
+       * For use with DHTML form updating.
+       *
+       * @param opts -- the options.  A list of value and text pairs
+       * @param deflt -- the default value (or Empty if no default value)
+       * @param func -- the function to execute on form submission
+       */
+     def untrustedSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = untrustedSelect_*(opts, deflt, SFuncHolder(func))
+       
+     /**
+       * Create a select box based on the list with a default value and the function to be executed on
+       * form submission.  No check is made to see if the resulting value was in the original list.
+       * For use with DHTML form updating.
+        *
+        * @param opts -- the options.  A list of value and text pairs
+        * @param deflt -- the default value (or Empty if no default value)
+        * @param func -- the function to execute on form submission
+        */
+     def untrustedSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
+       (<select name={mapFunc(func)}>{
+         opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
+       }</select>)
+     }
+           
     
     private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "true", Null) else Null
     

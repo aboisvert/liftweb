@@ -16,7 +16,6 @@ import Helpers._
 import js._
 import JsCmds._
 
-
 class AjaxForm {
   var state = AjaxForm.state
   var city = ""
@@ -24,15 +23,23 @@ class AjaxForm {
   private def cityChoice(state: String): Elem = {
     val cities = AjaxForm.citiesFor(state)
     val first = cities.head
-    select(cities.map(s => (s,s)), Full(first), c => {println("Setting city"); city = c})
+    // make the select "untrusted" because we might put new values
+    // in the select
+    untrustedSelect(cities.map(s => (s,s)), Full(first), city = _)
+  }
+  
+  private def replace(state: String): JsCmd = {
+    val cities = AjaxForm.citiesFor(state)
+    val first = cities.head    
+    ReplaceOptions("city_select", cities.map(s => (s,s)), Full(first))
   }
 
   def show(xhtml: Group): NodeSeq =
     bind("select", xhtml,
-        "state" --> select(AjaxForm.states.map(s => (s,s)), Full(state), s => {println("State "+s); state = s}) %
-          ("onchange" -> ajaxCall("this.options[this.selectedIndex].value", s => After(200, SetHtml("city_select", cityChoice(s))))),
-        "city" --> <span id="city_select">{cityChoice(state)}</span>,
-        "submit" --> submit(?("Save"), ignore => {S.notice("City: "+city+" State: "+state) /*; redirectTo("/")*/}))
+        "state" --> select(AjaxForm.states.map(s => (s,s)), Full(state), state = _) %
+          ("onchange" -> ajaxCall("this.value", s => After(200, replace(s)))),
+        "city" --> cityChoice(state) % ("id" -> "city_select"),
+        "submit" --> submit(?("Save"), ignore => {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
 }
 
 object AjaxForm {
