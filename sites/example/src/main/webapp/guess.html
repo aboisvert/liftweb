@@ -1,0 +1,15 @@
+<lift:surround with="default" at="content">
+<lift:snippet type="CountGame:run" form="POST">
+  <choose:guess>
+    Guess a number between 1 and 100.<br/>
+    Last guess: <count:last/><br />
+    Guess: <count:input/><br/>
+    <input type="submit" value="Guess"/>
+  </choose:guess>
+
+  <choose:win>
+    You Win!!<br />
+    You guessed <count:number/> after <count:count/> guesses.<br/>
+  </choose:win>
+</lift:snippet>
+</lift:surround>
