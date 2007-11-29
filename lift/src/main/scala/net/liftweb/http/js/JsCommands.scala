@@ -16,8 +16,8 @@ object JsCommands {
 }
 
 class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
-  def +(in: JsCmd) = new JsCommands(in :: reverseList)
-  def +(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
+  def ++(in: JsCmd) = new JsCommands(in :: reverseList)
+  def ++(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
   
   def toResponse = {
     val data = reverseList.reverse.map(_.toJsCmd).mkString("\n").getBytes("UTF-8")
@@ -26,7 +26,7 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
 }
 
 abstract class JsCmd {
-  def +(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
+  def ++(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
   def toJsCmd: String
 }
 
@@ -132,6 +132,6 @@ object JsCmds {
       case x => x
     }
     
-    def toJsCmd = (Show(where) + SetHtml(where, msg) + After(realDuration, Hide(where, realFadeTime))).toJsCmd
+    def toJsCmd = (Show(where) ++ SetHtml(where, msg) ++ After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }
 }

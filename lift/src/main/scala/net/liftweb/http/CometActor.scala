@@ -184,14 +184,14 @@ sealed abstract class CometMessage
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd]) {
   def this(id: String, ro: RenderOut) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
-    val ret = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) + 
+    val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) ++
     ((xml, javaScript, displayAll) match { // FIXME deal with displayAll & stuff
-    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml)) + JsCmds.JsTry(js, false)
+    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml)) ++ JsCmds.JsTry(js, false)
     
     case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
     
     case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
-      fixedXhtml.openOr(Text("")))) + JsCmds.JsTry(js, false)
+      fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
       
     case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
       fixedXhtml.openOr(Text(""))))
@@ -199,17 +199,10 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
     case (_, Full(js), _) => js
     
     case _ => JsCmds.Noop
-  }) + JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
+  }) ++ JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
       ret
   }
-  /*
-  def asXhtml: NodeSeq = ((xml, javaScript) match {
-  case (Full(xml), Full(js)) => xml ++ script(js.toJsCmd)
-  case (Full(xml), _) => xml
-  case (_, Full(js)) => script(js.toJsCmd)
-  case _ => Text("")
-  }) ++ script("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")
-    */
+
   def inSpan: NodeSeq = xml.openOr(Text(""))
   def outSpan: NodeSeq = script("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}") ++
     javaScript.map(s => script(s.toJsCmd)).openOr(Text("")) ++ fixedXhtml.openOr(Text(""))
