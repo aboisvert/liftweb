@@ -429,19 +429,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   case x :: xs => (in, x.text)
 } 
 
-  
-  /**
-    * Makes the parameter the selected HTML element on load of the page
-    *
-    * @param in the element that should have focus
-    *
-    * @return the element and a script that will give the element focus
-    */
-  def focusOnLoad(in: Elem): NodeSeq = {
-    val (elem, id) = findOrAddId(in)
-    elem ++ script("jQuery(document).ready(function() {document.getElementById("+id.encJs+").focus();});")
-  }
-  
+ 
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
@@ -1191,12 +1179,14 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   */
     
+    /*
   def script(theScript: String): NodeSeq = (<script>
   // {Unparsed("""<![CDATA[
   """+theScript+"""
   // ]]>
   """)}</script>)
-  
+  */
+    
   /**
    * Optional cons that implements the expression: expr ?> value ::: List
    */

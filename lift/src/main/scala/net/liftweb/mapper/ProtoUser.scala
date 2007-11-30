@@ -8,6 +8,8 @@ package net.liftweb.mapper
 
 import net.liftweb.mapper._
 import net.liftweb.http._
+import js._
+import JsCmds._
 import scala.xml.{NodeSeq, Node, Group}
 import scala.xml.transform._
 import net.liftweb.sitemap._
@@ -279,7 +281,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       }
       
       bind("user", loginXhtml,
-           "email" --> (focusOnLoad(<input type="text" name="username"/>)),
+           "email" --> (FocusOnLoad(<input type="text" name="username"/>)),
            "password" --> (<input type="password" name="password"/>),
            "submit" --> (<input type="submit" value="Log In"/>))
     }

@@ -6,7 +6,7 @@ package net.liftweb.http.js
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.xml.{NodeSeq, Group}
+import scala.xml.{NodeSeq, Group, Unparsed, Elem}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
@@ -31,6 +31,34 @@ abstract class JsCmd {
 }
 
 object JsCmds {
+  object Script {
+    def apply(script: JsCmd): NodeSeq = <script>
+    // {Unparsed("""<![CDATA[
+    """+script.toJsCmd+"""
+    // ]]>""")
+    }
+    </script>
+  }
+  
+  /**
+     * Makes the parameter the selected HTML element on load of the page
+     *
+     * @param in the element that should have focus
+     *
+     * @return the element and a script that will give the element focus
+     */
+   object FocusOnLoad {
+    def apply(in: Elem): NodeSeq = {
+     val (elem, id) = findOrAddId(in)
+     elem ++ Script(OnLoad(Run("document.getElementById("+id.encJs+").focus();")))
+   }
+  }
+     
+  
+  case class OnLoad(cmd: JsCmd) extends JsCmd {
+    def toJsCmd = "jQuery(document).ready(function() {"+cmd.toJsCmd+"});"
+  }
+  
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
     def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
   }

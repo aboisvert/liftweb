@@ -15,6 +15,7 @@ import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
 // import S._
 import net.liftweb.http.js._
+import JsCmds._
 
 // import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
@@ -204,8 +205,8 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
   }
 
   def inSpan: NodeSeq = xml.openOr(Text(""))
-  def outSpan: NodeSeq = script("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}") ++
-    javaScript.map(s => script(s.toJsCmd)).openOr(Text("")) ++ fixedXhtml.openOr(Text(""))
+  def outSpan: NodeSeq = Script(Run("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")) ++
+    javaScript.map(s => Script(s)).openOr(Text("")) ++ fixedXhtml.openOr(Text(""))
   //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 

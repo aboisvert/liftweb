@@ -424,8 +424,8 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes))
           case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
-          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => processSurroundElement(elm)
-          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => processSurroundAndInclude(findAndEmbed(Can(elm.attributes.get("what")), elm.child))
+          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(elm))
+          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
 	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), kids, attr))       
 	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
 	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
