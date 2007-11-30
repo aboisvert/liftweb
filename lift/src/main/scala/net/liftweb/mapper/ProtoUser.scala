@@ -270,14 +270,6 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     </form>)
     
     def login = {
-      /*
-      def testLogin(ignore: String) {
-        getSingleton.find(By(email, username)) match {
-          case Full(user) if user.validated && user.password.match_?(pwd) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
-          case _ => S.error("Invalid Username/Password")
-        }
-      }*/
-        
       if (S.post_?) {
         S.param("username").flatMap(username => getSingleton.find(By(email, username))) match {
           case Full(user) if user.validated && user.password.match_?(S.param("password").openOr("*")) => logUserIn(user); S.notice("Logged In"); S.redirectTo(HomePage)
@@ -287,7 +279,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       }
       
       bind("user", loginXhtml,
-           "email" --> (<input type="text" name="username"/>),
+           "email" --> (focusOnLoad(<input type="text" name="username"/>)),
            "password" --> (<input type="password" name="password"/>),
            "submit" --> (<input type="submit" value="Log In"/>))
     }

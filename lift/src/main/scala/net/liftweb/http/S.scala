@@ -482,12 +482,6 @@ object S {
     def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
       mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
     
-    def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
-      case Nil => val id = "R"+randomString(12)
-      (in % ("id" -> id), id)
-      case x :: xs => (in, x.text)
-    } 
-    
     /**
       *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
       * the hidden element blurs, it swaps into the shown element.

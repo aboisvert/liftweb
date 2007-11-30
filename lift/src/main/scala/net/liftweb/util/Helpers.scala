@@ -416,6 +416,33 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   
   /**
+    * If the incoming Elem has an 'id', return it, otherwise
+    * construct a new Elem with a randomly generated id and return the pair
+    *
+    * @param in the element to test & add 'id' to
+    *
+    * @return the new element and the id
+    */
+  def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
+  case Nil => val id = "R"+randomString(12)
+  (in % ("id" -> id), id)
+  case x :: xs => (in, x.text)
+} 
+
+  
+  /**
+    * Makes the parameter the selected HTML element on load of the page
+    *
+    * @param in the element that should have focus
+    *
+    * @return the element and a script that will give the element focus
+    */
+  def focusOnLoad(in: Elem): NodeSeq = {
+    val (elem, id) = findOrAddId(in)
+    elem ++ script("jQuery(document).ready(function() {document.getElementById("+id.encJs+").focus();});")
+  }
+  
+  /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */

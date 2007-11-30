@@ -423,10 +423,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       v => 
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(nodes))
+          case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
+          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => processSurroundElement(elm)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => processSurroundAndInclude(findAndEmbed(Can(elm.attributes.get("what")), elm.child))
 	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), kids, attr))       
-	  case Elem("lift", "ignore", attr @ _, _, kids @ _*) => Text("")
-	  case Elem("lift", "surround", attr @ _, _, kids @ _*) => processSurroundElement(v.asInstanceOf[Elem])
-	  case Elem("lift", "embed", attr @ _, _, kids @ _*) => processSurroundAndInclude(findAndEmbed(Can(attr.get("what")), kids))
 	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
 	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
           case Elem("lift", "loc", attr @ _, _, kids @ _ *) => attr.filter(_.key == "id").toList match {case id :: _ => S.loc(id.value.text, kids) case _ => S.loc(kids.text, kids)}
