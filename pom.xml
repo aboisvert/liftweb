@@ -81,6 +81,9 @@
     <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
     <url>http://www.google.com/codesearch?hl=en&amp;q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;sa=N&amp;ct=rdl&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
   </scm>
+  <properties>
+    <scala.version>2.6.0</scala.version>
+  </properties>
   <modules>
     <module>lift</module>
     <module>sites/example</module>
@@ -104,6 +107,7 @@
       <id>scala-tools.org.snapshots</id>
       <name>Scala Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-snapshots</url>
+      <snapshots/>
     </repository>    
   </repositories>
   <dependencyManagement>
@@ -111,7 +115,7 @@
       <dependency>
         <groupId>org.scala-lang</groupId>
         <artifactId>scala-library</artifactId>
-        <version>2.6.0</version>
+        <version>${scala.version}</version>
       </dependency>
       <dependency>
         <groupId>javax.servlet</groupId>
@@ -146,7 +150,9 @@
             <jvmArg>-Xmx1524m</jvmArg>
           </jvmArgs>
           <args>
-            <!--arg>-unchecked</arg--></args>
+            <!--arg>-unchecked</arg-->
+          </args>
+          <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>
       <plugin>
