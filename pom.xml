@@ -89,6 +89,7 @@
     <module>sites/example</module>
     <module>sites/skittr</module>
     <module>sites/hellolift</module>
+    <module>lift-archetype-blank</module>
   </modules>
   <pluginRepositories>
     <pluginRepository>
