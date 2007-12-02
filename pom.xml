@@ -90,6 +90,7 @@
     <module>sites/skittr</module>
     <module>sites/hellolift</module>
     <module>lift-archetype-blank</module>
+    <module>lift-archetype-hellolift</module>
   </modules>
   <pluginRepositories>
     <pluginRepository>

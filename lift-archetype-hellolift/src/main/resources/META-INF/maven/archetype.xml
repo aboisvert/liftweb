@@ -1,0 +1,36 @@
+
+<archetype>
+  <id>liftweb-archetype-hellolift</id>
+  <sources>
+    <source>src/main/scala/comet/.keep</source>
+    <source>src/main/scala/comet/DynamicBlogView.scala</source>
+    <source>src/main/scala/controller/.keep</source>
+    <source>src/main/scala/controller/BlogCache.scala</source>
+    <source>src/main/scala/model/.keep</source>
+    <source>src/main/scala/model/Entry.scala</source>
+    <source>src/main/scala/model/User.scala</source>
+    <source>src/main/scala/snippet/.keep</source>
+    <source>src/main/scala/snippet/BlogUtil.scala</source>
+    <source>src/main/scala/snippet/HelloWorld.scala</source>
+    <source>src/main/scala/view/.keep</source>
+  </sources>
+  <resources>
+    <resource>src/main/scala/bootstrap/liftweb/Boot.scala</resource>
+    <resource>src/main/webapp/WEB-INF/web.xml</resource>
+    <resource>src/main/webapp/images/header_bg.jpg</resource>
+    <resource>src/main/webapp/images/li-off.jpg</resource>
+    <resource>src/main/webapp/images/li-on.jpg</resource>
+    <resource>src/main/webapp/images/page_bg.jpg</resource>
+    <resource>src/main/webapp/scripts/jquery-1.2.1.min.js</resource>
+    <resource>src/main/webapp/style/style.css</resource>
+    <resource>src/main/webapp/templates-hidden/default.html</resource>
+    <resource>src/main/webapp/blog.html</resource>
+    <resource>src/main/webapp/entry.html</resource>
+    <resource>src/main/webapp/index.html</resource>
+    <resource>src/main/webapp/request.html</resource>
+    <resource>src/main/webapp/view.html</resource>
+  </resources>
+  <testSources>
+    <source>src/test/scala/AppTest.scala</source>
+  </testSources>
+</archetype>
