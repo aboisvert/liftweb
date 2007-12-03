@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 #parse('ext.vm')
   <modelVersion>4.0.0</modelVersion>
@@ -10,7 +11,7 @@
   <properties>
     <scala.version>$scala_version</scala.version>
   </properties>
-                                
+
   <repositories>
     <repository>
       <id>scala-tools.org</id>
@@ -26,14 +27,14 @@
     </repository>
 #end
   </repositories>
-  
+
   <pluginRepositories>
     <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </pluginRepository>
-  </pluginRepositories>  
+  </pluginRepositories>
 
   <dependencies>
     <dependency>
@@ -58,8 +59,14 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+      <groupId>org.mortbay.jetty</groupId>
+      <artifactId>jetty</artifactId>
+      <version>[6.1.6,)</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-  
+
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -86,7 +93,7 @@
           <contextPath>/</contextPath>
           <scanIntervalSeconds>5</scanIntervalSeconds>
         </configuration>
-      </plugin>      
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
