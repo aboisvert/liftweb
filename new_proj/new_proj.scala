@@ -111,6 +111,11 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
       <artifactId>mysql-connector-java</artifactId>
       <version>5.0.4</version>
     </dependency>
+    <dependency>
+      <groupId>com.rabbitmq</groupId>
+      <artifactId>rabbitmq-client</artifactId>
+      <version> 1.2.0</version>
+    </dependency>
   </dependencies>
 
   <build>
