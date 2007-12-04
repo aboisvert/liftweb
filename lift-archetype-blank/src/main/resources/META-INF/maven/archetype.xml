@@ -11,7 +11,7 @@
   <resources>
     <resource>src/main/scala/bootstrap/liftweb/Boot.scala</resource>
     <resource>src/main/webapp/WEB-INF/web.xml</resource>
-    <resource>src/main/webapp/scripts/jquery-1.2.1.min.js</resource>
+    <resource>src/main/webapp/scripts/jquery-1.2.1.js</resource>
     <resource>src/main/webapp/templates-hidden/default.html</resource>
     <resource>src/main/webapp/index.html</resource>
   </resources>
