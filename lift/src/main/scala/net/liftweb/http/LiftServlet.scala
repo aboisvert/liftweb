@@ -517,7 +517,7 @@ object LiftServlet {
     if (in ne _context) {
       // Helpers.setResourceFinder(in.getResource)
       _context = in
-      performBoot(in)
+   //   performBoot(in)
       }
   }
   
@@ -583,7 +583,7 @@ object LiftServlet {
   
   private var snippetTable_i: SnippetPf = Map.empty
   
-  private def performBoot(context: ServletContext) = {
+  /*private def performBoot(context: ServletContext) = {
     try {
       val c = Class.forName("bootstrap.liftweb.Boot")
       val i = c.newInstance
@@ -594,7 +594,7 @@ object LiftServlet {
     case e: java.lang.reflect.InvocationTargetException => Log.error("Failed to Boot", e); None
     case e => Log.error("Failed to Boot", e); None
     }
-  }
+  }*/
   
   def addSnippetBefore(pf: SnippetPf) = {
     snippetTable_i = pf orElse snippetTable_i
@@ -648,6 +648,20 @@ object LiftServlet {
 
 case object BreakOut
 
+abstract class Bootable
+{
+  def boot() : Unit;
+}
+
+private[http] case object DefaultBootstrap extends Bootable
+{
+  def boot() : Unit =
+  {
+      val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance)
+      f.map{f => f()}
+  }
+}
+
 class LiftFilter extends Filter 
 {
   //The variable holds the current ServletContext (we need it for request URI - handling
@@ -670,6 +684,9 @@ class LiftFilter extends Filter
     //We need to capture the ServletContext on init
     def init(config:FilterConfig) {
       context = config.getServletContext
+      
+      bootLift(config.getInitParameter("bootloader"))
+      
       LiftServlet.setContext(context) 
       actualServlet = new LiftServlet(context)
       actualServlet.init
@@ -681,6 +698,19 @@ class LiftFilter extends Filter
       actualServlet.destroy
       actualServlet = null 
       }
+    
+    def bootLift(loader : Can[String]) : Unit =
+    {
+      try 
+      {        
+        val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
+           
+        b.boot
+      } catch {
+         case e => Log.error("Failed to Boot", e); None
+      }
+    }
+
  
     private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
     {
