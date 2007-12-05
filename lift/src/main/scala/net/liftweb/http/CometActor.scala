@@ -77,10 +77,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
     
     case PerformSetupComet =>
+    println("--- in perform comet setup ---")
       localSetup
       reRender(true)
     
     case AskRender =>
+    println("Got an Ask Render") 
       askingWho match {
         case Full(who) => who forward AskRender
         case _ => if (devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime, true))

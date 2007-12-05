@@ -16,7 +16,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   private val data = FatLazy(defaultValue)
   private val orgData = FatLazy(defaultValue)
   
-  protected def real_i_set_!(value : Date) : Date = {
+  protected def real_i_set_!(value: Date): Date = {
     if (value != data.get) {
       data() = value
       this.dirty_?( true)

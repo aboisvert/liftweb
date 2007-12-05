@@ -41,7 +41,7 @@ object LiftSession {
 }
 
 @serializable
-class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : boolean, val contentType: String, val httpSession: HttpSession) extends Actor with HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : Boolean, val contentType: String, val httpSession: HttpSession) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
@@ -126,7 +126,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
    */
   def valueUnbound(event: HttpSessionBindingEvent) {
     try {
-    if (running_?) this ! ShutDown
+    if (running_?) this.shutDown
     } finally {
       // uncomment for Scala 2.6.1 to avoid memory leak 
       // Actor.clearSelf
@@ -137,12 +137,13 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   /**
    * called when the Actor is started
    */
+     /*
   def act = {
     this.trapExit = true
     running_? = true
 
     loop(react(dispatcher))
-  }
+  }*/
   
   /**
     * Called just before the session exits.  If there's clean-up work, override this method 
@@ -151,6 +152,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
      
    }
   
+  /*
   def dispatcher: PartialFunction[Any, Unit] = {
     case ShutDown =>
       Log.debug("Shutting down session")
@@ -161,20 +163,30 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     case AskSessionToRender(request,httpRequest, timeout, whenDone) => processRequest(request, httpRequest, timeout, whenDone)
 
     case unknown => Log.debug("LiftSession Got a message "+unknown)
+  }*/
+    
+  private def shutDown() = synchronized {
+    Log.debug("Shutting down session")
+    running_? = false
+    asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
+    cleanUpSession()
   }
 
-  private def processRequest(request: RequestState, httpRequest: HttpServletRequest, timeout: Long, whenDone: AnswerHolder => Any) = synchronized {
+  private[http] def processRequest(request: RequestState, httpRequest: HttpServletRequest): AnswerHolder = {
     S.init(request, httpRequest, notices,this) {
       try {
 	val sessionDispatch = S.highLevelSessionDispatcher
 	val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), this)        
 	if (sessionDispatch.isDefinedAt(toMatch)) {
 	  runParams(request)
+          try {
 	  sessionDispatch(toMatch)(httpRequest) match {
-	    case Full(r) => whenDone(AnswerHolder(r))
-	    case _ => whenDone(AnswerHolder(request.createNotFound))
+	    case Full(r) => AnswerHolder(r)
+	    case _ => AnswerHolder(request.createNotFound)
 	  }
-	  /*if (!request.ajax_?)*/ notices = Nil
+          } finally {
+	  notices = Nil
+          }
 	} else {
           runParams(request)
 
@@ -205,9 +217,9 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 		S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 	      }
 	      notices = Nil
-	      whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200)))
+	      AnswerHolder(XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
 	    }
-	    case _ => whenDone(AnswerHolder(request.createNotFound))
+	    case _ => AnswerHolder(request.createNotFound)
 	  }
 	}
       } catch {
@@ -215,18 +227,18 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	  val rd = ite.getCause.asInstanceOf[RedirectException]
 	notices = S.getNotices
 	
-	whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
+	AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
 					    ResponseInfo.xhtmlTransitional,
 					    List("Location" -> (request.updateWithContextPath(rd.to))),
-					    302)))
+					    302))
 	case rd : net.liftweb.http.RedirectException => {   
 	  notices = S.getNotices
 	  
-	  whenDone(AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
+	  AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
 					      List("Location" -> (request.updateWithContextPath(rd.to))),
-					      302)))
+					      302))
 	}
-	case e  => whenDone(AnswerHolder(request.showException(e)))
+	case e  => AnswerHolder(request.showException(e))
       }
     }
   }
@@ -449,7 +461,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 
           ret
           
-	  case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
+	  case err => println("Got "+err);  <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
 	}) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids
     } catch {
       case e => e.printStackTrace; kids
@@ -492,10 +504,11 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
 	tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
-	  val constr = cls.getConstructor(Array(this.getClass /*classOf[LiftSession]*/, classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
+	  val constr = cls.getConstructor(Array(this.getClass , classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
-	  ret.link(this)
+	  // ret.link(this)
+	  println("*About to set up*")
 	  ret ! PerformSetupComet
 	  ret
 	}
@@ -591,7 +604,8 @@ abstract class SessionMessage
 /**
  * The response from a page saying that it's been rendered
  */
-case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
+
+// case class AskSessionToRender(request: RequestState,httpRequest: HttpServletRequest,timeout: Long, sendBack: AnswerHolder => Any)
 // case class UpdateState(name: String, value: Can[String]) extends SessionMessage
 // case object CurrentVars extends SessionMessage
 case object ShutDown

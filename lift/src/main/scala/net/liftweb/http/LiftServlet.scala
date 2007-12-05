@@ -100,7 +100,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       case _ => 
         val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
             request.contentType)
-        ret.start
+        // ret.start
         session.putValue(actorNameConst, ret)
         ret
     }
@@ -223,6 +223,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             selves += self
           }
           
+          /*
         def drainTheSwamp { // remove any message from the current thread's inbox
           receiveWithin(0) {
             case TIMEOUT => true
@@ -244,8 +245,12 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         } else*/ {
 	
         val thisSelf = self
-	sessionActor ! AskSessionToRender(session, request, timeout, a => thisSelf ! a)
-        receiveWithin(timeout) {
+        */
+          println("*** About to request***")
+	val ret = sessionActor.processRequest(session, request).what.toResponse
+        println("**** Done with request ***")
+        ret
+        /*{
           case AnswerHolder(r) => r.toResponse
           // if we failed allow the optional handler to process a request 
 	  case n @ TIMEOUT => LiftServlet.requestTimedOut.flatMap(_(session, n)) match {
@@ -253,7 +258,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             case _ => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
           }
 	}
-        }
+        }*/
         } finally {
           this.synchronized {
             this.requestCnt = this.requestCnt - 1
