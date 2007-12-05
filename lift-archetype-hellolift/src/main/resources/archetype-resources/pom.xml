@@ -26,14 +26,14 @@
     </repository>
 #end
   </repositories>
-  
+
   <pluginRepositories>
     <pluginRepository>
       <id>scala-tools.org</id>
       <name>Scala-Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-releases</url>
     </pluginRepository>
-  </pluginRepositories>  
+  </pluginRepositories>
 
   <dependencies>
     <dependency>
@@ -75,7 +75,7 @@
       <artifactId>mysql-connector-java</artifactId>
       <version>5.0.4</version>
       <scope>runtime</scope>
-    </dependency>    
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -83,7 +83,7 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-  
+
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
     <testSourceDirectory>src/test/scala</testSourceDirectory>
@@ -107,22 +107,10 @@
         <groupId>org.mortbay.jetty</groupId>
         <artifactId>maven-jetty-plugin</artifactId>
         <configuration>
-          <systemProperties>
-            <systemProperty>
-              <name>org.apache.cocoon.log4j.loglevel</name>
-              <value>WARN</value>
-            </systemProperty>
-          </systemProperties>
-          <connectors>
-            <connector implementation="org.mortbay.jetty.nio.SelectChannelConnector">
-              <port>8888</port>
-              <maxIdleTime>30000</maxIdleTime>
-            </connector>
-          </connectors>
           <contextPath>/</contextPath>
           <scanIntervalSeconds>5</scanIntervalSeconds>
         </configuration>
-      </plugin>      
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-eclipse-plugin</artifactId>
