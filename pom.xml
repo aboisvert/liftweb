@@ -86,9 +86,7 @@
   </properties>
   <modules>
     <module>lift</module>
-    <module>sites/example</module>
-    <module>sites/skittr</module>
-    <module>sites/hellolift</module>
+    <module>sites</module>
     <module>lift-archetype-blank</module>
     <module>lift-archetype-hellolift</module>
   </modules>
