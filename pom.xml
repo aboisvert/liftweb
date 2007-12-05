@@ -59,6 +59,14 @@
     <developer>
       <name>OctoberDan</name>
     </developer>
+    <developer>
+      <name>Viktor Klang a.k.a. Sevikkla</name>
+      <timezone>+1</timezone>
+      <roles>
+        <role>Enhancement specialist</role>
+        <role>Funny guy</role>
+      </roles>
+    </developer>
   </developers>
   <contributors>
     <contributor>
