@@ -60,8 +60,18 @@ class Ajax {
 	       text => DisplayMessage("messages", 
 				      <pre>{text}</pre>, 
 				      4 seconds, 200))
-    }>Enter text above and click me</a>
+    }>Enter text above and click me</a><br/>
+    <br/>
+    
+    <div id="some_stuff"></div>
+    {
+      a(<span>Click here and the stuff above will get a message</span>){
+        DisplayMessage("some_stuff", <lift:embed what="/templates-hidden/ajax"/>, 5 seconds, 1 second)
+      }
+    }
 
     </span>
   }
+  
+  def time = Text(timeNow.toString)
 }

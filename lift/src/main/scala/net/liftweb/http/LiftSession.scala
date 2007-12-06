@@ -412,7 +412,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
               // val ar: Array[Object] = Array(Group(kids))
 	      ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
 		case Full(md: NodeSeq) => md
-		case _ => kids
+		case it => kids
 	      }
 	    }
             case _ => kids
@@ -438,14 +438,14 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
           case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
           case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(elm))
           case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
-	  case Elem("lift", "comet", attr @ _, _, kids @ _*) => processSurroundAndInclude(executeComet(Can(attr.get("type").map(_.text.trim)), Can(attr.get("name").map(_.text.trim)), kids, attr))       
-	  case Elem("lift", "snippet", attr @ _, _, kids @ _*) => S.setVars(attr)(processSurroundAndInclude(processSnippet(Can(attr.get("type")), attr, kids)))
-	  case Elem("lift", "children", attr @ _, _, kids @ _*) => processSurroundAndInclude(kids)
-          case Elem("lift", "loc", attr @ _, _, kids @ _ *) => attr.filter(_.key == "id").toList match {case id :: _ => S.loc(id.value.text, kids) case _ => S.loc(kids.text, kids)}
-	  case Elem("lift", "a", attr @ _, scope @ _, kids @ _*) => Elem(null, "a", addAjaxHREF(attr), scope, processSurroundAndInclude(kids): _*)
-	  case Elem("lift", "form", attr @ _, scope @ _, kids @ _*) => Elem(null, "form", addAjaxForm(attr), scope, processSurroundAndInclude(kids): _*)
-	  case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(v.child) : _*)
-	  case _ => {v}
+          case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(processSnippet(Can(elm.attributes.get("type")), elm.attributes, elm.child)))
+	  case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
+          case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(elm.child)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "loc" => elm.attributes.filter(_.key == "id").toList match {case id :: _ => S.loc(id.value.text, elm.child) case _ => S.loc(elm.child.text, elm.child)}
+          case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(elm.child): _*)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(elm.child): _*)
+	  case elm: Elem => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(v.child) : _*)
+	  case _ => v
 	}
     }
   }
