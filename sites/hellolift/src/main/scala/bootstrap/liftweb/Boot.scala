@@ -16,7 +16,7 @@ import com.hellolift.model._
 class Boot {
   def boot {
     // add the connection manager if there's not already a JNDI connection defined
-    if (DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor) 
     
     // add the com.hellolift package to the list packages
     // searched for Snippets, CometWidgets, etc.
