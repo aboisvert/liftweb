@@ -67,16 +67,16 @@
         <role>Funny guy</role>
       </roles>
     </developer>
-  </developers>
-  <contributors>
-    <contributor>
+    <developer>
       <name>David Bernard</name>
+      <email>dwayne [at] liftweb.net</email>
       <timezone>+1</timezone>
       <roles>
         <role>maven support</role>
       </roles>
-    </contributor>
-  </contributors>
+    </developer>
+  </developers>
+  
   <mailingLists>
     <mailingList>
       <name>User and Dev</name>
