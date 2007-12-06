@@ -25,8 +25,11 @@
   <developers>
     <developer>
       <name>David Pollak</name>
+      <timezone>-8</timezone>
+      <email>dpp [at] liftweb.net</email>
       <roles>
-        <role>Lead</role>
+        <role>BDFL</role>
+        <role>Feeder of the Bears</role>
       </roles>
     </developer>
     <developer>
