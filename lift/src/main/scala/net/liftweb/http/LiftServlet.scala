@@ -246,10 +246,8 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 	
         val thisSelf = self
         */
-          println("*** About to request***")
-	val ret = sessionActor.processRequest(session, request).what.toResponse
-        println("**** Done with request ***")
-        ret
+	sessionActor.processRequest(session, request).what.toResponse
+
         /*{
           case AnswerHolder(r) => r.toResponse
           // if we failed allow the optional handler to process a request 

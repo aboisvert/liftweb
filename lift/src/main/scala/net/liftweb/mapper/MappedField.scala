@@ -435,10 +435,11 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
    */
   def targetSQLType: Int
   
-  override def toString : String = {
-    val t = is
-    if (t == null) "" else t.toString
-  }
+  override def toString : String = 
+    is match {
+      case null => ""
+      case v => v.toString
+    }
   
   def validations: List[FieldType => List[ValidationIssue]] = Nil
   

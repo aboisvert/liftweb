@@ -461,7 +461,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 
           ret
           
-	  case err => println("Got "+err);  <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
+	  case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
 	}) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids
     } catch {
       case e => e.printStackTrace; kids
@@ -508,7 +508,6 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	  val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
 	  ret.start
 	  // ret.link(this)
-	  println("*About to set up*")
 	  ret ! PerformSetupComet
 	  ret
 	}
