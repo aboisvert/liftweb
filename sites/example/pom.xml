@@ -12,12 +12,4 @@
   <artifactId>lift-example</artifactId>
   <packaging>war</packaging>
   <name>Lift Example</name>
-
-  <dependencies>
-    <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-client</artifactId>
-      <version> 1.2.0</version>
-    </dependency>
-  </dependencies>
 </project>
