@@ -14,7 +14,12 @@
   <version>0.3.0-SNAPSHOT</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
-  <description>Lift is an expressive and elegant framework for writing web applications. Lift stresses the importance of security, maintainability, scalability and performance, while allowing for high levels of developer productivity.Lift is a scala web framework.</description>
+  <description>
+Lift is an expressive and elegant framework for writing web applications.
+Lift stresses the importance of security, maintainability, scalability
+and performance while allowing for high levels of developer productivity.
+Lift is a scala web framework.
+  </description>
   <licenses>
     <license>
       <name>the Apache License, ASL Version 2.0</name>
@@ -102,7 +107,7 @@
   <scm>
     <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/liftweb</connection>
     <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
-    <url>http://www.google.com/codesearch?hl=en&amp;q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;sa=N&amp;ct=rdl&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
+    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
   </scm>
   <issueManagement>
     <system>google</system>
