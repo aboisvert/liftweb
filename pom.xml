@@ -1,11 +1,10 @@
-<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb</groupId>
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.3.0-SNAPSHOT</version>
+  <version>0.3.0</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
@@ -101,9 +100,9 @@ Lift is a scala web framework.
     </mailingList>
   </mailingLists>
   <scm>
-    <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/liftweb</connection>
-    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
-    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
+    <connection>scm:svn:http://liftweb.googlecode.com/svn/tags/lift-0.3.0</connection>
+    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/tags/lift-0.3.0</developerConnection>
+    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb/tags/lift-0.3.0?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
   </scm>
   <issueManagement>
     <system>google</system>
@@ -135,7 +134,7 @@ Lift is a scala web framework.
       <id>scala-tools.org.snapshots</id>
       <name>Scala Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-snapshots</url>
-      <snapshots/>
+      <snapshots />
     </repository>
   </repositories>
   <dependencyManagement>
