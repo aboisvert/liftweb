@@ -64,7 +64,9 @@ Lift is a scala web framework.
     </developer>
     <developer>
       <id>jorge.ortiz</id>
-      <name>Jorge Eugenio Ortiz Hinojosa</name>
+      <name>Jorge Ortiz</name>
+      <timezone>-8</timezone>
+      <email>jorge [at] liftweb.net</email>
     </developer>
     <developer>
       <id>stevej</id>
