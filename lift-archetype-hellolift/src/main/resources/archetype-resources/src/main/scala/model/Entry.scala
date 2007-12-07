@@ -1,13 +1,13 @@
-package ${groupId}.model
+package ${packageName}.model
 
 import net.liftweb.mapper._
 import net.liftweb.util._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 
-import ${groupId}.controller.BlogCache
-import ${groupId}.controller.BlogCache._
-import ${groupId}.controller.AddEntry
+import ${packageName}.controller.BlogCache
+import ${packageName}.controller.BlogCache._
+import ${packageName}.controller.AddEntry
 
 object Entry extends Entry with KeyedMetaMapper[Long, Entry] {
   override def dbTableName = "entries"

@@ -7,7 +7,7 @@ import net.liftweb.sitemap.Loc._
 import Helpers._
 import net.liftweb.mapper._
 import java.sql.{Connection, DriverManager}
-import ${groupId}.model._
+import ${packageName}.model._
  
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -16,11 +16,11 @@ import ${groupId}.model._
 class Boot {
   def boot {
     // add the connection manager if there's not already a JNDI connection defined
-    if (DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
+    if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor) 
     
-    // add the ${groupId} package to the list packages
+    // add the ${packageName} package to the list packages
     // searched for Snippets, CometWidgets, etc.
-    LiftServlet.addToPackages("${groupId}")
+    LiftServlet.addToPackages("${packageName}")
      
     // Update the database schema to be in sync
     Schemifier.schemify(true, Log.infoF _, User, Entry)

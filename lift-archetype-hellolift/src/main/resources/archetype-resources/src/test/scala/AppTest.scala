@@ -1,4 +1,4 @@
-package ${groupId};
+package ${packageName};
 
 import junit.framework._;
 import Assert._;

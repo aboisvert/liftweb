@@ -1,10 +1,10 @@
-package ${groupId}.controller
+package ${packageName}.controller
 
 import net.liftweb.mapper._
 import scala.collection.mutable.Map
 import scala.actors.Actor
 import scala.actors.Actor.{react}
-import ${groupId}.model.Entry
+import ${packageName}.model.Entry
 
 /** 
  * An asynchronous cache for Blog Entries built on top of Scala Actors.

@@ -1,4 +1,4 @@
-package ${groupId}.model
+package ${packageName}.model
 
 import net.liftweb.mapper._
 import net.liftweb.util._

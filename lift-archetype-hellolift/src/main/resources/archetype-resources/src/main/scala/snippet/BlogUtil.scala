@@ -1,4 +1,4 @@
-package ${groupId}.snippet
+package ${packageName}.snippet
 
 import net.liftweb.util._
 import net.liftweb.http._
@@ -6,8 +6,8 @@ import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
 import net.liftweb.sitemap._
 import scala.xml._
-import ${groupId}.model.Entry
-import ${groupId}.model.User
+import ${packageName}.model.Entry
+import ${packageName}.model.User
 
 class BlogUtil {
   def entry = (new Entry).author(User.currentUser).toForm(Full("Post"), 

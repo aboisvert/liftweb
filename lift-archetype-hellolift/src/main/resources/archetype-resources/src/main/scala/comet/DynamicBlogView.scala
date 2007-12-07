@@ -1,4 +1,4 @@
-package ${groupId}.comet
+package ${packageName}.comet
 
 import net.liftweb.http._
 import net.liftweb.util._
@@ -6,10 +6,10 @@ import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import scala.xml._
 
-import ${groupId}.model.Entry
-import ${groupId}.controller.BlogCache
-import ${groupId}.controller.BlogUpdate
-import ${groupId}.controller.AddBlogWatcher
+import ${packageName}.model.Entry
+import ${packageName}.controller.BlogCache
+import ${packageName}.controller.BlogUpdate
+import ${packageName}.controller.AddBlogWatcher
 
 class DynamicBlogView(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
 CometActor(theSession, name, defaultXml, attributes) {
