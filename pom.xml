@@ -248,6 +248,7 @@ Lift is a scala web framework.
               <descriptorRefs>
                 <descriptorRef>project</descriptorRef>
               </descriptorRefs>
+              <tarLongFileMode>gnu</tarLongFileMode>
             </configuration>
             <executions>
               <execution>
