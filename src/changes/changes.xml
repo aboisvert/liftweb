@@ -56,5 +56,7 @@
 	    <action dev="David Pollak" type="add">properties that are based on user, machine, and run mode</action>
 	    <action dev="David Pollak" type="add">filters for fields such that input (and comparison and queries) can automatically be made upper case, lower case, trim, etc.</action>      
     </release>
+    <release version="0.1.0" date="2007-02-26" description="first public release">
+    </release>
   </body>
 </document>
