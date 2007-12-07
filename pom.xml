@@ -1,12 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <!-- 
-  mvn install (in the root folder)
-  mvn scala:compile install (in the lift folder)
-  mvn scala:compile install jetty:run  (in the example folder)
-  then open http://localhost:8888/
- -->
   <groupId>net.liftweb</groupId>
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
