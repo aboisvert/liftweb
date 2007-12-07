@@ -5,7 +5,7 @@
   <parent>
     <groupId>net.liftweb</groupId>
     <artifactId>lift-examples-parent</artifactId>
-    <version>0.3.0</version>
+    <version>0.4-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>    
   </parent>
 
