@@ -24,6 +24,7 @@
   </licenses>
   <developers>
     <developer>
+      <id>pollac</id>
       <name>David Pollak</name>
       <timezone>-8</timezone>
       <email>dpp [at] liftweb.net</email>
@@ -33,36 +34,46 @@
       </roles>
     </developer>
     <developer>
-      <name>Burak.Emir</name>
+      <id>Burak.Emir</id>
+      <name>Burak Emir</name>
     </developer>
     <developer>
+      <id>philipp.schmidt</id>
       <name>philipp.schmidt</name>
     </developer>
     <developer>
+      <id>cwilkes</id>
       <name>cwilkes</name>
     </developer>
     <developer>
+      <id>julien.wetterwald</id>
       <name>julien.wetterwald</name>
     </developer>
     <developer>
+      <id>leppoc</id>
       <name>leppoc</name>
     </developer>
     <developer>
+      <id>stepan.koltsov</id>
       <name>stepan.koltsov</name>
     </developer>
     <developer>
-      <name>jorge.ortiz</name>
+      <id>jorge.ortiz</id>
+      <name>Jorge Eugenio Ortiz Hinojosa</name>
     </developer>
     <developer>
-      <name>stevej</name>
+      <id>stevej</id>
+      <name>Steve Jenson</name>
     </developer>
     <developer>
-      <name>alex.boisvert</name>
+      <id>alex.boisvert</id>
+      <name>Alex Boisvert</name>
     </developer>
     <developer>
       <name>OctoberDan</name>
     </developer>
     <developer>
+      <id>viktor.klang</id>
       <name>Viktor Klang a.k.a. Sevikkla</name>
       <timezone>+1</timezone>
       <roles>
@@ -71,6 +82,7 @@
       </roles>
     </developer>
     <developer>
+      <id>david.bernard.31</id>
       <name>David Bernard</name>
       <email>dwayne [at] liftweb.net</email>
       <timezone>+1</timezone>
@@ -79,7 +91,7 @@
       </roles>
     </developer>
   </developers>
-  
+
   <mailingLists>
     <mailingList>
       <name>User and Dev</name>
@@ -92,6 +104,10 @@
     <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
     <url>http://www.google.com/codesearch?hl=en&amp;q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;sa=N&amp;ct=rdl&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
   </scm>
+  <issueManagement>
+    <system>google</system>
+    <url>http://code.google.com/p/liftweb/issues</url>
+  </issueManagement>
   <properties>
     <scala.version>2.6.0</scala.version>
   </properties>
@@ -192,6 +208,20 @@
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>changes-report</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+        <configuration>
+          <issueLinkTemplate>%URL%/detail?id=%ISSUE%</issueLinkTemplate>
+        </configuration>
       </plugin>
     </plugins>
   </reporting>
