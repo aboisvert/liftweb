@@ -281,5 +281,36 @@ Lift is a scala web framework.
         </site>
       </distributionManagement>
     </profile>
+
+    <profile>
+      <id>ms-windows</id>
+      <activation>
+        <os>
+          <family>windows</family>
+        </os>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.scala-tools</groupId>
+            <artifactId>maven-scala-plugin</artifactId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>compile</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <jvmArgs>
+                <jvmArg>-Xmx1024m</jvmArg>
+              </jvmArgs>
+              <args></args>
+              <scalaVersion>${scala.version}</scalaVersion>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
   </profiles>
 </project>
