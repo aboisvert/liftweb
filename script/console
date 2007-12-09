@@ -19,4 +19,4 @@ done
 
 echo $CWD
 
-CLASSPATH=$THE_CLASSPATH:target/classes scala liftrepl.scala
+CLASSPATH=$THE_CLASSPATH:target/classes scala script/liftrepl.scala
