@@ -66,7 +66,9 @@ class Ajax {
     <div id="some_stuff"></div>
     {
       a(<span>Click here and the stuff above will get a message</span>){
-        DisplayMessage("some_stuff", <lift:embed what="/templates-hidden/ajax"/>, 5 seconds, 1 second)
+        DisplayMessage("some_stuff",
+            <lift:embed what="/templates-hidden/ajax"/>,
+            5 seconds, 1 second)
       }
     }
 

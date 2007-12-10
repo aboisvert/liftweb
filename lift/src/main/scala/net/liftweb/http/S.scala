@@ -397,6 +397,33 @@ object S {
   
   private def makeFormElement(name: String, func: AFuncHolder): Elem = (<input type={name} name={mapFunc(func)}/>)
  
+  
+  /**
+    * Create an Ajax button. When it's pressed, the function is executed
+    *
+    * @param text -- the name/text of the button
+    * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
+    *
+    * @return a button to put on your page
+    */
+  def ajaxButton(func: => JsCmd, text: String): Elem =
+    <input type="button" value={text}/> % 
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+        mapFunc(() => func)+"=true', dataType: 'script'});"))
+
+  /**
+    * Create an Ajax button. When it's pressed, the function is executed
+    *
+    * @param text -- the name/text of the button
+    * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
+    *
+    * @return a button to put on your page
+    */
+  def ajaxButton(text: String)(func: => JsCmd): Elem =
+    <input type="button" value={text}/> % 
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+        mapFunc(() => func)+"=true', dataType: 'script'});"))
+        
   /**
     * create an anchor tag around a body which will do an AJAX call and invoke the function
     *
