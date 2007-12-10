@@ -84,7 +84,7 @@ val pom = """<?xml version="1.0" encoding="UTF-8"?>
     <dependency>
       <groupId>net.liftweb</groupId>
       <artifactId>lift-core</artifactId>
-      <version>0.3.0-SNAPSHOT</version>
+      <version>0.4-SNAPSHOT</version>
     </dependency>
     <dependency>
       <groupId>scala</groupId>
