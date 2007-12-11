@@ -187,14 +187,22 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) ++
     ((xml, javaScript, displayAll) match { // FIXME deal with displayAll & stuff
-    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml)) ++ JsCmds.JsTry(js, false)
+    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) ++ JsCmds.JsTry(js, false)
+    // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
     
-    case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
+    // case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
+    case (Full(xml), _, false) => JsCmds.SetHtml(id, xml)
     
-    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+//    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+//      fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
+      
+//    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+//      fixedXhtml.openOr(Text(""))))
+
+    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (<span id={id}>{xml}</span> ++
       fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
       
-    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (<span id={id}>{xml}</span> ++
       fixedXhtml.openOr(Text(""))))
     
     case (_, Full(js), _) => js

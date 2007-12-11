@@ -581,19 +581,6 @@ object LiftServlet {
   
   private var snippetTable_i: SnippetPf = Map.empty
   
-  /*private def performBoot(context: ServletContext) = {
-    try {
-      val c = Class.forName("bootstrap.liftweb.Boot")
-      val i = c.newInstance
-      val f = createInvoker("boot", i)
-      f.map{f => f()}
-      
-    } catch {
-    case e: java.lang.reflect.InvocationTargetException => Log.error("Failed to Boot", e); None
-    case e => Log.error("Failed to Boot", e); None
-    }
-  }*/
-  
   def addSnippetBefore(pf: SnippetPf) = {
     snippetTable_i = pf orElse snippetTable_i
     snippetTable_i
@@ -642,6 +629,24 @@ object LiftServlet {
       case _ => session.createNotFound.toResponse
     }
   }
+  
+  /**
+    * Set a snippet failure handler here.  The class and method for the snippet are passed in
+    */
+  var snippetFailedFunc: List[SnippetFailure => Unit] = logSnippetFailure _ :: Nil
+  
+  private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
+  
+  case class SnippetFailure(page: String, typeName: Can[String], failure: SnippetFailures.Value)
+  
+  object SnippetFailures extends Enumeration {
+      val NoTypeDefined = Value(1, "No Type Defined")
+      val ClassNotFound = Value(2, "Class Not Found")
+      val StatefulDispatchNotMatched = Value(3, "Stateful Snippet: Dispatch Not Matched")
+      val MethodNotFound = Value(4, "Method Not Found")
+      val NoNameSpecified = Value(5, "No Snippet Name Specified")
+    }
+  
 }
 
 case object BreakOut

@@ -64,7 +64,7 @@ object JsCmds {
   }
   case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
-      val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(content))).openOr(content)), false, true) 
+      val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)), false, true) 
       val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
       ret
     }
@@ -103,7 +103,8 @@ object JsCmds {
   }
   
   case class ModalDialog(html: NodeSeq) extends JsCmd {
-    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude(html))).openOr(html)), false, true).encJs+");"
+    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s => 
+    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true).encJs+");"
   }
 
   case class Run(text: String) extends JsCmd {

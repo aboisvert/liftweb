@@ -199,7 +199,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	      case _ => Empty
 	    }
 	  
-	  findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(xml)) match {
+	  findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
 	    case Full(xml: NodeSeq) => {
 	      val realXml = (xml \\ "span").filter(!_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty).toList match {
 		case Nil => xml
@@ -351,10 +351,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   private def findAndEmbed(templateName: Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
     templateName match {
-      case Full(s) => {
-	findTemplate(s.text) match {
-	  case Full(s) => processSurroundAndInclude(s)
-	  case _ => Comment("FIX"+"ME Unable to find template named "+s.text) ++ kids
+      case Full(tn) => {
+	findTemplate(tn.text) match {
+	  case Full(s) => processSurroundAndInclude(tn.text, s)
+	  case _ => Comment("FIX"+"ME Unable to find template named "+tn.text) ++ kids
 	}
       }
       case _ => Comment("FIX"+"ME No named specified for embedding") ++ kids
@@ -396,28 +396,36 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     case _ => Empty
   })
   
-  private def processSnippet(snippetName: Can[Seq[Node]], attrs: MetaData, kids: NodeSeq): NodeSeq = {
+  import LiftServlet.SnippetFailures._
+  
+  private def processSnippet(page: String, snippetName: Can[String], attrs: MetaData, kids: NodeSeq): NodeSeq = {
     val isForm = !attrs.get("form").toList.isEmpty
-    val ret = snippetName.map(_.text).map(snippet => 
+    val ret = snippetName.map(snippet => 
 	S.locateSnippet(snippet).map(_(kids)) openOr {
 	  val (cls, method) = splitColonPair(snippet, null, "render")
 	  findSnippetInstance(cls) match {
             
-            case Full(inst: StatefulSnippet) if inst.dispatch.isDefinedAt(method) => 
+            case Full(inst: StatefulSnippet) =>
+            if (inst.dispatch.isDefinedAt(method))
             (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
               inst.dispatch(method)(kids)
+            else {LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, StatefulDispatchNotMatched))); kids}
               
 	    case Full(inst) => {
               val ar: Array[Object] = List(Group(kids)).toArray
               // val ar: Array[Object] = Array(Group(kids))
 	      ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
 		case Full(md: NodeSeq) => md
-		case it => kids
+		case it => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, MethodNotFound))); kids
 	      }
 	    }
-            case _ => kids
+            case _ => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, ClassNotFound))); kids
 	  }
-	}).openOr(kids)
+	}).openOr{
+      LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, NoNameSpecified)))
+      Comment("FIX"+"ME -- no type defined for snippet")
+      kids
+      }
     
     def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
       case Nil => Null
@@ -430,21 +438,21 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
-  private[http] def processSurroundAndInclude(in: NodeSeq): NodeSeq = {
+  private[http] def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
     in.flatMap{
       v => 
 	v match {
-	  case Group(nodes) => Group(processSurroundAndInclude(nodes))
+	  case Group(nodes) => Group(processSurroundAndInclude(page, nodes))
           case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
-          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(elm))
-          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
-          case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(processSnippet(Can(elm.attributes.get("type")), elm.attributes, elm.child)))
-	  case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
-          case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(elm.child)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(page, elm))
+          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(page, findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
+          case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(page, processSnippet(page, Can(elm.attributes.get("type")).map(_.text), elm.attributes, elm.child)))
+	  case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(page, executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
+          case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(page, elm.child)
           case elm: Elem if elm.prefix == "lift" && elm.label == "loc" => elm.attributes.filter(_.key == "id").toList match {case id :: _ => S.loc(id.value.text, elm.child) case _ => S.loc(elm.child.text, elm.child)}
-          case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(elm.child): _*)
-          case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(elm.child): _*)
-	  case elm: Elem => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(v.child) : _*)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
+          case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
+	  case elm: Elem => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(page, v.child) : _*)
 	  case _ => v
 	}
     }
@@ -544,8 +552,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     bufs
   }
   
-  private def processSurroundElement(in: Elem): NodeSeq = in match {
-    case Elem("lift", "surround", attr @ _, _, kids @ _*) =>
+  private def processSurroundElement(page: String, in: Elem): NodeSeq = {
+    val attr = in.attributes
+    val kids = in.child
+    // case Elem("lift", "surround", attr @ _, _, kids @ _*) =>
       
       val (otherKids, paramElements) = filter2(kids) {
 	case Elem("lift", "with-param", _, _, _) => false
@@ -555,12 +565,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     val params = paramElements.flatMap {
       case Elem("lift", "with-param", attr @ _, _, kids @ _*) =>
 	val valueOption: Option[Seq[Node]] = attr.get("name")
-      val option: Option[(String, NodeSeq)] = valueOption.map((v: Seq[Node]) => (v.text, processSurroundAndInclude(kids)))
+      val option: Option[(String, NodeSeq)] = valueOption.map((v: Seq[Node]) => (v.text, processSurroundAndInclude(page, kids)))
       option
     }
     
     val mainParam = (attr.get("at").map(_.text: String).getOrElse("main"),
-		     processSurroundAndInclude(otherKids))
+		     processSurroundAndInclude(page, otherKids))
       val paramsMap = collection.immutable.Map(params: _*) + mainParam
     findAndMerge(attr.get("with"), paramsMap)
   }
@@ -568,7 +578,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   private def findAndMerge(templateName: Can[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
     val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
     
-    findTemplate(name).map(s => processBind(processSurroundAndInclude(s), atWhat)).
+    findTemplate(name).map(s => processBind(processSurroundAndInclude(name, s), atWhat)).
       openOr(atWhat.values.flatMap(_.elements).toList)
   }
   
