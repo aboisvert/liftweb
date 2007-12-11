@@ -168,6 +168,9 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
                    val nanoEnd: Long,
                    val uploadedFiles: List[FileParamHolder]) 
 {
+  override def toString = "RequestState("+paramNames+", "+params+", "+uri+", "+path+
+    ", "+contextPath+", "+requestType+", "+webServices_? +", "+contentType+")"
+      
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
@@ -207,27 +210,7 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
         ResponseInfo.xhtmlTransitional , Nil, 404)
   }
   
-  def showException(e: Throwable) = {
-    Log.error("Exception being returned to browser", e)
-    def _showException(le: Throwable): String = {
-      val ret = "Message: "+le.toString+"\n"+
-      le.getStackTrace.map{st => st.toString}.mkString("","\n","") + "\n"
-      
-      val also = le.getCause match {
-	case sub: Throwable => "Caught and thrown by:\n"+ _showException(sub)
-	case _ => ""
-      }
-      
-      ret + also
-    }
-    val et = _showException(e)
-    XhtmlResponse((<html><body>Exception occured while processing {this.uri} 
-	     <pre>{
-	       
-	       et      
-	     }</pre></body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
-  }
-  
+
   def post_? = requestType.post_?
   def get_? = requestType.get_?
   def put_? = requestType.put_?

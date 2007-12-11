@@ -594,10 +594,9 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
   }
   
-  def runMethod(inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = { Empty
-  }
+  // def runMethod(inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = Empty
   
-  def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
+  // def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
   
   def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Full(ptypes)) or _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or

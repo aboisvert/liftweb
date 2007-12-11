@@ -238,7 +238,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 					      List("Location" -> (request.updateWithContextPath(rd.to))),
 					      302))
 	}
-	case e  => AnswerHolder(request.showException(e))
+	case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e)) // request.showException(e))
       }
     }
   }

@@ -647,6 +647,58 @@ object LiftServlet {
       val NoNameSpecified = Value(5, "No Snippet Name Specified")
     }
   
+  /**
+    * The function that deals with how exceptions are presented to the user during processing
+    * of an HTTP request.  Put a new function here to change the behavior.
+    *
+    * The function takes the RequestState and the Exception and returns a ResponseIt that's 
+    * sent to the browser.
+    */
+  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => ResponseIt = showException
+  
+  /**
+    * The partial function (pattern matching) for handling converting an exception to something to
+    * be sent to the browser depending on the current RunMode (development, etc.)
+    *
+    * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
+    * so that your response over-rides the default, but the processing falls through to the default.
+    */
+  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), ResponseIt] = {
+    case (Props.RunModes.Development, r, e) =>
+    XhtmlResponse((<html><body>Exception occured while processing {r.uri} 
+    <pre>{
+      _showException(e)     
+    }</pre></body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
+
+    case (_, r, e) => 
+    XhtmlResponse((<html><body>Something unexpects happened while serving the page at {r.uri} 
+    </body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
+  }
+   
+  /**
+    * A utility method to convert an exception to a string of stack traces
+    * @param le the exception
+    *
+    * @return the stack trace
+    */
+  def _showException(le: Throwable): String = {
+    val ret = "Message: "+le.toString+"\n"+
+    le.getStackTrace.map(_.toString).mkString("\n") + "\n"
+    
+    val also = le.getCause match {
+      case sub: Throwable => "Caught and thrown by:\n"+ _showException(sub)
+      case _ => ""
+    }
+    
+    ret + also
+  }
+    
+  private def showException(r: RequestState, e: Throwable): ResponseIt = {
+    Log.error("Exception being returned to browser when processing "+r, e)
+   browserResponseToException(Props.mode, r, e)
+  }
+  
+  
 }
 
 case object BreakOut
