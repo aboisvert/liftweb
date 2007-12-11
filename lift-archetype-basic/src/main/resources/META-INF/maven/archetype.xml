@@ -22,5 +22,6 @@
   </testSources>
   <testResources>
     <resource>src/test/scala/RunWebApp.scala</resource>
+    <resource>src/test/scala/LiftConsole.scala</resource>
   </testResources>
 </archetype>
