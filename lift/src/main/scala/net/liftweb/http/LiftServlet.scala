@@ -671,7 +671,7 @@ object LiftServlet {
     }</pre></body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
 
     case (_, r, e) => 
-    XhtmlResponse((<html><body>Something unexpects happened while serving the page at {r.uri} 
+    XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri} 
     </body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
   }
    
