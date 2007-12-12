@@ -805,7 +805,10 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
 
 /**
   * Keep session information around without the nastiness of naming session variables
-  * or the type-unsafety of casting the results
+  * or the type-unsafety of casting the results.
+  * SessionVars are type-safe variables that map pretty directly to  
+  * HttpSession attributes.  Put stuff in and they are available for the  
+  * life of the Session.
   *
   * @param dflt - the default value of the session variable
   */
@@ -817,7 +820,11 @@ abstract class SessionVar[T](dflt: => Can[T]) extends AnyVar[T, SessionVar[T]](d
 
 /**
    * Keep request-local information around without the nastiness of naming session variables
-   * or the type-unsafety of casting the results
+   * or the type-unsafety of casting the results.
+   * RequestVars share their value through the scope of the current HTTP  
+   * request.  They have no value at the beginning of request servicing  
+   * and their value is discarded at the end of request processing.  They  
+   * are helpful to share values across many snippets.
    *
    * @param dflt - the default value of the session variable
    */
