@@ -9,7 +9,7 @@ package net.liftweb.http
 import scala.actors.Actor
 import scala.actors.Actor._
 import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
-import scala.collection.mutable.{HashMap, ArrayBuffer}
+import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.mapper.DB
 import net.liftweb.util._
@@ -201,7 +201,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	  
 	  findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
 	    case Full(xml: NodeSeq) => {
-	      val realXml = (xml \\ "span").filter(!_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty).toList match {
+	      val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
 		case Nil => xml
 		case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
 		val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
@@ -243,6 +243,21 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     }
   }
   
+  private def allElems(in: NodeSeq, f: Elem => Boolean): List[Elem] = {
+    val lb = new ListBuffer[Elem]
+    
+    def appendAll(in: NodeSeq, lb: ListBuffer[Elem]) {
+      in.foreach{
+        case Group(ns) => appendAll(ns, lb)
+        case e: Elem if f(e) => lb += e; appendAll(e.child, lb)
+        case e: Elem => appendAll(e.child, lb)
+        case _ => 
+      }
+    }
+    appendAll(in, lb)
+    
+    lb.toList
+  }
   
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, session.path, session.requestType, this)
@@ -463,11 +478,11 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       findComet(theType, name, kids, Map.empty ++ attr.flatMap{case u: UnprefixedAttribute => List((u.key, u.value.text)) case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) case _ => Nil}.toList).
       map(c =>
 	(c !? (6600, AskRender)) match {
-	  case Some(AnswerRender(response, _, when, _)) => 
-          val ret = <span id={c.uniqueId+"_outer"}><span id={c.uniqueId} lift:when={when.toString}>{
-            response.inSpan}</span>{response.outSpan}</span>
+          case Some(AnswerRender(response, _, when, _)) if c.hasOuter => 
+          <span id={c.uniqueId+"_outer"}>{c.buildSpan(when, response.inSpan)}{response.outSpan}</span>
 
-          ret
+          case Some(AnswerRender(response, _, when, _)) => 
+          c.buildSpan(when, response.inSpan)
           
 	  case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
 	}) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids

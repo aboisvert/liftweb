@@ -10,7 +10,7 @@ import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
-import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node}
+import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
 // import S._
@@ -39,6 +39,14 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     * Set to 'true' if we should run "render" on every page load
     */
   protected def devMode = false
+  
+  def hasOuter = true
+  
+  def parentTag = <span/>
+  
+  def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
+      parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))
+          
   
   def act = {
     this.trapExit = true
@@ -73,7 +81,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       case Full(who) => who forward l
       case _ =>
         if (when >= lastRenderTime) listeners += sender.receiver
-        else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime, wasLastFullRender)
+        else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
     }
     
     case PerformSetupComet =>
@@ -83,7 +91,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case AskRender =>
       askingWho match {
         case Full(who) => who forward AskRender
-        case _ => if (devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), whosAsking openOr this, lastRenderTime, true))
+        case _ => if (devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, true))
         }
     
     case ActionMessageSet(msgs, request) =>
@@ -126,11 +134,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   final def reRender(sendAll: Boolean): AnswerRender = {
     lastRenderTime = Math.max(millis, lastRenderTime + 1)
-    wasLastFullRender = sendAll
+    wasLastFullRender = sendAll & hasOuter
     S.initIfUninitted(theSession) {
       lastRendering = render
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
-      val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering), this, lastRenderTime, sendAll)// buildRendered(lastRendering, lastRenderTime)
+      val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), this, lastRenderTime, sendAll)// buildRendered(lastRendering, lastRenderTime)
       listeners.toList.foreach(_ ! rendered)
       listeners.clear
       rendered
@@ -182,11 +190,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
 sealed abstract class CometMessage
 
-class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd]) {
-  def this(id: String, ro: RenderOut) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript)
+class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
+    spanFunc: (Long, NodeSeq) => NodeSeq) {
+  def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) ++
-    ((xml, javaScript, displayAll) match { // FIXME deal with displayAll & stuff
+    ((xml, javaScript, displayAll) match { 
     case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) ++ JsCmds.JsTry(js, false)
     // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
     
@@ -199,10 +208,10 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
 //    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
 //      fixedXhtml.openOr(Text(""))))
 
-    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (<span id={id}>{xml}</span> ++
+    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
       fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
       
-    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (<span id={id}>{xml}</span> ++
+    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
       fixedXhtml.openOr(Text(""))))
     
     case (_, Full(js), _) => js
