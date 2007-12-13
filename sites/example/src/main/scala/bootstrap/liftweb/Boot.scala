@@ -15,6 +15,7 @@ import net.liftweb.example.comet.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.immutable.TreeMap
 import net.liftweb.example.model._
+import net.liftweb.example.snippet.definedLocale
  
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -25,6 +26,8 @@ class Boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     LiftServlet.addToPackages("net.liftweb.example")
      
+    LiftServlet.localeCalculator = r => definedLocale.openOr(LiftServlet.defaultLocaleCalculator(r))
+    
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
     
     val dispatcher: LiftServlet.DispatchPf = {

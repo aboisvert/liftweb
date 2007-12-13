@@ -270,8 +270,8 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   def findAnyTemplate(places : List[String]) : Can[NodeSeq] = {
     val pls = places.mkString("/","/", "")
-    val toTry = for (s <- suffixes; p <- locales) yield p + pls + p + (if (s.length > 0) "." + s else "")
-
+    val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
+    
     first(toTry)(v => LiftServlet.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
   }  
   

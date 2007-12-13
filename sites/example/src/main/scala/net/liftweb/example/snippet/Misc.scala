@@ -14,7 +14,7 @@ import net.liftweb.mapper._
 import net.liftweb.http.S._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
-
+import java.util.Locale
 
 class Misc {
   private object selectedUser extends RequestVar[User](Empty)
@@ -112,7 +112,22 @@ class Misc {
       "mime_type" --> theUpload.map(v => Text(v.mimeType)),
       "length" --> theUpload.map(v => Text(v.file.length.toString)),
       "md5" --> theUpload.map(v => Text(hexEncode(md5(v.file))))
-      )
+      );
+
+  private def setLocale(lc: String) {
+    Locale.getAvailableLocales.filter(_.toString == lc).toList match {
+      case x :: xs => definedLocale(x)
+      case _ => definedLocale(Empty)
+    }
+  }
   
+  def lang(xhtml: Group): NodeSeq = bind("showLoc", xhtml,
+      "lang" --> locale.getDisplayLanguage(locale),
+      "select" --> S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
+        map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))  
+      
 }
+
+object definedLocale extends SessionVar[Locale](Empty)
+
 
