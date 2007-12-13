@@ -149,7 +149,9 @@ object RequestState {
        }
     }
     }
-  }  
+  }
+  
+  def unapply(in: RequestState) = Some((in.path, in.requestType, in.contextPath, in.webServices_? , in.contentType)) 
 }
 
 case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
