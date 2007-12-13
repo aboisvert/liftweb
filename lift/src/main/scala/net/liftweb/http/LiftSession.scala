@@ -96,7 +96,6 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       }
     }
     
-
     def buildFunc(i: RunnerHolder): () => Any = i.func match {
     case bfh: S.BinFuncHolder => () => state.uploadedFiles.filter(_.name == i.name).map(v => bfh(v))
     case normal => () => normal(state.params.getOrElse(i.name, state.uploadedFiles.filter(_.name == i.name).map(_.fileName)))
@@ -117,6 +116,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   }
   
   
+  private[http] def updateFunctionMap(funcs: Map[String, S.AFuncHolder]): Unit = synchronized {
+    funcs.foreach(mi => messageCallback(mi._1) = mi._2)
+  }
+  
   def updateFunctionMap(funcs: Map[String, S.AFuncHolder], uniqueId: String, when: Long): Unit = synchronized {
     funcs.foreach{case (name, func) => messageCallback(name) = func.duplicate(uniqueId)}
     }
@@ -135,36 +138,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   }
   
   /**
-   * called when the Actor is started
-   */
-     /*
-  def act = {
-    this.trapExit = true
-    running_? = true
-
-    loop(react(dispatcher))
-  }*/
-  
-  /**
     * Called just before the session exits.  If there's clean-up work, override this method 
     */
   def cleanUpSession() {
      
    }
   
-  /*
-  def dispatcher: PartialFunction[Any, Unit] = {
-    case ShutDown =>
-      Log.debug("Shutting down session")
-    asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
-      cleanUpSession()
-    self.exit
-    
-    case AskSessionToRender(request,httpRequest, timeout, whenDone) => processRequest(request, httpRequest, timeout, whenDone)
-
-    case unknown => Log.debug("LiftSession Got a message "+unknown)
-  }*/
-    
   private def shutDown() = synchronized {
     Log.debug("Shutting down session")
     running_? = false
@@ -206,8 +185,6 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 		case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
 		val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
 		val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
-		
-		
 		
 		val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
 		xform.transform(xml)

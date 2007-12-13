@@ -38,17 +38,10 @@ import java.util.Locale
 private[http] class LiftServlet(val getServletContext: ServletContext) extends AnyRef /* HttpServlet */ {
   private val actorNameConst = "the_actor"
   private var requestCnt = 0
-  private val selves = new ListBuffer[Actor]
   
   def destroy = {
     try {
     LiftServlet.ending = true
-    this.synchronized {
-      while (requestCnt > 0) {
-        selves.foreach(s => s ! None)
-        wait(100L)
-      }
-    }
     Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
     ActorPing.snapshot
     Scheduler.shutdown 
@@ -201,8 +194,9 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         // Response("".getBytes("UTF-8"), Nil, 200)
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
         S.init(session, sessionActor) {
+          try {
             val what = flatten(sessionActor.runParams(session))
-
+            
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
 
             val ret = what2 match {
@@ -214,53 +208,21 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             }
 
             ret
+          } finally {
+            sessionActor.updateFunctionMap(S.functionMap)
+          }
         }        
   } else {
         try {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1
-            self.trapExit = true
-            selves += self
           }
           
-          /*
-        def drainTheSwamp { // remove any message from the current thread's inbox
-          receiveWithin(0) {
-            case TIMEOUT => true
-            case s @ _ => Log.trace("Drained "+s) ; false
-          } match {
-            case false => drainTheSwamp
-            case _ =>
-          }
-        }
-        
-        drainTheSwamp
-        
-        val timeout = (LiftServlet.calcRequestTimeout.map(_(session)) openOr (/*if (session.ajax_?) (Servlet.ajaxRequestTimeout openOr 120) 
-            else*/ (LiftServlet.stdRequestTimeout openOr 10))) * 1000L        
-        
-        /*if (session.ajax_? && Servlet.hasJetty_?) {
-          sessionActor ! AskSessionToRender(session, request, 120000L, a => Servlet.resumeRequest(a, request))
-          Servlet.doContinuation(request)
-        } else*/ {
-	
-        val thisSelf = self
-        */
 	sessionActor.processRequest(session, request).what.toResponse
 
-        /*{
-          case AnswerHolder(r) => r.toResponse
-          // if we failed allow the optional handler to process a request 
-	  case n @ TIMEOUT => LiftServlet.requestTimedOut.flatMap(_(session, n)) match {
-            case Full(r) => r
-            case _ => Log.warn("Got unknown (Servlet) resp "+n); session.createNotFound.toResponse
-          }
-	}
-        }*/
         } finally {
           this.synchronized {
             this.requestCnt = this.requestCnt - 1
-            selves -= self
             this.notifyAll
           }
         }
