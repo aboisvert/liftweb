@@ -702,9 +702,9 @@ class LiftFilter extends Filter
     def init(config:FilterConfig) {
       context = config.getServletContext
       
+      LiftServlet.setContext(context)       
       bootLift(config.getInitParameter("bootloader"))
-      
-      LiftServlet.setContext(context) 
+
       actualServlet = new LiftServlet(context)
       actualServlet.init
     }
