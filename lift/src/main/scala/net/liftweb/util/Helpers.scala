@@ -1072,8 +1072,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
         else (in % sc) :: moof(in / sc, scales.tail)
       }
       
-      val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
-      lst.mkString("",", ", "")+" ("+len+")"
+      val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).filter(_._1 > 0).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
+      lst.mkString("",", ", "")// +" ("+len+")"
     }
   }
   

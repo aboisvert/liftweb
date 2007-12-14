@@ -26,7 +26,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis
-  private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty, Empty)
+  private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty, Empty, false)
   private var wasLastFullRender = false
   private val listeners = new ListBuffer[Actor]()
   private var askingWho: Can[CometActor] = Empty
@@ -180,9 +180,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     reRender(false)
   }
   
-  implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty)
+  implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty, false)
   // implicit def xmlNsToXmlOrJsCmd(in: Seq[Node]): RenderOut = new RenderOut(in)
-  implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Empty, Full(in), Empty)
+  implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Empty, Full(in), Empty, false)
   implicit def pairToPair(in: (String, Any)): (String, NodeSeq) = (in._1, Text(in._2 match {case null => "null" case s => s.toString}))
   implicit def nodeSeqToFull(in: NodeSeq): Can[NodeSeq] = Full(in)
   implicit def elemToFull(in: Elem): Can[NodeSeq] = Full(in)
@@ -191,11 +191,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 sealed abstract class CometMessage
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
-    spanFunc: (Long, NodeSeq) => NodeSeq) {
-  def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc)
+    spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean) {
+  def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) ++
-    ((xml, javaScript, displayAll) match { 
+    ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match { 
     case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) ++ JsCmds.JsTry(js, false)
     // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
     
@@ -221,7 +221,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
       ret
   }
 
-  def inSpan: NodeSeq = xml.openOr(Text(""))
+  def inSpan: NodeSeq = xml.openOr(Text(""))++javaScript.map(s => Script(s)).openOr(Text("")) 
   def outSpan: NodeSeq = Script(Run("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")) ++
     javaScript.map(s => Script(s)).openOr(Text("")) ++ fixedXhtml.openOr(Text(""))
   //def asXhtml: NodeSeq = xml.openOr(Text(""))
@@ -237,8 +237,8 @@ case object Unlisten extends CometMessage
 // case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
 case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
-case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd]) {
-  def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty)
-  def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty)
-  def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy)) 
+case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
+  def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
+  def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
+  def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false) 
 }
