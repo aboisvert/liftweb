@@ -84,10 +84,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "DATETIME"
-    case DerbyDriver => "TIMESTAMP"
-  })
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.dateTimeColumnType
   
   def inFuture_? = data.get match {
   case null => false

@@ -95,9 +95,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case _ => "BIGINT"
-  })  
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.enumColumnType
   
   /**
     * Build a list for the select.  Return a tuple of (String, String) where the first string
@@ -157,10 +155,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
     }                                         
   }
   
-  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "INTEGER NOT NULL AUTO_INCREMENT UNIQUE"
-    case DerbyDriver => "INTEGER NOT NULL GENERATED ALWAYS AS IDENITY"
-  })
+  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.integerIndexColumnType
 
 }
 
@@ -243,8 +238,6 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case _ => "INTEGER"
-  })
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.integerColumnType
 }
 

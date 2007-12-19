@@ -6,7 +6,7 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import java.sql.{Connection, ResultSet}
+import java.sql.{Connection, ResultSet, DatabaseMetaData}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import net.liftweb.util.{Helpers}
 import Helpers._
@@ -96,9 +96,19 @@ object Schemifier {
     }
   }
   
+  /**
+   * Retrieves schema name where the unqualified db objects are searched.
+   */
+  def getDefaultSchemaName(connection: SuperConnection) : String = {
+    connection.driverType.defaultSchemaName match {
+      case Some(name) => name
+      case None => connection.getMetaData.getUserName
+    }
+  }
+
   private def hasTable_? (table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Boolean = {
     val md = connection.getMetaData
-    val rs = md.getTables(null, null, null, null)
+    val rs = md.getTables(null, getDefaultSchemaName(connection), null, null)
     
     def hasTable: Boolean = {
       if (!rs.next) false
@@ -111,30 +121,44 @@ object Schemifier {
     hasTable
   }
   
+
+  /**
+   * Creates an SQL command and optionally executes it.
+   * 
+   * @param performWrite Whether the SQL command should be executed.
+   * @param logFunc Logger.
+   * @param connection Database connection.
+   * @param makeSql Factory for SQL command.
+   * 
+   * @returns SQL command.
+   */
+  private def maybeWrite(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, connection: SuperConnection) (makeSql: () => String) : String ={
+    val ct = makeSql()
+    if (performWrite) {
+      logFunc(ct)
+      val st = connection.createStatement
+      st.execute(ct)
+      st.close
+    }
+    ct
+  }
+
   private def ensureTable(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
     val hasTable = hasTable_?(table, connection, actualTableNames)
     val cmds = new ListBuffer[String]()
     if (!hasTable) {
-      val ct = "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+") "+connection.createTablePostpend
-      cmds += ct
-      if (performWrite) {
-        logFunc(ct)
-        val st = connection.createStatement
-        st.execute(ct)
-        st.close
+      cmds += maybeWrite(performWrite, logFunc, connection) {
+        () => "CREATE TABLE "+table.dbTableName+" ("+createColumns(table, connection).mkString(" , ")+") "+connection.createTablePostpend
       }
-      table.mappedFields.filter{f => f.dbPrimaryKey_?}.foreach {
-        pkField =>
-          val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
-            cmds += ct
-        if (performWrite) {
-          logFunc(ct)
-          val st = connection.createStatement
-          st.execute(ct)
-          st.close
+      if (!connection.driverType.pkDefinedByIndexColumn_?) {
+        // Add primary key only when it has not been created by the index field itself.
+        table.mappedFields.filter{f => f.dbPrimaryKey_?}.foreach {
+          pkField =>
+            cmds += maybeWrite(performWrite, logFunc, connection) {
+              () => "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+pkField.dbColumnName+")"
+            }
         }
       }
-      
       hasTable_?(table, connection, actualTableNames)
       Collector(table.dbAddTable.toList, cmds.toList)
     } else Collector(Nil, cmds.toList)
@@ -152,7 +176,7 @@ object Schemifier {
       var cols: List[String] = Nil
       val totalColCnt = field.dbColumnCount
       val md = connection.getMetaData
-      val rs = md.getColumns(null, null, actualTableNames(table.dbTableName), null)
+      val rs = md.getColumns(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), null)
       while (hasColumn < totalColCnt && rs.next) {
         val tableName = rs.getString(3).toLowerCase
         val columnName = rs.getString(4).toLowerCase
@@ -167,28 +191,17 @@ object Schemifier {
       // FIXME deal with column types
       (field.dbColumnNames(field.name) diff cols).foreach {
         colName =>
-          
-          val ct = "ALTER TABLE "+table.dbTableName+" ADD COLUMN "+field.fieldCreatorString(connection.driverType, colName)
-          cmds += ct
-        if (performWrite) {
-          logFunc(ct)
-          val st = connection.createStatement
-          st.execute(ct)
-          st.close
-        }
-
-        if (field.dbPrimaryKey_?) {
-          val ct = "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+field.dbColumnName+")"
-            cmds += ct
-          if (performWrite) {
-            logFunc(ct)            
-            val st = connection.createStatement
-            st.execute(ct)
-            st.close
+          cmds += maybeWrite(performWrite, logFunc, connection) {
+            () => "ALTER TABLE "+table.dbTableName+" ADD COLUMN "+field.fieldCreatorString(connection.driverType, colName)
+          }
+        if ((!connection.driverType.pkDefinedByIndexColumn_?) && field.dbPrimaryKey_?) {
+          // Add primary key only when it has not been created by the index field itself.
+          cmds += maybeWrite(performWrite, logFunc, connection) {
+            () => "ALTER TABLE "+table.dbTableName+" ADD CONSTRAINT "+table.dbTableName+"_PK PRIMARY KEY("+field.dbColumnName+")"
           }
         }
       }
-      
+
       field.dbAddedColumn.toList
       
     }
@@ -203,7 +216,7 @@ object Schemifier {
     val byName = new HashMap[String, List[String]]()
     
     val md = connection.getMetaData
-    val rs = md.getIndexInfo(null, null, actualTableNames(table.dbTableName), false, false)
+    val rs = md.getIndexInfo(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), false, false)
     def quad(rs: ResultSet): List[(String, String, Int)] = {
       if (!rs.next) Nil else {
 	if (rs.getString(3).toLowerCase == table.dbTableName.toLowerCase)
@@ -221,13 +234,8 @@ object Schemifier {
     val single = table.mappedFields.filter{f => f.dbIndexed_?}.toList.flatMap {
       field =>
 	if (!indexedFields.contains(List(field.dbColumnName.toLowerCase))) {
-          val ct = "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
-          cmds += ct
-          if (performWrite) {
-            logFunc(ct)
-            val st = connection.createStatement
-            st.execute(ct)
-            st.close
+          cmds += maybeWrite(performWrite, logFunc, connection) {
+            () => "CREATE INDEX "+(table.dbTableName+"_"+field.dbColumnName)+" ON "+table.dbTableName+" ( "+field.dbColumnName+" )"
           }
           field.dbAddedIndex.toList
 	} else Nil
@@ -238,17 +246,12 @@ object Schemifier {
 	val columns = index.columns.toList
       val fn = columns.map(_.field.dbColumnName.toLowerCase).sort(_ < _)
       if (!indexedFields.contains(fn)) {
-        val ct = "CREATE INDEX "+(table.dbTableName+"_"+columns.map(_.field.dbColumnName).mkString("_"))+" ON "+table.dbTableName+" ( "+columns.map(_.indexDesc).comma+" )"
-          cmds += ct
-        if (performWrite) {
-          logFunc(ct)
-          val st = connection.createStatement
-          st.execute(ct)
-          st.close
+        cmds += maybeWrite(performWrite, logFunc, connection) {
+          () => "CREATE INDEX "+(table.dbTableName+"_"+columns.map(_.field.dbColumnName).mkString("_"))+" ON "+table.dbTableName+" ( "+columns.map(_.indexDesc).comma+" )"
         }
       }
     }
-    
+
     Collector(single, cmds.toList)
   }
 
@@ -264,7 +267,7 @@ object Schemifier {
 	
 	val md = connection.getMetaData
 	// val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
-	val rs = md.getExportedKeys(null, null,myTable)
+	val rs = md.getExportedKeys(null, getDefaultSchemaName(connection), myTable)
 	//val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
 	var foundIt = false
 	while (!foundIt && rs.next) {
@@ -275,13 +278,8 @@ object Schemifier {
 	rs.close
 
 	if (!foundIt) {
-          val ct = "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
-            cmds += ct
-          if (performWrite) {
-            logFunc(ct)
-            val st = connection.createStatement
-            st.execute(ct)
-            st.close
+          cmds += maybeWrite(performWrite, logFunc, connection) {
+            () => "ALTER TABLE "+table.dbTableName+" ADD FOREIGN KEY ( "+field.dbColumnName+" ) REFERENCES "+other.dbTableName+" ( "+field.dbKeyToColumn.dbColumnName+" ) "
           }
           field.dbAddedForeignKey.toList
 	} else Nil

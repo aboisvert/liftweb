@@ -87,11 +87,7 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "BOOLEAN"
-    case DerbyDriver => "SMALLINT"
-  })
-  
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.booleanColumnType
 
   
     /**

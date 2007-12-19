@@ -52,10 +52,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
    /**
       * Given the driver type, return the string required to create the column in the database
       */
-    override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-       case DerbyDriver => "BIGINT"
-       case MySqlDriver => "BIGINT UNSIGNED"
-     })  
+    override def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.longForeignKeyColumnType
         
 }
 
@@ -96,10 +93,7 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
     else tryo(convertKey(in.toString)).flatMap(s => s)
   }
   
-  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "BIGINT UNSIGNED NOT NULL AUTO_INCREMENT UNIQUE KEY"
-    case DerbyDriver => "BIGINT NOT NULL GENERATED ALWAYS AS IDENTITY"
-  })
+  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.longIndexColumnType
 
 }
 
@@ -184,9 +178,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case _ => "BIGINT"
-  })  
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.enumListColumnType
   
     /**
    * Create an input field for the item
@@ -273,8 +265,6 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case _ => "BIGINT"
-  })
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.longColumnType
 }
 

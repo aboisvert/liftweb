@@ -71,8 +71,5 @@ class MappedBinary[T<:Mapper[T]](val fieldOwner: T, val maxLen: Int) extends Map
   /**
    * Given the driver type, return the string required to create the column in the database
    */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" "+(dbType match {
-    case MySqlDriver => "MEDIUMBLOB" // VARBINARY("+maxLen+")"
-    case DerbyDriver => "LONG VARCHAR FOR BIT DATA"
-  })
+  def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.binaryColumnType
 }
