@@ -26,7 +26,7 @@ class StateMachineTests extends TestCase("State Machine Tests") {
     user.save
     TestStateMachine.stateEnumeration // cause the singleton to get loaded
     val tran = TestStateMachine.FirstTransition
-    val toTest = TestStateMachine.createNewInstance(tran) {i => i.managedItem(user.id)}
+    val toTest = TestStateMachine.createNewInstance(tran) {i => i.managedItem(user)}
     
     assert(TestStateMachine.didExitInitial)
     assert(TestStateMachine.didEnterFirst)

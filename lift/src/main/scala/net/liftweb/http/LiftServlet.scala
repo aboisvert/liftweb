@@ -57,7 +57,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   
   def init = {
     try {
-      if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
+      // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
     ActorPing.start
     LiftServlet.ending = false
     // super.init
@@ -83,7 +83,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) match {
       case null => Empty
       case u : URL => Full(u)
-      case _ => Empty
     }
   }
   
@@ -378,7 +377,7 @@ object LiftServlet {
     */
   var localeCalculator: Can[HttpServletRequest] => Locale = defaultLocaleCalculator _
   
-  def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case l: Locale => Full(l) case _ => Empty}).openOr(Locale.getDefault())
+  def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
 
   
   val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
@@ -648,8 +647,8 @@ object LiftServlet {
     le.getStackTrace.map(_.toString).mkString("\n") + "\n"
     
     val also = le.getCause match {
+      case null => ""
       case sub: Throwable => "Caught and thrown by:\n"+ _showException(sub)
-      case _ => ""
     }
     
     ret + also

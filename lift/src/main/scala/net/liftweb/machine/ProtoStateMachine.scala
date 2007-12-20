@@ -188,7 +188,12 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   protected def processEvent(who: MyType, what: Meta#Event) {
     val transitions = stateInfo(who.state) // get the transitions
     val which = first(transitions.toList) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Full(t) else Empty}
-    if (!which.isDefined) what.unmatchedEventHanlder(who, stateList(who.state))
+
+    if (!which.isDefined) {
+      val s: State = stateList(who.state)
+      what.unmatchedEventHandler(who, s)
+    }
+
     which.foreach {
       t =>
       val to = t.to
@@ -248,7 +253,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        * you can override this method (and not call "super") to log issues or do
        * something else
        */
-     override def unmatchedEventHanlder(who: MyType, state: State) {
+     override def unmatchedEventHandler(who: MyType, state: State) {
        who.nextTransitionAt(-1L)
        state.trans.foreach {
          to =>
@@ -257,7 +262,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
            case _ =>
          }
        }
-       if (who.nextTransitionAt.is == -1) super.unmatchedEventHanlder(who, state)
+       if (who.nextTransitionAt.is == -1) super.unmatchedEventHandler(who, state)
        else who.inProcess(false).save
      }    
   }
@@ -268,7 +273,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   
   object Event {
     def unmatchedHandler: Can[(MyType,State, Event) => Any] = Empty
-    def unmatchedEventHanlder(who: MyType, state: State, event: Event) {
+    def unmatchedEventHandler(who: MyType, state: State, event: Event) {
       val f = unmatchedHandler openOr ((who: MyType,state: State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
       f(who, state, event)
     }
@@ -280,8 +285,8 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        * you can override this method (and not call "super") to log issues or do
        * something else
        */
-     def unmatchedEventHanlder(who: MyType, state: State) {
-       Event.unmatchedEventHanlder(who, state, this) // throw new UnmatchedEventException("Event "+this+" was not matched at state "+who.state, who, this)
+     def unmatchedEventHandler(who: MyType, state: State) {
+       Event.unmatchedEventHandler(who, state, this) // throw new UnmatchedEventException("Event "+this+" was not matched at state "+who.state, who, this)
      }
 
   }

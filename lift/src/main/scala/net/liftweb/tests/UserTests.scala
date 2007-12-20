@@ -29,7 +29,7 @@ class UserTests extends TestCase("User Tests") {
           for (petCnt <- 1 to (1 + cnt/ 10)) {
             val p = new Pet
             p.name(""+petCnt+" of "+u.lastName)
-            p.owner(u.id)
+            p.owner(u)
             p.save
           }
         }

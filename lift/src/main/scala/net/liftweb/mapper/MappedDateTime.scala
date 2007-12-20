@@ -28,8 +28,8 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
 
   
   def toLong: Long = is match {
+    case null => 0L
     case d: Date => d.getTime / 1000L
-    case _ => 0L
   }
   
   /**
