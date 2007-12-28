@@ -104,9 +104,15 @@ object JsCmds {
     def toJsCmd = "alert("+text.encJs+");"
   }
   
-  case class ModalDialog(html: NodeSeq) extends JsCmd {
+  object ModalDialog {
+    def apply(html: NodeSeq) = new ModalDialog(html, Empty)
+    def apply(html: NodeSeq, width: String) = new ModalDialog(html, Full(width))    
+  }
+  
+  class ModalDialog(html: NodeSeq, width: Can[String]) extends JsCmd {
     def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s => 
-    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true).encJs+");"
+    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true).encJs+
+      (width.map(w => ", { width: '"+w+"' }").openOr("")) + ");"
   }
 
   case class Run(text: String) extends JsCmd {
