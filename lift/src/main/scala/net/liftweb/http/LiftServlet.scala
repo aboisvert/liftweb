@@ -10,7 +10,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import javax.servlet.{ServletContext}
 import scala.collection.mutable.{ListBuffer}
 import java.net.URLDecoder
-import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment}
+import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment, Text}
 import scala.xml.transform._
 import scala.actors._
 import scala.actors.Actor._
@@ -333,6 +333,17 @@ object LiftServlet {
       "text/html"
     }
   }
+  
+  
+  private def _stringToXml(s: String): NodeSeq = Text(s)
+  
+  /**
+    * A function that defines how a String should be converted to XML
+    * for the localization stuff.  By default, Text(s) is returned,
+    * but you can change this to attempt to parse the XML in the String and
+    * return the NodeSeq. 
+    */
+  var localizeStringToXml: String => NodeSeq = _stringToXml _  
   
   /**
     * The base name of the resource bundle

@@ -9,7 +9,7 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
 import scala.collection.immutable.{ListMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
 import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
@@ -145,9 +145,10 @@ object S {
    def loc(str: String): Can[NodeSeq] =
        resourceBundle.flatMap(r => tryo(r.getObject(str) match {
      case null => LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
-     case s: String => Full(Text(s))
+     case s: String => Full(LiftServlet.localizeStringToXml(s))
      case g: Group => Full(g)
      case e: Elem => Full(e)
+     case n: Node => Full(n)
      case ns: NodeSeq => Full(ns)
      case x => Full(Text(x.toString))
    }).flatMap(s => s))
