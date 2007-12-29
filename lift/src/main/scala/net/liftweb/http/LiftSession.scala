@@ -179,7 +179,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	    }
 	  
 	  findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
-	    case Full(xml: NodeSeq) => {
+	    case Full(rawXml: NodeSeq) => {
+        println(">>>>>merge", rawXml)
+        val xml = HeadHelper.mergeToHtmlHead(rawXml)
+        println(">>>>>xml", xml)
 	      val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
 		case Nil => xml
 		case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
