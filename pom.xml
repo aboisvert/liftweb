@@ -1,3 +1,18 @@
+<!--
+  Copyright 2007 liftweb.net
+ 
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+ 
+     http://www.apache.org/licenses/LICENSE-2.0
+  
+  Unless required by applicable law or agreed to in writing,
+  software distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions
+  and limitations under the License.
+-->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb</groupId>
@@ -13,6 +28,10 @@ Lift stresses the importance of security, maintainability, scalability
 and performance while allowing for high levels of developer productivity.
 Lift is a scala web framework.
   </description>
+  <organization>
+    <name>Lift Team</name>
+    <url>http://liftweb.net/</url>
+  </organization>
   <licenses>
     <license>
       <name>the Apache License, ASL Version 2.0</name>
@@ -102,7 +121,7 @@ Lift is a scala web framework.
   <scm>
     <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/liftweb</connection>
     <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
-    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_p=http://liftweb.googlecode.com/svn&amp;cs_f=trunk/liftweb</url>
+    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_f=trunk/liftweb</url>
   </scm>
   <issueManagement>
     <system>google</system>
@@ -170,6 +189,7 @@ Lift is a scala web framework.
           <execution>
             <goals>
               <goal>compile</goal>
+              <goal>testCompile</goal>
             </goals>
           </execution>
         </executions>
@@ -277,7 +297,8 @@ Lift is a scala web framework.
         </repository>
         <site>
           <id>scala-tools.org</id>
-          <url>dav:http://dav.scala-tools.org/mvnsites/liftweb</url>
+          <!--url>dav:http://dav.scala-tools.org/mvnsites/liftweb</url-->
+          <url>file://${user.home}/.m2/mvnsites/liftweb</url>
         </site>
       </distributionManagement>
     </profile>
@@ -298,6 +319,7 @@ Lift is a scala web framework.
               <execution>
                 <goals>
                   <goal>compile</goal>
+                  <goal>testCompile</goal>
                 </goals>
               </execution>
             </executions>
