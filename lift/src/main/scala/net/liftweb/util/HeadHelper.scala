@@ -25,9 +25,11 @@ object HeadHelper {
         Nil
       }
       case Elem(namespace, label, attrs, scp, ns @ _*) => Elem(namespace, label, attrs, scp, extractHead2(ns):_* )
-      case z => z 
+      case Group(nodes) => nodes.flatMap(extractHead)
+      case _ if (node.isInstanceOf[Node]) => node
+      case _ => node.flatMap(extractHead2) 
     }
-    extractHead(xhtml)
+    extractHead2(xhtml)
   }
  
   def cleanHead(htmlHead: NodeSeq) : NodeSeq = {

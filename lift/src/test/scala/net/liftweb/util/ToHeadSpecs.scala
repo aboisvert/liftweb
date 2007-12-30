@@ -85,7 +85,6 @@ object ToHeadSpecs extends Specification {
             <ul><li><a href="/">Home</a></li><li><a href="/htmlFragmentWithHead" id="current">htmlFragmentWithHead</a></li><li><a href="/htmlSnippetWithHead">htmlSnippetWithHead</a></li></ul>
           </body>
         </html>
-       println("try : ", HeadHelper.mergeToHtmlHead(actual))
        HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
      }
      
