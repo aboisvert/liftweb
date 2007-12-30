@@ -1,3 +1,4 @@
+
 <document>
   <properties>
     <title>Changes Of Lift</title>
@@ -15,49 +16,52 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-	  
-    <release version="0.3.0" date="2007-12-07" description="step 3">
-            <action dev="Steve Jenson" type="add">Adding a new lift archetype, lift-archetype-basic that will generate a lift template with basic database and users functionality.</action>
- 	    <action dev="David Pollak" type="add">Support for Ajax including integration of jQuery</action>
-	    <action dev="David Pollak" type="add">Radically improved Comet support</action>
-	    <action dev="Jorge Eugenio Ortiz Hinojosa" type="add">Facebook API support</action>
-            <action dev="Steve Jenson" type="add">AMQP (RabbitMQ) support</action>
-	    <action dev="David Pollak" type="add">Radically improved Comet support</action>
-	    <action dev="David Pollak" type="add">Built in Traits for Users (including user management) and Tags</action>
-	    <action dev="David Pollak" type="add">Support for  a variety of new Mapped types (Country, Locale, Postal Code, etc.)</action>
-	    <action dev="David Pollak" type="add">New examples including a real-time blog</action>
-	    <action dev="David Bernard" type="update">Project builder using Maven and significantly improved Maven support</action>
-	    <action dev="David Pollak" type="add">Localization</action>
-	    <action dev="David Pollak" type="add">Improved XHTML support including proper headers based on browser type</action>
-	    <action dev="Team" type="update">Improved documentation</action>
-	    <action dev="Team" type="update">Radically improved samples and "getting started" pieces</action>
-	    <action dev="David Pollak" type="add">support for multiple database instances</action>
-	    <action dev="David Pollak" type="add">improved regex support including some Regex -> object creation support for parsing</action>
-	    <action dev="David Pollak" type="add">a new and improved textile parser</action>
+    <release version="0.4-SNAPSHOT" date="????-??-??" description="">
+      <action dev="David Bernard" type="add">/html/body//head are merged into /html/head, to allow html fragment inlined into body to contribute to /html/head</action>
+      <action dev="David Bernard" type="update">the look of the maven site generated (for lift itself and for archetypes)</action>
+      <action dev="Steve Jenson" type="add">Adding a new lift archetype, lift-archetype-basic that will generate a lift template with basic database and users functionality.</action>
+    </release>
+    
+    <release version="0.3.0" date="2007-12-07" description="champagne">
+      <action dev="David Pollak" type="add">Support for Ajax including integration of jQuery</action>
+      <action dev="David Pollak" type="add">Radically improved Comet support</action>
+      <action dev="Jorge Eugenio Ortiz Hinojosa" type="add">Facebook API support</action>
+      <action dev="Steve Jenson" type="add">AMQP (RabbitMQ) support</action>
+      <action dev="David Pollak" type="add">Radically improved Comet support</action>
+      <action dev="David Pollak" type="add">Built in Traits for Users (including user management) and Tags</action>
+      <action dev="David Pollak" type="add">Support for  a variety of new Mapped types (Country, Locale, Postal Code, etc.)</action>
+      <action dev="David Pollak" type="add">New examples including a real-time blog</action>
+      <action dev="David Bernard" type="update">Project builder using Maven and significantly improved Maven support</action>
+      <action dev="David Pollak" type="add">Localization</action>
+      <action dev="David Pollak" type="add">Improved XHTML support including proper headers based on browser type</action>
+      <action dev="Team" type="update">Improved documentation</action>
+      <action dev="Team" type="update">Radically improved samples and "getting started" pieces</action>
+      <action dev="David Pollak" type="add">support for multiple database instances</action>
+      <action dev="David Pollak" type="add">improved regex support including some Regex -> object creation support for parsing</action>
+      <action dev="David Pollak" type="add">a new and improved textile parser</action>
     </release>
     <release version="0.2.0" date="2007-06-06">
-	    <action dev="David Pollak" type="add">"new_proj" script to create a new project</action>
-	    <action dev="David Pollak" type="add">HTTP test framework for writing tests</action>
-	    <action dev="David Pollak" type="add">Skittr code example -- a Twitter clone in lift and Scala</action>
-	    <action dev="David Pollak" type="add">SiteMap -- define site navigation and access control rules in a Domain Specific Language</action>
-	    <action dev="David Pollak" type="add">each model can live in a different database (multi database support)</action>
-	    <action dev="David Pollak" type="add">support for Jetty continuations on AJAX calls (automatic, not application code required)</action>
-	    <action dev="David Pollak" type="update">improvements to query building</action>
-	    <action dev="David Pollak" type="add">Shared session variable across Snippets and Controllers</action>
-	    <action dev="David Pollak" type="add">"recursive snippets" to re-write the page</action>
-	    <action dev="David Pollak" type="add">ability to pass attributes to Snippets and Controllers</action>
-	    <action dev="David Pollak" type="add">built in support for blowfish encryption</action>
-	    <action dev="David Pollak" type="add">logging via log4j</action>
-	    <action dev="David Pollak" type="add">MappedListEnum to persist List[Enumeration] easily</action>
-	    <action dev="David Pollak" type="add">lots of HTML form elements (select, multiselect, etc.)</action>
-	    <action dev="David Pollak" type="update">enhanced SQL queries</action>
-	    <action dev="David Pollak" type="add">filterMap support for queries as the rows come back from the database</action>
-	    <action dev="David Pollak" type="add">comparison operators for MappedField</action>
-	    <action dev="David Pollak" type="add">run modes (Production, Test, Development, etc.)</action>
-	    <action dev="David Pollak" type="add">properties that are based on user, machine, and run mode</action>
-	    <action dev="David Pollak" type="add">filters for fields such that input (and comparison and queries) can automatically be made upper case, lower case, trim, etc.</action>      
+      <action dev="David Pollak" type="add">"new_proj" script to create a new project</action>
+      <action dev="David Pollak" type="add">HTTP test framework for writing tests</action>
+      <action dev="David Pollak" type="add">Skittr code example -- a Twitter clone in lift and Scala</action>
+      <action dev="David Pollak" type="add">SiteMap -- define site navigation and access control rules in a Domain Specific Language</action>
+      <action dev="David Pollak" type="add">each model can live in a different database (multi database support)</action>
+      <action dev="David Pollak" type="add">support for Jetty continuations on AJAX calls (automatic, not application code required)</action>
+      <action dev="David Pollak" type="update">improvements to query building</action>
+      <action dev="David Pollak" type="add">Shared session variable across Snippets and Controllers</action>
+      <action dev="David Pollak" type="add">"recursive snippets" to re-write the page</action>
+      <action dev="David Pollak" type="add">ability to pass attributes to Snippets and Controllers</action>
+      <action dev="David Pollak" type="add">built in support for blowfish encryption</action>
+      <action dev="David Pollak" type="add">logging via log4j</action>
+      <action dev="David Pollak" type="add">MappedListEnum to persist List[Enumeration] easily</action>
+      <action dev="David Pollak" type="add">lots of HTML form elements (select, multiselect, etc.)</action>
+      <action dev="David Pollak" type="update">enhanced SQL queries</action>
+      <action dev="David Pollak" type="add">filterMap support for queries as the rows come back from the database</action>
+      <action dev="David Pollak" type="add">comparison operators for MappedField</action>
+      <action dev="David Pollak" type="add">run modes (Production, Test, Development, etc.)</action>
+      <action dev="David Pollak" type="add">properties that are based on user, machine, and run mode</action>
+      <action dev="David Pollak" type="add">filters for fields such that input (and comparison and queries) can automatically be made upper case, lower case, trim, etc.</action>
     </release>
-    <release version="0.1.0" date="2007-02-26" description="first public release">
-    </release>
+    <release version="0.1.0" date="2007-02-26" description="first public release"></release>
   </body>
 </document>
