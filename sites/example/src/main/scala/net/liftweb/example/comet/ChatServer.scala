@@ -9,6 +9,7 @@ package net.liftweb.example.comet
 import scala.actors.Actor
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
+import net.liftweb.util._
 import scala.xml.{NodeSeq}
 import scala.collection.immutable.TreeMap
 import net.liftweb.textile.TextileParser
@@ -29,7 +30,7 @@ class ChatServer extends Actor {
     *
     * @return textile markup for the incoming string
     */
-  def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, a => a). // parse it
+  def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, Empty). // parse it
       map(_.toHtml.toList match {case Nil => Nil case x :: xs => x.child}).  // convert to html and get the first child (to avoid things being wrapped in <p>)
       getOrElse(Text(msg)) // if it wasn't parsable, then just return a Text node of the message
   

@@ -9,6 +9,7 @@ package net.liftweb.textile
 import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
 import scala.xml.{MetaData, NodeSeq, Elem, Null, Text, TopScope, Unparsed, UnprefixedAttribute}
 import scala.collection.mutable.HashMap
+import net.liftweb.util._
 
 /**
  * The textile parser
@@ -23,7 +24,7 @@ object TextileParser extends Application {
    * to get the XHTML result to send to the browser.
    * int will be the number of characters parsed.
    */
-  def parse(_toParse: String, urlRewrite: String => String): Option[Lst] = {
+  def parse(_toParse: String, urlRewrite: Can[String => String]): Option[Lst] = {
     val toParse = _toParse match {
       case null => "null\n\n"
       case s if !s.endsWith("\n\n") => s + "\n\n"
@@ -59,7 +60,7 @@ object TextileParser extends Application {
 	   } getOrElse None
   }
   
-  def toHtml(toParse: String, wikiUrlFunc: String => String): NodeSeq = {
+  def toHtml(toParse: String, wikiUrlFunc: Can[String => String]): NodeSeq = {
     parse(toParse, wikiUrlFunc).map(_.toHtml) getOrElse Text("")
   }
 
@@ -67,7 +68,7 @@ object TextileParser extends Application {
   /**
    * the thing that actually does the textile parsing
    */
-  class TextileParsers(wikiUrlFunc: String => String) extends Parsers with ImplicitConversions {
+  class TextileParsers(wikiUrlFunc: Can[String => String]) extends Parsers with ImplicitConversions {
     type Elem = char
     
     def document : Parser[Lst] = rep(paragraph) ^^ Lst
@@ -812,10 +813,10 @@ object TextileParser extends Application {
     override def toHtml : NodeSeq = Text("")
   }
 
-  case class WikiAnchor(elems : List[Textile], href : String, alt : String, attrs : List[Attribute], wikiFunc: String => String) extends ATextile(elems, attrs) {
+  case class WikiAnchor(elems: List[Textile], href: String, alt: String, attrs: List[Attribute], wikiFunc: Can[String => String]) extends ATextile(elems, attrs) {
     // var rootUrl = ""
-    def allAttrs = AnyAttribute("href", wikiFunc(href)) :: attrs 
-    override def toHtml : NodeSeq = Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)
+    def allAttrs = wikiFunc.map(wf => AnyAttribute("href", wf(href)) :: attrs) openOr attrs 
+    override def toHtml: NodeSeq = wikiFunc.map(ignore => Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)) openOr Text(alt)
   }
   
   val example = 

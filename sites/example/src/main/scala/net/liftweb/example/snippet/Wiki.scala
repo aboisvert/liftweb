@@ -11,6 +11,7 @@ import scala.xml.{NodeSeq, Text, Group}
 import net.liftweb.http.S
 import net.liftweb.mapper._
 import net.liftweb.http.S._
+import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import net.liftweb.textile._
 
@@ -42,7 +43,7 @@ class Wiki {
       
       <span><a href="/wiki/all">Show All Pages</a><br/>{
 	if (edit) editEntry(entry, isNew, pageName)
-        else TextileParser.toHtml(entry.entry, a => a) ++ 
+        else TextileParser.toHtml(entry.entry, Full((a: String) => a)) ++ 
              <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
       }</span>
     }
@@ -70,7 +71,7 @@ class Wiki {
     def view = BindChoice(!toEdit, () => bind("view", 
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child, 
       TheBindParam("name", Text(pageName)),
-      TheBindParam("value", (TextileParser.toHtml(entry.entry, a => a) ++ 
+      TheBindParam("value", (TextileParser.toHtml(entry.entry, Full(a => a)) ++ 
 		  <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a>))))
     
     (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {
