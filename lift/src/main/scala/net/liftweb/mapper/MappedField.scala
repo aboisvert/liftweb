@@ -9,11 +9,12 @@ package net.liftweb.mapper
 import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
-import scala.xml.{Text, Node, NodeSeq}
+import scala.xml.{Text, Node, NodeSeq, Elem}
 import java.util.Date
 import net.liftweb.http.S
 import net.liftweb.http.S._
 import net.liftweb.util._
+import Helpers._
 
 /**
   * The base (not Typed) trait that defines a field that is mapped to a column or more than 1 column
@@ -130,7 +131,22 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     case _ => super.equals(other)
   }
   
-  override def toForm = Text("Foo")
+  def validSelectValues: Can[List[(KeyType, String)]] = Empty
+  
+  def immutableMsg = Text(?("Can't change"))
+  
+  override def toForm: Node = validSelectValues.flatMap{
+    case Nil => Empty
+    
+    case xs => val mapBack: HashMap[String, KeyType] = new HashMap
+               var selected: Can[String] = Empty
+               
+               Full(S.select(xs.map{case (value, text) => val t = randomString(10)
+                                                          mapBack(t) = value
+                                                          if (value == this.is) selected = Full(t)
+                                                          (t, text)},
+                    selected, v => mapBack.get(v).foreach(x => set(x))))
+  }.openOr(immutableMsg)
 }
 
 trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField

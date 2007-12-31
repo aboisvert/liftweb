@@ -55,6 +55,29 @@ object Helpers {
   def urlDecode(in : String) = {URLDecoder.decode(in, "UTF-8")}
   def urlEncode(in : String) = {URLEncoder.encode(in, "UTF-8")}
   
+  /**
+   * Take a list of name/value parse and turn them into a URL query string
+   *
+   * @param params the name/value pairs
+   *
+   * @return a valid query string
+   */
+  def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&")
+  
+  
+  /**
+    * Append parameters to a URL
+    *
+    * @param url the url to append the params to
+    * @param params the parameters (name/value) to append to the URL
+    *
+    * @return the url with the parameters appended
+    */
+  def appendParams(url: String, params: Seq[(String, String)]): String = params.toList match {
+    case Nil => url
+    case xs => url + "&" + paramsToUrlParams(xs)
+  }
+  
   val validSuffixes = {
     val ret = new HashSet[String];
     ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
