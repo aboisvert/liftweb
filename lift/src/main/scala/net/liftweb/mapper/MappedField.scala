@@ -129,6 +129,8 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     case km: KeyedMapper[KeyType, Other] => this.is == km.primaryKeyField.is
     case _ => super.equals(other)
   }
+  
+  override def toForm = Text("Foo")
 }
 
 trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField
