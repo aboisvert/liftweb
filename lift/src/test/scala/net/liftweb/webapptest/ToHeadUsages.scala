@@ -5,8 +5,10 @@ import org.specs.runner.JUnit3
 import org.specs.runner.ConsoleRunner
 import net.sourceforge.jwebunit.junit.WebTester
 
+/*
 class ToHeadUsagesTest extends JUnit3(ToHeadUsages)
 object ToHeadUsagesRunner extends ConsoleRunner(ToHeadUsages)
+
 
 object ToHeadUsages extends Specification {
   JettyTestServer.start()
@@ -29,3 +31,4 @@ object ToHeadUsages extends Specification {
 
   JettyTestServer.stop()
 }
+*/

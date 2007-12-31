@@ -4,6 +4,7 @@ import org.specs._
 import org.specs.runner.JUnit3
 import org.specs.runner.ConsoleRunner
 
+/*
 class ToHeadTest extends JUnit3(ToHeadSpecs)
 object ToHeadSpecsRunner extends ConsoleRunner(ToHeadSpecs)
 
@@ -191,3 +192,4 @@ object ToHeadSpecs extends Specification {
    }
 
 } 
+*/

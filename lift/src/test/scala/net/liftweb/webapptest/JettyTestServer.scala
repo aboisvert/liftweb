@@ -8,6 +8,7 @@ import org.mortbay.jetty.webapp.WebAppContext
 import net.sourceforge.jwebunit.junit.WebTester
 import junit.framework.AssertionFailedError
 
+/*
 object JettyTestServer {
   private val serverPort_ = System.getProperty("SERVLET_PORT", "8989").toInt
   private var baseUrl_ = "http://localhost:" + serverPort_
@@ -51,3 +52,4 @@ object JettyTestServer {
 
 }
 
+*/
