@@ -127,7 +127,14 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     localShutdown()
     self.exit("Politely Asked to Exit")
   }
-  
+  /**
+   * It's the main method to override, to define what is rendered by the CometActor
+   *
+   * There are implicit conversions for a bunch of stuff to
+   * RenderOut (including NodeSeq).  Thus, if you don't declare the return
+   * turn to be something other than RenderOut and return something that's
+   * coersable into RenderOut, the compiler "does the right thing"(tm) for you.
+   */
   def render: RenderOut
   
   def compute: Map[String, Any] = Map.empty[String, Any]
@@ -237,6 +244,14 @@ case object Unlisten extends CometMessage
 // case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
 case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
+
+/**
+ * @param xhtml is the "normal" render body
+ * @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
+ * @param script is the script to be executed on render.  This is where you want to put your script
+ * @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
+ * @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE 
+ */
 case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
