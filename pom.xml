@@ -128,7 +128,7 @@ Lift is a scala web framework.
     <url>http://code.google.com/p/liftweb/issues</url>
   </issueManagement>
   <properties>
-    <scala.version>2.6.0</scala.version>
+    <scala.version>2.6.1</scala.version>
   </properties>
   <modules>
     <module>lift</module>

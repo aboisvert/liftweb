@@ -19,7 +19,7 @@ object HeadHelper {
         val newHead = cleanHead(<head>{headChildren}</head>)
         Elem(namespace, "html", attrs, scp, (newHead ++ newChildren):_*)
       }
-      case <html>{ ch @ _* }</html> => extractHead2(ch)
+      // case <html>{ ch @ _* }</html> => extractHead2(ch)
       case <head>{ ch @ _* }</head> => {
         headChildren &+ ch
         Nil

@@ -127,21 +127,20 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   */
 trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType], 
                              StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, StateType] {
-    self: MyType =>
-
+  self: MyType =>
   /**
     * This method must be implemented.  It defines the states and legal state transitions
     */
-  protected def states : List[State];
+  protected def states : List[Meta#State];
   
   /**
     * Any transitions that are applied to all states can be listed here
     */
-  protected def globalTransitions: List[ATransition]
+  protected def globalTransitions: List[Meta#ATransition]
   
   // the state transition table
-  private val stateInfo = new HashMap[StV, Seq[ATransition]]
-  private val stateList = new HashMap[StV, State]
+  private val stateInfo = new HashMap[StV, Seq[Meta#ATransition]]
+  private val stateList = new HashMap[StV, Meta#State]
                                       
   // process the states
   states.foreach {
@@ -190,7 +189,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
     val which = first(transitions.toList) {t => if (t.on.isDefinedAt(what) && t.testGuard(who, who.state, t.to, what)) Full(t) else Empty}
 
     if (!which.isDefined) {
-      val s: State = stateList(who.state)
+      val s = stateList(who.state)
       what.unmatchedEventHandler(who, s)
     }
 
@@ -208,9 +207,9 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
     }
   }
                        
-  class State(val name: StV,val trans: Seq[ATransition]) {
-    def entry(act: (MyType, StV, StV, Meta#Event) => Any): State = {_entry = act :: _entry; this}
-    def exit(act: (MyType, StV, StV, Meta#Event) => Any): State = {_exit = act :: _exit; this}
+  class State(val name: StV,val trans: Seq[Meta#ATransition]) {
+    def entry(act: (MyType, StV, StV, Meta#Event) => Any): Meta#State = {_entry = act :: _entry; this}
+    def exit(act: (MyType, StV, StV, Meta#Event) => Any): Meta#State = {_exit = act :: _exit; this}
     private var _entry: List[(MyType, StV, StV, Meta#Event) => Any] = Nil
     private var _exit: List[(MyType, StV, StV, Meta#Event) => Any] = Nil
     
@@ -221,7 +220,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   }
   
   object State {
-    def apply(name: StV, trans: ATransition*) = new State(name, trans)
+    def apply(name: StV, trans: Meta#ATransition*) = new State(name, trans)
   }
   
   abstract class ATransition(val to: StV,val on: PartialFunction[Meta#Event, Any]) {
@@ -253,7 +252,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        * you can override this method (and not call "super") to log issues or do
        * something else
        */
-     override def unmatchedEventHandler(who: MyType, state: State) {
+     override def unmatchedEventHandler(who: MyType, state: Meta#State) {
        who.nextTransitionAt(-1L)
        state.trans.foreach {
          to =>
@@ -272,9 +271,9 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   case class On(override val on: PartialFunction[Meta#Event, Any], override val to: StV) extends ATransition(to, on)
   
   object Event {
-    def unmatchedHandler: Can[(MyType,State, Event) => Any] = Empty
-    def unmatchedEventHandler(who: MyType, state: State, event: Event) {
-      val f = unmatchedHandler openOr ((who: MyType,state: State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
+    def unmatchedHandler: Can[(MyType, Meta#State, Event) => Any] = Empty
+    def unmatchedEventHandler(who: MyType, state: Meta#State, event: Event) {
+      val f = unmatchedHandler openOr ((who: MyType,state: Meta#State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
       f(who, state, event)
     }
   }
@@ -285,7 +284,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        * you can override this method (and not call "super") to log issues or do
        * something else
        */
-     def unmatchedEventHandler(who: MyType, state: State) {
+     def unmatchedEventHandler(who: MyType, state: Meta#State) {
        Event.unmatchedEventHandler(who, state, this) // throw new UnmatchedEventException("Event "+this+" was not matched at state "+who.state, who, this)
      }
 
