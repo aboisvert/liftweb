@@ -109,6 +109,10 @@ Lift is a scala web framework.
         <role>maven support</role>
       </roles>
     </developer>
+    <developer>
+      <id>mstarzyk</id>
+      <name>Maciek Starzyk</name>
+    </developer>      
   </developers>
 
   <mailingLists>
@@ -258,6 +262,18 @@ Lift is a scala web framework.
       <id>release</id>
       <build>
         <plugins>
+					<plugin>
+						<inherited>true</inherited>
+						<artifactId>maven-source-plugin</artifactId>
+						<executions>
+							<execution>
+								<id>attach-sources</id>
+								<goals>
+									<goal>jar</goal>
+								</goals>
+							</execution>
+						</executions>
+					</plugin>        
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <configuration>
@@ -265,7 +281,7 @@ Lift is a scala web framework.
                 <descriptorRef>project</descriptorRef>
               </descriptorRefs>
               <tarLongFileMode>gnu</tarLongFileMode>
-            </configuration>
+            </configuration>            
             <executions>
               <execution>
                 <id>make-assembly</id>
