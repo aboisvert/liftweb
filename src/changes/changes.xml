@@ -16,10 +16,18 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.4-SNAPSHOT" date="????-??-??" description="">
+    <release version="0.4" date="????-??-??" description="">
+      <action dev="David Pollak" type="update">Upgrade to scala-2.6.1</action>
+      <action dev="Maciek Starzyk" type="add">Adding support to H2 to lift-ORM</action>
+      <action dev="Maciek Starzyk" type="add">Adding support to PostgreSQL to lift-ORM</action>
       <action dev="David Bernard" type="add">/html/body//head are merged into /html/head, to allow html fragment inlined into body to contribute to /html/head</action>
-      <action dev="David Bernard" type="update">the look of the maven site generated (for lift itself and for archetypes)</action>
       <action dev="Steve Jenson" type="add">Adding a new lift archetype, lift-archetype-basic that will generate a lift template with basic database and users functionality.</action>
+      <action dev="Steve Jenson" type="add">Adding LiftConsole to archetype to play with lift-based application in console mode</action>
+      <action dev="Steve Jenson" type="add">Adding mock for HTTPRequest and Co</action>
+      <action dev="David Bernard" type="add">Adding first Specs test to test lift-core</action>
+      <action dev="David Bernard" type="update">The look of the maven site generated (for lift itself and for archetypes)</action>
+      <action dev="David Bernard" type="remove">Removing deprecated new_proj (replaced by archetypes)</action>
+      <action dev="David Bernard" type="remove">Removing lift-archetype-hellolift (replaced by lift-archetype-basic (and the sample application hellolift))</action>
     </release>
     
     <release version="0.3.0" date="2007-12-07" description="champagne">
