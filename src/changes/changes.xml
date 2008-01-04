@@ -18,6 +18,7 @@
   -->
     <release version="0.4" date="????-??-??" description="">
       <action dev="David Pollak" type="update">Upgrade to scala-2.6.1</action>
+      <action dev="David Pollak" type="update">Support for PosgreSQL 8.1 and some tests</action>
       <action dev="Maciek Starzyk" type="add">Adding support to H2 to lift-ORM</action>
       <action dev="Maciek Starzyk" type="add">Adding support to PostgreSQL to lift-ORM</action>
       <action dev="David Bernard" type="add">/html/body//head are merged into /html/head, to allow html fragment inlined into body to contribute to /html/head</action>

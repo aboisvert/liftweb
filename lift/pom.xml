@@ -35,7 +35,8 @@
       <groupId>postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>8.2-504.jdbc4</version>
-      <optional>true</optional>
+      <scope>test</scope>
+      <!-- <optional>true</optional> -->
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>

@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import java.sql.{Connection, ResultSet, DatabaseMetaData}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import net.liftweb.util.{Helpers}
+import net.liftweb.util.{Helpers, Full, Can}
 import Helpers._
 
 /**
@@ -34,6 +34,15 @@ object Schemifier {
      def +(other: Collector) = Collector(funcs ::: other.funcs, cmds ::: other.cmds)
    }
   
+   private def using[RetType <: Any, VarType <: {def close()}](f: => VarType)(f2: VarType => RetType): RetType = {
+     val theVar = f
+     try {
+       f2(theVar)
+     } finally {
+       theVar.close()
+     }
+   }
+   
   def schemify(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
     val tables = stables.toList
     DB.use(dbId) {
@@ -99,26 +108,22 @@ object Schemifier {
   /**
    * Retrieves schema name where the unqualified db objects are searched.
    */
-  def getDefaultSchemaName(connection: SuperConnection) : String = {
-    connection.driverType.defaultSchemaName match {
-      case Some(name) => name
-      case None => connection.getMetaData.getUserName
-    }
-  }
+  def getDefaultSchemaName(connection: SuperConnection): String =
+    connection.driverType.defaultSchemaName.openOr(connection.getMetaData.getUserName)
+
 
   private def hasTable_? (table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Boolean = {
     val md = connection.getMetaData
-    val rs = md.getTables(null, getDefaultSchemaName(connection), null, null)
-    
-    def hasTable: Boolean = {
+    using(md.getTables(null, getDefaultSchemaName(connection), null, null)){ rs =>
+    def hasTable(rs: ResultSet): Boolean = 
       if (!rs.next) false
       else rs.getString(3) match {
         case s if s.toLowerCase == table.dbTableName.toLowerCase => actualTableNames(table.dbTableName) = s; true
-        case _ => hasTable
+        case _ => hasTable(rs)
       }
-    }
 
-    hasTable
+    hasTable(rs)
+    }  
   }
   
 
@@ -176,7 +181,7 @@ object Schemifier {
       var cols: List[String] = Nil
       val totalColCnt = field.dbColumnCount
       val md = connection.getMetaData
-      val rs = md.getColumns(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), null)
+      using(md.getColumns(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), null))(rs =>
       while (hasColumn < totalColCnt && rs.next) {
         val tableName = rs.getString(3).toLowerCase
         val columnName = rs.getString(4).toLowerCase
@@ -185,8 +190,8 @@ object Schemifier {
           cols = columnName :: cols
           hasColumn = hasColumn + 1
         }
-      }
-      rs.close
+      })
+
       
       // FIXME deal with column types
       (field.dbColumnNames(field.name) diff cols).foreach {
@@ -216,7 +221,7 @@ object Schemifier {
     val byName = new HashMap[String, List[String]]()
     
     val md = connection.getMetaData
-    val rs = md.getIndexInfo(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), false, false)
+    val q = using(md.getIndexInfo(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), false, false)) {rs =>
     def quad(rs: ResultSet): List[(String, String, Int)] = {
       if (!rs.next) Nil else {
 	if (rs.getString(3).toLowerCase == table.dbTableName.toLowerCase)
@@ -224,12 +229,13 @@ object Schemifier {
 	else Nil
       }
     }
-    
-    val q = quad(rs)
+    quad(rs)
+    }
+    // val q = quad(rs)
     // q.foreach{case (name, col, pos) => byColumn.get(col) match {case Some(li) => byColumn(col) = (name, col, pos) :: li case _ => byColumn(col) = List((name, col, pos))}}
     q.foreach{case (name, col, pos) => byName.get(name) match {case Some(li) => byName(name) = col :: li case _ => byName(name) = List(col)}}
     val indexedFields: List[List[String]] = byName.map{case (name, value) => value.sort(_ < _)}.toList
-    rs.close
+    //rs.close
     
     val single = table.mappedFields.filter{f => f.dbIndexed_?}.toList.flatMap {
       field =>
@@ -267,15 +273,14 @@ object Schemifier {
 	
 	val md = connection.getMetaData
 	// val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
-	val rs = md.getExportedKeys(null, getDefaultSchemaName(connection), myTable)
-	//val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
 	var foundIt = false
+        using(md.getExportedKeys(null, getDefaultSchemaName(connection), myTable))(rs =>
+	//val rs = md.getCrossReference(null, null,myTable , null, null, otherTable)
 	while (!foundIt && rs.next) {
           val pkName = rs.getString(4)
           val fkName = rs.getString(8)
           foundIt = (field.dbColumnName.toLowerCase == fkName.toLowerCase && field.dbKeyToColumn.dbColumnName.toLowerCase == pkName.toLowerCase)
-	}
-	rs.close
+	})
 
 	if (!foundIt) {
           cmds += maybeWrite(performWrite, logFunc, connection) {
