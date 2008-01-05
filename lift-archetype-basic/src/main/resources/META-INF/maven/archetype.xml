@@ -14,8 +14,6 @@
     <resource>src/main/webapp/style/style.css</resource>
     <resource>src/main/webapp/templates-hidden/default.html</resource>
     <resource>src/main/webapp/index.html</resource>
-    <resource>script/console</resource>
-    <resource>script/liftrepl.scala</resource>
   </resources>
   <testSources>
     <source>src/test/scala/AppTest.scala</source>
