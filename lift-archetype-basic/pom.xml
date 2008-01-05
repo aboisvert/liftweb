@@ -12,6 +12,7 @@
   <description>Archetype - basic project for Lift</description>
   <properties>
     <lift.version>${project.parent.version}</lift.version>
+    <maven.test.skip>true</maven.test.skip>
   </properties>
   <build>
     <resources>
