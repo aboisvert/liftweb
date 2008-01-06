@@ -12,12 +12,6 @@ import com.hellolift.model.Entry
 class BlogCache extends Actor {
   def act = loop(Map(), Map())
 
-  def format(xs : List[Entry]) = {
-    <span>
-    {xs.reverse.flatMap(x => <div><strong>x.title</strong><div>x.body</div></div>)}
-    </span>
-  }
-
   def getEntries(id : long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, false), MaxRows(20))
 
   /**

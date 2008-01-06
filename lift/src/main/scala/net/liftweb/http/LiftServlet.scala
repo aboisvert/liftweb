@@ -324,10 +324,15 @@ object LiftServlet {
     }
   }
 
+  /**
+   * If you don't want lift to send the application/xhtml+xml mime type to those browsers
+   * that understand it, then set this to {@code false}
+   */
+  var useXhtmlMimeType: Boolean = true
+
   def determineContentType(accept: String) : String = {
     // If application/xhtml+xml is explicitly listed then let's use that.
-    // TODO(stevej): convert this into a match somehow. (ask david)
-    if (accept != null && accept.contains("application/xhtml+xml")) {
+    if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
       "application/xhtml+xml"
     } else {
       "text/html"
