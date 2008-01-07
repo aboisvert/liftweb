@@ -1,5 +1,5 @@
 <archetype>
-  <id>liftweb-archetype-hellolift</id>
+  <id>liftweb-archetype-basic</id>
   <sources>
     <source>src/main/scala/comet/.keep</source>
     <source>src/main/scala/model/.keep</source>
