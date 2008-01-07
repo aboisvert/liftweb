@@ -1,7 +1,7 @@
 <archetype>
   <id>liftweb-archetype-hellolift</id>
   <sources>
-    <source>src/main/scala/comet/.keep</source
+    <source>src/main/scala/comet/.keep</source>
     <source>src/main/scala/model/.keep</source>
     <source>src/main/scala/model/User.scala</source>
     <source>src/main/scala/snippet/.keep</source>
