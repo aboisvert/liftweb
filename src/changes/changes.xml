@@ -17,7 +17,8 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.4" date="????-??-??" description="">
-      <action dev="Steve Jenson" type="update">Added support for switching XHTML MIME type serving off. See LiftServet.useXhtmlMimeType</action>
+      <action dev="Steve Jenson" type="add">Added XMPP support for lift applications. see the package net.liftweb.xmpp</action>
+      <action dev="Steve Jenson" type="add">Added support for switching XHTML MIME type serving off. See LiftServet.useXhtmlMimeType</action>
       <action dev="David Pollak" type="update">Upgrade to scala-2.6.1</action>
       <action dev="David Pollak" type="update">Support for PosgreSQL 8.1 and some tests</action>
       <action dev="Maciek Starzyk" type="add">Adding support to H2 to lift-ORM</action>
