@@ -114,12 +114,17 @@ Lift is a scala web framework.
   <scm>
     <connection>scm:svn:http://liftweb.googlecode.com/svn/trunk/liftweb</connection>
     <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/trunk/liftweb</developerConnection>
-    <url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_f=trunk/liftweb</url>
+    <!--url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_f=trunk/liftweb</url-->
+    <url>http://scala-tools.org/svn/repobrowser.svn?path=%2ftrunk%2fliftweb&amp;revision=HEAD&amp;name=liftweb&amp;bypassEmpty=true</url>
   </scm>
   <issueManagement>
     <system>google</system>
     <url>http://code.google.com/p/liftweb/issues</url>
   </issueManagement>
+  <ciManagement>
+   <system>hudson</system>
+   <url>http://scala-tools.org/hudson/job/liftweb/</url>
+  </ciManagement>
   <properties>
     <scala.version>2.6.1</scala.version>
   </properties>
