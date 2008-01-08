@@ -1,74 +1,202 @@
 package net.liftweb.util
 
-/*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
-
+/* 
+ * Copyright 2007 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+   
+/**
+ * The Can object provide methods to create Cans from:<li>
+ * <ul/> an Option
+ * <ul/> a List
+ * <ul/> any AnyRef object
+ * </li>
+ * It also holds implicit methods to transform: Option to Can, Can to Iterable, Can to Option  
+ */
 object Can {
+  /**
+   * @returns a Can object from an Option. Full(x) if the Option is Some(x) and Empty otherwise
+   */
   def apply[T](in: Option[T]) = in match {
     case Some(x) => Full(x)
     case _ => Empty
   }
   
+  /**
+   * This method is used to transform a List with 0 or one element to a Can.
+   * @returns a Can object from the head of a List. Full(x) if the List contains at least one element and Empty otherwise.
+   */
   def apply[T](in: List[T]) = in match {
     case x :: _ => Full(x)
     case _ => Empty
   }
   
+  /**
+   * This method is used to transform any AnyRef to a Can.
+   * @returns a Can object from an object. Full(in) if the object is not null and Empty otherwise.
+   */
   def apply[T <: AnyRef](in: T): Can[T] = type2Can(in)
   
+  /**
+   * This implicit def allows to use Iterable methods on a Can: size, foreach,...
+   * @returns List(in) if the can is Full(in) and Nil otherwise
+   */
   implicit def can2Iterable[T](in: Can[T]): Iterable[T] = in.toList
+
+  /**
+   * This implicit def allows to use Options as Cans
+   * @returns a Can object from an Option. Full(in) if the Option is Some(in) and Empty otherwise
+   */
   implicit def option2Can[T](in: Option[T]): Can[T] = Can(in)
+
+  /**
+   * This implicit def allows to use Cans as Options
+   * @returns Some(in) if the can is Full(in) and None otherwise
+   */
   implicit def can2Option[T](in: Can[T]): Option[T] = in.toOption
+
+  /**
+   * This implicit def allows to use any object as a Can, permitting null values to be handled as Empty
+   * @returns Full(in) if in is not null Empty otherwise
+   */
   implicit def type2Can[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
 }
 
+/**
+ * The Can class is a container which is able to declare if it is Full (with a non-null value) or Empty.
+ * It serves the same purpose as the Option class from Scala standard library but adds several features:<li>
+ * <ul> you can transform it to a Failure object if it is Empty (with the ?~ method)
+ * <ul> you can chain failure messages on Failure Cans
+ * <ul> you "run" a function on your Can, with a default value: <code>Full(1).run("zero") { x: String, y: Int => y.toString }</code>   
+ * <ul> you can "pass" a Can to a funtion for side effects: <code>Full(1) $ { x: Can[Int] => println(x openOr 0) }</code>  
+ * </li>
+ */
 @serializable
 sealed abstract class Can[+A] extends Product {
+    /**
+     * @returns true if the Can contains no value
+     */
     def isEmpty: Boolean
 
-    def open_! : A
-
-    def openOr[B >: A](default: => B): B = default
-
-    def map[B](f: A => B): Can[B] = Empty
-
-    def flatMap[B](f: A => Can[B]): Can[B] = Empty
-
-    def filter(p: A => Boolean): Can[A] = this
-    
-    def foreach(f: A => Any): Unit = {}
-
-    def or[B >: A](alternative: => Can[B]): Can[B] = alternative
-    
-    def elements: Iterator[A] = Iterator.empty
-    
-    def exists(func: A => Boolean): Boolean = false
-
-    def toList: List[A] = Nil
-      
-    def ?~(msg: String): Can[A] = this
-        
-    def ?~!(msg: String): Can[A] = ?~(msg)
-            
+    /**
+     * @returns false if the Can contains a value
+     */
     def isDefined: Boolean = !isEmpty
 
-    def failMsg(msg: String): Can[A] = ?~(msg)
+    /**
+     * @returns the value of the Can if it is full. Throw an exception otherwise
+     */
+    def open_! : A
 
+    /**
+     * @returns the value of the Can if it is full. Returns a default value otherwise
+     */
+    def openOr[B >: A](default: => B): B = default
+
+    /**
+     * applies a function on the Can's value if it exists
+     * @returns the modified can or an Empty can
+     */
+    def map[B](f: A => B): Can[B] = Empty
+
+    /**
+     * applies a function returning a Can on the Can's value if it exists and removes the "inner" can if necessary
+     * @returns the modified can or an Empty can
+     */
+    def flatMap[B](f: A => Can[B]): Can[B] = Empty
+
+    /**
+     * @returns this Can if it has a value satisfying a predicate
+     */
+    def filter(p: A => Boolean): Can[A] = this
+    
+    /**
+     * @returns true if the Can's value verifies a predicate
+     */
+    def exists(func: A => Boolean): Boolean = false
+
+    /**
+     * applies a function to the Can value
+     */
+    def foreach(f: A => Any): Unit = {}
+
+   /**
+    * @returns a this or an alternative Can if this is an Empty Can
+    */
+    def or[B >: A](alternative: => Can[B]): Can[B] = alternative
+    
+    /**
+     * @returns an iterator on the Can value
+     */
+    def elements: Iterator[A] = Iterator.empty
+    
+    /**
+     * @returns true if the Can's value verifies a predicate
+     */
+    def toList: List[A] = Nil
+    
+    /**
+     * @returns the Can as an Option
+     */
+    def toOption: Option[A] = None
+
+    /**
+     * @param msg the failure message
+     * @returns a Failure with the message if the Can is an Empty Can
+     */
+    def ?~(msg: String): Can[A] = this
+        
+    /**
+     * Alias for ?~
+     */
+    def failMsg(msg: String): Can[A] = ?~(msg)
+    
+    /**
+     * @param msg the failure message
+     * @returns a Failure with the message if the Can is an Empty Can. Chain the messages if it is already a Failure
+     */
+    def ?~!(msg: String): Can[A] = ?~(msg)
+            
+    /**
+     * Alias for ?~!
+     */
     def compoundFailMsg(msg: String): Can[A] = ?~!(msg)
 
+    /**
+     * @param msg the failure message
+     * @param p a predicate
+     * @returns a Failure with the message if the predicate is not satisfied with the Can's value
+     */
     def filterMsg(msg: String)(p: A => Boolean): Can[A] = filter(p) ?~ msg
         
+    /**
+     * runs a function on the Can's value
+     * @returns the result of the function or a default value
+     */
     def run[T](in: T)(f: (T, A) => T) = in
     
+    /**
+     * pass the Can's value to a function
+     * @returns the Can
+     */
     def pass(f: Can[A] => Any) = {f(this) ; this}
     
+    /**
+     * Alias for pass
+     */
     def $(f: Can[A] => Any) = pass(f)
-    
-    def toOption: Option[A] = None
-    
+   
+    /**
+     * overrides the equals method for Cans (For Full and Empty only. For Failure, the method is overriden again)
+     */
     override def equals(other: Any): Boolean = (this, other) match {
       case (Full(x), Full(y)) => x == y
       case (Full(x), y) => x == y
@@ -76,44 +204,59 @@ sealed abstract class Can[+A] extends Product {
       case _ => false
     }
     
-    def choice[B](f1: A => Can[B])(f2: => Can[B]): Can[B] = this match {
-    case Full(x) => f1(x)
-    case _ => f2
-  }
+    /**
+     * applies the function f1 if possible, return an alternative Can otherwise
+     */
+    def choice[B](f1: A => Can[B])(alternative: => Can[B]): Can[B] = this match {
+      case Full(x) => f1(x)
+      case _ => alternative
+    }
 }
 
+/**
+ * The Full Can is a Can containing a value.
+ * It provides adequate behavior to a Can for when a value is involved
+ */
 @serializable
 final case class Full[+A](value: A) extends Can[A] {
   def isEmpty: Boolean = false 
 
   def open_! : A = value
   
+  override def openOr[B >: A](default: => B): B = value
+
+  override def or[B >: A](alternative: => Can[B]): Can[B] = this
+
   override def exists(func: A => Boolean): Boolean = func(value)
 
-  override def openOr[B >: A](default: => B): B = value
+  override def filter(p: A => Boolean): Can[A] = if (p(value)) this else Empty
+
+  override def foreach(f: A => Any): Unit = f(value)
 
   override def map[B](f: A => B): Can[B] = Full(f(value))
 
   override def flatMap[B](f: A => Can[B]): Can[B] = f(value)
 
-  override def filter(p: A => Boolean): Can[A] = if (p(value)) this else Empty
-  
-  override def foreach(f: A => Any): Unit = f(value)
-
-  override def or[B >: A](alternative: => Can[B]): Can[B] = this
-
   override def elements: Iterator[A] = Iterator.fromValues(value)
 
   override def toList: List[A] = List(value)
   
+  override def toOption: Option[A] = Some(value)
+
   override def run[T](in: T)(f: (T, A) => T) = f(in, value)
   
-  override def toOption: Option[A] = Some(value)
 }
 
+/**
+ * Singleton object representing an Empty Can
+ */
 @serializable
 case object Empty extends EmptyCan[Nothing]
 
+/**
+ * The Empty Can is a Can containing no value.
+ * It provides adequate behavior to a Can for when no value is involved
+ */
 @serializable
 abstract class EmptyCan[+A] extends Can[A] {
 
@@ -123,13 +266,17 @@ abstract class EmptyCan[+A] extends Can[A] {
 
   override def openOr[B >: A](default: => B): B = default
 
-  override def filter(p: A => Boolean): Can[A] = this
-  
   override def or[B >: A](alternative: => Can[B]): Can[B] = alternative
 
+  override def filter(p: A => Boolean): Can[A] = this
+  
   override def ?~(msg: String) = Failure(msg, Empty, Nil)
 }
 
+/**
+ * A Failure is an Empty Can having a failure message explaining the reason for being empty
+ * It can also optionally provide an exception or a chain of causes represented as a list of other Failure objects
+ */
 @serializable
 case class Failure(msg: String, exception: Can[Throwable], chain: List[Failure]) extends EmptyCan[Nothing] {
   type A = Nothing
@@ -143,6 +290,12 @@ case class Failure(msg: String, exception: Can[Throwable], chain: List[Failure])
   override def flatMap[B](f: A => Can[B]): Can[B] = this
       
   def messageChain: String = (this :: chain).map(_.msg).mkString(" <- ")
+  
+  override def equals(other: Any): Boolean = (this, other) match {
+    case (Failure(x, y, z), Failure(x1, y1, z1)) => (x, y, z) == (x1, y1, z1)
+    case (x, y: AnyRef) => x eq y
+    case _ => false
+  }
 }
 
 // vim: set ts=2 sw=2 et:

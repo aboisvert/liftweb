@@ -16,27 +16,27 @@ object PostgresSpecs extends Specification {
      "schemify" in {
         val driver = tryo {
           val cls = Class.forName("org.postgresql.Driver")
-           DriverManager.getConnection("jdbc:postgresql://localhost/lift_test", "lift", "")
+          DriverManager.getConnection("jdbc:postgresql://localhost/lift_test", "lift", "")
         }
                 
         driver.foreach{d =>
-        DB.defineConnectionManager(DefaultConnectionIdentifier, new ConnectionManager {
-          def newConnection(name: ConnectionIdentifier): Can[Connection] = Full(d)
-          def releaseConnection(conn: Connection) = () // {conn.close}
+          DB.defineConnectionManager(DefaultConnectionIdentifier, new ConnectionManager {
+            def newConnection(name: ConnectionIdentifier): Can[Connection] = Full(d)
+            def releaseConnection(conn: Connection) = () // {conn.close}
         })
         
-        Schemifier.destroyTables_!!(ignoreLogger _, TestModel)
-        Schemifier.schemify(true, ignoreLogger _, TestModel)
+          Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
+          Schemifier.schemify(true, ignoreLogger _, SampleModel)
         
-        val elwood = TestModel.find(By(TestModel.firstName, "Elwood")).open_!
-          val madeline = TestModel.find(By(TestModel.firstName, "Madeline")).open_!
-            val archer = TestModel.find(By(TestModel.firstName, "Archer")).open_!
+          val elwood = SampleModel.find(By(SampleModel.firstName, "Elwood")).open_!
+          val madeline = SampleModel.find(By(SampleModel.firstName, "Madeline")).open_!
+          val archer = SampleModel.find(By(SampleModel.firstName, "Archer")).open_!
         
-              elwood.firstName.toString must verify((s: String) => s == "Elwood")
-        madeline.firstName.toString must verify((s: String) => s == "Madeline")
-        archer.firstName.toString must verify((s: String) => s == "Archer")
+          elwood.firstName.toString must_== "Elwood"
+          madeline.firstName.toString must_== "Madeline"
+          archer.firstName.toString must_== "Archer"
         
-        elwood.id.is must verify((id: Long) => id < madeline.id.is)
+          elwood.id.is must be_<(madeline.id.is)
         }
      }
    }
@@ -44,7 +44,7 @@ object PostgresSpecs extends Specification {
    private def ignoreLogger(f: => AnyRef): Unit = ()
 } 
 
-object TestModel extends TestModel with KeyedMetaMapper[Long, TestModel] {
+object SampleModel extends SampleModel with KeyedMetaMapper[Long, SampleModel] {
   override def dbAddTable = Full(populate _)
   
   private def populate {
@@ -54,8 +54,8 @@ object TestModel extends TestModel with KeyedMetaMapper[Long, TestModel] {
   }  
 }
 
-class TestModel extends KeyedMapper[Long, TestModel] {
-  def getSingleton = TestModel // what's the "meta" server
+class SampleModel extends KeyedMapper[Long, SampleModel] {
+  def getSingleton = SampleModel // what's the "meta" server
   def primaryKeyField = id
 
 object id extends MappedLongIndex(this)

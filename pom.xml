@@ -98,6 +98,15 @@ Lift is a scala web framework.
       <id>mstarzyk</id>
       <name>Maciek Starzyk</name>
     </developer>      
+    <developer>
+      <id>eric.torreborre</id>
+      <name>Eric Torreborre</name>
+      <email>etorreborre [at] liftweb.net</email>
+      <timezone>+8</timezone>
+      <roles>
+        <role>specs support</role>
+      </roles>
+    </developer>
   </developers>
 
   <mailingLists>
