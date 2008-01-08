@@ -1,16 +1,15 @@
 package net.liftweb.http
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
-
-\*                                                 */
+/*                                                
+ * (c) 2006-2008 WorldWide Conferencing, LLC
+ * Distributed under an Apache License
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
-import scala.collection.immutable.{ListMap}
+import scala.collection.immutable.{ListMap, TreeMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
 import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
 import Helpers._
@@ -41,7 +40,8 @@ object S {
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
-  private val _attrs = new ThreadGlobal[HashMap[String, String]]
+  // private val _attrs = new ThreadGlobal[HashMap[String, String]]
+  private val _attrs = new ThreadGlobal[Map[String, String]]
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
@@ -281,7 +281,7 @@ object S {
     doAround(aroundRequest,
     _sessionInfo.doWith(session) (
       _requestVar.doWith(new HashMap) {
-    _attrs.doWith(new HashMap) {
+    _attrs.doWith(new TreeMap) {
     snippetMap.doWith(new HashMap) {
       _resBundle.doWith(null) {
       inS.doWith(true) {
@@ -320,11 +320,11 @@ object S {
   }
   
   def setVars[T](attr: MetaData)(f: => T): T = {
-    val old = _attrs.value
-    val ht: HashMap[String, String] = new HashMap
-    old.elements.foreach(v => ht(v._1) = v._2)
-    attr.elements.foreach(e => ht(e.key) = e.value.text)
-    _attrs.doWith(ht)(f)
+    //val old = _attrs.value
+    //val ht: HashMap[String, String] = new HashMap
+    //old.elements.foreach(v => ht(v._1) = v._2)
+    //attr.elements.foreach(e => ht(e.key) = e.value.text)
+    _attrs.doWith(_attrs.value ++ attr.toList.map(m => (m.key, m.value.text)))(f)
   }
   
   def initIfUninitted[B](session: LiftSession)(f: => B) : B = {
@@ -384,7 +384,7 @@ object S {
   def contextPath = session.map(_.contextPath).openOr("")  
   
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
-    val snippet = name.split(":").toList.map(_.trim).filter(_.length > 0)
+    val snippet = if (name.indexOf(".") != -1) name.roboSplit(".") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
     if (LiftServlet.snippetTable.isDefinedAt(snippet)) Full(LiftServlet.snippetTable(snippet)) else Empty
   }
   
@@ -771,6 +771,7 @@ object S {
   
 }
 
+@serializable
 object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
 }

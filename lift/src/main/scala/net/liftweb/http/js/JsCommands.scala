@@ -73,30 +73,29 @@ object JsCmds {
   }
 
   trait HasTime {
-    def time: Can[Long]
-    
-    def timeStr = time.map(_.toString) openOr ""
+    def time: Can[Helpers.TimeSpan]
+    def timeStr = time.map(_.toLong.toString) openOr ""
   }
   
-  case class After(millis: Long, toDo: JsCmd) extends JsCmd {
+  case class After(millis: Helpers.TimeSpan, toDo: JsCmd) extends JsCmd {
     def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis+");"
   }
 
   object Show {
     def apply(uid: String) = new Show(uid, Empty)
-    def apply(uid: String, time: Long) = new Show(uid, Full(time))
+    def apply(uid: String, time: Helpers.TimeSpan) = new Show(uid, Full(time))
   }
   
-  class Show(val uid: String,val time: Can[Long]) extends JsCmd with HasTime {
+  class Show(val uid: String,val time: Can[Helpers.TimeSpan]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").show("+timeStr+");} catch (e) {}"
   }
 
   object Hide {
     def apply(uid: String) = new Hide(uid, Empty)
-    def apply(uid: String, time: Long) = new Hide(uid, Full(time))    
+    def apply(uid: String, time: Helpers.TimeSpan) = new Hide(uid, Full(time))    
   }
   
-  class Hide(val uid: String,val time: Can[Long]) extends JsCmd with HasTime {
+  class Hide(val uid: String,val time: Can[Helpers.TimeSpan]) extends JsCmd with HasTime {
      def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
   }
 
@@ -157,17 +156,9 @@ object JsCmds {
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def realFadeTime: Long = fadeTime.toLong match {
-      case x if x <= 0 => 0
-      case x if x < 100 => x * 1000L
-      case x => x
-    }
+    def realFadeTime: Long = fadeTime.toLong
     
-    def realDuration: Long = duration.toLong match {
-      case x if x <= 0 => 10.seconds.toLong
-      case x if x < 100 => x * 1000L
-      case x => x
-    }
+    def realDuration: Long = duration.toLong
     
     def toJsCmd = (Show(where) ++ SetHtml(where, msg) ++ After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }

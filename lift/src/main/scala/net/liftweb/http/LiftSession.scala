@@ -1,10 +1,10 @@
 package net.liftweb.http
 
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*                                                
+ * (c) 2007-2008 WorldWide Conferencing, LLC
+ * Distributed under an Apache License
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 
 import scala.actors.Actor
 import scala.actors.Actor._
@@ -28,7 +28,7 @@ object LiftSession {
 		       contextPath: String,
 		       requestType: RequestType,
 		       webServices_? : boolean,
-		       contentType: String) = {new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType, session)}
+		       contentType: String) = (new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType)).setSession(session)
   
   var creator = createSession _
   
@@ -41,7 +41,7 @@ object LiftSession {
 }
 
 @serializable
-class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : Boolean, val contentType: String, val httpSession: HttpSession) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : Boolean, val contentType: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
@@ -49,11 +49,19 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   private val asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
   private val asyncById = new HashMap[String, CometActor]()
   
+  var httpSession: HttpSession = _
+  
   def sessionDidActivate(se: HttpSessionEvent) = {
+    httpSession = se.getSession
     
   }
   def sessionWillPassivate(se: HttpSessionEvent) = {
-    
+    httpSession = null
+  }
+  
+  def setSession(session: HttpSession) = {
+    httpSession = session
+    this
   }
   
   private var cometList: List[Actor] = Nil
@@ -76,7 +84,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
    * What happens when this session is bound to the HTTP session?
    */ 
   def valueBound(event: HttpSessionBindingEvent) {
-    
+    httpSession = event.getSession
   }
   
   private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Can[String]) 
@@ -240,9 +248,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, session.path, session.requestType, this)
     val templ = LiftServlet.templateTable
-    (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) match {
-      case ns @ Full(_) => ns 
-      case _ =>
+    (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
 	val tpath = path.path
       val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
 	case s @ _ if (!s.isEmpty) => s
@@ -319,15 +325,6 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     }
   }
   
-  /*
-  def fixResponse(resp: XhtmlResponse, request: RequestState): XhtmlResponse = {
-    val newHeaders = fixHeaders(resp.headers, request)
-    val (newXml, theType) = 
-      if (couldBeHtml(resp.headers) && request.contextPath.length > 0) (request.fixHtml(resp.out), ResponseInfo.xhtmlTransitional)
-      else (resp.out, Empty)
-	
-      XhtmlResponse(resp.out, theType, newHeaders, resp.code)
-  }*/
   
   /**
    * Update any "Location" headers to add the Context path
@@ -389,7 +386,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     case _ => Empty
   })
   
-  import LiftServlet.SnippetFailures._
+  // import LiftServlet.SnippetFailures._
   
   private def processSnippet(page: String, snippetName: Can[String], attrs: MetaData, kids: NodeSeq): NodeSeq = {
     val isForm = !attrs.get("form").toList.isEmpty
@@ -402,20 +399,24 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
             if (inst.dispatch.isDefinedAt(method))
             (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
               inst.dispatch(method)(kids)
-            else {LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, StatefulDispatchNotMatched))); kids}
+            else {LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, 
+                LiftServlet.SnippetFailures.StatefulDispatchNotMatched))); kids}
               
 	    case Full(inst) => {
               val ar: Array[Object] = List(Group(kids)).toArray
               // val ar: Array[Object] = Array(Group(kids))
 	      ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
 		case Full(md: NodeSeq) => md
-		case it => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, MethodNotFound))); kids
+		case it => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, 
+                    LiftServlet.SnippetFailures.MethodNotFound))); kids
 	      }
 	    }
-            case _ => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, ClassNotFound))); kids
+            case _ => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, 
+                LiftServlet.SnippetFailures.ClassNotFound))); kids
 	  }
 	}).openOr{
-      LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, NoNameSpecified)))
+      LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName, 
+          LiftServlet.SnippetFailures.NoNameSpecified)))
       Comment("FIX"+"ME -- no type defined for snippet")
       kids
       }
@@ -431,20 +432,54 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
+
+  /**
+    * The partial function that defines how lift tags are processed for this session.  Initially composed
+    * of LiftServlet.liftTagProcessing orElse the default lift tag processing.  If you need to change the
+    * way a particular session handles lift tags, alter this partial function.
+    */
+  var liftTagProcessing: LiftServlet.LiftTagPF = _
+  
+  /**
+    * The basic partial function that does lift tag processing
+    */
+  private def _defaultLiftTagProcessing: LiftServlet.LiftTagPF = {
+    case ("snippet", elm, metaData, kids, page) => 
+    metaData.get("type") match {
+      case Some(tn) => liftTagProcessing((tn.text, elm, metaData, kids, page))
+      case _ => processSnippet(page, Empty , elm.attributes, elm.child)
+    }
+    case ("surround", elm, _, _, page) => processSurroundElement(page, elm)    
+    case ("embed", _, metaData, kids, page) => findAndEmbed(Can(metaData.get("what")), kids)
+    case ("ignore", _, _, _, _) => Text("")
+    case ("comet", _, metaData, kids, _) => executeComet(Can(metaData.get("type").map(_.text.trim)), Can(metaData.get("name").map(_.text.trim)), kids, metaData)
+    case ("children", _, _, kids, _) => kids
+    case ("a", elm, metaData, kids, _) => Elem(null, "a", addAjaxHREF(metaData), elm.scope, kids :_*)
+    case ("form", elm, metaData, kids, _) => Elem(null, "form", addAjaxForm(metaData), elm.scope, kids : _*)
+    case ("loc", elm, metaData, kids, _) => metaData.get("locid") match {case Some(id) => S.loc(id.text, kids) case _ => S.loc(kids.text, kids)}
+    case (snippetInfo, elm, metaData, kids, page) => processSnippet(page, Full(snippetInfo) , metaData, kids)
+  }
+  
+  liftTagProcessing = LiftServlet.liftTagProcessing orElse _defaultLiftTagProcessing
+  
+  
+  
+  
   private[http] def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
     in.flatMap{
       v => 
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(page, nodes))
-          case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
-          case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(page, elm))
-          case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(page, findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
-          case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(page, processSnippet(page, Can(elm.attributes.get("type")).map(_.text), elm.attributes, elm.child)))
-	  case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(page, executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
-          case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(page, elm.child)
-          case elm: Elem if elm.prefix == "lift" && elm.label == "loc" => elm.attributes.filter(_.key == "locid").toList match {case id :: _ => S.loc(id.value.text, elm.child) case _ => S.loc(elm.child.text, elm.child)}
-          case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
-          case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(page, elm))
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(page, findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(page, processSnippet(page, Can(elm.attributes.get("type")).map(_.text), elm.attributes, elm.child)))
+	  // case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(page, executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(page, elm.child)
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "loc" => elm.attributes.filter(_.key == "locid").toList match {case id :: _ => S.loc(id.value.text, elm.child) case _ => S.loc(elm.child.text, elm.child)}
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
+          // case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
+          case elm: Elem if elm.prefix == "lift" || elm.prefix == "l" => S.setVars(elm.attributes)(processSurroundAndInclude(page, liftTagProcessing(elm.label, elm, elm.attributes, elm.child, page)))
 	  case elm: Elem => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(page, v.child) : _*)
 	  case _ => v
 	}
@@ -519,7 +554,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
-    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", Null))
+    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -529,7 +564,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       case x :: xs => x.value.text +";"
     }
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
-    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, Null)))
+    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "action"))))
   }
   
   
@@ -571,7 +606,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   private def findAndMerge(templateName: Can[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
     val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
     
-    findTemplate(name).map(s => processBind(processSurroundAndInclude(name, s), atWhat)).
+    findTemplate(name).map(s => processBind(s, atWhat)).
       openOr(atWhat.values.flatMap(_.elements).toList)
   }
   

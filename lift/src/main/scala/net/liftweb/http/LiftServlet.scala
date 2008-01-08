@@ -281,6 +281,7 @@ object LiftServlet {
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
+  type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   
   /**
     * A partial function that allows the application to define requests that should be
@@ -323,6 +324,8 @@ object LiftServlet {
       case request => determineContentType(request.getHeader("Accept"))
     }
   }
+  
+  var liftTagProcessing: LiftTagPF = Map.empty
 
   /**
    * If you don't want lift to send the application/xhtml+xml mime type to those browsers

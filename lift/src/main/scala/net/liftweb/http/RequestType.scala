@@ -8,6 +8,7 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServletRequest}
 
+@serializable
 abstract class RequestType {
   def post_? : boolean = false
   def get_? : boolean = false
@@ -16,22 +17,27 @@ abstract class RequestType {
   def delete_? : boolean = false
 }
 
+@serializable
 case object GetRequest extends RequestType {
   override def get_? = true
 }
+@serializable
 case object PostRequest extends RequestType {
   override def post_? = true
 }
+@serializable
 case object HeadRequest extends RequestType {
   override def head_? = true
 }
+@serializable
 case object PutRequest extends RequestType {
   override def put_? = true
 }
+@serializable
 case object DeleteRequest extends RequestType {
   override def delete_? = true
 }
-
+@serializable
 case class UnknownRequest(method: String) extends RequestType
 
 object RequestType {

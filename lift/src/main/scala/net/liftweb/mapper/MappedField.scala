@@ -20,6 +20,7 @@ import Helpers._
   * The base (not Typed) trait that defines a field that is mapped to a column or more than 1 column
   * (e.g., MappedPassword) in the database
   */
+@serializable
 trait BaseMappedField {
   /**
     * Get a JDBC friendly representation of the named field (this is used for MappedFields that correspond to more than 

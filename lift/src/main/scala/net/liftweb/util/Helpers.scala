@@ -1,10 +1,10 @@
 package net.liftweb.util
 
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*            
+ * (c) 2007-2008 WorldWide Conferencing, LLC
+ * Distributed under an Apache License
+ * http://www.apache.org/licenses/LICENSE-2.0
+ */
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet, ListBuffer}
@@ -891,7 +891,11 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   
   def splitColonPair(in: String, first: String, second: String): (String, String) = {
-    (if (in == null) "" else in).split(":").filter{s => s.length > 0}.toList match {
+    (in match {
+      case null => List("")
+      case s if s.indexOf(".") != -1 => s.roboSplit("\\.")
+      case s => s.roboSplit(":")
+    }) match {
       case f :: s :: _ => (f,s)
 	case f :: Nil => (f, second)
 	  case _ => (first, second)

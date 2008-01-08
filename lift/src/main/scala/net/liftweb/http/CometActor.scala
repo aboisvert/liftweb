@@ -28,10 +28,16 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private var lastRenderTime = millis
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty, Empty, false)
   private var wasLastFullRender = false
-  private val listeners = new ListBuffer[Actor]()
+  @transient
+  private var t_listeners = new ListBuffer[Actor]()
   private var askingWho: Can[CometActor] = Empty
   private var whosAsking: Can[CometActor] = Empty
   private var answerWith: Can[Any => Any] = Empty
+  
+  private def listeners = {
+    if (t_listeners == null) t_listeners = new ListBuffer
+    t_listeners
+  }
   
   def defaultPrefix: String
   
@@ -252,6 +258,7 @@ case class ReRender(doAll: Boolean) extends CometMessage
  * @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
  * @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE 
  */
+@serializable
 case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)

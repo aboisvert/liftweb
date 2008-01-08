@@ -884,6 +884,9 @@ object NotNullRef {
   def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNotNull, Empty, Empty)
 }
 
+trait LongKeyedMetaMapper[A <: LongKeyedMapper[A]] extends KeyedMetaMapper[Long, A] { self: A => }
+
+
 trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] { self: A =>
  
   private def testProdArity(prod: Product): boolean = {

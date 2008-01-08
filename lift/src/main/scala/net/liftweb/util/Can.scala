@@ -25,6 +25,7 @@ object Can {
   implicit def type2Can[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
 }
 
+@serializable
 sealed abstract class Can[+A] extends Product {
     def isEmpty: Boolean
 
@@ -81,6 +82,7 @@ sealed abstract class Can[+A] extends Product {
   }
 }
 
+@serializable
 final case class Full[+A](value: A) extends Can[A] {
   def isEmpty: Boolean = false 
 
@@ -109,8 +111,10 @@ final case class Full[+A](value: A) extends Can[A] {
   override def toOption: Option[A] = Some(value)
 }
 
+@serializable
 case object Empty extends EmptyCan[Nothing]
 
+@serializable
 abstract class EmptyCan[+A] extends Can[A] {
 
   def isEmpty: Boolean = true 
@@ -126,6 +130,7 @@ abstract class EmptyCan[+A] extends Can[A] {
   override def ?~(msg: String) = Failure(msg, Empty, Nil)
 }
 
+@serializable
 case class Failure(msg: String, exception: Can[Throwable], chain: List[Failure]) extends EmptyCan[Nothing] {
   type A = Nothing
   

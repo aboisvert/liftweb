@@ -17,10 +17,13 @@ import java.io.InputStream
 import scala.xml._
 import org.apache.commons.fileupload.servlet._
 
+@serializable
 sealed abstract class ParamHolder {
   def name: String
 }
+@serializable
 case class NormalParamHolder(name: String, value: String) extends ParamHolder
+@serializable
 case class FileParamHolder(name: String, mimeType: String, fileName: String, file: Array[Byte]) extends ParamHolder
 
 object RequestState {
@@ -154,10 +157,12 @@ object RequestState {
   def unapply(in: RequestState) = Some((in.path, in.requestType, in.contextPath, in.webServices_? , in.contentType)) 
 }
 
+@serializable
 case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
   def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
 }
 
+@serializable
 class RequestState(val paramNames: List[String], val params: Map[String, List[String]], val uri: String,
 		           val path: ParsePath,
 		           val contextPath: String,

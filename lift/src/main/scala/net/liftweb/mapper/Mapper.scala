@@ -14,6 +14,7 @@ import net.liftweb.http.S
 import S._
 import net.liftweb.util.{Can, Empty, Full, Failure}
 
+@serializable
 trait Mapper[A<:Mapper[A]] { self: A =>
   private val secure_# = Safe.next
   private var was_deleted_? = false
@@ -211,6 +212,10 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   def timeZoneField: Can[MappedTimeZone[A]] = Empty
   
   def countryField: Can[MappedCountry[A]] = Empty
+}
+
+trait LongKeyedMapper[OwnerType <: LongKeyedMapper[OwnerType]] extends KeyedMapper[Long, OwnerType] { self: OwnerType =>
+
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>
