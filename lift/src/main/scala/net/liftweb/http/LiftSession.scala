@@ -564,7 +564,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       case x :: xs => x.value.text +";"
     }
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
-    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "action"))))
+    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
   
   
