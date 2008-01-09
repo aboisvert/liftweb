@@ -171,6 +171,7 @@ Lift is a scala web framework.
   </dependencyManagement>
   <build>
     <sourceDirectory>src/main/scala</sourceDirectory>
+    <testSourceDirectory>src/test/scala</testSourceDirectory>
     <extensions>
       <extension>
         <groupId>org.apache.maven.wagon</groupId>
