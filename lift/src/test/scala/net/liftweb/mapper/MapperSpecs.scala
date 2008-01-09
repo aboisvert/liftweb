@@ -1,3 +1,18 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.mapper
 
 import org.specs._
@@ -7,24 +22,29 @@ import net.liftweb.util._
 import Helpers._
 import java.sql.{Connection, DriverManager}
 
-class PosgresTest extends JUnit3(PostgresSpecs)
-object PostgresSpecsRunner extends ConsoleRunner(PostgresSpecs)
+//import net.liftweb.mapper.DBVendors.{MySqlRunner, DerbyRunner}
 
-object PostgresSpecs extends Specification {
-  
-   "Postgres Driver" should {
-     "schemify" in {
-        val driver = tryo {
-          val cls = Class.forName("org.postgresql.Driver")
-          DriverManager.getConnection("jdbc:postgresql://localhost/lift_test", "lift", "")
+class MapperSpecsAsTest extends JUnit3(MapperSpecs)
+object MapperSpecsRunner extends ConsoleRunner(MapperSpecs)
+
+object MapperSpecs extends Specification {
+  def providers = DBProviders.asList
+   
+  println("lg :" + providers.length)
+  providers.foreach(provider => {
+      println("should on " + provider)
+    ("Mapper for " + provider.name) should {
+      // precondition
+      try {
+          provider.setupDB
+      } catch {
+        case e => {
+            println("skip : " + provider.name)
+            skip(e.getMessage)
         }
-                
-        driver.foreach{d =>
-          DB.defineConnectionManager(DefaultConnectionIdentifier, new ConnectionManager {
-            def newConnection(name: ConnectionIdentifier): Can[Connection] = Full(d)
-            def releaseConnection(conn: Connection) = () // {conn.close}
-        })
-        
+      }
+
+      "schemify" in {
           Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
           Schemifier.schemify(true, ignoreLogger _, SampleModel)
         
@@ -37,9 +57,9 @@ object PostgresSpecs extends Specification {
           archer.firstName.toString must_== "Archer"
         
           elwood.id.is must be_<(madeline.id.is)
-        }
      }
-   }
+    }
+  })
 
    private def ignoreLogger(f: => AnyRef): Unit = ()
 } 
