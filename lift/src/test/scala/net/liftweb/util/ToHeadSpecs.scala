@@ -66,7 +66,7 @@ object ToHeadSpecs extends Specification {
             <head>
               <script src="foo.js" id="fromFrag"></script>
             </head>
-            <h2>Welcome to the your project!</h2>
+            <h2>Welcome to your project!</h2>
             <ul><li><a href="/">Home</a></li><li><a href="/htmlFragmentWithHead" id="current">htmlFragmentWithHead</a></li><li><a href="/htmlSnippetWithHead">htmlSnippetWithHead</a></li></ul>
           </body>
         </html>
@@ -81,7 +81,7 @@ object ToHeadSpecs extends Specification {
             <script src="foo.js" id="fromFrag"></script>
           </head>
           <body>
-            <h2>Welcome to the your project!</h2>
+            <h2>Welcome to your project!</h2>
             <ul><li><a href="/">Home</a></li><li><a href="/htmlFragmentWithHead" id="current">htmlFragmentWithHead</a></li><li><a href="/htmlSnippetWithHead">htmlSnippetWithHead</a></li></ul>
           </body>
         </html>

@@ -18,6 +18,10 @@
   -->
     <release version="0.5" description="">
       <action dev="David Pollak" type="update">
+Fixed the 'Welcome to the your project' type-o
+</action>
+
+      <action dev="David Pollak" type="update">
 Further abstracted the whole logging thing.
 
 There's a default log4j setup that can be override
