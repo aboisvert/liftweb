@@ -4,6 +4,7 @@ import net.liftweb.util._
 
 abstract class DriverType(val name : String) {
   def binaryColumnType: String
+  def clobColumnType: String
   def booleanColumnType: String
   def dateTimeColumnType: String
   def integerColumnType: String
@@ -52,6 +53,7 @@ abstract class DriverType(val name : String) {
 object DerbyDriver extends DriverType("Apache Derby") {
   def binaryColumnType = "LONG VARCHAR FOR BIT DATA"
   def booleanColumnType = "SMALLINT"
+  def clobColumnType = "LONG VARCHAR"    
   def dateTimeColumnType = "TIMESTAMP"
   def integerColumnType = "INTEGER"
   def integerIndexColumnType = "INTEGER NOT NULL GENERATED ALWAYS AS IDENITY"
@@ -66,6 +68,7 @@ object DerbyDriver extends DriverType("Apache Derby") {
 
 object MySqlDriver extends DriverType("MySQL") {
   def binaryColumnType = "MEDIUMBLOB"
+  def clobColumnType = "LONGTEXT"
   def booleanColumnType = "BOOLEAN"
   def dateTimeColumnType = "DATETIME"
   def integerColumnType = "INTEGER"
@@ -81,6 +84,7 @@ object MySqlDriver extends DriverType("MySQL") {
 
 object H2Driver extends DriverType("H2") {
   def binaryColumnType = "BINARY"
+  def clobColumnType = "LONGVARCHAR"    
   def booleanColumnType = "BOOLEAN"
   def dateTimeColumnType = "TIMESTAMP"
   def integerColumnType = "INTEGER"
@@ -103,6 +107,7 @@ object H2Driver extends DriverType("H2") {
 
 object PostgreSqlDriver extends DriverType("PostgreSQL") {
   def binaryColumnType = "BYTEA"
+  def clobColumnType = "TEXT"    
   def booleanColumnType = "BOOLEAN"
   def dateTimeColumnType = "TIMESTAMP"
   def integerColumnType = "INTEGER"
