@@ -16,6 +16,31 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+    <release version="0.5" description="">
+      <action dev="David Pollak" type="update">
+Further abstracted the whole logging thing.
+
+There's a default log4j setup that can be override
+
+The LiftLogger trait is made concrete in Log4JLogger, but the
+generic LiftLogger creation is done by function that can
+be modified in LogBoot:
+  var loggerByName: String => LiftLogger = _logger
+  var loggerByClass: Class => LiftLogger = _loggerCls
+
+One can insert a new logging system into lift by replacing
+the loggerByName and loggerByClass functions with appropriate
+functions that return a LiftLogger.
+</action>
+
+      <action dev="David Pollak" type="add">MappedText and MapperFakeClob classes</action>
+      <action dev="David Pollak" type="update">Extensive updates to the 
+      &lt;lift:xxx /&gt; tag mechanism that uses tag labels as
+      snippets and support for adding arbitrary tag handling to
+      lift.</action>
+      
+
+    </release>
     <release version="0.4" date="2008-01-07" description="">
       <action dev="Steve Jenson" type="add">Added XMPP support for lift applications. see the package net.liftweb.xmpp</action>
       <action dev="Steve Jenson" type="add">Added support for switching XHTML MIME type serving off. See LiftServet.useXhtmlMimeType</action>
