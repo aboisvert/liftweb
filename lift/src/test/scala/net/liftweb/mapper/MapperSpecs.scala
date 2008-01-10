@@ -34,6 +34,8 @@ object MapperSpecs extends Specification {
   providers.foreach(provider => {
       println("should on " + provider)
     ("Mapper for " + provider.name) should {
+
+      "schemify" in {
       // precondition
       try {
           provider.setupDB
@@ -43,8 +45,6 @@ object MapperSpecs extends Specification {
             skip(e.getMessage)
         }
       }
-
-      "schemify" in {
           Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
           Schemifier.schemify(true, ignoreLogger _, SampleModel)
         
