@@ -16,7 +16,7 @@ import net.liftweb.util._
 object DB {
   private val threadStore = new ThreadLocal
   private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
-  val logger = Log.logger(DB.getClass)
+  val logger = LogBoot.loggerByClass(DB.getClass)
   
   var queryTimeout: Can[Int] = Empty
   

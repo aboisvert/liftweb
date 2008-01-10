@@ -15,29 +15,81 @@ import org.apache.log4j.xml._
 /**
  * A thin wrapper around log4j
  */
-object Log {
-  val defaultProps = 
-    """<?xml version="1.0" encoding="UTF-8" ?>
-    <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
-  <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-  <appender name="appender" class="org.apache.log4j.ConsoleAppender">
-  <layout class="org.apache.log4j.SimpleLayout"/>
-  </appender>
-  <root>
-  <priority value ="INFO"/>
-  <appender-ref ref="appender"/>
-  </root>
-  </log4j:configuration>
-"""
+object Log extends LiftLogger {
+  // def logger(clz: Class): LiftLogger = new Log4JLogger(LogBoot.loggerByClass(clz))
+  //def logger(name: String): LiftLogger = new Log4JLogger(LogBoot.loggerByName(name))
+  //private val _rootLogger = Lazy(logger("lift"))
+  //val rootLogger: LiftLogger = _rootLogger.get
+  lazy val rootLogger: LiftLogger = LogBoot.loggerByName("lift")
 
-  private def log4jIsConfigured = LogManager.getLoggerRepository.getCurrentLoggers.hasMoreElements
+  override def trace(msg: => AnyRef) = rootLogger.trace(msg)
+   override def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)
+   
+   override def assertLog(assertion: Boolean, msg: => String) = rootLogger.assertLog(assertion, msg)
+   
+   override def isEnabledFor(level: LiftLogLevels.Value) = rootLogger.isEnabledFor(level)
+   override def isDebugEnabled = rootLogger.isDebugEnabled
+   override def debug(msg: => AnyRef) = rootLogger.debug(msg)
+   // override def debugF(msg: => AnyRef) = debug(msg)
+   override def debug(msg: => AnyRef, t: => Throwable) = rootLogger.debug(msg, t)
+   
+   override def isErrorEnabled = rootLogger.isEnabledFor(LiftLogLevels.Error)
+   override def error(msg: => AnyRef) = rootLogger.error(msg)
+   // override def errorF(msg: => AnyRef) = error(msg)
+   override def error(msg: => AnyRef, t: => Throwable) = rootLogger.error(msg, t)
+
+   override def fatal(msg: AnyRef) = rootLogger.fatal(msg)
+   // override def fatalF(msg: AnyRef) = fatal(msg)
+   override def fatal(msg: AnyRef, t: Throwable) = rootLogger.fatal(msg, t)
+   
+   override def level = rootLogger.level
+   override def level_=(level: LiftLogLevels.Value) = rootLogger.level = level
+   override def name = rootLogger.name
+   // def parent = rootLogger.parent
+   
+   override def isInfoEnabled = rootLogger.isInfoEnabled
+   override def info(msg: => AnyRef) = rootLogger.info(msg)
+   def infoF(msg: => AnyRef) = info(msg)
+   override def info(msg: => AnyRef, t: => Throwable) = rootLogger.info(msg, t)
+
+
+   // def isEnabledFor(level: Priority) = rootLogger.isEnabledFor(level)
+   
+   override def isWarnEnabled = rootLogger.isWarnEnabled
+   override def warn(msg: => AnyRef) = rootLogger.warn(msg)
+   // def warnF(msg: => AnyRef) = warn(msg)
+   override def warn(msg: => AnyRef, t: => Throwable) = rootLogger.warn(msg, t)
+   
+   def never(msg: => AnyRef) {}
+  def neverF(msg: => AnyRef) {}
+  def never(msg: => AnyRef, t: => Throwable) {}
   
-  private def findTheFile: Can[(java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
+  override def isTraceEnabled = rootLogger.isTraceEnabled  
+}
+
+object LogBoot {
+  lazy val checkConfig: Boolean = loggerSetup() 
+
+  var loggerSetup: () => Boolean = _log4JSetup _
+    
+  private def _log4JSetup() =
+  {
+    val defaultProps = 
+      """<?xml version="1.0" encoding="UTF-8" ?>
+      <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+    <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+    <appender name="appender" class="org.apache.log4j.ConsoleAppender">
+    <layout class="org.apache.log4j.SimpleLayout"/>
+    </appender>
+    <root>
+    <priority value ="INFO"/>
+    <appender-ref ref="appender"/>
+    </root>
+    </log4j:configuration>
+  """    
+  def log4jIsConfigured = LogManager.getLoggerRepository.getCurrentLoggers.hasMoreElements
+  def findTheFile: Can[(java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
   (name =>tryo(getClass.getResource(name)).filter(_ ne null).map(s => (s, name)))) 
-  /*(s, name match {case None => None; case Some(s) if s eq null => None; case Some(s) => Some( (s, name) )})) match {
-    case None => (None, None)
-    case Some((s, name)) => (Some(s), Some(name))
-  }*/
   
   val (log4jUrl, fileName) = findTheFile match {
     case Full((url, name)) => (Full(url), Full(name))
@@ -56,94 +108,118 @@ object Log {
     val defPropBytes = defaultProps.toString.getBytes("UTF-8")
     val is = new java.io.ByteArrayInputStream(defPropBytes)
     domConf.doConfigure(is, LogManager.getLoggerRepository())
-  }
-  def logger(clz: Class): LiftLogger = new LiftLogger(LogBoot.loggerByClass(clz))
-  def logger(name: String): LiftLogger = new LiftLogger(LogBoot.loggerByName(name))
-  //private val _rootLogger = Lazy(logger("lift"))
-  //val rootLogger: LiftLogger = _rootLogger.get
-  lazy val rootLogger: LiftLogger = logger("lift")
-
-  def trace(msg: => AnyRef) = rootLogger.trace(msg)
-   def trace(msg: => AnyRef, t: => Throwable) = rootLogger.trace(msg, t)
-   
-   def assertLog(assertion: Boolean, msg: => String) = rootLogger.assertLog(assertion, msg)
-   
-   def isDebugEnabled = rootLogger.isDebugEnabled
-   def debug(msg: => AnyRef) = rootLogger.debug(msg)
-   def debugF(msg: => AnyRef) = debug(msg)
-   def debug(msg: => AnyRef, t: => Throwable) = rootLogger.debug(msg, t)
-   
-   def isErrorEnabled = rootLogger.isEnabledFor(Level.ERROR)
-   def error(msg: => AnyRef) = rootLogger.error(msg)
-   def errorF(msg: => AnyRef) = error(msg)
-   def error(msg: => AnyRef, t: => Throwable) = rootLogger.error(msg, t)
-
-   def fatal(msg: AnyRef) = rootLogger.fatal(msg)
-   def fatalF(msg: AnyRef) = fatal(msg)
-   def fatal(msg: AnyRef, t: Throwable) = rootLogger.fatal(msg, t)
-   
-   def level = rootLogger.level
-   def level_=(level: Level) = rootLogger.level = level
-   def name = rootLogger.name
-   def parent = rootLogger.parent
-   
-   def isInfoEnabled = rootLogger.isInfoEnabled
-   def info(msg: => AnyRef) = rootLogger.info(msg)
-   def infoF(msg: => AnyRef) = info(msg)
-   def info(msg: => AnyRef, t: => Throwable) = rootLogger.info(msg, t)
-
-
-   def isEnabledFor(level: Priority) = rootLogger.isEnabledFor(level)
-   
-   def isWarnEnabled = rootLogger.isWarnEnabled
-   def warn(msg: => AnyRef) = rootLogger.warn(msg)
-   def warnF(msg: => AnyRef) = warn(msg)
-   def warn(msg: => AnyRef, t: => Throwable) = rootLogger.warn(msg, t)
-   
-   def never(msg: => AnyRef) {}
-  def neverF(msg: => AnyRef) {}
-  def never(msg: => AnyRef, t: => Throwable) {}
+  }  
+  true
 }
-
-object LogBoot {
-  private def _loggerCls(clz: Class): Logger = Logger.getLogger(clz)
-  private def _logger(name: String): Logger = Logger.getLogger(name)
   
-  var loggerByName: String => Logger = _logger
-  var loggerByClass: Class => Logger = _loggerCls
+  private def _loggerCls(clz: Class): LiftLogger = if (checkConfig) new Log4JLogger(Logger.getLogger(clz)) else NullLogger
+  private def _logger(name: String): LiftLogger = if (checkConfig) new Log4JLogger(Logger.getLogger(name)) else NullLogger
+  
+  var loggerByName: String => LiftLogger = _logger
+  var loggerByClass: Class => LiftLogger = _loggerCls
 }
 
-class LiftLogger(val logger: Logger) {
-   def isTraceEnabled = logger.isTraceEnabled
-   def trace(msg: => AnyRef) = if (isTraceEnabled) logger.trace(msg)
-   def trace(msg: => AnyRef, t: => Throwable) = if (isTraceEnabled) logger.trace(msg, t)
-   
-   def assertLog(assertion: Boolean, msg: => String) = if (assertion) logger.assertLog(assertion, msg)
-   
-   def isDebugEnabled = logger.isDebugEnabled
-   def debug(msg: => AnyRef) = if (isDebugEnabled) logger.debug(msg)
-   def debug(msg: => AnyRef, t: => Throwable) = if (isDebugEnabled) logger.debug(msg, t)
-   
-   def isErrorEnabled = logger.isEnabledFor(Level.ERROR)
-   def error(msg: => AnyRef) = if (isErrorEnabled) logger.error(msg)
-   def error(msg: => AnyRef, t: => Throwable) = if (isErrorEnabled) logger.error(msg, t)
+object NullLogger extends LiftLogger {
+  
+}
 
-   def fatal(msg: AnyRef) = logger.fatal(msg)
-   def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
-   
-   def level = logger.getLevel
-   def level_=(level: Level) = logger.setLevel(level)
-   def name = logger.getName
-   def parent = logger.getParent
-   
-   def isInfoEnabled = logger.isInfoEnabled
-   def info(msg: => AnyRef) = if (isInfoEnabled) logger.info(msg)
-   def info(msg: => AnyRef, t: => Throwable) = if (isInfoEnabled) logger.info(msg, t)
+trait LiftLogger {
+  def isTraceEnabled: Boolean = false
+  def trace(msg: => AnyRef): Unit = ()
+  def trace(msg: => AnyRef, t: => Throwable): Unit = ()
+  
+  def assertLog(assertion: Boolean, msg: => String): Unit = ()
+  
+  def isDebugEnabled: Boolean = false
+  def debug(msg: => AnyRef): Unit = ()
+  def debug(msg: => AnyRef, t: => Throwable): Unit = ()
+  
+  def isErrorEnabled: Boolean = false
+  def error(msg: => AnyRef): Unit = ()
+  def error(msg: => AnyRef, t: => Throwable): Unit = ()
 
+  def fatal(msg: AnyRef): Unit = ()
+  def fatal(msg: AnyRef, t: Throwable): Unit = ()
+ 
+  def level: LiftLogLevels.Value = LiftLogLevels.Off
+  def level_=(level: LiftLogLevels.Value): Unit = ()
+  def name: String = "Null"
+  // def parent = logger.getParent
+  
+  def isInfoEnabled: Boolean = false
+  def info(msg: => AnyRef): Unit = ()
+  def info(msg: => AnyRef, t: => Throwable): Unit = ()
+
+
+  def isEnabledFor(level: LiftLogLevels.Value): Boolean = false
+  
+  def isWarnEnabled: Boolean = false
+  def warn(msg: => AnyRef): Unit = ()
+  def warn(msg: => AnyRef, t: => Throwable): Unit = ()
+}
+
+object LiftLogLevels extends Enumeration {
+  val All = Value(1, "All")
+  val Trace = Value(3, "Trace")
+  val Debug = Value(5, "Debug")
+  val Warn = Value(7, "Warn")
+  val Error = Value(9, "Error")
+  val Fatal = Value(11, "Fatal")
+  val Info = Value(13, "Info")
+  val Off = Value(15, "Off")
+}
+
+class Log4JLogger(val logger: Logger) extends LiftLogger {
+   override def isTraceEnabled = logger.isTraceEnabled
+   override def trace(msg: => AnyRef) = if (isTraceEnabled) logger.trace(msg)
+   override def trace(msg: => AnyRef, t: => Throwable) = if (isTraceEnabled) logger.trace(msg, t)
+   
+   override def assertLog(assertion: Boolean, msg: => String) = if (assertion) logger.assertLog(assertion, msg)
+   
+   override def isDebugEnabled = logger.isDebugEnabled
+   override def debug(msg: => AnyRef) = if (isDebugEnabled) logger.debug(msg)
+   override def debug(msg: => AnyRef, t: => Throwable) = if (isDebugEnabled) logger.debug(msg, t)
+   
+   override def isErrorEnabled = logger.isEnabledFor(Level.ERROR)
+   override def error(msg: => AnyRef) = if (isErrorEnabled) logger.error(msg)
+   override def error(msg: => AnyRef, t: => Throwable) = if (isErrorEnabled) logger.error(msg, t)
+
+   override def fatal(msg: AnyRef) = logger.fatal(msg)
+   override def fatal(msg: AnyRef, t: Throwable) = logger.fatal(msg, t)
+   
+   override def level = logger.getLevel match {
+   case Level.ALL => LiftLogLevels.All  
+   case Level.DEBUG => LiftLogLevels.Debug  
+   case Level.ERROR => LiftLogLevels.Error  
+   case Level.WARN => LiftLogLevels.Warn  
+   case Level.FATAL => LiftLogLevels.Fatal  
+   case Level.INFO => LiftLogLevels.Info  
+   case Level.TRACE => LiftLogLevels.Trace  
+   case Level.OFF => LiftLogLevels.Off
+   }
+   
+   val liftToLog4J: PartialFunction[LiftLogLevels.Value, Level] = {
+   case LiftLogLevels.All => Level.ALL
+   case LiftLogLevels.Debug => Level.DEBUG
+   case LiftLogLevels.Error => Level.ERROR
+   case LiftLogLevels.Warn => Level.WARN
+   case LiftLogLevels.Fatal => Level.FATAL
+   case LiftLogLevels.Info => Level.INFO
+   case LiftLogLevels.Trace => Level.TRACE
+   case LiftLogLevels.Off => Level.OFF
+   }
+   
+   override def isEnabledFor(level: LiftLogLevels.Value): Boolean = logger.isEnabledFor(liftToLog4J(level))
+   override def level_=(level: LiftLogLevels.Value) = logger.setLevel(liftToLog4J(level) )
+   override def name = logger.getName
+   
+   override def isInfoEnabled = logger.isInfoEnabled
+   override def info(msg: => AnyRef) = if (isInfoEnabled) logger.info(msg)
+   override def info(msg: => AnyRef, t: => Throwable) = if (isInfoEnabled) logger.info(msg, t)
 
    def isEnabledFor(level: Priority) = logger.isEnabledFor(level)
    
-   def isWarnEnabled = isEnabledFor(Level.WARN)
-   def warn(msg: => AnyRef) = if (isWarnEnabled) logger.warn(msg)
-   def warn(msg: => AnyRef, t: => Throwable) = if (isWarnEnabled) logger.warn(msg, t)
+   override def isWarnEnabled = isEnabledFor(Level.WARN)
+   override def warn(msg: => AnyRef) = if (isWarnEnabled) logger.warn(msg)
+   override def warn(msg: => AnyRef, t: => Throwable) = if (isWarnEnabled) logger.warn(msg, t)
 }
