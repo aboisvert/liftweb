@@ -29,6 +29,8 @@ object Log {
   </root>
   </log4j:configuration>
 """
+
+  private def log4jIsConfigured = LogManager.getLoggerRepository.getCurrentLoggers.hasMoreElements
   
   private def findTheFile: Can[(java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml"))) 
   (name =>tryo(getClass.getResource(name)).filter(_ ne null).map(s => (s, name)))) 
@@ -49,7 +51,7 @@ object Log {
     } else PropertyConfigurator.configure(url)
   }
 
-  if (!log4jUrl.isDefined) {
+  if (!log4jUrl.isDefined && !log4jIsConfigured) {
     val domConf = new DOMConfigurator
     val defPropBytes = defaultProps.toString.getBytes("UTF-8")
     val is = new java.io.ByteArrayInputStream(defPropBytes)
