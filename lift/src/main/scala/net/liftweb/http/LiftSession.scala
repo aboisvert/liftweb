@@ -283,9 +283,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   }  
   
   private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
-    val controller: String = (places.take(1) orElse List("default_template"))(0)
-    val action: String = (places.drop(1).take(1) orElse List("render"))(0)
-    val trans = List((n:String) => n, (n:String) => smartCaps(n))
+    val (controller, action) = places match {
+      case ctl :: act :: _ => (ctl, act)
+      case ctl :: _ => (ctl, "index")
+      case Nil => ("default_template", "index")
+    }
+    val trans = List[String => String](n => n, n => smartCaps(n))
     val toTry = trans.flatMap(f => (LiftServlet.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
 
     first(toTry) {
@@ -293,8 +296,11 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	try {
 	  tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName)).flatMap{
 	    c =>
-	      val inst = c.newInstance
-	    c.getMethod(action, null).invoke(inst, null) match {
+	      (c.newInstance match {
+                case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
+                case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
+                case _ => Empty
+              }) match {
 	      case null | Empty | None => Empty
               case n: Group => Full(n)
               case n: Elem => Full(n)
@@ -648,5 +654,20 @@ abstract class SessionMessage
 case object ShutDown
 
 case class AnswerHolder(what: ResponseIt)
+
+/**
+  * If a class is to be used as a lift view (rendering from code rather than a static template)
+  * and the method names are to be used as "actions", the view must be marked as "InsecureLiftView"
+  * because there exists the ability to execute arbitrary methods based on wire content
+  */
+trait InsecureLiftView
+
+/**
+  *  The preferred way to do lift views... implement a partial function that dispatches
+  * the incoming request to an appropriate method
+  */
+trait LiftView {
+   def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
+}
 
 // vim: set ts=2 sw=2 et:

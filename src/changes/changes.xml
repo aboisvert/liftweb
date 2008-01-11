@@ -18,6 +18,11 @@
   -->
     <release version="0.5" description="">
       <action dev="David Pollak" type="update">
+Added LocInfo and LocInfoVal to SiteMap for storing CSS and
+other tidbits about each menu item
+</action>
+
+      <action dev="David Pollak" type="update">
 Fixed the 'Welcome to the your project' type-o
 </action>
 

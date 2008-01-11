@@ -72,7 +72,7 @@ object LogBoot {
 
   var loggerSetup: () => Boolean = _log4JSetup _
     
-  private def _log4JSetup() =
+  def _log4JSetup() =
   {
     val defaultProps = 
       """<?xml version="1.0" encoding="UTF-8" ?>

@@ -832,6 +832,7 @@ case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) 
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
+
 //case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
 object By {
   import OprEnum._

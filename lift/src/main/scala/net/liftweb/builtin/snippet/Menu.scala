@@ -13,8 +13,8 @@ class Menu {
   }
 
   private def buildANavItem(i: MenuItem) = i match {
-    case MenuItem(text, uri, true, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, true) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, _) => (<li><a href={uri}>{text}</a></li>)
+    case MenuItem(text, uri, true, _, _) => (<li><a href={uri} id="current">{text}</a></li>)
+    case MenuItem(text, uri, _, true, _) => (<li><a href={uri} id="current">{text}</a></li>)
+    case MenuItem(text, uri, _, _, _) => (<li><a href={uri}>{text}</a></li>)
   }
 }

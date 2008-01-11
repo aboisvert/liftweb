@@ -70,7 +70,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   
   private[sitemap] def buildItem(current: Boolean, path: Boolean) =
     if (hidden || testAccess.isDefined) Empty
-    else link.create(Nil).map(t => MenuItem(text.text(),t , current, path))
+    else link.create(Nil).map(t => MenuItem(text.text(),t , current, path, stuff.flatMap{case v: Loc.LocInfo[Any] => v() case _ =>  Empty}))
   
   private def hidden = stuff.contains(Loc.Hidden)
 }
@@ -81,7 +81,7 @@ object Loc {
       text: LinkText,
       params: LocStuff*): Loc = new Loc(name, link, text, params.toList)
 
-  abstract class LocStuff
+  trait LocStuff
   case class Title(title: () => String) extends LocStuff 
   case object Hidden extends LocStuff
   case class If(test: () => boolean, failMsg: FailMsg) extends LocStuff
@@ -102,6 +102,14 @@ object Loc {
   }
   case class FailMsg(msg: () => RedirectWithMessage)
   
+  trait LocInfoVal[T] {
+    def value: T
+  }
+  
+  trait LocInfo[T] extends LocStuff { //  with Function0[Can[LocInfoVal[T]]] {
+     def apply(): Can[LocInfoVal[T]]
+  }
+  
   private def alwaysTrue(a: (ParsePath, RequestState, HttpServletRequest)) = true
   private def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
   
@@ -119,11 +127,10 @@ object Loc {
 case class RedirectWithMessage(to: String, msg: String)
 
 case class CompleteMenu(lines: List[MenuLine]) {
-  //private val _breadCrumbs = Lazy(lines.flatMap(_.breadCrumbs))
   lazy val breadCrumbs: List[MenuItem] = lines.flatMap(_.breadCrumbs)
 }
 case class MenuLine(items: List[MenuItem]) {
   private[sitemap] def breadCrumbs: List[MenuItem] = items.filter(_.path)
 }
-case class MenuItem(text: String, uri: String, current: boolean, path: boolean)
+case class MenuItem(text: String, uri: String, current: Boolean, path: Boolean, info: List[Loc.LocInfoVal[_]])
 
