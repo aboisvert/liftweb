@@ -785,7 +785,12 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
   /**
     * The current value of the session variable
     */
-  def is: Can[T] = findFunc(name).or(dflt)
+  def is: Can[T] = findFunc(name) match {
+    case v @ Full(_) => v
+    case _ => val ret = dflt
+    ret.foreach(v => apply(v))
+    ret
+  }
   
   /**
     * Set the session variable
@@ -796,8 +801,9 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
   
   def apply(what: Can[T]): Unit = what match {
     case Full(w) => setFunc(name, w)
-    case Failure(_, _, _) => ()        // no-op (or clear?)
-    case Empty => clearFunc(name)      // clear (or no-op?)
+    case _ => clearFunc(name)
+    //case Failure(_, _, _) => ()        // no-op (or clear?)
+    //case Empty => clearFunc(name)      // clear (or no-op?)
   }
   
   def remove(): Unit = clearFunc(name)   
