@@ -29,7 +29,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
     */
   def fieldToString(name: String, strValue: String) = name+"="+strValue
   
-  def fieldToXHtml(name: String, strValue: NodeSeq) = <td>{name}</td><td>{strValue}</td>
+  def fieldToXHtml(name: String, strValue: NodeSeq) = <xml:group><td>{name}</td><td>{strValue}</td></xml:group>
   
   def mutable_? = true
       
