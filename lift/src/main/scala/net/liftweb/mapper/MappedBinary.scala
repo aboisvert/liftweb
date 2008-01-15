@@ -90,7 +90,7 @@ class MappedText[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T]
    * Get the JDBC SQL Type for this field
    */
   //  def getTargetSQLType(field : String) = Types.BINARY
-  def targetSQLType = Types.CLOB
+  def targetSQLType = Types.VARCHAR
   
   def defaultValue = null
   override def writePermission_? = true

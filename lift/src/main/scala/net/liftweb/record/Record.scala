@@ -40,13 +40,16 @@ trait KeyedMetaRecord[BaseRecord <: KeyedRecord[BaseRecord, KeyType], KeyType] e
 
 }
 
-
+/*
 object TestRecord extends TestRecord with MetaRecord[TestRecord] {
   
 }
-
+*/
+  
+/*
 class TestRecord extends Record[TestRecord] {
   def meta = TestRecord
   
   object longing extends LongField(this)
 }
+*/
