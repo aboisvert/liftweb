@@ -6,11 +6,12 @@ import S._
 import net.liftweb.mapper.ValidationIssue
 import net.liftweb.util.{Can}
 
+/*
 /**
    * The base (not Typed) trait that defines a field that is mapped to a column or more than 1 column
    * (e.g., MappedPassword) in the database
    */
- trait SimpleProtoBase {
+ trait ReadableFieldBase {
    /**
      * Validate this field and return a list of Validation Issues
      */
@@ -49,14 +50,14 @@ import net.liftweb.util.{Can}
     def displayName: String  
  }
 
-trait ProtoOwner[MyType <: ProtoOwner[MyType]] { 
+trait ProtoOwner[MyType <: ProtoOwner[MyType]] {self: MyType =>
   def safe_? : Boolean;
   
-  def getSingleton : MetaProtoOwner[MyType, _]
+  def getSingleton : MetaProtoOwner[MyType]
       
 }
 
-trait MetaProtoOwner[BaseType <: ProtoOwner[BaseType],MyType <: MetaProtoOwner[BaseType, MyType] ] extends ProtoOwner[BaseType] { self: MyType => 
+trait MetaProtoOwner[BaseType <: ProtoOwner[BaseType] ]  { self: BaseType  => 
   def getActualField[T, N, FT <: OwnedProtoBase[T, BaseType, N]](actual: ProtoOwner[BaseType],field: FT): FT
    
 }
@@ -365,3 +366,51 @@ type SetReturnType
 class ProtoBase {
 
 }
+*/
+  
+trait Record[MyType <: Record[MyType]] { self: MyType =>
+  def meta: MetaRecord[MyType]
+}
+
+trait MetaRecord[TheType <: Record[TheType]] extends Record[TheType] { ident: TheType =>
+  
+}
+
+/*
+object MetaFoo extends Foo with MetaRecord[Foo]
+
+class Foo extends Record[Foo] {
+  def meta = MetaFoo
+}
+*/
+
+trait SRecord { self : SRecord =>
+  def meta: self.type with MetaSRecord
+}
+
+trait MetaSRecord { self: SRecord =>
+  
+}
+
+/*
+object MetaSFoo extends SFoo with MetaSRecord
+
+class SFoo extends SRecord {
+  def meta = MetaSFoo
+}
+*/
+
+/*
+trait Record {
+   def meta: MetaRecord[this.type]
+   
+   def bark = meta.foo
+}
+
+trait MetaRecord[BaseType <: Record] {
+
+  def foo = "woof"
+}
+*/
+
+

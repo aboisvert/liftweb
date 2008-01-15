@@ -14,6 +14,9 @@ object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[
   override def fieldOrder = id :: firstName :: lastName :: email :: 
   locale :: timezone ::
   password :: textArea :: Nil
+
+  // comment this line out to require email validations
+  override def skipEmailValidation = true
 }
 
 /**
