@@ -101,7 +101,7 @@
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.1.5-SNAPSHOT</version>
+      <version>1.1.5</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -180,7 +180,7 @@
       <plugin>
         <artifactId>maven-surefire-report-plugin</artifactId>
         <configuration>
-          <showSuccess>false</showSuccess>
+          <!--showSuccess>false</showSuccess-->
         </configuration>
         <reportSets>
           <reportSet>
