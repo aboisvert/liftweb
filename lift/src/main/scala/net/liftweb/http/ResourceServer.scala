@@ -20,12 +20,18 @@ import javax.servlet.http.{HttpServletRequest , HttpServletResponse}
 import java.net.{URLConnection}
 
 object ResourceServer {
+  private var allowedPaths : Set[String] = Set.empty
+    
   def findResourceInClasspath(request: RequestState, uri: List[String])(req: HttpServletRequest): Can[ResponseIt] = {
     val uriPath = uri.foldLeft("")(_ + "/" + _);
-    val header = List(("Content-Type", detectContentType(uri.last)))
-    LiftServlet.loadResource(uriPath) match {
-      case Full(data :Array[Byte]) => Full(Response(data, header, HttpServletResponse.SC_OK))
-      case _ => Empty
+    if (isAllowed(uriPath)) {
+      val header = List(("Content-Type", detectContentType(uri.last)))
+      LiftServlet.loadResource(uriPath) match {
+        case Full(data :Array[Byte]) => Full(Response(data, header, HttpServletResponse.SC_OK))
+        case _ => Empty
+      }
+    } else {
+      Empty
     }
   }
   
@@ -53,5 +59,11 @@ object ResourceServer {
       contentType = "application/octet-stream"
     }
     contentType
+  }
+  
+  def isAllowed(path: String) = allowedPaths.exists(_ == path)
+   
+  def allow(path: String) {
+    allowedPaths = allowedPaths + path
   }
 }
