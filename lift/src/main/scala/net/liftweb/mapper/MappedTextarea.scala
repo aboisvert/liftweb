@@ -3,14 +3,15 @@ package net.liftweb.mapper
 import scala.xml.{NodeSeq}
 import net.liftweb.http.S
 import net.liftweb.http.S._
+import net.liftweb.util._
 
 class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
   /**
      * Create an input field for the item
      */
-    override def toForm : NodeSeq = {
+    override def toForm: Can[NodeSeq] = {
        val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
-       <textarea name={funcName} rows={textareaRows.toString} cols={textareaCols.toString}>{is.toString}</textarea>
+       Full(<textarea name={funcName} rows={textareaRows.toString} cols={textareaCols.toString}>{is.toString}</textarea>)
     }
   /*
    override def i : Elem = {

@@ -11,6 +11,9 @@ import java.lang.reflect.Method
 import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
 import java.util.Date
 import java.util.regex._
+import scala.xml.NodeSeq
+import net.liftweb.http.S
+import S._
 
 /*
 trait NiceLength[MyType <: MappedString[_]] {self: MyType =>
@@ -88,6 +91,8 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   override protected[mapper] def doneWithSave() {
     orgData.setFrom(data)
   }
+  
+  override def toForm: Can[NodeSeq] = Full(<input type='text' maxlength={maxLen.toString} name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>)  
   
   protected def i_obscure_!(in : String) : String = {
     ""

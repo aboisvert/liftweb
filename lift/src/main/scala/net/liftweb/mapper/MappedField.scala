@@ -108,9 +108,9 @@ trait BaseMappedField {
    /**
     * Create an input field for the item
     */
-  def toForm: NodeSeq   
+  def toForm: Can[NodeSeq]   
   
-  def asHtml: Node  
+  def asHtml: NodeSeq
   
   /**
     * Called after the field is saved to the database
@@ -136,7 +136,7 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
   
   def immutableMsg = Text(?("Can't change"))
   
-  override def toForm: Node = validSelectValues.flatMap{
+  override def toForm: Can[NodeSeq] = Full(validSelectValues.flatMap{
     case Nil => Empty
     
     case xs => val mapBack: HashMap[String, KeyType] = new HashMap
@@ -147,7 +147,7 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
                                                           if (value == this.is) selected = Full(t)
                                                           (t, text)},
                     selected, v => mapBack.get(v).foreach(x => set(x))))
-  }.openOr(immutableMsg)
+  }.openOr(immutableMsg))
 }
 
 trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField
@@ -332,7 +332,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
    * Create an input field for the item
    */
-  override def toForm: NodeSeq = <input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>
+  override def toForm: Can[NodeSeq] = Full(<input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>)
   
   /**
     * Set the field to the value

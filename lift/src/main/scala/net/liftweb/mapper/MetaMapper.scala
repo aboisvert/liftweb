@@ -709,14 +709,17 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     List(Text(" }"))
   }
   
+  def formatFormLine(displayName: NodeSeq, form: NodeSeq): Node = (<xml:group><tr>
+  <td>{displayName}</td>
+  <td>{form}</td>
+  </tr></xml:group>)
+  
   def toForm(toMap: A): NodeSeq = 
-    mappedFieldArray.filter(_.field.dbDisplay_?).map {
+    mappedFieldArray.filter(_.field.dbDisplay_?).flatMap {
       e =>
 	val field = ??(e.method, toMap)
-      <tr>
-      <td>{field.displayName}</td>
-      <td>{field.toForm}</td>
-      </tr>}
+        field.toForm.toList.map(form => formatFormLine(Text(field.displayName), form))
+      }
   
   /**
    * Given the prototype field (the field on the Singleton), get the field from the instance
@@ -1019,13 +1022,13 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
    * Default snippet for modification. Used by the default add and edit snippets.
    */
   def modSnippet(xhtml: NodeSeq, obj: A, cleanup: (A => Unit)): NodeSeq = {
-    val Name = _dbTableName
+    val name = _dbTableName
 
     def callback(ignore: String) {
       cleanup(obj)
     }
     
-    xbind(Name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm) orElse {
+    xbind(name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm.openOr(Text(""))) orElse {
       case "submit" => label => S.submit(label.text, callback)
     })
   }

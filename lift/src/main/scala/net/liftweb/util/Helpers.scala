@@ -1250,9 +1250,60 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
  //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
  
  implicit def stringToSuper(in: String): SuperString = new SuperString(in)
+ 
+  /**
+    * Given an incoming list, return a set of lists that is the original list rotated through all its positions
+    *
+    * @param in the list to rotate
+    *
+    * @return all the rotations of the list
+    */ 
+  def rotateList[T](in: List[T]): List[List[T]] = {
+    def doIt(in: List[T], cnt: Int): List[List[T]] = (in, cnt) match {
+      case (_, 0) => Nil
+      case (x :: xs, cnt) => in :: doIt(xs ::: List(x), cnt - 1)
+    }
+    doIt(in, in.length)
+  }
+
+ /**
+   * Given a list, return all the permutations of the list.
+   *
+   * @param in -- the list
+   *
+   * @return all the permutations of the list
+   */
+  def permuteList[T](in: List[T]): List[List[T]] = in match {
+    case Nil => Nil
+    case x :: Nil => List(List(x))
+    case xs => rotateList(xs).flatMap{case x :: xs => permuteList(xs).map(x :: _) case _ => Nil}
+  }
+  
+ /**
+   * Given a list, return all the permutations including the removal of items (does not return a Nil list unless in is Nil).
+   *
+   * @param in the list to permute
+   *
+   * @return all the permutations of the list including sublists, sorted in longest to shortest
+   */
+  def permuteWithSublists[T](in: List[T]): List[List[T]] = {
+   def internal(in: List[T]): List[List[T]] = in match {
+    case Nil => Nil
+    case x :: Nil => List(List(x))
+    case xs => val rot = rotateList(xs)
+    val ret = rot.flatMap{case x :: xs => permuteList(xs).map(x :: _)}
+    ret ::: rot.map{case x :: xs => xs}.flatMap(internal(_))
+  } 
+   
+   internal(in).removeDuplicates.sort(_.length > _.length)
+   
+ }
 }
 
 class SuperList[T](val what: List[T]) {
+  def permute = Helpers.permuteList(what)
+  def rotate = Helpers.rotateList(what)
+  def permuteAll = Helpers.permuteWithSublists(what)
   def headOr(other: => T): T = if (what.isEmpty) other else what.head
   def or(other: => List[T]): List[T] = if (!what.isEmpty) what else other
   def str: String = what.mkString("")
