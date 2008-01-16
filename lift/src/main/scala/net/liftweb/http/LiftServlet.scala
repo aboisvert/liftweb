@@ -73,6 +73,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         case RequestMatcher(r, ParsePath("classpath" :: subPath, _,_),_, _) => ResourceServer.findResourceInClasspath(r, subPath)
       }
       LiftServlet.addDispatchAfter(dispatcher)      
+      ResourceServer.allow("/jquery-1.2.2.js")
     // super.init
     } finally {
       clearThread
