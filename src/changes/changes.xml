@@ -18,6 +18,13 @@
   -->
     <release version="0.5" description="">
       <action dev="David Pollak" type="add">
+Parser Combinator Helper routines
+</action>
+      <action dev="David Pollak" type="update">
+MappedField.toForm now returns a Can[NodeSeq] so a field can be omitted from
+a form
+</action>
+      <action dev="David Pollak" type="add">
 Added the "record" and "record_mgt" packages with half-baked
 record and field stuff in them
 </action>
