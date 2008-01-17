@@ -20,19 +20,30 @@ import javax.servlet.http.{HttpServletRequest , HttpServletResponse}
 import java.net.{URLConnection}
 
 object ResourceServer {
-  private var allowedPaths : Set[String] = Set.empty
+  private var allowedPaths: PartialFunction[List[String], Boolean] = {
+    case "jquery.js" :: Nil => true
+    case "json.js" :: Nil => true
+  }
+  
+  private var pathRewriter: PartialFunction[List[String], List[String]] = {
+     case "jquery.js" :: Nil => List("jquery-1.2.2-min.js")
+     case "json.js" :: Nil => List( "json2-min.js")
+     case xs => xs
+  }
     
-  def findResourceInClasspath(request: RequestState, uri: List[String])(req: HttpServletRequest): Can[ResponseIt] = {
-    val uriPath = uri.foldLeft("")(_ + "/" + _);
-    if (isAllowed(uriPath)) {
-      val header = List(("Content-Type", detectContentType(uri.last)))
-      LiftServlet.loadResource(uriPath) match {
-        case Full(data :Array[Byte]) => Full(Response(data, header, HttpServletResponse.SC_OK))
-        case _ => Empty
-      }
-    } else {
-      Empty
-    }
+  /**
+    * The base package for serving resources.  This way, resource names can't be spoofed
+    */
+  var baseResourceLocation = "toserve"
+  
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: HttpServletRequest): Can[ResponseIt] = {
+    val uri = _uri.filter(!_.startsWith("."))
+    if (isAllowed(uri)) {
+      val rw = baseResourceLocation :: pathRewriter(uri)
+      val path = rw.mkString("/")
+      LiftServlet.loadResource(path).map(data => Response(data, List(("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK))
+        
+    } else Empty
   }
   
   /**
@@ -61,9 +72,13 @@ object ResourceServer {
     contentType
   }
   
-  def isAllowed(path: String) = allowedPaths.exists(_ == path)
+  private def isAllowed(path: List[String]) = allowedPaths.isDefinedAt(path) && allowedPaths(path)
    
-  def allow(path: String) {
-    allowedPaths = allowedPaths + path
+  def allow(path: PartialFunction[List[String], Boolean]) {
+    allowedPaths = path orElse allowedPaths 
+  }
+  
+  def rewrite(rw: PartialFunction[List[String], List[String]]) {
+    pathRewriter = rw orElse pathRewriter
   }
 }

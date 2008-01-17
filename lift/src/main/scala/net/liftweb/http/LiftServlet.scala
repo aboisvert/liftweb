@@ -69,25 +69,15 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
       ActorPing.start
       LiftServlet.ending = false
-      val dispatcher: LiftServlet.DispatchPf = {
-        case RequestMatcher(r, ParsePath("classpath" :: subPath, _,_),_, _) => ResourceServer.findResourceInClasspath(r, subPath)
-      }
-      LiftServlet.addDispatchAfter(dispatcher)      
-      ResourceServer.allow("/jquery-1.2.2.js")
+      LiftServlet.addDispatchAfter({
+        case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftServlet.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
+      })      
+      // ResourceServer.allow("/jquery-1.2.2.js")
     // super.init
     } finally {
       clearThread
     }
   }
-  
-  /**
-   * Forward the GET request to the POST handler
-   */
-     /*
-  def doGet(request : HttpServletRequest , response : HttpServletResponse, start: Long) = {
-    isExistingFile_?(request).map(u => doServiceFile(u, request, response)) openOr
-      doService(request, response, RequestType(request ))
-  }*/
 
   /**
    * Is the file an existing file in the WAR?
@@ -310,6 +300,11 @@ object LiftServlet {
   def appendBeforeSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _beforeSend = _beforeSend ::: List(f)
   }
+  
+  /**
+    * The path to handle served resources
+    */
+  var ResourceServerPath = "classpath" 
   
   private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   

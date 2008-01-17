@@ -17,6 +17,15 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.5" description="">
+      <action dev="David Pollak" type="update">
+Added json2.js (and minified version)
+Enhanced the resource serving stuff so that:
+- The path is defined in LiftServlet and changable (defaults to "classpath")
+- Moved the resource location from the root to "toserve" (can be changed) to avoid any possible way of serving up classes
+- The white list is a Partial Function for more flexibility
+- The white list by default contains jquery.js and json.js
+- There's a re-writer to re-write the request into an actual file (so jquery.js gets re-written to jquery-1.2.2-min.js)
+</action>
       <action dev="David Pollak" type="add">
 Parser Combinator Helper routines
 </action>
