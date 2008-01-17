@@ -18,16 +18,20 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
   private var currentData: List[ChatLine] = Nil
   def defaultPrefix = "chat"
     
+  private lazy val infoId = uniqueId + "_info"
+
   private val server = {
     val ret = ChatServer.server
-    (ret !? ChatServerAdd(this)) match {
-      case ChatServerUpdate(value) => currentData = value
-      case _ => 
-    }
+    ret ! ChatServerAdd(this)
     ret
   }
 
-  override def lowPriority : PartialFunction[Any, Unit] = {case ChatServerUpdate(value) => currentData = value ; reRender(false)} 
+  override def lowPriority = {
+    case ChatServerUpdate(value) => 
+      val diff = value diff currentData
+    if (!diff.isEmpty) partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a ++ AppendHtml(infoId, line(b))))
+      currentData = value // ; reRender(false)
+  } 
   
   override lazy val fixedRender: Can[NodeSeq] = {
     val n = "id"+randomString(10)
@@ -35,9 +39,10 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
         (S.text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )
   }
   
+  def line(cl: ChatLine) = (<li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)
   
   override def render = (<span>Hello "{userName}"
-    <ul>{currentData.reverse.flatMap(cl => <li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)}</ul>
+    <ul id={infoId}>{currentData.reverse.flatMap(line)}</ul>
     </span>)
   
   override def localSetup {
@@ -49,9 +54,12 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
     }
   }
   
-  def waitForUpdate : Option[List[ChatLine]] = receiveWithin(100) {case ChatServerUpdate(l) => Some(l) case TIMEOUT => None}
+	// def waitForUpdate : Option[List[ChatLine]] = receiveWithin(100) {case ChatServerUpdate(l) => Some(l) case TIMEOUT => None}
   
-  def sendMessage(msg: String) = msg.trim match {
+  def sendMessage(msg: String) = server ! ChatServerMsg(userName, msg.trim)
+
+/*
+msg.trim match {
     case msg if msg.length > 0 => 
     server ! ChatServerMsg(userName, msg)
     waitForUpdate match {
@@ -60,4 +68,5 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
     }
     case _ =>
   }
+*/
 }

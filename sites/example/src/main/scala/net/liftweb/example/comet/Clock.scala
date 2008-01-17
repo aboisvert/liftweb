@@ -10,18 +10,23 @@ import net.liftweb.http._
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import scala.xml._
+import js._
+import JsCmds._
 
-class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
-      CometActor(theSession, name, defaultXml, attributes) {
-
+class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends CometActor(theSession, name, defaultXml, attributes) {
+  
   def defaultPrefix = "clk"
   ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
   
-  def render = bind("time" -> timeNow)
+  private lazy val spanId = uniqueId+"_timespan"
+
+  def render = bind("time" -> timeSpan)
+
+  def timeSpan = (<span id={spanId}>{timeNow}</span>)
   
   override def lowPriority : PartialFunction[Any, Unit] = {
     case Tick => 
-    reRender(false) // tell the component to redraw itself
+      partialUpdate(SetHtml(spanId, Text(timeNow.toString)))
     ActorPing.schedule(this, Tick, 10000L) // schedule an update in 10 seconds
   }
 }

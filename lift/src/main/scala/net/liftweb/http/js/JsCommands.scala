@@ -28,6 +28,11 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
 abstract class JsCmd {
   def ++(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
   def toJsCmd: String
+
+  def fixHtml(uid: String, content: NodeSeq): String = 
+    AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)),
+		 false, true).encJs
+
 }
 
 object JsCmds {
@@ -64,21 +69,25 @@ object JsCmds {
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
     def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
   }
+
+  case class AppendHtml(uid: String, content: NodeSeq) extends JsCmd {
+    def toJsCmd = "jQuery("+("#"+uid).encJs+").append("+fixHtml(uid, content)+");"
+  }
+
   case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
-      val html = AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)), false, true) 
-      val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+html.encJs+";});} catch (e) {}"
+      val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+fixHtml(uid, content)+";});} catch (e) {}"
       ret
     }
   }
 
   trait HasTime {
     def time: Can[Helpers.TimeSpan]
-    def timeStr = time.map(_.toLong.toString) openOr ""
+    def timeStr = time.map(_.len.toString) openOr ""
   }
   
   case class After(millis: Helpers.TimeSpan, toDo: JsCmd) extends JsCmd {
-    def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis+");"
+    def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis.len+");"
   }
 
   object Show {
@@ -118,9 +127,11 @@ object JsCmds {
     def toJsCmd = text
   }
 
-  case object Noop extends JsCmd {
+  case object _Noop extends JsCmd {
     def toJsCmd = ""
   }
+
+  val Noop: JsCmd = _Noop
   
   case object Unblock extends JsCmd {
     def toJsCmd = "jQuery.unblockUI();"
@@ -156,9 +167,9 @@ object JsCmds {
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def realFadeTime: Long = fadeTime.toLong
+    def realFadeTime: Long = fadeTime.len
     
-    def realDuration: Long = duration.toLong
+    def realDuration: Long = duration.len
     
     def toJsCmd = (Show(where) ++ SetHtml(where, msg) ++ After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }

@@ -33,6 +33,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private var askingWho: Can[CometActor] = Empty
   private var whosAsking: Can[CometActor] = Empty
   private var answerWith: Can[Any => Any] = Empty
+  private var deltas: List[Delta] = Nil
   
   private def listeners = {
     if (t_listeners == null) t_listeners = new ListBuffer
@@ -86,8 +87,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     askingWho match {
       case Full(who) => who forward l
       case _ =>
-        if (when >= lastRenderTime) listeners += sender.receiver
+        deltas.filter(_.when > when) match { 
+          case Nil => if (when >= lastRenderTime) listeners += sender.receiver
         else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
+          case all @ (hd :: xs) => sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+              Full(all.reverse.foldLeft(Noop.asInstanceOf[JsCmd])(_ ++ _.js)), Empty, buildSpan, false), whosAsking openOr this, hd.when, false)
+        }
     }
     
     case PerformSetupComet =>
@@ -97,7 +102,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case AskRender =>
       askingWho match {
         case Full(who) => who forward AskRender
-        case _ => if (devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, true))
+        case _ => if (!deltas.isEmpty || devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, true))
         }
     
     case ActionMessageSet(msgs, request) =>
@@ -148,6 +153,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   final def reRender(sendAll: Boolean): AnswerRender = {
     lastRenderTime = Math.max(millis, lastRenderTime + 1)
     wasLastFullRender = sendAll & hasOuter
+    deltas = Nil
     S.initIfUninitted(theSession) {
       lastRendering = render
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
@@ -155,6 +161,22 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       listeners.toList.foreach(_ ! rendered)
       listeners.clear
       rendered
+    }
+  }
+  
+  protected def partialUpdate(cmd: JsCmd) {
+    val time = deltas match {
+      case Nil => millis + 1
+      case hd :: _ => hd.when.max( millis + 1)
+    }
+    val delta = JsDelta(time, cmd)
+    val garbageTime = time - 120000L // remove anything that's more than 2 minutes old
+    deltas = delta :: deltas.filter(_.when < garbageTime)
+    if (!listeners.isEmpty) {
+      val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+          Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
+      listeners.toList.foreach(_ ! rendered)
+      listeners.clear
     }
   }
   
@@ -200,6 +222,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   implicit def nodeSeqToFull(in: NodeSeq): Can[NodeSeq] = Full(in)
   implicit def elemToFull(in: Elem): Can[NodeSeq] = Full(in)
 }
+
+abstract class Delta(val when: Long) {
+  def js: JsCmd
+}
+
+case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)
 
 sealed abstract class CometMessage
 

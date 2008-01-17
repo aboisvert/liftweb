@@ -110,7 +110,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         session.putValue(actorNameConst, ret)
         ret
     }
-    ret.breakOutComet()
+    // ret.breakOutComet()
     ret
   }
   
@@ -168,6 +168,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 	  }
 	}
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
+        sessionActor.breakOutComet()
         sessionActor.enterComet(self)
         try {
         S.init(session, sessionActor) {

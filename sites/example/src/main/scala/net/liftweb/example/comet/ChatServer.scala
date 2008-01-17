@@ -36,14 +36,14 @@ class ChatServer extends Actor {
   
   def loop(chat: List[ChatLine], sessions: List[Actor]) {
     react {
-    case ChatServerMsg(user, msg) => 
+    case ChatServerMsg(user, msg) if msg.length > 0 => 
       val chatu = (ChatLine(user, toHtml(msg), timeNow) :: chat).take(500)
       val toDistribute = chatu.take(15)
       sessions.foreach (_ ! ChatServerUpdate(toDistribute))
       loop(chatu, sessions)
 
     case ChatServerAdd(me) => 
-      reply(ChatServerUpdate(chat.take(15)))
+      me ! ChatServerUpdate(chat.take(15))
       loop(chat, me :: sessions)
 
     case ChatServerRemove(me) => loop(chat, sessions.remove(_ == me))
