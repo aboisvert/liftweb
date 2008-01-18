@@ -468,23 +468,11 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   liftTagProcessing = LiftServlet.liftTagProcessing orElse _defaultLiftTagProcessing
   
-  
-  
-  
-  private[http] def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
+  def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
     in.flatMap{
       v => 
 	v match {
 	  case Group(nodes) => Group(processSurroundAndInclude(page, nodes))
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "ignore" => Text("")
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "surround" => S.setVars(elm.attributes)(processSurroundElement(page, elm))
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "embed" => S.setVars(elm.attributes)(processSurroundAndInclude(page, findAndEmbed(Can(elm.attributes.get("what")), elm.child)))
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "snippet" => S.setVars(elm.attributes)(processSurroundAndInclude(page, processSnippet(page, Can(elm.attributes.get("type")).map(_.text), elm.attributes, elm.child)))
-	  // case elm: Elem if elm.prefix == "lift" && elm.label == "comet" => processSurroundAndInclude(page, executeComet(Can(elm.attributes.get("type").map(_.text.trim)), Can(elm.attributes.get("name").map(_.text.trim)), elm.child, elm.attributes))       
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "children" => processSurroundAndInclude(page, elm.child)
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "loc" => elm.attributes.filter(_.key == "locid").toList match {case id :: _ => S.loc(id.value.text, elm.child) case _ => S.loc(elm.child.text, elm.child)}
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "a" => Elem(null, "a", addAjaxHREF(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
-          // case elm: Elem if elm.prefix == "lift" && elm.label == "form" => Elem(null, "form", addAjaxForm(elm.attributes), elm.scope, processSurroundAndInclude(page, elm.child): _*)
           case elm: Elem if elm.prefix == "lift" || elm.prefix == "l" => S.setVars(elm.attributes)(processSurroundAndInclude(page, liftTagProcessing(elm.label, elm, elm.attributes, elm.child, page)))
 	  case elm: Elem => Elem(v.prefix, v.label, processAttributes(v.attributes), v.scope, processSurroundAndInclude(page, v.child) : _*)
 	  case _ => v
