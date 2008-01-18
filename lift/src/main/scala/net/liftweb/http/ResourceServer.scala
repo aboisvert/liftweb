@@ -15,7 +15,8 @@
  */
 package net.liftweb.http
 
-import net.liftweb.util.{Can, Full, Empty}
+import net.liftweb.util.{Can, Full, Empty, Helpers}
+import Helpers._
 import javax.servlet.http.{HttpServletRequest , HttpServletResponse}
 import java.net.{URLConnection}
 
@@ -41,8 +42,14 @@ object ResourceServer {
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
       val path = "/"+rw.mkString("/")
-      LiftServlet.loadResource(path).map(data => Response(data, List(("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK))
-        
+      LiftServlet.getResource(path).map{url =>
+      val uc = url.openConnection
+      val mod = req.getHeader("if-modified-since")
+      if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, 304)
+      else Response(readWholeStream(url.openStream),
+          List(("Last-Modified", toInternetDate(uc.getLastModified)), 
+              ("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK)
+      }
     } else Empty
   }
   
