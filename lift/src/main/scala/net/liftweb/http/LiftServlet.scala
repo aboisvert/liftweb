@@ -610,12 +610,23 @@ object LiftServlet {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }
+
+  private def cvt(ns: Node, session: RequestState) = 
+    convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
+				    ResponseInfo.xhtmlTransitional(session),
+				    Nil, 200), session) )
   
   var convertResponse: PartialFunction[(Any, RequestState), Response] = {
       case (r: ResponseIt, _) => r.toResponse
-      case (ns: NodeSeq, session) => convertResponse( (XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional(session), Nil, 200), session) )
+      case (ns: Group, session) => cvt(ns, session)
+	case (ns: Node, session) => cvt(ns, session)
+      case (ns: NodeSeq, session) => cvt(Group(ns), session)
+    case (ns: Seq[Node], session) => cvt(Group(ns), session)
+    
+    case (Full(o), session) => convertResponse( (o, session) )
+	
       case (Some(o), session) => convertResponse( (o, session) )
-      case (_, session) => session.createNotFound.toResponse
+      case (bad, session) => println("bad is "+bad) ; session.createNotFound.toResponse
   }
   
   /**
