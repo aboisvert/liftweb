@@ -10,7 +10,8 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
 import scala.collection.immutable.{ListMap, TreeMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONAny, JSONParser}
+import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
+import scala.util.parsing.json._
 import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
 import Helpers._
 import js._
@@ -425,13 +426,20 @@ object S {
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
         
-  def buildJSONFunc(f: JSONAny => JsCmd): (String, JsCmd) = {
+  def buildJSONFunc(f: Any => JsCmd): (String, JsCmd) = {
       val key = "F"+System.nanoTime+"_"+randomString(3)
 
+    def checkCmd(in: Any) = in match {
+      case v: HashMap[String, Any] if v.isDefinedAt("command") => 
+	JSONCmd(v("command").toString, v.get("target").
+		map{case null => null case x => x.toString}.getOrElse(null),
+		v.get("params").getOrElse(None), v)
+
+      case v => v
+    }
+
       def jsonCallback(in: List[String]): JsCmd = {
-        println(in)
-        println(JSONParser.parse(in.head))
-        in.flatMap(s => JSONParser.parse(s).map(List(_)).getOrElse(Nil).map(f)).foldLeft(JsCmds.Noop)(_ ++ _)
+        in.flatMap(s => JSON.parse(s).toList.map(JSON.resolveType _ andThen checkCmd).map(f)).foldLeft(JsCmds.Noop)(_ ++ _)
       }
       
       addFunctionMap(key, jsonCallback _)
@@ -863,3 +871,6 @@ object AnyVar {
   implicit def whatSessionVarIs[T](in: SessionVar[T]): Can[T] = in.is
   implicit def whatRequestVarIs[T](in: RequestVar[T]): Can[T] = in.is
 }
+
+case class JSONCmd(command: String, target: String, params: Any,
+		   all: HashMap[String, Any])

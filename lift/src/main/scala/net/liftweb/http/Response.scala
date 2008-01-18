@@ -46,5 +46,7 @@ case class Response(data: Array[Byte], headers: List[(String, String)], code: In
 }
 
 object ResponseInfo {
-  val xhtmlTransitional = Full("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
+  var xhtmlTransitional: PartialFunction[RequestState, Can[String]] = {
+    case _ => Full("<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">")
+  }
 }

@@ -203,7 +203,10 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 		S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
 	      }
 	      notices = Nil
-	      AnswerHolder(XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
+	      
+	      // AnswerHolder(XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
+	      
+	      AnswerHolder(LiftServlet.convertResponse((realXml, request))) // XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
 	    }
 	    case _ => AnswerHolder(request.createNotFound)
 	  }
@@ -214,13 +217,13 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	notices = S.getNotices
 	
 	AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
-					    ResponseInfo.xhtmlTransitional,
+					    ResponseInfo.xhtmlTransitional(request),
 					    List("Location" -> (request.updateWithContextPath(rd.to))),
 					    302))
 	case rd : net.liftweb.http.RedirectException => {   
 	  notices = S.getNotices
 	  
-	  AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional,
+	  AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.xhtmlTransitional(request),
 					      List("Location" -> (request.updateWithContextPath(rd.to))),
 					      302))
 	}

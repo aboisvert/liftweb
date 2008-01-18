@@ -152,7 +152,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 	S.init(session, sessionActor) {
 	  val f = LiftServlet.dispatchTable(request)(toMatch)
 	  f(request) match {
-            case Full(v) => LiftServlet.convertResponse(v, session)
+            case Full(v) => LiftServlet.convertResponse( (v, session) )
             case Empty => session.createNotFound.toResponse
             case f: Failure => session.createNotFound(f).toResponse 
 	  }
@@ -611,13 +611,11 @@ object LiftServlet {
     dispatchTable_i
   }
   
-  def convertResponse(r: Any, session: RequestState): Response = {
-    r match {
-      case r: ResponseIt => r.toResponse
-      case ns: NodeSeq => convertResponse(XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional, Nil, 200), session)
-      case Some(o) => convertResponse(o, session)
-      case _ => session.createNotFound.toResponse
-    }
+  var convertResponse: PartialFunction[(Any, RequestState), Response] = {
+      case (r: ResponseIt, _) => r.toResponse
+      case (ns: NodeSeq, session) => convertResponse( (XhtmlResponse(Group(session.fixHtml(Group(ns))), ResponseInfo.xhtmlTransitional(session), Nil, 200), session) )
+      case (Some(o), session) => convertResponse( (o, session) )
+      case (_, session) => session.createNotFound.toResponse
   }
   
   /**
@@ -658,11 +656,11 @@ object LiftServlet {
     XhtmlResponse((<html><body>Exception occured while processing {r.uri} 
     <pre>{
       _showException(e)     
-    }</pre></body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
+    }</pre></body></html>),ResponseInfo.xhtmlTransitional(r), List("Content-Type" -> "text/html"), 500)
 
     case (_, r, e) => 
     XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri} 
-    </body></html>),ResponseInfo.xhtmlTransitional, List("Content-Type" -> "text/html"), 500)
+    </body></html>),ResponseInfo.xhtmlTransitional(r), List("Content-Type" -> "text/html"), 500)
   }
    
   /**

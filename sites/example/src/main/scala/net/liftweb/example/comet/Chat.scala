@@ -28,9 +28,12 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
 
   override def lowPriority = {
     case ChatServerUpdate(value) => 
-      val diff = value diff currentData
-    if (!diff.isEmpty) partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a ++ AppendHtml(infoId, line(b))))
-      currentData = value // ; reRender(false)
+      (value diff currentData) match {
+	case Nil =>
+	case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a ++ AppendHtml(infoId, line(b))))
+      }
+
+      currentData = value
   } 
   
   override lazy val fixedRender: Can[NodeSeq] = {
@@ -58,15 +61,5 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
   
   def sendMessage(msg: String) = server ! ChatServerMsg(userName, msg.trim)
 
-/*
-msg.trim match {
-    case msg if msg.length > 0 => 
-    server ! ChatServerMsg(userName, msg)
-    waitForUpdate match {
-      case Some(l : List[ChatLine]) => currentData = l ; reRender(false)
-      case _ => 
-    }
-    case _ =>
-  }
-*/
+
 }

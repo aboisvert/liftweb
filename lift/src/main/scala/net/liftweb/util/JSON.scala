@@ -1,5 +1,9 @@
 package net.liftweb.util;
 
+/*
+
+replaced by the Scala JSON parser
+
 import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
 import Helpers._
 
@@ -107,3 +111,4 @@ object JSONParser extends Parsers with ImplicitConversions { // with CombParserH
   
   def parse(in: String) = theValue(in)
 }
+*/
