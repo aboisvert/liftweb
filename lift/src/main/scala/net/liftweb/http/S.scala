@@ -10,7 +10,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
 import scala.collection.immutable.{ListMap, TreeMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
+import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONAny, JSONParser}
 import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
 import Helpers._
 import js._
@@ -424,6 +424,18 @@ object S {
     <input type="button" value={text}/> % 
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
+        
+  def buildJSONFunc(f: JSONAny => JsCmd): (String, JsCmd) = {
+      val key = "F"+System.nanoTime+"_"+randomString(3)
+
+      def jsonCallback(in: List[String]): JsCmd = 
+        in.flatMap(s => JSONParser.parse(s).map(List(_)).getOrElse(Nil).map(f)).foldLeft(JsCmds.Noop)(_ ++ _)
+
+      addFunctionMap(key, jsonCallback _)
+      
+      (key, JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}")) // HERE
+    }
         
   /**
     * create an anchor tag around a body which will do an AJAX call and invoke the function
