@@ -88,6 +88,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
         case _ => true
       }
     }
+  
+    def thePath(end: String) = "/" + BasePath + "/" + end
     
     /**
       * Return the URL of the "login" page
@@ -101,42 +103,42 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     /**
       * The menu item for login (make this "Empty" to disable)
       */
-    def loginMenuLoc: Can[Menu] = Full(Menu(Loc("Login", "/user_mgt/login", "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))))
+    def loginMenuLoc: Can[Menu] = Full(Menu(Loc("Login", thePath(Login), "Login", If(notLoggedIn_? _, "already logged in. Please logout first."))))
     
     /**
       * The menu item for logout (make this "Empty" to disable)
       */
-    def logoutMenuLoc: Can[Menu] = Full(Menu(Loc("Logout", "/user_mgt/logout", "Logout", testLogginIn)))
+    def logoutMenuLoc: Can[Menu] = Full(Menu(Loc("Logout", thePath(Logout), "Logout", testLogginIn)))
     
     /**
       * The menu item for creating the user/sign up (make this "Empty" to disable)
       */
-    def createUserMenuLoc: Can[Menu] = Full(Menu(Loc("CreateUser", "/user_mgt/sign_up", "Sign Up", If(notLoggedIn_? _, "Please logout first."))))
+    def createUserMenuLoc: Can[Menu] = Full(Menu(Loc("CreateUser", thePath(SignUp), "Sign Up", If(notLoggedIn_? _, "Please logout first."))))
     
     /**
       * The menu item for lost password (make this "Empty" to disable)
       */
-    def lostPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("LostPassword", ("/user_mgt/lost_password", true), "Lost Password", If(notLoggedIn_? _, "Please logout first.")))) // not logged in
+    def lostPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("LostPassword", thePath(LostPassword), "Lost Password", If(notLoggedIn_? _, "Please logout first.")))) // not logged in
     
     /**
        * The menu item for resetting the password (make this "Empty" to disable)
        */
-    def resetPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ResetPassword", "/user_mgt/reset_password", "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first.")))) //not Logged in
+    def resetPasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ResetPassword", (thePath(PasswordReset), true), "Reset Password", Hidden, If(notLoggedIn_? _, "Please logout first.")))) //not Logged in
     
     /**
        * The menu item for editing the user (make this "Empty" to disable)
        */
-    def editUserMenuLoc: Can[Menu] = Full(Menu(Loc("EditUser", "/user_mgt/edit", "Edit User", testLogginIn)))
+    def editUserMenuLoc: Can[Menu] = Full(Menu(Loc("EditUser", thePath(Edit), "Edit User", testLogginIn)))
     
     /**
       * The menu item for changing password (make this "Empty" to disable)
       */
-    def changePasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ChangePassword", "/user_mgt/change_password", "Change Password", testLogginIn)))
+    def changePasswordMenuLoc: Can[Menu] = Full(Menu(Loc("ChangePassword", thePath(ChangePassword), "Change Password", testLogginIn)))
     
     /**
       * The menu item for validating a user (make this "Empty" to disable)
       */
-    def validateUserMenuLoc: Can[Menu] = Full(Menu(Loc("ValidateUser", ("/user_mgt/validate_user", true), "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))))     
+    def validateUserMenuLoc: Can[Menu] = Full(Menu(Loc("ValidateUser", (thePath(ValidateUser), true), "Validate User", Hidden, If(notLoggedIn_? _, "Please logout first."))))     
         
     lazy val sitemap : List[Menu] = List(loginMenuLoc, logoutMenuLoc, createUserMenuLoc, lostPasswordMenuLoc, resetPasswordMenuLoc,
         editUserMenuLoc, changePasswordMenuLoc, validateUserMenuLoc).flatten(a => a)
@@ -314,20 +316,19 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     
         def sendPasswordReset(email: String) {
         getSingleton.find(By(this.email, email)) match {
-          case Full(user) if this.validated =>
-            user.uniqueId.reset()
+          case Full(user) if user.validated =>
+            user.uniqueId.reset().save
           val resetLink = S.hostAndPath+"/"+BasePath+"/"+PasswordReset+"/"+user.uniqueId
           val email: String = user.email
 
           val msgXml = passwordResetMailBody(user, resetLink)
-
           Mailer.sendMail(From(emailFrom),Subject(passwordResetEmailSubject),  
               (To(user.email) :: xmlToMailBodyType(msgXml) :: (bccEmail.toList.map(BCC(_)))) :_*)
           S.notice("Password Reset Email sent") 
           S.redirectTo(HomePage)
           
           case Full(user) => 
-            
+            sendValidationEmail(user)
             S.notice("Account Validation Re-sent")
             S.redirectTo(HomePage)
           

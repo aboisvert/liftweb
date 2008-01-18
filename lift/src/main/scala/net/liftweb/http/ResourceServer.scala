@@ -40,7 +40,7 @@ object ResourceServer {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
-      val path = rw.mkString("/")
+      val path = "/"+rw.mkString("/")
       LiftServlet.loadResource(path).map(data => Response(data, List(("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK))
         
     } else Empty

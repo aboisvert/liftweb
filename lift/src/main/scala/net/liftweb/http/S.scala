@@ -428,9 +428,12 @@ object S {
   def buildJSONFunc(f: JSONAny => JsCmd): (String, JsCmd) = {
       val key = "F"+System.nanoTime+"_"+randomString(3)
 
-      def jsonCallback(in: List[String]): JsCmd = 
+      def jsonCallback(in: List[String]): JsCmd = {
+        println(in)
+        println(JSONParser.parse(in.head))
         in.flatMap(s => JSONParser.parse(s).map(List(_)).getOrElse(Nil).map(f)).foldLeft(JsCmds.Noop)(_ ++ _)
-
+      }
+      
       addFunctionMap(key, jsonCallback _)
       
       (key, JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
