@@ -418,7 +418,8 @@ object LiftServlet {
     val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
     val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
     val resume = cci.getMethod("resume", null)
-    (true && false /* FIXME disable Jetty Support */, (cc), (meth), (getObj), (setObj), (suspend), resume)
+      /* FIXME disable Jetty Support */
+    (true && false, (cc), (meth), (getObj), (setObj), (suspend), resume)
     } catch {
       case e => (false, null, null, null, null, null, null)
     }
