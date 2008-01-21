@@ -799,6 +799,26 @@ object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
 }
 
+abstract class JSONHandler {
+  private val name = "_lift_json_"+getClass.getName
+  private def handlers: (JSONCall, JsCmd) = 
+    S.servletSession.map(s => s.getAttribute(name) match 
+			 {case Full((x: JSONCall, y: JsCmd)) => 
+			   (x, y)
+			  case _ => 
+			    val ret: (JSONCall, JsCmd) = 
+			      S.buildJSONFunc(this.apply)
+			  s.setAttribute(name, ret)
+			  ret
+			}).openOr( (JSONCall(""), JsCmds.Noop) )
+
+  def call: JSONCall = handlers._1
+
+  def jsCmd: JsCmd = handlers._2
+
+  def apply(in: Any): JsCmd
+}
+
 abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: MyType =>
   private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
   protected def findFunc(name: String): Can[T]
