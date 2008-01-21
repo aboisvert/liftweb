@@ -26,7 +26,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = millis
-  private var lastRendering: RenderOut = RenderOut(Full(defaultXml), Empty, Empty, Empty, false)
+  private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
+						   Empty, Empty, Empty, false)
   private var wasLastFullRender = false
   @transient
   private var t_listeners = new ListBuffer[Actor]()
@@ -50,6 +51,10 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   def hasOuter = true
   
   def parentTag = <span/>
+
+  def handleJSON(in: Any): JsCmd = Noop
+
+  lazy val (jsonCall, jsonInCode) = S.buildJSONFunc(handleJSON)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
       parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))

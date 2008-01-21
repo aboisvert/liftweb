@@ -1259,7 +1259,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     * @return all the rotations of the list
     */ 
   def rotateList[T](in: List[T]): List[List[T]] = {
-    def doIt(in: List[T], cnt: Int): List[List[T]] = (in, cnt) match {
+    def doIt(in: List[T], cnt: Int): List[List[T]] = ((in, cnt): @unchecked) match {
       case (_, 0) => Nil
       case (x :: xs, cnt) => in :: doIt(xs ::: List(x), cnt - 1)
     }
@@ -1273,10 +1273,10 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
    *
    * @return all the permutations of the list
    */
-  def permuteList[T](in: List[T]): List[List[T]] = in match {
+  def permuteList[T](in: List[T]): List[List[T]] = (in: @unchecked) match {
     case Nil => Nil
     case x :: Nil => List(List(x))
-    case xs => rotateList(xs).flatMap{case x :: xs => permuteList(xs).map(x :: _) case _ => Nil}
+    case xs => rotateList(xs).flatMap(x => (x: @unchecked) match{case x :: xs => permuteList(xs).map(x :: _) case _ => Nil})
   }
   
  /**
@@ -1291,8 +1291,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     case Nil => Nil
     case x :: Nil => List(List(x))
     case xs => val rot = rotateList(xs)
-    val ret = rot.flatMap{case x :: xs => permuteList(xs).map(x :: _)}
-    ret ::: rot.map{case x :: xs => xs}.flatMap(internal(_))
+    val ret = rot.flatMap(z => (z: @unchecked) match {case x :: xs => permuteList(xs).map(x :: _)})
+    ret ::: rot.map(z => (z: @unchecked) match {case x :: xs => xs}).flatMap(internal(_))
   } 
    
    internal(in).removeDuplicates.sort(_.length > _.length)

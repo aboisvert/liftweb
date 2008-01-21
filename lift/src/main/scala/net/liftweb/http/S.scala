@@ -426,7 +426,7 @@ object S {
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
         
-  def buildJSONFunc(f: Any => JsCmd): (String, JsCmd) = {
+  def buildJSONFunc(f: Any => JsCmd): (JSONCall, JsCmd) = {
       val key = "F"+System.nanoTime+"_"+randomString(3)
 
     def checkCmd(in: Any) = in match {
@@ -444,8 +444,8 @@ object S {
       
       addFunctionMap(key, jsonCallback _)
       
-      (key, JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
-        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}")) // HERE
+      (JSONCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
     }
         
   /**

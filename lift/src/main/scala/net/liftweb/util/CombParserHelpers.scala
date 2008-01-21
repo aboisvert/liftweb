@@ -7,7 +7,7 @@ trait CombParserHelpers { self: Parsers =>
 implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
 type Elem = Char
 
-def notEol(c: Char): Boolean = c != '\n' && notEOF(c)
+def notEol(c: Char): Boolean = c != '\n' && c != '\r' && notEOF(c)
 def isEol(c: Char): Boolean = (c == '\n' || c == '\r' || isEOF(c))
   def notNum(c: Char): Boolean = !Character.isDigit(c)
 def isNum(c: Char): Boolean = Character.isDigit(c)

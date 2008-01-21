@@ -527,10 +527,13 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     asyncById(act.uniqueId) = act
   }
   
-  def removeCometActor(act: CometActor): Unit = synchronized {asyncById -= act.uniqueId
+  def removeCometActor(act: CometActor): Unit = synchronized {
+    asyncById -= act.uniqueId
+    messageCallback -= act.jsonCall.funcId
+
     // FIXME remove all the stuff from the function table related to this item
     
-    }
+  }
   
   
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
