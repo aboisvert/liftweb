@@ -808,7 +808,7 @@ abstract class JSONHandler {
 			  case _ => 
 			    val ret: (JSONCall, JsCmd) = 
 			      S.buildJSONFunc(this.apply)
-			  s.setAttribute(name, ret)
+			  s.setAttribute(name, Full(ret))
 			  ret
 			}).openOr( (JSONCall(""), JsCmds.Noop) )
 

@@ -16,6 +16,12 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+      <action dev="David Pollak" type="add">
+Added JSON support including:
+- S.buildJSONFunc
+- JSONHandler class
+- Lots of fancy JavaScript expression building
+</action>
     <release version="0.5" description="">
       <action dev="David Pollak" type="update">
 Added json2.js (and minified version)

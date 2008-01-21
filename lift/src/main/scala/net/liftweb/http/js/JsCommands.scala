@@ -36,10 +36,90 @@ case class JSONCall(funcId: String) {
 	       ", 'params':"+
 	       params.toJsCmd+"});")
 
+
+  def apply(command: JsExp, params: JsExp) = 
+    JsCmds.Run(funcId+"({'command': "+command.toJsCmd+", 'params':"+
+	       params.toJsCmd+"});")
+
+  def apply(command: JsExp, target: JsExp, params: JsExp) =
+    JsCmds.Run(funcId+"({'command': "+command.toJsCmd+", 'target': "+
+	       target.toJsCmd+
+	       ", 'params':"+
+	       params.toJsCmd+"});")
+
 }
 
 trait JsExp extends HtmlFixer {
   def toJsCmd: String
+  
+  def !(right: JsMethod): JsExp = new JsExp {
+    def toJsCmd = JsExp.this.toJsCmd + "." + right.toJsCmd
+  }
+}
+
+trait JsMethod {
+  def toJsCmd: String
+}
+
+/**
+ * JavaScript Expressions
+ */
+object JE {
+  implicit def strToS(in: String): Str = Str(in)
+  /**
+   * gets the element by ID
+   */
+  case class E(id: String) extends JsExp {
+    override def toJsCmd = "document.getElementById("+id.encJs+")"
+  }
+
+  /**
+   * A String (JavaScript encoded)
+   */
+  case class Str(str: String) extends JsExp {
+    def toJsCmd = str.encJs
+  }
+
+  /**
+   * A JavaScript method that takes parameters
+   */
+  case class M(method: String, params: JsExp*) extends JsMethod {
+    def toJsCmd = params.mkString(method+"(", ", ", ")")
+  }
+  
+  /**
+   * A value that can be retrieved from an expression
+   */
+  case class V(valueName: String) extends JsMethod {
+    def toJsCmd = valueName
+  }
+  
+  case object Value extends JsMethod {
+    def toJsCmd = "value"
+  }
+
+
+
+  /**
+   * A JQuery query
+   */
+  case class JQ(query: String) extends JsExp with JQueryLeft {
+    override def toJsCmd = "jQuery("+query.encJs+")"
+  }
+
+  /**
+   * A JQuery query for an element based on the id of the element
+   */
+  case class JQId(id: String) extends JsExp with JQueryLeft {
+    override def toJsCmd = "jQuery("+("#"+id).encJs+")"
+  }
+  
+  /**
+   * Append content to a JQuery
+   */
+  case class JAppend(content: NodeSeq) extends JsExp with JQueryRight {
+    override def toJsCmd = "append("+fixHtml("inline", content)+")"
+  }
 }
 
 trait JQueryRight {
@@ -50,13 +130,13 @@ trait JQueryRight {
 trait JQueryLeft {
   this: JsExp =>
     def >>(that: JQueryRight): JsExp = new JsExp {
-      def toJsCmd = this.toJsCmd + "."+ that.toJsCmd
+      def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
     }
 
 
   def >>(that: JQueryLeft with JQueryRight): JsExp with JQueryLeft =
     new JsExp with JQueryLeft {
-      def toJsCmd = this.toJsCmd + "."+ that.toJsCmd
+      def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
     }
 }
 
@@ -67,10 +147,9 @@ trait HtmlFixer {
 
 }
 
-abstract class JsCmd extends HtmlFixer {
+trait JsCmd extends HtmlFixer {
   def ++(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
   def toJsCmd: String
-
 }
 
 object JsCmds {
@@ -99,21 +178,6 @@ object FocusOnLoad {
   }
 }
 
-case class Elemt(id: String) extends JsExp {
-  override def toJsCmd = "document.getElementById("+id.encJs+")"
-}
-
-case class JQ(query: String) extends JsExp with JQueryLeft {
-  override def toJsCmd = "jQuery("+query+")"
-}
-
-case class JQId(id: String) extends JsExp with JQueryLeft {
-  override def toJsCmd = "jQuery("+("#"+id).encJs+")"
-}
-
-case class JQAppend(content: NodeSeq) extends JsExp with JQueryRight {
-  override def toJsCmd = "append("+fixHtml("inline", content)+")"
-}
 
 
 implicit def jsExpToJsCmd(in: JsExp) = Run(in.toJsCmd+";")
@@ -127,14 +191,9 @@ case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
   def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
 }
 
-/*
-case class AppendHtml(uid: String, content: NodeSeq) extends JsCmd {
-  def toJsCmd = "jQuery("+("#"+uid).encJs+").append("+fixHtml(uid, content)+");"
-}*/
-
 object AppendHtml {
   def apply(uid: String, content: NodeSeq): JsCmd =
-    JQId(uid) >> JQAppend(content)
+    JE.JQId(uid) >> JE.JAppend(content)
 }
 
 
