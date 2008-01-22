@@ -500,17 +500,36 @@ object S {
         contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
       nh ++ rnk
     }
-    
-    def ajaxText(value: String, func: String => JsCmd): Elem = ajaxText_*(value, SFuncHolder(func))
-      
-    private def ajaxText_*(value: String, func: AFuncHolder): Elem = {
-      val funcName = mapFunc(func) 
-      (<input type="text" value={value}/>) %
-        ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
-    }
-    
-    def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
+
+  /**
+   * Create a JSON text widget that makes a JSON call on blur or "return".
+   * Note that this is not "Stateful" and will be moved out of S at some
+   * point.
+   *
+   * @param value - the initial value of the text field
+   * @param json - takes a JsExp which describes how to recover the
+   * value of the text field and returns a JsExp containing the thing
+   * to execute on blur/return
+   *
+   * @return a text field
+   */
+  def jsonText(value: String, json: JsExp => JsCmd): Elem = {
+    (<input type="text" value={value}/>) %
+  ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
+  ("onblur" -> (json(JE.Raw("this.value")).toJsCmd))
+ }
+   
+   def ajaxText(value: String, func: String => JsCmd): Elem = 
+     ajaxText_*(value, SFuncHolder(func))
+   
+   private def ajaxText_*(value: String, func: AFuncHolder): Elem = {
+     val funcName = mapFunc(func) 
+     (<input type="text" value={value}/>) %
+     ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
+     ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+   }
+   
+   def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
       
     private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
       val funcName = mapFunc(func)

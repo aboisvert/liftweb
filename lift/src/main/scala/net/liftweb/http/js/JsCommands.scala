@@ -105,6 +105,10 @@ object JE {
   case class M(method: String, params: JsExp*) extends JsMethod {
     def toJsCmd = params.mkString(method+"(", ", ", ")")
   }
+
+  case class Raw(rawJsCmd: String) extends JsExp {
+    def toJsCmd = rawJsCmd
+  }
   
   /**
    * A value that can be retrieved from an expression
