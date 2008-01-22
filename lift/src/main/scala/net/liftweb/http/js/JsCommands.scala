@@ -64,6 +64,8 @@ trait JsExp extends HtmlFixer {
   def :=(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd +" = " +right.toJsCmd
   }
+
+  def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
 }
 
 trait JsMethod {
@@ -143,6 +145,10 @@ object JE {
    */
   case class JQId(id: JsExp) extends JsExp with JQueryLeft {
     override def toJsCmd = "jQuery('#'+"+id.toJsCmd+")"
+  }
+  
+  case class JQAttr(key: String, value: JsExp) extends JsExp with JQueryRight with JQueryLeft {
+    def toJsCmd = "attr("+key.encJs+", "+value.toJsCmd+")"
   }
   
   /**
@@ -261,7 +267,7 @@ object FocusOnLoad {
 
 
 
-implicit def jsExpToJsCmd(in: JsExp) = Run(in.toJsCmd+";")
+implicit def jsExpToJsCmd(in: JsExp) = in.cmd
 
 
 case class OnLoad(cmd: JsCmd) extends JsCmd {

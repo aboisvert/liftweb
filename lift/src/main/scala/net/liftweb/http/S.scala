@@ -317,7 +317,7 @@ object S {
   
   object attr {
     def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
-    def update(what: String, value: String) = S._attrs.value(what) = value
+    // def update(what: String, value: String) = S._attrs.value(what) = value
   }
   
   def setVars[T](attr: MetaData)(f: => T): T = {
