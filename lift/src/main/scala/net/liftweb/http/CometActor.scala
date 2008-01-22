@@ -160,7 +160,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
     S.initIfUninitted(theSession) {
-      lastRendering = render
+      lastRendering = render ++ jsonInCode
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), this, lastRenderTime, sendAll)// buildRendered(lastRendering, lastRenderTime)
       listeners.toList.foreach(_ ! rendered)
@@ -296,4 +296,7 @@ case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false) 
+  def ++(cmd: JsCmd) = 
+    RenderOut(xhtml, fixedXhtml, script.map(_ ++ cmd) or Full(cmd),
+	      destroyScript, ignoreHtmlOnJs)
 }

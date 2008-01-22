@@ -26,6 +26,11 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
 }
 
 case class JSONCall(funcId: String) {
+  def apply(command: String): JsCmd = apply(JE.Str(command))
+
+  def apply(command: JsExp): JsCmd = 
+    JsCmds.Run(funcId+"({'command': "+command.toJsCmd+", 'params': false});")
+
   def apply(command: String, params: JsExp) = 
     JsCmds.Run(funcId+"({'command': "+command.encJs+", 'params':"+
 	       params.toJsCmd+"});")
@@ -55,6 +60,10 @@ trait JsExp extends HtmlFixer {
   def !(right: JsMethod): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + "." + right.toJsCmd
   }
+
+  def :=(right: JsExp): JsExp = new JsExp {
+    def toJsCmd = JsExp.this.toJsCmd +" = " +right.toJsCmd
+  }
 }
 
 trait JsMethod {
@@ -66,6 +75,16 @@ trait JsMethod {
  */
 object JE {
   implicit def strToS(in: String): Str = Str(in)
+  implicit def boolToJsExp(in: Boolean): JsExp = if (in) JsTrue else JsFalse
+
+  case class Num(n: Number) extends JsExp {
+    def toJsCmd = n.toString
+  }
+
+  case class JSArray[T <% JsExp](in: T*) extends JsExp {
+    def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]")
+  }
+  
   /**
    * gets the element by ID
    */
@@ -98,20 +117,28 @@ object JE {
     def toJsCmd = "value"
   }
 
+  case object JsFalse extends JsExp {
+    def toJsCmd = "false"
+  }
+
+  case object JsTrue extends JsExp {
+    def toJsCmd = "true"
+  }
+
 
 
   /**
    * A JQuery query
    */
-  case class JQ(query: String) extends JsExp with JQueryLeft {
-    override def toJsCmd = "jQuery("+query.encJs+")"
+  case class JQ(query: JsExp) extends JsExp with JQueryLeft {
+    override def toJsCmd = "jQuery("+query.toJsCmd+")"
   }
 
   /**
    * A JQuery query for an element based on the id of the element
    */
-  case class JQId(id: String) extends JsExp with JQueryLeft {
-    override def toJsCmd = "jQuery("+("#"+id).encJs+")"
+  case class JQId(id: JsExp) extends JsExp with JQueryLeft {
+    override def toJsCmd = "jQuery('#'+"+id.toJsCmd+")"
   }
   
   /**
@@ -193,7 +220,7 @@ case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
 
 object AppendHtml {
   def apply(uid: String, content: NodeSeq): JsCmd =
-    JE.JQId(uid) >> JE.JAppend(content)
+    JE.JQId(JE.Str(uid)) >> JE.JAppend(content)
 }
 
 
@@ -254,6 +281,8 @@ case class Run(text: String) extends JsCmd {
 case object _Noop extends JsCmd {
   def toJsCmd = ""
 }
+
+implicit def cmdToString(in: JsCmd): String = in.toJsCmd
 
 val Noop: JsCmd = _Noop
 

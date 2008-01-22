@@ -46,6 +46,4 @@ class Json {
     <div id="json_result"></div>
     </span>
   }
-  
-  def time = Text(timeNow.toString)
 }

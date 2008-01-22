@@ -263,11 +263,11 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
    * field.set(new_value) <br />
    * are all the same
    */
-  def update(v: FieldType) {
+  def update[Q <% FieldType](v: Q) {
     this.set(v)
   }
   
-  def apply(v: FieldType): OwnerType = {
+  def apply[Q <% FieldType](v: Q): OwnerType = {
     this.set(v)
     fieldOwner
   }
