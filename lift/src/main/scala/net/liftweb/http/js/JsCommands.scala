@@ -144,8 +144,58 @@ object JE {
   /**
    * Append content to a JQuery
    */
-  case class JAppend(content: NodeSeq) extends JsExp with JQueryRight {
+  case class JAppend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "append("+fixHtml("inline", content)+")"
+  }
+
+  /**
+   * AppendTo content to a JQuery
+   */
+  case class JAppendTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "appendTo("+fixHtml("inline", content)+")"
+  }
+
+  /**
+   * Append content to a JQuery
+   */
+  case class JPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "prepend("+fixHtml("inline", content)+")"
+  }
+
+  /**
+   * Append content to a JQuery
+   */
+  case class JPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
+  }
+
+  object JHtml {
+    def apply() = new JsExp with JQueryRight {
+      def toJsCmd = "html()"
+    }
+
+    def apply(content: NodeSeq) = new JsExp with JQueryRight with JQueryLeft {
+      def toJsCmd = "html("+fixHtml("inline", content)+")"
+    }
+  }
+
+  object JText {
+    def apply() = new JsExp with JQueryRight {
+      def toJsCmd = "text()"
+    }
+
+    def apply(content: String) = new JsExp with JQueryRight with JQueryLeft {
+      def toJsCmd = "text("+content.encJs+")"
+    }
+  }
+
+  
+  
+  /**
+   * Serialize the jquery into a JSON array
+   */
+  case object JsonSerialize extends JsExp with JQueryRight {
+    def toJsCmd = "serializeArray()"
   }
 }
 
