@@ -171,12 +171,29 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
             
           case Cmp(field, opr, Empty, Empty) =>
           (1 to field.dbColumnCount).foreach (cn => updatedWhat = updatedWhat + whereOrAnd +field.dbColumnNames(field.name)(cn - 1)+" "+opr+" ")
-
+	  
+	  // For vals, add "AND $fieldname = ? [OR $fieldname = ?]*" to the query. The number
+	  // of fields you add onto the query is equal to vals.length
+	  case ByList(field, vals) => {
+	    // Have we already added the AND?
+	    var firstAnd = false
+	    vals.foreach(v => {
+	      val clause =  if (wav) {
+		// Our query must be of the form AND x = ? [OR x = ?]*
+		(if (!firstAnd) { firstAnd = true; " AND " } else {" OR "}) + field.name + " = ? " 
+	      } else {
+		wav = true
+		"WHERE " + field.name + " = ? "
+	      }
+	      updatedWhat = updatedWhat + clause
+	    })
+	  }
+	  // Executes a subquery with {@code query}
           case BySql(query, _*) => 
             updatedWhat = updatedWhat + whereOrAnd + " ( "+ query +" ) "
           case _ => 
         }
-        addFields(updatedWhat,wav, xs)
+        addFields(updatedWhat, wav, xs)
       }
     }
   }
@@ -188,6 +205,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.targetSQLType)
       setStatementFields(st, xs, curPos + 1)
 
+      case ByList(field, vals: List[Long]) :: xs => {
+	var newPos = curPos
+	vals.foreach(v => {
+	  st.setLong(newPos, v.asInstanceOf[Long])
+	  newPos = newPos + 1
+	})
+	setStatementFields(st, xs, newPos)
+      }
       case BySql(query, params @ _*) :: xs => {
         params.toList match {
           case Nil => setStatementFields(st, xs, curPos)
@@ -832,6 +857,7 @@ abstract class QueryParam[O<:Mapper[O]]
 //case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
+case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
