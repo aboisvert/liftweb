@@ -105,7 +105,7 @@ object JE {
    * A JavaScript method that takes parameters
    */
   case class M(method: String, params: JsExp*) extends JsMethod {
-    def toJsCmd = params.mkString(method+"(", ", ", ")")
+    def toJsCmd = params.map(_.toJsCmd).mkString(method+"(", ", ", ")")
   }
 
   case class Raw(rawJsCmd: String) extends JsExp {

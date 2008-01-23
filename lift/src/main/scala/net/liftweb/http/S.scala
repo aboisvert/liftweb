@@ -444,7 +444,7 @@ object S {
       
       addFunctionMap(key, jsonCallback _)
       
-      (JSONCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+      (JSONCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, type: 'POST', data: '"+
         key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
     }
         
