@@ -33,6 +33,7 @@ object CanSpec extends Specification {
     "be implicitly defined from an Option. The open_! method can be used on an Option for example" in {
       Some(1).open_! must_== 1
     }
+    /*
     "be implicitly defined from any AnyRef object. If the object is null, the Can is Empty" in {
       val s: String = null
       val c: Can[String] = s 
@@ -40,7 +41,7 @@ object CanSpec extends Specification {
     }
     "be implicitly defined from any AnyRef object. If the object is not null, the Can is Full" in {
       "hello".open_! must_== "hello"
-    }
+    }*/
   }
   "A Can" should {
     "provide a 'choice' method to either apply a function to the Can value or return another default can" in {

@@ -10,6 +10,7 @@ import net.liftweb.mapper._
 import net.liftweb.util._
 import Helpers._
 import net.liftweb.http.S
+import scala.xml.{Elem, NodeSeq}
 
 class MappedUniqueId[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[T](owner, maxLen) {
   override def writePermission_? = false
@@ -24,10 +25,14 @@ class MappedUniqueId[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[
 class MappedBirthYear[T <: Mapper[T]](owner: T, minAge: Int) extends MappedInt[T](owner) {
   override def defaultValue = year(timeNow) - minAge
   
-  override def toForm = {
+  override def _toForm: Can[NodeSeq] = {
     val end = (year(timeNow) - minAge)
-    val start = end - 100
-    S.select((start to end).toList.reverse.map(y => (y.toString, y.toString)), Full(is.toString),v => set(v.toInt))
+      val start = end - 100
+    Full(S.select((start to end).
+		  toList.
+		  reverse.
+		  map(y => (y.toString, y.toString)), 
+		  Full(is.toString),v => set(v.toInt)))
   }
 }
 

@@ -9,7 +9,8 @@ package net.liftweb.mapper
 import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
-import scala.xml.{Text, Node, NodeSeq, Elem}
+import scala.xml.{Text, Node, NodeSeq, Group,
+		  Elem, Null, PrefixedAttribute, MetaData}
 import java.util.Date
 import net.liftweb.http.S
 import net.liftweb.http.S._
@@ -108,8 +109,15 @@ trait BaseMappedField {
    /**
     * Create an input field for the item
     */
-  def toForm: Can[NodeSeq]   
-  
+  def toForm: Can[NodeSeq]
+
+  /**
+   * This is where the instance creates its "toForm" stuff.
+   * The actual toForm method wraps the information based on
+   * mode.
+   */
+  def _toForm: Can[NodeSeq]
+
   def asHtml: NodeSeq
   
   /**
@@ -134,19 +142,22 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
   
   def validSelectValues: Can[List[(KeyType, String)]] = Empty
   
-  def immutableMsg = Text(?("Can't change"))
+  def immutableMsg: NodeSeq = Text(?("Can't change"))
   
-  override def toForm: Can[NodeSeq] = Full(validSelectValues.flatMap{
+  override def _toForm: Can[NodeSeq] = Full(validSelectValues.flatMap{
     case Nil => Empty
     
-    case xs => val mapBack: HashMap[String, KeyType] = new HashMap
-               var selected: Can[String] = Empty
-               
-               Full(S.select(xs.map{case (value, text) => val t = randomString(10)
-                                                          mapBack(t) = value
-                                                          if (value == this.is) selected = Full(t)
-                                                          (t, text)},
-                    selected, v => mapBack.get(v).foreach(x => set(x))))
+    case xs => 
+      val mapBack: HashMap[String, KeyType] = new HashMap
+    var selected: Can[String] = Empty
+    
+    Full(S.select(xs.map{case (value, text) =>
+      val t = randomString(10)
+                         mapBack(t) = value
+                         if (value == this.is) selected = Full(t)
+                         (t, text)},
+		  selected, 
+		  v => mapBack.get(v).foreach(x => set(x))))
   }.openOr(immutableMsg))
 }
 
@@ -327,12 +338,32 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     * the value could be assigned
     */
   def setFromAny(value: Any): FieldType
-     
+    
+  def toFormAppendedAttributes: MetaData = 
+    if (Props.mode == Props.RunModes.Test)
+      new PrefixedAttribute("lift", "field_name", Text(calcFieldName), Null)
+    else Null
+
+  def calcFieldName: String = fieldOwner.getSingleton._dbTableName+":"+name
+  
+ 
+  final def toForm = {
+    def mf(in: Node): NodeSeq = in match {
+      case g: Group => g.nodes.flatMap(mf)
+      case e: Elem => e % toFormAppendedAttributes
+      case other => other
+    }
+   
+    _toForm.map(_.flatMap(mf) )
+  }
     
   /**
    * Create an input field for the item
    */
-  override def toForm: Can[NodeSeq] = Full(<input type='text' name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>)
+  override def _toForm: Can[NodeSeq] = 
+    Full(<input type='text' 
+	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})} 
+	 value={is match {case null => "" case s => s.toString}}/>)
   
   /**
     * Set the field to the value

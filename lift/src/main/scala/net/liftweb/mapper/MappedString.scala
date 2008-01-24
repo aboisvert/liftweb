@@ -92,7 +92,10 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     orgData.setFrom(data)
   }
   
-  override def toForm: Can[NodeSeq] = Full(<input type='text' maxlength={maxLen.toString} name={S.mapFunc({s: List[String] => this.setFromAny(s)})} value={is match {case null => "" case s => s.toString}}/>)  
+  override def _toForm: Can[NodeSeq] = 
+    Full(<input type='text' maxlength={maxLen.toString} 
+	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})} 
+	 value={is match {case null => "" case s => s.toString}}/>)  
   
   protected def i_obscure_!(in : String) : String = {
     ""

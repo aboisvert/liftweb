@@ -93,6 +93,6 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
     /**
    * Create an input field for the item
    */
-  override def toForm = S.checkbox(is,this(_))
+  override def _toForm = Full(S.checkbox(is,this.apply _))
 }
 

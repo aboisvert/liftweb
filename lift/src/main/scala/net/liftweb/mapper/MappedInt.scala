@@ -106,8 +106,9 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
     /**
    * Create an input field for the item
    */
-  override def toForm: Can[NodeSeq] = 
-    Full(S.select(buildDisplayList, Full(toInt.toString),v => this(fromInt(Helpers.toInt(v)))))
+  override def _toForm: Can[NodeSeq] = 
+    Full(S.select(buildDisplayList, 
+		  Full(toInt.toString),v => this(fromInt(Helpers.toInt(v)))))
 }
 
 class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {

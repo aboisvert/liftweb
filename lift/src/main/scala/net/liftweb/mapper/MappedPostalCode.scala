@@ -292,8 +292,11 @@ class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) 
     case x :: xs => x
   }
   
-  override def toForm = S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
-    map(lo => (lo.toString, lo.getDisplayName)), Full(this.is), v => set(v))
+  override def _toForm: Can[NodeSeq] = 
+    Full(S.select(Locale.getAvailableLocales.
+		  toList.sort(_.getDisplayName < _.getDisplayName).
+		  map(lo => (lo.toString, lo.getDisplayName)), 
+		  Full(this.is), v => set(v)))
 }
 
 class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32) {
@@ -304,12 +307,16 @@ class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32
     case x => x
   }
   
-  override def toForm = S.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v))
+  override def _toForm: Can[NodeSeq] = 
+    Full(S.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v)))
 }
 
 object MappedTimeZone {
-  lazy val timeZoneList = TimeZone.getAvailableIDs.toList.filter(!_.startsWith("SystemV/")).filter(!_.startsWith("Etc/")).filter(_.length > 3).
-    sort(_ < _).map(tz => (tz, tz))
+  lazy val timeZoneList = 
+    TimeZone.getAvailableIDs.toList.
+  filter(!_.startsWith("SystemV/")).
+  filter(!_.startsWith("Etc/")).filter(_.length > 3).
+  sort(_ < _).map(tz => (tz, tz))
 }
 
 class MappedCountry[T <: Mapper[T]](owner: T) extends MappedEnum[T, Countries.type](owner, Countries) {

@@ -389,9 +389,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   private val snippetClasses: HashMap[String, Class] = new HashMap
   
-  private def findSnippetInstance(cls: String): Can[AnyRef] = S.snippetForClass(cls) or (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
-    case Full(inst: StatefulSnippet) => inst.snippetName = cls; S.setSnippetForClass(cls, inst); inst
-    case Full(ret) => ret
+  private def findSnippetInstance(cls: String): Can[AnyRef] = 
+    S.snippetForClass(cls) or 
+  (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
+    case Full(inst: StatefulSnippet) => 
+      inst.snippetName = cls; S.setSnippetForClass(cls, inst); Can(inst)
+    case Full(ret) => Can(ret)
     case _ => Empty
   })
   

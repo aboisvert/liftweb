@@ -95,12 +95,14 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   protected def i_obscure_!(in : String) : String = in
   
   /**
-     * Create an input field for the item
-     */
-    override def toForm: Can[NodeSeq] = {
-       val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
-       Full(<span><input type='password' name={funcName} value={is.toString}/>&nbsp;
-       repeat<input type='password' name={funcName} value={is.toString}/></span>)
+   * Create an input field for the item
+   */
+  override def _toForm: Can[NodeSeq] = {
+    val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
+    Full(<span><input type='password' name={funcName} 
+	 value={is.toString}/>&nbsp;{?("repeat")}&nbsp;<input 
+	 type='password' name={funcName}
+	 value={is.toString}/></span>)
     }
     
   

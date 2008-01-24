@@ -67,7 +67,7 @@ object Can {
    * This implicit def allows to use any object as a Can, permitting null values to be handled as Empty
    * @returns Full(in) if in is not null Empty otherwise
    */
-  implicit def type2Can[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
+  def type2Can[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
 }
 
 /**

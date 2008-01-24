@@ -226,7 +226,7 @@ object S {
   /**
     * The current LiftSession
     */
-  def session: Can[LiftSession] = _sessionInfo.value
+  def session: Can[LiftSession] = Can(_sessionInfo.value)
   
   /**
     * Log a query for the given request.  The query log can be tested to see
@@ -306,7 +306,7 @@ object S {
   }
   
   private[http] object requestState {
-    private def rv: Can[HashMap[String, Any]] = _requestVar.value //  match {case null => Empty case v => Full(v)}
+    private def rv: Can[HashMap[String, Any]] = Can(_requestVar.value) //  match {case null => Empty case v => Full(v)}
     
     def apply[T](name: String): Can[T] = rv.flatMap(r => Can(r.get(name).asInstanceOf[Option[T]]))
     
