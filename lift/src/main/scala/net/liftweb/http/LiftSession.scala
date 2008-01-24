@@ -204,9 +204,12 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
 	      }
 	      notices = Nil
 	      
-	      // AnswerHolder(XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
-	      
-	      AnswerHolder(LiftServlet.convertResponse((realXml, request))) // XhtmlResponse(Group(request.fixHtml(realXml)), ResponseInfo.xhtmlTransitional, Nil, 200))
+	      AnswerHolder(LiftServlet.
+			   convertResponse((realXml,
+					    S.getHeaders(LiftServlet.
+					    defaultHeaders( 
+					      (realXml, request) )),
+					    request)))
 	    }
 	    case _ => AnswerHolder(request.createNotFound)
 	  }

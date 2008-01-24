@@ -48,6 +48,7 @@ object S {
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
+  private val _responseHeaders = new ThreadGlobal[Map[String, String]]
   
   /**
    * Get the current RequestState
@@ -277,33 +278,51 @@ object S {
       }
     }
   }
+
+  def setHeader(name: String, value: String) {
+    _responseHeaders.set(_responseHeaders.value + ( (name, value )))
+  }
+  
+  def getHeaders(in: List[(String, String)]): List[(String, String)] = {
+    val rh = _responseHeaders.value
+    rh.elements.toList ::: 
+    in.filter{case (n, v) => !rh.contains(n)}
+  }
+  
+  private def _innerInit[B](f: () => B): B = {
+    _attrs.doWith(new TreeMap) {
+      snippetMap.doWith(new HashMap) {
+	_resBundle.doWith(null) {
+	  inS.doWith(true) {
+	    _stateSnip.doWith(new HashMap) {
+	      initNotice {
+		_functionMap.doWith(new HashMap[String, AFuncHolder]) {
+		  wrapQuery {
+		    this.currCnt.doWith(0)(f)
+		  }
+		}
+	      }
+	    }
+	  }
+	}
+      }
+    }
+  }
   
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     doAround(aroundRequest,
-    _sessionInfo.doWith(session) (
-      _requestVar.doWith(new HashMap) {
-    _attrs.doWith(new TreeMap) {
-    snippetMap.doWith(new HashMap) {
-      _resBundle.doWith(null) {
-      inS.doWith(true) {
-        _stateSnip.doWith(new HashMap) {
-          initNotice {
-            _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-              this._request.doWith(request) {
-                wrapQuery {
-                this.currCnt.doWith(0)(f)
-                }
-              }
-            }
-          }
-      }
-      }
-    }
-    }
-      }
-    }) )
-    
+	     this._request.doWith(request) {
+	       _sessionInfo.doWith(session) {
+		 _responseHeaders.doWith(Map.empty) {
+		   _requestVar.doWith(new HashMap) {
+		     _innerInit(f)
+		   }
+		 }
+	       }
+	     }
+	   )
   }
+
   
   private[http] object requestState {
     private def rv: Can[HashMap[String, Any]] = Can(_requestVar.value) //  match {case null => Empty case v => Full(v)}

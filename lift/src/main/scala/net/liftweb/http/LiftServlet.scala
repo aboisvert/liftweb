@@ -152,7 +152,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 	S.init(session, sessionActor) {
 	  val f = LiftServlet.dispatchTable(request)(toMatch)
 	  f(request) match {
-            case Full(v) => LiftServlet.convertResponse( (v, session) )
+            case Full(v) => LiftServlet.convertResponse( (v, Nil, session) )
             case Empty => session.createNotFound.toResponse
             case f: Failure => session.createNotFound(f).toResponse 
 	  }
@@ -612,22 +612,27 @@ object LiftServlet {
     dispatchTable_i
   }
 
-  private def cvt(ns: Node, session: RequestState) = 
+  private def cvt(ns: Node, headers: List[(String, String)], session: RequestState) = 
     convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
 				    ResponseInfo.xhtmlTransitional(session),
-				    Nil, 200), session) )
+				    headers, 200), headers, session) )
   
-  var convertResponse: PartialFunction[(Any, RequestState), Response] = {
-      case (r: ResponseIt, _) => r.toResponse
-      case (ns: Group, session) => cvt(ns, session)
-	case (ns: Node, session) => cvt(ns, session)
-      case (ns: NodeSeq, session) => cvt(Group(ns), session)
-    case (ns: Seq[Node], session) => cvt(Group(ns), session)
+  var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
+    case _ => List(("Expires", "0"))
+  }
+  
+  var convertResponse: PartialFunction[(Any, List[(String, String)],
+					RequestState), Response] = {
+      case (r: ResponseIt, _, _) => r.toResponse
+      case (ns: Group, headers, session) => cvt(ns, headers, session)
+	case (ns: Node, headers, session) => cvt(ns, headers, session)
+      case (ns: NodeSeq, headers, session) => cvt(Group(ns), headers, session)
+    case (ns: Seq[Node], headers, session) => cvt(Group(ns), headers, session)
     
-    case (Full(o), session) => convertResponse( (o, session) )
+    case (Full(o), headers, session) => convertResponse( (o, headers, session) )
 	
-      case (Some(o), session) => convertResponse( (o, session) )
-      case (bad, session) => println("bad is "+bad) ; session.createNotFound.toResponse
+      case (Some(o), headers, session) => convertResponse( (o, headers, session) )
+      case (bad, _, session) => println("bad is "+bad) ; session.createNotFound.toResponse
   }
   
   /**
