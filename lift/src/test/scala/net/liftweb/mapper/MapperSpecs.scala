@@ -30,38 +30,29 @@ object MapperSpecsRunner extends ConsoleRunner(MapperSpecs)
 object MapperSpecs extends Specification {
   def providers = DBProviders.asList
    
-  println("lg :" + providers.length)
   providers.foreach(provider => {
-      println("should on " + provider)
     ("Mapper for " + provider.name) should {
 
       "schemify" in {
-      // precondition
-      try {
-          provider.setupDB
-      } catch {
-        case e => {
-            println("skip : " + provider.name)
-            skip(e.getMessage)
-        }
+        try { provider.setupDB } catch { case e => skip(e.getMessage) }
+        
+        Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
+        Schemifier.schemify(true, ignoreLogger _, SampleModel)
+        
+        val elwood = SampleModel.find(By(SampleModel.firstName, "Elwood")).open_!
+        val madeline = SampleModel.find(By(SampleModel.firstName, "Madeline")).open_!
+        val archer = SampleModel.find(By(SampleModel.firstName, "Archer")).open_!
+        
+        elwood.firstName.toString must_== "Elwood"
+        madeline.firstName.toString must_== "Madeline"
+        archer.firstName.toString must_== "Archer"
+        
+        elwood.id.is must be_<(madeline.id.is)
       }
-          Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
-          Schemifier.schemify(true, ignoreLogger _, SampleModel)
-        
-          val elwood = SampleModel.find(By(SampleModel.firstName, "Elwood")).open_!
-          val madeline = SampleModel.find(By(SampleModel.firstName, "Madeline")).open_!
-          val archer = SampleModel.find(By(SampleModel.firstName, "Archer")).open_!
-        
-          elwood.firstName.toString must_== "Elwood"
-          madeline.firstName.toString must_== "Madeline"
-          archer.firstName.toString must_== "Archer"
-        
-          elwood.id.is must be_<(madeline.id.is)
-     }
     }
-  })
+ })
 
-   private def ignoreLogger(f: => AnyRef): Unit = ()
+ private def ignoreLogger(f: => AnyRef): Unit = ()
 } 
 
 object SampleModel extends SampleModel with KeyedMetaMapper[Long, SampleModel] {
@@ -78,8 +69,6 @@ class SampleModel extends KeyedMapper[Long, SampleModel] {
   def getSingleton = SampleModel // what's the "meta" server
   def primaryKeyField = id
 
-object id extends MappedLongIndex(this)
-  
-  // First Name
+  object id extends MappedLongIndex(this)
   object firstName extends MappedString(this, 32)  
 }
