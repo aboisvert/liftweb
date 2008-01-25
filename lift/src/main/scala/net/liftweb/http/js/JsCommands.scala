@@ -78,6 +78,7 @@ trait JsMethod {
 object JE {
   implicit def strToS(in: String): Str = Str(in)
   implicit def boolToJsExp(in: Boolean): JsExp = if (in) JsTrue else JsFalse
+  implicit def numToJsExp(in: Number): JsExp = Num(in)
 
   case class Num(n: Number) extends JsExp {
     def toJsCmd = n.toString
@@ -131,7 +132,52 @@ object JE {
     def toJsCmd = "true"
   }
 
+  case object JQTabsSelected extends JsExp with JQueryRight {
+    def toJsCmd = "tabsSelected()"
+  }
 
+  case object JQScrollToBottom extends JsExp with JQueryRight with JQueryLeft {
+    def toJsCmd = "each(function(i) {this.scrollTop=this.scrollHeight;})"
+  }
+
+  object JQTabsClick {
+    def apply(tab: JsExp): JsExp with JQueryRight with JQueryLeft = 
+      new JsExp with JQueryRight with JQueryLeft {
+	def toJsCmd = "tabsClick("+tab.toJsCmd+")"
+      }
+    
+    def apply(tab: Int): JsExp with JQueryRight with JQueryLeft = 
+      apply(Num(tab))
+  }
+  
+  object JQTabs {
+    def apply(in: JsExp): JsExp with JQueryRight with JQueryLeft = 
+      new JsExp with JQueryRight with JQueryLeft {
+	def toJsCmd = "tabs("+in.toJsCmd+")"
+      }
+    
+    def apply(): JsExp with JQueryRight with JQueryLeft = 
+      apply(Raw(""))
+  }
+
+  object AnonFunc {
+    def apply(in: JsCmd): JsExp = new JsExp {
+      def toJsCmd = "function() {"+in.toJsCmd+"}"
+    }
+    
+    def apply(params: String, in: JsCmd): JsExp = new JsExp {
+      def toJsCmd = "function("+params+") {"+in.toJsCmd+"}"
+    }
+  }
+  
+  object JsObj {
+    def apply(members: (String, JsExp)*): JsExp = 
+      new JsExp {
+	def toJsCmd = members.
+	map{case (n, v) => n.encJs+": "+v.toJsCmd}.
+	mkString("{", ", ", "}")
+      }
+  }
 
   /**
    * A JQuery query
