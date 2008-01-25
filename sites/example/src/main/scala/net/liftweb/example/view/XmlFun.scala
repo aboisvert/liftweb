@@ -7,10 +7,16 @@ package net.liftweb.example.view
 \*                                                 */
 
 import scala.xml.{Text, Node, NodeSeq}
-import net.liftweb.http.S
-import net.liftweb.http.S._
+import net.liftweb.http._
+import S._
+import net.liftweb.util._
 
-class XmlFun {
+class XmlFun extends LiftView {
+
+  def dispatch_& = {
+    case "index" => render _
+  }
+
   def render = {
     val addresses = addressNode("123 any street", null, "SF", "CA", "94122", "US") ::
     addressNode("456 other lane", "flat 3", "London", "", "NW3", "GB") ::
@@ -20,6 +26,7 @@ class XmlFun {
     addressNode("74 nice st", "#1801", "Chicago", "IL", "60606", "US") :: Nil
 
 val toCount = param("country") openOr {"US"}
+    Full(
     <lift:surround with="default" at="content">
 
 <p>The XML is 
@@ -31,6 +38,7 @@ val toCount = param("country") openOr {"US"}
 <p><a href='/xml_fun?country=GB'>Count GB addresses.</a></p>
     
     </lift:surround>
+    )
   }
   
   private def addressNode(line1 : String,line2 : String, city : String, state : String, zip_pc : String, country : String) = {
