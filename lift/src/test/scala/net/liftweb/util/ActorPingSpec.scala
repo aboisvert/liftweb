@@ -9,11 +9,11 @@ object ActorPingSpecRunner extends ConsoleRunner(ActorPingSpec)
 object ActorPingSpec extends Specification with PingedService with WaitFor {
   "The ActorPing object" should {
     "provide a schedule method to ping an actor regularly" in {
-    //  waitFor(100.ms) {
-    //    service.start
-    //    ActorPing.schedule(service, Alive, 10)
-    //  } 
-    //  service.pinged must beTrue
+      waitFor(100.ms) {
+        service.start
+        ActorPing.schedule(service, Alive, 10)
+      } 
+      service.pinged must beTrue
     }
   }
 }
