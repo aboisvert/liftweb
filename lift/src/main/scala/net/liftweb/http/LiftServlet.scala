@@ -98,7 +98,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         session.putValue(actorNameConst, ret)
         ret
     }
-    // ret.breakOutComet()
+    ret.breakOutComet()
     ret
   }
   
@@ -145,8 +145,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       val resp: Response = if (LiftServlet.ending) {
         session.createNotFound.toResponse
       } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
-        
-         
 	S.init(session, sessionActor) {
 	  val f = LiftServlet.dispatchTable(request)(toMatch)
 	  f(request) match {
@@ -156,40 +154,40 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 	  }
 	}
       } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
-        sessionActor.breakOutComet()
+        // sessionActor.breakOutComet()
         sessionActor.enterComet(self)
         try {
-        S.init(session, sessionActor) {
-        val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
-        
-        def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
-          receiveWithin(len) {
-            case TIMEOUT => in
-            case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
-            case BreakOut => drainTheSwamp(0, in)
-            case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
+          S.init(session, sessionActor) {
+            val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+            
+            def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+              receiveWithin(len) {
+		case TIMEOUT => in
+		case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
+		case BreakOut => drainTheSwamp(0, in)
+		case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
+              }
+            }
+            
+            drainTheSwamp(0, Nil)
+            
+            if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
+            else {
+              
+              actors.foreach{case (act, when) => act ! Listen(when)}
+	      
+              val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
+              
+              actors.foreach{case (act, _) => act ! Unlisten}
+              
+              val ret2 = drainTheSwamp(100L, ret)
+              
+              val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
+              val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
+	      
+              (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+            }
           }
-        }
-        
-        drainTheSwamp(0, Nil)
-        
-        if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
-        else {
-        
-        actors.foreach{case (act, when) => act ! Listen(when)}
-
-        val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
-        
-        actors.foreach{case (act, _) => act ! Unlisten}
-        
-        val ret2 = drainTheSwamp(100L, ret)
-        
-        val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
-        val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
-
-        (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
-        }
-        }
         } finally {
           sessionActor.exitComet(self)
         }
