@@ -175,7 +175,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  // For vals, add "AND $fieldname = ? [OR $fieldname = ?]*" to the query. The number
 	  // of fields you add onto the query is equal to vals.length
 	  case ByList(field, vals) => 
-	    val start = if (wav) "AND " else {"WHERE "; wav = true}
+	    val start = if (wav) "AND " else {wav=true; "WHERE "}
 	    updatedWhat = updatedWhat +
 	  vals.map(v => field.dbColumnName+ " = ?").
 	  mkString(start+" (", " OR ", ")")
