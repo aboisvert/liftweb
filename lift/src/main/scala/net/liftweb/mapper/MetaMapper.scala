@@ -179,10 +179,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	    var firstAnd = false
 	    vals.foreach(v => {
 	      val clause =  if (wav) {
-		// Our query must be of the form AND x = ? [OR x = ?]*
+		// Our query must be of the form AND x = ? [OR x = ?]* if a WHERE preceeds it.
 		(if (!firstAnd) { firstAnd = true; " AND " } else {" OR "}) + field.name + " = ? " 
 	      } else {
 		wav = true
+		// If there was no previous where clause, then firstAnd is not needed.
+		firstAnd = true
 		"WHERE " + field.name + " = ? "
 	      }
 	      updatedWhat = updatedWhat + clause

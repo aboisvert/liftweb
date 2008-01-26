@@ -118,6 +118,8 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     ov.foreach(v => this.set(v))
     fieldOwner
   }
+
+  def apply(ov: String): T = apply(Full(ov))
   
   def jdbcFriendly(field : String): String = data.get
   
