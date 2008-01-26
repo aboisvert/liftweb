@@ -174,7 +174,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  
 	  // For vals, add "AND $fieldname = ? [OR $fieldname = ?]*" to the query. The number
 	  // of fields you add onto the query is equal to vals.length
-	  case ByList(field, vals) => {
+	  case ByList(field, vals) => 
+	    val start = if (wav) "AND " else {"WHERE "; wav = true}
+	    updatedWhat = updatedWhat +
+	  vals.map(v => field.dbColumnName+ " = ?").
+	  mkString(start+" (", " OR ", ")")
+	  /*
+	  {
 	    // Have we already added the AND?
 	    var firstAnd = false
 	    vals.foreach(v => {
@@ -190,6 +196,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	      updatedWhat = updatedWhat + clause
 	    })
 	  }
+	  */
+
 	  // Executes a subquery with {@code query}
           case BySql(query, _*) => 
             updatedWhat = updatedWhat + whereOrAnd + " ( "+ query +" ) "
@@ -207,10 +215,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.targetSQLType)
       setStatementFields(st, xs, curPos + 1)
 
-      case ByList(field, vals: List[Long]) :: xs => {
+      case ByList(field, vals) :: xs => {
 	var newPos = curPos
 	vals.foreach(v => {
-	  st.setLong(newPos, v.asInstanceOf[Long])
+	  st.setObject(newPos, 
+		       field.convertToJDBCFriendly(v), 
+		       field.targetSQLType)
 	  newPos = newPos + 1
 	})
 	setStatementFields(st, xs, newPos)
