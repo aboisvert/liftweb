@@ -52,7 +52,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     try {
     LiftServlet.ending = true
     Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
-    ActorPing.snapshot
     Scheduler.shutdown 
     ActorPing.shutdown
     Log.debug("Destroyed servlet")
@@ -67,7 +66,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   def init = {
     try {
       // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
-      ActorPing.start
       LiftServlet.ending = false
       LiftServlet.addDispatchAfter({
         case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftServlet.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)

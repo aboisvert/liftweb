@@ -21,10 +21,6 @@ import java.util.concurrent._
  * The schedule methods return a ScheduledFuture object which can be cancelled if necessary
  */
 object ActorPing {
-  def start: Unit = {}
-  
-  def snapshot: Unit = {}
-  
   /** 
    * shutdown the underlying <code>SingleThreadScheduledExecutor</code>
    */
