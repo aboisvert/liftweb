@@ -209,12 +209,12 @@ class RequestState(val paramNames: List[String], val params: Map[String, List[St
   
   def createNotFound = {
     XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
-        ResponseInfo.xhtmlTransitional(this) , Nil, 404)
+        ResponseInfo.docType(this) , Nil, 404)
   }
   
   def createNotFound(failure: Failure) = { // FIXME do failure stuff
     XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
-        ResponseInfo.xhtmlTransitional(this) , Nil, 404)
+        ResponseInfo.docType(this) , Nil, 404)
   }
   
 

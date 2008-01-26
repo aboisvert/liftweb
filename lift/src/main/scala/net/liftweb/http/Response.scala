@@ -61,7 +61,8 @@ object DocType {
 }
 
 object ResponseInfo {
-  var xhtmlTransitional: PartialFunction[RequestState, Can[String]] = {
+  var docType: PartialFunction[RequestState, Can[String]] = {
+    case _ if S.getDocType._1 => S.getDocType._2
     case _ => Full(DocType.xhtmlTransitional)
   }
 }

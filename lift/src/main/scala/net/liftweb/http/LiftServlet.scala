@@ -610,7 +610,7 @@ object LiftServlet {
 
   private def cvt(ns: Node, headers: List[(String, String)], session: RequestState) = 
     convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
-				    ResponseInfo.xhtmlTransitional(session),
+				    ResponseInfo.docType(session),
 				    headers, 200), headers, session) )
   
   var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
@@ -669,11 +669,11 @@ object LiftServlet {
     XhtmlResponse((<html><body>Exception occured while processing {r.uri} 
     <pre>{
       _showException(e)     
-    }</pre></body></html>),ResponseInfo.xhtmlTransitional(r), List("Content-Type" -> "text/html"), 500)
+    }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
 
     case (_, r, e) => 
     XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri} 
-    </body></html>),ResponseInfo.xhtmlTransitional(r), List("Content-Type" -> "text/html"), 500)
+    </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
   }
    
   /**

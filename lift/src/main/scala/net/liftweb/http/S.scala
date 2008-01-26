@@ -48,7 +48,7 @@ object S {
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
-  private val _responseHeaders = new ThreadGlobal[Map[String, String]]
+  private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   
   /**
    * Get the current RequestState
@@ -280,14 +280,31 @@ object S {
   }
 
   def setHeader(name: String, value: String) {
-    _responseHeaders.set(_responseHeaders.value + ( (name, value )))
+    Can(_responseHeaders.value).foreach(
+      rh =>
+	rh.headers = rh.headers + name -> value
+    )
   }
   
   def getHeaders(in: List[(String, String)]): List[(String, String)] = {
-    val rh = _responseHeaders.value
-    rh.elements.toList ::: 
-    in.filter{case (n, v) => !rh.contains(n)}
+    Can(_responseHeaders.value).map(
+      rh =>
+	rh.headers.elements.toList ::: 
+      in.filter{case (n, v) => !rh.headers.contains(n)}
+      ).openOr(Nil)
   }
+
+  def setDocType(what: Can[String]) {
+    Can(_responseHeaders.value).foreach(
+      rh =>
+	rh.docType = what
+      )
+  }
+  
+  def getDocType: (Boolean, Can[String]) =
+    Can(_responseHeaders.value).map(
+      rh => (rh.overrodeDocType, rh.docType)
+      ).openOr( (false, Empty) )
   
   private def _innerInit[B](f: () => B): B = {
     _attrs.doWith(new TreeMap) {
@@ -313,7 +330,7 @@ object S {
     doAround(aroundRequest,
 	     this._request.doWith(request) {
 	       _sessionInfo.doWith(session) {
-		 _responseHeaders.doWith(Map.empty) {
+		 _responseHeaders.doWith(new ResponseInfoHolder) {
 		   _requestVar.doWith(new HashMap) {
 		     _innerInit(f)
 		   }
@@ -932,3 +949,17 @@ object AnyVar {
 
 case class JSONCmd(command: String, target: String, params: Any,
 		   all: HashMap[String, Any])
+
+class ResponseInfoHolder {
+  var headers: Map[String, String] = Map.empty
+  private var _docType: Can[String] = Empty
+  private var _setDocType = false
+
+  def docType = _docType
+  def docType_=(in: Can[String]) {
+    _docType = in
+    _setDocType = true
+  }
+
+  def overrodeDocType = _setDocType
+}
