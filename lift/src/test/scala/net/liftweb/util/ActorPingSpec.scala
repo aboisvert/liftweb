@@ -9,11 +9,25 @@ object ActorPingSpecRunner extends ConsoleRunner(ActorPingSpec)
 object ActorPingSpec extends Specification with PingedService with WaitFor {
   "The ActorPing object" should {
     "provide a schedule method to ping an actor regularly" in {
-      waitFor(100.ms) {
-        service.start
-        ActorPing.schedule(service, Alive, 10)
-      } 
+      service.start
+      ActorPing.schedule(service, Alive, 10)
+      waitFor(100.ms)
       service.pinged must beTrue
+    }
+  }
+}
+trait PingedService {
+  case object Alive
+  val service = new Service
+  
+  class Service extends Actor {
+    var pinged = false
+    def act() {
+      while (true) {
+        receive {
+          case Alive => {pinged = true; exit()}
+        }
+      }
     }
   }
 }
@@ -25,26 +39,6 @@ trait WaitFor {
     def s = {timeUnit = TimeUnit.SECONDS; this}
     def millis = if (timeUnit == TimeUnit.MILLISECONDS) i else i * 1000
   }
-  def waitFor[T](delay: Delay)(action: => T): T = {
-    waitFor(delay.millis)(action)
-  }
-  def waitFor[T](i: Int)(action: => T): T = {
-    val result = action
-    Thread.sleep(i)
-    result
-  }
-}
-trait PingedService {
-  case object Alive
-  val service = new Service
-  class Service extends Actor {
-    var pinged = false
-    def act() {
-      while (true) {
-        receive {
-          case Alive => {pinged = true; exit()}
-        }
-      }
-    }
-  }
+  def waitFor(delay: Delay): Unit = waitFor(delay.millis)
+  def waitFor(i: Int): Unit = Thread.sleep(i)
 }
