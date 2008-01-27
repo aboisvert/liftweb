@@ -7,7 +7,7 @@ import java.util.concurrent._
 class ActorPingSpecTest extends JUnit3(ActorPingSpec)
 object ActorPingSpecRunner extends ConsoleRunner(ActorPingSpec)
 object ActorPingSpec extends Specification with PingedService with WaitFor {
-  "The ActorPing object" should {
+  "The ActorPing object" should { usingBefore {() => ActorPing.restart }
     "provide a schedule method to ping an actor regularly" in {
       service.start
       ActorPing.schedule(service, Alive, 10)

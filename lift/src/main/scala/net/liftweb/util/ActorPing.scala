@@ -21,6 +21,15 @@ import java.util.concurrent._
  * The schedule methods return a ScheduledFuture object which can be cancelled if necessary
  */
 object ActorPing {
+
+  /** underlying <code>ScheduledExecutor</code> from the java concurrency library */
+  private var service = Executors.newSingleThreadScheduledExecutor(TF)
+  
+  /** 
+   * recreates the underlying <code>SingleThreadScheduledExecutor</code>
+   */
+  def restart: Unit = { service = Executors.newSingleThreadScheduledExecutor(TF) }
+
   /** 
    * shutdown the underlying <code>SingleThreadScheduledExecutor</code>
    */
@@ -37,11 +46,14 @@ object ActorPing {
    */
   def schedule(to: Actor, msg: Any, delay: Long, tu: TimeUnit): ScheduledFuture = {
     val r = new Runnable { def run { to ! msg } }
-    service.schedule(r, delay, tu)
+    try {
+      service.schedule(r, delay, tu)
+    }
+    catch { case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)}
   }
-  
-  private val service = Executors.newSingleThreadScheduledExecutor(TF)
 }
+/** ActorPing Exception thrown if the ping can't be scheduled */
+case class ActorPingException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
 private object TF extends ThreadFactory {
   val threadFactory = Executors.defaultThreadFactory()
