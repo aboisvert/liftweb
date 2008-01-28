@@ -1,6 +1,7 @@
 package net.liftweb.util
 import org.specs._
 import org.specs.runner._
+import org.specs.util.WaitFor
 import scala.actors.Actor
 import java.util.concurrent._
 
