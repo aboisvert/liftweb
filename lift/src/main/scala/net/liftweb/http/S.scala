@@ -12,11 +12,11 @@ import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Grou
 import scala.collection.immutable.{ListMap, TreeMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
 import scala.util.parsing.json._
-import net.liftweb.mapper.{Safe, ValidationIssue, MegaProtoUser}
+import net.liftweb.mapper.{ValidationIssue}
 import Helpers._
 import js._
 import java.io.InputStream
-import java.util.{Locale, ResourceBundle}
+import java.util.{Locale, TimeZone, ResourceBundle}
 
 /**
  * An object representing the current state of the HTTP request and response
@@ -95,6 +95,12 @@ object S {
    * default Locale for this JVM.
    */
   def locale: Locale = LiftServlet.localeCalculator(request.map(_.request))
+
+  /**
+   * Return the current timezone
+   */
+  def timeZone: TimeZone = 
+    LiftServlet.timeZoneCalculator(request.map(_.request))
 
   private def reduxio(in: List[LiftServlet.DispatchPf]): LiftServlet.DispatchPf = in match {
     case Nil => Map.empty

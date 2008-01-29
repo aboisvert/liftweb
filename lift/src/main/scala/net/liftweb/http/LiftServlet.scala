@@ -36,7 +36,7 @@ import js._
 import javax.servlet._
 import javax.servlet.http._
 import java.io.ByteArrayOutputStream
-import java.util.Locale
+import java.util.{Locale, TimeZone}
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into 
@@ -396,6 +396,16 @@ object LiftServlet {
     // test_boot
     _early
   }
+
+  /**
+    * A function that takes the current HTTP request and returns the current 
+    */
+  var timeZoneCalculator: Can[HttpServletRequest] => TimeZone = 
+    defaultTimeZoneCalculator _
+
+  def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone =
+    TimeZone.getDefault
+  
   
   /**
     * A function that takes the current HTTP request and returns the current 
