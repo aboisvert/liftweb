@@ -7,7 +7,7 @@ package net.liftweb.textile
  \*                                                 */
 
 import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
-import scala.xml.{MetaData, NodeSeq, Elem, Null, Text, TopScope, Unparsed, UnprefixedAttribute}
+import scala.xml.{MetaData, NodeSeq, Elem, Null, Text, TopScope, Unparsed, UnprefixedAttribute, Group, Node}
 import scala.collection.mutable.HashMap
 import net.liftweb.util._
 
@@ -63,7 +63,19 @@ object TextileParser extends Application {
   def toHtml(toParse: String, wikiUrlFunc: Can[String => String]): NodeSeq = {
     parse(toParse, wikiUrlFunc).map(_.toHtml) getOrElse Text("")
   }
+  
+  def toHtml(toParse: String): NodeSeq = {
+    parse(toParse, Empty).map(_.toHtml) getOrElse Text("")
+  }
 
+  def paraFixer(in: NodeSeq): NodeSeq = in match {
+    case g: Group => paraFixer(g.nodes)
+    case e: Elem if e.label == "p" => e.child
+    case e: Elem => e
+    case ns: Seq[Node] if ns.length == 2 &&
+    ns(1).text.trim.length == 0 => paraFixer(ns(0))
+    case x => x
+  }
   
   /**
    * the thing that actually does the textile parsing

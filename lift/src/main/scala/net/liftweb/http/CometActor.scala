@@ -162,7 +162,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     S.initIfUninitted(theSession) {
       lastRendering = render ++ jsonInCode
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
-      val rendered: AnswerRender = AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), this, lastRenderTime, sendAll)// buildRendered(lastRendering, lastRenderTime)
+      
+      val rendered: AnswerRender = 
+      AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), 
+      this, lastRenderTime, sendAll)
+      
       listeners.toList.foreach(_ ! rendered)
       listeners.clear
       rendered

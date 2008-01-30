@@ -61,31 +61,31 @@ object S {
     * Gets the list of templaters (partial functions that match and return a template rather than
     * loading a template from a file or a class)
     */
-  def sessionTemplater: List[TemplateHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionTemplateTableName) match {
+  def sessionTemplater: List[TemplateHolder] = 
+  servletSession.toList.
+  flatMap(_.getAttribute(LiftServlet.SessionTemplateTableName) match {
     case rw: List[TemplateHolder] => rw
     case _ => Nil
   })
+  
 
   
   /**
-    * Returns the Action (uri) for the current render scope
-    */
-  // def action: String = request.map(_.uri).openOr("")
-  
-  /**
-    * Returns session-specific request re-writers
-    */
-  def sessionRewriter: List[RewriteHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionRewriteTableName) match {
-  case rw: List[RewriteHolder] => rw
-  case _ => Nil
+  * Returns session-specific request re-writers
+  */
+  def sessionRewriter: List[RewriteHolder] = 
+  servletSession.toList.
+  flatMap(_.getAttribute(LiftServlet.SessionRewriteTableName) match {
+    case rw: List[RewriteHolder] => rw
+    case _ => Nil
   })
-    
+
   /**
-    * Returns a list of session-specific dispatchers
-    */
+  * Returns a list of session-specific dispatchers
+  */
   def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionDispatchTableName) match {
-  case rw: List[DispatchHolder] => rw
-  case _ => Nil
+    case rw: List[DispatchHolder] => rw
+    case _ => Nil
   })
 
   /**
@@ -507,7 +507,7 @@ object S {
     /**
       * Create an anchor that will run a JavaScript command when clicked
       */
-    def a(body: NodeSeq, cmd: JsCmd): Elem = (<a href="#" onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)
+    def a(body: NodeSeq, cmd: JsCmd): Elem = (<a href="javascript://" onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)
 
     /**
       * Create a span that will run a JavaScript command when clicked
