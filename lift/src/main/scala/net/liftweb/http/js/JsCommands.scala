@@ -25,7 +25,7 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
   }
 }
 
-case class JSONCall(funcId: String) {
+case class JsonCall(funcId: String) {
   def apply(command: String): JsCmd = apply(JE.Str(command))
 
   def apply(command: JsExp): JsCmd = 
@@ -84,14 +84,14 @@ object JE {
     def toJsCmd = n.toString
   }
 
-  case class JSArray[T <% JsExp](in: T*) extends JsExp {
+  case class JsArray[T <% JsExp](in: T*) extends JsExp {
     def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]")
   }
   
   /**
    * gets the element by ID
    */
-  case class E(id: String) extends JsExp {
+  case class ElemById(id: String) extends JsExp {
     override def toJsCmd = "document.getElementById("+id.encJs+")"
   }
 
@@ -105,18 +105,18 @@ object JE {
   /**
    * A JavaScript method that takes parameters
    */
-  case class M(method: String, params: JsExp*) extends JsMethod {
+  case class JsFunc(method: String, params: JsExp*) extends JsMethod {
     def toJsCmd = params.map(_.toJsCmd).mkString(method+"(", ", ", ")")
   }
 
-  case class Raw(rawJsCmd: String) extends JsExp {
+  case class JsRaw(rawJsCmd: String) extends JsExp {
     def toJsCmd = rawJsCmd
   }
   
   /**
    * A value that can be retrieved from an expression
    */
-  case class V(valueName: String) extends JsMethod {
+  case class JsVal(valueName: String) extends JsMethod {
     def toJsCmd = valueName
   }
   
@@ -132,15 +132,15 @@ object JE {
     def toJsCmd = "true"
   }
 
-  case object JQTabsSelected extends JsExp with JQueryRight {
+  case object JqTabsSelected extends JsExp with JQueryRight {
     def toJsCmd = "tabsSelected()"
   }
 
-  case object JQScrollToBottom extends JsExp with JQueryRight with JQueryLeft {
+  case object JqScrollToBottom extends JsExp with JQueryRight with JQueryLeft {
     def toJsCmd = "each(function(i) {this.scrollTop=this.scrollHeight;})"
   }
 
-  object JQTabsClick {
+  object JqTabsClick {
     def apply(tab: JsExp): JsExp with JQueryRight with JQueryLeft = 
       new JsExp with JQueryRight with JQueryLeft {
 	def toJsCmd = "tabsClick("+tab.toJsCmd+")"
@@ -150,14 +150,14 @@ object JE {
       apply(Num(tab))
   }
   
-  object JQTabs {
+  object JqTabs {
     def apply(in: JsExp): JsExp with JQueryRight with JQueryLeft = 
       new JsExp with JQueryRight with JQueryLeft {
 	def toJsCmd = "tabs("+in.toJsCmd+")"
       }
     
     def apply(): JsExp with JQueryRight with JQueryLeft = 
-      apply(Raw(""))
+      apply(JsRaw(""))
   }
 
   object AnonFunc {
@@ -182,50 +182,50 @@ object JE {
   /**
    * A JQuery query
    */
-  case class JQ(query: JsExp) extends JsExp with JQueryLeft {
+  case class Jq(query: JsExp) extends JsExp with JQueryLeft {
     override def toJsCmd = "jQuery("+query.toJsCmd+")"
   }
 
   /**
    * A JQuery query for an element based on the id of the element
    */
-  case class JQId(id: JsExp) extends JsExp with JQueryLeft {
+  case class JqId(id: JsExp) extends JsExp with JQueryLeft {
     override def toJsCmd = "jQuery('#'+"+id.toJsCmd+")"
   }
   
-  case class JQAttr(key: String, value: JsExp) extends JsExp with JQueryRight with JQueryLeft {
+  case class JqAttr(key: String, value: JsExp) extends JsExp with JQueryRight with JQueryLeft {
     def toJsCmd = "attr("+key.encJs+", "+value.toJsCmd+")"
   }
   
   /**
    * Append content to a JQuery
    */
-  case class JAppend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+  case class JqAppend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "append("+fixHtml("inline", content)+")"
   }
 
   /**
    * AppendTo content to a JQuery
    */
-  case class JAppendTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+  case class JqAppendTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "appendTo("+fixHtml("inline", content)+")"
   }
 
   /**
    * Append content to a JQuery
    */
-  case class JPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+  case class JqPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prepend("+fixHtml("inline", content)+")"
   }
 
   /**
    * Append content to a JQuery
    */
-  case class JPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+  case class JqPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
   }
 
-  object JHtml {
+  object JqHtml {
     def apply() = new JsExp with JQueryRight {
       def toJsCmd = "html()"
     }
@@ -235,7 +235,7 @@ object JE {
     }
   }
 
-  object JText {
+  object JqText {
     def apply() = new JsExp with JQueryRight {
       def toJsCmd = "text()"
     }
@@ -326,7 +326,7 @@ case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
 
 object AppendHtml {
   def apply(uid: String, content: NodeSeq): JsCmd =
-    JE.JQId(JE.Str(uid)) >> JE.JAppend(content)
+    JE.JqId(JE.Str(uid)) >> JE.JqAppend(content)
 }
 
 

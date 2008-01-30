@@ -468,7 +468,7 @@ object S {
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
         
-  def buildJSONFunc(f: Any => JsCmd): (JSONCall, JsCmd) = {
+  def buildJSONFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
       val key = "F"+System.nanoTime+"_"+randomString(3)
 
     def checkCmd(in: Any) = in match {
@@ -486,7 +486,7 @@ object S {
       
       addFunctionMap(key, jsonCallback _)
       
-      (JSONCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, type: 'POST', data: '"+
+      (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, type: 'POST', data: '"+
         key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
     }
         
@@ -558,7 +558,7 @@ object S {
   def jsonText(value: String, json: JsExp => JsCmd): Elem = {
     (<input type="text" value={value}/>) %
   ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-  ("onblur" -> (json(JE.Raw("this.value")).toJsCmd))
+  ("onblur" -> (json(JE.JsRaw("this.value")).toJsCmd))
  }
    
    def ajaxText(value: String, func: String => JsCmd): Elem = 
@@ -862,18 +862,18 @@ object NoticeType extends Enumeration {
 
 abstract class JSONHandler {
   private val name = "_lift_json_"+getClass.getName
-  private def handlers: (JSONCall, JsCmd) = 
+  private def handlers: (JsonCall, JsCmd) = 
     S.servletSession.map(s => s.getAttribute(name) match 
-			 {case Full((x: JSONCall, y: JsCmd)) => 
+			 {case Full((x: JsonCall, y: JsCmd)) => 
 			   (x, y)
 			  case _ => 
-			    val ret: (JSONCall, JsCmd) = 
+			    val ret: (JsonCall, JsCmd) = 
 			      S.buildJSONFunc(this.apply)
 			  s.setAttribute(name, Full(ret))
 			  ret
-			}).openOr( (JSONCall(""), JsCmds.Noop) )
+			}).openOr( (JsonCall(""), JsCmds.Noop) )
 
-  def call: JSONCall = handlers._1
+  def call: JsonCall = handlers._1
 
   def jsCmd: JsCmd = handlers._2
 

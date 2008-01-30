@@ -40,8 +40,8 @@ class Json {
     <option value="error">Show an error</option>
     </select>
     <br />
-    <button onclick={json.call(E("json_select") ! Value,
-			       E("json_question") ! Value).toJsCmd
+    <button onclick={json.call(ElemById("json_select") ! Value,
+			       ElemById("json_question") ! Value).toJsCmd
 		   }>Click Me</button>
     <div id="json_result"></div>
     </span>
