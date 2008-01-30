@@ -26,6 +26,8 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
 }
 
 case class JsonCall(funcId: String) {
+  def exp(exp: JsExp): JsCmd = JsCmds.Run(funcId+"("+exp.toJsCmd+");")
+  
   def apply(command: String): JsCmd = apply(JE.Str(command))
   
   def apply(command: JsExp): JsCmd = 

@@ -468,12 +468,12 @@ object S {
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
         
-  def buildJSONFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
+  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
       val key = "F"+System.nanoTime+"_"+randomString(3)
 
     def checkCmd(in: Any) = in match {
       case v: HashMap[String, Any] if v.isDefinedAt("command") => 
-	JSONCmd(v("command").toString, v.get("target").
+	JsonCmd(v("command").toString, v.get("target").
 		map{case null => null case x => x.toString}.getOrElse(null),
 		v.get("params").getOrElse(None), v)
 
@@ -860,7 +860,7 @@ object NoticeType extends Enumeration {
   val Notice, Warning, Error = Value
 }
 
-abstract class JSONHandler {
+abstract class JsonHandler {
   private val name = "_lift_json_"+getClass.getName
   private def handlers: (JsonCall, JsCmd) = 
     S.servletSession.map(s => s.getAttribute(name) match 
@@ -868,7 +868,7 @@ abstract class JSONHandler {
 			   (x, y)
 			  case _ => 
 			    val ret: (JsonCall, JsCmd) = 
-			      S.buildJSONFunc(this.apply)
+			      S.buildJsonFunc(this.apply)
 			  s.setAttribute(name, Full(ret))
 			  ret
 			}).openOr( (JsonCall(""), JsCmds.Noop) )
@@ -953,7 +953,7 @@ object AnyVar {
   implicit def whatRequestVarIs[T](in: RequestVar[T]): Can[T] = in.is
 }
 
-case class JSONCmd(command: String, target: String, params: Any,
+case class JsonCmd(command: String, target: String, params: Any,
 		   all: HashMap[String, Any])
 
 class ResponseInfoHolder {

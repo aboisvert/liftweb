@@ -17,13 +17,13 @@ import Helpers._
 import scala.xml. _
 
 class Json {
-  object json extends JSONHandler {
+  object json extends JsonHandler {
     def apply(in: Any): JsCmd = 
       SetHtml("json_result", in match {
-	case JSONCmd("show", _, p: String, _) => Text(p)
-	case JSONCmd("textile", _, p: String, _) => 
+	case JsonCmd("show", _, p: String, _) => Text(p)
+	case JsonCmd("textile", _, p: String, _) => 
 	  TextileParser.toHtml(p, Empty)
-	case JSONCmd("count", _, p: String, _) => Text(p.length+" Characters")
+	case JsonCmd("count", _, p: String, _) => Text(p.length+" Characters")
 	case x => <b>Problem... didn't handle JSON message {x}</b>
       })
   }

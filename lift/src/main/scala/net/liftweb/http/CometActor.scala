@@ -52,9 +52,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def parentTag = <span/>
 
-  def handleJSON(in: Any): JsCmd = Noop
+  def handleJson(in: Any): JsCmd = Noop
 
-  lazy val (jsonCall, jsonInCode) = S.buildJSONFunc(handleJSON)
+  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(handleJson)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
       parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))
