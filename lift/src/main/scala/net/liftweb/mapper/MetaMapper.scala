@@ -175,28 +175,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  // For vals, add "AND $fieldname = ? [OR $fieldname = ?]*" to the query. The number
 	  // of fields you add onto the query is equal to vals.length
 	  case ByList(field, vals) => 
-	    val start = if (wav) "AND " else {wav=true; "WHERE "}
-	    updatedWhat = updatedWhat +
-	  vals.map(v => field.dbColumnName+ " = ?").
-	  mkString(start+" (", " OR ", ")")
-	  /*
-	  {
-	    // Have we already added the AND?
-	    var firstAnd = false
-	    vals.foreach(v => {
-	      val clause =  if (wav) {
-		// Our query must be of the form AND x = ? [OR x = ?]* if a WHERE preceeds it.
-		(if (!firstAnd) { firstAnd = true; " AND " } else {" OR "}) + field.name + " = ? " 
-	      } else {
-		wav = true
-		// If there was no previous where clause, then firstAnd is not needed.
-		firstAnd = true
-		"WHERE " + field.name + " = ? "
+	    vals match {
+	      case Nil => // Do nothing if there are no vals sent
+	      case _ => {
+		val start = if (wav) "AND " else {wav=true; "WHERE "}
+		updatedWhat = updatedWhat +
+		vals.map(v => field.dbColumnName+ " = ?").mkString(start+" (", " OR ", ")")
 	      }
-	      updatedWhat = updatedWhat + clause
-	    })
-	  }
-	  */
+	    }
 
 	  // Executes a subquery with {@code query}
           case BySql(query, _*) => 
