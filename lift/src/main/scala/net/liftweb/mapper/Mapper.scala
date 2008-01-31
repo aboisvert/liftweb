@@ -80,7 +80,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     * fields for JSON object, put the calculated fields
     * here
     */
-  def suplimentalJs: List[(String, JsExp)] = Nil
+  def suplementalJs: List[(String, JsExp)] = Nil
   
   def validate : List[ValidationIssue] = {
     runSafe {
@@ -238,7 +238,7 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
                                    
   def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField)) openOr this    
   
-  def asSafeJs(f: KeyType => JsExp): JsExp = getSingleton.asSafeJs(this, f)
+  def asSafeJs(f: KeyObfuscator): JsExp = getSingleton.asSafeJs(this, f)
   
   override def equals(other: Any): Boolean = {
     other match {

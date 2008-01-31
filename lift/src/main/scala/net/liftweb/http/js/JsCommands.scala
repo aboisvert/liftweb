@@ -95,7 +95,7 @@ object JE {
   }
   
   case class JsArray[T <% JsExp](in: T*) extends JsExp {
-    def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]")
+    def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]\n")
   }
   
   case class ValById(id: String) extends JsExp {
@@ -200,7 +200,7 @@ object JE {
     new JsExp {
       def toJsCmd = members.
       map{case (n, v) => n.encJs+": "+v.toJsCmd}.
-      mkString("{", ", ", "}")
+      mkString("{", ", ", "}\n")
     }
   }
   

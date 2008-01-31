@@ -147,6 +147,8 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     case _ => super.equals(other)
   }
   
+  def dbKeyToTable: KeyedMetaMapper[KeyType, Other]
+  
   def validSelectValues: Can[List[(KeyType, String)]] = Empty
   
   def immutableMsg: NodeSeq = Text(?("Can't change"))

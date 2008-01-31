@@ -283,8 +283,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   ).openOr(false)
   
 
+  type AnyBound = T forSome {type T}
   
-  private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
+  private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyBound, A]]
   
   def dirty_?(toTest: A) : boolean = {
     mappedFieldArray.foreach {
@@ -711,7 +712,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def asJs(actual: A): JsExp = {
     JE.JsObj(mappedFieldArray.
     map(f => ??(f.method, actual)).filter(_.renderJs_?).map(_.asJs).toList :::
-    actual.suplimentalJs :_*)
+    actual.suplementalJs :_*)
   }
   
   /**
@@ -922,7 +923,8 @@ object NotNullRef {
 trait LongKeyedMetaMapper[A <: LongKeyedMapper[A]] extends KeyedMetaMapper[Long, A] { self: A => }
 
 
-trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] { self: A =>
+trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] { 
+  self: A  with MetaMapper[A] with KeyedMapper[Type, A] =>
  
   private def testProdArity(prod: Product): boolean = {
     var pos = 0
@@ -933,13 +935,20 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     true
   }
   
-  def asSafeJs(actual: A, f: Type => JsExp): JsExp = {
+  type Q = MappedField[AnyBound, A] with MappedForeignKey[AnyBound, A, OO] forSome 
+  {type OO <: KeyedMapper[AnyBound, OO]}
+  
+  def asSafeJs(actual: A, f: KeyObfuscator): JsExp = {
     val pk = actual.primaryKeyField
-    val first = (pk.name, f(pk.is))
+    val first = (pk.name, JE.Str(f.obscure(self, pk.is)))
     JE.JsObj(first :: mappedFieldArray.
     map(f => this.??(f.method, actual)).
-    filter(f => !f.dbPrimaryKey_? && f.renderJs_?).map(_.asJs).toList :::
-    actual.suplimentalJs :_*)
+    filter(f => !f.dbPrimaryKey_? && f.renderJs_?).map{
+      case fk: Q => 
+      (fk.name, JE.Str(f.obscure(fk.dbKeyToTable, fk.is)))
+      
+    case x => x.asJs}.toList :::
+    actual.suplementalJs :_*)
   }
   
   private def convertToQPList(prod: Product): Array[QueryParam[A]] = {
@@ -1162,3 +1171,30 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 }
 
 case class FieldHolder[T](name: String, method: Method, field: MappedField[_, T]) 
+
+class KeyObfuscator {
+  private val to: HashMap[Any, HashMap[Any, String]] = new HashMap
+  private val from: HashMap[Any, HashMap[String, Any]] = new HashMap
+  
+  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
+  KeyedMetaMapper[KeyType, MetaType], key: KeyType): String = {
+    val local = to.getOrElse(theType, new HashMap)
+    local.get(key) match {
+      case Some(s) => s
+      case _ => val ret = "r"+randomString(15)
+      local(key) = ret
+      to(theType) = local
+      
+      val lf = from.getOrElse(theType, new HashMap)
+      lf(ret) = key
+      from(theType) = lf
+      
+      ret
+    }
+  }
+  
+  def recover[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
+  KeyedMetaMapper[KeyType, MetaType], id: String): Can[KeyType] = {
+    Can(from.get(theType)).flatMap(h => Can(h.get(id)).map(_.asInstanceOf[KeyType]))
+  }
+}
