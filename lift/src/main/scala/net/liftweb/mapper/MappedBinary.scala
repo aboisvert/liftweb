@@ -10,6 +10,7 @@ import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import java.util.Date
 import net.liftweb.util.FatLazy 
+import net.liftweb.http.js._
 
 class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[Byte], T] {
   private val data : FatLazy[Array[Byte]] =  FatLazy(defaultValue)
@@ -42,6 +43,10 @@ class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[By
   protected def i_obscure_!(in : Array[Byte]) : Array[Byte] = {
     new Array[Byte](0)
   }
+  
+  override def renderJs_? = false
+  
+  def asJsExp = throw new NullPointerException("No way")
   
   override def setFromAny(f: Any): Array[Byte] =
     this.set((if (f == null) null
@@ -102,6 +107,8 @@ class MappedText[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T]
   
   protected[mapper] def doneWithSave() {orgData.setFrom(data)}
 
+    def asJsExp: JsExp = JE.Str(is)
+  
   protected def i_obscure_!(in: String): String = ""
   
   override def setFromAny(f: Any): String =
@@ -178,6 +185,8 @@ class MappedFakeClob[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   protected[mapper] def doneWithSave() {orgData.setFrom(data)}
 
   protected def i_obscure_!(in: String): String = ""
+  
+    def asJsExp: JsExp = JE.Str(is)
   
   override def setFromAny(f: Any): String =
     this.set(f match {

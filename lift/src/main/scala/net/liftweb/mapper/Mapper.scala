@@ -12,6 +12,7 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
 import net.liftweb.http.S
 import S._
+import net.liftweb.http.js._
 import net.liftweb.util.{Can, Empty, Full, Failure}
 
 @serializable
@@ -74,10 +75,21 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     getSingleton.asHtml(this)
   }
   
+  /**
+    * If the instance calculates any additional
+    * fields for JSON object, put the calculated fields
+    * here
+    */
+  def suplimentalJs: List[(String, JsExp)] = Nil
+  
   def validate : List[ValidationIssue] = {
     runSafe {
       getSingleton.validate(this)
     }
+  }
+  
+  def asJs: JsExp = {
+    getSingleton.asJs(this)
   }
   
   /*
@@ -225,6 +237,8 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
   override def comparePrimaryKeys(other: OwnerType) = primaryKeyField.is == other.primaryKeyField.is
                                    
   def reload: OwnerType = getSingleton.find(By(primaryKeyField, primaryKeyField)) openOr this    
+  
+  def asSafeJs(f: KeyType => JsExp): JsExp = getSingleton.asSafeJs(this, f)
   
   override def equals(other: Any): Boolean = {
     other match {

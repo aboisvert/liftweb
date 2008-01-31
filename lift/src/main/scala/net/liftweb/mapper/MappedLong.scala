@@ -13,6 +13,7 @@ import net.liftweb.util._
 import java.util.Date
 import scala.xml.{NodeSeq, Text, Unparsed}
 import net.liftweb.http.S
+import net.liftweb.http.js._
 import S._
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, foreign: => KeyedMetaMapper[Long, O]) 
@@ -128,6 +129,8 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   override def readPermission_? = true
   override def writePermission_? = true
   
+   def asJsExp: JsExp = JE.JsArray(is.map(v => JE.Num(v.id)) :_*)
+  
   def real_convertToJDBCFriendly(value: List[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
   
   private def toLong: Long = is.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong  
@@ -137,6 +140,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   def jdbcFriendly(field: String) = new java.lang.Long(toLong)
   override def jdbcFriendly = new java.lang.Long(toLong)
 
+  
 
   override def setFromAny(in: Any): List[ENUM#Value] = {
     in match {
@@ -216,11 +220,15 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
     }
     data
   }
+  
+  def asJsExp = JE.Num(is)
+  
   override def readPermission_? = true
   override def writePermission_? = true
   
   def real_convertToJDBCFriendly(value: Long): Object = new java.lang.Long(value)
   
+  // def asJsExp = JE.Num(is)
   
   def jdbcFriendly(field : String) = new java.lang.Long(i_is_!)
   override def jdbcFriendly = new java.lang.Long(i_is_!)

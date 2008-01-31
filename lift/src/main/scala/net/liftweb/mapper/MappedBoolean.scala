@@ -13,6 +13,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.http.S
 import java.util.Date
 import net.liftweb.util._
+import net.liftweb.http.js._
 
 class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)
@@ -43,6 +44,8 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   
   def jdbcFriendly(field : String) = data.map(v => new java.lang.Integer(if(v) 1 else 0)) openOr null
 
+  def asJsExp = if (is) JE.JsTrue else JE.JsFalse
+  
   override def setFromAny(in: Any): Boolean = {
     in match {
       case b: Boolean => this.set(b)

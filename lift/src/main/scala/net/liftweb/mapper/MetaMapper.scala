@@ -14,6 +14,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Full, Failure}
 import net.liftweb.http.{LiftServlet, S}
 import java.util.Date
+import net.liftweb.http.js._
 
 trait BaseMetaMapper {
   type RealType <: Mapper[RealType]
@@ -283,7 +284,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
 
   
-  private def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
+  private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[Any, A]]
   
   def dirty_?(toTest: A) : boolean = {
     mappedFieldArray.foreach {
@@ -707,6 +708,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   def doHtmlLine(toLine: A): NodeSeq = mappedFieldArray.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
   
+  def asJs(actual: A): JsExp = {
+    JE.JsObj(mappedFieldArray.
+    map(f => ??(f.method, actual)).filter(_.renderJs_?).map(_.asJs).toList :::
+    actual.suplimentalJs :_*)
+  }
+  
   /**
     *
     */
@@ -924,6 +931,15 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
       pos = pos + 1
     }
     true
+  }
+  
+  def asSafeJs(actual: A, f: Type => JsExp): JsExp = {
+    val pk = actual.primaryKeyField
+    val first = (pk.name, f(pk.is))
+    JE.JsObj(first :: mappedFieldArray.
+    map(f => this.??(f.method, actual)).
+    filter(f => !f.dbPrimaryKey_? && f.renderJs_?).map(_.asJs).toList :::
+    actual.suplimentalJs :_*)
   }
   
   private def convertToQPList(prod: Product): Array[QueryParam[A]] = {

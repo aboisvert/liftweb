@@ -13,6 +13,7 @@ import Helpers._
 import java.util.Date
 import net.liftweb.http._
 import scala.xml.NodeSeq
+import js._
 
 class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[ENUM#Value, T] {
   private var data: ENUM#Value = defaultValue
@@ -52,6 +53,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   def jdbcFriendly(field: String) = new java.lang.Integer(toInt)
   override def jdbcFriendly = new java.lang.Integer(toInt)
 
+  def asJsExp = JE.Num(is.id)
 
   override def setFromAny(in: Any): ENUM#Value = {
     in match {
@@ -181,6 +183,8 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   override protected[mapper] def doneWithSave() {
     orgData = data
   }
+  
+  def asJsExp = JE.Num(is)
   
   protected def real_i_set_!(value : int) : int = {
     if (value != data) {

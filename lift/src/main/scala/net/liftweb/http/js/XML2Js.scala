@@ -10,8 +10,8 @@ import scala.xml._
 import net.liftweb.util._
 import Helpers._
 
-
-case class Xml2Js(child: NodeSeq) extends Node {
+/*
+case class Jx(child: NodeSeq) extends Node {
   def label = throw new UnsupportedOperationException("Xml2Js does not have a label")
   
   def toJs = 
@@ -40,4 +40,4 @@ case class Xml2Js(child: NodeSeq) extends Node {
       case Xml2Js(kids) => addToDocFrag(parent, kids.toList)
       case _ => Nil
     }
-}
+}*/

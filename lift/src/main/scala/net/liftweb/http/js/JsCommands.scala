@@ -80,7 +80,11 @@ trait JsMethod {
 object JE {
   implicit def strToS(in: String): Str = Str(in)
   implicit def boolToJsExp(in: Boolean): JsExp = if (in) JsTrue else JsFalse
-  implicit def numToJsExp(in: Number): JsExp = Num(in)
+  implicit def numToJsExp(in: Int): JsExp = Num(in)
+  implicit def numToJsExp(in: Long): JsExp = Num(in)
+  implicit def numToJsExp(in: Double): JsExp = Num(in)
+  implicit def numToJsExp(in: Float): JsExp = Num(in)
+  implicit def setExToArray(in: Seq[JsExp]): JsArray[JsExp] = JsArray[JsExp](in :_*)
   
   case class Num(n: Number) extends JsExp {
     def toJsCmd = n.toString
@@ -341,8 +345,12 @@ object JsCmds {
     def toJsCmd = left.toJsCmd + " = " + right.toJsCmd + ";"
   }
   
+  case class JsCrVar(name: String, right: JsExp) extends JsCmd {
+    def toJsCmd = "var "+name + " = "+right.toJsCmd + ";"
+  }
+  
   case class SetElemById(id: String, right: JsExp, then: String*) extends JsCmd {
-    def toJsCmd = "documenet.getElementById("+id.encJs+")"+ (
+    def toJsCmd = "document.getElementById("+id.encJs+")"+ (
     if (then.isEmpty) "" else then.mkString(".", ".", "")
     ) + " = "+right.toJsCmd + ";"
   }
@@ -355,7 +363,21 @@ object JsCmds {
   }
   
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
-    def toJsCmd = left.toJsCmd + "\n" + right.toJsCmd
+    def toJsCmd = {
+      val sb = new StringBuilder
+      append(sb, this)
+      sb.toString
+    }
+    
+    private def append(sb: StringBuilder, cmd: JsCmd) {
+      cmd match {
+        case CmdPair(l, r) => append(sb, l)
+        sb.append('\n')
+        append(sb, r)
+        
+        case c => sb.append(c.toJsCmd)
+      }
+    }
   }
   
   object AppendHtml {

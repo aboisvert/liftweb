@@ -13,6 +13,7 @@ import java.util.Date
 import java.util.regex._
 import scala.xml.NodeSeq
 import net.liftweb.http.S
+import net.liftweb.http.js._
 import S._
 
 /*
@@ -119,6 +120,8 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     fieldOwner
   }
 
+  def asJsExp: JsExp = JE.Str(is)
+  
   def apply(ov: String): T = apply(Full(ov))
   
   def jdbcFriendly(field : String): String = data.get

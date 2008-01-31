@@ -61,6 +61,9 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
     is
   }
 
+  override def renderJs_? = false
+   
+  def asJsExp = throw new NullPointerException("No way")
   
   def match_?(toMatch : String) = {
     hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get

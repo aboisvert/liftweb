@@ -11,6 +11,7 @@ import java.util.Date
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
+import net.liftweb.http.js._
 
 class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, T] {
   private val data = FatLazy(defaultValue)
@@ -31,6 +32,8 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
     case null => 0L
     case d: Date => d.getTime / 1000L
   }
+  
+  def asJsExp = JE.Num(toLong)
   
   /**
    * Get the JDBC SQL Type for this field

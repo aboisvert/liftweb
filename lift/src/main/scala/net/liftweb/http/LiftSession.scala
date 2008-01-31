@@ -560,7 +560,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
-    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "#", attr.filter(a => a.key != "onclick" && a.key != "href")))
+    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "javascript://", attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -570,7 +570,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       case x :: xs => x.value.text +";"
     }
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
-    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
+    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "javascript://", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
   
   

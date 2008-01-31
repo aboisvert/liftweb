@@ -14,6 +14,7 @@ import scala.xml.{Text, Node, NodeSeq, Group,
 import java.util.Date
 import net.liftweb.http.S
 import net.liftweb.http.S._
+import net.liftweb.http.js._
 import net.liftweb.util._
 import Helpers._
 
@@ -129,6 +130,12 @@ trait BaseMappedField {
      * The display name of this field (e.g., "First Name")
      */
    def displayName: String  
+   
+   def asJsExp: JsExp
+   
+   def asJs: (String, JsExp) = (name, asJsExp)
+   
+   def renderJs_? = true
 }
 
 /**
