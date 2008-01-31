@@ -761,9 +761,11 @@ class LiftFilter extends Filter
     //And throw it away on destruction
     def destroy {
       context = null
-      actualServlet.destroy
-      actualServlet = null 
+      if (actualServlet != null) {
+	actualServlet.destroy
+	actualServlet = null 
       }
+    }
     
     def bootLift(loader : Can[String]) : Unit =
     {
