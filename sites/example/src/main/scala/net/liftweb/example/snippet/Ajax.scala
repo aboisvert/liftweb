@@ -55,7 +55,7 @@ class Ajax {
     <textarea id="the_area" cols="50" rows="10"></textarea>
     <br />
 
-    <a href="#" onclick={
+    <a href="javascript://" onclick={
       ajaxCall("document.getElementById('the_area').value",
 	       text => DisplayMessage("messages", 
 				      <pre>{text}</pre>, 

@@ -706,9 +706,17 @@ object TextileParser extends Application {
       Elem(null, "blockquote", fromStyle(attrs), TopScope, par : _*)  ++ Text("\n")
     }
   }
+
+  val validAttributes = List(/*"class", */ "title", /*"style", "dir",*/ "lang")
+
   case class HTML(tag : String, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
+    def validAttr(in: Attribute): Boolean = in match {
+      case AnyAttribute(name, _) => validAttributes.contains(name)
+      case _ => false
+    }
+
     override def toHtml : NodeSeq = {
-      Elem(null, tag, fromStyle(attrs), TopScope, flattenAndDropLastEOL(elems) : _*)
+      Elem(null, tag, fromStyle(attrs.filter(validAttr)), TopScope, flattenAndDropLastEOL(elems) : _*)
     }}
   case class FootnoteDef(num : String) extends ATextile(null, Nil) {
     override def toHtml : NodeSeq = {
