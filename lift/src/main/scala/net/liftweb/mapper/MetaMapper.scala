@@ -710,9 +710,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   def doHtmlLine(toLine: A): NodeSeq = mappedFieldArray.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
   
   def asJs(actual: A): JsExp = {
-    JE.JsObj(mappedFieldArray.
+    JE.JsObj(("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
     map(f => ??(f.method, actual)).filter(_.renderJs_?).map(_.asJs).toList :::
-    actual.suplementalJs :_*)
+    actual.suplementalJs(Empty) :_*)
   }
   
   /**
@@ -875,14 +875,27 @@ object By {
   def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, Eql, Full(value), Empty)
   def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
     Cmp[O,T](field, Eql, Full(value.primaryKeyField.is), Empty)
+    
+  def apply[O <: Mapper[O], Q <: KeyedMapper[Long, Q]](field: MappedForeignKey[Long, O, Q], value: Can[Q]) = 
+    Cmp[O,Long](field, Eql, Full(value.map(_.primaryKeyField.is).openOr(0L)), Empty)    
 }
 
 object NotBy {
   import OprEnum._
-
+  
   def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <>, Full(value), Empty)
   def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
-    Cmp[O,T](field, <>, Full(value.primaryKeyField.is), Empty)}
+  Cmp[O,T](field, <>, Full(value.primaryKeyField.is), Empty)
+  def apply[O <: Mapper[O], Q <: KeyedMapper[Long, Q]](field: MappedForeignKey[Long, O, Q], value: Can[Q]) = {
+    val lng: Long = value.map(_.primaryKeyField.is) match {
+      case Full(v: Long) => v
+      case _ => val v: Long = (0L).asInstanceOf[Long]
+      v
+    }
+    
+    Cmp[O,Long](field, <>, Full(lng), Empty)
+  }    
+}
 
 object ByRef {
   import OprEnum._
@@ -926,7 +939,7 @@ trait LongKeyedMetaMapper[A <: LongKeyedMapper[A]] extends KeyedMetaMapper[Long,
 trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with KeyedMapper[Type, A] { 
   self: A  with MetaMapper[A] with KeyedMapper[Type, A] =>
  
-  private def testProdArity(prod: Product): boolean = {
+  private def testProdArity(prod: Product): Boolean = {
     var pos = 0
     while (pos < prod.productArity) {
       if (!prod.productElement(pos).isInstanceOf[QueryParam[A]]) return false
@@ -935,20 +948,22 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     true
   }
   
-  type Q = MappedField[AnyBound, A] with MappedForeignKey[AnyBound, A, OO] forSome 
+  type Q = MappedForeignKey[AnyBound, A, OO] with MappedField[AnyBound, A] forSome 
   {type OO <: KeyedMapper[AnyBound, OO]}
+  
+  // type QQ = ZZ forSome {type ZZ <: KeyedMapper[AnyBound, ZZ]}
   
   def asSafeJs(actual: A, f: KeyObfuscator): JsExp = {
     val pk = actual.primaryKeyField
     val first = (pk.name, JE.Str(f.obscure(self, pk.is)))
-    JE.JsObj(first :: mappedFieldArray.
+    JE.JsObj(first :: ("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
     map(f => this.??(f.method, actual)).
     filter(f => !f.dbPrimaryKey_? && f.renderJs_?).map{
-      case fk: Q => 
+      case fk:  Q => 
       (fk.name, JE.Str(f.obscure(fk.dbKeyToTable, fk.is)))
       
     case x => x.asJs}.toList :::
-    actual.suplementalJs :_*)
+    actual.suplementalJs(Full(f)) :_*)
   }
   
   private def convertToQPList(prod: Product): Array[QueryParam[A]] = {

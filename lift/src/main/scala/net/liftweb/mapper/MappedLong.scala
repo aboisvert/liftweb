@@ -31,6 +31,10 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
   override def dbIndexed_? = true
             
   override def dbForeignKey_? = true
+  
+    
+  def asSafeJs(obs: Can[KeyObfuscator]): JsExp = 
+  obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Num(is))
 
       /**
       * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier

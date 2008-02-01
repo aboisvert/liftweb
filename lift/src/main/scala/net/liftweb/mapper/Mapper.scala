@@ -80,7 +80,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     * fields for JSON object, put the calculated fields
     * here
     */
-  def suplementalJs: List[(String, JsExp)] = Nil
+  def suplementalJs(ob: Can[KeyObfuscator]): List[(String, JsExp)] = Nil
   
   def validate : List[ValidationIssue] = {
     runSafe {

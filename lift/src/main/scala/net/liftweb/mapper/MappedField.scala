@@ -150,6 +150,7 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
   def dbKeyToTable: KeyedMetaMapper[KeyType, Other]
   
   def validSelectValues: Can[List[(KeyType, String)]] = Empty
+
   
   def immutableMsg: NodeSeq = Text(?("Can't change"))
   
