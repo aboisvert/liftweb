@@ -24,6 +24,8 @@ object ResourceServer {
   private var allowedPaths: PartialFunction[List[String], Boolean] = {
     case "jquery.js" :: Nil => true
     case "json.js" :: Nil => true
+    case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
+    case "jlift.js" :: Nil => true
   }
   
   private var pathRewriter: PartialFunction[List[String], List[String]] = {

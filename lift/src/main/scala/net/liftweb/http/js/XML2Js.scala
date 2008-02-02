@@ -60,7 +60,7 @@ case class JxExp(in: JsExp) extends Node with JxBase {
   def appendToParent(parentName: String): JsCmd = {
     val ran = "v"+randomString(10)
     JsCrVar(ran, in) ++
-    JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+");} else {"+
+    JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+".cloneNode(true));} else {"+
     parentName+".appendChild(document.createTextNode("+ran+"));}")
   }
 }

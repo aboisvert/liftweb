@@ -6,7 +6,7 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.collection.mutable._
+import scala.collection.mutable.{ListBuffer, HashMap}
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types, PreparedStatement, Statement}
 import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
@@ -711,7 +711,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   def asJs(actual: A): JsExp = {
     JE.JsObj(("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
-    map(f => ??(f.method, actual)).filter(_.renderJs_?).map(_.asJs).toList :::
+    map(f => ??(f.method, actual)).filter(_.renderJs_?).flatMap(_.asJs).toList :::
     actual.suplementalJs(Empty) :_*)
   }
   
@@ -951,16 +951,17 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   type Q = MappedForeignKey[AnyBound, A, OO] with MappedField[AnyBound, A] forSome 
   {type OO <: KeyedMapper[AnyBound, OO]}
   
-  // type QQ = ZZ forSome {type ZZ <: KeyedMapper[AnyBound, ZZ]}
-  
   def asSafeJs(actual: A, f: KeyObfuscator): JsExp = {
     val pk = actual.primaryKeyField
     val first = (pk.name, JE.Str(f.obscure(self, pk.is)))
     JE.JsObj(first :: ("$lift_class", JE.Str(dbTableName)) :: mappedFieldArray.
     map(f => this.??(f.method, actual)).
-    filter(f => !f.dbPrimaryKey_? && f.renderJs_?).map{
+    filter(f => !f.dbPrimaryKey_? && f.renderJs_?).flatMap{
       case fk:  Q => 
-      (fk.name, JE.Str(f.obscure(fk.dbKeyToTable, fk.is)))
+      val key = f.obscure(fk.dbKeyToTable, fk.is)
+      List((fk.name, JE.Str(key)),
+      (fk.name+"_obj", 
+      JE.AnonFunc("index", JE.JsRaw("return index["+key.encJs+"];").cmd)))
       
     case x => x.asJs}.toList :::
     actual.suplementalJs(Full(f)) :_*)
@@ -1188,28 +1189,29 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 case class FieldHolder[T](name: String, method: Method, field: MappedField[_, T]) 
 
 class KeyObfuscator {
-  private val to: HashMap[Any, HashMap[Any, String]] = new HashMap
-  private val from: HashMap[Any, HashMap[String, Any]] = new HashMap
+  var to: Map[String, Map[Any, String]] = Map.empty
+  var from: Map[String, Map[String, Any]] = Map.empty
   
   def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
-  KeyedMetaMapper[KeyType, MetaType], key: KeyType): String = {
-    val local = to.getOrElse(theType, new HashMap)
+  KeyedMetaMapper[KeyType, MetaType], key: KeyType): String = synchronized {
+    val local: Map[Any, String] = to.getOrElse(theType.dbTableName, Map.empty)
     local.get(key) match {
       case Some(s) => s
       case _ => val ret = "r"+randomString(15)
-      local(key) = ret
-      to(theType) = local
       
-      val lf = from.getOrElse(theType, new HashMap)
-      lf(ret) = key
-      from(theType) = lf
+      val l2: Map[Any, String] = local + ( (key -> ret) )
+      to = to + ( (theType.dbTableName -> l2) )
+      
+      val lf: Map[String, Any] = from.getOrElse(theType.dbTableName, Map.empty) + ( (ret -> key))
+      // lf(ret) = key
+      from = from + ( (theType.dbTableName -> lf) )
       
       ret
     }
   }
   
   def recover[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
-  KeyedMetaMapper[KeyType, MetaType], id: String): Can[KeyType] = {
-    Can(from.get(theType)).flatMap(h => Can(h.get(id)).map(_.asInstanceOf[KeyType]))
+  KeyedMetaMapper[KeyType, MetaType], id: String): Can[KeyType] = synchronized {
+    Can(from.get(theType.dbTableName)).flatMap(h => Can(h.get(id)).map(_.asInstanceOf[KeyType]))
   }
 }

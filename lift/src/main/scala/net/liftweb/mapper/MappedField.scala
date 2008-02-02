@@ -133,7 +133,7 @@ trait BaseMappedField {
    
    def asJsExp: JsExp
    
-   def asJs: (String, JsExp) = (name, asJsExp)
+   def asJs: List[(String, JsExp)] = List((name, asJsExp))
    
    def renderJs_? = true
 }
