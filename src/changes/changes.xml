@@ -16,13 +16,39 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+    <release version="0.5" description="">
+
+      
+      <action dev="David Pollak" type="update">
+	Revised the example site to use
+	Blueprint CSS for style
+      </action>
+
+      
+      <action dev="David Pollak" type="add">
+	jlift JavaScript utilities and associated
+	binder helpers.
+      </action>
+
+      <action dev="David Pollak" type="add">
+	Blueprint CSS built in (version 0.6)
+	so it can be served via /classpath
+      </action>
+
+      <action dev="David Pollak" type="add">
+	XML -> JavaScript bindings so that JSON -> XHTML rendering
+	can be defined using Scala XML literals, but the resulting
+	JavaScript code can be sent to the browser to do mass rendering
+	of JSON objects.
+      </action>
+
+
       <action dev="David Pollak" type="add">
 Added JSON support including:
 - S.buildJSONFunc
 - JSONHandler class
 - Lots of fancy JavaScript expression building
 </action>
-    <release version="0.5" description="">
       <action dev="David Pollak" type="update">
 	When lift is running in test mode, the default form generators
 	will insert lift:field_name attribute into the form fields
