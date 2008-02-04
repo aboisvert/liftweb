@@ -876,8 +876,11 @@ object By {
   def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
     Cmp[O,T](field, Eql, Full(value.primaryKeyField.is), Empty)
     
-  def apply[O <: Mapper[O], Q <: KeyedMapper[Long, Q]](field: MappedForeignKey[Long, O, Q], value: Can[Q]) = 
-    Cmp[O,Long](field, Eql, Full(value.map(_.primaryKeyField.is).openOr(0L)), Empty)    
+  def apply[O <: Mapper[O],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Can[Q]) = 
+  value match {
+    case Full(v) => Cmp[O,T](field, Eql, Full(v.primaryKeyField.is), Empty)
+    case _ => Cmp(field, IsNull, Empty, Empty)
+  }
 }
 
 object NotBy {
@@ -886,15 +889,11 @@ object NotBy {
   def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <>, Full(value), Empty)
   def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
   Cmp[O,T](field, <>, Full(value.primaryKeyField.is), Empty)
-  def apply[O <: Mapper[O], Q <: KeyedMapper[Long, Q]](field: MappedForeignKey[Long, O, Q], value: Can[Q]) = {
-    val lng: Long = value.map(_.primaryKeyField.is) match {
-      case Full(v: Long) => v
-      case _ => val v: Long = (0L).asInstanceOf[Long]
-      v
-    }
-    
-    Cmp[O,Long](field, <>, Full(lng), Empty)
-  }    
+  def apply[O <: Mapper[O],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Can[Q]) = 
+  value match {
+    case Full(v) => Cmp[O,T](field, <>, Full(v.primaryKeyField.is), Empty)
+    case _ => Cmp(field, IsNotNull, Empty, Empty)
+  }   
 }
 
 object ByRef {
