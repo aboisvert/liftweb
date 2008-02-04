@@ -358,9 +358,12 @@ object TextileParser extends Application {
     }
     
     def formattedLineElem[Q <% UnitParser](m: Q): Parser[List[Textile] ~ List[Attribute]] = formattedLineElem(m, rep(attribute))
-    def formattedLineElem[Q <% UnitParser](m: Q, p: Parser[List[Attribute]]): Parser[List[Textile] ~ List[Attribute]] = m ~ p ~  rep1(not(m) ~ lineElem) ~ m ^^ { 
+    def formattedLineElem[Q <% UnitParser](m: Q, p: Parser[List[Attribute]]): Parser[List[Textile] ~ List[Attribute]] =  spaceOrStart ~ m ~ p ~  rep1(not(m) ~ lineElem) ~ m ~ spaceOrEnd ^^ { 
       case attrs ~ ln => mkTilde(reduceCharBlocks(ln), attrs) }
 
+      def spaceOrStart: UnitParser = beginl | ' '
+      def spaceOrEnd: UnitParser = accept(' ') | discard(endOfLine)
+      
     // TODO: generalize formattedLineElem some more
     def bold : Parser[Textile] = accept("**") ~ rep(attribute) ~ rep1(not(accept("**")) ~ lineElem_notStrong) ~ accept("**") ^^ { 
       case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
