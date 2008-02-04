@@ -49,7 +49,7 @@
           <groupId>test</groupId>
           <artifactId>sample</artifactId>
           <version>0.1</version>
-          <basedir>target</basedir>
+          <basedir>${project.build.directory}</basedir>
         </configuration>
       </plugin>
     </plugins>
