@@ -452,7 +452,7 @@ object S {
     */
   def ajaxButton(func: => JsCmd, text: String): Elem =
     <input type="button" value={text}/> % 
-      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
 
   /**
@@ -465,7 +465,7 @@ object S {
     */
   def ajaxButton(text: String)(func: => JsCmd): Elem =
     <input type="button" value={text}/> % 
-      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"))
         
   def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
@@ -532,14 +532,14 @@ object S {
       */
     private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
       "jQuery.ajax( {url: '"+
-        contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+        contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
     
     def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
       val funcName = mapFunc(func)
       val (nk, id) = findOrAddId(kids)
       val rnk = if (visible) nk else nk % ("style" -> "display: none") 
       val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-        contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+        contextPath+"/"+LiftServlet.ajaxPath+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
       nh ++ rnk
     }
 
@@ -568,7 +568,7 @@ object S {
      val funcName = mapFunc(func) 
      (<input type="text" value={value}/>) %
      ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-     ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+     ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
    }
    
    def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
@@ -576,7 +576,7 @@ object S {
     private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
       val funcName = mapFunc(func)
       (<input type="checkbox"/>) % checked(value) %
-        ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
+        ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
     }
     
     def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -588,10 +588,10 @@ object S {
       
       (<select>{
         opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+      }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+
+    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+
       mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     /**

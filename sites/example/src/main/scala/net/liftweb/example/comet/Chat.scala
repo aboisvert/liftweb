@@ -12,8 +12,8 @@ import net.liftweb.http.js._
 import JsCmds._
 
 
-class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
-      CometActor(theSession, name, defaultXml, attributes) {
+class Chat(initInfo: CometActorInitInfo) extends 
+      CometActor(initInfo) {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
   def defaultPrefix = "chat"
@@ -50,7 +50,7 @@ class Chat(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attr
   
   override def localSetup {
     if (userName.length == 0) {
-      ask(new AskName(theSession, name, defaultXml, attributes), "what's your username") {
+      ask(new AskName(CometActorInitInfo(theSession, name, defaultXml, attributes)), "what's your username") {
             case s: String if (s.trim.length > 2) => userName = s.trim; reRender(true)
             case s => localSetup; reRender(false)
       }

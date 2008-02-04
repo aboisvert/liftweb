@@ -5,8 +5,8 @@ import S._
 import net.liftweb.util._
 import scala.xml._
 
-class AskName(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
-      CometActor(theSession, name, defaultXml, attributes) {
+class AskName(initInfo: CometActorInitInfo) extends 
+      CometActor(initInfo) {
   def defaultPrefix = "ask_name"
     
   def render = ajaxForm(<div>What is your username?</div> ++ text("",name => answer(name.trim)) ++ 

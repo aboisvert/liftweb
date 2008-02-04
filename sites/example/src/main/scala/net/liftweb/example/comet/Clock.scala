@@ -13,7 +13,7 @@ import scala.xml._
 import js._
 import JsCmds._
 
-class Clock (theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends CometActor(theSession, name, defaultXml, attributes) {
+class Clock (info: CometActorInitInfo) extends CometActor(info) {
   
   def defaultPrefix = "clk"
   ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw

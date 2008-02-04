@@ -36,6 +36,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private var answerWith: Can[Any => Any] = Empty
   private var deltas: List[Delta] = Nil
   
+  def this(info: CometActorInitInfo) =
+  this(info.theSession,info.name,info.defaultXml,info.attributes)
+  
   private def listeners = {
     if (t_listeners == null) t_listeners = new ListBuffer
     t_listeners
@@ -239,6 +242,9 @@ abstract class Delta(val when: Long) {
 case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)
 
 sealed abstract class CometMessage
+
+case class CometActorInitInfo(theSession: LiftSession,name: Can[String],defaultXml: NodeSeq, val attributes: Map[String, String])
+
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
     spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean) {
