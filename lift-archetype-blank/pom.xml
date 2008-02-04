@@ -5,7 +5,7 @@
     <groupId>net.liftweb</groupId>
     <artifactId>lift</artifactId>
     <version>0.5-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>    
+    <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>lift-archetype-blank</artifactId>
   <name>${project.artifactId}</name>
@@ -18,22 +18,47 @@
     <resources>
       <resource>
         <directory>src/main/resources</directory>
-        <includes><include>ext.vm</include></includes>
+        <includes>
+          <include>ext.vm</include>
+        </includes>
         <filtering>true</filtering>
       </resource>
       <resource>
         <directory>src/main/resources</directory>
-        <excludes><exclude>ext.vm</exclude></excludes>
+        <excludes>
+          <exclude>ext.vm</exclude>
+        </excludes>
         <filtering>false</filtering>
       </resource>
     </resources>
+    <plugins>
+      <plugin>
+        <artifactId>maven-archetype-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>install</phase>
+            <goals>
+              <goal>create</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <archetypeArtifactId>${project.artifactId}</archetypeArtifactId>
+          <archetypeGroupId>${project.groupId}</archetypeGroupId>
+          <archetypeVersion>${project.version}</archetypeVersion>
+          <groupId>test</groupId>
+          <artifactId>sample</artifactId>
+          <version>0.1</version>
+          <basedir>target</basedir>
+        </configuration>
+      </plugin>
+    </plugins>
   </build>
 </project>
 <!--
 mvn archetype:create           \
   -DarchetypeGroupId=net.liftweb                \
   -DarchetypeArtifactId=lift-archetype-blank   \
-  -DarchetypeVersion=0.3.0-SNAPSHOT                \
   -DgroupId=foo.bar                                \
   -DartifactId=toto   
 -->
