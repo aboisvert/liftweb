@@ -17,7 +17,7 @@ import net.liftweb.util._
 import java.util.Locale
 
 class Misc {
-  private object selectedUser extends RequestVar[User](Empty)
+  private object selectedUser extends RequestVar[Can[User]](Empty)
   
   /**
    * Get the XHTML containing a list of users
@@ -31,8 +31,8 @@ class Misc {
     <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
   // get and display each of the users
   User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine} 
-		       <td>{link("/simple/edit", () => selectedUser(u), Text("Edit"))}</td>
-		       <td>{link("/simple/delete", () => selectedUser(u), Text("Delete"))}</td>
+		       <td>{link("/simple/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
+		       <td>{link("/simple/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
 		       </tr>)
   }
    
@@ -68,14 +68,14 @@ class Misc {
 
              // oops... validation errors
              // display the errors and make sure our selected user is still the same
-             case x => error(x); selectedUser(user)
+             case x => error(x); selectedUser(Full(user))
            }
 
   /**
     * Add a user
     */
   def add(xhtml: Group): NodeSeq = 
-    selectedUser.openOr(new User).toForm(Empty, saveUser _) ++ <tr> 
+    selectedUser.is.openOr(new User).toForm(Empty, saveUser _) ++ <tr> 
     <td><a href="/simple/index.html">Cancel</a></td>
     <td><input type="submit" value="Create"/></td>
     </tr>    
@@ -101,22 +101,22 @@ class Misc {
      ) openOr {error("User not found"); redirectTo("/simple/index.html")}
   
   // the request-local variable that hold the file parameter
-  private object theUpload extends RequestVar[FileParamHolder](Empty)
+  private object theUpload extends RequestVar[Can[FileParamHolder]](Empty)
   
   /**
     * Bind the appropriate XHTML to the form
     */
-  def upload(xhtml: Group): NodeSeq = if (S.get_?) bind("ul", chooseTemplate("choose", "get", xhtml), 'file_upload --> fileUpload(ul => theUpload(ul)))
+  def upload(xhtml: Group): NodeSeq = if (S.get_?) bind("ul", chooseTemplate("choose", "get", xhtml), 'file_upload --> fileUpload(ul => theUpload(Full(ul))))
   else bind("ul", chooseTemplate("choose", "post", xhtml),
-      "file_name" --> theUpload.map(v => Text(v.fileName)),
-      "mime_type" --> theUpload.map(v => Text(v.mimeType)),
-      "length" --> theUpload.map(v => Text(v.file.length.toString)),
-      "md5" --> theUpload.map(v => Text(hexEncode(md5(v.file))))
+      "file_name" --> theUpload.is.map(v => Text(v.fileName)),
+      "mime_type" --> theUpload.is.map(v => Text(v.mimeType)),
+      "length" --> theUpload.is.map(v => Text(v.file.length.toString)),
+      "md5" --> theUpload.is.map(v => Text(hexEncode(md5(v.file))))
       );
 
   private def setLocale(lc: String) {
     Locale.getAvailableLocales.filter(_.toString == lc).toList match {
-      case x :: xs => definedLocale(x)
+      case x :: xs => definedLocale(Full(x))
       case _ => definedLocale(Empty)
     }
   }
@@ -128,6 +128,6 @@ class Misc {
       
 }
 
-object definedLocale extends SessionVar[Locale](Empty)
+object definedLocale extends SessionVar[Can[Locale]](Empty)
 
 

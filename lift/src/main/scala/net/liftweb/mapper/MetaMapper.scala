@@ -957,7 +957,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     map(f => this.??(f.method, actual)).
     filter(f => !f.dbPrimaryKey_? && f.renderJs_?).flatMap{
       case fk:  Q => 
-      val key = f.obscure(fk.dbKeyToTable, fk.is)
+      val key = f.obscure(fk.dbKeyToTable, fk)
       List((fk.name, JE.Str(key)),
       (fk.name+"_obj", 
       JE.AnonFunc("index", JE.JsRaw("return index["+key.encJs+"];").cmd)))
@@ -1191,8 +1191,8 @@ class KeyObfuscator {
   var to: Map[String, Map[Any, String]] = Map.empty
   var from: Map[String, Map[String, Any]] = Map.empty
   
-  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
-  KeyedMetaMapper[KeyType, MetaType], key: KeyType): String = synchronized {
+  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType], Q <% KeyType](theType: 
+  KeyedMetaMapper[KeyType, MetaType], key: Q): String = synchronized {
     val local: Map[Any, String] = to.getOrElse(theType.dbTableName, Map.empty)
     local.get(key) match {
       case Some(s) => s
@@ -1207,6 +1207,19 @@ class KeyObfuscator {
       
       ret
     }
+  }
+  
+  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](what: KeyedMapper[KeyType, MetaType]): String =
+  {
+    obscure(what.getSingleton, what.primaryKeyField)
+  }
+  
+    def apply[KeyType, MetaType <: KeyedMapper[KeyType, MetaType], Q <% KeyType](theType: 
+  KeyedMetaMapper[KeyType, MetaType], key: Q): String = obscure(theType, key)
+    
+  def apply[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](what: KeyedMapper[KeyType, MetaType]): String =
+  {
+    obscure(what)
   }
   
   def recover[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 

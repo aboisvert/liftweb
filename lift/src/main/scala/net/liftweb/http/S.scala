@@ -880,7 +880,7 @@ abstract class JsonHandler {
   def apply(in: Any): JsCmd
 }
 
-abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: MyType =>
+abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
   private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
   protected def findFunc(name: String): Can[T]
   protected def setFunc(name: String, value: T): Unit
@@ -889,10 +889,10 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
   /**
     * The current value of the session variable
     */
-  def is: Can[T] = findFunc(name) match {
-    case v @ Full(_) => v
+  def is: T = findFunc(name) match {
+    case Full(v) => v
     case _ => val ret = dflt
-    ret.foreach(v => apply(v))
+    apply(ret)
     ret
   }
   
@@ -903,16 +903,18 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
     */
   def apply(what: T): Unit = setFunc(name, what)
   
+  /*
   def apply(what: Can[T]): Unit = what match {
     case Full(w) => setFunc(name, w)
     case _ => clearFunc(name)
     //case Failure(_, _, _) => ()        // no-op (or clear?)
     //case Empty => clearFunc(name)      // clear (or no-op?)
   }
+  */
   
   def remove(): Unit = clearFunc(name)   
   
-  override def toString = is.map(_.toString).openOr("Undefined")
+  override def toString = is.toString
 }
 
 /**
@@ -924,7 +926,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => Can[T]) { self: M
   *
   * @param dflt - the default value of the session variable
   */
-abstract class SessionVar[T](dflt: => Can[T]) extends AnyVar[T, SessionVar[T]](dflt) {
+abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
   override protected def findFunc(name: String): Can[T] = S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
   override protected def setFunc(name: String, value: T): Unit = S.servletSession.foreach(_.setAttribute(name, Full(value)))
   override protected def clearFunc(name: String): Unit = S.servletSession.foreach(_.removeAttribute(name))
@@ -940,7 +942,7 @@ abstract class SessionVar[T](dflt: => Can[T]) extends AnyVar[T, SessionVar[T]](d
    *
    * @param dflt - the default value of the session variable
    */
-abstract class RequestVar[T](dflt: => Can[T]) extends AnyVar[T, RequestVar[T]](dflt) {
+abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
   override protected def findFunc(name: String): Can[T] = S.requestState(name) // S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
   override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value // S.servletSession.foreach(_.setAttribute(name, Full(value)))
   override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
@@ -949,8 +951,8 @@ abstract class RequestVar[T](dflt: => Can[T]) extends AnyVar[T, RequestVar[T]](d
 
 
 object AnyVar {
-  implicit def whatSessionVarIs[T](in: SessionVar[T]): Can[T] = in.is
-  implicit def whatRequestVarIs[T](in: RequestVar[T]): Can[T] = in.is
+  implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
+  implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
 }
 
 case class JsonCmd(command: String, target: String, params: Any,
