@@ -337,7 +337,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     }
   
   
-  def validateUser(id: String) = getSingleton.find(By(uniqueId, id)) match {
+  def validateUser(id: String): NodeSeq = getSingleton.find(By(uniqueId, id)) match {
     case Full(user) if !user.validated => 
       user.validated(true).uniqueId.reset().save
     S.notice("Account Validated")

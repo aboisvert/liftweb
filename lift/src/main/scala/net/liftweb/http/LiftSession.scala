@@ -674,6 +674,7 @@ trait InsecureLiftView
   * the incoming request to an appropriate method
   */
 trait LiftView {
+   implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can(in)
    def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
 }
 
