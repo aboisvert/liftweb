@@ -186,7 +186,7 @@ object Schemifier {
         val tableName = rs.getString(3).toLowerCase
         val columnName = rs.getString(4).toLowerCase
         
-        if (tableName == table.dbTableName && field.dbColumnNames(field.name).contains(columnName)) {
+        if (tableName == table.dbTableName.toLowerCase && field.dbColumnNames(field.name).contains(columnName)) {
           cols = columnName :: cols
           hasColumn = hasColumn + 1
         }
