@@ -16,6 +16,8 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+    <release version="0.6" description="">
+    </release>
     <release version="0.5" date="2008-02-05" description="">
       <action dev="Steve Jenson" type="add">Added a new QueryParam, ByList which lets you query on Model objects with a List[T].</action>
       <action dev="David Pollak" type="update">Revised the example site to use Blueprint CSS for style</action>
