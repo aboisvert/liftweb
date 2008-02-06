@@ -97,7 +97,7 @@ class MappedText[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T]
   //  def getTargetSQLType(field : String) = Types.BINARY
   def targetSQLType = Types.VARCHAR
   
-  def defaultValue = null
+  def defaultValue: String = null
   override def writePermission_? = true
   override def readPermission_? = true
   
