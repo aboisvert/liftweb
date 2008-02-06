@@ -1191,8 +1191,8 @@ class KeyObfuscator {
   var to: Map[String, Map[Any, String]] = Map.empty
   var from: Map[String, Map[String, Any]] = Map.empty
   
-  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType], Q <% KeyType](theType: 
-  KeyedMetaMapper[KeyType, MetaType], key: Q): String = synchronized {
+  def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](theType: 
+  KeyedMetaMapper[KeyType, MetaType], key: KeyType): String = synchronized {
     val local: Map[Any, String] = to.getOrElse(theType.dbTableName, Map.empty)
     local.get(key) match {
       case Some(s) => s
@@ -1211,11 +1211,14 @@ class KeyObfuscator {
   
   def obscure[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](what: KeyedMapper[KeyType, MetaType]): String =
   {
-    obscure(what.getSingleton, what.primaryKeyField)
+    obscure(what.getSingleton, what.primaryKeyField.is)
   }
   
     def apply[KeyType, MetaType <: KeyedMapper[KeyType, MetaType], Q <% KeyType](theType: 
-  KeyedMetaMapper[KeyType, MetaType], key: Q): String = obscure(theType, key)
+    KeyedMetaMapper[KeyType, MetaType], key: Q): String = {
+      val k: KeyType = key
+      obscure(theType, k)
+    }
     
   def apply[KeyType, MetaType <: KeyedMapper[KeyType, MetaType]](what: KeyedMapper[KeyType, MetaType]): String =
   {
