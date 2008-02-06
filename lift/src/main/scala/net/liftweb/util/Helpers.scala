@@ -45,6 +45,13 @@ object Helpers {
   def toInternetDate(in: Date): String = internetDateFormatter.format(in)
   def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
   
+  def dateFormatter = new SimpleDateFormat("yyyy/MM/dd")
+  def timeFormatter = new SimpleDateFormat("HH:mm zzz")
+  
+  def formattedTimeNow = timeFormatter.format(timeNow)
+  def formattedDateNow = dateFormatter.format(timeNow)
+  
+  
   /*
 
   */
