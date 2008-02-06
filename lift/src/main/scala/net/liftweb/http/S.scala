@@ -466,22 +466,29 @@ object S {
   def ajaxButton(text: String)(func: => JsCmd): Elem =
     <input type="button" value={text}/> % 
       ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+
-        mapFunc(() => func)+"=true', dataType: 'script'});"))
+        mapFunc(() => func)+"=true', dataType: 'script'});"));
         
-  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
-      val key = "F"+System.nanoTime+"_"+randomString(3)
-
-    def checkCmd(in: Any) = in match {
-      case v: HashMap[String, Any] if v.isDefinedAt("command") => 
-	JsonCmd(v("command").toString, v.get("target").
-		map{case null => null case x => x.toString}.getOrElse(null),
-		v.get("params").getOrElse(None), v)
-
+        def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
+          val key = "F"+System.nanoTime+"_"+randomString(3)
+          
+          def checkCmd(in: Any) = in match {
+            case v: HashMap[String, Any] if v.isDefinedAt("command") => 
+            JsonCmd(v("command").toString, v.get("target").
+            map {
+              case null => null
+              case x => x.toString
+      } . getOrElse(null),v.get("params").getOrElse(None), v)
+      
       case v => v
-    }
+      }
 
       def jsonCallback(in: List[String]): JsCmd = {
-        in.flatMap(s => JSON.parse(s).toList.map(JSON.resolveType _ andThen checkCmd).map(f)).foldLeft(JsCmds.Noop)(_ ++ _)
+        in.flatMap(s => 
+        try {
+        JSON.parse(s).toList.map(JSON.resolveType _ andThen checkCmd).map(f)
+      } catch {
+        case e => println("Failed to JSON parse "+s); List(JsCmds.Noop)
+      }).foldLeft(JsCmds.Noop)(_ ++ _)
       }
       
       addFunctionMap(key, jsonCallback _)
