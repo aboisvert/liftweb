@@ -494,7 +494,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
     try {
       findComet(theType, name, kids, Map.empty ++ attr.flatMap{case u: UnprefixedAttribute => List((u.key, u.value.text)) case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) case _ => Nil}.toList).
       map(c =>
-      (c !? (6600, AskRender)) match {
+      (c !? (26600, AskRender)) match {
         case Some(AnswerRender(response, _, when, _)) if c.hasOuter => 
         <span id={c.uniqueId+"_outer"}>{c.buildSpan(when, response.inSpan)}{response.outSpan}</span>
         
@@ -546,7 +546,8 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
     findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
       cls =>
-      tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
+      tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
+      case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
         val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
         val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
         ret.start
@@ -567,7 +568,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
   
   
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
     new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "javascript://", attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
   
@@ -577,7 +578,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
     new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
   
@@ -640,7 +641,7 @@ class LiftSession(val uri: String, val path: ParsePath, val contextPath: String,
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+LiftServlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
+      function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+LiftServlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
       jQuery(document).ready(function(){lift_handlerSuccessFunc();});
       // ]]>
       """)}</script>) :_*)

@@ -1,18 +1,18 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions
- * and limitations under the License.
- */
+* Copyright 2007-2008 WorldWide Conferencing, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions
+* and limitations under the License.
+*/
 package net.liftweb.http;
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
@@ -39,23 +39,23 @@ import java.io.ByteArrayOutputStream
 import java.util.{Locale, TimeZone}
 
 /**
- * An implementation of HttpServlet.  Just drop this puppy into 
- * your Java web container, do a little magic in web.xml, and
- * ta-da, you've got a scala-powered Servlet
- * 
- */
+* An implementation of HttpServlet.  Just drop this puppy into 
+* your Java web container, do a little magic in web.xml, and
+* ta-da, you've got a scala-powered Servlet
+* 
+*/
 private[http] class LiftServlet(val getServletContext: ServletContext) extends AnyRef /* HttpServlet */ {
   private val actorNameConst = "the_actor"
   private var requestCnt = 0
   
   def destroy = {
     try {
-    LiftServlet.ending = true
-    Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
-    Scheduler.shutdown 
-    ActorPing.shutdown
-    Log.debug("Destroyed servlet")
-    // super.destroy
+      LiftServlet.ending = true
+      Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
+      Scheduler.shutdown 
+      ActorPing.shutdown
+      Log.debug("Destroyed servlet")
+      // super.destroy
     } catch {
       case e => Log.error("Servlet destruction failure",e)
     } finally {
@@ -71,15 +71,15 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftServlet.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
       })      
       // ResourceServer.allow("/jquery-1.2.2.js")
-    // super.init
+      // super.init
     } finally {
       clearThread
     }
   }
-
+  
   /**
-   * Is the file an existing file in the WAR?
-   */
+  * Is the file an existing file in the WAR?
+  */
   private def isExistingFile_?(request : HttpServletRequest) : Can[URL] = {
     if (!goodPath_?(request.getRequestURI)) Empty else
     getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) match {
@@ -92,31 +92,31 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     val ret = session.getValue(actorNameConst) match {
       case r: LiftSession => r
       case _ => 
-        val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
-            request.contentType)
-        // ret.start
-        session.putValue(actorNameConst, ret)
-        ret
+      val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
+      request.contentType)
+      // ret.start
+      session.putValue(actorNameConst, ret)
+      ret
     }
     ret.breakOutComet()
     ret
   }
   
-  /* override */ def service(req: HttpServletRequest,resp: HttpServletResponse, session: RequestState) {
+  def service(req: HttpServletRequest,resp: HttpServletResponse, session: RequestState) {
     try {
-    def doIt {
-      logTime("Service request "+req.getRequestURI) {
-        LiftServlet.early.foreach(_(req))
-        doService(req, resp, session)
+      def doIt {
+        logTime("Service request ("+req.getMethod+") "+req.getRequestURI) {
+          LiftServlet.early.foreach(_(req))
+          doService(req, resp, session)
         }      
-    }
-    LiftServlet.checkJetty(req) match {
-      case None => doIt
-      case r if r eq null => doIt
-      case r: ResponseIt => sendResponse(r.toResponse, resp, Empty)
-      case Some(r: ResponseIt) => sendResponse(r.toResponse, resp, Empty)
-          case _ => doIt
-  }
+      }
+      LiftServlet.checkJetty(req) match {
+        case None => doIt
+        case r if r eq null => doIt
+        case r: ResponseIt => sendResponse(r.toResponse, resp, Empty)
+        case Some(r: ResponseIt) => sendResponse(r.toResponse, resp, Empty)
+        case _ => doIt
+      }
     } catch {
       case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw new Exception("Request failed", e)
     } finally {
@@ -134,99 +134,99 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   }
   
   /**
-   * Service the HTTP request
-   */ 
+  * Service the HTTP request
+  */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, session: RequestState) {
     
-
+    
     val sessionActor = getActor(session, request.getSession)    
     val toMatch = RequestMatcher(session, session.path, RequestType(request), sessionActor)
     
-      val resp: Response = if (LiftServlet.ending) {
-        session.createNotFound.toResponse
-      } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
-	S.init(session, sessionActor) {
-	  val f = LiftServlet.dispatchTable(request)(toMatch)
-	  f(request) match {
-            case Full(v) => LiftServlet.convertResponse( (v, Nil, session) )
-            case Empty => session.createNotFound.toResponse
-            case f: Failure => session.createNotFound(f).toResponse 
-	  }
-	}
-      } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
-        // sessionActor.breakOutComet()
-        sessionActor.enterComet(self)
-        try {
-          S.init(session, sessionActor) {
-            val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
-            
-            def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
-              receiveWithin(len) {
-		case TIMEOUT => in
-		case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
-		case BreakOut => drainTheSwamp(0, in)
-		case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
-              }
-            }
-            
-            drainTheSwamp(0, Nil)
-            
-            if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
-            else {
-              
-              actors.foreach{case (act, when) => act ! Listen(when)}
-	      
-              val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
-              
-              actors.foreach{case (act, _) => act ! Unlisten}
-              
-              val ret2 = drainTheSwamp(100L, ret)
-              
-              val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
-              val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
-	      
-              (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
-            }
-          }
-        } finally {
-          sessionActor.exitComet(self)
-        }
-        // Response("".getBytes("UTF-8"), Nil, 200)
-      } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
-        S.init(session, sessionActor) {
-          try {
-            val what = flatten(sessionActor.runParams(session))
-            
-            val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
-
-            val ret = what2 match {
-              case (n: Node) :: _ => XmlResponse(n).toResponse
-              case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
-              case (r: ResponseIt) :: _ => r.toResponse
-              case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
-              case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
-            }
-
-            ret
-          } finally {
-            sessionActor.updateFunctionMap(S.functionMap)
-          }
-        }        
-  } else {
-        try {
-          this.synchronized {
-            this.requestCnt = this.requestCnt + 1
-          }
-          
-	sessionActor.processRequest(session, request).what.toResponse
-
-        } finally {
-          this.synchronized {
-            this.requestCnt = this.requestCnt - 1
-            this.notifyAll
-          }
+    val resp: Response = if (LiftServlet.ending) {
+      session.createNotFound.toResponse
+    } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
+      S.init(session, sessionActor) {
+        val f = LiftServlet.dispatchTable(request)(toMatch)
+        f(request) match {
+          case Full(v) => LiftServlet.convertResponse( (v, Nil, session) )
+          case Empty => session.createNotFound.toResponse
+          case f: Failure => session.createNotFound(f).toResponse 
         }
       }
+    } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
+      // sessionActor.breakOutComet()
+      sessionActor.enterComet(self)
+      try {
+        S.init(session, sessionActor) {
+          val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+          
+          def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+            receiveWithin(len) {
+              case TIMEOUT => in
+              case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
+              case BreakOut => drainTheSwamp(0, in)
+              case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
+            }
+          }
+          
+          drainTheSwamp(0, Nil)
+          
+          if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
+          else {
+            
+            actors.foreach{case (act, when) => act ! Listen(when)}
+            
+            val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
+            
+            actors.foreach{case (act, _) => act ! Unlisten}
+            
+            val ret2 = drainTheSwamp(100L, ret)
+            
+            val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
+            val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
+            
+            (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+          }
+        }
+      } finally {
+        sessionActor.exitComet(self)
+      }
+      // Response("".getBytes("UTF-8"), Nil, 200)
+    } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
+      S.init(session, sessionActor) {
+        try {
+          val what = flatten(sessionActor.runParams(session))
+          
+          val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
+          
+          val ret = what2 match {
+            case (n: Node) :: _ => XmlResponse(n).toResponse
+            case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
+            case (r: ResponseIt) :: _ => r.toResponse
+            case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
+            case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
+          }
+          
+          ret
+        } finally {
+          sessionActor.updateFunctionMap(S.functionMap)
+        }
+      }        
+    } else {
+      try {
+        this.synchronized {
+          this.requestCnt = this.requestCnt + 1
+        }
+        
+        sessionActor.processRequest(session, request).what.toResponse
+        
+      } finally {
+        this.synchronized {
+          this.requestCnt = this.requestCnt - 1
+          this.notifyAll
+        }
+      }
+    }
     logIfDump(session, resp)
     
     sendResponse(resp, response, Full(session))
@@ -237,10 +237,10 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   private def logIfDump(request: RequestState, response: Response) {
     if (dumpRequestResponse) {
       val toDump = request.uri+"\n"+
-        request.params + "\n"+
-        response.headers+"\n"+
-        new String(response.data)
-        
+      request.params + "\n"+
+      response.headers+"\n"+
+      new String(response.data)
+      
       Log.info(toDump)
     }
   }
@@ -250,8 +250,8 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     val len = bytes.length
     // insure that certain header fields are set
     val header = insureField(resp.headers, List(("Content-Type", LiftServlet.determineContentType(request)),
-                                                ("Content-Encoding", "UTF-8"),
-                                                ("Content-Length", len.toString)));
+    ("Content-Encoding", "UTF-8"),
+    ("Content-Length", len.toString)));
     
     LiftServlet._beforeSend.foreach(_(resp, response, header, request))
     
@@ -261,10 +261,10 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     response.getOutputStream.write(bytes)    
     LiftServlet._afterSend.foreach(_(resp, response, header, request))
   }
-
+  
   /**
-   * Remove any thread-local associations
-   */
+  * Remove any thread-local associations
+  */
   def clearThread: Unit = {
     // uncomment for Scala 2.6.1 to avoid memory leak 
     // Actor.clearSelf
@@ -277,7 +277,7 @@ object LiftServlet {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
-
+  
   type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
@@ -285,9 +285,9 @@ object LiftServlet {
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   
   /**
-    * A partial function that allows the application to define requests that should be
-    * handled by lift rather than the default servlet handler
-    */
+  * A partial function that allows the application to define requests that should be
+  * handled by lift rather than the default servlet handler
+  */
   type LiftRequestPf = PartialFunction[RequestState, Boolean]
   
   private var _early: List[(HttpServletRequest) => Any] = Nil
@@ -298,8 +298,8 @@ object LiftServlet {
   }
   
   /**
-    * The path to handle served resources
-    */
+  * The path to handle served resources
+  */
   var ResourceServerPath = "classpath" 
   
   private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
@@ -307,10 +307,10 @@ object LiftServlet {
   def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
-
+  
   /**
-   * Determine the proper Content-Type based on the browser's Accept HTTP Header.
-   */
+  * Determine the proper Content-Type based on the browser's Accept HTTP Header.
+  */
   def determineContentType(req: Can[RequestState]) : String = {
     req match {
       case Full(request) => determineContentType(request.request)
@@ -320,10 +320,10 @@ object LiftServlet {
   
   
   /**
-    * The function referenced here is called if there's a localization lookup failure
-    */
+  * The function referenced here is called if there's a localization lookup failure
+  */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
-
+  
   def determineContentType(request: HttpServletRequest) : String = {
     request match {
       case null => "text/html"
@@ -332,13 +332,13 @@ object LiftServlet {
   }
   
   var liftTagProcessing: LiftTagPF = Map.empty
-
+  
   /**
-   * If you don't want lift to send the application/xhtml+xml mime type to those browsers
-   * that understand it, then set this to {@code false}
-   */
+  * If you don't want lift to send the application/xhtml+xml mime type to those browsers
+  * that understand it, then set this to {@code false}
+  */
   var useXhtmlMimeType: Boolean = true
-
+  
   def determineContentType(accept: String) : String = {
     // If application/xhtml+xml is explicitly listed then let's use that.
     if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
@@ -352,80 +352,80 @@ object LiftServlet {
   private def _stringToXml(s: String): NodeSeq = Text(s)
   
   /**
-    * A function that defines how a String should be converted to XML
-    * for the localization stuff.  By default, Text(s) is returned,
-    * but you can change this to attempt to parse the XML in the String and
-    * return the NodeSeq. 
-    */
+  * A function that defines how a String should be converted to XML
+  * for the localization stuff.  By default, Text(s) is returned,
+  * but you can change this to attempt to parse the XML in the String and
+  * return the NodeSeq. 
+  */
   var localizeStringToXml: String => NodeSeq = _stringToXml _  
   
   /**
-    * The base name of the resource bundle
-    */
+  * The base name of the resource bundle
+  */
   var resourceName = "lift"
-
+  
   /**
-    * Where to send the user if there's no comet session
-    */
+  * Where to send the user if there's no comet session
+  */
   var noCometSessionPage = "/"
   
   /**
-    * Put a function that will calculate the request timeout based on the
-    * incoming request.
-    */
+  * Put a function that will calculate the request timeout based on the
+  * incoming request.
+  */
   var calcRequestTimeout: Can[RequestState => Int] = Empty
   
   /**
-    * If you want the standard (non-AJAX) request timeout to be something other than
-    * 10 seconds, put the value here
-    */
+  * If you want the standard (non-AJAX) request timeout to be something other than
+  * 10 seconds, put the value here
+  */
   var stdRequestTimeout: Can[Int] = Empty
   
   /**
-    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
-    */
+  * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
+  */
   var ajaxRequestTimeout: Can[Int] = Empty
   
   /**
-    * If the request times out (or returns a non-Response) you can
-    * intercept the response here and create your own response
-    */
+  * If the request times out (or returns a non-Response) you can
+  * intercept the response here and create your own response
+  */
   var requestTimedOut: Can[(RequestState, Any) => Can[Response]] = Empty
   
   def early = {
     // test_boot
     _early
   }
-
+  
   /**
-    * A function that takes the current HTTP request and returns the current 
-    */
+  * A function that takes the current HTTP request and returns the current 
+  */
   var timeZoneCalculator: Can[HttpServletRequest] => TimeZone = 
-    defaultTimeZoneCalculator _
-
+  defaultTimeZoneCalculator _
+  
   def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone =
-    TimeZone.getDefault
+  TimeZone.getDefault
   
   
   /**
-    * A function that takes the current HTTP request and returns the current 
-    */
+  * A function that takes the current HTTP request and returns the current 
+  */
   var localeCalculator: Can[HttpServletRequest] => Locale = defaultLocaleCalculator _
   
   def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
-
+  
   
   val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
-    val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
-    val meth = cc.getMethod("getContinuation", Array(classOf[HttpServletRequest], classOf[AnyRef]))
-    val cci = Class.forName("org.mortbay.util.ajax.Continuation")
-    val getObj = cci.getMethod("getObject", null)
-    val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
-    val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
-    val resume = cci.getMethod("resume", null)
+      val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
+      val meth = cc.getMethod("getContinuation", Array(classOf[HttpServletRequest], classOf[AnyRef]))
+      val cci = Class.forName("org.mortbay.util.ajax.Continuation")
+      val getObj = cci.getMethod("getObject", null)
+      val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
+      val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
+      val resume = cci.getMethod("resume", null)
       /* FIXME disable Jetty Support */
-    (true && false, (cc), (meth), (getObj), (setObj), (suspend), resume)
+      (true && false, (cc), (meth), (getObj), (setObj), (suspend), resume)
     } catch {
       case e => (false, null, null, null, null, null, null)
     }
@@ -439,10 +439,10 @@ object LiftServlet {
   
   def doContinuation(req: HttpServletRequest): Nothing = {
     try {
-    val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
-    Log.trace("About to suspend continuation")
-    suspend.invoke(cont, Array(new java.lang.Long(200000L)))
-    throw new Exception("Bail")
+      val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
+      Log.trace("About to suspend continuation")
+      suspend.invoke(cont, Array(new java.lang.Long(200000L)))
+      throw new Exception("Bail")
     } catch {
       case e: java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") => throw e.getCause
     }
@@ -462,7 +462,7 @@ object LiftServlet {
   
   def setSiteMap(sm: SiteMap) {_sitemap = Full(sm)}
   def siteMap: Can[SiteMap] = _sitemap
-    
+  
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
   
   var ending = false
@@ -486,9 +486,9 @@ object LiftServlet {
     // test_boot
     req.getSession.getAttribute(SessionRewriteTableName) match {
       case null | Nil => rewriteTable_i
-    case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
-    case _ => rewriteTable_i
-  }
+      case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
+      case _ => rewriteTable_i
+    }
   }
   
   def snippetTable: SnippetPf = snippetTable_i
@@ -501,9 +501,9 @@ object LiftServlet {
   }
   
   var ajaxPath = "ajax_request"
-
+  
   var cometPath = "comet_request"
-
+  
   private var _context: ServletContext = _
   
   def context: ServletContext = synchronized {_context}
@@ -512,8 +512,8 @@ object LiftServlet {
     if (in ne _context) {
       // Helpers.setResourceFinder(in.getResource)
       _context = in
-   //   performBoot(in)
-      }
+      //   performBoot(in)
+    }
   }
   
   private var otherPackages: List[String] = Nil
@@ -529,7 +529,7 @@ object LiftServlet {
   def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
-      val buffer = new Array[Byte](2048)
+    val buffer = new Array[Byte](2048)
     val out = new ByteArrayOutputStream
     def reader {
       val len = stream.read(buffer)
@@ -543,9 +543,9 @@ object LiftServlet {
   }
   def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
-
   
-
+  
+  
   def finder(name: String): Can[InputStream] = {
     LiftServlet.context match {
       case null => Empty
@@ -557,15 +557,15 @@ object LiftServlet {
   }  
   
   /**
-    * Get the partial function that defines if a request should be handled by
-    * the application (rather than the default servlet handler)
-    */
+  * Get the partial function that defines if a request should be handled by
+  * the application (rather than the default servlet handler)
+  */
   def isLiftRequest_? : LiftRequestPf = i_isLiftRequest_?
-      
+  
   /**
-    * Append a partial function to the list of interceptors to test
-    * if the request should be handled by lift
-    */
+  * Append a partial function to the list of interceptors to test
+  * if the request should be handled by lift
+  */
   def addLiftRequest(what: LiftRequestPf) {i_isLiftRequest_? = i_isLiftRequest_? orElse what}
   
   private var i_isLiftRequest_? : LiftRequestPf = Map.empty
@@ -592,12 +592,12 @@ object LiftServlet {
     templateTable_i = pf orElse templateTable_i
     templateTable_i
   }
-
+  
   def addTemplateAfter(pf: TemplatePf) = {
     templateTable_i = templateTable_i orElse pf
     templateTable_i
   }
-
+  
   def addRewriteBefore(pf: RewritePf) = {
     rewriteTable_i = pf orElse rewriteTable_i
     rewriteTable_i
@@ -617,33 +617,33 @@ object LiftServlet {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }
-
+  
   private def cvt(ns: Node, headers: List[(String, String)], session: RequestState) = 
-    convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
-				    ResponseInfo.docType(session),
-				    headers, 200), headers, session) )
+  convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
+  ResponseInfo.docType(session),
+  headers, 200), headers, session) )
   
   var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
     case _ => List(("Expires", "0"))
   }
   
   var convertResponse: PartialFunction[(Any, List[(String, String)],
-					RequestState), Response] = {
-      case (r: ResponseIt, _, _) => r.toResponse
-      case (ns: Group, headers, session) => cvt(ns, headers, session)
-	case (ns: Node, headers, session) => cvt(ns, headers, session)
-      case (ns: NodeSeq, headers, session) => cvt(Group(ns), headers, session)
+  RequestState), Response] = {
+    case (r: ResponseIt, _, _) => r.toResponse
+    case (ns: Group, headers, session) => cvt(ns, headers, session)
+    case (ns: Node, headers, session) => cvt(ns, headers, session)
+    case (ns: NodeSeq, headers, session) => cvt(Group(ns), headers, session)
     case (ns: Seq[Node], headers, session) => cvt(Group(ns), headers, session)
     
     case (Full(o), headers, session) => convertResponse( (o, headers, session) )
-	
-      case (Some(o), headers, session) => convertResponse( (o, headers, session) )
-      case (bad, _, session) => println("bad is "+bad) ; session.createNotFound.toResponse
+    
+    case (Some(o), headers, session) => convertResponse( (o, headers, session) )
+    case (bad, _, session) => println("bad is "+bad) ; session.createNotFound.toResponse
   }
   
   /**
-    * Set a snippet failure handler here.  The class and method for the snippet are passed in
-    */
+  * Set a snippet failure handler here.  The class and method for the snippet are passed in
+  */
   var snippetFailedFunc: List[SnippetFailure => Unit] = logSnippetFailure _ :: Nil
   
   private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
@@ -651,47 +651,47 @@ object LiftServlet {
   case class SnippetFailure(page: String, typeName: Can[String], failure: SnippetFailures.Value)
   
   object SnippetFailures extends Enumeration {
-      val NoTypeDefined = Value(1, "No Type Defined")
-      val ClassNotFound = Value(2, "Class Not Found")
-      val StatefulDispatchNotMatched = Value(3, "Stateful Snippet: Dispatch Not Matched")
-      val MethodNotFound = Value(4, "Method Not Found")
-      val NoNameSpecified = Value(5, "No Snippet Name Specified")
-    }
+    val NoTypeDefined = Value(1, "No Type Defined")
+    val ClassNotFound = Value(2, "Class Not Found")
+    val StatefulDispatchNotMatched = Value(3, "Stateful Snippet: Dispatch Not Matched")
+    val MethodNotFound = Value(4, "Method Not Found")
+    val NoNameSpecified = Value(5, "No Snippet Name Specified")
+  }
   
   /**
-    * The function that deals with how exceptions are presented to the user during processing
-    * of an HTTP request.  Put a new function here to change the behavior.
-    *
-    * The function takes the RequestState and the Exception and returns a ResponseIt that's 
-    * sent to the browser.
-    */
+  * The function that deals with how exceptions are presented to the user during processing
+  * of an HTTP request.  Put a new function here to change the behavior.
+  *
+  * The function takes the RequestState and the Exception and returns a ResponseIt that's 
+  * sent to the browser.
+  */
   var logAndReturnExceptionToBrowser: (RequestState, Throwable) => ResponseIt = showException
   
   /**
-    * The partial function (pattern matching) for handling converting an exception to something to
-    * be sent to the browser depending on the current RunMode (development, etc.)
-    *
-    * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
-    * so that your response over-rides the default, but the processing falls through to the default.
-    */
+  * The partial function (pattern matching) for handling converting an exception to something to
+  * be sent to the browser depending on the current RunMode (development, etc.)
+  *
+  * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
+  * so that your response over-rides the default, but the processing falls through to the default.
+  */
   var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), ResponseIt] = {
     case (Props.RunModes.Development, r, e) =>
     XhtmlResponse((<html><body>Exception occured while processing {r.uri} 
     <pre>{
       _showException(e)     
     }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
-
+    
     case (_, r, e) => 
     XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri} 
     </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
   }
-   
+  
   /**
-    * A utility method to convert an exception to a string of stack traces
-    * @param le the exception
-    *
-    * @return the stack trace
-    */
+  * A utility method to convert an exception to a string of stack traces
+  * @param le the exception
+  *
+  * @return the stack trace
+  */
   def _showException(le: Throwable): String = {
     val ret = "Message: "+le.toString+"\n"+
     le.getStackTrace.map(_.toString).mkString("\n") + "\n"
@@ -703,10 +703,10 @@ object LiftServlet {
     
     ret + also
   }
-    
+  
   private def showException(r: RequestState, e: Throwable): ResponseIt = {
     Log.error("Exception being returned to browser when processing "+r, e)
-   browserResponseToException(Props.mode, r, e)
+    browserResponseToException(Props.mode, r, e)
   }
   
   
@@ -723,76 +723,76 @@ private[http] case object DefaultBootstrap extends Bootable
 {
   def boot() : Unit =
   {
-      val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance)
-      f.map{f => f()}
+    val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance)
+    f.map{f => f()}
   }
 }
 
 class LiftFilter extends Filter 
 {
   //The variable holds the current ServletContext (we need it for request URI - handling
-   private var context : ServletContext = null
-   private var actualServlet: LiftServlet = _
-   
-    def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
-    {      
-    
-      (req, res) match {
-        case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-        val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq), System.nanoTime)
-        if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
-        else chain.doFilter(req, res)
-        
-        case _ => chain.doFilter(req, res)
-      }
-    }
+  private var context : ServletContext = null
+  private var actualServlet: LiftServlet = _
   
-    //We need to capture the ServletContext on init
-    def init(config:FilterConfig) {
-      context = config.getServletContext
+  def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
+  {      
+    
+    (req, res) match {
+      case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
+      val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq), System.nanoTime)
+      if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
+      else chain.doFilter(req, res)
       
-      LiftServlet.setContext(context)       
-      bootLift(Can(config.getInitParameter("bootloader")))
-
-      actualServlet = new LiftServlet(context)
-      actualServlet.init
+      case _ => chain.doFilter(req, res)
     }
+  }
+  
+  //We need to capture the ServletContext on init
+  def init(config:FilterConfig) {
+    context = config.getServletContext
     
-    //And throw it away on destruction
-    def destroy {
-      context = null
-      if (actualServlet != null) {
-	actualServlet.destroy
-	actualServlet = null 
-      }
-    }
+    LiftServlet.setContext(context)       
+    bootLift(Can(config.getInitParameter("bootloader")))
     
-    def bootLift(loader : Can[String]) : Unit =
-    {
-      try 
-      {        
-        val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
-           
-        b.boot
-      } catch {
-         case e => Log.error("Failed to Boot", e); None
-      }
+    actualServlet = new LiftServlet(context)
+    actualServlet.init
+  }
+  
+  //And throw it away on destruction
+  def destroy {
+    context = null
+    if (actualServlet != null) {
+      actualServlet.destroy
+      actualServlet = null 
     }
-
- 
-    private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
-    {
-       actualServlet.service(req, res, session)
+  }
+  
+  def bootLift(loader : Can[String]) : Unit =
+  {
+    try 
+    {        
+      val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
+      
+      b.boot
+    } catch {
+      case e => Log.error("Failed to Boot", e); None
     }
- 
-    //This function tells you wether a resource exists or not, could probably be better
-    private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
-      in.endsWith(".htm") ||
-      in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
-    
-    private def isLiftRequest_?(session: RequestState): Boolean = {
-      if (LiftServlet.isLiftRequest_?.isDefinedAt(session)) LiftServlet.isLiftRequest_?(session)
-      else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) || 
-        context.getResource(session.uri) == null
-    }
+  }
+  
+  
+  private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
+  {
+    actualServlet.service(req, res, session)
+  }
+  
+  //This function tells you wether a resource exists or not, could probably be better
+  private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
+  in.endsWith(".htm") ||
+  in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
+  
+  private def isLiftRequest_?(session: RequestState): Boolean = {
+    if (LiftServlet.isLiftRequest_?.isDefinedAt(session)) LiftServlet.isLiftRequest_?(session)
+    else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) || 
+    context.getResource(session.uri) == null
+  }
 }
