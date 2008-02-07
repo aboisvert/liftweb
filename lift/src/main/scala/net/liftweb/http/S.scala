@@ -10,8 +10,8 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
 import scala.collection.immutable.{ListMap, TreeMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log}
-import scala.util.parsing.json._
+import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
+// import scala.util.parsing.json._
 import net.liftweb.mapper.{ValidationIssue}
 import Helpers._
 import js._
@@ -472,7 +472,7 @@ object S {
           val key = "F"+System.nanoTime+"_"+randomString(3)
           
           def checkCmd(in: Any) = in match {
-            case v: HashMap[String, Any] if v.isDefinedAt("command") => 
+            case v: scala.collection.Map[String, Any] if v.isDefinedAt("command") => 
             JsonCmd(v("command").toString, v.get("target").
             map {
               case null => null
@@ -485,7 +485,7 @@ object S {
       def jsonCallback(in: List[String]): JsCmd = {
         in.flatMap(s => 
         try {
-        JSON.parse(s.trim).toList.map(JSON.resolveType _ andThen checkCmd).map(f)
+        JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
       } catch {
         case e => println("Failed to JSON parse "+s.trim.toList.map(c => (c, c.toInt))); List(JsCmds.Noop)
       }).foldLeft(JsCmds.Noop)(_ ++ _)
@@ -963,7 +963,7 @@ object AnyVar {
 }
 
 case class JsonCmd(command: String, target: String, params: Any,
-		   all: HashMap[String, Any])
+		   all: scala.collection.Map[String, Any])
 
 class ResponseInfoHolder {
   var headers: Map[String, String] = Map.empty

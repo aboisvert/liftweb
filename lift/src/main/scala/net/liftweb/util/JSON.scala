@@ -1,12 +1,9 @@
 package net.liftweb.util;
 
-/*
-
-replaced by the Scala JSON parser
-
 import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
 import Helpers._
 
+/*
 trait JSONAny {
   implicit def strToStr(in: String) = in match {case null => JSONNull case in => JSONString(in)}
   implicit def boolToB(in: Boolean) = if (in) JSONTrue else JSONFalse
@@ -45,26 +42,31 @@ case object JSONFalse extends JSONAny {
 case object JSONNull extends JSONAny {
   override def toString = "null"
 }
+*/
 
 object JSONParser extends Parsers with ImplicitConversions { // with CombParserHelpers {
   implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
   
+  def parse(in: String): Can[Any] = theValue(in) match {
+    case Success(v, _) => Full(v)
+    case _ => Empty
+  }
+  
   def whitespace = elem(' ') | elem('\t') | elem('\n') | elem('\r')
   
   def spaces = discard(rep(whitespace))
   
-  def jsonObject = ( spaces ~ '{' ~ spaces ~ members ~ spaces ~ '}' ~ spaces ^^ {case xs =>
-    xs.filter(i => i.name.equalsIgnoreCase("command") && i.value.isInstanceOf[JSONString]) match {
-      case x :: _ => JSONCommand(x.value.asInstanceOf[JSONString].value.toLowerCase, xs.filter(!_.name.equalsIgnoreCase("command")))
-      case _ => JSONObject(xs)
-    }
+  
+  def jsonObject: Parser[Map[String, Any]] = ( spaces ~ '{' ~ spaces ~ members ~ spaces ~ '}' ~ spaces ^^ {case xs =>
+    Map(xs :_*)
     } )  |
-    spaces ~'{' ~ spaces ~ '}' ~ spaces  ^^ JSONObject(Nil)
+    spaces ~'{' ~ spaces ~ '}' ~ spaces  ^^ Map.empty
+    
   
   def members = rep1sep(pair, pair, spaces ~ ',' ~ spaces)
   
-  def pair = string ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ v => JSONPair(s,v)}
+  def pair = string ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ v => (s,v)}
   
   def string = ('\'' ~ rep(not('\'') ~ achar) ~ '\'' ^^ {case xs => xs.mkString("")}) |
                ('"' ~ rep(not('"') ~ achar) ~ '"' ^^ {case xs => xs.mkString("")})
@@ -72,18 +74,18 @@ object JSONParser extends Parsers with ImplicitConversions { // with CombParserH
   def achar = ('\\' ~ ('"' ^^ '"' | '\\' ^^ '\\' | '/' ^^ '/' | 'b' ^^ '\b' | 'n' ^^ '\n' | 'r' ^^ '\r' | 't' ^^ '\t' | 
     'u' ~ repN(4, hexDigit) ^^ {case dg => Integer.parseInt(dg.mkString(""), 16).toChar})) | elem("any char", c => c != '"' && c >= ' ')
   
-  def number: Parser[JSONNumber] =  intFracExp | intFrac | intExp |  (anInt ^^ {case n => new JSONNumber(n)})
+  def number: Parser[Double] =  intFracExp | intFrac | intExp |  (anInt ^^ {case n => n.toDouble})
   
   def exp = e ~ digits ^^ {case x ~ d => d.mkString("").toInt * x}
   
   def e = ('e' ~ '-' ^^ -1) | ('e' ~ '+' ^^ 1) | ('e' ^^ 1) |
     ('E' ~ '-' ^^ -1) | ('E' ~ '+' ^^ 1) | ('E' ^^ 1)
   
-  def intFracExp = anInt ~ frac ~ exp ^^ {case i ~ f ~ exp => JSONNumber((i.toString+"."+f+"e"+exp).toDouble)}
+  def intFracExp: Parser[Double] = anInt ~ frac ~ exp ^^ {case i ~ f ~ exp => ((i.toString+"."+f+"e"+exp).toDouble)}
   
-  def intFrac = anInt ~ frac ^^ {case i ~ f => JSONNumber((i.toString+"."+f).toDouble)}
+  def intFrac = anInt ~ frac ^^ {case i ~ f => ((i.toString+"."+f).toDouble)}
   
-  def intExp = anInt ~ exp ^^ {case i ~ e => JSONNumber((i.toString+"e"+e).toDouble)}
+  def intExp = anInt ~ exp ^^ {case i ~ e => ((i.toString+"e"+e).toDouble)}
   
   def anInt = (digit19 ~ digits ^^ {case x ~ xs => (x :: xs).mkString("").toLong}) | 
     (digit ^^ {case x => x.toString.toLong}) | ('-' ~ digit19 ~ digits ^^ {case x ~ xs => (x :: xs).mkString("").toLong * -1L}) | 
@@ -99,16 +101,16 @@ object JSONParser extends Parsers with ImplicitConversions { // with CombParserH
   
   def frac = '.' ~ digits
     
-  def theValue: Parser[JSONAny] = string ^^ JSONString | number | jsonObject | array | istrue | isfalse | isnull 
+  def theValue: Parser[Any] = string | number | jsonObject | array | istrue | isfalse | isnull 
   
-  def array = spaces ~ '[' ~ spaces ~ elements ~ spaces ~ ']' ~ spaces ^^ {case e => JSONArray(e)}
+  def array: Parser[List[Any]] = spaces ~ '[' ~ spaces ~ elements ~ spaces ~ ']' ~ spaces ^^ {case e => e}
     
   def elements = repsep(theValue, spaces ~ ',' ~ spaces)
   
-  def istrue = accept("true".toList) ^^ JSONTrue
-  def isfalse = accept("false".toList) ^^ JSONFalse
-  def isnull = accept("null".toList) ^^ JSONNull
+  def istrue = accept("true".toList) ^^ true
+  def isfalse = accept("false".toList) ^^ false
+  def isnull = accept("null".toList) ^^ Empty
   
-  def parse(in: String) = theValue(in)
+  // def parse(in: String) = theValue(in)
 }
-*/
+
