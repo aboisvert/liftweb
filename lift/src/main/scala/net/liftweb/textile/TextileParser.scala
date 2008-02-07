@@ -39,11 +39,18 @@ object TextileParser extends Application {
     }
     
 
-    def fixRefs(in : List[Textile], refs : HashMap[String, String]) : unit = in match {
-      case (s : RefAnchor) :: rest => {refs.get(s.ref) match {case Some(tr) => {s.href = tr} case None => {s.href = "javascript://"}}; fixRefs(rest, refs)}
-      case (s : ATextile) :: rest => {fixRefs(s.theElems, refs); fixRefs(rest, refs)}
-      case s :: rest => {fixRefs(rest, refs)}
-      case _ => {}
+    def fixRefs(in : List[Textile], refs: HashMap[String, String]): Unit = in match {
+      case Nil =>
+      
+      case (s: RefAnchor) :: rest => 
+      refs.get(s.ref) match {case Some(tr) => s.href = tr case None => s.href = "javascript://"}
+      fixRefs(rest, refs)
+      
+      case (s: ATextile) :: rest => 
+        fixRefs(s.theElems, refs)
+        fixRefs(rest, refs)
+      
+      case _ :: rest => fixRefs(rest, refs)
     }
     
     val parser = new TextileParsers(urlRewrite)

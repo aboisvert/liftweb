@@ -115,3 +115,36 @@ trait CombParserHelpers { self: Parsers =>
   
   def repNN[T](n: Int, p: => Parser[T]): Parser[List[T]] = if (n == 0) rep(p) else p ~ repNN(n - 1, p) ^^ {case ~(x, xs) => x :: xs}  
 }
+
+trait SafeSeqParser extends Parsers {
+  
+  /** A parser generator for non-empty repetitions.
+   *  
+   * <p> rep1(f, p) first uses `f' (which must succeed) and then repeatedly uses `p' to 
+   *     parse the input until `p' fails 
+   *     (the result is a `List' of the consecutive results of `f' and `p')</p>
+   *
+   * @param first a `Parser' that parses the first piece of input
+   * @param p a `Parser' that is to be applied successively to the rest of the input (if any)
+   * @return A parser that returns a list of results produced by first applying `f' and then 
+   *         repeatedly `p' to the input (it only succeeds if `f' matches).
+   */
+  override def rep1[T](first: => Parser[T], p: => Parser[T]): Parser[List[T]] = new Parser[List[T]] {
+    def apply(in0: Input) = {
+      val xs = new scala.collection.mutable.ListBuffer[T]
+      var in = in0
+      
+      var res = first(in)
+      
+      while(res.successful) {
+        xs += res.get
+        in = res.next
+        res = p(in)
+      }
+      
+      if (!xs.isEmpty) Success(xs.toList, res.next)
+      else Failure("TODO", in0)
+    }
+  }
+  
+}

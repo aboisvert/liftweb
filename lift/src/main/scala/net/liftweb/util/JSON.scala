@@ -1,50 +1,22 @@
 package net.liftweb.util;
 
+/* 
+ * Copyright 2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
 import Helpers._
 
-/*
-trait JSONAny {
-  implicit def strToStr(in: String) = in match {case null => JSONNull case in => JSONString(in)}
-  implicit def boolToB(in: Boolean) = if (in) JSONTrue else JSONFalse
-}
-
-case class JSONCommand(command: String, params: List[JSONPair]) extends JSONAny
-
-case class JSONObject(fields: List[JSONPair]) extends JSONAny {
-  private val myMap = Map(fields.map(f => (f.name, f.value)) :_*)
-  override def toString = fields.mkString("{ ", ", ", " }")
-  def apply(name: String) = myMap(name)
-  def get(name: String) = myMap.get(name)
-  def elements = myMap.elements
-  
-
-}
-case class JSONPair(name: String, value: JSONAny) {
-  override def toString = name.encJs +": "+value
-}
-case class JSONString(value: String) extends JSONAny {
-  override def toString = value.encJs
-}
-case class JSONNumber(value: Double) extends JSONAny {
-  def this(in: Long) = this(in.toDouble)
-  override def toString = value.toString
-}
-case class JSONArray(elems: List[JSONAny]) extends JSONAny {
-  override def toString = elems.mkString("[ ", ", ", " ]")  
-}
-case object JSONTrue extends JSONAny {
-  override def toString = "true"
-}
-case object JSONFalse extends JSONAny {
-  override def toString = "false"
-}
-case object JSONNull extends JSONAny {
-  override def toString = "null"
-}
-*/
-
-object JSONParser extends Parsers with ImplicitConversions { // with CombParserHelpers {
+object JSONParser extends SafeSeqParser with ImplicitConversions { 
   implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
   
