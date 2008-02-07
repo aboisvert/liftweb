@@ -465,7 +465,7 @@ object S {
     */
   def ajaxButton(text: String)(func: => JsCmd): Elem =
     <input type="button" value={text}/> % 
-      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, data: '"+
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
         mapFunc(() => func)+"=true', dataType: 'script'});"));
         
         def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
@@ -485,9 +485,9 @@ object S {
       def jsonCallback(in: List[String]): JsCmd = {
         in.flatMap(s => 
         try {
-        JSON.parse(s).toList.map(JSON.resolveType _ andThen checkCmd).map(f)
+        JSON.parse(s.trim).toList.map(JSON.resolveType _ andThen checkCmd).map(f)
       } catch {
-        case e => println("Failed to JSON parse "+s); List(JsCmds.Noop)
+        case e => println("Failed to JSON parse "+s.trim.toList.map(c => (c, c.toInt))); List(JsCmds.Noop)
       }).foldLeft(JsCmds.Noop)(_ ++ _)
       }
       
