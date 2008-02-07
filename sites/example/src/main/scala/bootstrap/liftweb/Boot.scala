@@ -1,9 +1,9 @@
 package bootstrap.liftweb
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
+(c) 2007 WorldWide Conferencing, LLC
+Distributed under an Apache License
+http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
 import net.liftweb.util.{Helpers, Can, Full, Empty, Failure, Log}
@@ -16,16 +16,16 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import scala.collection.immutable.TreeMap
 import net.liftweb.example.model._
 import net.liftweb.example.snippet.definedLocale
- 
+
 /**
-  * A class that's instantiated early and run.  It allows the application
-  * to modify lift's environment
-  */
+* A class that's instantiated early and run.  It allows the application
+* to modify lift's environment
+*/
 class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     LiftServlet.addToPackages("net.liftweb.example")
-     
+    
     LiftServlet.localeCalculator = r => definedLocale.openOr(LiftServlet.defaultLocaleCalculator(r))
     
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
@@ -33,7 +33,7 @@ class Boot {
     val dispatcher: LiftServlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
       case RequestMatcher(_, ParsePath("showcities":: _, _, _),_,  _) => XmlServer.showCities
-
+      
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
       case RequestMatcher(_, ParsePath("showstates":: xs, _, _),_,  _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
       
@@ -44,59 +44,63 @@ class Boot {
     
     val wiki_rewriter: LiftServlet.RewritePf = {
       case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => 
-         RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
-          TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
+      TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     
     LiftServlet.addRewriteBefore(wiki_rewriter)
-
+    
     val wikibind_rewriter: LiftServlet.RewritePf = {
       case RewriteRequest(_, path @ ParsePath("wikibind" :: page :: _, _,_), _, _) => 
-         RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false), 
-          TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false), 
+      TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     
+    LiftServlet.appendEarly(makeUtf8)
+        
     LiftServlet.addRewriteBefore(wikibind_rewriter)
-
+    
   }
   
   private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Can[ResponseIt] =
-      createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
-      case Full(ret: ResponseIt) => Full(ret)
-      case _ => Empty
-    })
+  createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
+    case Full(ret: ResponseIt) => Full(ret)
+    case _ => Empty
+  })
+  
+  private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
 }
 
 object XmlServer {
   def showStates(which: String)(req: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(
-      <states renderedAt={timeNow.toString}>{
-      which match {
-        case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
-        
-        case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
-        
-        case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
+  <states renderedAt={timeNow.toString}>{
+    which match {
+      case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
+      
+      case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
+      
+      case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
       } }</states>))
- 
-  def showCities(ignore: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(<cities>
-  <city name="Boston"/>
-  <city name="New York"/>
-  <city name="San Francisco"/>
-  <city name="Dallas"/>
-  <city name="Chicago"/>
-  </cities>))
-  
-}
-
-object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
-    try {
-      Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
-      val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
-      Full(dm)
-    } catch {
-      case e : Exception => e.printStackTrace; Empty
+      
+      def showCities(ignore: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(<cities>
+      <city name="Boston"/>
+      <city name="New York"/>
+      <city name="San Francisco"/>
+      <city name="Dallas"/>
+      <city name="Chicago"/>
+      </cities>))
+      
     }
-  }
-  def releaseConnection(conn: Connection) {conn.close}
-}
+    
+    object DBVendor extends ConnectionManager {
+      def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+        try {
+          Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
+          val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
+          Full(dm)
+        } catch {
+          case e : Exception => e.printStackTrace; Empty
+        }
+      }
+      def releaseConnection(conn: Connection) {conn.close}
+    }

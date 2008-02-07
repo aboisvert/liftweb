@@ -106,7 +106,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     try {
       def doIt {
         logTime("Service request ("+req.getMethod+") "+req.getRequestURI) {
-          LiftServlet.early.foreach(_(req))
           doService(req, resp, session)
         }      
       }
@@ -137,8 +136,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   * Service the HTTP request
   */ 
   def doService(request:HttpServletRequest , response: HttpServletResponse, session: RequestState) {
-    
-    
     val sessionActor = getActor(session, request.getSession)    
     val toMatch = RequestMatcher(session, session.path, RequestType(request), sessionActor)
     
@@ -191,7 +188,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       } finally {
         sessionActor.exitComet(self)
       }
-      // Response("".getBytes("UTF-8"), Nil, 200)
     } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
       S.init(session, sessionActor) {
         try {
@@ -739,6 +735,7 @@ class LiftFilter extends Filter
     
     (req, res) match {
       case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
+      LiftServlet.early.foreach(_(httpReq))
       val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq), System.nanoTime)
       if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
       else chain.doFilter(req, res)
