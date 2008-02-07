@@ -637,8 +637,7 @@ object S {
        * @param body - the NodeSeq to wrap in the anchor tag
        */
      def link(to: String, func: () => Any, body: NodeSeq): Elem = {
-       val key = "F"+System.nanoTime+"_"+randomString(3)
-       addFunctionMap(key, (a: List[String]) => {func(); true})
+       val key = mapFunc((a: List[String]) => {func(); true})
        (<a href={to+"?"+key+"=_"}>{body}</a>)
      }
     
