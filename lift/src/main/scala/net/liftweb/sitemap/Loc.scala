@@ -80,8 +80,8 @@ object Loc {
       link: Link,
       text: LinkText,
       params: LocStuff*): Loc = new Loc(name, link, text, params.toList)
-  def unapplySeq(loc: Loc) : Option[(String, Link, LinkText, Seq[LocStuff])] =
-    Some((loc.name, loc.link, loc.text, loc.stuff))
+  def unapplySeq(loc: Loc) : Option[(String, String, String, Seq[LocStuff])] =
+    Some((loc.name, loc.link.uri, loc.text.text(), loc.stuff))
 
   trait LocStuff
   case class Title(title: () => String) extends LocStuff 
