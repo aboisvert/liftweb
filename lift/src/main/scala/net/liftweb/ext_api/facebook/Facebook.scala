@@ -34,4 +34,5 @@ object Facebook {
   def sessionKey_! : String = sessionKey.open_!
   
   def loginUrl: String = "http://www.facebook.com/login.php?api_key=" + FacebookRestApi.apiKey + "&v=1.0"
+  def addUrl : String = "http://www.facebook.com/add.php?api_key=" + FacebookRestApi.apiKey
 }
