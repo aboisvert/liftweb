@@ -6,6 +6,7 @@ import org.jivesoftware.smack.Chat
 import org.jivesoftware.smack.ChatManager
 import org.jivesoftware.smack.ConnectionConfiguration
 import org.jivesoftware.smack.MessageListener
+import org.jivesoftware.smack.ChatManagerListener
 import org.jivesoftware.smack.Roster
 import org.jivesoftware.smack.RosterEntry
 import org.jivesoftware.smack.RosterListener
@@ -74,6 +75,18 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
   val chats: HashMap[String, Chat] = new HashMap[String, Chat]
   val pendingMsg: HashMap[String, List[String]] = new HashMap[String, List[String]]
   val md = new MessageDispatcher(this)
+
+  // Manage the remotely created chats, so we don't miss incomming messages
+  // The only thing we need to do is add our message listener, the rest
+  // will be managed by the dispatching actor.
+  conn.getChatManager().addChatListener(new ChatManagerListener {
+    def chatCreated(chat: Chat, createdLocally: Boolean) {
+       if (!createdLocally) {
+           chat.addMessageListener(md)
+       }
+    }
+  })
+
   def act = loop(Nil)
 
   def loop(clients: List[Actor]) {
@@ -154,10 +167,13 @@ case class Start()
 
 /**
  * An example Chat application that prints to stdout.
+ *
+ * @param username is the username to login to at Google Talk: format: something@gmail.com
+ * @param password is the password for the user account at Google Talk.
  */
-class ConsoleChatActor extends Actor {
+class ConsoleChatActor(val username: String, val password: String) extends Actor {
   def connf() = new ConnectionConfiguration("talk.google.com", 5222, "gmail.com")
-  def login(conn: XMPPConnection) = conn.login("USERNAME@gmail.com", "PASSWORD")
+  def login(conn: XMPPConnection) = conn.login(username, password)
   val xmpp = new XMPPDispatcher(connf, login)
   xmpp.start
 
@@ -233,8 +249,12 @@ class ConsoleChatActor extends Actor {
 }
 
 object ConsoleChatHelper {
-  def run = {
-    val ex = new ConsoleChatActor
+  /**
+   * @param u is the username
+   * @param p is the password
+   */
+  def run(u: String, p: String) = {
+    val ex = new ConsoleChatActor(u, p)
     ex.start
     ex ! Start
     ex
