@@ -87,11 +87,11 @@ abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   
-  /*
-  def &(right: JsExp): JsExp = new JsExp {
+  
+  def +(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + " + "+ right.toJsCmd
   }
-  */
+  
 }
 
 trait JsMethod {
