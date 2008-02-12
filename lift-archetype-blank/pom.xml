@@ -34,6 +34,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-archetype-plugin</artifactId>
+        <version>1.0-alpha-7</version>
         <executions>
           <execution>
             <phase>install</phase>
@@ -50,6 +51,9 @@
           <artifactId>sample</artifactId>
           <version>0.1</version>
           <basedir>${project.build.directory}</basedir>
+
+          <interactiveMode>false</interactiveMode>
+          <goals>package</goals>
         </configuration>
       </plugin>
     </plugins>
@@ -60,5 +64,5 @@ mvn archetype:create           \
   -DarchetypeGroupId=net.liftweb                \
   -DarchetypeArtifactId=lift-archetype-blank   \
   -DgroupId=foo.bar                                \
-  -DartifactId=toto   
+  -DartifactId=toto
 -->
