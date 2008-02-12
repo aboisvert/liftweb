@@ -172,15 +172,20 @@ object DB {
   
   def rollback(name: ConnectionIdentifier) = use(name)(conn => conn.rollback)
   
+  /**
+   * Executes {@code statement} and converts the {@code ResultSet} to model 
+   * instance {@code T} using {@code f} 
+   */
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))
-    Helpers.calcTime{
-    val rs = statement.executeQuery
-    try {
-      (statement.toString, f(rs))
-    } finally {
-      rs.close
-    }} match {case (time, (query, res)) => runLogger(query, time); res}
+    Helpers.calcTime {
+      val rs = statement.executeQuery
+      try {
+	(statement.toString, f(rs))
+      } finally {
+	statement.close
+	rs.close
+      }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
@@ -205,6 +210,10 @@ object DB {
       }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
+  /**
+   * Executes function {@code f} with the connection named {@code name}. Releases the connection
+   * before returning.
+   */
   def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
     val conn = getConnection(name)
     try {

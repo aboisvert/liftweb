@@ -66,6 +66,29 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   def findAllByInsecureSql(query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = findAllByInsecureSqlDb(dbDefaultConnectionIdentifier, query, IDidASecurityAuditOnThisQuery)
 
+  /**
+   * Execute a PreparedStatement and return a List of Mapper instances. {@code f} is 
+   * where the user will do the work of creating the PreparedStatement and 
+   * preparing it for execution.
+   *
+   * @param f A function that takes a SuperConnection and returns a PreparedStatement.
+   * @return A List of Mapper instances.
+   */
+  def findAllByPreparedStatement(f: SuperConnection => PreparedStatement): List[A] = {
+    DB.use(dbDefaultConnectionIdentifier) {
+      conn => 
+	findAllByPreparedStatement(dbDefaultConnectionIdentifier, f(conn))
+    }
+  }
+
+  def findAllByPreparedStatement(dbId: ConnectionIdentifier, stmt: PreparedStatement): List[A] = findAllByPreparedStatementDb(dbId, stmt)(a => Full(a))
+
+  def findAllByPreparedStatementDb[T](dbId: ConnectionIdentifier, stmt: PreparedStatement)(f: A => Can[T]): List[T] = {
+    DB.exec(stmt) {
+      rs => createInstances(dbId, rs, Empty, Empty, f)
+    }
+  }
+
   def findAllByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, IDidASecurityAuditOnThisQuery: boolean): List[A] = 
     findMapByInsecureSqlDb(dbId, query, IDidASecurityAuditOnThisQuery)(a => Full(a))
   
