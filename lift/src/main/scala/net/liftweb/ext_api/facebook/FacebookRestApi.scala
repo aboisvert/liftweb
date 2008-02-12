@@ -71,30 +71,35 @@ object FacebookClient {
   
   def callMethod(meth: SessionlessFacebookMethod, params: (String, Any)* ): Node =
     call(buildParams(meth.name, params))
-    
-  def authGetSession(authToken: String) : Option[String] = {
-    (callMethod(AuthGetSession, ("auth_token", authToken)) \\ "session_key").text match {
-      case "" => None
-      case sessionKey => Some(sessionKey)
-    }
-  }
   
-  def fromSessionKey(sessionKey: String) : FacebookClient = {
-    new FacebookClient(sessionKey)
+  def fromSession(session: FacebookSession) : FacebookClient = {
+    new FacebookClient(session)
   }
   
   def fromAuthToken(authToken: String) : Option[FacebookClient] = {
+    FacebookSession.fromAuthToken(authToken).map(fromSession)
+  }
+  
+  type State = {
+    def sessionKey: Option[String]
+    def expiration: Option[Long]
+    def uid: Option[String]
+  }
+  
+  def fromState(implicit state: State) : Option[FacebookClient] = {
     for (
-      sessionKey <- authGetSession(authToken)
-    ) yield fromSessionKey(sessionKey)
+      key <- state.sessionKey;
+      exp <- state.expiration;
+      uid <- state.uid
+    ) yield fromSession(FacebookSession(key, exp, uid))
   }
 }
   
-class FacebookClient(val apiKey: String, val secret: String, val sessionKey: String) {
+class FacebookClient(val apiKey: String, val secret: String, val session: FacebookSession) {
   import FacebookRestApi._
   import FacebookClient._
   
-  def this(sessionKey: String) = this(FacebookRestApi.apiKey, FacebookRestApi.secret, sessionKey)
+  def this(session: FacebookSession) = this(FacebookRestApi.apiKey, FacebookRestApi.secret, session)
   
   def callMethod(meth: FacebookMethod, name: String, mimeType: String, file: Array[Byte], params: (String, Any)* ): Node = {
     val boundary = System.currentTimeMillis.toString
@@ -138,7 +143,7 @@ class FacebookClient(val apiKey: String, val secret: String, val sessionKey: Str
   private def buildParams(meth: FacebookMethod, params: Seq[(String, Any)]): List[(String, Any)] = {
     val allParams: List[(String, Any)] =
       (if (meth.requiresSession)
-        List("call_id" -> System.currentTimeMillis, "session_key" -> sessionKey)
+        List("call_id" -> System.currentTimeMillis, "session_key" -> session.key)
       else
         Nil) :::
       params.toList
@@ -150,6 +155,25 @@ class FacebookClient(val apiKey: String, val secret: String, val sessionKey: Str
     callMethod(GetInfo, ("uids", users.mkString(",")), ("fields", fields.map(_.name).mkString(",")))
   }
 }
+
+object FacebookSession {
+  def apply(key: String, expiration: Long, uid: String) : FacebookSession =
+    new FacebookSession(key, expiration, uid)
+  
+  def fromAuthToken(authToken: String): Option[FacebookSession] = {
+    val response = FacebookClient.callMethod(AuthGetSession, ("auth_token", authToken))
+    val key = (response \\ "session_key").text
+    val uid = (response \\ "uid").text
+    val expiration = (response \\ "expires").text
+    
+    if (key == "")
+      None
+    else
+      Some(FacebookSession(key, expiration.toLong, uid))
+  }
+}
+
+class FacebookSession(val key: String, val expiration: Long, val uid: String)
   
 class FacebookMethod(val name: String, paramCnt: Int, attachment: Boolean) {
   def this(nm: String, cnt: Int) { this(nm, cnt, false) }
