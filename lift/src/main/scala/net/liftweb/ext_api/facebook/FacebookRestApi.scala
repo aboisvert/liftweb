@@ -78,6 +78,16 @@ object FacebookClient {
       case sessionKey => Some(sessionKey)
     }
   }
+  
+  def fromSessionKey(sessionKey: String) : FacebookClient = {
+    new FacebookClient(sessionKey)
+  }
+  
+  def fromAuthToken(authToken: String) : Option[FacebookClient] = {
+    for (
+      sessionKey <- authGetSession(authToken)
+    ) yield fromSessionKey(sessionKey)
+  }
 }
   
 class FacebookClient(val apiKey: String, val secret: String, val sessionKey: String) {
