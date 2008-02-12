@@ -19,9 +19,9 @@ trait JxYieldFunc {
 }
 
 trait JxBase {
-  this: Node =>
+  self: Node =>
   
-  def ++(other: Node): Seq[Node] = this :: other :: Nil
+  // def ++(other: Node): Seq[Node] = this :: other :: Nil
   
   def appendToParent(parentName: String): JsCmd
   

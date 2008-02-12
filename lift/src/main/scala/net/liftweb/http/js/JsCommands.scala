@@ -108,7 +108,7 @@ object JE {
   implicit def numToJsExp(in: Long): JsExp = Num(in)
   implicit def numToJsExp(in: Double): JsExp = Num(in)
   implicit def numToJsExp(in: Float): JsExp = Num(in)
-  implicit def setExToArray(in: Seq[JsExp]): JsArray[JsExp] = JsArray[JsExp](in :_*)
+  // implicit def setExToArray(in: Seq[JsExp]): JsArray[JsExp] = JsArray[JsExp](in :_*)
   
   case class Num(n: Number) extends JsExp {
     def toJsCmd = n.toString
