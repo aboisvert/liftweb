@@ -30,7 +30,7 @@ CometActor(initInfo) {
     case ChatServerUpdate(value) => 
     (value diff currentData) match {
       case Nil =>
-      case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a +# AppendHtml(infoId, line(b))))
+      case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a & AppendHtml(infoId, line(b))))
     }
     
     currentData = value

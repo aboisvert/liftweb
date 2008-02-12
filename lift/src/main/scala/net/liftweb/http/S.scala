@@ -488,7 +488,7 @@ object S {
       JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
   } catch {
     case e => println("Failed to JSON parse "+s.trim.toList.map(c => (c, c.toInt))); List(JsCmds.Noop)
-  }).foldLeft(JsCmds.Noop)(_ +# _)
+  }).foldLeft(JsCmds.Noop)(_ & _)
   }
   
   addFunctionMap(key, jsonCallback _)

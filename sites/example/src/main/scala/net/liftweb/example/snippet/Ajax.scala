@@ -49,7 +49,7 @@ class Ajax {
 			 v => DisplayMessage("messages", 
 					     Text("You entered some text: "+v),
 					     4 seconds, 1 second)
-			 +# SetHtml("the_text", Text(v))))
+			 & SetHtml("the_text", Text(v))))
     } <br />
 
     <textarea id="the_area" cols="50" rows="10"></textarea>

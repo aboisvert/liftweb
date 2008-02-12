@@ -99,7 +99,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
           case Nil => if (when >= lastRenderTime) listeners += sender.receiver
         else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
           case all @ (hd :: xs) => sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
-              Full(all.reverse.foldLeft(Noop.asInstanceOf[JsCmd])(_ +# _.js)), Empty, buildSpan, false), whosAsking openOr this, hd.when, false)
+              Full(all.reverse.foldLeft(Noop.asInstanceOf[JsCmd])(_ & _.js)), Empty, buildSpan, false), whosAsking openOr this, hd.when, false)
         }
     }
     
@@ -250,9 +250,9 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
     spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean) {
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
-    val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) +#
+    val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
     ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match { 
-    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) +# JsCmds.JsTry(js, false)
+    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) & JsCmds.JsTry(js, false)
     // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
     
     // case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
@@ -265,7 +265,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
 //      fixedXhtml.openOr(Text(""))))
 
     case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
-      fixedXhtml.openOr(Text("")))) +# JsCmds.JsTry(js, false)
+      fixedXhtml.openOr(Text("")))) & JsCmds.JsTry(js, false)
       
     case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
       fixedXhtml.openOr(Text(""))))
@@ -273,7 +273,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
     case (_, Full(js), _) => js
     
     case _ => JsCmds.Noop
-  }) +# JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
+  }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
       ret
   }
 
@@ -308,6 +308,6 @@ case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false) 
   def ++(cmd: JsCmd) = 
-    RenderOut(xhtml, fixedXhtml, script.map(_ +# cmd) or Full(cmd),
+    RenderOut(xhtml, fixedXhtml, script.map(_ & cmd) or Full(cmd),
 	      destroyScript, ignoreHtmlOnJs)
 }

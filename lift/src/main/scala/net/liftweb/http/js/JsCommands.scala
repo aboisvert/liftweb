@@ -17,8 +17,8 @@ object JsCommands {
 }
 
 class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
-  def +#(in: JsCmd) = new JsCommands(in :: reverseList)
-  def +#(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
+  def &(in: JsCmd) = new JsCommands(in :: reverseList)
+  def &(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
   
   def toResponse = {
     val data = reverseList.reverse.map(_.toJsCmd).mkString("\n").getBytes("UTF-8")
@@ -71,7 +71,7 @@ abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   
   def appendToParent(parentName: String): JsCmd = {
     val ran = "v"+randomString(10)
-    JsCmds.JsCrVar(ran, this) +#
+    JsCmds.JsCrVar(ran, this) &
     JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+".cloneNode(true));} else {"+
     parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
   }
@@ -87,9 +87,11 @@ abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   
-  def +(right: JsExp): JsExp = new JsExp {
+  /*
+  def &(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + " + "+ right.toJsCmd
   }
+  */
 }
 
 trait JsMethod {
@@ -419,12 +421,12 @@ trait HtmlFixer {
 }
 
 trait JsCmd extends HtmlFixer {
-  def +#(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
+  def &(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
   def toJsCmd: String
 }
 
 object JsCmds {
-  implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ +# _)
+  implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ & _)
   
   object Script {
     def apply(script: JsCmd): NodeSeq = <script>{Unparsed("""
@@ -599,6 +601,6 @@ object JsCmds {
     
     def realDuration: Long = duration.len
     
-    def toJsCmd = (Show(where) +# SetHtml(where, msg) +# After(realDuration, Hide(where, realFadeTime))).toJsCmd
+    def toJsCmd = (Show(where) & SetHtml(where, msg) & After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }
 }
