@@ -118,9 +118,19 @@ object JE {
     def toJsCmd = "JSON.stringify("+in.toJsCmd+")"
   }
   
+  object JsArray {
+    def apply(in: JsExp*): JsExp = new JsExp {
+      def toJsCmd = in.map(_.toJsCmd).mkString("[",", ", "]\n")
+    }
+    
+    def apply(in: List[JsExp]): JsExp = this.apply(in :_*)
+    
+  }
+  
+  /*
   case class JsArray[T <% JsExp](in: T*) extends JsExp {
     def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]\n")
-  }
+  }*/
   
   case class ValById(id: String) extends JsExp {
     def toJsCmd = "document.getElementById("+id.encJs+").value"
