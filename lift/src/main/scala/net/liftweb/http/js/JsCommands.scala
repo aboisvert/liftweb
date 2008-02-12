@@ -9,6 +9,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import scala.xml.{NodeSeq, Group, Unparsed, Elem}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
+import scala.xml.{Node, SpecialNode}
 
 object JsCommands {
   def create = new JsCommands(Nil)  
@@ -16,8 +17,8 @@ object JsCommands {
 }
 
 class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
-  def ++(in: JsCmd) = new JsCommands(in :: reverseList)
-  def ++(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
+  def +#(in: JsCmd) = new JsCommands(in :: reverseList)
+  def +#(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
   
   def toResponse = {
     val data = reverseList.reverse.map(_.toJsCmd).mkString("\n").getBytes("UTF-8")
@@ -56,16 +57,33 @@ case class JsonCall(funcId: String) {
   
 }
 
-trait JsExp extends HtmlFixer {
+abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   def toJsCmd: String
+  
+  // def label: String = "#JS"
+  
+  override def toString(sb: StringBuilder) = {
+    sb.append("<!-- ")
+    sb.append(toJsCmd)
+    sb.append("\n-->")
+    sb
+  }
+  
+  def appendToParent(parentName: String): JsCmd = {
+    val ran = "v"+randomString(10)
+    JsCmds.JsCrVar(ran, this) +#
+    JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+".cloneNode(true));} else {"+
+    parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
+  }
   
   def !(right: JsMethod): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + "." + right.toJsCmd
   }
   
+  /*
   def :=(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd +" = " +right.toJsCmd
-  }
+  }*/
   
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   
@@ -401,12 +419,12 @@ trait HtmlFixer {
 }
 
 trait JsCmd extends HtmlFixer {
-  def ++(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
+  def +#(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)  
   def toJsCmd: String
 }
 
 object JsCmds {
-  implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ ++ _)
+  implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ +# _)
   
   object Script {
     def apply(script: JsCmd): NodeSeq = <script>{Unparsed("""
@@ -581,6 +599,6 @@ object JsCmds {
     
     def realDuration: Long = duration.len
     
-    def toJsCmd = (Show(where) ++ SetHtml(where, msg) ++ After(realDuration, Hide(where, realFadeTime))).toJsCmd
+    def toJsCmd = (Show(where) +# SetHtml(where, msg) +# After(realDuration, Hide(where, realFadeTime))).toJsCmd
   }
 }

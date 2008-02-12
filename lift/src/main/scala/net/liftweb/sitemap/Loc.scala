@@ -115,7 +115,7 @@ object Loc {
   private def alwaysTrue(a: (ParsePath, RequestState, HttpServletRequest)) = true
   private def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
   
-  implicit def strToLinkText(in: String): LinkText = LinkText(f(in))
+  implicit def strToLinkText(in: => String): LinkText = LinkText(() => in)
   implicit def strToLink(in: String): Link = Link(in, false, alwaysTrue _, retString(in) _)
   implicit def strPairToLink(in: (String, Boolean)): Link = Link(in._1, in._2, alwaysTrue _, retString(in._1) _)
   implicit def strToFailMsg(in: String): FailMsg = FailMsg(f(RedirectWithMessage("/", in)))
