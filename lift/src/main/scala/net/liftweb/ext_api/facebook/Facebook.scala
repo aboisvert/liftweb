@@ -5,7 +5,8 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Failure, Full}
 
 object Facebook {
-  object API extends SessionVar[Can[FacebookClient]](sessionKey.map(k => new FacebookClient(k)))
+  object SessionKey extends SessionVar[Can[String]](sessionKey)
+  object API extends SessionVar[Can[FacebookClient]](SessionKey.map(k => new FacebookClient(k)))
   
   def canvasPage_? : boolean = S.param("fb_sig_in_canvas") match {
     case Full(num) if toInt(num) == 1 => true
@@ -28,6 +29,8 @@ object Facebook {
   }
   
   def userId_! : Int = userId.open_!
+  
+  private def authToken : Can[String] = S.param("auth_token")
   
   def sessionKey : Can[String] = S.param("fb_sig_session_key")
   

@@ -9,7 +9,11 @@ object FacebookRestApi {
   def apiKey = System.getProperty("com.facebook.api_key")
   def secret = System.getProperty("com.facebook.secret")
   def apiKey_=(key: String) = System.setProperty("com.facebook.api_key", key)
-  def secret_=(key: String) = System.setProperty("com.facebook.secret", key)
+  def secret_=(key: String) = System.setProperty("com.facebook.secret", key)  
+}
+
+object FacebookClient {
+  import FacebookRestApi._
   
   val TARGET_API_VERSION = "1.0"
   val FB_SERVER = "api.facebook.com/restserver.php"
@@ -30,16 +34,55 @@ object FacebookRestApi {
 
   def byteToHex(b: Byte): String = Integer.toHexString((b & 0xf0) >>> 4) + Integer.toHexString(b & 0x0f)
     
-  def genSignature(allParams: List[(String, Any)], secret: String, sessionKey: String, requireSession: Boolean): String = {
+  def genSignature(allParams: List[(String, Any)], secret: String): String = {
     val md = java.security.MessageDigest.getInstance("MD5")
     val theStr = convert(allParams).sort(_ < _).mkString("") + secret
 
     md.digest((theStr).getBytes).map(byteToHex(_)).mkString("")
   }
+
+  private[facebook] def call(params: List[(String, Any)]): Node = {
+    val theParams = params.map{case (name, value) => urlEncode(name)+"="+urlEncode(value.toString)}.mkString("&")
+
+    SERVER_URL.openConnection match {
+      case conn: HttpURLConnection => {
+        conn.setRequestMethod("POST")
+        conn.setDoOutput(true)
+        conn.connect
+        conn.getOutputStream.write(theParams.getBytes())
+
+        XML.load(conn.getInputStream())
+      }
+    }
+  }
+  
+  private[facebook] def buildParams(methodName: String, params: Seq[(String, Any)]): List[(String, Any)] = {
+    val allParams: List[(String, Any)] =
+      ("method", methodName) ::
+      ("api_key", apiKey) ::
+      ("v",  TARGET_API_VERSION) ::
+      params.toList
+
+    val signature = genSignature(allParams, secret)
+
+    val ret = "sig" -> signature :: allParams
+    ret
+  }
+  
+  def callMethod(meth: SessionlessFacebookMethod, params: (String, Any)* ): Node =
+    call(buildParams(meth.name, params))
+    
+  def authGetSession(authToken: String) : Option[String] = {
+    (callMethod(AuthGetSession, ("auth_token", authToken)) \\ "session_key").text match {
+      case "" => None
+      case sessionKey => Some(sessionKey)
+    }
+  }
 }
   
 class FacebookClient(val apiKey: String, val secret: String, val sessionKey: String) {
   import FacebookRestApi._
+  import FacebookClient._
   
   def this(sessionKey: String) = this(FacebookRestApi.apiKey, FacebookRestApi.secret, sessionKey)
   
@@ -78,39 +121,21 @@ class FacebookClient(val apiKey: String, val secret: String, val sessionKey: Str
       }
     }
   }
-
+    
+  def callMethod(meth: FacebookMethod, params: (String, Any)* ): Node =
+    call(buildParams(meth, params))
+  
   private def buildParams(meth: FacebookMethod, params: Seq[(String, Any)]): List[(String, Any)] = {
     val allParams: List[(String, Any)] =
-      ("method", meth.name) ::
-      ("api_key", apiKey) ::
-      ("v",  TARGET_API_VERSION) ::
       (if (meth.requiresSession)
         List("call_id" -> System.currentTimeMillis, "session_key" -> sessionKey)
       else
         Nil) :::
       params.toList
-
-    val signature = genSignature(allParams, secret, sessionKey, meth.requiresSession)
-
-    val ret = "sig" -> signature :: allParams
-    ret
+    
+    FacebookClient.buildParams(meth.name, allParams)
   }
-
-  def callMethod(meth: FacebookMethod, params: (String, Any)* ): Node = {
-    val theParams = buildParams(meth, params).map{case (name, value) => urlEncode(name)+"="+urlEncode(value.toString)}.mkString("&")
-
-    SERVER_URL.openConnection match {
-      case conn: HttpURLConnection => {
-        conn.setRequestMethod("POST")
-        conn.setDoOutput(true)
-        conn.connect
-        conn.getOutputStream.write(theParams.getBytes())
-
-        XML.load(conn.getInputStream())
-      }
-    }
-  }
-  
+      
   def getInfo(users: Collection[Int], fields: Collection[FacebookField]): Node = {
     callMethod(GetInfo, ("uids", users.mkString(",")), ("fields", fields.map(_.name).mkString(",")))
   }
@@ -120,15 +145,18 @@ class FacebookMethod(val name: String, paramCnt: Int, attachment: Boolean) {
   def this(nm: String, cnt: Int) { this(nm, cnt, false) }
   def this(nm: String) { this(nm, 0) }
 
-  def requiresSession: Boolean = this match {
-    case AuthCreateToken | AuthGetSession => false
-    case _ => true
-  }
+  def requiresSession: Boolean = true
 }
 
-case object AuthCreateToken extends FacebookMethod("facebook.auth.createToken")
+class SessionlessFacebookMethod(override val name: String, paramCnt: Int) extends FacebookMethod(name, paramCnt, false) {
+  def this(nm: String) = this(nm, 0)
+  
+  override def requiresSession = false
+}
+
+case object AuthCreateToken extends SessionlessFacebookMethod("facebook.auth.createToken")
+case object AuthGetSession extends SessionlessFacebookMethod("facebook.auth.getSession", 1)
 case object GetFriends extends FacebookMethod("facebook.friends.get")
-case object AuthGetSession extends FacebookMethod("facebook.auth.getSession", 1)
 case object FqlQuery extends FacebookMethod("facebook.fql.query", 1)
 case object GetEvents extends FacebookMethod("facebook.events.get", 5)
 case object GetEventsMembers extends FacebookMethod("facebook.events.getMembers", 1)
