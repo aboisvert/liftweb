@@ -23,25 +23,16 @@ import scala.xml.transform._
 
 object LiftSession {
   
-  def createSession(session: HttpSession, uri: String,
-  path: ParsePath,
-  contextPath: String,
-  requestType: RequestType,
-  webServices_? : boolean,
-  contentType: String) = (new LiftSession(uri, path, contextPath, requestType, webServices_?, contentType)).setSession(session)
+  def createSession(session: HttpSession,  contextPath: String) = (new LiftSession(contextPath)).setSession(session)
   
   var creator = createSession _
   
-  def apply(session: HttpSession, uri: String,
-  path: ParsePath,
-  contextPath: String,
-  requestType: RequestType,
-  webServices_? : boolean,
-  contentType: String) = creator(session, uri, path, contextPath, requestType, webServices_?, contentType)
+  def apply(session: HttpSession, contextPath: String) = 
+  creator(session, contextPath)
 }
 
 @serializable
-class LiftSession(val uri: String, val path: ParsePath, val contextPath: String, val requestType: RequestType, val webServices_? : Boolean, val contentType: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil

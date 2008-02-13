@@ -92,8 +92,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     val ret = session.getValue(actorNameConst) match {
       case r: LiftSession => r
       case _ => 
-      val ret = LiftSession(session, request.uri, request.path, request.contextPath, request.requestType, request.webServices_?,
-      request.contentType)
+      val ret = LiftSession(session, request.contextPath)
       // ret.start
       session.putValue(actorNameConst, ret)
       ret
@@ -314,6 +313,17 @@ object LiftServlet {
     }
   }
   
+  /**
+    * The maximum allowed size of a complete mime multi-part POST.  Default
+    * 8MB
+    */
+  var maxMimeSize: Long = 8 * 1024 * 1024
+  
+  /**
+    * The maximum allowed size of a single file in a mime multi-part POST.
+    * Default 7MB
+    */
+  var maxMimeFileSize: Long = 7 * 1024 * 1024
   
   /**
   * The function referenced here is called if there's a localization lookup failure
@@ -775,7 +785,6 @@ class LiftFilter extends Filter
       case e => Log.error("Failed to Boot", e); None
     }
   }
-  
   
   private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
   {

@@ -39,6 +39,9 @@ object Can {
     case _ => Empty
   }
   
+  def apply[InType, OutType](pf: PartialFunction[InType, OutType], value: InType): Can[OutType] =
+  if (pf.isDefinedAt(value)) Full(pf(value)) else Empty
+  
   /**
    * This method is used to transform any AnyRef to a Can.
    * @returns a Can object from an object. Full(in) if the object is not null and Empty otherwise.
