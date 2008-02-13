@@ -46,13 +46,13 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   final def removeRegExChars(regEx: String)(in: String): String = in.replaceAll(regEx, "")
   
   final def toLower(in: String): String = in match {
-  case null => null
-  case s => s.toLowerCase
-}
+    case null => null
+    case s => s.toLowerCase
+  }
   final def toUpper(in: String): String = in match {
-  case null => null
-  case s => s.toUpperCase
-}
+    case null => null
+    case s => s.toUpperCase
+  }
 
   final def trim(in: String): String = in match {
     case null => null

@@ -768,12 +768,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   <td>{form}</td>
   </tr></xml:group>)
   
-  def toForm(toMap: A): NodeSeq = 
-    mappedFieldArray.filter(_.field.dbDisplay_?).flatMap {
-      e =>
-	val field = ??(e.method, toMap)
+  def toForm(toMap: A): NodeSeq =
+    mappedFieldArray.map(e => ??(e.method, toMap)).filter(_.dbDisplay_?).flatMap {
+      field =>
         field.toForm.toList.map(form => formatFormLine(Text(field.displayName), form))
-      }
+    }
   
   /**
    * Given the prototype field (the field on the Singleton), get the field from the instance
