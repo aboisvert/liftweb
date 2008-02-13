@@ -65,6 +65,13 @@
       <version>[6.1.6,)</version>
       <scope>test</scope>
     </dependency>
+    <!-- for LiftConsole -->
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-compiler</artifactId>
+      <version>${scala.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
@@ -103,7 +110,7 @@
               <goal>compress</goal>
             </goals>
           </execution>
-        </executions>        
+        </executions>
         <configuration>
           <nosuffix>true</nosuffix>
         </configuration>
