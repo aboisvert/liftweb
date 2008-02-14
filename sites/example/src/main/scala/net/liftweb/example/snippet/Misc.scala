@@ -1,10 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.example.snippet
-
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
 
 import net.liftweb.example.model._
 import scala.xml.{NodeSeq, Text, Group}
@@ -18,7 +27,7 @@ import java.util.Locale
 
 class Misc {
   private object selectedUser extends RequestVar[Can[User]](Empty)
-  
+
   /**
    * Get the XHTML containing a list of users
    */
@@ -30,36 +39,36 @@ class Misc {
     // the header
     <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
   // get and display each of the users
-  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine} 
-		       <td>{link("/simple/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
-		       <td>{link("/simple/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
-		       </tr>)
+  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine}
+           <td>{link("/simple/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
+           <td>{link("/simple/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
+           </tr>)
   }
-   
+
   /**
    * Confirm deleting a user
    */
-  def confirmDelete(xhtml: Group): NodeSeq = {      
+  def confirmDelete(xhtml: Group): NodeSeq = {
     (for (user <- selectedUser.is) // find the user
-     yield { 
+     yield {
        def deleteUser(ignore: String) {
          notice("User "+(user.firstName+" "+user.lastName)+" deleted")
          user.delete_!
          redirectTo("/simple/index.html")
        }
-       
+
        // bind the incoming XHTML to a "delete" button.
        // when the delete button is pressed, call the "deleteUser"
        // function (which is a closure and bound the "user" object
        // in the current content)
        bind("xmp", xhtml, "username" --> (user.firstName.is+" "+user.lastName.is),
-	    "delete" --> submit("Delete", deleteUser))
-       
+      "delete" --> submit("Delete", deleteUser))
+
        // if the was no ID or the user couldn't be found,
        // display an error and redirect
      }) openOr {error("User not found"); redirectTo("/simple/index.html")}
    }
-  
+
   // called when the form is submitted
   private def saveUser(user: User) = user.validate match {
              // no validation errors, save the user, and go
@@ -74,35 +83,35 @@ class Misc {
   /**
     * Add a user
     */
-  def add(xhtml: Group): NodeSeq = 
-    selectedUser.is.openOr(new User).toForm(Empty, saveUser _) ++ <tr> 
+  def add(xhtml: Group): NodeSeq =
+    selectedUser.is.openOr(new User).toForm(Empty, saveUser _) ++ <tr>
     <td><a href="/simple/index.html">Cancel</a></td>
     <td><input type="submit" value="Create"/></td>
-    </tr>    
+    </tr>
 
   /**
    * Edit a user
    */
-  def edit(xhtml: Group): NodeSeq = 
+  def edit(xhtml: Group): NodeSeq =
     selectedUser.map(_.
-	 // get the form data for the user and when the form
-	 // is submitted, call the passed function.
-	 // That means, when the user submits the form,
-	 // the fields that were typed into will be populated into
-	 // "user" and "saveUser" will be called.  The
-	 // form fields are bound to the model's fields by this
-	 // call.
-         toForm(Empty, saveUser _) ++ <tr> 
+   // get the form data for the user and when the form
+   // is submitted, call the passed function.
+   // That means, when the user submits the form,
+   // the fields that were typed into will be populated into
+   // "user" and "saveUser" will be called.  The
+   // form fields are bound to the model's fields by this
+   // call.
+         toForm(Empty, saveUser _) ++ <tr>
            <td><a href="/simple/index.html">Cancel</a></td>
            <td><input type="submit" value="Save"/></td>
          </tr>
 
        // bail out if the ID is not supplied or the user's not found
      ) openOr {error("User not found"); redirectTo("/simple/index.html")}
-  
+
   // the request-local variable that hold the file parameter
   private object theUpload extends RequestVar[Can[FileParamHolder]](Empty)
-  
+
   /**
     * Bind the appropriate XHTML to the form
     */
@@ -120,12 +129,12 @@ class Misc {
       case _ => definedLocale(Empty)
     }
   }
-  
+
   def lang(xhtml: Group): NodeSeq = bind("showLoc", xhtml,
       "lang" --> locale.getDisplayLanguage(locale),
       "select" --> S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
-        map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))  
-      
+        map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))
+
 }
 
 object definedLocale extends SessionVar[Can[Locale]](Empty)

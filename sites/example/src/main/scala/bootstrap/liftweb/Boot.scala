@@ -1,10 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package bootstrap.liftweb
-
-/*                                                *\
-(c) 2007 WorldWide Conferencing, LLC
-Distributed under an Apache License
-http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
 
 import net.liftweb.util.{Helpers, Can, Full, Empty, Failure, Log}
 import net.liftweb.http._
@@ -25,49 +34,49 @@ class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     LiftServlet.addToPackages("net.liftweb.example")
-    
+
     LiftServlet.localeCalculator = r => definedLocale.openOr(LiftServlet.defaultLocaleCalculator(r))
-    
+
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
-    
+
     val dispatcher: LiftServlet.DispatchPf = {
       // if the url is "showcities" then return the showCities function
       case RequestMatcher(_, ParsePath("showcities":: _, _, _),_,  _) => XmlServer.showCities
-      
+
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
       case RequestMatcher(_, ParsePath("showstates":: xs, _, _),_,  _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
-      
+
       // if it's a web service, pass it to the web services invoker
       case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_),_, _) => invokeWebService(r, c)
     }
     LiftServlet.addDispatchBefore(dispatcher)
-    
+
     val wiki_rewriter: LiftServlet.RewritePf = {
-      case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) => 
-      RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false), 
+      case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>
+      RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false),
       TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-    
+
     LiftServlet.addRewriteBefore(wiki_rewriter)
-    
+
     val wikibind_rewriter: LiftServlet.RewritePf = {
-      case RewriteRequest(_, path @ ParsePath("wikibind" :: page :: _, _,_), _, _) => 
-      RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false), 
+      case RewriteRequest(_, path @ ParsePath("wikibind" :: page :: _, _,_), _, _) =>
+      RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false),
       TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-    
+
     LiftServlet.appendEarly(makeUtf8)
-        
+
     LiftServlet.addRewriteBefore(wikibind_rewriter)
-    
+
   }
-  
+
   private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Can[ResponseIt] =
   createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
     case Full(ret: ResponseIt) => Full(ret)
     case _ => Empty
   })
-  
+
   private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
 }
 
@@ -76,12 +85,12 @@ object XmlServer {
   <states renderedAt={timeNow.toString}>{
     which match {
       case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
-      
+
       case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
-      
+
       case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
       } }</states>))
-      
+
       def showCities(ignore: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(<cities>
       <city name="Boston"/>
       <city name="New York"/>
@@ -89,9 +98,9 @@ object XmlServer {
       <city name="Dallas"/>
       <city name="Chicago"/>
       </cities>))
-      
+
     }
-    
+
     object DBVendor extends ConnectionManager {
       def newConnection(name: ConnectionIdentifier): Can[Connection] = {
         try {

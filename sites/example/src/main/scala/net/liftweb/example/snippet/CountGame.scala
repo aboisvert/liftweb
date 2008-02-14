@@ -1,10 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.example.snippet
-
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
 
 import net.liftweb.example.model._
 import scala.xml.{NodeSeq, Text, Group}
@@ -18,29 +27,29 @@ import net.liftweb.util._
 
 class CountGame extends StatefulSnippet {
   val dispatch: DispatchIt = {
-    case "run" if lastGuess == number => 
+    case "run" if lastGuess == number =>
       xhtml => win(chooseTemplate("choose", "win", xhtml))
-    
-    case "run" => 
+
+    case "run" =>
       xhtml => nextGuess(chooseTemplate("choose", "guess", xhtml))
   }
-  
-  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number, 
-				 "count" --> count)
-  
-  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml, 
-					"input" --> text("", guess _),
-					"last" --> 
-					lastGuess.map(v => 
-					  if (v < number) v+" is low" 
-					  else v+" is high").
-					openOr("Make first Guess"))
-  
+
+  def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number,
+         "count" --> count)
+
+  def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml,
+          "input" --> text("", guess _),
+          "last" -->
+          lastGuess.map(v =>
+            if (v < number) v+" is low"
+            else v+" is high").
+          openOr("Make first Guess"))
+
   private def guess(in: String) {
     count += 1
     lastGuess = Full(toInt(in))
   }
-    
+
   private val number = 1 + randomInt(100)
   private var lastGuess: Can[Int] = Empty
   private var count = 0

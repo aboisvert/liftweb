@@ -1,10 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.example.comet
-
-/*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
-  Distributed under an Apache License
-  http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
 
 import scala.actors.Actor
 import scala.actors.Actor._
@@ -22,7 +31,7 @@ import java.util.Date
 
 class ChatServer extends Actor {
   def act = loop(Nil, Nil)
-  
+
   /**
     * Convert an incoming string into XHTML using Textile Markup
     *
@@ -33,16 +42,16 @@ class ChatServer extends Actor {
   def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, Empty). // parse it
       map(_.toHtml.toList match {case Nil => Nil case x :: xs => x.child}).  // convert to html and get the first child (to avoid things being wrapped in <p>)
       getOrElse(Text(msg)) // if it wasn't parsable, then just return a Text node of the message
-  
+
   def loop(chat: List[ChatLine], sessions: List[Actor]) {
     react {
-    case ChatServerMsg(user, msg) if msg.length > 0 => 
+    case ChatServerMsg(user, msg) if msg.length > 0 =>
       val chatu = (ChatLine(user, toHtml(msg), timeNow) :: chat).take(500)
       val toDistribute = chatu.take(15)
       sessions.foreach (_ ! ChatServerUpdate(toDistribute))
       loop(chatu, sessions)
 
-    case ChatServerAdd(me) => 
+    case ChatServerAdd(me) =>
       me ! ChatServerUpdate(chat.take(15))
       loop(chat, me :: sessions)
 

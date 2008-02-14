@@ -1,10 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.example.snippet
-
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
 
 import net.liftweb.http._
 import S._
@@ -22,34 +31,34 @@ class Ajax {
     <span>
     {
       a(() => {cnt = cnt + 1; SetHtml("cnt_id", Text( cnt.toString))},
-          <span>Click me to increase the count 
-	   (currently <span id='cnt_id'>0</span>)</span>)
-      // a link that does AJAX to increment a counter server-side 
+          <span>Click me to increase the count
+     (currently <span id='cnt_id'>0</span>)</span>)
+      // a link that does AJAX to increment a counter server-side
       // and displays the result on the client
     } <br />
 
     <div id="messages"></div>
     {
-      val opts = (1 to 50).toList.map(i => (i.toString, i.toString)) 
+      val opts = (1 to 50).toList.map(i => (i.toString, i.toString))
       // build the options
-      ajaxSelect(opts, Full(1.toString), 
-		 v => DisplayMessage("messages", 
-				     Text("You selected "+v) ++
-				     <span>&nbsp;From the select box</span>,
-				     5 seconds, 1 second))
+      ajaxSelect(opts, Full(1.toString),
+     v => DisplayMessage("messages",
+             Text("You selected "+v) ++
+             <span>&nbsp;From the select box</span>,
+             5 seconds, 1 second))
     } <br />
     {
-      ajaxText("", v => DisplayMessage("messages", 
-				       Text("You entered some text: "+v),
-				       4 seconds, 1 second))
+      ajaxText("", v => DisplayMessage("messages",
+               Text("You entered some text: "+v),
+               4 seconds, 1 second))
     } <br />
     {
       swappable(<span>Click to edit: <span id='the_text'></span></span>,
-		ajaxText("", 
-			 v => DisplayMessage("messages", 
-					     Text("You entered some text: "+v),
-					     4 seconds, 1 second)
-			 & SetHtml("the_text", Text(v))))
+    ajaxText("",
+       v => DisplayMessage("messages",
+               Text("You entered some text: "+v),
+               4 seconds, 1 second)
+       & SetHtml("the_text", Text(v))))
     } <br />
 
     <textarea id="the_area" cols="50" rows="10"></textarea>
@@ -57,12 +66,12 @@ class Ajax {
 
     <a href="javascript://" onclick={
       ajaxCall("document.getElementById('the_area').value",
-	       text => DisplayMessage("messages", 
-				      <pre>{text}</pre>, 
-				      4 seconds, 200))
+         text => DisplayMessage("messages",
+              <pre>{text}</pre>,
+              4 seconds, 200))
     }>Enter text above and click me</a><br/>
     <br/>
-    
+
     <div id="some_stuff"></div>
     {
       a(<span>Click here and the stuff above will get a message</span>){
@@ -74,6 +83,6 @@ class Ajax {
 
     </span>
   }
-  
+
   def time = Text(timeNow.toString)
 }
