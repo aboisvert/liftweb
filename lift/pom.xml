@@ -153,13 +153,24 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>net.sf.alchim</groupId>
+        <artifactId>yuicompressor-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compress</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
           <excludes>
             <exclude>net/liftweb/webapptest/**</exclude>
           </excludes>
-        </configuration>      
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -180,7 +191,7 @@
       <plugin>
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>cobertura-maven-plugin</artifactId>
-				<!-- version 2.1 is bugged ouput coverage 100% or 0% -->
+        <!-- version 2.1 is bugged ouput coverage 100% or 0% -->
         <version>2.2</version>
         <configuration>
           <formats>

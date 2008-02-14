@@ -27,18 +27,19 @@ object ResourceServer {
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jlift.js" :: Nil => true
   }
-  
+
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
      case "jquery.js" :: Nil => List("jquery-1.2.3-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
+     case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
   }
-    
+
   /**
     * The base package for serving resources.  This way, resource names can't be spoofed
     */
   var baseResourceLocation = "toserve"
-  
+
   def findResourceInClasspath(request: RequestState, _uri: List[String])(req: HttpServletRequest): Can[ResponseIt] = {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
@@ -49,20 +50,20 @@ object ResourceServer {
       val mod = req.getHeader("if-modified-since")
       if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, 304)
       else Response(readWholeStream(url.openStream),
-          List(("Last-Modified", toInternetDate(uc.getLastModified)), 
+          List(("Last-Modified", toInternetDate(uc.getLastModified)),
               ("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK)
       }
     } else Empty
   }
-  
+
   /**
    * detect the Content-Type of file (path) with servlet-context-defined content-types
    * (application's web.xml or servlet container's configuration), and fall
    * back to system or JVM-defined (FileNameMap) content types.
    * if no content-type found, then return "application/octet-stream"
-   * 
+   *
    * @param path Resource name to be analyzed to detect MIME type
-   * 
+   *
    * @see ServletContext#getMimeType(String)
    * @see URLConnection#getFileNameMap()
    */
@@ -80,13 +81,13 @@ object ResourceServer {
     }
     contentType
   }
-  
+
   private def isAllowed(path: List[String]) = allowedPaths.isDefinedAt(path) && allowedPaths(path)
-   
+
   def allow(path: PartialFunction[List[String], Boolean]) {
-    allowedPaths = path orElse allowedPaths 
+    allowedPaths = path orElse allowedPaths
   }
-  
+
   def rewrite(rw: PartialFunction[List[String], List[String]]) {
     pathRewriter = rw orElse pathRewriter
   }
