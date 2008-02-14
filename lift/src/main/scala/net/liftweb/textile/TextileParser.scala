@@ -1080,6 +1080,6 @@ We use CSS(Cascading Style Sheets).
     res.toHtml
   }) getOrElse ""
     
-  println(tryit)
+
   */
 }

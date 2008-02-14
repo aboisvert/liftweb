@@ -644,7 +644,7 @@ object LiftServlet {
     case (Full(o), headers, session) => convertResponse( (o, headers, session) )
     
     case (Some(o), headers, session) => convertResponse( (o, headers, session) )
-    case (bad, _, session) => println("bad is "+bad) ; session.createNotFound.toResponse
+    case (bad, _, session) => session.createNotFound.toResponse
   }
   
   /**

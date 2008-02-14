@@ -487,7 +487,7 @@ object S {
     try {
       JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
   } catch {
-    case e => println("Failed to JSON parse "+s.trim.toList.map(c => (c, c.toInt))); List(JsCmds.Noop)
+    case e => List(JsCmds.Noop)
   }).foldLeft(JsCmds.Noop)(_ & _)
   }
   

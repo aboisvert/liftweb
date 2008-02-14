@@ -72,7 +72,8 @@ abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   def appendToParent(parentName: String): JsCmd = {
     val ran = "v"+randomString(10)
     JsCmds.JsCrVar(ran, this) &
-    JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+".cloneNode(true));} else {"+
+    JE.JsRaw("if ("+ran+".parentNode) "+ran+" = "+ran+".cloneNode(true)").cmd &
+    JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+");} else {"+
     parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
   }
   
@@ -145,6 +146,31 @@ object JE {
     )
   }
   
+  object LjSwappable {
+    def apply(visible: JsExp, hidden: JsExp): JxBase = {
+      new JxNodeBase {
+        def child = Nil
+        def appendToParent(name: String): JsCmd = 
+        JsRaw(name+".appendChild(lift$.swappable("+visible.toJsCmd
+        +", "+hidden.toJsCmd +"))").cmd
+    }
+    }
+    
+    def apply(visible: NodeSeq, hidden: NodeSeq): JxBase = {
+      new JxNodeBase {
+        def child = Nil
+        def appendToParent(name: String): JsCmd = 
+        JsRaw(name+".appendChild(lift$.swappable("+AnonFunc(
+          JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
+          addToDocFrag("df", visible.toList) &
+          JE.JsRaw("return df").cmd
+        ).toJsCmd
+        +"(), "+AnonFunc(JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
+          addToDocFrag("df", hidden.toList) &
+          JE.JsRaw("return df").cmd).toJsCmd +"()))").cmd
+    }
+    }
+  }
    
   object LjBuildIndex {
     def apply(obj: String,
@@ -306,7 +332,11 @@ object JE {
     apply(JsRaw(""))
   }
   
-  trait AnonFunc extends JsExp
+  trait AnonFunc extends JsExp {
+    def applied: JsExp = new JsExp {
+      def toJsCmd = AnonFunc.this.toJsCmd + "()"
+    }
+  }
   
   object AnonFunc {
     def apply(in: JsCmd): AnonFunc = new JsExp with AnonFunc {

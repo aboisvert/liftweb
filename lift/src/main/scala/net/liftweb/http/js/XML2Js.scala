@@ -30,30 +30,50 @@ trait JxBase {
   def addAttrs(varName: String, attrs: List[MetaData]): JsCmd = attrs.map {
     m =>
     m.value.map{
+      case exp: JsExp => 
+      JsRaw( varName+"."+m.key+" = "+exp.toJsCmd).cmd
+      
+      case cmd: JsCmd => val varName = "v"+randomString(20)
+      JsCrVar(varName, AnonFunc(cmd)) &
+      JsRaw(varName+"."+m.key+" = "+varName+"()")
+      
       case JxAttr(cmd) => 
       JsRaw(varName+"."+m.key+" = "+ cmd.toJsCmd).cmd
+      
       case JxFuncAttr(cmd) => 
       JsRaw(varName+"."+m.key+" = "+ AnonFunc(cmd).toJsCmd).cmd
-      case x => JsRaw(varName+".setAttribute("+m.key.encJs+","+x.text.encJs+");").cmd
+      
+      case x => 
+      JsRaw(varName+".setAttribute("+m.key.encJs+","+x.text.encJs+");").cmd
     }.foldLeft(Noop)(_ & _)
   }.foldLeft(Noop)(_ & _)
   
   def addToDocFrag(parent: String, elems: List[Node]): JsCmd = elems.map{
-    case Group(nodes) => addToDocFrag(parent, nodes.toList)
     case Jx(kids) => addToDocFrag(parent, kids.toList)
     case jb: JxBase => jb.appendToParent(parent)      
+    case Group(nodes) => addToDocFrag(parent, nodes.toList)
     case Text(txt) => JsRaw(parent+".appendChild(document.createTextNode("+txt.encJs+"));").cmd
+    case a: Atom[_] => JsRaw(parent+".appendChild(document.createTextNode("+a.text.encJs+"));").cmd
     case e: scala.xml.Elem =>
     val varName = "v"+randomString(10)
     JsCrVar(varName, JsRaw("document.createElement("+e.label.encJs+")")) &
-    JsRaw(parent+".appendChild("+varName+")") &
     addAttrs(varName, e.attributes.toList) &
+    JsRaw(parent+".appendChild("+varName+")") &    
     addToDocFrag(varName, e.child.toList)
-    case ns: Seq[Node] => addToDocFrag(parent, ns.toList)
-    // case _ => Noop
+    case ns: Seq[Node] =>
+    if (ns.length == 0) Noop
+    else if (ns.length == 1) {
+      Log.error("In addToDocFrag, got a "+ns+" of type "+ns.getClass.getName)
+      Noop
+    } else addToDocFrag(parent, ns.toList)
+
   }.foldLeft(Noop)(_ & _)
 }
 
+
+abstract class JxNodeBase extends Node with JxBase {
+  
+}
 
 /*
 case class JxExp(in: JsExp) extends Node with JxBase {
@@ -122,6 +142,28 @@ case class JxMatch(exp: JsExp, cases: JxCase*) extends Node with JxBase {
 }
 
 case class JxCase(toMatch: JsExp, toDo: NodeSeq)
+
+case class JxIf(toTest: JsExp, ifTrue: NodeSeq) extends Node with JxBase {
+  def child = Nil
+  def appendToParent(parentName: String): JsCmd = {
+    JsRaw("if ("+toTest.toJsCmd+") {\n"+
+    addToDocFrag(parentName, ifTrue.toList).toJsCmd+
+    "}\n")
+  }
+}
+
+case class JxIfElse(toTest: JsExp, ifTrue: NodeSeq, ifFalse: NodeSeq) extends Node with JxBase {
+  def child = Nil
+  def appendToParent(parentName: String): JsCmd = {
+    JsRaw("if ("+toTest.toJsCmd+") {\n"+
+    addToDocFrag(parentName, ifTrue.toList).toJsCmd+
+    "} else {\n" +
+    addToDocFrag(parentName, ifFalse.toList).toJsCmd+
+    "}\n")
+  }
+}
+
+
 
 case class Jx(child: NodeSeq) extends Node with JxBase with JxYieldFunc {
   
