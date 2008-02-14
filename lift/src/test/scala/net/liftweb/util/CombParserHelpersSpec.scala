@@ -1,6 +1,22 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.util
+
 import org.specs._
-import scala.util.parsing.input._  
+import scala.util.parsing.input._
 import org.specs.runner._
 import scala.util.parsing.combinator.Parsers
 import org.scalacheck._
@@ -46,11 +62,11 @@ object CombParserHelpersSpec extends Specification {
     }
     "provide a whiteSpace parser always succeeding and discarding its result" in {
       import stringWithWhiteGen._
-      val whiteSpaceParse = (s: String) => whiteSpace(s) must beLike { 
+      val whiteSpaceParse = (s: String) => whiteSpace(s) must beLike {
         case Success(x, y) => x.toString == "()"
         case _ => false
       }
-      
+
       property(whiteSpaceParse) must pass
     }
   }
@@ -73,4 +89,4 @@ object stringWithWhiteGen {
    }
   }
 }
-object ParserHelpers extends CombParserHelpers with Parsers 
+object ParserHelpers extends CombParserHelpers with Parsers

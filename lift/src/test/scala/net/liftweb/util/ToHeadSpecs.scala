@@ -1,3 +1,18 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.util
 
 import org.specs._
@@ -25,7 +40,7 @@ object ToHeadSpecs extends Specification {
                <style>
                .myClass {{
                  text-align:right;
-                 }}               
+                 }}
                </style>
              </head>
            </div>
@@ -51,14 +66,14 @@ object ToHeadSpecs extends Specification {
        </html>
        HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
      }
-     
+
      "merge <head> from real example" >> {
        val actual = <html xmlns:lift="http://liftweb.net/" xmlns="http://www.w3.org/1999/xhtml">
           <head>
             <meta content="text/html; charset=UTF-8" http-equiv="content-type"></meta>
             <meta content="" name="description"></meta>
             <meta content="" name="keywords"></meta>
-          
+
             <title>lift webapptest</title>
             <script type="text/javascript" src="/scripts/jquery-1.2.1.js"></script>
           </head>
@@ -75,7 +90,7 @@ object ToHeadSpecs extends Specification {
             <meta content="text/html; charset=UTF-8" http-equiv="content-type"></meta>
             <meta content="" name="description"></meta>
             <meta content="" name="keywords"></meta>
-          
+
             <title>lift webapptest</title>
             <script type="text/javascript" src="/scripts/jquery-1.2.1.js"></script>
             <script src="foo.js" id="fromFrag"></script>
@@ -87,7 +102,7 @@ object ToHeadSpecs extends Specification {
         </html>
        HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
      }
-     
+
      "merge <lift:tohead> into a new head if not previously exist" >> {
        val actual = <html>
          <body>
@@ -192,5 +207,5 @@ object ToHeadSpecs extends Specification {
      }
    }
 
-} 
+}
 

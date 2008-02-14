@@ -1,4 +1,20 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 package net.liftweb.util
+
 import org.specs._
 import net.liftweb.util.Can._
 import org.specs.runner._
@@ -36,7 +52,7 @@ object CanSpec extends Specification {
     /*
     "be implicitly defined from any AnyRef object. If the object is null, the Can is Empty" in {
       val s: String = null
-      val c: Can[String] = s 
+      val c: Can[String] = s
       c mustBe Empty
     }
     "be implicitly defined from any AnyRef object. If the object is not null, the Can is Full" in {
@@ -113,12 +129,12 @@ object CanSpec extends Specification {
     }
     "define a 'pass' method passing the can to a function and returning itself (alias: $)" in {
       var empty = false
-      def emptyString(s: Can[String]) = s foreach {c: String => empty = c.isEmpty} 
+      def emptyString(s: Can[String]) = s foreach {c: String => empty = c.isEmpty}
       Full("") $ emptyString _
       empty must beTrue
     }
     "define a 'run' method either returning a default value or applying a user-defined function on it" in {
-      def appendToString(s: String, x: Int) = s + x.toString 
+      def appendToString(s: String, x: Int) = s + x.toString
       Full(1).run("string")(appendToString) must_== "string1"
     }
   }
@@ -187,8 +203,8 @@ object CanSpec extends Specification {
       Failure("error", Full(new LiftException("broken")), Nil).exception.get must_== new LiftException("broken")
     }
     "return a chained list of causes" in {
-      Failure("error", 
-               Full(new Exception("broken")), 
+      Failure("error",
+               Full(new Exception("broken")),
                List(Failure("nested cause", Empty, Nil))).chain must_== List(Failure("nested cause", Empty, Nil))
     }
   }
