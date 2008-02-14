@@ -9,10 +9,12 @@ package net.liftweb.http
 import scala.xml.{Node, Unparsed}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
+import javax.servlet.http.Cookie
 
 trait ToResponse extends ResponseIt {
   def out: Node
   def headers: List[(String, String)]
+  def cookies: List[Cookie]
   def code: Int
   def docType: Can[String]
   
@@ -31,7 +33,7 @@ trait ToResponse extends ResponseIt {
     
     val doc = docType.map(_ + "\n") openOr ""
       
-    Response((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, code)
+    Response((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, cookies, code)
     }
 }
 
@@ -39,9 +41,10 @@ trait ResponseIt {
   def toResponse: Response
 }
 
-case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], code: Int) extends ToResponse
+case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], 
+			 cookies: List[Cookie], code: Int) extends ToResponse
 
-case class Response(data: Array[Byte], headers: List[(String, String)], code: Int) extends ResponseIt {
+case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
   def toResponse = this
 }
 

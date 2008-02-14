@@ -15,7 +15,7 @@
 */
 package net.liftweb.http;
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import javax.servlet.{ServletContext}
 import scala.collection.mutable.{ListBuffer}
 import java.net.URLDecoder
@@ -144,7 +144,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       S.init(session, sessionActor) {
         val f = LiftServlet.dispatchTable(request)(toMatch)
         f(request) match {
-          case Full(v) => LiftServlet.convertResponse( (v, Nil, session) )
+          case Full(v) => LiftServlet.convertResponse( (v, Nil, S.cookies, session) )
           case Empty => session.createNotFound.toResponse
           case f: Failure => session.createNotFound(f).toResponse 
         }
@@ -240,16 +240,22 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     }
   }
   
+  /**
+   * Sends the {@code HttpServletResponse} to the browser using data from the 
+   * {@link Response} and {@link RequestState}.
+   */
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
     val header = insureField(resp.headers, List(("Content-Type", LiftServlet.determineContentType(request)),
-    ("Content-Encoding", "UTF-8"),
-    ("Content-Length", len.toString)));
+						("Content-Encoding", "UTF-8"),
+						("Content-Length", len.toString)))
     
     LiftServlet._beforeSend.foreach(_(resp, response, header, request))
-    
+    // set the cookies
+    resp.cookies.foreach(cookie => response.addCookie(cookie))
+
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
@@ -624,27 +630,33 @@ object LiftServlet {
     dispatchTable_i
   }
   
-  private def cvt(ns: Node, headers: List[(String, String)], session: RequestState) = 
-  convertResponse( (XhtmlResponse(Group(session.fixHtml(ns)), 
-  ResponseInfo.docType(session),
-  headers, 200), headers, session) )
-  
+  /**
+   * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
+   */
+  private def cvt(ns: Node, headers: List[(String, String)], cookies: List[Cookie], session: RequestState) = 
+    convertResponse((XhtmlResponse(Group(session.fixHtml(ns)), 
+				    ResponseInfo.docType(session),
+				    headers, cookies, 200), headers, cookies, session))
+
   var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
     case _ => List(("Expires", "0"))
   }
   
-  var convertResponse: PartialFunction[(Any, List[(String, String)],
-  RequestState), Response] = {
-    case (r: ResponseIt, _, _) => r.toResponse
-    case (ns: Group, headers, session) => cvt(ns, headers, session)
-    case (ns: Node, headers, session) => cvt(ns, headers, session)
-    case (ns: NodeSeq, headers, session) => cvt(Group(ns), headers, session)
-    case (ns: Seq[Node], headers, session) => cvt(Group(ns), headers, session)
+  /**
+   * convertResponse is a PartialFunction that reduces a given Tuple4 into a 
+   * ResponseIt that can then be sent to the browser.
+   */
+  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), Response] = {
+    case (r: ResponseIt, _, _, _) => r.toResponse
+    case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
+    case (ns: Node, headers, cookies, session) => cvt(ns, headers, cookies, session)
+    case (ns: NodeSeq, headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
+    case (ns: Seq[Node], headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
     
-    case (Full(o), headers, session) => convertResponse( (o, headers, session) )
+    case (Full(o), headers, cookies, session) => convertResponse( (o, headers, cookies, session) )
     
-    case (Some(o), headers, session) => convertResponse( (o, headers, session) )
-    case (bad, _, session) => session.createNotFound.toResponse
+    case (Some(o), headers, cookies, session) => convertResponse( (o, headers, cookies, session) )
+    case (bad, _, _, session) => session.createNotFound.toResponse
   }
   
   /**
@@ -685,11 +697,11 @@ object LiftServlet {
     XhtmlResponse((<html><body>Exception occured while processing {r.uri} 
     <pre>{
       _showException(e)     
-    }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
+    }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
     
     case (_, r, e) => 
     XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri} 
-    </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), 500)
+    </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
   }
   
   /**

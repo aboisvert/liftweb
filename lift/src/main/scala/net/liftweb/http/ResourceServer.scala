@@ -48,10 +48,10 @@ object ResourceServer {
       LiftServlet.getResource(path).map{url =>
       val uc = url.openConnection
       val mod = req.getHeader("if-modified-since")
-      if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, 304)
+      if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, Nil, 304)
       else Response(readWholeStream(url.openStream),
           List(("Last-Modified", toInternetDate(uc.getLastModified)),
-              ("Content-Type", detectContentType(rw.last))),  HttpServletResponse.SC_OK)
+              ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
       }
     } else Empty
   }

@@ -13,6 +13,7 @@ case class XmlResponse(xml: Node) extends ToResponse {
   def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> "text/xml")
+  def cookies = Nil
   def out = xml
 }
 

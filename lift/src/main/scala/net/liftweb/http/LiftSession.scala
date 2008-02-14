@@ -196,12 +196,10 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
               }
               notices = Nil
               
-              AnswerHolder(LiftServlet.
-              convertResponse((realXml,
-					    S.getHeaders(LiftServlet.
-					    defaultHeaders( 
-              (realXml, request) )),
-					    request)))
+              AnswerHolder(LiftServlet.convertResponse((realXml,
+							S.getHeaders(LiftServlet.defaultHeaders((realXml, request))),
+							S.cookies,
+							request)))
             }
             case _ => AnswerHolder(request.createNotFound)
           }
@@ -212,15 +210,18 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
         notices = S.getNotices
         
         AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
-        ResponseInfo.docType(request),
-        List("Location" -> (request.updateWithContextPath(rd.to))),
-        302))
+				   ResponseInfo.docType(request),
+				   List("Location" -> (request.updateWithContextPath(rd.to))),
+				   Nil,
+				   302))
         case rd : net.liftweb.http.RedirectException => {   
           notices = S.getNotices
           
-          AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), ResponseInfo.docType(request),
-          List("Location" -> (request.updateWithContextPath(rd.to))),
-          302))
+          AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
+				     ResponseInfo.docType(request),
+				     List("Location" -> (request.updateWithContextPath(rd.to))),
+				     Nil,
+				     302))
         }
         case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e)) // request.showException(e))
       }

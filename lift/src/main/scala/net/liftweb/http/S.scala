@@ -6,7 +6,7 @@ package net.liftweb.http
 * http://www.apache.org/licenses/LICENSE-2.0
 */
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import scala.collection.mutable.{HashMap, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
 import scala.collection.immutable.{ListMap, TreeMap}
@@ -49,7 +49,8 @@ object S {
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
-  
+  private val _responseCookies = new ThreadGlobal[ListBuffer[Cookie]]
+
   /**
   * Get the current RequestState
   *
@@ -81,12 +82,42 @@ object S {
   })
   
   /**
-  * Returns a list of session-specific dispatchers
+  * @return a list of session-specific dispatchers
   */
   def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionDispatchTableName) match {
     case rw: List[DispatchHolder] => rw
     case _ => Nil
   })
+
+  /**
+   * @return a List of any Cookies that have been set for this Response.
+   * This is a read-ony copy of the ListBuffer[Cookie] that are actually sent
+   * when the Response is sent.
+   */
+  def cookies: List[Cookie] = _responseCookies.value match { 
+    case null => Nil 
+    case xs: ListBuffer[Cookie] => xs.readOnly 
+  }
+
+  /**
+   * Adds a Cookie to the List[Cookies] that will be sent with the Response.
+   *
+   * If you wish to delete a Cookie as part of the Response, add a Cookie with
+   * a MaxAge of 0.
+   */
+  def addCookie(cookie: Cookie) {
+    _responseCookies.value match {
+      case null => {
+	val buffer = new ListBuffer[Cookie]()
+	buffer += cookie
+	_responseCookies.set(buffer)
+      }
+      case xs => {
+	xs += cookie
+      }
+    }
+    
+  }
   
   /**
   * Returns the Locale for this request based on the HTTP request's 

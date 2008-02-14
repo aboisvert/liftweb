@@ -22,7 +22,7 @@ class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
   
   def toResponse = {
     val data = reverseList.reverse.map(_.toJsCmd).mkString("\n").getBytes("UTF-8")
-    Response(data, List("Content-Length" -> data.length.toString, "Content-Type" -> "text/javascript"), 200)
+    Response(data, List("Content-Length" -> data.length.toString, "Content-Type" -> "text/javascript"), Nil, 200)
   }
 }
 
