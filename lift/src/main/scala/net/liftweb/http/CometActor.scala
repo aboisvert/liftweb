@@ -312,23 +312,28 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     askingWho match {
       case Full(who) => who forward l
       case _ =>
-        deltas.filter(_.when > when) match { 
-          case Nil => if (when >= lastRenderTime) listeners += sender.receiver
-        else sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
-          case all @ (hd :: xs) => sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
-              Full(all.reverse.foldLeft(Noop.asInstanceOf[JsCmd])(_ & _.js)), Empty, buildSpan, false), whosAsking openOr this, hd.when, false)
-        }
+      if (when < lastRenderTime) {
+        sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
+      } else {
+      deltas.filter(_.when > when) match { 
+        case Nil => listeners += sender.receiver
+        
+        case all @ (hd :: xs) => sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+        Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false), 
+        whosAsking openOr this, hd.when, false)
+      }
+      }
     }
     
     case PerformSetupComet =>
-      localSetup
-      reRender(true)
+    localSetup
+    performReRender(true)
     
     case AskRender =>
-      askingWho match {
-        case Full(who) => who forward AskRender
-        case _ => if (!deltas.isEmpty || devMode) reRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, true))
-        }
+    askingWho match {
+      case Full(who) => who forward AskRender
+      case _ => if (!deltas.isEmpty || devMode) performReRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, true))
+    }
     
     case ActionMessageSet(msgs, request) =>
     S.init(request, theSession) {
@@ -336,33 +341,52 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       reply(ret)
     }    
-      
+    
     case AskQuestion(what, who) =>
-      startQuestion(what)
-      whosAsking = Full(who)
+    startQuestion(what)
+    whosAsking = Full(who)
     
     case AnswerQuestion(what, request) =>
-      S.init(request, theSession) {
-        askingWho.foreach {
-          askingWho =>
+    S.init(request, theSession) {
+      askingWho.foreach {
+        askingWho =>
         reply("A null message to release the actor from its send and await reply... do not delete this message")
-	askingWho.unlink(self)
+        askingWho.unlink(self)
         askingWho ! ShutDown
-	this.askingWho = Empty
+        this.askingWho = Empty
         val aw = answerWith
         answerWith = Empty
-	aw.foreach(_(what))
-        reRender(true)
-        }
+        aw.foreach(_(what))
+        performReRender(true)
       }
-      
-    case ReRender(all) => reRender(all)
-
+    }
+    
+    case ReRender(all) => performReRender(all)
+    
     case ShutDown =>
     theSession.removeCometActor(this)
     localShutdown()
     self.exit("Politely Asked to Exit")
+    
+    // case ReRenderMsg(sendAll) =>
+
+    
+    case PartialUpdateMsg(cmd) =>
+        val time = deltas match {
+      case Nil => millis + 1
+      case hd :: _ => hd.when.max( millis + 1)
+    }
+    val delta = JsDelta(time, cmd)
+    val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
+    deltas = delta :: deltas.filter(_.when < garbageTime)
+    if (!listeners.isEmpty) {
+      val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+          Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
+      listeners.toList.foreach(_ ! rendered)
+      listeners.clear
+    }
   }
+  
   /**
    * It's the main method to override, to define what is rendered by the CometActor
    *
@@ -373,9 +397,13 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
    */
   def render: RenderOut
   
-  def compute: Map[String, Any] = Map.empty[String, Any]
+  // def compute: Map[String, Any] = Map.empty[String, Any]
   
-  final def reRender(sendAll: Boolean): AnswerRender = {
+  def reRender(sendAll: Boolean) {
+    this ! ReRender(sendAll)
+  }
+  
+  private def performReRender(sendAll: Boolean) {
     lastRenderTime = Math.max(millis, lastRenderTime + 1)
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
@@ -394,32 +422,20 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   protected def partialUpdate(cmd: JsCmd) {
-    val time = deltas match {
-      case Nil => millis + 1
-      case hd :: _ => hd.when.max( millis + 1)
-    }
-    val delta = JsDelta(time, cmd)
-    val garbageTime = time - 120000L // remove anything that's more than 2 minutes old
-    deltas = delta :: deltas.filter(_.when < garbageTime)
-    if (!listeners.isEmpty) {
-      val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
-          Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
-      listeners.toList.foreach(_ ! rendered)
-      listeners.clear
-    }
+    this ! PartialUpdateMsg(cmd)
   }
   
-  def startQuestion(what: Any) {}
+  protected def startQuestion(what: Any) {}
   
   /**
     * This method will be called after the Actor has started.  Do any setup here
     */
-  def localSetup(): Unit = {}
+  protected def localSetup(): Unit = {}
   
   /**
     * This method will be called as part of the shut-down of the actor.  Release any resources here.
     */
-  def localShutdown(): Unit = {}
+  protected def localShutdown(): Unit = {}
   
   def composeFunction = composeFunction_i
   
@@ -428,7 +444,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   def bind(prefix: String, vals: (String, NodeSeq)*): NodeSeq = Helpers.bind(prefix, defaultXml, vals.map(a => TheBindParam(a._1, a._2)) :_*)
   def bind(vals: (String, NodeSeq)*): NodeSeq = bind(defaultPrefix, vals :_*)
   
-  def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
+  protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
     who.start
     theSession.addCometActor(who)
     who.link(self)
@@ -438,10 +454,10 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     who ! AskQuestion(what, this)
   }
   
-  def answer(answer: Any) {
+  protected def answer(answer: Any) {
     whosAsking.foreach(_ !? AnswerQuestion(answer, S.request.open_!))
     whosAsking = Empty
-    reRender(false)
+    performReRender(false)
   }
   
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty, false)
@@ -501,6 +517,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
   //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 
+case class PartialUpdateMsg(cmd: JsCmd) extends CometMessage
 case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displayAll: Boolean) extends CometMessage
 case object PerformSetupComet extends CometMessage
