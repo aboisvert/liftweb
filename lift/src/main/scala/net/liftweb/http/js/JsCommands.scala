@@ -242,6 +242,16 @@ object JE {
      def funcName: String = "map"   
   }
   
+  object LjFold {
+    def apply(what: JsExp, init: JsExp, func: String): JsExp = new JsExp {
+      def toJsCmd = "lift$.fold("+what.toJsCmd+", "+init.toJsCmd+", "+func.encJs+")"
+    }
+
+    def apply(what: JsExp, init: JsExp, func: AnonFunc): JsExp = new JsExp {
+      def toJsCmd = "lift$.fold("+what.toJsCmd+", "+init.toJsCmd+", "+func.toJsCmd+")"
+    }
+  }
+  
     object LjFlatMap extends MostLjFuncs {
      def funcName: String = "flatMap"   
   }

@@ -979,7 +979,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     map(f => this.??(f.method, actual)).
     filter(f => !f.dbPrimaryKey_? && f.renderJs_?).flatMap{
       case fk:  Q => 
-      val key = f.obscure(fk.dbKeyToTable, fk)
+      val key = f.obscure(fk.dbKeyToTable, fk.is)
       List((fk.name, JE.Str(key)),
       (fk.name+"_obj", 
       JE.AnonFunc("index", JE.JsRaw("return index["+key.encJs+"];").cmd)))

@@ -44,6 +44,16 @@
 				}
 			},
 			
+			fold: function(array, initVal, func) {
+				var realFunc = func;
+				if (func.apply == null) {
+					realFunc = eval("function(p1, p2) {return "+func+";}");
+				}
+				lift$.foreach( array,
+					function(e) {initVal = realFunc(initVal, e);});
+				return initVal;
+			},
+			
 			filter: function(array, func) {
 				var realFunc = func;
 				if (func.apply == null) {
