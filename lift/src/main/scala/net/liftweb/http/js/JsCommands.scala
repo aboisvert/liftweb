@@ -100,8 +100,9 @@ trait JsMethod {
 }
 
 /**
-* JavaScript Expressions
-*/
+ * JavaScript Expressions. To see these in action, check out 
+ * sites/example/src/webapp/json.html
+ */
 object JE {
   implicit def strToS(in: String): Str = Str(in)
   implicit def boolToJsExp(in: Boolean): JsExp = if (in) JsTrue else JsFalse
@@ -138,8 +139,8 @@ object JE {
   }
   
   /**
-  * gets the element by ID
-  */
+   * gets the element by ID
+   */
   case class ElemById(id: String, then: String*) extends JsExp {
     override def toJsCmd = "document.getElementById("+id.encJs+")" + (
     if (then.isEmpty) "" else then.mkString(".", ".", "")
@@ -153,7 +154,7 @@ object JE {
         def appendToParent(name: String): JsCmd = 
         JsRaw(name+".appendChild(lift$.swappable("+visible.toJsCmd
         +", "+hidden.toJsCmd +"))").cmd
-    }
+      }
     }
     
     def apply(visible: NodeSeq, hidden: NodeSeq): JxBase = {
@@ -168,7 +169,7 @@ object JE {
         +"(), "+AnonFunc(JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
           addToDocFrag("df", hidden.toList) &
           JE.JsRaw("return df").cmd).toJsCmd +"()))").cmd
-    }
+      }
     }
   }
    
@@ -202,44 +203,41 @@ object JE {
     }
   }
   
-    object LjAlt {
+  object LjAlt {
 
-     def apply(obj: String, func: String, alt: String): JsExp = new JsExp {
+    def apply(obj: String, func: String, alt: String): JsExp = new JsExp {
       def toJsCmd = "lift$.alt("+obj+", "+func.encJs+", "+alt.encJs+")"
     }
     
-     def apply(obj: JsExp, func: JsExp, alt: String): JsExp = new JsExp {
+    def apply(obj: JsExp, func: JsExp, alt: String): JsExp = new JsExp {
       def toJsCmd = "lift$.alt("+obj.toJsCmd+", "+func.toJsCmd+", "+alt.encJs+")"
     }
     
-     def apply(obj: JsExp, func: JsExp, alt: JsExp): JsExp = new JsExp {
+    def apply(obj: JsExp, func: JsExp, alt: JsExp): JsExp = new JsExp {
       def toJsCmd = "lift$.alt("+obj.toJsCmd+", "+func.toJsCmd+", "+alt.toJsCmd+")"
     }
-    
-
   }
   
   object LjMagicUpdate {
-     def apply(obj: String, field: String, idField: String, toUpdate: JsExp): JsExp = new JsExp {
+    def apply(obj: String, field: String, idField: String, toUpdate: JsExp): JsExp = new JsExp {
       def toJsCmd = "lift$.magicUpdate("+obj+", "+field.encJs+", "+idField.encJs+", "+toUpdate.toJsCmd+")"
     }
     
     def apply(obj: JsExp, field: String, idField: String, toUpdate: JsExp): JsExp = new JsExp {
       def toJsCmd = "lift$.magicUpdate("+obj.toJsCmd+", "+field.encJs+", "+idField.encJs+", "+toUpdate.toJsCmd+")"
     }
-
   }
 
   object LjForeach extends MostLjFuncs {
-     def funcName: String = "foreach"   
+    def funcName: String = "foreach"   
   }
   
-    object LjFilter extends MostLjFuncs {
-     def funcName: String = "filter"   
+  object LjFilter extends MostLjFuncs {
+    def funcName: String = "filter"   
   }
   
-    object LjMap extends MostLjFuncs {
-     def funcName: String = "map"   
+  object LjMap extends MostLjFuncs {
+    def funcName: String = "map"   
   }
   
   object LjFold {
@@ -252,13 +250,13 @@ object JE {
     }
   }
   
-    object LjFlatMap extends MostLjFuncs {
-     def funcName: String = "flatMap"   
+  object LjFlatMap extends MostLjFuncs {
+    def funcName: String = "flatMap"   
   }
   
-    object LjSort extends MostLjFuncs {
-     def funcName: String = "sort"   
-     
+  object LjSort extends MostLjFuncs {
+    def funcName: String = "sort"   
+    
     def apply(obj: String): JsExp = new JsExp {
       def toJsCmd = "lift$."+funcName+"("+obj+")"
     }
@@ -269,15 +267,15 @@ object JE {
   }
   
   /**
-  * A String (JavaScript encoded)
-  */
+   * A String (JavaScript encoded)
+   */
   case class Str(str: String) extends JsExp {
     def toJsCmd = str.encJs
   }
   
   /**
-  * A JavaScript method that takes parameters
-  */
+   * A JavaScript method that takes parameters
+   */
   case class JsFunc(method: String, params: JsExp*) extends JsMethod {
     def toJsCmd = params.map(_.toJsCmd).mkString(method+"(", ", ", ")")
   }
@@ -288,16 +286,28 @@ object JE {
   
   case class JsVar(varName: String, andThen: String*) extends JsExp {
     def toJsCmd = varName + (if (andThen.isEmpty) "" 
-    else andThen.mkString(".", ".", ""))
+			     else andThen.mkString(".", ".", ""))
   }
   
   /**
-  * A value that can be retrieved from an expression
-  */
+   * A value that can be retrieved from an expression
+   */
   case class JsVal(valueName: String) extends JsMethod {
     def toJsCmd = valueName
   }
   
+  case object Id extends JsMethod {
+    def toJsCmd = "id"
+  }
+
+  case object Class extends JsMethod {
+    def toJsCmd = "class"
+  }
+
+  case object Style extends JsMethod {
+    def toJsCmd = "style"
+  }
+
   case object Value extends JsMethod {
     def toJsCmd = "value"
   }
@@ -357,28 +367,26 @@ object JE {
       def toJsCmd = "function("+params+") {"+in.toJsCmd+"}"
     }
   }
-  
 
-  
   object JsObj {
     def apply(members: (String, JsExp)*): JsExp = 
-    new JsExp {
-      def toJsCmd = members.
-      map{case (n, v) => n.encJs+": "+v.toJsCmd}.
-      mkString("{", ", ", "}\n")
-    }
+      new JsExp {
+	def toJsCmd = members.
+	map{case (n, v) => n.encJs+": "+v.toJsCmd}.
+	mkString("{", ", ", "}\n")
+      }
   }
   
   /**
-  * A JQuery query
-  */
+   * A JQuery query
+   */
   case class Jq(query: JsExp) extends JsExp with JQueryLeft {
     override def toJsCmd = "jQuery("+query.toJsCmd+")"
   }
   
   /**
-  * A JQuery query for an element based on the id of the element
-  */
+   * A JQuery query for an element based on the id of the element
+   */
   case class JqId(id: JsExp) extends JsExp with JQueryLeft {
     override def toJsCmd = "jQuery('#'+"+id.toJsCmd+")"
   }
@@ -388,29 +396,29 @@ object JE {
   }
   
   /**
-  * Append content to a JQuery
-  */
+   * Append content to a JQuery
+   */
   case class JqAppend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "append("+fixHtml("inline", content)+")"
   }
   
   /**
-  * AppendTo content to a JQuery
-  */
+   * AppendTo content to a JQuery
+   */
   case class JqAppendTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "appendTo("+fixHtml("inline", content)+")"
   }
   
   /**
-  * Append content to a JQuery
-  */
+   * Append content to a JQuery
+   */
   case class JqPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prepend("+fixHtml("inline", content)+")"
   }
   
   /**
-  * Append content to a JQuery
-  */
+   * Append content to a JQuery
+   */
   case class JqPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
   }
@@ -434,12 +442,10 @@ object JE {
       def toJsCmd = "text("+content.encJs+")"
     }
   }
-  
-  
-  
+
   /**
-  * Serialize the jquery into a JSON array
-  */
+   * Serialize the jquery into a JSON array
+   */
   case object JsonSerialize extends JsExp with JQueryRight {
     def toJsCmd = "serializeArray()"
   }
@@ -458,8 +464,8 @@ trait JQueryLeft {
   
   
   def >>(that: JQueryLeft with JQueryRight): JsExp with JQueryLeft =
-  new JsExp with JQueryLeft {
-    def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
+    new JsExp with JQueryLeft {
+      def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
   }
 }
 
