@@ -120,6 +120,23 @@ object S {
   }
   
   /**
+   * Deletes the cookie from the user's browser.
+   * @param cookie the Cookie to delete
+   */
+  def deleteCookie(cookie: Cookie) {
+    cookie.setMaxAge(0)
+    addCookie(cookie)
+  }
+  
+  /**
+   * Deletes the cookie from the user's browser.
+   * @param name the name of the cookie to delete
+   */
+  def deleteCookie(name: String) {
+    deleteCookie(new Cookie(name, ""))
+  }
+
+  /**
   * Returns the Locale for this request based on the HTTP request's 
   * Accept-Language header. If that header corresponds to a Locale
   * that's installed on this JVM then return it, otherwise return the
