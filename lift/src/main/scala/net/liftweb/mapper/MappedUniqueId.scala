@@ -41,6 +41,13 @@ class MappedGender[T <: Mapper[T]](owner: T) extends MappedEnum(owner, Genders) 
 }
 
 object Genders extends Enumeration {
-  val Male = Value(1, "Male")
-  val Female = Value(2, "Female")
+  
+  val Male = new I18NGender(1, "male")
+  val Female = new I18NGender(2, "female")
+  
+  class I18NGender(id : int, name: String) extends Val(id, name) {
+    override def toString = {
+      S.??(name)
+    }
+  }
 }

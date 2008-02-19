@@ -219,7 +219,7 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   lazy val location = LiftServlet.siteMap.flatMap(_.findLoc(this, request))
   
   def testLocation: Can[RedirectWithMessage] = if (LiftServlet.siteMap.isEmpty) Empty
-  else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", "Invalid URL"))
+     else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", S.??("invalid.url")))
   
   
   lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)

@@ -36,10 +36,10 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   
   protected def real_i_set_!(value : String) : String = {
     password() = value match {
-      case "*" | null | MappedPassword.blankPw if (value.length < 3) => {invalidPw = true ; invalidMsg = "Password must be set" ; "*"}
+      case "*" | null | MappedPassword.blankPw if (value.length < 3) => {invalidPw = true ; invalidMsg = S.??("password.must.be.set") ; "*"}
       case MappedPassword.blankPw => {return "*"}
       case _ if (value.length > 4) => {invalidPw = false; hash("{"+value+"} salt={"+salt_i.get+"}")}
-      case _ => {invalidPw = true ; invalidMsg = "Password too short"; "*"}
+      case _ => {invalidPw = true ; invalidMsg = S.??("password.too.short"); "*"}
     }
     this.dirty_?( true)
     "*"
@@ -48,7 +48,7 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   def setList(in: List[String]): Boolean =
     in match {
     case x1 :: x2 :: Nil if x1 == x2 => this.set(x1) ; true
-    case _ => invalidPw = true; invalidMsg = "Passwords do not match"; false
+    case _ => invalidPw = true; invalidMsg = S.??("passwords.do.not.match"); false
     }
   
   
@@ -56,7 +56,7 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
     f match {
       case a : Array[String] if (a.length == 2 && a(0) == a(1)) => {this.set(a(0))}
       case l : List[String] if (l.length == 2 && l.head == l(1)) => {this.set(l.head)}
-      case _ => {invalidPw = true; invalidMsg = "Passwords do not match"}
+      case _ => {invalidPw = true; invalidMsg = S.??("passwords.do.not.match")}
     }
     is
   }
@@ -72,7 +72,7 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   override def validate : List[ValidationIssue] = {
     if (!invalidPw && password.get != "*") Nil
     else if (invalidPw) List(ValidationIssue(this, invalidMsg))
-    else List(ValidationIssue(this, "Password must be set"))
+    else List(ValidationIssue(this, S.??("password.must.set")))
   }
   
   def real_convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")
@@ -103,7 +103,7 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   override def _toForm: Can[NodeSeq] = {
     val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
     Full(<span><input type='password' name={funcName} 
-	 value={is.toString}/>&nbsp;{?("repeat")}&nbsp;<input 
+	 value={is.toString}/>&nbsp;{S.??("repeat")}&nbsp;<input 
 	 type='password' name={funcName}
 	 value={is.toString}/></span>)
     }
