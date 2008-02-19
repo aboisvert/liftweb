@@ -17,9 +17,12 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.6" description="">
+      <action dev="Marius Danciu" type="add">
+        Added lift core localization support.
+      </action>
       <action dev="Steve Jenson" type="add">
         Added Cookie support.
-      </add>
+      </action>
       <action dev="Steve Jenson" type="update">
 	Updating our version of jQuery to 1.2.3.
       </action>
