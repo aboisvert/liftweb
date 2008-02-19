@@ -84,7 +84,7 @@ abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
   /**
    * -> accesses a property in the current JsExp
    */
-  def ->(right: JsMethod): JsExp = !(right)
+  def ->(right: JsMethod): JsExp = this ! right
 
   /*
   def :=(right: JsExp): JsExp = new JsExp {
