@@ -115,8 +115,7 @@ object S {
       case xs => {
 	xs += cookie
       }
-    }
-    
+    }    
   }
   
   /**
@@ -135,6 +134,14 @@ object S {
   def deleteCookie(name: String) {
     deleteCookie(new Cookie(name, ""))
   }
+
+  /**
+   * Wipes the _responseCookies contents.
+   */
+  def clearCookies {
+    _responseCookies.set(new ListBuffer[Cookie]())
+  }
+
 
   /**
   * Returns the Locale for this request based on the HTTP request's 
