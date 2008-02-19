@@ -36,7 +36,7 @@ import js._
 import javax.servlet._
 import javax.servlet.http._
 import java.io.ByteArrayOutputStream
-import java.util.{Locale, TimeZone}
+import java.util.{Locale, TimeZone, ResourceBundle}
 
 /**
 * An implementation of HttpServlet.  Just drop this puppy into 
@@ -382,9 +382,14 @@ object LiftServlet {
   var localizeStringToXml: String => NodeSeq = _stringToXml _  
   
   /**
-  * The base name of the resource bundle
-  */
+   * The base name of the resource bundle
+   */
   var resourceName = "lift"
+    
+  /**
+   * The base name of the resource bundle of the lift core code
+   */
+  var liftCoreResourceName = "i18n.lift-core"
   
   /**
   * Where to send the user if there's no comet session
@@ -811,11 +816,20 @@ class LiftFilter extends Filter
       val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
       
       b.boot
+      postBoot
     } catch {
       case e => Log.error("Failed to Boot", e); None
     }
   }
   
+  private def postBoot {
+    try {
+      ResourceBundle getBundle (LiftServlet.liftCoreResourceName)
+    } catch {
+      case _ => Log.error("LiftWeb core resource bundle was not found ! ")
+    }
+  }
+
   private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
   {
     actualServlet.service(req, res, session)
