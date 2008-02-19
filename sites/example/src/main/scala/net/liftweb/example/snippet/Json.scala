@@ -23,7 +23,7 @@ import JE._
 import textile._
 import net.liftweb.util._
 import Helpers._
-import scala.xml. _
+import scala.xml._
 
 class Json {
   object json extends JsonHandler {
