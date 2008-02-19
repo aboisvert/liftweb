@@ -47,6 +47,7 @@ object S {
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
+  private val _liftCoreResBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[ListBuffer[Cookie]]
@@ -226,6 +227,15 @@ object S {
   }
   
   /**
+   * Get the lift core resource bundle for the current locale
+   */
+  def liftCoreResourceBundle: Can[ResourceBundle] = Can(_liftCoreResBundle.value).openOr {
+     val rb = tryo(ResourceBundle.getBundle(LiftServlet.liftCoreResourceName, locale))
+     _liftCoreResBundle.set(rb)
+     rb
+  }
+
+  /**
   * Get a localized string or return the original string
   *
   * @param str the string to localize
@@ -241,6 +251,18 @@ object S {
   else
   String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray) 
   
+  /**
+   * Get a core lift localized string or return the original string
+   *
+   * @param str the string to localize
+   *
+   * @return the localized version of the string
+   */
+  def ??(str: String): String = liftCoreResourceBundle.flatMap(r => tryo(r.getObject(str) match 
+      {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
+          openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str
+  }
+   
   /**
   * Localize the incoming string based on a resource bundle for the current locale
   * @param str the string or ID to localize
