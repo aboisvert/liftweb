@@ -415,14 +415,14 @@ object JE {
   }
   
   /**
-   * Append content to a JQuery
+   * Prepend content to a JQuery
    */
   case class JqPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prepend("+fixHtml("inline", content)+")"
   }
   
   /**
-   * Append content to a JQuery
+   * PrependTo content to a JQuery
    */
   case class JqPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
@@ -556,11 +556,37 @@ object JsCmds {
     }
   }
   
+  /**
+   * Append a NodeSeq to a node specified by uid using jQuery's append() method.
+   */
   object AppendHtml {
     def apply(uid: String, content: NodeSeq): JsCmd =
-    JE.JqId(JE.Str(uid)) >> JE.JqAppend(content)
+      JE.JqId(JE.Str(uid)) >> JE.JqAppend(content)
   }
-  
+
+  /**
+   * AppendTo a NodeSeq to a node specified by uid using jQuery's appendTo() method.
+   */
+  object AppendToHtml {
+    def apply(uid: String, content: NodeSeq): JsCmd =
+      JE.JqId(JE.Str(uid)) >> JE.JqAppendTo(content)
+  }
+
+  /**
+   * Prepends a NodeSeq to a node specified by uid using jQuery's prepend() method.
+   */
+  object PrependHtml {
+    def apply(uid: String, content: NodeSeq): JsCmd = 
+      JE.JqId(JE.Str(uid)) >> JE.JqPrepend(content)
+  }
+
+  /**
+   * Prepends a NodeSeq to a node specified by uid using jQuery prependTo() method.
+   */
+  object PrependToHtml {
+    def apply(uid: String, content: NodeSeq): JsCmd = 
+      JE.JqId(JE.Str(uid)) >> JE.JqPrependTo(content)
+  }
   
   
   case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
