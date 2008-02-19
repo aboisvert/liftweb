@@ -10,7 +10,7 @@ import scala.actors.{Actor}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
-import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute}
+import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
 // import S._
@@ -284,7 +284,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(_handleJson)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
-  parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))
+  parentTag.scope, Group(xml)) % (new UnprefixedAttribute("id", uniqueId, Null)) % (new PrefixedAttribute("lift", "when", time.toString, Null))
   
   
   def act = {
