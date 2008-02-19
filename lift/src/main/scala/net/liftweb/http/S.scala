@@ -924,15 +924,14 @@ object S {
     abstract class JsonHandler {
       private val name = "_lift_json_"+getClass.getName
       private def handlers: (JsonCall, JsCmd) = 
-      S.servletSession.map(s => s.getAttribute(name) match 
-      {case Full((x: JsonCall, y: JsCmd)) => 
-        (x, y)
-			  case _ => 
-        val ret: (JsonCall, JsCmd) = 
-        S.buildJsonFunc(this.apply)
-			  s.setAttribute(name, Full(ret))
-			  ret
-			}).openOr( (JsonCall(""), JsCmds.Noop) )
+	S.servletSession.map(s => s.getAttribute(name) match {
+	  case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
+	  case _ => { 
+	    val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+	    s.setAttribute(name, Full(ret))
+	    ret
+	  }
+	}).openOr( (JsonCall(""), JsCmds.Noop) )
       
       def call: JsonCall = handlers._1
       
