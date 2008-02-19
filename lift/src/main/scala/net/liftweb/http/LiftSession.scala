@@ -40,6 +40,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   private val asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
   private val asyncById = new HashMap[String, CometActor]()
   
+  val uniqueId = "LiftSession_"+randomString(20)
+  
   var httpSession: HttpSession = _
   
   def sessionDidActivate(se: HttpSessionEvent) = {
@@ -620,7 +622,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   class AddScriptTag extends RewriteRule {
     override def transform(n: Node) = n match {
       case Elem(null, "head", attr @ _, scope @ _, kids @ _*) =>
-      Elem(null, "head", attr,  scope, (kids ++ <script src="/scripts/jquery-cur.min.js" type="text/javascript"/>) :_*)
+      Elem(null, "head", attr,  scope, (kids ++ <script src="/classpath/jquery.js" type="text/javascript"/>) :_*)
       case _ => n
     }
   }

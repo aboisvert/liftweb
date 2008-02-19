@@ -46,6 +46,8 @@ case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String,
 
 case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
   def toResponse = this
+  
+  override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
 }
 
 /**

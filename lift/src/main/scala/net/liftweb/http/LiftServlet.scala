@@ -150,6 +150,9 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         }
       }
     } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
+      
+      LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+session.params)
+      
       // sessionActor.breakOutComet()
       sessionActor.enterComet(self)
       try {
@@ -181,6 +184,11 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
             val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
             
+            val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
+            
+            
+            LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
+            
             (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
           }
         }
@@ -188,6 +196,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         sessionActor.exitComet(self)
       }
     } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
+      LiftServlet.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+session.params)
       S.init(session, sessionActor) {
         try {
           val what = flatten(sessionActor.runParams(session))
@@ -202,6 +211,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
           }
           
+          LiftServlet.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
           ret
         } finally {
           sessionActor.updateFunctionMap(S.functionMap)
@@ -589,6 +599,14 @@ object LiftServlet {
   private var templateTable_i: TemplatePf = Map.empty
   
   private var snippetTable_i: SnippetPf = Map.empty
+  
+  var cometLoggerBuilder: () => LiftLogger = () => {
+    val ret = LogBoot.loggerByName("comet_trace")
+    ret.level = LiftLogLevels.Off
+    ret
+  }
+  
+  lazy val cometLogger: LiftLogger = cometLoggerBuilder()
   
   def addSnippetBefore(pf: SnippetPf) = {
     snippetTable_i = pf orElse snippetTable_i

@@ -1,10 +1,10 @@
 package net.liftweb.http
 
 /*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+(c) 2007 WorldWide Conferencing, LLC
+Distributed under an Apache License
+http://www.apache.org/licenses/LICENSE-2.0
+\*                                                 */
 
 import scala.actors.{Actor}
 import scala.actors.Actor._
@@ -18,6 +18,13 @@ import net.liftweb.http.js._
 import JsCmds._
 import JE._
 import net.liftweb.mapper.{MetaMapper, MappedField, KeyedMapper, KeyedMetaMapper, MappedEnum, KeyObfuscator }
+import java.util.concurrent.atomic.AtomicLong
+
+object CometActor {
+  private val serial = new AtomicLong
+  
+  def next: Long = serial.incrementAndGet
+}
 
 // import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
 
@@ -27,9 +34,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   @serializable
   private object Never
   val uniqueId = "LC"+randomString(20)
-  private var lastRenderTime = millis
+  private var lastRenderTime = CometActor.next
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
-						   Empty, Empty, Empty, false)
+  Empty, Empty, Empty, false)
   private var wasLastFullRender = false
   @transient
   private var t_listeners = new ListBuffer[Actor]()
@@ -51,14 +58,14 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   def defaultPrefix: String
   
   /**
-    * Set to 'true' if we should run "render" on every page load
-    */
+  * Set to 'true' if we should run "render" on every page load
+  */
   protected def devMode = false
   
   def hasOuter = true
   
   def parentTag = <span/>
-
+  
   private def _handleJson(in: Any): JsCmd = 
   if (jsonHandlerChain.isDefinedAt(in))
   jsonHandlerChain(in)
@@ -98,18 +105,18 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   /*
   abstract class JxSelect[KeyType, FieldType, KMType <: KeyedMapper[KeyType, KMType]](val meta: KeyedMetaMapper[KeyType, KMType],
   val field: MappedField[FieldType, KMType]) extends JxNodeBase with JsonBridge[KeyType, FieldType, KMType] {
-    
-    def child = Nil
-    
-    def appendToParent(parentName: String) = {
-      (renderExp).appendToParent(parentName)
-    }
-    
-    def renderExp: JsExp = (Jx(buildCheckbox).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]")))
-    
-    def buildCheckbox = <input type="checkbox" onclick={AnonFunc(theCall(JsRaw("this.checked")))} 
-    checked={JsVar("it", field.name)} />
-    
+  
+  def child = Nil
+  
+  def appendToParent(parentName: String) = {
+  (renderExp).appendToParent(parentName)
+  }
+  
+  def renderExp: JsExp = (Jx(buildCheckbox).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]")))
+  
+  def buildCheckbox = <input type="checkbox" onclick={AnonFunc(theCall(JsRaw("this.checked")))} 
+  checked={JsVar("it", field.name)} />
+  
   }*/
   
   class JxCheckbox[KeyType, KMType <: KeyedMapper[KeyType, KMType]](val meta: KeyedMetaMapper[KeyType, KMType],
@@ -156,7 +163,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
   }
   
-   abstract class JxSelect[KeyType, FieldType, KMType <: KeyedMapper[KeyType, KMType]](val meta: KeyedMetaMapper[KeyType, KMType],
+  abstract class JxSelect[KeyType, FieldType, KMType <: KeyedMapper[KeyType, KMType]](val meta: KeyedMetaMapper[KeyType, KMType],
   val field: MappedField[FieldType, KMType], val enum: List[(String, FieldType)]) extends JxNodeBase with JsonBridge[KeyType, FieldType, KMType] {
     
     def child = Nil
@@ -182,12 +189,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     
     /*
     def cvt: PartialFunction[Any, Can[FieldType]] = {
-      case null => Empty
-      case x: Int => tryo(enum(x))
-      case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))
-      case _ => Empty
+    case null => Empty
+    case x: Int => tryo(enum(x))
+    case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))
+    case _ => Empty
     }*/
-        
+    
     def values: List[(String, FieldType)] = enum
   }
   
@@ -203,9 +210,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     def renderExp: JsExp = Jx(buildInput).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
     
     /**
-      * A JavaScript expression that builds an array of Name, Value pairs for valid
-      * select box stuff
-      */
+    * A JavaScript expression that builds an array of Name, Value pairs for valid
+    * select box stuff
+    */
     def buildMapList: JsExp
     
     def buildInput: NodeSeq = <select onchange={AnonFunc(onChangeCmd)}>
@@ -224,12 +231,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     
     /*
     def cvt: PartialFunction[Any, Can[FieldType]] = {
-      case null => Empty
-      case x: Int => tryo(enum(x))
-      case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))
-      case _ => Empty
+    case null => Empty
+    case x: Int => tryo(enum(x))
+    case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))
+    case _ => Empty
     }*/
-
+    
   }
   
   class JxEnumSelect[KeyType, Enum <: Enumeration, KMType <: KeyedMapper[KeyType, KMType]](val meta: KeyedMetaMapper[KeyType, KMType],
@@ -262,7 +269,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))
       case _ => Empty
     }
-        
+    
     def values: List[Enum#Value] = enum.elements.toList
   }
   
@@ -273,33 +280,33 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   
   def handleJson(in: Any): JsCmd = Noop
-
+  
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(_handleJson)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
-      parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))
-          
+  parentTag.scope, Group(xml)) % ("id" -> uniqueId) % (new PrefixedAttribute("lift", "when", time.toString, Null))
+  
   
   def act = {
     this.trapExit = true
     loop {
-    react(composeFunction)
+      react(composeFunction)
     }
   }
   
   def fixedRender: Can[NodeSeq] = Empty
-
+  
   def highPriority : PartialFunction[Any, Unit] = {
     case Never =>
   }
   
   def lowPriority : PartialFunction[Any, Unit] = {
-  case Never =>
-}
+    case Never =>
+  }
   
   def mediumPriority : PartialFunction[Any, Unit] = {
-  case Never =>
-}  
+    case Never =>
+  }  
   
   private def _lowPriority : PartialFunction[Any, Unit] = {
     case s => Log.debug("CometActor "+this+" got unexpected message "+s)
@@ -315,13 +322,14 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       if (when < lastRenderTime) {
         sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
       } else {
-      deltas.filter(_.when > when) match { 
-        case Nil => listeners += sender.receiver
-        
-        case all @ (hd :: xs) => sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
-        Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false), 
-        whosAsking openOr this, hd.when, false)
-      }
+        deltas.filter(_.when > when) match { 
+          case Nil => listeners += sender.receiver
+          
+          case all @ (hd :: xs) =>
+          sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+          Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false), 
+          whosAsking openOr this, hd.when, false)
+        }
       }
     }
     
@@ -369,32 +377,30 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     self.exit("Politely Asked to Exit")
     
     // case ReRenderMsg(sendAll) =>
-
+    
     
     case PartialUpdateMsg(cmd) =>
-        val time = deltas match {
-      case Nil => millis + 1
-      case hd :: _ => hd.when.max( millis + 1)
-    }
+    val time = CometActor.next
     val delta = JsDelta(time, cmd)
-    val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
-    deltas = delta :: deltas.filter(_.when < garbageTime)
+    //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
+    //deltas = delta :: deltas.filter(_.when < garbageTime)
+    deltas = delta :: deltas
     if (!listeners.isEmpty) {
       val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
-          Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
+      Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
       listeners.toList.foreach(_ ! rendered)
       listeners.clear
     }
   }
   
   /**
-   * It's the main method to override, to define what is rendered by the CometActor
-   *
-   * There are implicit conversions for a bunch of stuff to
-   * RenderOut (including NodeSeq).  Thus, if you don't declare the return
-   * turn to be something other than RenderOut and return something that's
-   * coersable into RenderOut, the compiler "does the right thing"(tm) for you.
-   */
+  * It's the main method to override, to define what is rendered by the CometActor
+  *
+  * There are implicit conversions for a bunch of stuff to
+  * RenderOut (including NodeSeq).  Thus, if you don't declare the return
+  * turn to be something other than RenderOut and return something that's
+  * coersable into RenderOut, the compiler "does the right thing"(tm) for you.
+  */
   def render: RenderOut
   
   // def compute: Map[String, Any] = Map.empty[String, Any]
@@ -404,7 +410,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   private def performReRender(sendAll: Boolean) {
-    lastRenderTime = Math.max(millis, lastRenderTime + 1)
+    lastRenderTime = CometActor.next
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
     S.initIfUninitted(theSession) {
@@ -428,13 +434,13 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   protected def startQuestion(what: Any) {}
   
   /**
-    * This method will be called after the Actor has started.  Do any setup here
-    */
+  * This method will be called after the Actor has started.  Do any setup here
+  */
   protected def localSetup(): Unit = {}
   
   /**
-    * This method will be called as part of the shut-down of the actor.  Release any resources here.
-    */
+  * This method will be called as part of the shut-down of the actor.  Release any resources here.
+  */
   protected def localShutdown(): Unit = {}
   
   def composeFunction = composeFunction_i
@@ -480,40 +486,40 @@ case class CometActorInitInfo(theSession: LiftSession,name: Can[String],defaultX
 
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
-    spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean) {
+spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean) {
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq) =  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     val ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
     ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match { 
-    case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) & JsCmds.JsTry(js, false)
-    // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
-    
-    // case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
-    case (Full(xml), _, false) => JsCmds.SetHtml(id, xml)
-    
-//    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
-//      fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
+      case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) & JsCmds.JsTry(js, false)
+      // case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, session.processSurroundAndInclude("Comet id: "+id, xml)) ++ JsCmds.JsTry(js, false)
       
-//    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
-//      fixedXhtml.openOr(Text(""))))
-
-    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
+      // case (Full(xml), _, false) => JsCmds.SetHtml(id, session.processSurroundAndInclude(xml))
+      case (Full(xml), _, false) => JsCmds.SetHtml(id, xml)
+      
+      //    case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+      //      fixedXhtml.openOr(Text("")))) ++ JsCmds.JsTry(js, false)
+      
+      //    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", session.processSurroundAndInclude(<span id={id}>{xml}</span> ++
+      //      fixedXhtml.openOr(Text(""))))
+      
+      case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
       fixedXhtml.openOr(Text("")))) & JsCmds.JsTry(js, false)
       
-    case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
+      case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
       fixedXhtml.openOr(Text(""))))
-    
-    case (_, Full(js), _) => js
-    
-    case _ => JsCmds.Noop
-  }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
-      ret
-  }
-
-  def inSpan: NodeSeq = xml.openOr(Text(""))++javaScript.map(s => Script(s)).openOr(Text("")) 
       
+      case (_, Full(js), _) => js
+      
+      case _ => JsCmds.Noop
+  }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
+  ret
+  }
+  
+  def inSpan: NodeSeq = xml.openOr(Text(""))++javaScript.map(s => Script(s)).openOr(Text("")) 
+  
   def outSpan: NodeSeq = Script(Run("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")) ++
-    fixedXhtml.openOr(Text(""))
+  fixedXhtml.openOr(Text(""))
   //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 
@@ -530,18 +536,18 @@ case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends
 case class ReRender(doAll: Boolean) extends CometMessage
 
 /**
- * @param xhtml is the "normal" render body
- * @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
- * @param script is the script to be executed on render.  This is where you want to put your script
- * @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
- * @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE 
- */
+* @param xhtml is the "normal" render body
+* @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
+* @param script is the script to be executed on render.  This is where you want to put your script
+* @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
+* @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE 
+*/
 @serializable
 case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false) 
   def ++(cmd: JsCmd) = 
-    RenderOut(xhtml, fixedXhtml, script.map(_ & cmd) or Full(cmd),
-	      destroyScript, ignoreHtmlOnJs)
+  RenderOut(xhtml, fixedXhtml, script.map(_ & cmd) or Full(cmd),
+  destroyScript, ignoreHtmlOnJs)
 }
