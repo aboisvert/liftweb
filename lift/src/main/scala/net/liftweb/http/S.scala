@@ -845,7 +845,22 @@ object S {
       (<input type="hidden" name={name} value="false"/>) ++
       ((<input type="checkbox" name={name} value="true" />) % checked(value))
     }
-    
+   
+  /**
+   * Defines a &lt;input type="checkbox"&gt; {@code Element} with an 
+   * associated function set to {@code func} and a default value set
+   * to {@code value}.
+   */
+  def checkbox_s(value: Boolean, func: Boolean => Any): Elem = {
+      def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
+        f(in.exists(toBoolean(_)))
+        true
+      }
+    val name = mapFunc(LFuncHolder(from(func)))
+    <input type="checkbox" name={name} value={value.toString} /> % checked(value)
+
+  }
+
     // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
     implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
     implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
