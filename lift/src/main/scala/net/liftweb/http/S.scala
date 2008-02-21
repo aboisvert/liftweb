@@ -821,6 +821,7 @@ object S {
     }
     
     private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
+    private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", id, Null); case _ => Null}
     
     def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any): ChoiceHolder[T] = {
       val len = possible.length
@@ -831,35 +832,31 @@ object S {
       ChoiceItem(p._1, (<input type="checkbox" name={name} value={p._2.toString}/>) % checked(actual.contains(p._1)) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
     }
     
+    /**
+     * Defines a new checkbox set to {@code value} and running {@code func} when the 
+     * checkbox is submitted.
+     */
     def checkbox(value: Boolean, func: Boolean => Any): NodeSeq = {
+      checkbox_id(value, func, Empty)
+    }
+
+    /**
+     * Defines a new checkbox set to {@code value} and running {@code func} when the
+     * checkbox is submitted. Has an id of {@code id}.
+     */
+    def checkbox_id(value: Boolean, func: Boolean => Any, id: Can[String]): NodeSeq = {
       def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
         f(in.exists(toBoolean(_)))
         true
       }
-      checkbox_*(value, LFuncHolder(from(func)))
+      checkbox_*(value, LFuncHolder(from(func)), Empty)
     }
     
-    def checkbox_*(value: Boolean, func: AFuncHolder): NodeSeq = {
+    def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String]): NodeSeq = {
       val name = mapFunc(func)
-      // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
       (<input type="hidden" name={name} value="false"/>) ++
-      ((<input type="checkbox" name={name} value="true" />) % checked(value))
+      ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
     }
-   
-  /**
-   * Defines a &lt;input type="checkbox"&gt; {@code Element} with an 
-   * associated function set to {@code func} and a default value set
-   * to {@code value}.
-   */
-  def checkbox_s(value: Boolean, func: Boolean => Any): Elem = {
-      def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
-        f(in.exists(toBoolean(_)))
-        true
-      }
-    val name = mapFunc(LFuncHolder(from(func)))
-    <input type="checkbox" name={name} value={value.toString} /> % checked(value)
-
-  }
 
     // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
     implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
