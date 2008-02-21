@@ -427,7 +427,15 @@ object JE {
   case class JqPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
     override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
   }
-  
+
+  /**
+   * EmptyAfter will empty the node at the given uid and stick the given content behind it. Like
+   * a cleaner innerHTML.
+   */
+  case class JqEmptyAfter(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "empty().after("+fixHtml("inline", content)+")"
+  }
+
   object JqHtml {
     def apply() = new JsExp with JQueryRight {
       def toJsCmd = "html()"
@@ -578,6 +586,14 @@ object JsCmds {
   object PrependHtml {
     def apply(uid: String, content: NodeSeq): JsCmd = 
       JE.JqId(JE.Str(uid)) >> JE.JqPrepend(content)
+  }
+
+  /**
+   * Replaces the children of the node at {@code uid} with {@code content}
+   */
+  object EmptyAfter {
+    def apply(uid: String, content: NodeSeq): JsCmd = 
+      JE.JqId(JE.Str(uid)) >> JE.JqEmptyAfter(content)
   }
 
   /**
