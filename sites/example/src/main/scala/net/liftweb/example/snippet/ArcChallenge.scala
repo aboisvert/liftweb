@@ -52,8 +52,8 @@ class ArcChallenge extends StatefulSnippet {
   def ask = {
     <p>
     Say Anything:
-    {S.text("", p => {phrase = Full(p); thinking = Empty})}
-    {S.submit("Submit", ignore => {})}
+    {S.text("", p => phrase = Full(p))}
+    {S.submit("Submit", ignore => thinking = Empty)}
     </p>
   }
 
