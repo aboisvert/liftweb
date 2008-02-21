@@ -73,10 +73,6 @@ class ArcChallenge extends StatefulSnippet {
     </p>
   }
 
-  def setPhrase(n: String) {
-    phrase = Full(n)
-  }
-
   private var phrase: Can[String] = Empty
   private var thinking: Can[Boolean] = Empty
 }
