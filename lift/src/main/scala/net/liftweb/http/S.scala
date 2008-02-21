@@ -849,7 +849,7 @@ object S {
         f(in.exists(toBoolean(_)))
         true
       }
-      checkbox_*(value, LFuncHolder(from(func)), Empty)
+      checkbox_*(value, LFuncHolder(from(func)), id)
     }
     
     def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String]): NodeSeq = {
