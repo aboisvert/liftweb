@@ -142,6 +142,14 @@ object JE {
   case class ValById(id: String) extends JsExp {
     def toJsCmd = "document.getElementById("+id.encJs+").value"
   }
+
+  /**
+   * Put any JavaScript expression you want in here and the result will be 
+   * evaluated.
+   */
+  case class RunExp(exp: String) extends JsExp {
+    def toJsCmd = exp
+  }
   
   /**
    * gets the element by ID
