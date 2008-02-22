@@ -35,16 +35,7 @@ import scala.xml.{NodeSeq, Text, Group}
  * @author: Steve Jenson
  */
 class ArcChallenge extends StatefulSnippet {
-  val dispatch: DispatchIt = {
-    case "ask" if phrase.isEmpty =>
-      xhtml => ask
-
-    case "ask" if thinking.isEmpty =>
-      xhtml => think
-
-    case "ask" =>
-     xhtml => answer
-  }
+  var dispatch: DispatchIt = {case _ => xhtml => ask}
 
   /**
    * Step 1: Type in a Phrase.
@@ -52,8 +43,8 @@ class ArcChallenge extends StatefulSnippet {
   def ask = {
     <p>
     Say Anything:
-    {S.text("", p => phrase = Full(p))}
-    {S.submit("Submit", ignore => thinking = Empty)}
+    {S.text("", p => phrase = p)}
+    {S.submit("Submit", ignore => dispatch = {case _ => xhtml => think})}
     </p>
   }
 
@@ -61,7 +52,7 @@ class ArcChallenge extends StatefulSnippet {
    * Step 2: Show a link that takes you to the Phrase you entered.
    */
   def think = {
-    S.submit("Click here to see what you said", ignore => thinking = Full(true))
+    S.submit("Click here to see what you said", ignore => dispatch = {case _ => xhtml => answer})
   }
 
   /**
@@ -69,10 +60,9 @@ class ArcChallenge extends StatefulSnippet {
    */
   def answer = {
     <p>
-    You said: {phrase.openOr("")}
+    You said: {phrase}
     </p>
   }
 
-  private var phrase: Can[String] = Empty
-  private var thinking: Can[Boolean] = Empty
+  private var phrase = ""
 }
