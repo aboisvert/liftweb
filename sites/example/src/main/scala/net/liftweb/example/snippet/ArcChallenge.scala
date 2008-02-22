@@ -51,18 +51,13 @@ class ArcChallenge extends StatefulSnippet {
   /**
    * Step 2: Show a link that takes you to the Phrase you entered.
    */
-  def think = {
-    S.submit("Click here to see what you said", ignore => dispatch = {case _ => xhtml => answer})
-  }
+  def think = S.submit("Click here to see what you said",
+		       ignore => dispatch = {case _ => xhtml => answer})
 
   /**
    * Step 3: Show the phrase.
    */
-  def answer = {
-    <p>
-    You said: {phrase}
-    </p>
-  }
+  def answer = <p>You said: {phrase}</p>
 
   private var phrase = ""
 }
