@@ -144,14 +144,6 @@ object JE {
   }
 
   /**
-   * Put any JavaScript expression you want in here and the result will be 
-   * evaluated.
-   */
-  case class RunExp(exp: String) extends JsExp {
-    def toJsCmd = exp
-  }
-  
-  /**
    * gets the element by ID
    */
   case class ElemById(id: String, then: String*) extends JsExp {
@@ -293,6 +285,10 @@ object JE {
     def toJsCmd = params.map(_.toJsCmd).mkString(method+"(", ", ", ")")
   }
   
+  /**
+   * Put any JavaScript expression you want in here and the result will be 
+   * evaluated.
+   */
   case class JsRaw(rawJsCmd: String) extends JsExp {
     def toJsCmd = rawJsCmd
   }
