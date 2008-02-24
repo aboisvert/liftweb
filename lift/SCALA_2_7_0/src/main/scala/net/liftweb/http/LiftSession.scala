@@ -358,14 +358,14 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
   
-  private def findSnippetClass(name: String): Can[Class] = {
+  private def findSnippetClass(name: String): Can[Class[C] forSome {type C}] = {
     if (name == null) Empty
     else findClass(name, LiftServlet.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
   
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
-    findSnippetClass(cls).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
+    findSnippetClass(cls).flatMap((clz: Class[_]) => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
       case Full(md: MetaData) => Full(md.copy(rest))
       case _ => Empty
     }).flatMap(s => s))).openOr(rest)
@@ -385,14 +385,12 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
   
-  private val snippetClasses: HashMap[String, Class] = new HashMap
-  
   private def findSnippetInstance(cls: String): Can[AnyRef] = 
   S.snippetForClass(cls) or 
-  (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
+  (findSnippetClass(cls).flatMap((c: Class[_]) => instantiate(c)) match {
     case Full(inst: StatefulSnippet) => 
     inst.snippetName = cls; S.setSnippetForClass(cls, inst); Can(inst)
-    case Full(ret) => Can(ret)
+    case c@Full(ret) => c
     case _ => Empty
   })
   
@@ -538,8 +536,9 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
-      cls =>
+    def isCometActor(c: Class[_]) = classOf[CometActor].isAssignableFrom(c)
+    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), isCometActor _).flatMap{
+      (cls : Class[C] forSome {type C}) =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
         val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))

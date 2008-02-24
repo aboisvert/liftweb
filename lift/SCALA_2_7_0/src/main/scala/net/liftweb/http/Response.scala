@@ -14,7 +14,7 @@ import javax.servlet.http.Cookie
 trait ToResponse extends ResponseIt {
   def out: Node
   def headers: List[(String, String)]
-  def cookies: List[Cookie]
+  def cookies: List[javax.servlet.http.Cookie]
   def code: Int
   def docType: Can[String]
   
@@ -42,9 +42,9 @@ trait ResponseIt {
 }
 
 case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], 
-			 cookies: List[Cookie], code: Int) extends ToResponse
+			 cookies: List[javax.servlet.http.Cookie], code: Int) extends ToResponse
 
-case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
+case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[javax.servlet.http.Cookie], code: Int) extends ResponseIt {
   def toResponse = this
   
   override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"

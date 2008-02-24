@@ -147,20 +147,21 @@ trait TestFramework {
     waitAll(threads)
   }  
 
-  private def snurpHeaders(in: java.util.Map): Map[String, List[String]] = {
+  private def snurpHeaders(in: java.util.Map[java.lang.String, java.util.List[java.lang.String]]): Map[String, List[String]] = {
     def entryToPair(e: AnyRef): List[(String, List[String])] = {
+      type javaMap = java.util.Map.Entry[java.lang.String,java.util.List[java.lang.String]]
       e match {
         case null => Nil
-        case e: java.util.Map.Entry => morePulling(e)
+        case e: javaMap => morePulling(e)
         case _ => Nil
       }
     }
     
-    def morePulling(e: java.util.Map.Entry): List[(String, List[String])] = {
+    def morePulling(e: java.util.Map.Entry[java.lang.String, java.util.List[java.lang.String]]): List[(String, List[String])] = {
       (e.getKey, e.getValue) match {
         case (null, _) => Nil
         case (s: String, null) => List((s, Nil))
-        case (s: String, a: java.util.List) => List((s, a.toArray.toList.map{case null => null; case s: String => s; case _ => null}.filter(_ ne null)))
+        case (s: String, a: java.util.List[String]) => List((s, a.toArray.toList.map{case null => null; case s: String => s; case _ => null}.filter(_ ne null)))
         case _ => Nil
       }
     }

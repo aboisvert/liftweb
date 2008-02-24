@@ -54,13 +54,13 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
   
   def initialState = TestState.Initial
   protected def states = {
-    (State(TestState.Initial, On({case FirstTransition() => }, TestState.First)) exit {(a,b,c,d) => didExitInitial = true; true}) ::
+    (State(TestState.Initial, On({case FirstTransition => }, TestState.First)) exit {(a,b,c,d) => didExitInitial = true; true}) ::
     (State(TestState.First, After( 2 seconds, TestState.Second) action ((obj, from, to, event) => {from.id == to.id; obj.woof}),
-           On({case TestEvent1() => }, TestState.Third) action ((obj, from, to, event) => false))
+           On({case TestEvent1 => }, TestState.Third) action ((obj, from, to, event) => false))
      exit {(a,b,c,d) => didExitFirst = true}
      entry {(a,b,c,d) => didEnterFirst = true}) ::
-    (State(TestState.Second, On({case TestEvent2() => }, TestState.First ) guard ((obj, from, to, event) => false),
-           On( {case TestEvent2() => }, TestState.Third) guard ((obj, from, to, event) => true)) entry {(a,b,c,d) => didEnterSecond = true}) ::
+    (State(TestState.Second, On({case TestEvent2 => }, TestState.First ) guard ((obj, from, to, event) => false),
+           On( {case TestEvent2 => }, TestState.Third) guard ((obj, from, to, event) => true)) entry {(a,b,c,d) => didEnterSecond = true}) ::
     (State(TestState.Third) entry (terminate) exit (terminate)) ::
     Nil
   }
@@ -86,9 +86,9 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
    */
   override def timedEventPeriodicWait = 200L
   
-  case class FirstTransition extends Event
-  case class TestEvent1 extends Event
-  case class TestEvent2 extends Event
+  case object FirstTransition extends Event
+  case object TestEvent1 extends Event
+  case object TestEvent2 extends Event
   //case class TimerEvent(len: TimeSpan) extends Event
   //def Timer(to: StV, when: TimeSpan): To = To(to, {case TimerEvent(_) => true})
 }

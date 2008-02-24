@@ -38,13 +38,13 @@ object ActorPing {
   /** 
    * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, every <code>delay</code> milliseconds
    */
-  def schedule(to: Actor, msg: Any, delay: Long): ScheduledFuture = schedule(to, msg, delay, TimeUnit.MILLISECONDS)
+  def schedule(to: Actor, msg: Any, delay: Long): ScheduledFuture[_] = schedule(to, msg, delay, TimeUnit.MILLISECONDS)
   
   /** 
    * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, 
    * every <code>delay</code> using <code>tu<code> as a TimeUnit
    */
-  def schedule(to: Actor, msg: Any, delay: Long, tu: TimeUnit): ScheduledFuture = {
+  def schedule(to: Actor, msg: Any, delay: Long, tu: TimeUnit): ScheduledFuture[_] = {
     val r = new Runnable { def run { to ! msg } }
     try {
       service.schedule(r, delay, tu)

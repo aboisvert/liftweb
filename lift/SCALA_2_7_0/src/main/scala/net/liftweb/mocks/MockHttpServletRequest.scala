@@ -79,12 +79,10 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getIntHeader(h: String): Int = {
     Helpers.toInt(headers(h))
   }
-  def getHeaderNames = {
-    new Vector(headers.underlying.keySet).elements
-  }
+  def getHeaderNames = new Vector[Object](headers.underlying.keySet).elements 
   def getHeaders = headers
   def getHeaders(s: String) = {
-    val v = new Vector()
+    val v = new Vector[String]()
     v.add(headers(s))
     v.elements
   }
@@ -107,7 +105,7 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getRealPath(s: String) = s
   def getRequestDispatcher(s: String): RequestDispatcher = null
   def isSecure = false
-  def getLocales = new Vector(Arrays.asList(Locale.getAvailableLocales.asInstanceOf[Array[Object]])).elements
+  def getLocales = new Vector[Locale](java.util.Arrays.asList[Locale](Locale.getAvailableLocales)).elements
   def getLocale = locale
   def removeAttribute(key: String) = attr -= key
   def setAttribute(key: String, value: Any) = attr += key -> value
@@ -121,13 +119,13 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getParameterMap = parameterMap.underlying
   def getParameterValues(key: String) = 
     parameterMap.underlying.values.toArray.asInstanceOf[Array[String]]
-  def getParameterNames = new Vector(parameterMap.underlying.keySet).elements
+  def getParameterNames = new Vector[String](parameterMap.underlying.keySet).elements
   def getParameter(key: String) = parameterMap(key)
   def getInputStream = inputStream
   def getContentType = contentType
   def getContentLength = contentLength
   def getCharacterEncoding = charEncoding
   def setCharacterEncoding(enc: String) = charEncoding = enc
-  def getAttributeNames = new Vector(attr.underlying.keySet).elements
+  def getAttributeNames = new Vector[String](attr.underlying.keySet).elements
   def getAttribute(key: String) = attr(key).asInstanceOf[Object]
 }

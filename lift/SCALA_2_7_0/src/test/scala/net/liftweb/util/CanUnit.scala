@@ -52,23 +52,23 @@ object CanUnit extends Specification with CanGen {
 }
 trait CanGen {
 
-  implicit def genThrowable(dummy: Arb[Throwable]): Arbitrary[Throwable] = new Arbitrary[Throwable] {
+  implicit def genThrowable: Arbitrary[Throwable] = new Arbitrary[Throwable] {
     case class UserException extends Throwable
-    def getArbitrary = value(UserException())
+    def arbitrary = value(UserException())
   }
 
-  implicit def genCan[T](dummy: Arb[Can[T]])(implicit a: Arb[T] => Arbitrary[T]): Arbitrary[Can[T]] = new Arbitrary[Can[T]] {
-    def getArbitrary = frequency(
+  implicit def genCan[T](implicit a: Arbitrary[T]): Arbitrary[Can[T]] = new Arbitrary[Can[T]] {
+    def arbitrary = frequency(
       (3, value(Empty)),
-      (3, arbitrary[T].map(Full[T])),
+      (3, Arbitrary.arbitrary[T].map(Full(_))),
       (1, genFailureCan)
     )
   }
 
-  def genFailureCan: Gen[Failure] = for {
+  def genFailureCan[T](implicit a: Arbitrary[Can[T]]): Gen[Failure] = for {
     msgLen <- choose(0, 4)
     msg <- vectorOf(msgLen, alphaChar)
-    exception <- arbitrary[Can[Throwable]]
+    exception <- Arbitrary.arbitrary[Can[Throwable]]
     chainLen <- choose(1, 5)
     chain <- frequency((1, vectorOf(chainLen, genFailureCan)), (3, value(Nil)))
   } yield Failure(msg.mkString, exception, chain.toList)

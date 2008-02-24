@@ -91,7 +91,7 @@ object Props {
       case Full(prop) => 
         Map(prop.entrySet.toArray.map{
           s2 => 
-            val s = s2.asInstanceOf[java.util.Map.Entry]
+            val s = s2.asInstanceOf[java.util.Map.Entry[String, String]]
           (s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
         } :_*)
 

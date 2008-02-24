@@ -609,7 +609,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   }
   
 
-  private def createApplier(name : String, inst : AnyRef, clz : Class) : (A, AnyRef) => unit = {
+  private def createApplier(name : String, inst : AnyRef, clz : Class[C] forSome {type C}) : (A, AnyRef) => unit = {
     val accessor = mappedColumns.get(name)
     if ((accessor eq null) || accessor == None) null else {
       (accessor.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
@@ -650,7 +650,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   protected val rootClass = this.getClass.getSuperclass
   
-  private val mappedAppliers = new HashMap[(String, Can[Class]), (A, AnyRef) => unit];
+  private val mappedAppliers = new HashMap[(String, Can[Class[C] forSome {type C}]), (A, AnyRef) => unit];
   
   private val _mappedFields  = new HashMap[String, Method];
   
@@ -881,26 +881,26 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
   def indexDesc: String = field.dbColumnName+"("+len+")"
 }
 
-abstract class QueryParam[O<:Mapper[O]]
-//case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
-case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
-case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
-case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
-case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
-case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
-case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
+abstract class QueryParam[F<:Mapper[F]]
 
-//case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
+case class Cmp[F<:Mapper[F], T](field: MappedField[T,F], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, F]]) extends QueryParam[F]
+case class OrderBy[F<:Mapper[F], T](field: MappedField[T,F],ascending: boolean) extends QueryParam[F]
+case class ByList[F<:Mapper[F], T](field: MappedField[T,F], vals: List[T]) extends QueryParam[F]
+case class BySql[F<:Mapper[F]](query: String, params: Any*) extends QueryParam[F]
+case class MaxRows[F<:Mapper[F]](max: long) extends QueryParam[F]
+case class StartAt[F<:Mapper[F]](start: long) extends QueryParam[F]
+
+//case class NotBy[F<:Mapper[F], T](field: MappedField[T, F], value: T) extends QueryParam[F]
 object By {
   import OprEnum._
   
-  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, Eql, Full(value), Empty)
-  def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
-    Cmp[O,T](field, Eql, Full(value.primaryKeyField.is), Empty)
+  def apply[F <: Mapper[F], T, U <% T](field: MappedField[T, F], value: U) = Cmp[F,T](field, Eql, Full(value), Empty)
+  def apply[F <: Mapper[F],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, F, Q], value: Q) = 
+    Cmp[F,T](field, Eql, Full(value.primaryKeyField.is), Empty)
     
-  def apply[O <: Mapper[O],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Can[Q]) = 
+  def apply[F <: Mapper[F],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, F, Q], value: Can[Q]) = 
   value match {
-    case Full(v) => Cmp[O,T](field, Eql, Full(v.primaryKeyField.is), Empty)
+    case Full(v) => Cmp[F,T](field, Eql, Full(v.primaryKeyField.is), Empty)
     case _ => Cmp(field, IsNull, Empty, Empty)
   }
 }
@@ -908,12 +908,12 @@ object By {
 object NotBy {
   import OprEnum._
   
-  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <>, Full(value), Empty)
-  def apply[O <: Mapper[O],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Q) = 
-  Cmp[O,T](field, <>, Full(value.primaryKeyField.is), Empty)
-  def apply[O <: Mapper[O],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, O, Q], value: Can[Q]) = 
+  def apply[F <: Mapper[F], T, U <% T](field: MappedField[T, F], value: U) = Cmp[F,T](field, <>, Full(value), Empty)
+  def apply[F <: Mapper[F],T,  Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, F, Q], value: Q) = 
+  Cmp[F,T](field, <>, Full(value.primaryKeyField.is), Empty)
+  def apply[F <: Mapper[F],T, Q <: KeyedMapper[T, Q]](field: MappedForeignKey[T, F, Q], value: Can[Q]) = 
   value match {
-    case Full(v) => Cmp[O,T](field, <>, Full(v.primaryKeyField.is), Empty)
+    case Full(v) => Cmp[F,T](field, <>, Full(v.primaryKeyField.is), Empty)
     case _ => Cmp(field, IsNotNull, Empty, Empty)
   }   
 }
@@ -921,37 +921,37 @@ object NotBy {
 object ByRef {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, Eql, Empty, Full(otherField))
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], otherField: MappedField[T,F]) = Cmp[F,T](field, Eql, Empty, Full(otherField))
 }
 
 object NotByRef {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <>, Empty, Full(otherField))
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], otherField: MappedField[T,F]) = Cmp[F,T](field, <>, Empty, Full(otherField))
 }
 
 object By_> {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, >, Full(value), Empty)
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, >, Empty, Full(otherField))  
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], value: T) = Cmp[F,T](field, >, Full(value), Empty)
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], otherField: MappedField[T,F]) = Cmp[F,T](field, >, Empty, Full(otherField))  
 }
 
 object By_< {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <, Full(value), Empty)
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <, Empty, Full(otherField))    
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], value: T) = Cmp[F,T](field, <, Full(value), Empty)
+  def apply[F <: Mapper[F], T](field: MappedField[T, F], otherField: MappedField[T,F]) = Cmp[F,T](field, <, Empty, Full(otherField))    
 }
 
 object NullRef {
   import OprEnum._
-  def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNull, Empty, Empty)
+  def apply[F <: Mapper[F], T](field: MappedField[T, F]) = Cmp(field, IsNull, Empty, Empty)
 }
 
 object NotNullRef {
   import OprEnum._
-  def apply[O <: Mapper[O], T](field: MappedField[T, O]) = Cmp(field, IsNotNull, Empty, Empty)
+  def apply[F <: Mapper[F], T](field: MappedField[T, F]) = Cmp(field, IsNotNull, Empty, Empty)
 }
 
 trait LongKeyedMetaMapper[A <: LongKeyedMapper[A]] extends KeyedMetaMapper[Long, A] { self: A => }
@@ -1207,7 +1207,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   def addSnippetCallback(obj: A) { obj.save } 
 }
 
-case class FieldHolder[T](name: String, method: Method, field: MappedField[_, T]) 
+case class FieldHolder[T](name: String, method: java.lang.reflect.Method, field: MappedField[_, T]) 
 
 class KeyObfuscator {
   var to: Map[String, Map[Any, String]] = Map.empty

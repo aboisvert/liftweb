@@ -6,7 +6,7 @@ package net.liftweb.textile
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
+import scala.util.parsing.combinatorold.{Parsers, ImplicitConversions, ~, mkTilde}
 import scala.xml.{MetaData, NodeSeq, Elem, Null, Text, TopScope, Unparsed, UnprefixedAttribute, Group, Node}
 import scala.collection.mutable.HashMap
 import net.liftweb.util._
@@ -628,7 +628,7 @@ object TextileParser extends Application {
   
   // drop the last EOL to prevent needless <br />
   // TODO: find a better solution.. it's not quite clear to me where newlines are meaningful
-  private def flattenAndDropLastEOL(elems : List[Textile]) = ((elems match {case Nil => Nil case x => (x.last match { case EOL() => elems.init case _ => elems})})).flatMap{e => e.toHtml.toList}
+  private def flattenAndDropLastEOL(elems : List[Textile]) = ((elems match {case Nil => Nil case x => (x.last match { case EOL => elems.init case _ => elems})})).flatMap{e => e.toHtml.toList}
 
   case class Paragraph(elems : List[Textile], attrs: List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
@@ -651,7 +651,7 @@ object TextileParser extends Application {
     }
   }
 
-  case class BlankLine extends Textile {
+  case object BlankLine extends Textile {
     def toHtml = Text("")
   }
 
@@ -665,7 +665,7 @@ object TextileParser extends Application {
     }
   }
 
-  case class EmDash extends Textile  {
+  case object EmDash extends Textile  {
     def toHtml : NodeSeq = Unparsed(" &#8212; ")
   }
 
@@ -673,36 +673,36 @@ object TextileParser extends Application {
     def toHtml : NodeSeq = Text("")
   }*/
   
-  case class EOL extends Textile  {
+  case object EOL extends Textile  {
     // return the characters because Scala's XML library returns <br></br> in the
     // toString for the element and this causes 2 line breaks in some browsers
     // def toHtml :NodeSeq = Elem(null, "br", null, TopScope, Nil : _*) concat Text("\n")
     def toHtml :NodeSeq = Unparsed("<br />\n")
   }
 
-  case class EnDash extends Textile  {
+  case object EnDash extends Textile  {
     def toHtml : NodeSeq = Unparsed(" &#8211; ")
   }
 
-  case class SingleQuote extends Textile  {
+  case object SingleQuote extends Textile  {
     def toHtml : NodeSeq = Unparsed("&#8217;")
   }
 
-  case class Elipsis extends Textile  {
+  case object Elipsis extends Textile  {
     def toHtml : NodeSeq = Unparsed("&#8230;")
   }
 
-  case class Dimension extends Textile   {
+  case object Dimension extends Textile   {
     def toHtml : NodeSeq = Unparsed("&#215;")
   }
   
-  case class Trademark extends Textile  {
+  case object Trademark extends Textile  {
     def toHtml : NodeSeq = Unparsed("&#8482;")
   }
-  case class Copyright extends Textile {
+  case object Copyright extends Textile {
     def toHtml : NodeSeq = Unparsed("&#169;")
   }
-  case class Register extends Textile {
+  case object Register extends Textile {
     def toHtml : NodeSeq = Unparsed("&#174;")
   }
 

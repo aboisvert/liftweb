@@ -251,7 +251,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
     
-  def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
+  def renum[T](in: java.util.Enumeration[T]): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
   //implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
 
@@ -424,7 +424,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   /**
   * Convert an enum to a List[T]
   */
-  def enumToList[T](enum : java.util.Enumeration) : List[T] = {
+  def enumToList[T](enum : java.util.Enumeration[T]) : List[T] = {
     if (enum.hasMoreElements) {
       val next = enum.nextElement
       if (next.isInstanceOf[T]) next.asInstanceOf[T] :: enumToList[T](enum)
@@ -436,7 +436,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   /**
   * Convert an enum to a List[String]
   */
-  def enumToStringList(enum : java.util.Enumeration) : List[String] =
+  def enumToStringList(enum : java.util.Enumeration[_]) : List[String] =
     if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
   
   
@@ -464,23 +464,23 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String]) : Can[Class] =
-    findClass(name, where, ^(smartCaps, n => n), s => true)
+  def findClass(name : String, where : List[String]) : Can[(Class[C] forSome {type C})] =
+    findClass(name, where, ^(smartCaps, n => n), (s:Class[C] forSome {type C}) => true)
   
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Can[Class] = {
+  def findClass(name : String, where : List[String], guard: (Class[C] forSome {type C}) => Boolean ) : Can[(Class[C] forSome {type C})] = {
     findClass(name, where, ^(smartCaps, n => n), guard)
   }
   
-  def findClass(where : List[(String, List[String])]) : Can[Class] = {
+  def findClass(where : List[(String, List[String])]) : Can[(Class[C] forSome {type C})] = {
     where match {
       case Nil => Empty
       case s :: rest => {
 	findClass(s._1, s._2) match {
-          case Full(s) => Full(s)
+          case c@Full(s) => c
           case _ => findClass(rest)
 	}
       }
@@ -491,8 +491,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * Find a class with name given name in a list of packages, with a list of functions that modify
   * 'name' (e.g., leave it alone, make it camel case, etc.)
   */
-  def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Can[Class] = {
-    def findClass_s(name : String, where : String) : Can[Class] = {
+  def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class[C] forSome {type C}) => boolean) : Can[(Class[C] forSome {type C})] = {
+    def findClass_s(name : String, where : String) : Can[(Class[C] forSome {type C})] = {
       tryo(^(classOf[ClassNotFoundException]), Empty) {
         val clzName = where+"."+name
 	
@@ -501,7 +501,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
     
     
-    def findClass_l(name : String, where : List[String]) : Can[Class] = {
+    def findClass_l(name : String, where : List[String]) : Can[(Class[C] forSome {type C})] = {
       where match {
         case Nil => Empty
         case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
@@ -519,7 +519,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return None.
   */
-  def tryo[T](ignore : List[Class],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
+  def tryo[T](ignore : List[Class[_]],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
     try {
       Full(f)
     } catch {
@@ -527,7 +527,6 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case c if (ignore == null || ignore.isEmpty) => onError.foreach(_(c)); Failure("tryo", Full(c), Nil)
     }
   }
-  
   /**
   * Wraps a "try" block around the function f.  If f throws
   * an exception return None
@@ -553,7 +552,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * 
   * @return true if clz is assignable from of the matching classes
   */
-  def containsClass(clz : Class, toMatch : List[Class]) : Boolean = {
+  def containsClass(clz : Class[_], toMatch : List[Class[_]]) : Boolean = {
     toMatch match {
       case null | Nil => false
       case c :: rest if (c.isAssignableFrom(clz)) => true
@@ -561,7 +560,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
-  def classHasControllerMethod(clz : Class, methName : String): Boolean = {
+  def classHasControllerMethod(clz : Class[_], methName : String): Boolean = {
     tryo {
       clz match {
         case null => false
@@ -570,7 +569,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     } openOr false
   }
 
-  def invokeControllerMethod(clz : Class, meth : String) = {
+  def invokeControllerMethod(clz : Class[_], meth : String) = {
     try {
       clz.getMethod(meth, null).invoke(clz.newInstance, null)
     } catch {
@@ -582,7 +581,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * Invoke the given method for the given class, with the given params.
   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
   */
-  private def _invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Can[Array[Class]]): Can[Any] = {
+  private def _invokeMethod(clz: (Class[C] forSome {type C}), inst: AnyRef, meth: String, params: Array[Object], ptypes: Can[Array[(Class[C] forSome {type C})]]): Can[Any] = {
     /*
     * try to find a method matching the given parameters
     */
@@ -617,9 +616,9 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
-  def instantiate(clz: Class): Can[AnyRef] = tryo{clz.newInstance}
+  def instantiate(clz: (Class[C] forSome {type C})): Can[AnyRef] = tryo{clz.newInstance.asInstanceOf[AnyRef]}
 
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
+  def invokeMethod(clz: (Class[C] forSome {type C}), inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Empty) or _invokeMethod(clz, inst, smartCaps(meth), params, Empty) or
     _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
   }
@@ -628,12 +627,12 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   
   // def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
   
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
+  def invokeMethod(clz: (Class[C] forSome {type C}), inst: AnyRef, meth: String, params: Array[Object], ptypes: Array[(Class[C] forSome {type C})]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Full(ptypes)) or _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
     _invokeMethod(clz, inst, methodCaps(meth), params, Full(ptypes))
   }
 
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
+  def invokeMethod(clz: (Class[C] forSome {type C}), inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)
@@ -1239,7 +1238,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   case class MySome[+A](x: A) extends MyOption[A] {
     def |[B >: A](default: => B): B  = x
   }
-  case class MyNone extends MyOption[Nothing] {
+  case object MyNone extends MyOption[Nothing] {
     def |[B ](default: => B): B  = default
   }
 

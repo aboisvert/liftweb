@@ -13,10 +13,10 @@ package net.liftweb.util;
  * limitations under the License.
  */
 import Helpers._
-import scala.util.parsing.combinator.{Parsers, ImplicitConversions, ~, mkTilde}
+import scala.util.parsing.combinatorold.{Parsers, ImplicitConversions, ~, mkTilde}
 
 /**  
- * The CombParserHelpers trait provides parsing helpers which can be combined
+ * The CombParserHelpers trait provides parser combinators helpers
  */
 trait CombParserHelpers { self: Parsers =>
 
@@ -62,11 +62,15 @@ trait CombParserHelpers { self: Parsers =>
   /** @return a unit parser for any repetition of 'line' spaces */
   def lineSpace = discard(rep(aSpace))
 
-  def acceptCI[ES <% List[Elem]](es: ES): UnitParser = new UnitParser {
+  /**
+   * @param elements list of characters 
+   * @return a unit parser which will succeed if the input matches the list of characters regardless 
+   * of the case (uppercase or lowercase)  
+   */
+  def acceptCI[ES <% List[Elem]](elements: ES): UnitParser = new UnitParser {
     def xform(in: Char): Char = Character.toUpperCase(in)
     def apply(in0: Input) = {
-      var res = new scala.collection.mutable.ListBuffer[Elem]
-      var these: List[Elem] = es
+      var these: List[Elem] = elements
       var in = in0
 
       while(!these.isEmpty && xform(in.first) == xform(these.head)) {

@@ -8,7 +8,7 @@ package net.liftweb.util
 
 class ThreadGlobal[T]
 {
-  private val threadLocal = new ThreadLocal
+  private val threadLocal = new ThreadLocal[T]
   
   def value : T = threadLocal.get.asInstanceOf[T];
   

@@ -6,7 +6,7 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import javax.servlet.http._
+import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import javax.servlet.ServletContext
 // import scala.collection.Map
 // import scala.collection.mutable.HashMap
@@ -247,5 +247,5 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
 }
 
 case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: LiftSession)
-case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
+case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: javax.servlet.http.HttpServletRequest)
 case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])

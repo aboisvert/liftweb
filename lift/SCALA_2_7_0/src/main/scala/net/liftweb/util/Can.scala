@@ -254,7 +254,7 @@ final case class Full[+A](value: A) extends Can[A] {
  * Singleton object representing an Empty Can
  */
 @serializable
-case object Empty extends EmptyCan[Nothing]
+object Empty extends EmptyCan[Nothing]
 
 /**
  * The Empty Can is a Can containing no value.

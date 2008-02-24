@@ -31,9 +31,9 @@ case class GetPendingMsg(to: String)
 /** These messages are sent to the client Actor */
 case class NewRoster(r: Roster)
 // TODO(stevej): make these type-safe when Java generics are in.
-case class RosterEntriesDeleted(entries: Collection)
-case class RosterEntriesUpdated(entries: Collection)
-case class RosterEntriesAdded(entries: Collection)
+case class RosterEntriesDeleted[T](entries: Collection[T])
+case class RosterEntriesUpdated[T](entries: Collection[T])
+case class RosterEntriesAdded[T](entries: Collection[T])
 case class RosterPresenceChanged(p: Presence)
 case class NewChat(chat: Chat)
 case class RecvMsg(chat: Chat, msg: Message)
@@ -57,13 +57,13 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
   login(conn)
   val roster: Roster = conn.getRoster();
   roster.addRosterListener(new DispatchRosterListener(this) {
-    def entriesDeleted(a: Collection) {
+    def entriesDeleted[T](a: Collection[T]) {
       dispatch ! RosterEntriesDeleted(a)
     }
-    def entriesUpdated(a: Collection) {
+    def entriesUpdated[T](a: Collection[T]) {
       dispatch ! RosterEntriesUpdated(a)
     }
-    def entriesAdded(a: Collection) {
+    def entriesAdded[T](a: Collection[T]) {
       dispatch ! RosterEntriesAdded(a)
     }
     def presenceChanged(p: Presence) {

@@ -103,9 +103,9 @@ trait FileDbSetup {
     deleteIt(f)
 
     DB.defineConnectionManager(DefaultConnectionIdentifier, vendor)
-
-    Schemifier.schemify(true, (s: (=> AnyRef)) => Log.info(s), User, Pet)
-    Schemifier.schemify(true, (s: (=> AnyRef)) => Log.info(s), TestStateMachine)
+    def logger(s: => AnyRef) = Log.info(s) 
+    Schemifier.schemify(true, logger _, User, Pet)
+    Schemifier.schemify(true, logger _, TestStateMachine)
   }
 }
 
@@ -144,7 +144,8 @@ trait DbSetup {
     }
     deleteAllTables
 
-    Schemifier.schemify(true,(s: (=> AnyRef)) => Log.info(s), User, Pet, TestStateMachine)
+    def logger(s: => AnyRef) = Log.info(s) 
+    Schemifier.schemify(true, logger _, User, Pet, TestStateMachine)
   }
 }
 

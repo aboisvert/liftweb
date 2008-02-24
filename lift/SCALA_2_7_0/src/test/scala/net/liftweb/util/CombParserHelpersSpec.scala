@@ -18,14 +18,13 @@ package net.liftweb.util
 import org.specs._
 import scala.util.parsing.input._
 import org.specs.runner._
-import scala.util.parsing.combinator.Parsers
+import scala.util.parsing.combinatorold.Parsers
 import org.scalacheck._
 import Gen._
 import Prop._
 import org.specs.matcher.ScalacheckParameters._
 
-class CombParserHelpersSpecTest extends JUnit3(CombParserHelpersSpec)
-object CombParserHelpersSpecRunner extends ConsoleRunner(CombParserHelpersSpec)
+class CombParserHelpersSpecTest extends Runner(CombParserHelpersSpec) with JUnit
 object CombParserHelpersSpec extends Specification {
   import ParserHelpers._
   "The parser helpers" should {
@@ -75,14 +74,14 @@ object whiteStringGen {
   def genWhiteString: Gen[String] = for (len <- choose(1, 4);
                                          string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
                                     ) yield string.mkString("")
-  implicit def whiteString(dummy: Arb[String]): Arbitrary[String] = new Arbitrary[String] {
-    def getArbitrary = genWhiteString
+  implicit def whiteString: Arbitrary[String] = new Arbitrary[String] {
+    def arbitrary = genWhiteString
   }
 }
 object stringWithWhiteGen {
   import whiteStringGen._
-  implicit def genString(dummy: Arb[String]): Arbitrary[String] = new Arbitrary[String] {
-    def getArbitrary = {
+  implicit def genString: Arbitrary[String] = new Arbitrary[String] {
+    def arbitrary = {
       for (len <- choose(1, 4);
            string <- vectorOf(len, frequency((1, value("a")), (2, value("b")), (1, genWhiteString)))
       ) yield string.mkString("")

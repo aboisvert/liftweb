@@ -70,16 +70,16 @@ class UserTests extends TestCase("User Tests") {
   def findAllTest {
     assert(User.findAll.length == maxUsers, "Actual len "+User.findAll.length+" expected "+maxUsers)
     assert(User.findAll(MaxRows(25), StartAt(25)).length == 25)
-    assert(User.findAll(StartAt(25)).length == (maxUsers - 25))
+    assert(User.findAll(StartAt[User](25)).length == (maxUsers - 25))
     assert(User.findAll(By(User.email, "mr33@foo.com")).length == 1)
     assert(User.findAll(By(User.email, "dogmr33@foo.com")).length == 0)
-    assert(User.findAll(BySql("email = ?", "mr9@foo.com")).length == 1)
-    assert(User.findAll(BySql("email = ?", "eemr1@foo.com")).length == 0)  
-    assert(User.findAll(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)  
-    assert(User.findAll(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).length == 1)  
+    assert(User.findAll(BySql[User]("email = ?", "mr9@foo.com")).length == 1)
+    assert(User.findAll(BySql[User]("email = ?", "eemr1@foo.com")).length == 0)  
+    assert(User.findAll(BySql[User]("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)  
+    assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr9@foo.com", "9")).length == 1)  
     assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)  
     val u = User.find(33).open_!
-    assert(User.findAll(BySql("email = ?", u.email)).length == 1)
+    assert(User.findAll(BySql[User]("email = ?", u.email)).length == 1)
     assert(User.findAll(OrderBy(User.firstName, true))(0).firstName == "1")
     assert(User.findAll(OrderBy(User.firstName, false))(0).firstName == "99")
   }

@@ -113,11 +113,11 @@ object LogBoot {
     true
   }
   
-  private def _loggerCls(clz: Class): LiftLogger = if (checkConfig) new Log4JLogger(Logger.getLogger(clz)) else NullLogger
+  private def _loggerCls(clz: Class[_]): LiftLogger = if (checkConfig) new Log4JLogger(Logger.getLogger(clz)) else NullLogger
   private def _logger(name: String): LiftLogger = if (checkConfig) new Log4JLogger(Logger.getLogger(name)) else NullLogger
   
   var loggerByName: String => LiftLogger = _logger
-  var loggerByClass: Class => LiftLogger = _loggerCls
+  var loggerByClass: (Class[T] forSome {type T}) => LiftLogger = _loggerCls
 }
 
 object NullLogger extends LiftLogger {

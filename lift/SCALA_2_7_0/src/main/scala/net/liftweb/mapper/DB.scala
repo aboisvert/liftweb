@@ -14,7 +14,7 @@ import net.liftweb.util._
 // import net.liftweb.util.Lazy._
 
 object DB {
-  private val threadStore = new ThreadLocal
+  private val threadStore = new ThreadLocal[HashMap[ConnectionIdentifier, ConnectionHolder]]
   private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
   val logger = LogBoot.loggerByClass(DB.getClass)
   
@@ -54,12 +54,12 @@ object DB {
   
   private def info : HashMap[ConnectionIdentifier, ConnectionHolder] = {
     threadStore.get match {
-      case null =>
-	val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder];
-	threadStore.set(tinfo)
-	tinfo
-
-      case v: HashMap[ConnectionIdentifier, ConnectionHolder] => v
+      case null => {
+        val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder]
+        threadStore.set(tinfo)
+        tinfo
+      }
+      case v => v
     }
   }
   
