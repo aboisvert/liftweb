@@ -134,5 +134,7 @@ case class CompleteMenu(lines: List[MenuLine]) {
 case class MenuLine(items: List[MenuItem]) {
   private[sitemap] def breadCrumbs: List[MenuItem] = items.filter(_.path)
 }
-case class MenuItem(text: String, uri: String, current: Boolean, path: Boolean, info: List[Loc.LocInfoVal[_]])
 
+
+
+case class MenuItem(text: String, uri: String, current: Boolean, path: Boolean, info: List[Loc.LocInfoVal[Any]])
