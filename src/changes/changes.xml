@@ -18,9 +18,6 @@
   -->
     <release version="0.6" description="">
       <action dev="Marius Danciu" type="add">
-        Added support for returning lift templates in conjunction with XhtmlResponse.
-      </action>
-      <action dev="Marius Danciu" type="add">
         Added lift core localization support.
       </action>
       <action dev="Steve Jenson" type="add">
