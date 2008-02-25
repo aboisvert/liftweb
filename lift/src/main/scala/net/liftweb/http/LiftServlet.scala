@@ -141,7 +141,6 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     val resp: Response = if (LiftServlet.ending) {
       session.createNotFound.toResponse
     } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
-      
       S.init(session, sessionActor) {
         val f = LiftServlet.dispatchTable(request)(toMatch)
         f(request) match {

@@ -153,52 +153,6 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     cleanUpSession()
   }
   
-  private def idAndWhen(in: Node): Can[(String, String)] = 
-    ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
-      case (x :: _, y :: _) => Full((x.text,y.value.text))
-      case _ => Empty
-    }
-
-  /**
-   * Do specific XML transformations
-   */
-  private def xmlToRealXml(rawXml: NodeSeq) = {
-    val xml = HeadHelper.mergeToHtmlHead(rawXml)
-    val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
-      case Nil => xml
-      case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
-      val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-      val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
-      
-      val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
-      xform.transform(xml)
-    }
-    
-    realXml
-  }
-  
-  /**
-   * Obtains an xhtml template by URI
-   *
-   * @param templateName: String - the name of the xhtml template
-   * @return Empty can if templateName is empty or if the template is not found
-   */
-  def template(templateName: Can[String]): Can[NodeSeq] = {
-     templateName match {
-       case Full(name) =>
-        findTemplate(name).map(xml => processSurroundAndInclude(name, xml)) match {
-           case Full(rawXml: NodeSeq) => {
-              val realXml = xmlToRealXml(rawXml)
-              updateFunctionMap(S.functionMap)
-              notices = Nil
-              Can(fixHtml(realXml))	
-           }
-           case _ => Empty
-       }
-       case _ => Empty
-    }
-  }
-  
   private[http] def processRequest(request: RequestState, httpRequest: HttpServletRequest): AnswerHolder = {
     S.init(request, httpRequest, notices,this) {
       try {
@@ -220,11 +174,28 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           // make sure we're okay, sitemap wise
           request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)} 
           
+          def idAndWhen(in: Node): Can[(String, String)] = 
+          ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
+            case (x :: _, y :: _) => Full((x.text,y.value.text))
+            case _ => Empty
+          }
+          
           findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
             case Full(rawXml: NodeSeq) => {
-              val realXml = xmlToRealXml(rawXml)
+              val xml = HeadHelper.mergeToHtmlHead(rawXml)
+              val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
+                case Nil => xml
+                case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
+                val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
+                val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
+                
+                val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
+                xform.transform(xml)
+              }
               
-              updateFunctionMap(S.functionMap)
+              this.synchronized {
+                S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+              }
               notices = Nil
               
               AnswerHolder(LiftServlet.convertResponse((realXml,

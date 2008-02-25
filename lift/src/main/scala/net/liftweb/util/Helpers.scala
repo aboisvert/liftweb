@@ -26,8 +26,6 @@ import java.lang.Character._
 import javax.crypto._
 import javax.crypto.spec._
 import net.liftweb.mapper.{Mapper, MappedField}
-import net.liftweb.http.S
-import scala.xml.Comment
 
 /**
  *  A bunch of helper functions
@@ -1375,28 +1373,6 @@ class SuperString(val what: String) {
     commaIt(toDo).reverse.mkString("")
   }
   }
-  
-}
-
-/**
- * This object provides convenient access to get the Node from a template
- *
- */
-case object Template {
-  
-  /**
-   * Generally used in conjunction with XhtmlResponse. It automatically generates markup in case of failures
-   *
-   */
-  def apply(templateName: String): Node = {
-    S.session match {
-       case Full(s) => {
-         (s.template(Can(templateName)) openOr (<html><body>{Comment("FIX: " + "Template " + templateName + " was not found")}</body></html>)) theSeq(0)
-       }
-       case _ => <html><body>{Comment("FIX: " + "No session found")}</body></html> 
-    }
-  }
-  
 }
 
 /*
