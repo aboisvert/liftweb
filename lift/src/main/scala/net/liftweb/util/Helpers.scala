@@ -25,7 +25,7 @@ import java.util.{TimeZone, Calendar}
 import java.lang.Character._
 import javax.crypto._
 import javax.crypto.spec._
-import net.liftweb.mapper.{Mapper, MappedField}
+// import net.liftweb.mapper.{Mapper, MappedField}
 
 /**
  *  A bunch of helper functions
@@ -261,6 +261,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
    * 
    * @author jorge.ortiz
    */
+   /*
   def tbind[T<:Mapper[T]](namespace: String, xml: NodeSeq, objs: Seq[T])(transform: T => PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
     val templates = xml.theSeq.headOption.get.child
     
@@ -268,7 +269,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       template <- templates)
         yield xbind(namespace, template)(transform(obj))
     ).flatMap(_.theSeq)
-  }
+  }*/
   
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform 
