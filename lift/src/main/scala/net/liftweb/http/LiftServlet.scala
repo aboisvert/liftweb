@@ -144,7 +144,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       S.init(session, sessionActor) {
         val f = LiftServlet.dispatchTable(request)(toMatch)
         f(request) match {
-          case Full(v) => LiftServlet.convertResponse( (v, Nil, S.cookies, session) )
+          case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, session) )
           case Empty => session.createNotFound.toResponse
           case f: Failure => session.createNotFound(f).toResponse 
         }
@@ -216,7 +216,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         } finally {
           sessionActor.updateFunctionMap(S.functionMap)
         }
-      }        
+      }
     } else {
       try {
         this.synchronized {

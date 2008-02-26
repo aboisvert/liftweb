@@ -33,6 +33,8 @@ object LiftSession {
 
 @serializable
 class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
+  import TemplateFinder._
+  
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
@@ -117,7 +119,6 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     ret
   }
   
-  
   private[http] def updateFunctionMap(funcs: Map[String, S.AFuncHolder]): Unit = synchronized {
     funcs.foreach(mi => messageCallback(mi._1) = mi._2)
   }
@@ -154,8 +155,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
   
   private[http] def processRequest(request: RequestState, httpRequest: HttpServletRequest): AnswerHolder = {
-    S.init(request, httpRequest, notices,this) {
-      try {
+    try {
+      S.init(request, httpRequest, notices,this) {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), this)        
         if (sessionDispatch.isDefinedAt(toMatch)) {
@@ -200,35 +201,32 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
               
               AnswerHolder(LiftServlet.convertResponse((realXml,
 							S.getHeaders(LiftServlet.defaultHeaders((realXml, request))),
-							S.cookies,
+							S.responseCookies,
 							request)))
             }
             case _ => AnswerHolder(request.createNotFound)
           }
         }
-      } catch {
-        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
-        val rd = ite.getCause.asInstanceOf[RedirectException]
-        notices = S.getNotices
-        
-        AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
-				   ResponseInfo.docType(request),
-				   List("Location" -> (request.updateWithContextPath(rd.to))),
-				   Nil,
-				   302))
-        case rd : net.liftweb.http.RedirectException => {   
-          notices = S.getNotices
-          
-          AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
-				     ResponseInfo.docType(request),
-				     List("Location" -> (request.updateWithContextPath(rd.to))),
-				     Nil,
-				     302))
-        }
-        case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e)) // request.showException(e))
       }
+    } catch {
+      case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
+      val rd = ite.getCause.asInstanceOf[RedirectException]
+      AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
+      ResponseInfo.docType(request),
+      List("Location" -> (request.updateWithContextPath(rd.to))),
+      Nil,
+      302))
+      case rd : net.liftweb.http.RedirectException => {   
+        AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
+        ResponseInfo.docType(request),
+        List("Location" -> (request.updateWithContextPath(rd.to))),
+        Nil,
+        302))
+      }
+      case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e)) // request.showException(e))
     }
   }
+  
   
   private def allElems(in: NodeSeq, f: Elem => Boolean): List[Elem] = {
     val lb = new ListBuffer[Elem]
@@ -268,70 +266,12 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     findAnyTemplate(splits) or findAnyTemplate("templates-hidden" :: splits)
   }
   
-  
-  private val suffixes = List("", "html", "xhtml", "htm")
-  
-  private def locales: List[String] = {
-    val locale = S.locale
-    "_"+locale.toString :: "_"+locale.getLanguage :: "" :: Nil
-  }
-  
-  def findAnyTemplate(places : List[String]) : Can[NodeSeq] = {
-    val pls = places.mkString("/","/", "")
-    val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
-    
-    first(toTry)(v => LiftServlet.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
-  }  
-  
-  private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
-    val (controller, action) = places match {
-      case ctl :: act :: _ => (ctl, act)
-      case ctl :: _ => (ctl, "index")
-      case Nil => ("default_template", "index")
-    }
-    val trans = List[String => String](n => n, n => smartCaps(n))
-    val toTry = trans.flatMap(f => (LiftServlet.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
-    
-    first(toTry) {
-      clsName => 
-      try {
-        tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName)).flatMap{
-          c =>
-          (c.newInstance match {
-            case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
-            case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
-            case _ => Empty
-          }) match {
-            case null | Empty | None => Empty
-            case n: Group => Full(n)
-            case n: Elem => Full(n)
-            case s: NodeSeq => Full(s)
-            case Some(n: Group) => Full(n)
-            case Some(n: Elem) => Full(n)
-            case Some(n: NodeSeq) => Full(n)
-            case Some(n: Seq[Node]) => Full(n)
-            case Full(n: Group) => Full(n)
-            case Full(n: Elem) => Full(n)
-            case Full(n: NodeSeq) => Full(n)
-            case Full(n: Seq[Node]) => Full(n)
-            case _ => Empty
-          }
-        }
-      } catch {
-        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) => throw ite.getCause
-        case re: RedirectException => throw re
-        case _ => Empty
-      }
-    }
-  }
-  
   def couldBeHtml(in : List[(String, String)]) : boolean = {
     in match {
       case null | Nil => true
       case _ => in.ciGet("Content-Type").map(_.toLowerCase.contains("html")) openOr true
     }
   }
-  
   
   /**
   * Update any "Location" headers to add the Context path
@@ -668,6 +608,72 @@ trait InsecureLiftView
 trait LiftView {
   implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can(in)
   def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
+}
+
+object TemplateFinder {
+  private val suffixes = List("", "html", "xhtml", "htm")
+  
+  /**
+    * Given a list of paths (e.g. List("foo", "index")),
+    * find the template.
+    * @param places - the path to look in
+    *
+    * @return the template if it can be found
+    */
+  def findAnyTemplate(places : List[String]): Can[NodeSeq] = {
+    val pls = places.mkString("/","/", "")
+    val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
+    
+    first(toTry)(v => LiftServlet.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
+  }  
+  
+  private def locales: List[String] = {
+    val locale = S.locale
+    "_"+locale.toString :: "_"+locale.getLanguage :: "" :: Nil
+  }
+  
+  
+  private def lookForClasses(places : List[String]) : Can[NodeSeq] = {
+    val (controller, action) = places match {
+      case ctl :: act :: _ => (ctl, act)
+      case ctl :: _ => (ctl, "index")
+      case Nil => ("default_template", "index")
+    }
+    val trans = List[String => String](n => n, n => smartCaps(n))
+    val toTry = trans.flatMap(f => (LiftServlet.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
+    
+    first(toTry) {
+      clsName => 
+      try {
+        tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName)).flatMap{
+          c =>
+          (c.newInstance match {
+            case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
+            case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
+            case _ => Empty
+          }) match {
+            case null | Empty | None => Empty
+            case n: Group => Full(n)
+            case n: Elem => Full(n)
+            case s: NodeSeq => Full(s)
+            case Some(n: Group) => Full(n)
+            case Some(n: Elem) => Full(n)
+            case Some(n: NodeSeq) => Full(n)
+            case Some(n: Seq[Node]) => Full(n)
+            case Full(n: Group) => Full(n)
+            case Full(n: Elem) => Full(n)
+            case Full(n: NodeSeq) => Full(n)
+            case Full(n: Seq[Node]) => Full(n)
+            case _ => Empty
+          }
+        }
+      } catch {
+        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) => throw ite.getCause
+        case re: RedirectException => throw re
+        case _ => Empty
+      }
+    }
+  }
 }
 
 // vim: set ts=2 sw=2 et:

@@ -31,6 +31,21 @@ object S {
   case class DispatchHolder(name: String, dispatch: LiftServlet.DispatchPf)
   case class TemplateHolder(name: String, template: LiftServlet.TemplatePf)
   
+  case class CookieHolder(inCookies: List[Cookie], outCookies: List[Cookie]) {
+    def add(in: Cookie) = CookieHolder(inCookies, in :: outCookies.filter(_.getName != in.getName))
+    def delete(name: String) = {
+      val c = new Cookie(name, "")
+      c.setMaxAge(0)
+      add(c)
+    }
+    def delete(old: Cookie) = {
+      val c = old.clone().asInstanceOf[Cookie]
+      c.setMaxAge(0)
+      c.setValue("")
+      add(c)
+    }
+  }
+  
   /**
   * The current session
   */
@@ -50,8 +65,8 @@ object S {
   private val _liftCoreResBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
-  private val _responseCookies = new ThreadGlobal[ListBuffer[Cookie]]
-
+  private val _responseCookies = new ThreadGlobal[CookieHolder]
+  
   /**
   * Get the current RequestState
   *
@@ -89,61 +104,88 @@ object S {
     case rw: List[DispatchHolder] => rw
     case _ => Nil
   })
-
+  
   /**
-   * @return a List of any Cookies that have been set for this Response.
-   * This is a read-ony copy of the ListBuffer[Cookie] that are actually sent
-   * when the Response is sent.
-   */
+  * @return a List of any Cookies that have been set for this Response.
+  * This is a read-ony copy of the ListBuffer[Cookie] that are actually sent
+  * when the Response is sent.
+  */
+  /*
   def cookies: List[Cookie] = _responseCookies.value match { 
-    case null => Nil 
-    case xs: ListBuffer[Cookie] => xs.readOnly 
-  }
-
+  case null => Nil 
+  case xs: ListBuffer[Cookie] => xs.readOnly 
+  }*/
+  def receivedCookies: List[Cookie] =
+  for (rc <- Can(_responseCookies.value).toList;
+  c <- rc.inCookies) yield c.clone().asInstanceOf[Cookie]
+  
   /**
-   * Adds a Cookie to the List[Cookies] that will be sent with the Response.
-   *
-   * If you wish to delete a Cookie as part of the Response, add a Cookie with
-   * a MaxAge of 0.
-   */
+  * Finds a cookie with the given name
+  * @param name - the name of the cookie to find
+  *
+  * @return a Can of the cookie
+  */
+  def findCookie(name: String): Can[Cookie] = 
+  Can(_responseCookies.value).flatMap(
+  rc =>
+  Can(rc.inCookies.filter(_.getName == name)).map(_.clone().asInstanceOf[Cookie])
+  )
+  
+  def responseCookies: List[Cookie] = Can(_responseCookies.value).
+  toList.flatMap(_.outCookies)
+  
+  /**
+  * Adds a Cookie to the List[Cookies] that will be sent with the Response.
+  *
+  * If you wish to delete a Cookie as part of the Response, add a Cookie with
+  * a MaxAge of 0.
+  */
   def addCookie(cookie: Cookie) {
-    _responseCookies.value match {
-      case null => {
+    Can(_responseCookies.value).
+    foreach(rc => _responseCookies.set(rc.add(cookie)))
+  }
+  
+  /*
+  {
+  _responseCookies.value match {
+  case null => {
 	val buffer = new ListBuffer[Cookie]()
 	buffer += cookie
 	_responseCookies.set(buffer)
-      }
-      case xs => {
+  }
+  case xs => {
 	xs += cookie
-      }
-    }    
   }
+  }    
+  }*/
   
   /**
-   * Deletes the cookie from the user's browser.
-   * @param cookie the Cookie to delete
-   */
+  * Deletes the cookie from the user's browser.
+  * @param cookie the Cookie to delete
+  */
   def deleteCookie(cookie: Cookie) {
-    cookie.setMaxAge(0)
-    addCookie(cookie)
+    Can(_responseCookies.value).
+    foreach(rc => _responseCookies.set(rc.delete(cookie)))
   }
   
   /**
-   * Deletes the cookie from the user's browser.
-   * @param name the name of the cookie to delete
-   */
+  * Deletes the cookie from the user's browser.
+  * @param name the name of the cookie to delete
+  */
   def deleteCookie(name: String) {
-    deleteCookie(new Cookie(name, ""))
+    Can(_responseCookies.value).
+    foreach(rc => _responseCookies.set(rc.delete(name)))
   }
-
+  
   /**
-   * Wipes the _responseCookies contents.
-   */
+  * Wipes the _responseCookies contents.
+  */
+  /*
   def clearCookies {
-    _responseCookies.set(new ListBuffer[Cookie]())
-  }
-
-
+  _responseCookies.set(new ListBuffer[Cookie]())
+  }*/
+  
+  
   /**
   * Returns the Locale for this request based on the HTTP request's 
   * Accept-Language header. If that header corresponds to a Locale
@@ -227,14 +269,14 @@ object S {
   }
   
   /**
-   * Get the lift core resource bundle for the current locale
-   */
+  * Get the lift core resource bundle for the current locale
+  */
   def liftCoreResourceBundle: Can[ResourceBundle] = Can(_liftCoreResBundle.value).openOr {
-     val rb = tryo(ResourceBundle.getBundle(LiftServlet.liftCoreResourceName, locale))
-     _liftCoreResBundle.set(rb)
-     rb
+    val rb = tryo(ResourceBundle.getBundle(LiftServlet.liftCoreResourceName, locale))
+    _liftCoreResBundle.set(rb)
+    rb
   }
-
+  
   /**
   * Get a localized string or return the original string
   *
@@ -252,17 +294,17 @@ object S {
   String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray) 
   
   /**
-   * Get a core lift localized string or return the original string
-   *
-   * @param str the string to localize
-   *
-   * @return the localized version of the string
-   */
+  * Get a core lift localized string or return the original string
+  *
+  * @param str the string to localize
+  *
+  * @return the localized version of the string
+  */
   def ??(str: String): String = liftCoreResourceBundle.flatMap(r => tryo(r.getObject(str) match 
-      {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
-          openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str
+  {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
+  openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str
   }
-   
+  
   /**
   * Localize the incoming string based on a resource bundle for the current locale
   * @param str the string or ID to localize
@@ -833,17 +875,17 @@ object S {
     }
     
     /**
-     * Defines a new checkbox set to {@code value} and running {@code func} when the 
-     * checkbox is submitted.
-     */
+    * Defines a new checkbox set to {@code value} and running {@code func} when the 
+    * checkbox is submitted.
+    */
     def checkbox(value: Boolean, func: Boolean => Any): NodeSeq = {
       checkbox_id(value, func, Empty)
     }
-
+    
     /**
-     * Defines a new checkbox set to {@code value} and running {@code func} when the
-     * checkbox is submitted. Has an id of {@code id}.
-     */
+    * Defines a new checkbox set to {@code value} and running {@code func} when the
+    * checkbox is submitted. Has an id of {@code id}.
+    */
     def checkbox_id(value: Boolean, func: Boolean => Any, id: Can[String]): NodeSeq = {
       def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
         f(in.exists(toBoolean(_)))
@@ -857,7 +899,7 @@ object S {
       (<input type="hidden" name={name} value="false"/>) ++
       ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
     }
-
+    
     // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
     implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
     implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
@@ -941,7 +983,8 @@ object S {
     
     def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, (<span><b>{i.field.name}</b>: {i.msg}</span>) )}}
     
-    def getNotices = _notice.value.toList
+    def getNotices: List[(NoticeType.Value, NodeSeq)] = 
+    Can(_notice.value).toList.flatMap(_.toList)
     
     def errors: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(_._2))
     def notices: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(_._2))
@@ -958,14 +1001,14 @@ object S {
     abstract class JsonHandler {
       private val name = "_lift_json_"+getClass.getName
       private def handlers: (JsonCall, JsCmd) = 
-	S.servletSession.map(s => s.getAttribute(name) match {
-	  case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
-	  case _ => { 
-	    val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
-	    s.setAttribute(name, Full(ret))
-	    ret
-	  }
-	}).openOr( (JsonCall(""), JsCmds.Noop) )
+      S.servletSession.map(s => s.getAttribute(name) match {
+        case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
+        case _ => { 
+          val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+          s.setAttribute(name, Full(ret))
+          ret
+        }
+      }).openOr( (JsonCall(""), JsCmds.Noop) )
       
       def call: JsonCall = handlers._1
       
