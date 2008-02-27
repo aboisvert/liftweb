@@ -155,8 +155,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
   
   private[http] def processRequest(request: RequestState, httpRequest: HttpServletRequest): AnswerHolder = {
+    S.init(request, httpRequest, notices, this) {
     try {
-      S.init(request, httpRequest, notices,this) {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), this)        
         if (sessionDispatch.isDefinedAt(toMatch)) {
@@ -198,7 +198,6 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
                 S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
               }
               notices = Nil
-              
               AnswerHolder(LiftServlet.convertResponse((realXml,
 							S.getHeaders(LiftServlet.defaultHeaders((realXml, request))),
 							S.responseCookies,
@@ -207,23 +206,24 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
             case _ => AnswerHolder(request.createNotFound)
           }
         }
-      }
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
       val rd = ite.getCause.asInstanceOf[RedirectException]
       AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
       ResponseInfo.docType(request),
       List("Location" -> (request.updateWithContextPath(rd.to))),
-      Nil,
+      S.responseCookies,
       302))
       case rd : net.liftweb.http.RedirectException => {   
         AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
         ResponseInfo.docType(request),
         List("Location" -> (request.updateWithContextPath(rd.to))),
-        Nil,
+        S.responseCookies,
         302))
       }
-      case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e)) // request.showException(e))
+      case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e))
+    
+    }
     }
   }
   

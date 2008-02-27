@@ -106,84 +106,57 @@ object S {
   })
   
   /**
-  * @return a List of any Cookies that have been set for this Response.
-  * This is a read-ony copy of the ListBuffer[Cookie] that are actually sent
-  * when the Response is sent.
-  */
-  /*
-  def cookies: List[Cookie] = _responseCookies.value match { 
-  case null => Nil 
-  case xs: ListBuffer[Cookie] => xs.readOnly 
-  }*/
+   * @return a List of any Cookies that have been set for this Response.
+   */
   def receivedCookies: List[Cookie] =
-  for (rc <- Can(_responseCookies.value).toList;
-  c <- rc.inCookies) yield c.clone().asInstanceOf[Cookie]
+    for (rc <- Can(_responseCookies.value).toList; c <- rc.inCookies) 
+      yield c.clone().asInstanceOf[Cookie]
   
   /**
-  * Finds a cookie with the given name
-  * @param name - the name of the cookie to find
-  *
-  * @return a Can of the cookie
-  */
+   * Finds a cookie with the given name
+   * @param name - the name of the cookie to find
+   *
+   * @return a Can of the cookie
+   */
   def findCookie(name: String): Can[Cookie] = 
   Can(_responseCookies.value).flatMap(
-  rc =>
-  Can(rc.inCookies.filter(_.getName == name)).map(_.clone().asInstanceOf[Cookie])
-  )
+    rc => Can(rc.inCookies.filter(_.getName == name)).
+              map(_.clone().asInstanceOf[Cookie]))
   
   def responseCookies: List[Cookie] = Can(_responseCookies.value).
-  toList.flatMap(_.outCookies)
+    toList.flatMap(_.outCookies)
   
   /**
-  * Adds a Cookie to the List[Cookies] that will be sent with the Response.
-  *
-  * If you wish to delete a Cookie as part of the Response, add a Cookie with
-  * a MaxAge of 0.
-  */
+   * Adds a Cookie to the List[Cookies] that will be sent with the Response.
+   *
+   * If you wish to delete a Cookie as part of the Response, add a Cookie with
+   * a MaxAge of 0.
+   */
   def addCookie(cookie: Cookie) {
-    Can(_responseCookies.value).
-    foreach(rc => _responseCookies.set(rc.add(cookie)))
+    Can(_responseCookies.value).foreach(rc =>
+      _responseCookies.set(rc.add(cookie))
+    )
   }
-  
-  /*
-  {
-  _responseCookies.value match {
-  case null => {
-	val buffer = new ListBuffer[Cookie]()
-	buffer += cookie
-	_responseCookies.set(buffer)
-  }
-  case xs => {
-	xs += cookie
-  }
-  }    
-  }*/
   
   /**
-  * Deletes the cookie from the user's browser.
-  * @param cookie the Cookie to delete
-  */
+   * Deletes the cookie from the user's browser.
+   * @param cookie the Cookie to delete
+   */
   def deleteCookie(cookie: Cookie) {
-    Can(_responseCookies.value).
-    foreach(rc => _responseCookies.set(rc.delete(cookie)))
+    Can(_responseCookies.value).foreach(rc => 
+      _responseCookies.set(rc.delete(cookie))
+    )
   }
   
   /**
-  * Deletes the cookie from the user's browser.
-  * @param name the name of the cookie to delete
-  */
+   * Deletes the cookie from the user's browser.
+   * @param name the name of the cookie to delete
+   */
   def deleteCookie(name: String) {
-    Can(_responseCookies.value).
-    foreach(rc => _responseCookies.set(rc.delete(name)))
+    Can(_responseCookies.value).foreach(rc => 
+      _responseCookies.set(rc.delete(name))
+    )
   }
-  
-  /**
-  * Wipes the _responseCookies contents.
-  */
-  /*
-  def clearCookies {
-  _responseCookies.set(new ListBuffer[Cookie]())
-  }*/
   
   
   /**
@@ -451,13 +424,25 @@ object S {
     }
   }
   
+  /**
+   * @return a List[Cookie] even if the underlying request's Cookies are null.
+   */
+  private def getCookies(request: HttpServletRequest): List[Cookie] = { 
+    request.getCookies match {
+      case null => Nil
+      case xs: Array[Cookie] => xs.toList
+    }
+  }
+  
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     doAround(aroundRequest,
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
           _requestVar.doWith(new HashMap) {
-            _innerInit(f)
+	    _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
+              _innerInit(f)
+	    }
           }
         }
       }
