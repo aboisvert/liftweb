@@ -18,6 +18,9 @@
   -->
     <release version="0.6" description="">
       <action dev="Marius Danciu" type="add">
+        Added RedirectResponse class
+      </action>
+      <action dev="Marius Danciu" type="add">
         Added lift core localization support.
       </action>
       <action dev="Steve Jenson" type="add">
