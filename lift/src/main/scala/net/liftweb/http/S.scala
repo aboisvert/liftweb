@@ -427,12 +427,17 @@ object S {
   /**
    * @return a List[Cookie] even if the underlying request's Cookies are null.
    */
-  private def getCookies(request: HttpServletRequest): List[Cookie] = { 
+  private def getCookies(request: HttpServletRequest): List[Cookie] =
+  for (r <- Can(request).toList;
+  ca <- Can(r.getCookies).toList;
+  c <- ca) yield c
+  /*
+  Can(request).toList.flatMa
     request.getCookies match {
       case null => Nil
       case xs: Array[Cookie] => xs.toList
     }
-  }
+  }*/
   
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     doAround(aroundRequest,
