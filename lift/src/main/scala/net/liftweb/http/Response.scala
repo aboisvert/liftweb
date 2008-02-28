@@ -6,7 +6,7 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.xml.{Node, Unparsed}
+import scala.xml.{Node, Unparsed, Group, NodeSeq}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import javax.servlet.http.Cookie
@@ -49,6 +49,11 @@ case class Response(data: Array[Byte], headers: List[(String, String)], cookies:
   
   override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
 }
+
+case class RedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends ResponseIt {
+  def toResponse = Response(Array(0), List("Location" -> request.updateWithContextPath(uri)), cookies toList, 302)
+}
+
 
 /**
  * Stock XHTML doctypes available to the lift programmer.
