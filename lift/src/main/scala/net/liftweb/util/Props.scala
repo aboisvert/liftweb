@@ -91,8 +91,8 @@ object Props {
       case Full(prop) => 
         Map(prop.entrySet.toArray.map{
           s2 => 
-            val s = s2.asInstanceOf[java.util.Map.Entry]
-          (s.getKey.asInstanceOf[String],s.getValue.asInstanceOf[String])
+            val s = s2.asInstanceOf[java.util.Map.Entry[String, String]]
+          (s.getKey,s.getValue)
         } :_*)
 
       case _ => Map.empty[String, String] // if none, it's an empty map

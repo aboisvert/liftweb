@@ -598,18 +598,18 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   protected def  findApplier(name : String, inst : AnyRef) : Can[((A, AnyRef) => unit)] = synchronized {
     val clz = inst match {
       case null => null
-      case _ => inst.getClass
+      case _ => inst.getClass.asInstanceOf[Class[(C forSome {type C})]]
     }
     val look = (name.toLowerCase, if (clz ne null) Full(clz) else Empty)
       Can(mappedAppliers.get(look) orElse {
-          val newFunc = createApplier(name, inst, clz)
+          val newFunc = createApplier(name, inst)
           mappedAppliers(look) = newFunc
           Some(newFunc)
       })
   }
   
 
-  private def createApplier(name : String, inst : AnyRef, clz : Class) : (A, AnyRef) => unit = {
+  private def createApplier(name : String, inst : AnyRef /*, clz : Class*/) : (A, AnyRef) => unit = {
     val accessor = mappedColumns.get(name)
     if ((accessor eq null) || accessor == None) null else {
       (accessor.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
@@ -650,7 +650,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   protected val rootClass = this.getClass.getSuperclass
   
-  private val mappedAppliers = new HashMap[(String, Can[Class]), (A, AnyRef) => unit];
+  private val mappedAppliers = new HashMap[(String, Can[Class[(C forSome {type C})]]), (A, AnyRef) => unit];
   
   private val _mappedFields  = new HashMap[String, Method];
   

@@ -48,9 +48,9 @@ import javax.servlet.http._
  */
 class MockServletContext(var target: String) extends ServletContext {
   def getInitParameter(f: String) = null
-  def getInitParameterNames = new Vector().elements
+  def getInitParameterNames = new Vector[_]().elements
   def getAttribute(f: String) = null
-  def getAttributeNames = new Vector().elements
+  def getAttributeNames = new Vector[_]().elements
   def removeAttribute(name: String) {}
   def setAttribute(name: String, o: Object) {}
   def getContext(path: String) = this
@@ -74,8 +74,8 @@ class MockServletContext(var target: String) extends ServletContext {
   def getServerInfo = null
   def getServlet(name: String) = null
   def getServletContextName = null
-  def getServletNames = new Vector().elements
-  def getServlets = new Vector().elements
+  def getServletNames = new Vector[_]().elements
+  def getServlets = new Vector[_]().elements
   def log(msg: String, t: Throwable) {
     t.printStackTrace
     log(msg)
@@ -96,7 +96,7 @@ class MockServletContext(var target: String) extends ServletContext {
 class MockFilterConfig(servletContext: ServletContext) extends FilterConfig {
   def getFilterName = "LiftFilter" // as in lift's default web.xml
   def getInitParameter(key: String) = null
-  def getInitParameterNames  = new Vector().elements
+  def getInitParameterNames  = new Vector[_]().elements
   def getServletContext = servletContext
 }
 
@@ -156,7 +156,7 @@ class MockHttpSession extends HttpSession {
   def removeAttribute(key: String) = attr -= key
   def setAttribute(key: String, value: Any) = attr += key -> value
   def getValueNames: Array[String] = values.keySet.toArray
-  def getAttributeNames = new Vector(attr.underlying.keySet).elements
+  def getAttributeNames = new Vector[AnyRef](attr.underlying.keySet).elements
   def getSessionContext = sessionContext
   def getMaxInactiveInterval = maxii
   def setMaxInactiveInterval(i: Int) = maxii = i

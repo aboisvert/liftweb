@@ -191,7 +191,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
     * What is the real class that corresponds to FieldType 
     */
-  def dbFieldClass: Class
+  def dbFieldClass: Class[FieldType]
 
   /**
     * Get the field that this prototypical field represents

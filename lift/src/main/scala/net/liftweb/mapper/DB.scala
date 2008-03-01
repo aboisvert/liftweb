@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+(c) 2006-2008 WorldWide Conferencing, LLC
+Distributed under an Apache License
+http://www.apache.org/licenses/LICENSE-2.0
+\*                                                 */
 
 import java.sql.{Connection, ResultSet, Statement, PreparedStatement, Types, ResultSetMetaData}
 import javax.sql.{ DataSource}
@@ -14,9 +14,9 @@ import net.liftweb.util._
 // import net.liftweb.util.Lazy._
 
 object DB {
-  private val threadStore = new ThreadLocal
+  private val threadStore = new ThreadLocal[HashMap[ConnectionIdentifier, ConnectionHolder]]
   private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
-  val logger = LogBoot.loggerByClass(DB.getClass)
+  val logger = LogBoot.loggerByClass(DB.getClass.asInstanceOf[Class[AnyRef]])
   
   var queryTimeout: Can[Int] = Empty
   
@@ -28,8 +28,8 @@ object DB {
   }
   
   /**
-    * can we get a JDBC connection from JNDI?
-    */
+  * can we get a JDBC connection from JNDI?
+  */
   def jndiJdbcConnAvailable_? : Boolean = {
     val touchedEnv = envContext.calculated_?
     
@@ -38,7 +38,7 @@ object DB {
     } catch {
       case e => false
     }
-        
+    
     if (!touchedEnv) envContext.reset
     ret
   }
@@ -55,24 +55,24 @@ object DB {
   private def info : HashMap[ConnectionIdentifier, ConnectionHolder] = {
     threadStore.get match {
       case null =>
-	val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder];
-	threadStore.set(tinfo)
-	tinfo
-
-      case v: HashMap[ConnectionIdentifier, ConnectionHolder] => v
+      val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder]
+      threadStore.set(tinfo)
+      tinfo
+      
+      case v => v
     }
   }
   
   // remove thread-local association
   def clearThread: Unit = { threadStore.remove }  
-
+  
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
       Helpers.tryo {
-      val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
-      new SuperConnection(conn, () => conn.close)
+        val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
+        new SuperConnection(conn, () => conn.close)
       } openOr {throw new NullPointerException("Looking for Connection Identifier "+name+" but failed to find either a JNDI data source "+
-        "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
+      "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
     }
     ret.setAutoCommit(false)
     ret
@@ -100,8 +100,8 @@ object DB {
   }
   
   /**
-    *  Append a function to be invoked after the commit has taken place for the given connection identifier
-    */
+  *  Append a function to be invoked after the commit has taken place for the given connection identifier
+  */
   def appendPostFunc(name: ConnectionIdentifier, func: () => Unit) {
     info.get(name) match {
       case Some(ConnectionHolder(c, n, post)) => info(name) = ConnectionHolder(c, n, func :: post)
@@ -115,13 +115,13 @@ object DB {
   
   def statement[T](db : SuperConnection)(f : (Statement) => T) : T =  {
     Helpers.calcTime {
-    val st = db.createStatement
-    queryTimeout.foreach(to => st.setQueryTimeout(to))
-    try {
-      (st.toString, f(st))
-    } finally {
-      st.close
-    }
+      val st = db.createStatement
+      queryTimeout.foreach(to => st.setQueryTimeout(to))
+      try {
+        (st.toString, f(st))
+      } finally {
+        st.close
+      }
     } match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
@@ -147,7 +147,7 @@ object DB {
       case BIT | BOOLEAN => rs.getBoolean(pos).toString
       
       case VARCHAR | CHAR | CLOB | LONGVARCHAR => rs.getString(pos)
-
+      
       case DATE | TIME | TIMESTAMP => rs.getTimestamp(pos).toString
       
       case DOUBLE | FLOAT | REAL  => rs.getDouble(pos).toString
@@ -173,27 +173,27 @@ object DB {
   def rollback(name: ConnectionIdentifier) = use(name)(conn => conn.rollback)
   
   /**
-   * Executes {@code statement} and converts the {@code ResultSet} to model 
-   * instance {@code T} using {@code f} 
-   */
+  * Executes {@code statement} and converts the {@code ResultSet} to model 
+  * instance {@code T} using {@code f} 
+  */
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))
     Helpers.calcTime {
       val rs = statement.executeQuery
       try {
-	(statement.toString, f(rs))
+        (statement.toString, f(rs))
       } finally {
-	statement.close
-	rs.close
+        statement.close
+        rs.close
       }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
   def prepareStatement[T](statement : String, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     Helpers.calcTime {
-    val st = conn.prepareStatement(statement)
-    queryTimeout.foreach(to => st.setQueryTimeout(to))
+      val st = conn.prepareStatement(statement)
+      queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
-	(st.toString, f(st))
+        (st.toString, f(st))
       } finally {
         st.close
       }} match {case (time, (query, res)) => runLogger(query, time); res}
@@ -201,8 +201,8 @@ object DB {
   
   def prepareStatement[T](statement : String, keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     Helpers.calcTime{
-        val st = conn.prepareStatement(statement, keys)
-        queryTimeout.foreach(to => st.setQueryTimeout(to))
+      val st = conn.prepareStatement(statement, keys)
+      queryTimeout.foreach(to => st.setQueryTimeout(to))
       try {
         (st.toString, f(st))
       } finally {
@@ -211,9 +211,9 @@ object DB {
   }
   
   /**
-   * Executes function {@code f} with the connection named {@code name}. Releases the connection
-   * before returning.
-   */
+  * Executes function {@code f} with the connection named {@code name}. Releases the connection
+  * before returning.
+  */
   def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
     val conn = getConnection(name)
     try {
@@ -223,7 +223,7 @@ object DB {
     }
   }
   
-
+  
   val reservedWords = scala.collection.immutable.HashSet.empty ++ List("abort" , 
   "accept" , 
   "access" , 
@@ -584,13 +584,13 @@ class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
   lazy val brokenLimit_? = driverType.brokenLimit_?
   lazy val brokenAutogeneratedKeys_? = driverType.brokenAutogeneratedKeys_?
   lazy val wickedBrokenAutogeneratedKeys_? = driverType.wickedBrokenAutogeneratedKeys_?
-      
-      
+  
+  
   def createTablePostpend: String = driverType.createTablePostpend
   def supportsForeignKeys_? : Boolean = driverType.supportsForeignKeys_?
-
+  
   lazy val driverType = (calcDriver(connection.getMetaData.getDatabaseProductName))
-
+  
   def calcDriver(name: String): DriverType = {
     name match {
       case DerbyDriver.name => DerbyDriver

@@ -8,16 +8,16 @@ package net.liftweb.util
 
 class ThreadGlobal[T]
 {
-  private val threadLocal = new ThreadLocal
+  private val threadLocal = new ThreadLocal[T]
   
-  def value : T = threadLocal.get.asInstanceOf[T];
+  def value: T = threadLocal.get
   
   def set(v: T): ThreadGlobal[T] = {
     threadLocal.set(v)
     this
   }
   
-  def doWith[R](x : T)(f : => R) : R = {
+  def doWith[R](x: T)(f : => R) : R = {
     val original = value
     try {
       threadLocal.set(x)

@@ -298,14 +298,14 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
   
-  private def findSnippetClass(name: String): Can[Class] = {
+  private def findSnippetClass[C <: AnyRef](name: String): Can[Class[C]] = {
     if (name == null) Empty
     else findClass(name, LiftServlet.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
   
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
-    findSnippetClass(cls).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
+    findSnippetClass[AnyRef](cls).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
       case Full(md: MetaData) => Full(md.copy(rest))
       case _ => Empty
     }).flatMap(s => s))).openOr(rest)
@@ -325,14 +325,14 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
   
-  private val snippetClasses: HashMap[String, Class] = new HashMap
+  private val snippetClasses: HashMap[String, Class[_]] = new HashMap[String, Class[_]]()
   
   private def findSnippetInstance(cls: String): Can[AnyRef] = 
   S.snippetForClass(cls) or 
-  (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
+  (findSnippetClass[AnyRef](cls).flatMap(c => instantiate(c)) match {
     case Full(inst: StatefulSnippet) => 
-    inst.snippetName = cls; S.setSnippetForClass(cls, inst); Can(inst)
-    case Full(ret) => Can(ret)
+    inst.snippetName = cls; S.setSnippetForClass(cls, inst); Full(inst)
+    case Full(ret) => Full(ret)
     case _ => Empty
   })
   
@@ -476,9 +476,12 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     
   }
   
+  private def checkIfComet(c: Class[AnyRef]): Can[Class[CometActor]] =
+  if (classOf[CometActor].isAssignableFrom(c)) Full(c.asInstanceOf[Class[CometActor]]) else Empty
   
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil), {c : Class => classOf[CometActor].isAssignableFrom(c)}).flatMap{
+    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil),
+    checkIfComet _).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
@@ -645,7 +648,7 @@ object TemplateFinder {
     first(toTry) {
       clsName => 
       try {
-        tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName)).flatMap{
+        tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName).asInstanceOf[Class[AnyRef]]).flatMap{
           c =>
           (c.newInstance match {
             case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)

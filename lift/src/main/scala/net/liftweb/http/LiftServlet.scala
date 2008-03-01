@@ -764,7 +764,7 @@ private[http] case object DefaultBootstrap extends Bootable
 {
   def boot() : Unit =
   {
-    val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance)
+    val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance.asInstanceOf[AnyRef])
     f.map{f => f()}
   }
 }

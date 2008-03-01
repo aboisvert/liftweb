@@ -1,10 +1,10 @@
 package net.liftweb.util
 
 /*            
- * (c) 2007-2008 WorldWide Conferencing, LLC
- * Distributed under an Apache License
- * http://www.apache.org/licenses/LICENSE-2.0
- */
+* (c) 2007-2008 WorldWide Conferencing, LLC
+* Distributed under an Apache License
+* http://www.apache.org/licenses/LICENSE-2.0
+*/
 
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet, ListBuffer}
@@ -28,8 +28,8 @@ import javax.crypto.spec._
 // import net.liftweb.mapper.{Mapper, MappedField}
 
 /**
- *  A bunch of helper functions
- */
+*  A bunch of helper functions
+*/
 object Helpers {
   val utc = TimeZone.getTimeZone("UTC")
   def internetDateFormatter = {
@@ -53,9 +53,9 @@ object Helpers {
   
   
   /*
-
+  
   */
-    
+  
   /**
   * URL decode the string.  A pass-through to Java's URL decode with UTF-8
   */
@@ -63,23 +63,23 @@ object Helpers {
   def urlEncode(in : String) = {URLEncoder.encode(in, "UTF-8")}
   
   /**
-   * Take a list of name/value parse and turn them into a URL query string
-   *
-   * @param params the name/value pairs
-   *
-   * @return a valid query string
-   */
+  * Take a list of name/value parse and turn them into a URL query string
+  *
+  * @param params the name/value pairs
+  *
+  * @return a valid query string
+  */
   def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&")
   
   
   /**
-    * Append parameters to a URL
-    *
-    * @param url the url to append the params to
-    * @param params the parameters (name/value) to append to the URL
-    *
-    * @return the url with the parameters appended
-    */
+  * Append parameters to a URL
+  *
+  * @param url the url to append the params to
+  * @param params the parameters (name/value) to append to the URL
+  *
+  * @return the url with the parameters appended
+  */
   def appendParams(url: String, params: Seq[(String, String)]): String = params.toList match {
     case Nil => url
     case xs => url + "&" + paramsToUrlParams(xs)
@@ -99,7 +99,7 @@ object Helpers {
       val lastPoint = path.lastIndexOf('.')
       val lastSlash = path.lastIndexOf('/')
       if (lastPoint <= lastSlash) false else {
-	validSuffixes.contains(path.substring(lastPoint + 1))
+        validSuffixes.contains(path.substring(lastPoint + 1))
       }
     }
   }
@@ -136,16 +136,16 @@ object Helpers {
   }
   
   def couldBeHtml(in: Map[String, String]): Boolean =
-    in match {
-      case null => true
-      case n => {
-	n.get("Content-Type") match {
-	  case Some(s) => { (s.toLowerCase == "text/html") ||
-			    (s.toLowerCase == "application/xhtml+xml") }
-	  case None => true
-	}
+  in match {
+    case null => true
+    case n => {
+      n.get("Content-Type") match {
+        case Some(s) => { (s.toLowerCase == "text/html") ||
+        (s.toLowerCase == "application/xhtml+xml") }
+        case None => true
       }
     }
+  }
   
   def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
   
@@ -153,36 +153,36 @@ object Helpers {
     val ret = new HashMap[A,B];
     in.keys.foreach {
       k =>
-	ret += k -> in(k)
+      ret += k -> in(k)
     }
     
     ret
   }
   
   /**
-   * Returns a Full can with the first element x of the list in
-   * for which f(x) evaluates to true. If f(x) evaluates to false
-   * for every x, then an Empty can is returned.
-   *
-   * @param in  a list of elements to which f can be applied
-   * @param f   a function that can be applied to elements of in
-   */
+  * Returns a Full can with the first element x of the list in
+  * for which f(x) evaluates to true. If f(x) evaluates to false
+  * for every x, then an Empty can is returned.
+  *
+  * @param in  a list of elements to which f can be applied
+  * @param f   a function that can be applied to elements of in
+  */
   def first_? [B](in: List[B])(f: => B => Boolean): Can[B] =
-    in match {
+  in match {
     case Nil => Empty
     case x :: xs => if (f(x)) Full(x) else first_? (xs)(f)
   }
   
   /**
-   * Returns the first application of f to an element of in that
-   * results in a Full can. If f applied to an element of in results
-   * in an Empty can, then f will be applied to the rest of the
-   * elements of in until a Full can results. If the list runs out
-   * then an Empty can is returned.
-   * 
-   * @param in  a list of elements to which f can be applied
-   * @param f   a function that can be applied to elements of in
-   */  
+  * Returns the first application of f to an element of in that
+  * results in a Full can. If f applied to an element of in results
+  * in an Empty can, then f will be applied to the rest of the
+  * elements of in until a Full can results. If the list runs out
+  * then an Empty can is returned.
+  * 
+  * @param in  a list of elements to which f can be applied
+  * @param f   a function that can be applied to elements of in
+  */  
   def first[B,C](in : List[B])(f : B => Can[C]): Can[C] = {
     in match {
       case Nil => Empty
@@ -190,25 +190,25 @@ object Helpers {
         f(x) match {
           case s @ Full(_) =>  s
           case _ => first(xs)(f)
-	    }
+        }
       }
     }
   }
   
   /**
-    * Choose one of many templates from the children.  Looking for the
-    * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
-    *
-    * @param prefix the prefix (e.g., "choose")
-    * @param tag the tag to choose (e.g., "stuff")
-    * @param xhtml the incoming node sequence
-    *
-    * @return the first matching node sequence
-    */
+  * Choose one of many templates from the children.  Looking for the
+  * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
+  *
+  * @param prefix the prefix (e.g., "choose")
+  * @param tag the tag to choose (e.g., "stuff")
+  * @param xhtml the incoming node sequence
+  *
+  * @return the first matching node sequence
+  */
   def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
-      case Nil => Nil
-      case x :: xs => x.child
-    }
+    case Nil => Nil
+    case x :: xs => x.child
+  }
   
   sealed abstract class BindParam {
     def name: String
@@ -216,30 +216,30 @@ object Helpers {
     def calcValue(in: NodeSeq): NodeSeq
   }
   
-case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
-  def calcValue(in: NodeSeq): NodeSeq = value
-}
-
-case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
-  def calcValue(in: NodeSeq): NodeSeq = value
-}  
-
-case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends BindParam {
-  def calcValue(in: NodeSeq): NodeSeq = value(in)
-}
-case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
-  def calcValue(in: NodeSeq): NodeSeq = value(in)
-}
-
-
-   object BindParamAssoc {
-     implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
-       case null => Text("null")
-       case v => Text(v.toString)
-     })
-   }
-
-    class BindParamAssoc(val name: String) {
+  case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value
+  }
+  
+  case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value
+  }  
+  
+  case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value(in)
+  }
+  case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value(in)
+  }
+  
+  
+  object BindParamAssoc {
+    implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
+      case null => Text("null")
+      case v => Text(v.toString)
+    })
+  }
+  
+  class BindParamAssoc(val name: String) {
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
     def -->(value: Symbol): BindParam = TheBindParam(name, Text(value.name))
@@ -250,40 +250,40 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
-    
-  def renum[T](in: java.util.Enumeration): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
+  
+  def renum[T](in: java.util.Enumeration[T]): List[T] = if (!in.hasMoreElements()) Nil else in.nextElement.asInstanceOf[T] :: renum(in)
   
   //implicit def symThingToBindParam[T](p: (Symbol, T)): BindParam = stringThingToBindParam( (p._1.name, p._2))
-
+  
   /**
-   * Experimental template bind. Adopts the approach detailed in my "Template by Example" e-mail to the
-   * liftweb discussion list.
-   * 
-   * @author jorge.ortiz
-   */
-   /*
+  * Experimental template bind. Adopts the approach detailed in my "Template by Example" e-mail to the
+  * liftweb discussion list.
+  * 
+  * @author jorge.ortiz
+  */
+  /*
   def tbind[T<:Mapper[T]](namespace: String, xml: NodeSeq, objs: Seq[T])(transform: T => PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
-    val templates = xml.theSeq.headOption.get.child
-    
-    (for (obj <- objs;
-      template <- templates)
-        yield xbind(namespace, template)(transform(obj))
-    ).flatMap(_.theSeq)
+  val templates = xml.theSeq.headOption.get.child
+  
+  (for (obj <- objs;
+  template <- templates)
+  yield xbind(namespace, template)(transform(obj))
+  ).flatMap(_.theSeq)
   }*/
   
   /**
-   * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform 
-   * function, which can be used to format the returned NodeSeq.
-   */
+  * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform 
+  * function, which can be used to format the returned NodeSeq.
+  */
   def xbind(namespace: String, xml: NodeSeq)(transform: PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
     def rec_xbind(xml: NodeSeq): NodeSeq = {
       xml.flatMap {
         node => node match {
           case s: Elem if (node.prefix == namespace) =>
-            if (transform.isDefinedAt(node.label))
-              transform(node.label)(node)
-            else
-              Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+          if (transform.isDefinedAt(node.label))
+          transform(node.label)(node)
+          else
+          Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
           case Group(nodes) => Group(rec_xbind(nodes))
           case s: Elem => Elem(node.prefix, node.label, node.attributes, node.scope, rec_xbind(node.child) : _*)
           case n => node
@@ -295,8 +295,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   
   /**
-    * Bind a set of values to parameters and attributes in a block of XML 
-    */
+  * Bind a set of values to parameters and attributes in a block of XML 
+  */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
     val map: scala.collection.immutable.Map[String, BindParam] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
     
@@ -316,17 +316,17 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def in_bind(xml:NodeSeq): NodeSeq = {
       xml.flatMap {
         node =>
-          node match {
-            case s : Elem if (node.prefix == namespace) => {
-              map.get(node.label) match {
-		case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
-                case Some(ns) => ns.calcValue(s.child)
-              }
+        node match {
+          case s : Elem if (node.prefix == namespace) => {
+            map.get(node.label) match {
+              case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+              case Some(ns) => ns.calcValue(s.child)
             }
-	    case Group(nodes) => Group(in_bind(nodes))
-            case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
-            case n => node
           }
+          case Group(nodes) => Group(in_bind(nodes))
+          case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
+          case n => node
+        }
       }
     }
     in_bind(xml)
@@ -335,22 +335,22 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
     xml.flatMap {
       node =>
-        node match {
-          case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
-            node.attributes.get("name") match {
-              case None => bind(vals, node.child)
-              case Some(ns) => {
-                vals.get(ns.text) match {
-                  case None => bind(vals, node.child)
-                  case Some(nodes) => nodes
-                }
+      node match {
+        case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
+          node.attributes.get("name") match {
+            case None => bind(vals, node.child)
+            case Some(ns) => {
+              vals.get(ns.text) match {
+                case None => bind(vals, node.child)
+                case Some(nodes) => nodes
               }
             }
           }
-	  case Group(nodes) => Group(bind(vals, nodes))
-          case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
-          case n => node
         }
+        case Group(nodes) => Group(bind(vals, nodes))
+        case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
+        case n => node
+      }
     }
   }
   
@@ -362,31 +362,31 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     if (listvals.length > 0) Full(build(listvals.drop(1), bind(listvals.head, xml)))
     else Empty
   }
-
+  
   /**
-   * Bind parameters to XML.
-   * @param around XML with lift:bind elements
-   * @param atWhat data to bind
-   */
+  * Bind parameters to XML.
+  * @param around XML with lift:bind elements
+  * @param atWhat data to bind
+  */
   def processBind(around: NodeSeq, atWhat: Map[String, NodeSeq]) : NodeSeq = {
     
     /** Find element matched predicate f(x).isDefined, and return f(x) if found or None otherwise. */
     def findMap[A, B](s: Iterable[A])(f: A => Option[B]): Option[B] =
-      s.projection.map(f).find(_.isDefined).getOrElse(None)
+    s.projection.map(f).find(_.isDefined).getOrElse(None)
     
     around.flatMap {
       v =>
-        v match {
-          case Group(nodes) => Group(processBind(nodes, atWhat))
-          case Elem("lift", "bind", attr @ _, _, kids @ _*) =>
-            findMap(atWhat) {
-	      case (at, what) if attr("name").text == at => Some({what})
-	      case _ => None
-            }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
-          
-          case e: Elem => {Elem(e.prefix, e.label, e.attributes, e.scope, processBind(e.child, atWhat): _*)}
-          case _ => {v}
-	}
+      v match {
+        case Group(nodes) => Group(processBind(nodes, atWhat))
+        case Elem("lift", "bind", attr @ _, _, kids @ _*) =>
+        findMap(atWhat) {
+          case (at, what) if attr("name").text == at => Some({what})
+          case _ => None
+        }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
+        
+        case e: Elem => {Elem(e.prefix, e.label, e.attributes, e.scope, processBind(e.child, atWhat): _*)}
+        case _ => {v}
+      }
       
     }
   }
@@ -396,11 +396,11 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   */
   def insureField(toInsure: List[(String, String)], headers: List[(String, String)]): List[(String, String)] = {
     def insureField_inner(toInsure : List[(String, String)], field : (String, String)): List[(String, String)] =
-      toInsure.ciGet(field._1) match {
-        case Full(_) => toInsure
-        case _ => field :: toInsure
-      }
-
+    toInsure.ciGet(field._1) match {
+      case Full(_) => toInsure
+      case _ => field :: toInsure
+    }
+    
     headers match {
       case Nil => toInsure
       case x :: xs => insureField(insureField_inner(toInsure, x), xs)
@@ -411,7 +411,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def ciGet(swhat: String): Can[String] = {
       val what = swhat.toLowerCase
       def tGet(in: List[(String, String)]): Can[String] = 
-	in match {
+      in match {
         case Nil => Empty
         case x :: xs if (x._1.toLowerCase == what) => Full(x._2)
         case x :: xs => tGet(xs)
@@ -425,84 +425,87 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   /**
   * Convert an enum to a List[T]
   */
-  def enumToList[T](enum : java.util.Enumeration) : List[T] = {
+  def enumToList[T](enum: java.util.Enumeration[T]) : List[T] = {
     if (enum.hasMoreElements) {
       val next = enum.nextElement
+      next :: enumToList(enum)
+      /*
       if (next.isInstanceOf[T]) next.asInstanceOf[T] :: enumToList[T](enum)
       else enumToList[T](enum)
+      */
     } else
-      Nil
+    Nil
   }
   
   /**
   * Convert an enum to a List[String]
   */
-  def enumToStringList(enum : java.util.Enumeration) : List[String] =
-    if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
+  def enumToStringList[C](enum: java.util.Enumeration[C]) : List[String] =
+  if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
   
   
   def head[T](l : List[T], deft: => T) = l match {
-      case Nil => deft
-      case x :: xs => x
-    }
+    case Nil => deft
+    case x :: xs => x
+  }
   
   /**
-    * If the incoming Elem has an 'id', return it, otherwise
-    * construct a new Elem with a randomly generated id and return the pair
-    *
-    * @param in the element to test & add 'id' to
-    *
-    * @return the new element and the id
-    */
+  * If the incoming Elem has an 'id', return it, otherwise
+  * construct a new Elem with a randomly generated id and return the pair
+  *
+  * @param in the element to test & add 'id' to
+  *
+  * @return the new element and the id
+  */
   def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
-  case Nil => val id = "R"+randomString(12)
-  (in % ("id" -> id), id)
-  case x :: xs => (in, x.text)
-} 
-
- 
-  /**
-  * Find a class with name given name in a list of packages, either by matching 'name'
-  * or by matching 'smartCaps(name)'
-  */
-  def findClass(name : String, where : List[String]) : Can[Class] =
-    findClass(name, where, ^(smartCaps, n => n), s => true)
+    case Nil => val id = "R"+randomString(12)
+    (in % ("id" -> id), id)
+    case x :: xs => (in, x.text)
+  } 
+  
   
   /**
   * Find a class with name given name in a list of packages, either by matching 'name'
   * or by matching 'smartCaps(name)'
   */
-  def findClass(name : String, where : List[String], guard: (Class) => Boolean ) : Can[Class] = {
+  def findClass[C <: AnyRef](name : String, where : List[String]) : Can[Class[C]] =
+  findClass[C](name, where, ^[String => String](smartCaps _, (n: String) => n), (s: Class[_]) => Full(s.asInstanceOf[Class[C]]))
+  
+  /**
+  * Find a class with name given name in a list of packages, either by matching 'name'
+  * or by matching 'smartCaps(name)'
+  */
+  def findClass[C <: AnyRef](name : String, where : List[String], guard: Class[AnyRef] => Can[Class[C]]) : Can[Class[C]] = {
     findClass(name, where, ^(smartCaps, n => n), guard)
   }
   
-  def findClass(where : List[(String, List[String])]) : Can[Class] = {
+  def findClass[C <: AnyRef](where : List[(String, List[String])]) : Can[Class[C]] = {
     where match {
       case Nil => Empty
       case s :: rest => {
-	findClass(s._1, s._2) match {
+        findClass[C](s._1, s._2) match {
           case Full(s) => Full(s)
-          case _ => findClass(rest)
-	}
+          case _ => findClass[C](rest)
+        }
       }
     }
   }
-
+  
   /**
   * Find a class with name given name in a list of packages, with a list of functions that modify
   * 'name' (e.g., leave it alone, make it camel case, etc.)
   */
-  def findClass(name : String, where : List[String], modifiers : List[Function1[String, String]], guard: (Class) => boolean) : Can[Class] = {
-    def findClass_s(name : String, where : String) : Can[Class] = {
+  def findClass[C <: AnyRef](name : String, where : List[String], modifiers : List[Function1[String, String]], guard: Class[AnyRef] => Can[Class[C]]) : Can[Class[C]] = {
+    def findClass_s(name : String, where : String) : Can[Class[C]] = {
       tryo(^(classOf[ClassNotFoundException]), Empty) {
         val clzName = where+"."+name
-	
-        Class.forName(clzName)
+        
+        Class.forName(clzName).asInstanceOf[Class[C]]
       }
     }
     
     
-    def findClass_l(name : String, where : List[String]) : Can[Class] = {
+    def findClass_l(name : String, where : List[String]) : Can[Class[C]] = {
       where match {
         case Nil => Empty
         case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
@@ -520,7 +523,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * an exception with it's class in 'ignore' or of 'ignore' is
   * null or an empty list, ignore the exception and return None.
   */
-  def tryo[T](ignore : List[Class],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
+  def tryo[T, CL <: AnyRef](ignore : List[Class[CL]],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
     try {
       Full(f)
     } catch {
@@ -554,7 +557,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   * 
   * @return true if clz is assignable from of the matching classes
   */
-  def containsClass(clz : Class, toMatch : List[Class]) : Boolean = {
+  def containsClass[C, CL](clz: Class[C], toMatch : List[Class[CL]]) : Boolean = {
     toMatch match {
       case null | Nil => false
       case c :: rest if (c.isAssignableFrom(clz)) => true
@@ -562,7 +565,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
-  def classHasControllerMethod(clz : Class, methName : String): Boolean = {
+  def classHasControllerMethod(clz: Class[_], methName: String): Boolean = {
     tryo {
       clz match {
         case null => false
@@ -570,8 +573,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       }
     } openOr false
   }
-
-  def invokeControllerMethod(clz : Class, meth : String) = {
+  
+  def invokeControllerMethod(clz: Class[_], meth: String) = {
     try {
       clz.getMethod(meth, null).invoke(clz.newInstance, null)
     } catch {
@@ -579,11 +582,13 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
   }
   
+  type Garb = T forSome {type T}
+  
   /**
   * Invoke the given method for the given class, with the given params.
   * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
   */
-  private def _invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Can[Array[Class]]): Can[Any] = {
+  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
     /*
     * try to find a method matching the given parameters
     */
@@ -594,16 +599,17 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       */
       def findAlternates : Can[Method] = {
         val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
-						&& Modifier.isPublic(m.getModifiers)
-						&& m.getParameterTypes.length == params.length)
-	if (t.length == 1) Full(t(0))
-	else Empty
+        && Modifier.isPublic(m.getModifiers)
+        && m.getParameterTypes.length == params.length)
+        if (t.length == 1) Full(t(0))
+        else Empty
       }
       try {
-        clz.getMethod(meth, ptypes openOr params.map(_.getClass)) match {
-            case null => findAlternates
-	    case m => Full(m)
-          }
+        // openOr params.map(_.getClass).asInstanceOf[Array[Class[AnyRef]]]
+        clz.getMethod(meth, ptypes.open_! ) match {
+          case null => findAlternates
+          case m => Full(m)
+        }
       } catch {
         case e: java.lang.NoSuchMethodException => findAlternates
       }
@@ -611,16 +617,16 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     
     try {
       findMethod.map(m => if (Modifier.isStatic(m.getModifiers)) m.invoke(null, params)
-	  else m.invoke(inst, params))
+      else m.invoke(inst, params))
     } catch {
       case e: java.lang.IllegalAccessException => Failure("invokeMethod "+meth, Full(e), Nil)
       case e: java.lang.IllegalArgumentException => Failure("invokeMethod "+meth, Full(e), Nil)
     }
   }
   
-  def instantiate(clz: Class): Can[AnyRef] = tryo{clz.newInstance}
-
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
+  def instantiate[C](clz: Class[C]): Can[C] = tryo{clz.newInstance}
+  
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Empty) or _invokeMethod(clz, inst, smartCaps(meth), params, Empty) or
     _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
   }
@@ -629,12 +635,13 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   
   // def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
   
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String, params: Array[Object], ptypes: Array[Class]): Can[Any] = {
-    _invokeMethod(clz, inst, meth, params, Full(ptypes)) or _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[(Class[CL] forSome {type CL})]): Can[Any] = {
+    _invokeMethod(clz, inst, meth, params, Full(ptypes)) or
+    _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
     _invokeMethod(clz, inst, methodCaps(meth), params, Full(ptypes))
   }
-
-  def invokeMethod(clz: Class, inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
+  
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
   
   def methodCaps(name: String): String = {
     val tmp = smartCaps(name)
@@ -656,7 +663,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case c :: rest => c :: loop(rest)
       case Nil => Nil
     }
-
+    
     List.toString(loop('_' :: List.fromString(in)))
   }
   
@@ -696,9 +703,9 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   
   def decryptStream(in: InputStream, key: Array[Byte]): InputStream = decryptStream(in, blowfishKeyFromBytes(key))
   def decryptStream(in: InputStream, key: SecretKey): InputStream = {
-      val cipher = Cipher.getInstance("blowfish")
-      cipher.init(Cipher.DECRYPT_MODE, key)
-      new CipherInputStream(in, cipher)
+    val cipher = Cipher.getInstance("blowfish")
+    cipher.init(Cipher.DECRYPT_MODE, key)
+    new CipherInputStream(in, cipher)
   }
   
   def encryptStream(in: InputStream, key: Array[Byte]): InputStream= encryptStream(in, blowfishKeyFromBytes(key))
@@ -712,12 +719,12 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
       if (pos >= size) sb 
       else {
-	val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
-	sb.append((randNum & 0x1f) match {
-	  case n if n < 26 => ('A' + n).toChar
-	  case n => ('0' + (n - 26)).toChar
-	})
-	addChar(pos + 1, randNum >> 5, sb)
+        val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
+        sb.append((randNum & 0x1f) match {
+          case n if n < 26 => ('A' + n).toChar
+          case n => ('0' + (n - 26)).toChar
+        })
+        addChar(pos + 1, randNum >> 5, sb)
       }
     }
     addChar(0, 0, new StringBuilder(size)).toString
@@ -745,7 +752,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case lo: long => lo != 0
       case n : Number => n.intValue != 0
       case s : String => {
-     	val sl = s.toLowerCase
+        val sl = s.toLowerCase
         if (sl.length == 0) false
         else {
           if (sl.charAt(0) == 't') true
@@ -798,7 +805,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def parseNumber(tin: String): Long = {
     def cToL(in: Char) = in.toLong - '0'.toLong
     def p(in: List[Char]) = in.takeWhile(isDigit).foldLeft(0L)((acc,c) => (acc * 10L) + cToL(c))
-
+    
     if (tin eq null) 0L
     else {
       tin.trim.toList match {
@@ -813,25 +820,25 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   
   def toDate(in: Any): Can[Date] = {
     try {
-    in match {
-      case null => Empty
-      case d: java.util.Date => Full(d)
-      case lng: Long => Full(new Date(lng))
-      case lng: Number => Full(new Date(lng.longValue))
-      case Nil | Empty | None | Failure(_, _, _) => Empty
-      case Full(v) => toDate(v)
-      case Some(v) => toDate(v)
-      case v :: vs => toDate(v)
-      case s : String => Full(new Date(s))
-      case o => toDate(o.toString)
-    }
+      in match {
+        case null => Empty
+        case d: java.util.Date => Full(d)
+        case lng: Long => Full(new Date(lng))
+        case lng: Number => Full(new Date(lng.longValue))
+        case Nil | Empty | None | Failure(_, _, _) => Empty
+        case Full(v) => toDate(v)
+        case Some(v) => toDate(v)
+        case v :: vs => toDate(v)
+        case s : String => Full(new Date(s))
+        case o => toDate(o.toString)
+      }
     } catch {
       case e => Log.debug("Error parsing date "+in, e); Failure("Bad date: "+in, Full(e), Nil)
     }
   }
   
   def currentYear: Int =
-    java.util.Calendar.getInstance.get(java.util.Calendar.YEAR)
+  java.util.Calendar.getInstance.get(java.util.Calendar.YEAR)
   
   def millis = System.currentTimeMillis
   
@@ -842,9 +849,9 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     /*
     val start = millis
     try {
-      f
+    f
     } finally {
-      Log.info(msg+" took "+(millis - start)+" Milliseconds")
+    Log.info(msg+" took "+(millis - start)+" Milliseconds")
     }*/
   }
   
@@ -854,24 +861,24 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     (millis - start, ret)
   }
   
-  def createInvoker(name: String, on: AnyRef): Can[() => Can[Any]] = {
+  def createInvoker[C <: AnyRef](name: String, on: C): Can[() => Can[Any]] = {
     on match {
       case null => Empty
       case o => {
         o.getClass.getDeclaredMethods.filter{
           m => m.getName == name && 
-	  Modifier.isPublic(m.getModifiers) &&
-	  m.getParameterTypes.length == 0}.toList match {
-	    case Nil => Empty
-	    case x :: xs => Full(() => {
-	      try {
-		Full(x.invoke(o, null))
-	      } catch {
-		case e : InvocationTargetException => throw e.getCause
-	      }
-	    }
-			       )
-	  }
+          Modifier.isPublic(m.getModifiers) &&
+        m.getParameterTypes.length == 0}.toList match {
+          case Nil => Empty
+          case x :: xs => Full(() => {
+            try {
+              Full(x.invoke(o, null))
+            } catch {
+              case e : InvocationTargetException => throw e.getCause
+            }
+          }
+          )
+        }
       }
     }
   }
@@ -894,7 +901,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
         bos.write(ba,0,len)
       }
     }
-
+    
     new ByteArrayInputStream(bos.toByteArray)
   }
   
@@ -905,11 +912,11 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
       case s => s.roboSplit(":")
     }) match {
       case f :: s :: _ => (f,s)
-	case f :: Nil => (f, second)
-	  case _ => (first, second)
+      case f :: Nil => (f, second)
+      case _ => (first, second)
     }
   }
-
+  
   
   def md5(in: Array[Byte]): Array[Byte] = (MessageDigest.getInstance("MD5")).digest(in)
   
@@ -929,7 +936,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     val binHash = (MessageDigest.getInstance("SHA")).digest(in)
     hexEncode(binHash)
   }
-
+  
   
   def hash256(in : String): String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA-256")).digest(in.getBytes("UTF-8")))
@@ -939,7 +946,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     val binHash = (MessageDigest.getInstance("SHA-256")).digest(in)
     hexEncode(binHash)
   }
-
+  
   def hexEncode(in: Array[Byte]): String = {
     val sb = new StringBuilder
     val len = in.length
@@ -948,16 +955,16 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
         val b: int = in(pos)
         val msb = (b & 0xf0) >> 4
         val lsb = (b & 0x0f)
-          sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
+        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
         sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[char] else ('a' + (lsb - 10)).asInstanceOf[char]))
         
-	addDigit(in, pos + 1, len, sb)
+        addDigit(in, pos + 1, len, sb)
       }
     }
     addDigit(in, 0, len, sb)
     sb.toString
   }
-    
+  
   implicit def nodeSeqToOptionString(in: NodeSeq): Can[String] = if (in.length == 0) Empty else Full(in.text)
   
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
@@ -1006,8 +1013,8 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   
   /**
-    * Given the input date, what's the month (0 based)?
-    */
+  * Given the input date, what's the month (0 based)?
+  */
   def month(in: java.util.Date): Int = {
     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
     cal.setTimeInMillis(in.getTime)
@@ -1015,41 +1022,41 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   }
   
   /**
-     * Given the input date, what's the year?
-     */
-   def year(in: java.util.Date): Int =  {
-     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-     cal.setTimeInMillis(in.getTime)
-     cal.get(Calendar.YEAR)
-   }
-   
+  * Given the input date, what's the year?
+  */
+  def year(in: java.util.Date): Int =  {
+    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    cal.setTimeInMillis(in.getTime)
+    cal.get(Calendar.YEAR)
+  }
+  
   /**
-     * Given the input date, what's the day (1 based)?
-     */
-   def day(in: java.util.Date): Int =  {
-     val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-     cal.setTimeInMillis(in.getTime)
-     cal.get(Calendar.DAY_OF_MONTH)
-   }
-   
+  * Given the input date, what's the day (1 based)?
+  */
+  def day(in: java.util.Date): Int =  {
+    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
+    cal.setTimeInMillis(in.getTime)
+    cal.get(Calendar.DAY_OF_MONTH)
+  }
+  
   /**
-    * The current time as a Date object
-    */
+  * The current time as a Date object
+  */
   def timeNow = new java.util.Date
   
   /**
-    * Convert the incoming millis to days since epoch
-    */
+  * Convert the incoming millis to days since epoch
+  */
   def millisToDays(millis: Long): Long = millis / (1000L * 60L * 60L * 24L)
   
   /**
-    * The number of days since epoche
-    */
+  * The number of days since epoche
+  */
   def daysSinceEpoche: Long = millisToDays(millis)
   
   /**
-    * The current Day as a Date object
-    */
+  * The current Day as a Date object
+  */
   def dayNow: java.util.Date = 0.seconds.later.noTime
   def time(when: long) = new java.util.Date(when)
   
@@ -1064,7 +1071,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   */
   def xmlParam(in: NodeSeq, param: String): Can[String] = {
     val tmp = (in \ ("@"+param))
-      if (tmp.length == 0) Empty else Full(tmp.text)
+    if (tmp.length == 0) Empty else Full(tmp.text)
   }
   
   class TimeSpan(val len: Long) {
@@ -1135,9 +1142,9 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     implicit def timeSpanToLong(in: TimeSpan): long = in.len
     def format(in: Long): String = {
       scales.foldLeft[(Long, List[(Long, String)])]((in, Nil)){(total, div) =>
-      (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
+        (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
       }._2.filter(_._1 > 0).map{case (amt, measure) if amt == 1 => amt+" "+measure
-      case (amt, measure) => amt+" "+measure+"s"
+        case (amt, measure) => amt+" "+measure+"s"
       }.mkString(" ")
       
     }
@@ -1173,14 +1180,14 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def capify(in: String): String = {
     val tmp = ((in match {
       case null => ""
-    case s => s
-  }).trim match {
-    case "" => "n/a"
-    case s => s
-  }).toLowerCase
-  val sb = new StringBuilder
-  capify(tmp, 0, 250, false, false, sb)
-  sb.toString
+      case s => s
+    }).trim match {
+      case "" => "n/a"
+      case s => s
+    }).toLowerCase
+    val sb = new StringBuilder
+    capify(tmp, 0, 250, false, false, sb)
+    sb.toString
   }  
   
   /*
@@ -1188,7 +1195,7 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   private var _finder = defaultFinder
   
   def setResourceFinder(in: (String) => java.net.URL):unit = synchronized {
-    _finder = in
+  _finder = in
   }
   
   def resourceFinder = synchronized {_finder}
@@ -1196,34 +1203,34 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)} 
   def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
-    stream =>
-      val buffer = new Array[byte](2048)
-    val out = new ByteArrayOutputStream
-    def reader {
-      val len = stream.read(buffer)
-      if (len < 0) return
-      else if (len > 0) out.write(buffer, 0, len)
-      reader
-    }
-    reader
-    stream.close
-    out.toByteArray
+  stream =>
+  val buffer = new Array[byte](2048)
+  val out = new ByteArrayOutputStream
+  def reader {
+  val len = stream.read(buffer)
+  if (len < 0) return
+  else if (len > 0) out.write(buffer, 0, len)
+  reader
+  }
+  reader
+  stream.close
+  out.toByteArray
   }
   def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   */
-    
-    /*
+  
+  /*
   def script(theScript: String): NodeSeq = (<script>
   // {Unparsed("""<![CDATA[
   """+theScript+"""
   // ]]>
   """)}</script>)
   */
-    
+  
   /**
-   * Optional cons that implements the expression: expr ?> value ::: List
-   */
+  * Optional cons that implements the expression: expr ?> value ::: List
+  */
   class OptiCons(expr: Boolean) {
     def ?>[T](f: => T): List[T] = if (expr) List(f) else Nil
   }
@@ -1240,32 +1247,32 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
   case class MySome[+A](x: A) extends MyOption[A] {
     def |[B >: A](default: => B): B  = x
   }
-  case class MyNone extends MyOption[Nothing] {
+  case object MyNone extends MyOption[Nothing] {
     def |[B ](default: => B): B  = default
   }
-
+  
   class Boolean2(b: Boolean) {
     def ? [A](first: A): MyOption[A] = {
-        if (b) MySome(first)
-        else MyNone
+      if (b) MySome(first)
+      else MyNone
     }
   }
-
- implicit def boolean2(b: Boolean) = new Boolean2(b) 
- 
- implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
- 
- //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
- 
- implicit def stringToSuper(in: String): SuperString = new SuperString(in)
- 
+  
+  implicit def boolean2(b: Boolean) = new Boolean2(b) 
+  
+  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
+  
+  //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
+  
+  implicit def stringToSuper(in: String): SuperString = new SuperString(in)
+  
   /**
-    * Given an incoming list, return a set of lists that is the original list rotated through all its positions
-    *
-    * @param in the list to rotate
-    *
-    * @return all the rotations of the list
-    */ 
+  * Given an incoming list, return a set of lists that is the original list rotated through all its positions
+  *
+  * @param in the list to rotate
+  *
+  * @return all the rotations of the list
+  */ 
   def rotateList[T](in: List[T]): List[List[T]] = {
     def doIt(in: List[T], cnt: Int): List[List[T]] = ((in, cnt): @unchecked) match {
       case (_, 0) => Nil
@@ -1273,39 +1280,39 @@ case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: S
     }
     doIt(in, in.length)
   }
-
- /**
-   * Given a list, return all the permutations of the list.
-   *
-   * @param in -- the list
-   *
-   * @return all the permutations of the list
-   */
+  
+  /**
+  * Given a list, return all the permutations of the list.
+  *
+  * @param in -- the list
+  *
+  * @return all the permutations of the list
+  */
   def permuteList[T](in: List[T]): List[List[T]] = (in: @unchecked) match {
     case Nil => Nil
     case x :: Nil => List(List(x))
     case xs => rotateList(xs).flatMap(x => (x: @unchecked) match{case x :: xs => permuteList(xs).map(x :: _) case _ => Nil})
   }
   
- /**
-   * Given a list, return all the permutations including the removal of items (does not return a Nil list unless in is Nil).
-   *
-   * @param in the list to permute
-   *
-   * @return all the permutations of the list including sublists, sorted in longest to shortest
-   */
+  /**
+  * Given a list, return all the permutations including the removal of items (does not return a Nil list unless in is Nil).
+  *
+  * @param in the list to permute
+  *
+  * @return all the permutations of the list including sublists, sorted in longest to shortest
+  */
   def permuteWithSublists[T](in: List[T]): List[List[T]] = {
-   def internal(in: List[T]): List[List[T]] = in match {
-    case Nil => Nil
-    case x :: Nil => List(List(x))
-    case xs => val rot = rotateList(xs)
-    val ret = rot.flatMap(z => (z: @unchecked) match {case x :: xs => permuteList(xs).map(x :: _)})
-    ret ::: rot.map(z => (z: @unchecked) match {case x :: xs => xs}).flatMap(internal(_))
-  } 
-   
-   internal(in).removeDuplicates.sort(_.length > _.length)
-   
- }
+    def internal(in: List[T]): List[List[T]] = in match {
+      case Nil => Nil
+      case x :: Nil => List(List(x))
+      case xs => val rot = rotateList(xs)
+      val ret = rot.flatMap(z => (z: @unchecked) match {case x :: xs => permuteList(xs).map(x :: _)})
+      ret ::: rot.map(z => (z: @unchecked) match {case x :: xs => xs}).flatMap(internal(_))
+    } 
+    
+    internal(in).removeDuplicates.sort(_.length > _.length)
+    
+  }
 }
 
 class SuperList[T](val what: List[T]) {
@@ -1351,7 +1358,7 @@ class SuperString(val what: String) {
     sb.append('\'')
     sb.toString
   }
-
+  
   
   def escChar(in: Char): String = {
     val ret = Integer.toString(in.toInt, 16)
@@ -1361,24 +1368,24 @@ class SuperString(val what: String) {
   def commafy: String = {
     if (what eq null) null
     else {
-    val toDo = what.toList.reverse
-    
-    def commaIt(in: List[Char]): List[Char] = in match {
-      case Nil => in
-      case x :: Nil => in
-      case x1 :: x2 :: Nil => in
-      case x1 :: x2 :: x3 :: Nil => in
-      case x1 :: x2 :: x3 :: xs => x1 :: x2 :: x3 :: ',' :: commaIt(xs)
+      val toDo = what.toList.reverse
+      
+      def commaIt(in: List[Char]): List[Char] = in match {
+        case Nil => in
+        case x :: Nil => in
+        case x1 :: x2 :: Nil => in
+        case x1 :: x2 :: x3 :: Nil => in
+        case x1 :: x2 :: x3 :: xs => x1 :: x2 :: x3 :: ',' :: commaIt(xs)
+      }
+      
+      commaIt(toDo).reverse.mkString("")
     }
-    
-    commaIt(toDo).reverse.mkString("")
-  }
   }
 }
 
 /*
 class DoubleOption[T](val what: Option[Option[T]]) {
-  def flatten: Option[T] = what.flatMap(a => a)
+def flatten: Option[T] = what.flatMap(a => a)
 }*/
 
 // vim: set ts=2 sw=2 et:

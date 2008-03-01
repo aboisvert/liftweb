@@ -132,7 +132,7 @@ Lift is a scala web framework.
    <url>http://scala-tools.org/hudson/job/liftweb/</url>
   </ciManagement>
   <properties>
-    <scala.version>2.6.1</scala.version>
+    <scala.version>2.7.0-rc3</scala.version>
   </properties>
   <modules>
     <module>lift</module>

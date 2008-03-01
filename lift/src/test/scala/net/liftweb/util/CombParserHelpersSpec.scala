@@ -18,7 +18,7 @@ package net.liftweb.util
 import org.specs._
 import scala.util.parsing.input._
 import org.specs.runner._
-import scala.util.parsing.combinator.Parsers
+import scala.util.parsing.combinatorold.Parsers
 import org.scalacheck._
 import Gen._
 import Prop._

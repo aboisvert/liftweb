@@ -34,7 +34,7 @@ object Schemifier {
      def +(other: Collector) = Collector(funcs ::: other.funcs, cmds ::: other.cmds)
    }
   
-   private def using[RetType <: Any, VarType <: {def close()}](f: => VarType)(f2: VarType => RetType): RetType = {
+   private def using[RetType <: Any, VarType <: ResultSet](f: => VarType)(f2: VarType => RetType): RetType = {
      val theVar = f
      try {
        f2(theVar)

@@ -19,7 +19,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   private var data: ENUM#Value = defaultValue
   private var orgData: ENUM#Value = defaultValue
   def defaultValue: ENUM#Value = enum.elements.next
-  def dbFieldClass = classOf[List[ENUM#Value]]
+  def dbFieldClass = classOf[ENUM#Value]
 
   /**
    * Get the JDBC SQL Type for this field

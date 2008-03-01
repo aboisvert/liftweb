@@ -166,7 +166,7 @@ class MappedFakeClob[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
     value
   }
   
-  def dbFieldClass = classOf[Array[Byte]]
+  def dbFieldClass = classOf[String]
   
   /**
   * Get the JDBC SQL Type for this field
