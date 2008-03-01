@@ -606,7 +606,7 @@ object Helpers {
       }
       try {
         // openOr params.map(_.getClass).asInstanceOf[Array[Class[AnyRef]]]
-        clz.getMethod(meth, ptypes.open_! ) match {
+        clz.getMethod(meth, ptypes openOr params.map(_.getClass) ) match {
           case null => findAlternates
           case m => Full(m)
         }
