@@ -209,12 +209,14 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
       val rd = ite.getCause.asInstanceOf[RedirectException]
+      notices = S.getNotices
       AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
       ResponseInfo.docType(request),
       List("Location" -> (request.updateWithContextPath(rd.to))),
       S.responseCookies,
       302))
-      case rd : net.liftweb.http.RedirectException => {   
+      case rd : net.liftweb.http.RedirectException => {
+	notices = S.getNotices
         AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
         ResponseInfo.docType(request),
         List("Location" -> (request.updateWithContextPath(rd.to))),
