@@ -1,9 +1,15 @@
 package net.liftweb.http
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
+  (c) 2007-2008 WorldWide Conferencing, LLC
   Distributed under an Apache License
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-class RedirectException(val msg : String,val to : String) extends Exception(msg)
+import net.liftweb.util._
+
+class RedirectException(val msg: String,val to: String,val func: Can[() => Unit]) extends Exception(msg) {
+  def this(msg: String, to: String) {
+    this(msg, to, Empty)
+  }
+}

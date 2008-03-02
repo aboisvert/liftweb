@@ -75,4 +75,6 @@ trait StatefulSnippet {
      * @param body - the NodeSeq to wrap in the anchor tag
      */
    def link(to: String, func: () => Any, body: NodeSeq): Elem = S.link(to, () => {registerThisSnippet; func()}, body)
+   
+   def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet _)
 }

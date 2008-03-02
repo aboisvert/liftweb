@@ -208,25 +208,44 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
         }
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
-      val rd = ite.getCause.asInstanceOf[RedirectException]
-      notices = S.getNotices
-      AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
-      ResponseInfo.docType(request),
-      List("Location" -> (request.updateWithContextPath(rd.to))),
-      S.responseCookies,
-      302))
-      case rd : net.liftweb.http.RedirectException => {
-	notices = S.getNotices
-        AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)), 
-        ResponseInfo.docType(request),
-        List("Location" -> (request.updateWithContextPath(rd.to))),
-        S.responseCookies,
-        302))
-      }
+      handleRedirect(ite.getCause.asInstanceOf[RedirectException], request)
+      
+      case rd: net.liftweb.http.RedirectException => handleRedirect(rd, request)
+      
       case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e))
     
     }
     }
+  }
+  
+  private def handleRedirect(re: RedirectException, request: RequestState): AnswerHolder = {
+    notices = S.getNotices
+    
+    val whereTo: String = re.func.map {
+      f =>
+      val func: String = LiftSession.this.synchronized {
+        val funcName = "fn"+randomString(20)
+        messageCallback(funcName) = S.NFuncHolder(() => {
+          try {
+            f()
+          } finally {
+            LiftSession.this.synchronized {
+              messageCallback -= funcName
+            }
+          }
+        })
+        
+        funcName
+      }
+      
+      re.to + "?" + func +"=_"
+    } openOr re.to
+    
+    AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
+    ResponseInfo.docType(request),
+    List("Location" -> (request.updateWithContextPath(whereTo))),
+    S.responseCookies,
+    302))
   }
   
   

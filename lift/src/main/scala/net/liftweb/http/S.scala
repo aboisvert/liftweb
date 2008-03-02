@@ -303,6 +303,9 @@ object S {
   */
   def redirectTo[T](where: String): T = throw new RedirectException("Not Found", where)
   
+  def redirectTo[T](where: String, func: () => Unit): T = 
+  throw new RedirectException("Not Found", where, Full(func))
+  
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
   
   private val currCnt = new ThreadGlobal[Int]
