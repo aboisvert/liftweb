@@ -40,14 +40,14 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: HttpServletRequest): Can[ResponseIt] = {
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[ResponseIt] = {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
       val path = "/"+rw.mkString("/")
       LiftServlet.getResource(path).map{url =>
       val uc = url.openConnection
-      val mod = req.getHeader("if-modified-since")
+      val mod = req.request.getHeader("if-modified-since")
       if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, Nil, 304)
       else Response(readWholeStream(url.openStream),
           List(("Last-Modified", toInternetDate(uc.getLastModified)),

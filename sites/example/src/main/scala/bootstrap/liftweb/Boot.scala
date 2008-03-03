@@ -71,8 +71,8 @@ class Boot {
 
   }
 
-  private def invokeWebService(request: RequestState, methodName: String)(req: HttpServletRequest): Can[ResponseIt] =
-  createInvoker(methodName, new WebServices(request, req)).flatMap(_() match {
+  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[ResponseIt] =
+  createInvoker(methodName, new WebServices(request)).flatMap(_() match {
     case Full(ret: ResponseIt) => Full(ret)
     case _ => Empty
   })
@@ -81,7 +81,7 @@ class Boot {
 }
 
 object XmlServer {
-  def showStates(which: String)(req: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(
+  def showStates(which: String)(req: RequestState): Can[XmlResponse] = Full(XmlResponse(
   <states renderedAt={timeNow.toString}>{
     which match {
       case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
@@ -91,7 +91,7 @@ object XmlServer {
       case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
       } }</states>))
 
-      def showCities(ignore: HttpServletRequest): Can[XmlResponse] = Full(XmlResponse(<cities>
+      def showCities(ignore: RequestState): Can[XmlResponse] = Full(XmlResponse(<cities>
       <city name="Boston"/>
       <city name="New York"/>
       <city name="San Francisco"/>

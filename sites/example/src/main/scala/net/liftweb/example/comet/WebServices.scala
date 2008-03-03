@@ -19,8 +19,9 @@ import net.liftweb.http._
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import net.liftweb.example.model._
 
-class WebServices (val request: RequestState,val httpRequest: HttpServletRequest) extends SimpleController {
-
+class WebServices (val request: RequestState) extends SimpleController {
+  def httpRequest = request.request
+  
   def all_users: XmlResponse = {
     XmlResponse(<all_users>{
       User.findAll.map{u => u.toXml}

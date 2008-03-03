@@ -158,11 +158,11 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     S.init(request, httpRequest, notices, this) {
     try {
         val sessionDispatch = S.highLevelSessionDispatcher
-        val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), this)        
+        val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), Full(this))        
         if (sessionDispatch.isDefinedAt(toMatch)) {
           runParams(request)
           try {
-            sessionDispatch(toMatch)(httpRequest) match {
+            sessionDispatch(toMatch)(request) match {
               case Full(r) => AnswerHolder(r)
               case _ => AnswerHolder(request.createNotFound)
             }
@@ -266,7 +266,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
   
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
-    val toMatch = RequestMatcher(session, session.path, session.requestType, this)
+    val toMatch = RequestMatcher(session, session.path, session.requestType, Full(this))
     val templ = LiftServlet.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
       val tpath = path.path

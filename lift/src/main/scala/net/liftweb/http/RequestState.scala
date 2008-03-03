@@ -251,6 +251,6 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
 }
 
-case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: LiftSession)
+case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: Can[LiftSession])
 case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
 case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])

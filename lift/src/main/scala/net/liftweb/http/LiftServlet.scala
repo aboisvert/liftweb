@@ -101,11 +101,11 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     ret
   }
   
-  def service(req: HttpServletRequest,resp: HttpServletResponse, session: RequestState) {
+  def service(req: HttpServletRequest,resp: HttpServletResponse, requestState: RequestState) {
     try {
       def doIt {
         logTime("Service request ("+req.getMethod+") "+req.getRequestURI) {
-          doService(req, resp, session)
+          doService(req, resp, requestState)
         }      
       }
       LiftServlet.checkJetty(req) match {
@@ -134,107 +134,117 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   /**
   * Service the HTTP request
   */ 
-  def doService(request:HttpServletRequest , response: HttpServletResponse, session: RequestState) {
-    val sessionActor = getActor(session, request.getSession)    
-    val toMatch = RequestMatcher(session, session.path, RequestType(request), sessionActor)
+  def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState) {
+    val statelessToMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Empty)     
     
     val resp: Response = if (LiftServlet.ending) {
-      session.createNotFound.toResponse
-    } else if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
-      S.init(session, sessionActor) {
-        val f = LiftServlet.dispatchTable(request)(toMatch)
-        f(request) match {
-          case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, session) )
-          case Empty => session.createNotFound.toResponse
-          case f: Failure => session.createNotFound(f).toResponse 
-        }
-      }
-    } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.cometPath) {
-      
-      LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+session.params)
-      
-      // sessionActor.breakOutComet()
-      sessionActor.enterComet(self)
-      try {
-        S.init(session, sessionActor) {
-          val actors: List[(CometActor, Long)] = session.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
-          
-          def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
-            receiveWithin(len) {
-              case TIMEOUT => in
-              case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
-              case BreakOut => drainTheSwamp(0, in)
-              case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
-            }
-          }
-          
-          drainTheSwamp(0, Nil)
-          
-          if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
-          else {
-            
-            actors.foreach{case (act, when) => act ! Listen(when)}
-            
-            val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
-            
-            actors.foreach{case (act, _) => act ! Unlisten}
-            
-            val ret2 = drainTheSwamp(100L, ret)
-            
-            val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
-            val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
-            
-            val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
-            
-            
-            LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
-            
-            (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
-          }
-        }
-      } finally {
-        sessionActor.exitComet(self)
-      }
-    } else if (session.path.path.length == 1 && session.path.path.head == LiftServlet.ajaxPath) {
-      LiftServlet.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+session.params)
-      S.init(session, sessionActor) {
-        try {
-          val what = flatten(sessionActor.runParams(session))
-          
-          val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
-          
-          val ret = what2 match {
-            case (n: Node) :: _ => XmlResponse(n).toResponse
-            case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
-            case (r: ResponseIt) :: _ => r.toResponse
-            case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
-            case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
-          }
-          
-          LiftServlet.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
-          ret
-        } finally {
-          sessionActor.updateFunctionMap(S.functionMap)
-        }
+      requestState.createNotFound.toResponse
+    } else if (LiftServlet.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
+      val f = LiftServlet.statelessDispatchTable(statelessToMatch)
+      f(requestState) match {
+        case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
+        case Empty => requestState.createNotFound.toResponse
+        case f: Failure => requestState.createNotFound(f).toResponse 
       }
     } else {
-      try {
-        this.synchronized {
-          this.requestCnt = this.requestCnt + 1
+      val sessionActor = getActor(requestState, request.getSession)    
+      val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
+      if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
+        S.init(requestState, sessionActor) {
+          val f = LiftServlet.dispatchTable(request)(toMatch)
+          f(requestState) match {
+            case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
+            case Empty => requestState.createNotFound.toResponse
+            case f: Failure => requestState.createNotFound(f).toResponse 
+          }
         }
+      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftServlet.cometPath) {
         
-        sessionActor.processRequest(session, request).what.toResponse
+        LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
         
-      } finally {
-        this.synchronized {
-          this.requestCnt = this.requestCnt - 1
-          this.notifyAll
+        // sessionActor.breakOutComet()
+        sessionActor.enterComet(self)
+        try {
+          S.init(requestState, sessionActor) {
+            val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+            
+            def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+              receiveWithin(len) {
+                case TIMEOUT => in
+                case ar: AnswerRender => drainTheSwamp(0, ar :: in) 
+                case BreakOut => drainTheSwamp(0, in)
+                case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
+              }
+            }
+            
+            drainTheSwamp(0, Nil)
+            
+            if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
+            else {
+              
+              actors.foreach{case (act, when) => act ! Listen(when)}
+              
+              val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
+              
+              actors.foreach{case (act, _) => act ! Unlisten}
+              
+              val ret2 = drainTheSwamp(100L, ret)
+              
+              val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
+              val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
+              
+              val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
+              
+              
+              LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
+              
+              (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+            }
+          }
+        } finally {
+          sessionActor.exitComet(self)
+        }
+      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftServlet.ajaxPath) {
+        LiftServlet.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
+        S.init(requestState, sessionActor) {
+          try {
+            val what = flatten(sessionActor.runParams(requestState))
+            
+            val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
+            
+            val ret = what2 match {
+              case (n: Node) :: _ => XmlResponse(n).toResponse
+              case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
+              case (r: ResponseIt) :: _ => r.toResponse
+              case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
+              case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
+            }
+            
+            LiftServlet.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
+            ret
+          } finally {
+            sessionActor.updateFunctionMap(S.functionMap)
+          }
+        }
+      } else {
+        try {
+          this.synchronized {
+            this.requestCnt = this.requestCnt + 1
+          }
+          
+          sessionActor.processRequest(requestState, request).what.toResponse
+          
+        } finally {
+          this.synchronized {
+            this.requestCnt = this.requestCnt - 1
+            this.notifyAll
+          }
         }
       }
     }
-    logIfDump(session, resp)
+    logIfDump(requestState, resp)
     
-    sendResponse(resp, response, Full(session))
+    sendResponse(resp, response, Full(requestState))
   }
   
   val dumpRequestResponse = Props.getBool("dump.request.response")
@@ -251,21 +261,21 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   }
   
   /**
-   * Sends the {@code HttpServletResponse} to the browser using data from the 
-   * {@link Response} and {@link RequestState}.
-   */
+  * Sends the {@code HttpServletResponse} to the browser using data from the 
+  * {@link Response} and {@link RequestState}.
+  */
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
     val header = insureField(resp.headers, List(("Content-Type", LiftServlet.determineContentType(request)),
-						("Content-Encoding", "UTF-8"),
-						("Content-Length", len.toString)))
+    ("Content-Encoding", "UTF-8"),
+    ("Content-Length", len.toString)))
     
     LiftServlet._beforeSend.foreach(_(resp, response, header, request))
     // set the cookies
     resp.cookies.foreach(cookie => response.addCookie(cookie))
-
+    
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
@@ -289,7 +299,7 @@ object LiftServlet {
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
   
-  type DispatchPf = PartialFunction[RequestMatcher, HttpServletRequest => Can[ResponseIt]];
+  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
@@ -330,15 +340,15 @@ object LiftServlet {
   }
   
   /**
-    * The maximum allowed size of a complete mime multi-part POST.  Default
-    * 8MB
-    */
+  * The maximum allowed size of a complete mime multi-part POST.  Default
+  * 8MB
+  */
   var maxMimeSize: Long = 8 * 1024 * 1024
   
   /**
-    * The maximum allowed size of a single file in a mime multi-part POST.
-    * Default 7MB
-    */
+  * The maximum allowed size of a single file in a mime multi-part POST.
+  * Default 7MB
+  */
   var maxMimeFileSize: Long = 7 * 1024 * 1024
   
   /**
@@ -382,13 +392,13 @@ object LiftServlet {
   var localizeStringToXml: String => NodeSeq = _stringToXml _  
   
   /**
-   * The base name of the resource bundle
-   */
+  * The base name of the resource bundle
+  */
   var resourceName = "lift"
-    
+  
   /**
-   * The base name of the resource bundle of the lift core code
-   */
+  * The base name of the resource bundle of the lift core code
+  */
   var liftCoreResourceName = "i18n.lift-core"
   
   /**
@@ -499,6 +509,8 @@ object LiftServlet {
     case Nil => last
     case x :: xs => x orElse rpf(xs, last)
   }
+  
+  var statelessDispatchTable: DispatchPf = Map.empty
   
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
     // test_boot
@@ -654,21 +666,21 @@ object LiftServlet {
   }
   
   /**
-   * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
-   */
+  * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
+  */
   private def cvt(ns: Node, headers: List[(String, String)], cookies: List[Cookie], session: RequestState) = 
-    convertResponse((XhtmlResponse(Group(session.fixHtml(ns)), 
-				    ResponseInfo.docType(session),
-				    headers, cookies, 200), headers, cookies, session))
-
+  convertResponse((XhtmlResponse(Group(session.fixHtml(ns)), 
+  ResponseInfo.docType(session),
+  headers, cookies, 200), headers, cookies, session))
+  
   var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
     case _ => List(("Expires", "0"))
   }
   
   /**
-   * convertResponse is a PartialFunction that reduces a given Tuple4 into a 
-   * ResponseIt that can then be sent to the browser.
-   */
+  * convertResponse is a PartialFunction that reduces a given Tuple4 into a 
+  * ResponseIt that can then be sent to the browser.
+  */
   var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), Response] = {
     case (r: ResponseIt, _, _, _) => r.toResponse
     case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
@@ -829,7 +841,7 @@ class LiftFilter extends Filter
       case _ => Log.error("LiftWeb core resource bundle was not found ! ")
     }
   }
-
+  
   private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit = 
   {
     actualServlet.service(req, res, session)
