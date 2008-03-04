@@ -1343,20 +1343,23 @@ class SuperString(val what: String) {
   }
   
   def encJs: String = {
-    val len = what.length
-    val sb = new StringBuilder(len * 2)
-    sb.append('\'')
-    var pos = 0
-    while (pos < len) {
-      what.charAt(pos) match {
-        case c @ ('\\' | '\'') => sb.append(escChar(c))
-        case c if c < ' ' || c > '~' => sb.append(escChar(c))
-        case c => sb.append(c) 
+    if (what eq null) "null"
+    else {
+      val len = what.length
+      val sb = new StringBuilder(len * 2)
+      sb.append('\'')
+      var pos = 0
+      while (pos < len) {
+        what.charAt(pos) match {
+          case c @ ('\\' | '\'') => sb.append(escChar(c))
+          case c if c < ' ' || c > '~' => sb.append(escChar(c))
+          case c => sb.append(c) 
+        }
+        pos += 1
       }
-      pos += 1
+      sb.append('\'')
+      sb.toString
     }
-    sb.append('\'')
-    sb.toString
   }
   
   
