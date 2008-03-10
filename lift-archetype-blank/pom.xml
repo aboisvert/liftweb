@@ -1,10 +1,9 @@
-<?xml version="1.0"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>net.liftweb</groupId>
     <artifactId>lift</artifactId>
-    <version>0.6-SNAPSHOT</version>
+    <version>0.6</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>lift-archetype-blank</artifactId>
@@ -59,10 +58,3 @@
     </plugins>
   </build>
 </project>
-<!--
-mvn archetype:create           \
-  -DarchetypeGroupId=net.liftweb                \
-  -DarchetypeArtifactId=lift-archetype-blank   \
-  -DgroupId=foo.bar                                \
-  -DartifactId=toto
--->
