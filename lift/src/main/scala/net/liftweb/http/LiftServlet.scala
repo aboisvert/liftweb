@@ -150,12 +150,16 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
       val sessionActor = getActor(requestState, request.getSession)    
       val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
       if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
-        S.init(requestState, sessionActor) {
-          val f = LiftServlet.dispatchTable(request)(toMatch)
-          f(requestState) match {
-            case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
-            case Empty => requestState.createNotFound.toResponse
-            case f: Failure => requestState.createNotFound(f).toResponse 
+        S.init(requestState, requestState.request, sessionActor.notices, sessionActor) {
+          try {
+            val f = LiftServlet.dispatchTable(request)(toMatch)
+            f(requestState) match {
+              case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
+              case Empty => requestState.createNotFound.toResponse
+              case f: Failure => requestState.createNotFound(f).toResponse 
+            }
+          } finally {
+            sessionActor.notices = S.getNotices
           }
         }
       } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftServlet.cometPath) {

@@ -36,19 +36,19 @@ object RequestState {
     val contextPath = request.getContextPath
     val tmpPath = parsePath(tmpUri)
     
-    def processRewrite(uri: String, path: ParsePath, params: Map[String, String]): RewriteResponse = {
-      val toMatch = RewriteRequest(uri, path, reqType, request)
-      if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(uri, path, params)
+    def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
+      val toMatch = RewriteRequest(path, reqType, request)
+      if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(path, params)
       else {
         val resp = rewrite(toMatch)
-        processRewrite(resp.uri, resp.path, resp.params)
+        processRewrite(resp.path, resp.params)
         // rewrite(toMatch)
       }
     }
     
     
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
-    val rewritten = processRewrite(tmpUri, tmpPath, Map.empty)
+    val rewritten = processRewrite(tmpPath, Map.empty)
     
     val localParams: Map[String, List[String]] = Map(rewritten.params.toList.map{case (name, value) => name -> List(value)} :_*)
     
@@ -110,11 +110,11 @@ object RequestState {
       (paramNames, params, Nil, Empty)
     }
     
-    new RequestState(rewritten.uri,rewritten.path,contextPath, reqType,/* resourceFinder,*/
+    new RequestState(rewritten.path,contextPath, reqType,
     request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
   }
   
-  def nil = new RequestState("", NilPath, "", GetRequest, "", null, System.nanoTime, System.nanoTime,
+  def nil = new RequestState(NilPath, "", GetRequest, "", null, System.nanoTime, System.nanoTime,
   () => (Nil, Map.empty, Nil, Empty))
   
   def parsePath(in: String): ParsePath = {
@@ -162,13 +162,7 @@ object RequestState {
 }
 
 @serializable
-case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
-  def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
-}
-
-@serializable
-class RequestState(val uri: String,
-val path: ParsePath,
+class RequestState(val path: ParsePath,
 val contextPath: String,
 val requestType: RequestType,
 val contentType: String,
@@ -183,7 +177,7 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   val uploadedFiles: List[FileParamHolder]
   */
   
-  override def toString = "RequestState("+paramNames+", "+params+", "+uri+", "+path+
+  override def toString = "RequestState("+paramNames+", "+params+", "+path+
   ", "+contextPath+", "+requestType+", "+contentType+")"
   
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
@@ -231,13 +225,13 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
   
   def createNotFound = {
-    XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
-    ResponseInfo.docType(this), Nil, Nil, 404)
+    Response((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>).toString.getBytes("UTF-8"),
+     List("Content-Type" -> "text/html"), Nil, 404)
   }
   
   def createNotFound(failure: Failure) = { // FIXME do failure stuff
-    XhtmlResponse((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>),
-    ResponseInfo.docType(this), Nil, Nil, 404)
+    Response((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>).toString.getBytes("UTF-8"),
+     List("Content-Type" -> "text/html"), Nil, 404)
   }
   
   
@@ -247,10 +241,25 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
   
-  def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
+  lazy val uri = request.getRequestURI.substring(request.getContextPath.length) match {
+    case "" => "/"
+    case x => x
+  }
   
+  def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }
 
+
 case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: Can[LiftSession])
-case class RewriteRequest(uri: String,path: ParsePath,requestType: RequestType,httpRequest: HttpServletRequest)
-case class RewriteResponse(uri: String,path: ParsePath,params: Map[String, String])
+case class RewriteRequest(path: ParsePath,requestType: RequestType, httpRequest: HttpServletRequest)
+case class RewriteResponse(path: ParsePath, params: Map[String, String])
+
+@serializable
+case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
+  def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
+}
+
+object RewriteResponse {
+  def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, true, false), params)
+  def apply(path: List[String]) = new RewriteResponse(ParsePath(path, true, false), Map.empty)
+}

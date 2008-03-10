@@ -132,13 +132,11 @@ object DB {
       }) match {case (time, res) => runLogger(query, time); res}
   }
   
-  
-  
-  def runQuery(query: String): (List[String], List[List[String]]) = {
-    import java.sql.Types._
+     
     
-    def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = md.getColumnType(pos) match {
-      
+  private def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = {
+     import java.sql.Types._
+     md.getColumnType(pos) match {
       case ARRAY | BINARY | BLOB | DATALINK | DISTINCT | JAVA_OBJECT | LONGVARBINARY | NULL | OTHER | REF | STRUCT | VARBINARY  => rs.getObject(pos) match {
         case null => null
         case s => s.toString
@@ -152,10 +150,10 @@ object DB {
       
       case DOUBLE | FLOAT | REAL  => rs.getDouble(pos).toString
     }
-    
-    use(DefaultConnectionIdentifier)(conn => exec(conn, query) {
-      rs =>
-      val md = rs.getMetaData
+  }
+  
+  def resultSetTo(rs: ResultSet): (List[String], List[List[String]]) = {
+    val md = rs.getMetaData
       val cnt = md.getColumnCount
       val cntList = (1 to cnt).toList
       val colNames = cntList.map(i => md.getColumnName(i))
@@ -167,7 +165,32 @@ object DB {
       }
       
       (colNames, lb.toList)
+  }
+  
+  def runQuery(query: String, params: List[Any]): (List[String], List[List[String]]) = {
+    use(DefaultConnectionIdentifier)(conn => prepareStatement(query, conn) {
+      ps =>
+      params.zipWithIndex.foreach {
+        case (null, idx) => ps.setNull(idx + 1, Types.VARCHAR)
+        case (i: Int, idx) => ps.setInt(idx +1, i)
+        case (l: Long, idx) => ps.setLong(idx + 1, l)
+        case (d: Double, idx) => ps.setDouble(idx + 1, d)
+        case (f: Float, idx) => ps.setFloat(idx + 1, f)
+        case (d: java.util.Date, idx) => ps.setDate(idx + 1, new java.sql.Date(d.getTime))
+        case (b: Boolean, idx) => ps.setBoolean(idx + 1, b)
+        case (s: String, idx) => ps.setString(idx + 1, s)
+        case (bn: java.math.BigDecimal, idx) => ps.setBigDecimal(idx + 1, bn)
+        case (obj, idx) => ps.setObject(idx + 1, obj)
+      }
+      
+      resultSetTo(ps.executeQuery)
     })
+  }
+  
+  def runQuery(query: String): (List[String], List[List[String]]) = {
+
+    
+    use(DefaultConnectionIdentifier)(conn => exec(conn, query)(resultSetTo)) 
   }
   
   def rollback(name: ConnectionIdentifier) = use(name)(conn => conn.rollback)

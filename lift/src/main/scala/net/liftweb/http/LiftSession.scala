@@ -37,7 +37,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private var running_? = false
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
-  private var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
+  private[http] var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
   //  private var _state: Map[String, String] = Map.empty
   private val asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
   private val asyncById = new HashMap[String, CometActor]()
@@ -167,7 +167,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
               case _ => AnswerHolder(request.createNotFound)
             }
           } finally {
-            notices = Nil
+            notices = S.getNotices
           }
         } else {
           runParams(request)
@@ -197,7 +197,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
               this.synchronized {
                 S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
               }
-              notices = Nil
+              notices = S.getNotices
               AnswerHolder(LiftServlet.convertResponse((realXml,
 							S.getHeaders(LiftServlet.defaultHeaders((realXml, request))),
 							S.responseCookies,
@@ -220,7 +220,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private def handleRedirect(re: RedirectException, request: RequestState): AnswerHolder = {
     notices = S.getNotices
-    
+ 
     val whereTo: String = re.func.map {
       f =>
       val func: String = LiftSession.this.synchronized {

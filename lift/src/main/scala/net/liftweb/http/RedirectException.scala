@@ -9,7 +9,5 @@ package net.liftweb.http
 import net.liftweb.util._
 
 class RedirectException(val msg: String,val to: String,val func: Can[() => Unit]) extends Exception(msg) {
-  def this(msg: String, to: String) {
-    this(msg, to, Empty)
-  }
+
 }

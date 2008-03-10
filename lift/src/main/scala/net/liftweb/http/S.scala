@@ -301,7 +301,7 @@ object S {
   /**
   * Redirect the browser to a given URL
   */
-  def redirectTo[T](where: String): T = throw new RedirectException("Not Found", where)
+  def redirectTo[T](where: String): T = throw new RedirectException("Not Found", where, Empty)
   
   def redirectTo[T](where: String, func: () => Unit): T = 
   throw new RedirectException("Not Found", where, Full(func))
@@ -458,6 +458,7 @@ object S {
     )
   }
   
+  def referer: Can[String] = request.flatMap(r => Can(r.request.getHeader("Referer")))
   
   private[http] object requestState {
     private def rv: Can[HashMap[String, Any]] = Can(_requestVar.value) //  match {case null => Empty case v => Full(v)}

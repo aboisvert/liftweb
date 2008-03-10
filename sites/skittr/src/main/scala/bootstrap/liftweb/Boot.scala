@@ -13,7 +13,6 @@ import Helpers._
 import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import java.sql.{Connection, DriverManager}
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import scala.collection.immutable.TreeMap
 import com.skittr.model._
 import com.skittr.actor._
 
@@ -34,12 +33,12 @@ class Boot {
     
     // map certain urls to the right place
     val rewriter: LiftServlet.RewritePf = {
-    case RewriteRequest(_, ParsePath("user" :: user :: _, _,_), _, _) => 
-       RewriteResponse("/user", ParsePath("user" :: Nil, true, false), TreeMap("user" -> user))
-    case RewriteRequest(_, ParsePath("friend" :: user :: _, _,_), _, _) => 
-       RewriteResponse("/friend", ParsePath("friend" :: Nil, true, false), TreeMap("user" -> user))
-    case RewriteRequest(_, ParsePath("unfriend" :: user :: _, _,_), _, _) => 
-       RewriteResponse("/unfriend", ParsePath("unfriend" :: Nil, true, false), TreeMap("user" -> user))
+    case RewriteRequest(ParsePath("user" :: user :: _, _,_), _, _) => 
+       RewriteResponse("user" :: Nil, Map("user" -> user))
+    case RewriteRequest(ParsePath("friend" :: user :: _, _,_), _, _) => 
+       RewriteResponse("friend" :: Nil, Map("user" -> user))
+    case RewriteRequest(ParsePath("unfriend" :: user :: _, _,_), _, _) => 
+       RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
   
   LiftServlet.addRewriteBefore(rewriter)

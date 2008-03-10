@@ -69,7 +69,7 @@ object Helpers {
   *
   * @return a valid query string
   */
-  def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&")
+  def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&amp;")
   
   
   /**
@@ -82,7 +82,8 @@ object Helpers {
   */
   def appendParams(url: String, params: Seq[(String, String)]): String = params.toList match {
     case Nil => url
-    case xs => url + "&" + paramsToUrlParams(xs)
+    case xs if url.indexOf("?") == -1 => url + "?" + paramsToUrlParams(xs)
+    case xs => url + "&amp;" + paramsToUrlParams(xs)
   }
   
   val validSuffixes = {

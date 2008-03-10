@@ -16,7 +16,7 @@
 package net.liftweb.example.snippet
 
 import net.liftweb.example.model._
-import scala.xml.{NodeSeq, Text, Group}
+import scala.xml.{NodeSeq, Text, Group, Node}
 import net.liftweb.http._
 import net.liftweb.http.S
 import net.liftweb.mapper._
@@ -38,11 +38,9 @@ class CountGame extends StatefulSnippet {
   }
   
   def win(xhtml: NodeSeq) = bind("count", xhtml, "number" --> number,
-  "count" --> count) ++ <p>Counting backward: 
-  <lift:count_game.count_down from={number.toString} />
-  </p>
+  "count" --> count) ++ <p>Counting backward: {countDown(number)}</p>
   
-  def countDown(number: Int) = if (number <= 0) Text("")
+  def countDown(number: Int): Node = if (number <= 0) Text("")
   else <xml:group>{number} <lift:count_game.count_down from={(number - 1).toString} /></xml:group>
   
   def nextGuess(xhtml: NodeSeq) =  bind("count", xhtml,

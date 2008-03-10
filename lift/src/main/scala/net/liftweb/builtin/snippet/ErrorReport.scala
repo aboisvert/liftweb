@@ -20,7 +20,7 @@ import scala.xml._
 import net.liftweb.util.Helpers._
 
 class ErrorReport {
-  def render(styles: Group): NodeSeq =
+  def render(styles: Group): NodeSeq = {
     List((S.errors, (styles \\ "error_msg"), "Error", ((styles \\ "error_class") ++ (styles \\ "error_msg" \\ "@class"))),
         (S.warnings, (styles \\ "warning_msg"), "Warning", ((styles \\ "warning_class")++ (styles \\ "error_msg" \\ "@class"))),
         (S.notices, (styles \\ "notice_msg"), "Notice", ((styles \\ "notice_class")) ++ (styles \\ "notice_msg" \\ "@class"))).flatMap {
@@ -33,4 +33,5 @@ class ErrorReport {
         styleList.toList.map(_.text.trim).foldLeft(ret)((xml, style) => xml % new UnprefixedAttribute("class", style, Null))
       }
     }
+  }
 }

@@ -22,7 +22,6 @@ import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionI
 import java.sql.{Connection, DriverManager}
 import net.liftweb.example.comet.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import scala.collection.immutable.TreeMap
 import net.liftweb.example.model._
 import net.liftweb.example.snippet.definedLocale
 
@@ -52,17 +51,17 @@ class Boot {
     LiftServlet.addDispatchBefore(dispatcher)
 
     val wiki_rewriter: LiftServlet.RewritePf = {
-      case RewriteRequest(_, path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>
-      RewriteResponse("/wiki", ParsePath("wiki" :: Nil, true, false),
-      TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>
+      RewriteResponse("wiki" :: Nil,
+      Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
     LiftServlet.addRewriteBefore(wiki_rewriter)
 
     val wikibind_rewriter: LiftServlet.RewritePf = {
-      case RewriteRequest(_, path @ ParsePath("wikibind" :: page :: _, _,_), _, _) =>
-      RewriteResponse("/wikibind", ParsePath("wikibind" :: Nil, true, false),
-      TreeMap("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _,_), _, _) =>
+      RewriteResponse(ParsePath("wikibind" :: Nil, true, false),
+      Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
     LiftServlet.appendEarly(makeUtf8)
