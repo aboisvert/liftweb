@@ -4,7 +4,7 @@
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.6</version>
+  <version>0.7-SNAPSHOT</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
