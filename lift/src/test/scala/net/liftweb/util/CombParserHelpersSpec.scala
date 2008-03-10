@@ -23,7 +23,7 @@ import org.scalacheck._
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.specs.matcher.ScalacheckParameters._
- 
+
 class CombParserHelpersSpecTest extends Runner(CombParserHelpersSpec) with JUnit with Console
 object CombParserHelpersSpec extends Specification {
   import ParserHelpers._
@@ -65,16 +65,93 @@ object CombParserHelpersSpec extends Specification {
         case Success(x, y) => x.toString == "()"
         case _ => false
       }
-
       property(whiteSpaceParse) must pass
     }
+    "provide an acceptCI parser to parse whatever string matching another string ignoring case" in {
+      import abcdStringGen._
+      val ignoreCaseStringParse = (s: String, s2: String) => acceptCI(s).apply(s2) match {
+        case Success(x, y) => s2.toUpperCase must startWith(s.toUpperCase)  
+        case _ => true
+      }
+      property(ignoreCaseStringParse) must pass
+    }
+    "provide a digit parser - returning a String" in {
+      val isDigit = (s: String) => digit(s) match {
+        case Success(x, y) => s mustMatch("\\d")  
+        case _ => true
+      }
+      property(isDigit) must pass
+    }
+    "provide an aNumber parser - returning an Int if succeeding" in {
+      val number = (s: String) => aNumber(s) match {
+        case Success(x, y) => s must startWith(x.toString)
+        case _ => true
+      }
+      property(number) must pass
+    }
+    "provide a slash parser" in {
+      slash("/").get must_== '/'
+      slash("x") must beLike {case Failure(_, _) => true}
+    }
+    "provide a dslash parser which parses the slash and discards the input" in {
+      dslash("/").get.toString must_== "()"
+      dslash("/").next.atEnd must beTrue
+    }
+    "provide a colon parser" in {
+      colon(":").get must_== ':'
+      colon("x") must beLike {case Failure(_, _) => true}
+    }
+    "provide a dcolon parser which parses the colon and discards the input" in {
+      dcolon(":").get.toString must_== "()"
+      dcolon(":").next.atEnd must beTrue
+    }
+    "provide a EOL parser which parses the any and discards any end of line character" in {
+      List("\n", "\r") foreach { s =>
+        val result = EOL(s)
+        result.get.toString must_== "()"
+        result.next.atEnd must beTrue
+      }
+    }
+    val parserA = elem("a", (c: Char) => c == 'a')
+    val parserB = elem("b", (c: Char) => c == 'b')
+    val parserC = elem("c", (c: Char) => c == 'c')
+    val parserD = elem("d", (c: Char) => c == 'd')
+    def shouldSucceed[T](r: ParseResult[T]) = r match {
+      case Success(x, y) => true
+      case _ => false
+    }
+    "provide a permute parser succeeding if any permutation of given parsers succeeds" in {
+      def permuteParsers(s: String) = shouldSucceed(permute(parserA, parserB, parserC, parserD)(s)) 
+      import abcdStringGen._
+      property((s: String) => (stringWrapper(s).size == 4) ==> permuteParsers(s)) must pass
+    }
+    "provide a permuteAll parser succeeding if any permutation of the list given parsers, or a sublist of the given parsers succeeds" in {
+      def permuteAllParsers(s: String) = shouldSucceed(permuteAll(parserA, parserB, parserC, parserD)(s))
+      implicit def pick3Letters = abcdStringGen.pickN(3, List("a", "b", "c"))
+      property((s: String) => (!stringWrapper(s).isEmpty) ==> permuteAllParsers(s)) must pass
+    }
+    "provide a repNN parser succeeding if an input can be parsed n times with a parser" in {
+      def repNNParser(s: String) = shouldSucceed(repNN(3, parserA)(s))
+      implicit def pick3Letters = abcdStringGen.pickN(3, List("a", "a", "a"))
+      property((s: String) => (!stringWrapper(s).isEmpty) ==> repNNParser(s)) must pass
+    }
+  }
+}
+object abcdStringGen {
+  implicit def abcdString = new Arbitrary[String] {
+    def arbitrary = for (len <- choose(1, 4);
+                         string <- pick(len, List("a", "b", "c", "d"))
+                         ) yield string.mkString("")
+  }
+  def pickN(n: Int, elems: List[String]) = new Arbitrary[String] {
+    def arbitrary = for (string <- pick(n, elems)) yield string.mkString("")
   }
 }
 object whiteStringGen {
   def genWhiteString: Gen[String] = for (len <- choose(1, 4);
                                          string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
                                     ) yield string.mkString("")
-  implicit def whiteString: Arbitrary[String] = new Arbitrary[String] {
+  implicit def whiteString = new Arbitrary[String] {
     def arbitrary = genWhiteString
   }
 }

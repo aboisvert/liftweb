@@ -82,26 +82,67 @@ trait CombParserHelpers { self: Parsers =>
       else Failure("Expected: '"+these.head+"', found: '"+in.first+"'", in0)
     }                
   }
+  /**
+   * @return a trimmed string of the input (a List of Elem) 
+   */
   implicit def ns(in: List[Elem]): String = in.mkString("").trim
+
+  /**
+   * @return a list of elements (Elem) from a String 
+   */
   implicit def strToLst(in: String): List[Elem] = stringWrapper(in).toList
+
   implicit def ff(in: Parser[Elem]): List[Elem] = Nil
 
+  /**
+   * @return a parser for a digit 
+   */
   def digit = elem("digit", isNum)
 
+  /**
+   * @return a parser for a slash 
+   */
   def slash = elem("slash", c => c == '/')
+
+  /**
+   * @return a parser for a slash and discard the input 
+   */
   def dslash = discard(slash)
 
+  /**
+   * @return a parser for a colon 
+   */
   def colon = elem("colon", c => c == ':')
+
+  /**
+   * @return a parser for a colon and discard the input 
+   */
   def dcolon = discard(colon)
+
+  /**
+   * @return a parser discarding end of lines 
+   */
   def EOL = discard(elem("EOL", isEol))
 
-
+  /**
+   * @return a parser returning an Int if succeeding 
+   */
   def aNumber: Parser[Int] = rep1(elem("Number", isNum)) ^^ {case xs => xs.mkString("").toInt}
   
-
+  /**
+   * @return a parser which tries the permutations of a list of parsers 
+   */
   def permute[T](p: (Parser[T])*): Parser[List[T]] = permute((lst : List[Parser[T]]) => lst.permute, p :_*)
+
+  /**
+   * @return a parser which tries the permutations of a list and sublists of parsers 
+   */
   def permuteAll[T](p: (Parser[T])*): Parser[List[T]] = permute((lst : List[Parser[T]]) => lst.permuteAll, p :_*)
 
+  /**
+   * @param func list permutation function. Returns all permutations on the list or all permutations on the list plus all permutations on sublists for example
+   * @return a parser which tries the permutations of a list of parsers, given a permutation function 
+   */
   def permute[T](func: List[Parser[T]] => List[List[Parser[T]]], p: (Parser[T])*): Parser[List[T]] = 
     if (p.isEmpty) 
       success(Nil);
@@ -117,6 +158,9 @@ trait CombParserHelpers { self: Parsers =>
       }
     }
   
+  /**
+   * @return a parser which parses the input using p a number of times 
+   */
   def repNN[T](n: Int, p: => Parser[T]): Parser[List[T]] = if (n == 0) rep(p) else p ~ repNN(n - 1, p) ^^ {case ~(x, xs) => x :: xs}  
 }
 
