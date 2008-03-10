@@ -16,7 +16,7 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.6" description="">
+    <release version="0.6" date="2008-03-10" description="">
       <action dev="Marius Danciu" type="add">
         Added RedirectResponse class
       </action>
