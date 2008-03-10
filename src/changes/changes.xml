@@ -17,6 +17,9 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.6" date="2008-03-10" description="">
+      <action dev="Eric Torreborre" type="update">
+        Compiled the project with Scala-2.7.0
+      </action>
       <action dev="Marius Danciu" type="add">
         Added RedirectResponse class
       </action>
