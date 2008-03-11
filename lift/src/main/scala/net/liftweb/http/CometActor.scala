@@ -162,7 +162,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       askingWho.foreach {
         askingWho =>
         reply("A null message to release the actor from its send and await reply... do not delete this message")
-        askingWho.unlink(self)
+        // askingWho.unlink(self)
         askingWho ! ShutDown
         this.askingWho = Empty
         val aw = answerWith
@@ -256,7 +256,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
     who.start
     theSession.addCometActor(who)
-    who.link(self)
+    // who.link(this)
     who ! PerformSetupComet
     askingWho = Full(who)
     this.answerWith = Full(answerWith)
