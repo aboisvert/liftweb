@@ -153,7 +153,7 @@ class UserMgt {
         }</ul></span>)    
   }
   
-  def cur_name:  MetaData = new UnprefixedAttribute("name", S.param("user").openOr(""), Null)
+  def cur_name:  MetaData = new UnprefixedAttribute("name", Text(S.param("user").openOr("")), Null)
   
   def logged_in_? = S.get("user_name").isDefined
 }

@@ -358,7 +358,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     
     Elem(null,elemName,
          mappedFieldArray.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
-									   new UnprefixedAttribute(p.name, fld.toString, md)}
+									   new UnprefixedAttribute(p.name, Text(fld.toString), md)}
          ,TopScope)
     //    Elem("", 
     //    (mappedFieldArray.elements.map{p => ??(p._2, in).asString}).toList.mkString("", ",", "")

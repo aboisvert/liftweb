@@ -69,7 +69,7 @@ object Helpers {
   *
   * @return a valid query string
   */
-  def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&amp;")
+  def paramsToUrlParams(params: List[(String, String)]): String = params.map{case (n,v) => urlEncode(n)+"="+urlEncode(v)}.mkString("&")
   
   
   /**
@@ -83,7 +83,7 @@ object Helpers {
   def appendParams(url: String, params: Seq[(String, String)]): String = params.toList match {
     case Nil => url
     case xs if url.indexOf("?") == -1 => url + "?" + paramsToUrlParams(xs)
-    case xs => url + "&amp;" + paramsToUrlParams(xs)
+    case xs => url + "&" + paramsToUrlParams(xs)
   }
   
   val validSuffixes = {
@@ -1261,7 +1261,7 @@ object Helpers {
   
   implicit def boolean2(b: Boolean) = new Boolean2(b) 
   
-  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
+  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, Text(in._2.toString), Null)
   
   //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
   

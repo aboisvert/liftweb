@@ -754,14 +754,14 @@ object S {
       (<a href={to+"?"+key+"=_"}>{body}</a>)
     }
     
-    def text_*(value: String, func: AFuncHolder): Elem = makeFormElement("text", func) % new UnprefixedAttribute("value", value, Null)
-    def password_*(value: String, func: AFuncHolder): Elem = makeFormElement("password", func) % new UnprefixedAttribute("value", value, Null)
+    def text_*(value: String, func: AFuncHolder): Elem = makeFormElement("text", func) % new UnprefixedAttribute("value", Text(value), Null)
+    def password_*(value: String, func: AFuncHolder): Elem = makeFormElement("password", func) % new UnprefixedAttribute("value", Text(value), Null)
     def hidden_*(func: AFuncHolder): Elem = makeFormElement("hidden", func) % ("value" -> "true")
-    def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", value, Null)
-    def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
-    def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
+    def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
+    def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
+    def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
     def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func)) % ("value" -> "true")
-    def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", value, Null)
+    def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
     
     def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
     def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
@@ -857,7 +857,7 @@ object S {
     }
     
     private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
-    private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", id, Null); case _ => Null}
+    private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
     
     def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any): ChoiceHolder[T] = {
       val len = possible.length
@@ -894,13 +894,9 @@ object S {
       ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
     }
     
-    // implicit def toSFunc(in: String => Any): AFuncHolder = SFuncHolder(in)
     implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
     implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
-    // implicit def toL2Func(in: List[String] => AnyRef): AFuncHolder = L2FuncHolder(in)
-    
-    // implicit def stuffToUnpref(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, in._2.toString, Null)
-    implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, in._2.toString, Null)
+    implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, Text(in._2.toString), Null)
     
     @serializable
     abstract class AFuncHolder {

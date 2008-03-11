@@ -19,7 +19,7 @@ import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse
 import javax.servlet.{ServletContext}
 import scala.collection.mutable.{ListBuffer}
 import java.net.URLDecoder
-import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, UnprefixedAttribute, XML, Comment, Text}
+import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, XML, Comment, Text}
 import scala.xml.transform._
 import scala.actors._
 import scala.actors.Actor._

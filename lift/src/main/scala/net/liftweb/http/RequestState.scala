@@ -126,10 +126,10 @@ object RequestState {
   
   var fixHref = _fixHref _
   
-  private def _fixHref(contextPath: String, v : Seq[Node]) : String = {
+  private def _fixHref(contextPath: String, v : Seq[Node]): Text = {
     val hv = v.text
-    if (hv.startsWith("/")) contextPath+hv
-    else hv
+    if (hv.startsWith("/")) Text(contextPath+hv)
+    else Text(hv)
   }
   
   def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
@@ -137,7 +137,7 @@ object RequestState {
     else {
       def fixAttrs(toFix : String, attrs : MetaData) : MetaData = {
         if (attrs == Null) Null 
-        else if (attrs.key == toFix) new UnprefixedAttribute(toFix,RequestState.fixHref(contextPath, attrs.value),fixAttrs(toFix, attrs.next))
+        else if (attrs.key == toFix) new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value),fixAttrs(toFix, attrs.next))
         else attrs.copy(fixAttrs(toFix, attrs.next))
       }
       

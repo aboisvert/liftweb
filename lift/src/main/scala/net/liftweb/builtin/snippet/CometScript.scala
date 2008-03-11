@@ -41,5 +41,5 @@ class CometScript {
     </script>)
   }
 
-  def bodyAttr: MetaData = new UnprefixedAttribute("onload", "lift_cometEntry();", Null)
+  def bodyAttr: MetaData = new UnprefixedAttribute("onload", Text("lift_cometEntry();"), Null)
 }

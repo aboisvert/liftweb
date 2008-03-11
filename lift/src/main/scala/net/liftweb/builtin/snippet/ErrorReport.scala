@@ -30,7 +30,7 @@ class ErrorReport {
       msg.toList.map(e => (<li>{e}</li>) ) match {
         case Nil => Nil
         case msgList => val ret = (<div>{title}:<ul>{msgList}</ul></div>)
-        styleList.toList.map(_.text.trim).foldLeft(ret)((xml, style) => xml % new UnprefixedAttribute("class", style, Null))
+        styleList.toList.map(_.text.trim).foldLeft(ret)((xml, style) => xml % new UnprefixedAttribute("class", Text(style), Null))
       }
     }
   }

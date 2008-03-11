@@ -87,7 +87,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(_handleJson)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
-  parentTag.scope, Group(xml)) % (new UnprefixedAttribute("id", uniqueId, Null)) % (new PrefixedAttribute("lift", "when", time.toString, Null))
+  parentTag.scope, Group(xml)) % (new UnprefixedAttribute("id", Text(uniqueId), Null)) % (new PrefixedAttribute("lift", "when", Text(time.toString), Null))
   
   
   def act = {

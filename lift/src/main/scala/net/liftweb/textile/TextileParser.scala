@@ -596,7 +596,7 @@ object TextileParser extends Application {
       def fromList(st : List[Pair[String,String]]) : MetaData = {
         st match {
           case Nil => Null
-          case x :: xs => {new UnprefixedAttribute(x._1, x._2, fromList(xs))}
+          case x :: xs => {new UnprefixedAttribute(x._1, Text(x._2), fromList(xs))}
         }
       }
       fromList(crunchStyle(toList(st)))

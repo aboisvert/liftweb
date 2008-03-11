@@ -394,7 +394,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     
     def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
       case Nil => Null
-      case x => new UnprefixedAttribute("enctype", "multipart/form-data", Null)
+      case x => new UnprefixedAttribute("enctype", Text("multipart/form-data"), Null)
     }
     
     attrs.get("form").map(ft => <form action={S.uri} method={ft.text}>{ret}</form> % checkMultiPart(attrs)) getOrElse ret
@@ -447,7 +447,11 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private def executeComet(theType: Can[String], name: Can[String], kids: NodeSeq, attr: MetaData): NodeSeq = {
     try {
-      findComet(theType, name, kids, Map.empty ++ attr.flatMap{case u: UnprefixedAttribute => List((u.key, u.value.text)) case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) case _ => Nil}.toList).
+      findComet(theType, name, kids, Map.empty ++ 
+		attr.flatMap{
+		  case u: UnprefixedAttribute => List((u.key, u.value.text))
+		  case u: PrefixedAttribute => List((u.pre+":"+u.key, u.value.text)) 
+		  case _ => Nil}.toList).
       map(c =>
       (c !? (26600, AskRender)) match {
         case Some(AnswerRender(response, _, when, _)) if c.hasOuter => 
@@ -527,7 +531,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
-    new UnprefixedAttribute("onclick", ajax, new UnprefixedAttribute("href", "javascript://", attr.filter(a => a.key != "onclick" && a.key != "href")))
+    new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
   
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -537,7 +541,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
       case x :: xs => x.value.text +";"
     }
     val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
-    new UnprefixedAttribute("id", id, new UnprefixedAttribute("action", "#", new UnprefixedAttribute("onsubmit", ajax, attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
+    new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
   
   
