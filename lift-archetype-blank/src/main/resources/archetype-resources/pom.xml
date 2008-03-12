@@ -44,7 +44,7 @@
     </dependency>
     <dependency>
       <groupId>net.liftweb</groupId>
-      <artifactId>lift-core</artifactId>
+      <artifactId>lift-webkit</artifactId>
       <version>$lift_version</version>
     </dependency>
     <dependency>
