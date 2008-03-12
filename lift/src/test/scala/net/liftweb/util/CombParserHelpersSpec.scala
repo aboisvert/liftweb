@@ -70,21 +70,22 @@ object CombParserHelpersSpec extends Specification {
     "provide an acceptCI parser to parse whatever string matching another string ignoring case" in {
       import abcdStringGen._
       val ignoreCaseStringParse = (s: String, s2: String) => acceptCI(s).apply(s2) match {
-        case Success(x, y) => s2.toUpperCase must startWith(s.toUpperCase)  
+        case Success(x, y) => s2.toUpperCase must startWith(s.toUpperCase)
         case _ => true
       }
       property(ignoreCaseStringParse) must pass
     }
     "provide a digit parser - returning a String" in {
       val isDigit = (s: String) => digit(s) match {
-        case Success(x, y) => s mustMatch("\\d")  
+        case Success(x, y) => s mustMatch("\\d")
         case _ => true
       }
       property(isDigit) must pass
     }
     "provide an aNumber parser - returning an Int if succeeding" in {
-      val number = (s: String) => aNumber(s) match {
-        case Success(x, y) => s must startWith(x.toString)
+     val number = (s: String) => aNumber(s) match {
+        case Success(0, y) => s.toString must startWith("0")
+        case Success(x, y) => strToLst(s).dropWhile(_ == '0')(0) must_==(x.toString.head)
         case _ => true
       }
       property(number) must pass
@@ -121,7 +122,7 @@ object CombParserHelpersSpec extends Specification {
       case _ => false
     }
     "provide a permute parser succeeding if any permutation of given parsers succeeds" in {
-      def permuteParsers(s: String) = shouldSucceed(permute(parserA, parserB, parserC, parserD)(s)) 
+      def permuteParsers(s: String) = shouldSucceed(permute(parserA, parserB, parserC, parserD)(s))
       import abcdStringGen._
       property((s: String) => (stringWrapper(s).size == 4) ==> permuteParsers(s)) must pass
     }
