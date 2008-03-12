@@ -124,4 +124,18 @@
       </plugin>
     </plugins>
   </reporting>
+
+  <!-- fake deploy to avoid failure when request deploy -->
+  <distributionManagement>
+    <repository>
+      <id>dummy</id>
+      <name>Dummy Repository</name>
+      <url>file://${java.io.tmpdir}</url>
+    </repository>
+    <snapshotRepository>
+      <id>dummy</id>
+      <name>Dummy Repository</name>
+      <url>file://${java.io.tmpdir}</url>
+    </snapshotRepository>
+  </distributionManagement>
 </project>
