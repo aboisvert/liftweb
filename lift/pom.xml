@@ -9,18 +9,6 @@
   <packaging>jar</packaging>
   <name>Lift WebKit</name>
   <description>Tool Kit to create webapp with lift framework</description>
-  <repositories>
-    <repository>
-      <id>m2-repository-smack</id>
-      <url>http://maven.reucon.com/public</url>
-      <releases>
-        <enabled>true</enabled>
-      </releases>
-      <snapshots>
-        <enabled>false</enabled>
-      </snapshots>
-    </repository>
-  </repositories>
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
@@ -114,28 +102,6 @@
       <artifactId>jetty</artifactId>
       <version>[6.1.6,)</version>
       <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smack</artifactId>
-      <version>3.0.4</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
-      <groupId>org.igniterealtime.smack</groupId>
-      <artifactId>smackx</artifactId>
-      <version>3.0.4</version>
-      <exclusions>
-        <exclusion>
-          <groupId>javax.servlet</groupId>
-          <artifactId>servlet-api</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.jwebunit</groupId>
