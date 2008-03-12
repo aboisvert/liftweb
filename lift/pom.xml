@@ -81,11 +81,6 @@
       <!-- <scope>provided</scope> -->
     </dependency>
     <dependency>
-      <groupId>com.rabbitmq</groupId>
-      <artifactId>rabbitmq-client</artifactId>
-      <version>1.2.0</version>
-    </dependency>
-    <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
       <version>1.2.4</version>
