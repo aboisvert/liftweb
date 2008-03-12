@@ -5,9 +5,10 @@
     <groupId>net.liftweb</groupId>
     <version>0.7-SNAPSHOT</version>
   </parent>
-  <artifactId>lift-core</artifactId>
+  <artifactId>lift-webkit</artifactId>
   <packaging>jar</packaging>
-  <name>Lift Core</name>
+  <name>Lift WebKit</name>
+  <description>Tool Kit to create webapp with lift framework</description>
   <repositories>
     <repository>
       <id>m2-repository-smack</id>

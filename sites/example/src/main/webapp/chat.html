@@ -1,7 +1,7 @@
 <lift:surround with="default" at="content">
 <div class="widget sidebar">
-	<center><b>Group Chat</b></center><br />
-	<lift:comet type="Chat" name="Other">Chat Text</lift:comet>
+  <center><b>Group Chat</b></center><br />
+  <lift:comet type="Chat" name="Other">Chat Text</lift:comet>
 </div>
 <p>The total chat app, including the ask/answer component for soliciting a name
 comments, etc. is 68 lines of code.  There is no special code to support AJAX/Comet
@@ -45,8 +45,8 @@ Here's the code for the "AskName":</p>
     </style>
     <pre>
 <span class="keyword">class</span> <span class="type">AskName</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
-  <span class="keyword">def</span> <span class="function-name">render</span> = ajaxForm(&lt;div&gt;What is your username?&lt;/div&gt; ++ 
-                             text("",name => answer(name.trim)) ++ 
+  <span class="keyword">def</span> <span class="function-name">render</span> = ajaxForm(&lt;div&gt;What is your username?&lt;/div&gt; ++
+                             text("",name => answer(name.trim)) ++
                              submit("Enter", ignore => true))
 }
 </pre>
@@ -61,7 +61,7 @@ no need for continuations.</p>
 <span class="keyword">class</span> <span class="type">Chat</span> <span class="keyword">extends</span> <span class="type">CometActor</span> {
   <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">userName</span> = <span class="string">""</span>
   <span class="keyword">private</span> <span class="keyword">var</span> <span class="variable-name">currentData</span>: <span class="type">List[ChatLine]</span> = Nil
-  
+
   <span class="keyword">private</span> <span class="keyword">val</span> <span class="variable-name">server</span> = {
     <span class="keyword">val</span> <span class="variable-name">ret</span> = ChatServer.server
     ret !? ChatServerAdd(<span class="keyword">this</span>) <span class="keyword">match</span> {
@@ -70,7 +70,7 @@ no need for continuations.</p>
     }
     ret
   }
-  
+
 
   <span class="keyword">override</span> <span class="keyword">def</span> <span class="function-name">lowPriority</span> : <span class="type">PartialFunction[Any, Unit]</span> = {
       <span class="keyword">case</span> <span class="type">ChatServerUpdate</span>(<span class="variable-name">value</span>) =&gt; {
@@ -78,8 +78,8 @@ no need for continuations.</p>
         reRender
         loop
       }
-    } 
-  
+    }
+
   <span class="keyword">def</span> <span class="function-name">render</span> = {
     <span class="keyword">val</span> <span class="variable-name">inputName</span> = <span class="keyword">this</span>.uniqueId+<span class="string">"_msg"</span>
     <span class="keyword">val</span> <span class="variable-name">ret</span> = &lt;span&gt;Hello {userName}&lt;ul&gt;{
@@ -93,7 +93,7 @@ no need for continuations.</p>
 
     XmlAndMap(ret, TreeMap(inputName -&gt; sendMessage))
   }
-  
+
   <span class="keyword">override</span> <span class="keyword">def</span> <span class="function-name">localSetup</span> {
     <span class="keyword">if</span> (userName.length == 0) {
     ask(<span class="keyword">new</span> AskName, <span class="string">"what's your username"</span>) {
@@ -105,14 +105,14 @@ no need for continuations.</p>
     }
     }
   }
-  
+
   <span class="keyword">def</span> <span class="function-name">waitForUpdate</span> : <span class="type">Option[List[ChatLine]]</span> = {
     receiveWithin(100) {
       <span class="keyword">case</span> <span class="type">ChatServerUpdate</span>(<span class="variable-name">l</span>) =&gt; Some(l)
       <span class="keyword">case</span> <span class="type">TIMEOUT</span> =&gt; None
     }
   }
-  
+
   <span class="keyword">def</span> <span class="function-name">sendMessage</span>(<span class="variable-name">in</span>: <span class="type">List[String]</span>) = {
       server ! ChatServerMsg(userName, in.head)
       waitForUpdate <span class="keyword">match</span> {
@@ -149,5 +149,4 @@ updates itself.</p>
 <p>This example demonstrates the power of Scala's Actors and <i>lift</i>.
 With very few lines of code, we've got a complete AJAX/Comet app that
 has Seaside style Ask/Answer for building modal dialogs.</p>
-
 </lift:surround>

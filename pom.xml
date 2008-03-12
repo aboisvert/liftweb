@@ -136,6 +136,8 @@ Lift is a scala web framework.
   </properties>
   <modules>
     <module>lift</module>
+    <module>lift-testkit</module>
+    <module>lift-core</module>
     <module>sites</module>
     <module>lift-archetype-blank</module>
     <module>lift-archetype-basic</module>
