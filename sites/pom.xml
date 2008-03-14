@@ -49,6 +49,7 @@
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
       <version>10.2.2.0</version>
+      <!-- use for test and runtime -->
     </dependency>
     <dependency>
       <groupId>com.rabbitmq</groupId>

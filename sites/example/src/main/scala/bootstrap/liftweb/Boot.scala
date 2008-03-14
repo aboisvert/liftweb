@@ -103,8 +103,8 @@ object XmlServer {
     object DBVendor extends ConnectionManager {
       def newConnection(name: ConnectionIdentifier): Can[Connection] = {
         try {
-          Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
-          val dm =  DriverManager.getConnection("jdbc:derby:lift_example;create=true")
+          Class.forName("org.h2.Driver")
+          val dm =  DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")
           Full(dm)
         } catch {
           case e : Exception => e.printStackTrace; Empty

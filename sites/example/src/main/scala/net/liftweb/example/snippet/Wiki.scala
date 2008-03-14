@@ -28,6 +28,7 @@ import net.liftweb.textile._
 case class BindChoice(show: boolean, bind: () => NodeSeq)
 
 class Wiki {
+  def uriFor(path:String) = "/wiki/" + path
   /**
     * Display the Textile marked up wiki or an edit box
     */
@@ -36,7 +37,7 @@ class Wiki {
 
     def showAll = {
       WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
-      <div><a href={"/wiki/"+entry.name}>{entry.name}</a></div>)
+      <div><a href={uriFor(entry.name)}>{entry.name}</a></div>)
     }
 
     if (pageName == "all") showAll // if the page is "all" display all the pages
@@ -50,10 +51,10 @@ class Wiki {
       // show edit or just display
       val edit = isNew || (S.param("param1").map(_ == "edit") openOr false)
 
-      <span><a href="/wiki/all">Show All Pages</a><br/>{
+      <span><a href={uriFor("all")}>Show All Pages</a><br/>{
   if (edit) editEntry(entry, isNew, pageName)
         else TextileParser.toHtml(entry.entry, Full((a: String) => a)) ++
-             <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a> // and add an "edit" link
+             <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
       }</span>
     }
   }
@@ -81,7 +82,7 @@ class Wiki {
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child,
       TheBindParam("name", Text(pageName)),
       TheBindParam("value", (TextileParser.toHtml(entry.entry, Full(a => a)) ++
-      <br/><a href={S.uri+"/"+pageName+"/edit"}>Edit</a>))))
+      <br/><a href={uriFor(pageName+"/edit")}>Edit</a>))))
 
     (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {
       case Some(x) => x
@@ -90,10 +91,10 @@ class Wiki {
   }
 
   private def editEntry(entry: WikiEntry, isNew: boolean, pageName: String) = {
-    val action = S.uri+"/"+pageName
+    val action = uriFor(pageName)
     val message = if (isNew) Text("Create Entry named "+pageName) else Text("Edit entry named "+pageName)
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
-    val cancelLink = <a href={S.uri+"/"+pageName}>Cancel</a>
+    val cancelLink = <a href={uriFor(pageName)}>Cancel</a>
     val textarea = entry.entry.toForm
     val submitButton = S.submit(isNew ? "Add" | "Edit", s => {entry.save})
     <form method="GET" action={action}>{ // the form tag
