@@ -43,5 +43,5 @@ object ToHeadUsages extends Specification {
     }
   }
 
-  JettyTestServer.stop()
+//  JettyTestServer.stop()
 }
