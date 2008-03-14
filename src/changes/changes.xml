@@ -16,6 +16,14 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+    <release version="0.7" date="2008-03-11" description="">
+      <action dev="Marius Danciu" type="add">
+        - Added extensible support for specifying the behavior for invalid URI's (with or without site map)
+        - Changes LiftServlet object name to LiftRules
+        - Changed Loc behavior to use ResponseIt 
+        - Added RedirectWithState  
+      </action>
+    </release>
     <release version="0.6" date="2008-03-10" description="">
       <action dev="Eric Torreborre" type="update">
         Compiled the project with Scala-2.7.0
