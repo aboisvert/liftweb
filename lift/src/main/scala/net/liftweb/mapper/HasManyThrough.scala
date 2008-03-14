@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
+ (c) 2007-2008 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
@@ -13,10 +13,10 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
                      To <: Mapper[To],
                      Through <: Mapper[Through],
                      ThroughType <: Any](owner: From,
-				       otherSingleton: MetaMapper[To],
-                                       through: MetaMapper[Through],
-				       throughFromField: MappedField[ThroughType, Through], 
-				       throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks 
+					 otherSingleton: MetaMapper[To],
+					 through: MetaMapper[Through],
+					 throughFromField: MappedField[ThroughType, Through], 
+					 throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks 
 {
   private var theSetList: Seq[ThroughType] = Nil
   
@@ -45,7 +45,8 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
   def apply(): List[To] = others.get
   
   def get: List[To] = this()
-  
+
+  def reset = others.reset
 
   def set(what: Seq[ThroughType]): Seq[ThroughType] = {
     theSetList = what

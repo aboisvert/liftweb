@@ -770,7 +770,7 @@ object S {
     * Create a select box based on the list with a default value and the function to be executed on
     * form submission
     *
-    * @param opts -- the options.  A list of value and text pairs
+    * @param opts -- the options.  A list of value and text pairs (value, text to display)
     * @param deflt -- the default value (or Empty if no default value)
     * @param func -- the function to execute on form submission
     */
