@@ -32,13 +32,13 @@ import net.liftweb.example.snippet.definedLocale
 class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    LiftServlet.addToPackages("net.liftweb.example")
+    LiftRules.addToPackages("net.liftweb.example")
 
-    LiftServlet.localeCalculator = r => definedLocale.openOr(LiftServlet.defaultLocaleCalculator(r))
+    LiftRules.localeCalculator = r => definedLocale.openOr(LiftRules.defaultLocaleCalculator(r))
 
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
 
-    val dispatcher: LiftServlet.DispatchPf = {
+    val dispatcher: LiftRules.DispatchPf = {
       // if the url is "showcities" then return the showCities function
       case RequestMatcher(_, ParsePath("showcities":: _, _, _),_,  _) => XmlServer.showCities
 
@@ -48,25 +48,25 @@ class Boot {
       // if it's a web service, pass it to the web services invoker
       case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_),_, _) => invokeWebService(r, c)
     }
-    LiftServlet.addDispatchBefore(dispatcher)
+    LiftRules.addDispatchBefore(dispatcher)
 
-    val wiki_rewriter: LiftServlet.RewritePf = {
+    val wiki_rewriter: LiftRules.RewritePf = {
       case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>
       RewriteResponse("wiki" :: Nil,
       Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
-    LiftServlet.addRewriteBefore(wiki_rewriter)
+    LiftRules.addRewriteBefore(wiki_rewriter)
 
-    val wikibind_rewriter: LiftServlet.RewritePf = {
+    val wikibind_rewriter: LiftRules.RewritePf = {
       case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _,_), _, _) =>
       RewriteResponse(ParsePath("wikibind" :: Nil, true, false),
       Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
-    LiftServlet.appendEarly(makeUtf8)
+    LiftRules.appendEarly(makeUtf8)
 
-    LiftServlet.addRewriteBefore(wikibind_rewriter)
+    LiftRules.addRewriteBefore(wikibind_rewriter)
 
   }
 

@@ -50,7 +50,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 
   def destroy = {
     try {
-      LiftServlet.ending = true
+      LiftRules.ending = true
       Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
       Scheduler.shutdown
       ActorPing.shutdown
@@ -66,10 +66,10 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   def init = {
     try {
       // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
-      LiftServlet.ending = false
-      LiftServlet.addDispatchAfter({
-        case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftServlet.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
-      })
+      LiftRules.ending = false
+      LiftRules.addDispatchAfter({
+        case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftRules.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
+      })      
       // ResourceServer.allow("/jquery-1.2.2.js")
       // super.init
     } finally {
@@ -108,7 +108,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
           doService(req, resp, requestState)
         }
       }
-      LiftServlet.checkJetty(req) match {
+      LiftRules.checkJetty(req) match {
         case None => doIt
         case r if r eq null => doIt
         case r: ResponseIt => sendResponse(r.toResponse, resp, Empty)
@@ -137,24 +137,24 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState) {
     val statelessToMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Empty)
 
-    val resp: Response = if (LiftServlet.ending) {
+    val resp: Response = if (LiftRules.ending) {
       requestState.createNotFound.toResponse
-    } else if (LiftServlet.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
-      val f = LiftServlet.statelessDispatchTable(statelessToMatch)
+    } else if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
+      val f = LiftRules.statelessDispatchTable(statelessToMatch)
       f(requestState) match {
-        case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
+        case Full(v) => LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) )
         case Empty => requestState.createNotFound.toResponse
-        case f: Failure => requestState.createNotFound(f).toResponse
+        case f: Failure => requestState.createNotFound(f).toResponse 
       }
     } else {
       val sessionActor = getActor(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
-      if (LiftServlet.dispatchTable(request).isDefinedAt(toMatch)) {
+      if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
         S.init(requestState, requestState.request, sessionActor.notices, sessionActor) {
           try {
-            val f = LiftServlet.dispatchTable(request)(toMatch)
+            val f = LiftRules.dispatchTable(request)(toMatch)
             f(requestState) match {
-              case Full(v) => LiftServlet.convertResponse( (v, Nil, S.responseCookies, requestState) )
+              case Full(v) => LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) )
               case Empty => requestState.createNotFound.toResponse
               case f: Failure => requestState.createNotFound(f).toResponse
             }
@@ -162,9 +162,9 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
             sessionActor.notices = S.getNotices
           }
         }
-      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftServlet.cometPath) {
+      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
 
-        LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
+        LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
 
         // sessionActor.breakOutComet()
         sessionActor.enterComet(self)
@@ -183,12 +183,12 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 
             drainTheSwamp(0, Nil)
 
-            if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftServlet.noCometSessionPage) :: Nil).toResponse
+            if (actors.isEmpty) new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse
             else {
 
               actors.foreach{case (act, when) => act ! Listen(when)}
 
-              val ret = drainTheSwamp((LiftServlet.ajaxRequestTimeout openOr 120) * 1000L, Nil)
+              val ret = drainTheSwamp((LiftRules.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
 
               actors.foreach{case (act, _) => act ! Unlisten}
 
@@ -200,7 +200,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
               val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
 
 
-              LiftServlet.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
+              LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
 
               (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
             }
@@ -208,8 +208,8 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
         } finally {
           sessionActor.exitComet(self)
         }
-      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftServlet.ajaxPath) {
-        LiftServlet.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
+      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
+        LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
           try {
             val what = flatten(sessionActor.runParams(requestState))
@@ -224,7 +224,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
               case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
             }
 
-            LiftServlet.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
+            LiftRules.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
             ret
           } finally {
             sessionActor.updateFunctionMap(S.functionMap)
@@ -265,26 +265,32 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   }
 
   /**
-  * Sends the {@code HttpServletResponse} to the browser using data from the
-  * {@link Response} and {@link RequestState}.
-  */
+   * Sends the {@code HttpServletResponse} to the browser using data from the 
+   * {@link Response} and {@link RequestState}.
+   */
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
+     
+     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
+         case ("Location", uri) => (v._1, request map (_ updateWithContextPath(uri)) openOr uri)
+         case _ => v
+     })
+ 
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(resp.headers, List(("Content-Type", LiftServlet.determineContentType(request)),
-    ("Content-Encoding", "UTF-8"),
-    ("Content-Length", len.toString)))
-
-    LiftServlet._beforeSend.foreach(_(resp, response, header, request))
+    val header = insureField(fixHeaders(resp.headers), List(("Content-Type", LiftRules.determineContentType(request)),
+						("Content-Encoding", "UTF-8"),
+						("Content-Length", len.toString)))
+    
+    LiftRules._beforeSend.foreach(_(resp, response, header, request))
     // set the cookies
     resp.cookies.foreach(cookie => response.addCookie(cookie))
-
+    
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
-    response.getOutputStream.write(bytes)
-    LiftServlet._afterSend.foreach(_(resp, response, header, request))
+    response.getOutputStream.write(bytes)    
+    LiftRules._afterSend.foreach(_(resp, response, header, request))
   }
 
   /**
@@ -298,7 +304,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
 
 }
 
-object LiftServlet {
+object LiftRules {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
@@ -308,6 +314,7 @@ object LiftServlet {
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
+  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), ResponseIt]
 
   /**
   * A partial function that allows the application to define requests that should be
@@ -346,7 +353,7 @@ object LiftServlet {
   /**
   * The maximum allowed size of a complete mime multi-part POST.  Default
   * 8MB
-  */
+ */
   var maxMimeSize: Long = 8 * 1024 * 1024
 
   /**
@@ -473,14 +480,14 @@ object LiftServlet {
   }
 
   def resumeRequest(what: AnyRef, req: HttpServletRequest) {
-    val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
+    val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
     setObject.invoke(cont, Array(what))
     resume.invoke(cont, null)
   }
 
   def doContinuation(req: HttpServletRequest): Nothing = {
     try {
-      val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
+      val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
       Log.trace("About to suspend continuation")
       suspend.invoke(cont, Array(new java.lang.Long(200000L)))
       throw new Exception("Bail")
@@ -492,7 +499,7 @@ object LiftServlet {
   def checkJetty(req: HttpServletRequest) = {
     if (!hasJetty_?) None
     else {
-      val cont = getContinuation.invoke(contSupport, Array(req, LiftServlet))
+      val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
       val ret = getObject.invoke(cont, null)
       setObject.invoke(cont, Array(null))
       ret
@@ -590,7 +597,7 @@ object LiftServlet {
 
 
   def finder(name: String): Can[InputStream] = {
-    LiftServlet.context match {
+    LiftRules.context match {
       case null => Empty
       case c => c.getResourceAsStream(name) match {
         case null => Empty
@@ -744,6 +751,18 @@ object LiftServlet {
   }
 
   /**
+   * The partial function for defining the behavior of what happens when 
+   * URI is invalid and you're not using a site map
+   *
+   * It is strongly recommended to use partial functions composition like:
+   * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
+   */
+  var uriNotFound: URINotFoundPF = {
+    case (RequestMatcher(r, _, _, _), _) => RequestState.defaultCreateNotFound(r)
+  }
+   
+   
+  /**
   * A utility method to convert an exception to a string of stack traces
   * @param le the exception
   *
@@ -796,8 +815,8 @@ class LiftFilter extends Filter
 
     (req, res) match {
       case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-      LiftServlet.early.foreach(_(httpReq))
-      val session = RequestState(httpReq, LiftServlet.rewriteTable(httpReq), System.nanoTime)
+      LiftRules.early.foreach(_(httpReq))
+      val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
       if (isLiftRequest_?(session)) lift(httpReq, httpRes, session)
       else chain.doFilter(req, res)
 
@@ -809,7 +828,7 @@ class LiftFilter extends Filter
   def init(config:FilterConfig) {
     context = config.getServletContext
 
-    LiftServlet.setContext(context)
+    LiftRules.setContext(context)       
     bootLift(Can(config.getInitParameter("bootloader")))
 
     actualServlet = new LiftServlet(context)
@@ -840,7 +859,7 @@ class LiftFilter extends Filter
 
   private def postBoot {
     try {
-      ResourceBundle getBundle (LiftServlet.liftCoreResourceName)
+      ResourceBundle getBundle (LiftRules.liftCoreResourceName)
     } catch {
       case _ => Log.error("LiftWeb core resource bundle was not found ! ")
     }
@@ -857,7 +876,7 @@ class LiftFilter extends Filter
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
   private def isLiftRequest_?(session: RequestState): Boolean = {
-    if (LiftServlet.isLiftRequest_?.isDefinedAt(session)) LiftServlet.isLiftRequest_?(session)
+    if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
     else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
   }

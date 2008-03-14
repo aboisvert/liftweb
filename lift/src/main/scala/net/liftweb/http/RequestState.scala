@@ -29,7 +29,7 @@ case class FileParamHolder(name: String, mimeType: String, fileName: String, fil
 object RequestState {
   object NilPath extends ParsePath(Nil, true, false)
   
-  def apply(request: HttpServletRequest, rewrite: LiftServlet.RewritePf, nanoStart: Long): RequestState = {
+  def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
@@ -63,8 +63,8 @@ object RequestState {
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
         val mimeUpload = (new ServletFileUpload)
-        mimeUpload.setSizeMax(LiftServlet.maxMimeSize)
-        mimeUpload.setFileSizeMax(LiftServlet.maxMimeFileSize)
+        mimeUpload.setSizeMax(LiftRules.maxMimeSize)
+        mimeUpload.setFileSizeMax(LiftRules.maxMimeFileSize)
         val what = mimeUpload.getItemIterator(request)
         def hasNext = what.hasNext
         def next = what.next match {
@@ -110,12 +110,12 @@ object RequestState {
       (paramNames, params, Nil, Empty)
     }
     
-    new RequestState(rewritten.path,contextPath, reqType,
-    request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
+    new RequestState(rewritten.path,contextPath, reqType, 
+                     request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
   }
   
   def nil = new RequestState(NilPath, "", GetRequest, "", null, System.nanoTime, System.nanoTime,
-  () => (Nil, Map.empty, Nil, Empty))
+                             () => (Nil, Map.empty, Nil, Empty))
   
   def parsePath(in: String): ParsePath = {
     val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
@@ -157,6 +157,10 @@ object RequestState {
       }
     }
   }
+  
+  private[liftweb] def defaultCreateNotFound(in: RequestState) = 
+    XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
+      ResponseInfo.docType(in), Nil, Nil, 404)
   
   def unapply(in: RequestState) = Some((in.path, in.requestType, in.contextPath, in.contentType)) 
 }
@@ -215,23 +219,23 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     }
   }
   
-  lazy val location = LiftServlet.siteMap.flatMap(_.findLoc(this, request))
+  lazy val location = LiftRules.siteMap.flatMap(_.findLoc(this, request))
   
-  def testLocation: Can[RedirectWithMessage] = if (LiftServlet.siteMap.isEmpty) Empty
-     else location.map(_.testAccess) openOr Full(RedirectWithMessage("/", S.??("invalid.url")))
+  def testLocation: Can[ResponseIt] = {
+    if (LiftRules.siteMap.isEmpty) Empty
+    else location.map(_.testAccess) openOr Can(LiftRules.uriNotFound(RequestMatcher(this, path, requestType, S.session), Empty))
+  }
   
   
   lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)
   
   
   def createNotFound = {
-    Response((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>).toString.getBytes("UTF-8"),
-     List("Content-Type" -> "text/html"), Nil, 404)
+    LiftRules.uriNotFound((RequestMatcher(this, path, requestType, S.session), Empty))
   }
   
-  def createNotFound(failure: Failure) = { // FIXME do failure stuff
-    Response((<html><body>The Requested URL {contextPath+this.uri} was not found on this server</body></html>).toString.getBytes("UTF-8"),
-     List("Content-Type" -> "text/html"), Nil, 404)
+  def createNotFound(failure: Failure) = { 
+    LiftRules.uriNotFound((RequestMatcher(this, path, requestType, S.session), Can(failure)))
   }
   
   

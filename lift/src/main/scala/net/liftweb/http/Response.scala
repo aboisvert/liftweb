@@ -50,10 +50,19 @@ case class Response(data: Array[Byte], headers: List[(String, String)], cookies:
   override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
 }
 
-case class RedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends ResponseIt {
-  def toResponse = Response(Array(0), List("Location" -> request.updateWithContextPath(uri)), cookies toList, 302)
+case class RedirectResponse(uri: String, cookies: Cookie*) extends ResponseIt {
+  // The Location URI is not resolved here, instead it is resolved with context path prior of sending the actual response
+  def toResponse = Response(Array(0), List("Location" -> uri), cookies toList, 302)
 }
 
+case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
+
+object RedirectState {
+  implicit def func2Can(f: () => Unit) = Can(f)
+}
+case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)
+
+case class MessageState(override val msgs : (String, NoticeType.Value)*) extends RedirectState(Empty, msgs:_*)
 
 /**
  * Stock XHTML doctypes available to the lift programmer.

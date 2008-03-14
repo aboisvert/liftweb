@@ -24,7 +24,7 @@ class Boot {
   def modelList = List[BaseMetaMapper](User, Friend, MsgStore)
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
-    LiftServlet.addToPackages("com.skittr")
+    LiftRules.addToPackages("com.skittr")
      
     // make sure the database is up to date
     Schemifier.schemify(true, Log.infoF _, modelList :_*)
@@ -32,7 +32,7 @@ class Boot {
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
     
     // map certain urls to the right place
-    val rewriter: LiftServlet.RewritePf = {
+    val rewriter: LiftRules.RewritePf = {
     case RewriteRequest(ParsePath("user" :: user :: _, _,_), _, _) => 
        RewriteResponse("user" :: Nil, Map("user" -> user))
     case RewriteRequest(ParsePath("friend" :: user :: _, _,_), _, _) => 
@@ -41,7 +41,7 @@ class Boot {
        RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
   
-  LiftServlet.addRewriteBefore(rewriter)
+  LiftRules.addRewriteBefore(rewriter)
   
   // load up the list of user actors
   UserList.create

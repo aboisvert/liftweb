@@ -27,9 +27,9 @@ object S {
   /**
   * Holds the partial function that re-write an incoming request
   */
-  case class RewriteHolder(name: String, rewrite: LiftServlet.RewritePf)
-  case class DispatchHolder(name: String, dispatch: LiftServlet.DispatchPf)
-  case class TemplateHolder(name: String, template: LiftServlet.TemplatePf)
+  case class RewriteHolder(name: String, rewrite: LiftRules.RewritePf)
+  case class DispatchHolder(name: String, dispatch: LiftRules.DispatchPf)
+  case class TemplateHolder(name: String, template: LiftRules.TemplatePf)
   
   case class CookieHolder(inCookies: List[Cookie], outCookies: List[Cookie]) {
     def add(in: Cookie) = CookieHolder(inCookies, in :: outCookies.filter(_.getName != in.getName))
@@ -80,7 +80,7 @@ object S {
   */
   def sessionTemplater: List[TemplateHolder] = 
   servletSession.toList.
-  flatMap(_.getAttribute(LiftServlet.SessionTemplateTableName) match {
+  flatMap(_.getAttribute(LiftRules.SessionTemplateTableName) match {
     case rw: List[TemplateHolder] => rw
     case _ => Nil
   })
@@ -92,7 +92,7 @@ object S {
   */
   def sessionRewriter: List[RewriteHolder] = 
   servletSession.toList.
-  flatMap(_.getAttribute(LiftServlet.SessionRewriteTableName) match {
+  flatMap(_.getAttribute(LiftRules.SessionRewriteTableName) match {
     case rw: List[RewriteHolder] => rw
     case _ => Nil
   })
@@ -100,7 +100,7 @@ object S {
   /**
   * @return a list of session-specific dispatchers
   */
-  def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftServlet.SessionDispatchTableName) match {
+  def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftRules.SessionDispatchTableName) match {
     case rw: List[DispatchHolder] => rw
     case _ => Nil
   })
@@ -165,50 +165,50 @@ object S {
   * that's installed on this JVM then return it, otherwise return the
   * default Locale for this JVM.
   */
-  def locale: Locale = LiftServlet.localeCalculator(request.map(_.request))
+  def locale: Locale = LiftRules.localeCalculator(request.map(_.request))
   
   /**
   * Return the current timezone
   */
   def timeZone: TimeZone = 
-  LiftServlet.timeZoneCalculator(request.map(_.request))
+  LiftRules.timeZoneCalculator(request.map(_.request))
   
-  private def reduxio(in: List[LiftServlet.DispatchPf]): LiftServlet.DispatchPf = in match {
+  private def reduxio(in: List[LiftRules.DispatchPf]): LiftRules.DispatchPf = in match {
     case Nil => Map.empty
     case x :: Nil => x
     case x :: xs => x orElse reduxio(xs)
   }
   
-  def highLevelSessionDispatcher: LiftServlet.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
+  def highLevelSessionDispatcher: LiftRules.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
   def highLevelSessionDispatchList: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(HighLevelSessionDispatchTableName) match {
     case li: List[DispatchHolder] => li
     case _ => Nil
   })
   
   val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
-  def addHighLevelSessionDispatcher(name: String, disp: LiftServlet.DispatchPf) = 
+  def addHighLevelSessionDispatcher(name: String, disp: LiftRules.DispatchPf) = 
   servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name)))
   
   def removeHighLevelSessionDispatcher(name: String) =
   servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, highLevelSessionDispatchList.filter(_.name != name)))
   
-  def addSessionTemplater(name: String, rw: LiftServlet.TemplatePf) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
+  def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
+  servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
   
-  def addSessionRewriter(name: String, rw: LiftServlet.RewritePf) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name)))
+  def addSessionRewriter(name: String, rw: LiftRules.RewritePf) =
+  servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name)))
   
   def removeSessionRewriter(name: String) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionRewriteTableName, sessionRewriter.remove(_.name == name)))
+  servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, sessionRewriter.remove(_.name == name)))
   
   def removeSessionTemplater(name: String) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
+  servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
   
-  def addSessionDispatcher(name: String, rw: LiftServlet.DispatchPf) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionDispatchTableName, DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)))
+  def addSessionDispatcher(name: String, rw: LiftRules.DispatchPf) =
+  servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)))
   
   def removeSessionDispatcher(name: String) =
-  servletSession.foreach(_.setAttribute(LiftServlet.SessionDispatchTableName, sessionDispatcher.remove(_.name == name)))
+  servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, sessionDispatcher.remove(_.name == name)))
   
   /**
   * Test the current request to see if it's a POST
@@ -223,8 +223,8 @@ object S {
   */
   def loc(str: String): Can[NodeSeq] =
   resourceBundle.flatMap(r => tryo(r.getObject(str) match {
-    case null => LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
-    case s: String => Full(LiftServlet.localizeStringToXml(s))
+    case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
+    case s: String => Full(LiftRules.localizeStringToXml(s))
     case g: Group => Full(g)
     case e: Elem => Full(e)
     case n: Node => Full(n)
@@ -236,7 +236,7 @@ object S {
   * Get the resource bundle for the current locale
   */
   def resourceBundle: Can[ResourceBundle] = Can(_resBundle.value).openOr {
-    val rb = tryo(ResourceBundle.getBundle(LiftServlet.resourceName, locale))
+    val rb = tryo(ResourceBundle.getBundle(LiftRules.resourceName, locale))
     _resBundle.set(rb)
     rb
   }
@@ -245,7 +245,7 @@ object S {
   * Get the lift core resource bundle for the current locale
   */
   def liftCoreResourceBundle: Can[ResourceBundle] = Can(_liftCoreResBundle.value).openOr {
-    val rb = tryo(ResourceBundle.getBundle(LiftServlet.liftCoreResourceName, locale))
+    val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
     _liftCoreResBundle.set(rb)
     rb
   }
@@ -259,7 +259,7 @@ object S {
   */
   def ?(str: String): String = resourceBundle.flatMap(r => tryo(r.getObject(str) match 
   {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
-  openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str}
+  openOr{LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); str}
   
   def ?(str: String, params: Any *): String = if (params.length == 0) 
   ?(str)
@@ -275,7 +275,7 @@ object S {
   */
   def ??(str: String): String = liftCoreResourceBundle.flatMap(r => tryo(r.getObject(str) match 
   {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
-  openOr{LiftServlet.localizationLookupFailureNotice.foreach(_(str, locale)); str
+  openOr{LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); str
   }
   
   /**
@@ -541,7 +541,7 @@ object S {
   
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
     val snippet = if (name.indexOf(".") != -1) name.roboSplit(".") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
-    if (LiftServlet.snippetTable.isDefinedAt(snippet)) Full(LiftServlet.snippetTable(snippet)) else Empty
+    if (LiftRules.snippetTable.isDefinedAt(snippet)) Full(LiftRules.snippetTable(snippet)) else Empty
   }
   
   def mapSnippet(name: String, func: NodeSeq => NodeSeq) {snippetMap.value(name) = func}
@@ -565,7 +565,7 @@ object S {
   */
   def ajaxButton(func: => JsCmd, text: String): Elem =
   <input type="button" value={text}/> % 
-  ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
+  ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
     mapFunc(() => func)+"=true', dataType: 'script'});"))
     
     /**
@@ -578,7 +578,7 @@ object S {
     */
     def ajaxButton(text: String)(func: => JsCmd): Elem =
     <input type="button" value={text}/> % 
-    ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
+    ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
       mapFunc(() => func)+"=true', dataType: 'script'});"));
       
       def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
@@ -606,7 +606,7 @@ object S {
   
   addFunctionMap(key, jsonCallback _)
   
-  (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+  (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
     key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
   }
   
@@ -652,14 +652,14 @@ object S {
     */
     private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
     "jQuery.ajax( {url: '"+
-    contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+    contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
     
     def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
       val funcName = mapFunc(func)
       val (nk, id) = findOrAddId(kids)
       val rnk = if (visible) nk else nk % ("style" -> "display: none") 
       val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-      contextPath+"/"+LiftServlet.ajaxPath+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+      contextPath+"/"+LiftRules.ajaxPath+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
       nh ++ rnk
     }
     
@@ -688,7 +688,7 @@ object S {
       val funcName = mapFunc(func) 
       (<input type="text" value={value}/>) %
       ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-      ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+      ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
     }
     
     def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
@@ -696,7 +696,7 @@ object S {
     private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
       val funcName = mapFunc(func)
       (<input type="checkbox"/>) % checked(value) %
-      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
+      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
     }
     
     def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -708,10 +708,10 @@ object S {
       
       (<select>{
         opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+      }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
     }
     
-    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
+    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
     mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
     
     /**
@@ -972,6 +972,9 @@ object S {
     def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n)}
     
     def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, (<span><b>{i.field.name}</b>: {i.msg}</span>) )}}
+    
+    private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
+    private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg)}
     
     def getNotices: List[(NoticeType.Value, NodeSeq)] = 
     Can(_notice.value).toList.flatMap(_.toList)

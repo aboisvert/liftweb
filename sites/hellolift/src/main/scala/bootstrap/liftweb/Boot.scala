@@ -20,25 +20,25 @@ class Boot {
     
     // add the com.hellolift package to the list packages
     // searched for Snippets, CometWidgets, etc.
-    LiftServlet.addToPackages("com.hellolift")
+    LiftRules.addToPackages("com.hellolift")
      
     // Update the database schema to be in sync
     Schemifier.schemify(true, Log.infoF _, User, Entry)
     
     // Add a template handler to requests that come in for User related
     // function (e.g., log in, log out, etc.) are handled appropriately
-    LiftServlet.addTemplateBefore(User.templates) // LiftNote 5
+    LiftRules.addTemplateBefore(User.templates) // LiftNote 5
     
     // The locale is either calculated based on the incoming user or
     // based on the http request
-    LiftServlet.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftServlet.defaultLocaleCalculator(r))
+    LiftRules.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftRules.defaultLocaleCalculator(r))
 
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) :: 
     Menu(Loc("Request Details", "/request", "Request Details")) :: 
     User.sitemap ::: Entry.sitemap
 
-    LiftServlet.setSiteMap(SiteMap(entries:_*))
+    LiftRules.setSiteMap(SiteMap(entries:_*))
     
     // lazily load the current user on a request-by-request basis
     S.addAround(User.requestLoans)    

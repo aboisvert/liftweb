@@ -17,14 +17,14 @@ class Boot {
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     // where to search snippet
-    LiftServlet.addToPackages("${groupId}")     
+    LiftRules.addToPackages("${groupId}")     
     Schemifier.schemify(true, Log.infoF _, User)
 
-    LiftServlet.addTemplateBefore(User.templates)
+    LiftRules.addTemplateBefore(User.templates)
 
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) :: User.sitemap
-    LiftServlet.setSiteMap(SiteMap(entries:_*))
+    LiftRules.setSiteMap(SiteMap(entries:_*))
     S.addAround(User.requestLoans)
   }
 }

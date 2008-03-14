@@ -13,7 +13,7 @@ import Helpers._
 class Boot {
   def boot {
     // where to search snippet
-    LiftServlet.addToPackages("sandbox.lift.hellodarwin")
+    LiftRules.addToPackages("sandbox.lift.hellodarwin")
 
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) ::
@@ -30,7 +30,7 @@ class Boot {
       Menu(Loc("Hello3.4", "/helloForm4", "Hello Form4")) ::
       Menu(Loc("Hello4.1", "/helloFormAjax", "Hello FormAjax")) ::
       Nil
-    LiftServlet.setSiteMap(SiteMap(entries:_*))
+    LiftRules.setSiteMap(SiteMap(entries:_*))
   }
 }
 

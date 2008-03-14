@@ -45,7 +45,7 @@ object ResourceServer {
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
       val path = "/"+rw.mkString("/")
-      LiftServlet.getResource(path).map{url =>
+      LiftRules.getResource(path).map{url =>
       val uc = url.openConnection
       val mod = req.request.getHeader("if-modified-since")
       if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, Nil, 304)
@@ -69,7 +69,7 @@ object ResourceServer {
    */
   def detectContentType(path: String) : String = {
     // Configure response with content type of resource
-    var contentType = LiftServlet.context.getMimeType(path);
+    var contentType = LiftRules.context.getMimeType(path);
     // If not found, fall back to
     // FileResourceStream.getContentType() that looks into
     // system or JVM content types

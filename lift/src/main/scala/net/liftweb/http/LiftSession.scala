@@ -171,17 +171,15 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           }
         } else {
           runParams(request)
-
-          // make sure we're okay, sitemap wise
-          request.testLocation.foreach{s => S.error(s.msg); S.redirectTo(s.to)}
-
-          def idAndWhen(in: Node): Can[(String, String)] =
+          
+          def idAndWhen(in: Node): Can[(String, String)] = 
           ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
             case (x :: _, y :: _) => Full((x.text,y.value.text))
             case _ => Empty
           }
 
-          findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
+          // Process but make sure we're okay, sitemap wise
+          val response = request.testLocation openOr (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
             case Full(rawXml: NodeSeq) => {
               val xml = HeadHelper.mergeToHtmlHead(rawXml)
               val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
@@ -198,13 +196,15 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
                 S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
               }
               notices = S.getNotices
-              AnswerHolder(LiftServlet.convertResponse((realXml,
-              S.getHeaders(LiftServlet.defaultHeaders((realXml, request))),
-              S.responseCookies,
-              request)))
+              LiftRules.convertResponse((realXml,
+					   S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
+					   S.responseCookies,
+					   request))
             }
-            case _ => AnswerHolder(request.createNotFound)
-          }
+            case _ => request.createNotFound
+          })
+          // Before returning the response check for redirect and set the appropriate state.
+          AnswerHolder(checkRedirect(response))
         }
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
@@ -212,7 +212,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
       case rd: net.liftweb.http.RedirectException => handleRedirect(rd, request)
 
-      case e  => AnswerHolder(LiftServlet.logAndReturnExceptionToBrowser(request, e))
+      case e  => AnswerHolder(LiftRules.logAndReturnExceptionToBrowser(request, e))
 
     }
     }
@@ -221,31 +221,39 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   private def handleRedirect(re: RedirectException, request: RequestState): AnswerHolder = {
     notices = S.getNotices
 
-    val whereTo: String = re.func.map {
-      f =>
-      val func: String = LiftSession.this.synchronized {
-        val funcName = "fn"+randomString(20)
-        messageCallback(funcName) = S.NFuncHolder(() => {
-          try {
-            f()
-          } finally {
-            LiftSession.this.synchronized {
-              messageCallback -= funcName
+    val whereTo: String = attachRedirectFunc(re.to, re.func)
+    AnswerHolder(RedirectResponse(whereTo, S responseCookies:_*))
+  }
+  
+  private def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
+    f map { fnc => 
+        val func: String = LiftSession.this.synchronized {
+          val funcName = "fn"+randomString(20)
+          messageCallback(funcName) = S.NFuncHolder(() => {
+            try {
+              fnc()
+            } finally {
+              LiftSession.this.synchronized {
+                messageCallback -= funcName
+              }
             }
-          }
-        })
-
-        funcName
-      }
-
-      re.to + "?" + func +"=_"
-    } openOr re.to
-
-    AnswerHolder(XhtmlResponse(Group(request.fixHtml(<html><body>{request.uri} Not Found</body></html>)),
-    ResponseInfo.docType(request),
-    List("Location" -> (request.updateWithContextPath(whereTo))),
-    S.responseCookies,
-    302))
+          })
+          funcName
+        }
+        uri + "?" + func +"=_"
+    } openOr uri
+    
+  }
+  
+  private[http] def checkRedirect(resp: ResponseIt) = resp match {
+    case RedirectWithState(uri, state, cookies @ _*) => {
+      Can(state) map {
+        s => Can(s.msgs) map(_ foreach(m => S.message(m._1, m._2)))
+        notices = S.getNotices
+        RedirectResponse(attachRedirectFunc(uri, s func), cookies:_*)
+      } openOr resp
+    }
+    case _ => resp
   }
 
 
@@ -267,7 +275,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, session.path, session.requestType, Full(this))
-    val templ = LiftServlet.templateTable
+    val templ = LiftRules.templateTable
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
       val tpath = path.path
       val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
@@ -321,7 +329,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   private def findSnippetClass[C <: AnyRef](name: String): Can[Class[C]] = {
     if (name == null) Empty
-    else findClass(name, LiftServlet.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
+    else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
 
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
@@ -357,7 +365,6 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     case _ => Empty
   })
 
-  // import LiftServlet.SnippetFailures._
 
   private def processSnippet(page: String, snippetName: Can[String], attrs: MetaData, kids: NodeSeq): NodeSeq = {
     val isForm = !attrs.get("form").toList.isEmpty
@@ -368,26 +375,26 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
         case Full(inst: StatefulSnippet) =>
         if (inst.dispatch.isDefinedAt(method))
-        (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++
+        (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
         inst.dispatch(method)(kids)
-        else {LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName,
-        LiftServlet.SnippetFailures.StatefulDispatchNotMatched))); kids}
+        else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
+        LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
         case Full(inst) => {
           val ar: Array[Object] = List(Group(kids)).toArray
           // val ar: Array[Object] = Array(Group(kids))
           ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
             case Full(md: NodeSeq) => md
-            case it => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName,
-            LiftServlet.SnippetFailures.MethodNotFound))); kids
+            case it => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
+            LiftRules.SnippetFailures.MethodNotFound))); kids
           }
         }
-        case _ => LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName,
-        LiftServlet.SnippetFailures.ClassNotFound))); kids
+        case _ => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
+        LiftRules.SnippetFailures.ClassNotFound))); kids
       }
     }).openOr{
-      LiftServlet.snippetFailedFunc.foreach(_(LiftServlet.SnippetFailure(page, snippetName,
-      LiftServlet.SnippetFailures.NoNameSpecified)))
+      LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
+      LiftRules.SnippetFailures.NoNameSpecified)))
       Comment("FIX"+"ME -- no type defined for snippet")
       kids
     }
@@ -406,15 +413,15 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   /**
   * The partial function that defines how lift tags are processed for this session.  Initially composed
-  * of LiftServlet.liftTagProcessing orElse the default lift tag processing.  If you need to change the
+  * of LiftRules.liftTagProcessing orElse the default lift tag processing.  If you need to change the
   * way a particular session handles lift tags, alter this partial function.
   */
-  var liftTagProcessing: LiftServlet.LiftTagPF = _
+  var liftTagProcessing: LiftRules.LiftTagPF = _
 
   /**
   * The basic partial function that does lift tag processing
   */
-  private def _defaultLiftTagProcessing: LiftServlet.LiftTagPF = {
+  private def _defaultLiftTagProcessing: LiftRules.LiftTagPF = {
     case ("snippet", elm, metaData, kids, page) =>
     metaData.get("type") match {
       case Some(tn) => liftTagProcessing((tn.text, elm, metaData, kids, page))
@@ -431,7 +438,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     case (snippetInfo, elm, metaData, kids, page) => processSnippet(page, Full(snippetInfo) , metaData, kids)
   }
 
-  liftTagProcessing = LiftServlet.liftTagProcessing orElse _defaultLiftTagProcessing
+  liftTagProcessing = LiftRules.liftTagProcessing orElse _defaultLiftTagProcessing
 
   def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
     in.flatMap{
@@ -505,7 +512,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   if (classOf[CometActor].isAssignableFrom(c)) Full(c.asInstanceOf[Class[CometActor]]) else Empty
 
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftServlet.buildPackage("comet") ::: ("lift.app.comet" :: Nil),
+    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil),
     checkIfComet _).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
@@ -530,7 +537,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
     new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
@@ -540,7 +547,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftServlet.ajaxPath+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
+    val ajax = "jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
@@ -610,7 +617,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
         """+cometVar+"""
         function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
         function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-        function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+LiftServlet.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
+        function lift_cometEntry() {jQuery.ajax( {url: '"""+contextPath+"/"+LiftRules.cometPath+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
         jQuery(document).ready(function(){lift_handlerSuccessFunc();});
         // ]]>
         """)}</script>) :_*)
@@ -659,7 +666,7 @@ object TemplateFinder {
     val pls = places.mkString("/","/", "")
     val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
 
-    first(toTry)(v => LiftServlet.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
+    first(toTry)(v => LiftRules.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
   }
 
   private def locales: List[String] = {
@@ -675,7 +682,7 @@ object TemplateFinder {
       case Nil => ("default_template", "index")
     }
     val trans = List[String => String](n => n, n => smartCaps(n))
-    val toTry = trans.flatMap(f => (LiftServlet.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
+    val toTry = trans.flatMap(f => (LiftRules.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
 
     first(toTry) {
       clsName =>

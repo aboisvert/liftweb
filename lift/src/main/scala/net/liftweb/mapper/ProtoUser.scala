@@ -189,7 +189,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
   MenuItem(S.??("edit.profile"), Edit, true) ::
   MenuItem("", ValidateUser, false) :: Nil
     
-  def templates: LiftServlet.TemplatePf = {
+  def templates: LiftRules.TemplatePf = {
     case RequestMatcher(_, ParsePath(BasePath :: (w @ SignUp) :: _,
 				     _, _), _, _) 
     if testLoggedIn(w) => () => signup

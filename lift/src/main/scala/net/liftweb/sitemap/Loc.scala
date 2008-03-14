@@ -14,11 +14,11 @@ import Helpers._
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
     
-  def testAccess: Can[RedirectWithMessage] = {
-    first(stuff)(s =>
+  def testAccess: Can[ResponseIt] = {
+    first(stuff)(s => 
      s match {
-       case Loc.If(test, msg) if (!test()) => Full(msg.msg())
-       case Loc.Unless(test, msg) if test() => Full(msg.msg())
+       case Loc.If(test, msg) if (!test()) => Can(msg.msg())
+       case Loc.Unless(test, msg) if test() => Can(msg.msg())
        case _ => Empty
      }
     ) or _menu.testParentAccess
@@ -102,7 +102,7 @@ object Loc {
       ret
     }
   }
-  case class FailMsg(msg: () => RedirectWithMessage)
+  case class FailMsg(msg: () => ResponseIt)
   
   trait LocInfoVal[T] {
     def value: T
@@ -118,15 +118,14 @@ object Loc {
   implicit def strToLinkText(in: => String): LinkText = LinkText(() => in)
   implicit def strToLink(in: String): Link = Link(in, false, alwaysTrue _, retString(in) _)
   implicit def strPairToLink(in: (String, Boolean)): Link = Link(in._1, in._2, alwaysTrue _, retString(in._1) _)
-  implicit def strToFailMsg(in: String): FailMsg = FailMsg(f(RedirectWithMessage("/", in)))
-  implicit def redirectToFailMsg(in: RedirectWithMessage): FailMsg = FailMsg(f(in))
+  implicit def strToFailMsg(in: String): FailMsg = FailMsg(f(RedirectWithState("/", RedirectState(Empty, in -> NoticeType.Error))))
+  implicit def redirectToFailMsg(in: RedirectResponse): FailMsg = FailMsg(f(in))
   
   //implicit def strToFofStr(in: String): () => String = f(in)
   def f(in: String): () => String = () => in
-  def f(in: RedirectWithMessage): () => RedirectWithMessage = () => in
+  def f(in: RedirectResponse): () => RedirectResponse = () => in
 }
 
-case class RedirectWithMessage(to: String, msg: String)
 
 case class CompleteMenu(lines: List[MenuLine]) {
   lazy val breadCrumbs: List[MenuItem] = lines.flatMap(_.breadCrumbs)

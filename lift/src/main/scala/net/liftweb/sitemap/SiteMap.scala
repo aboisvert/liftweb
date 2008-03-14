@@ -27,5 +27,5 @@ trait HasKids {
   def buildUpperLines: List[MenuLine] = Nil
   def isRoot_? = false
   def buildAboveLine(path: Menu): List[MenuLine] = Nil
-  private[sitemap] def testAccess: Can[RedirectWithMessage] = Empty  
+  private[sitemap] def testAccess: Can[ResponseIt] = Empty  
 }

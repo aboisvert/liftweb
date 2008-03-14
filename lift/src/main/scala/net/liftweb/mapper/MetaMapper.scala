@@ -12,7 +12,7 @@ import java.sql.{ResultSet, Types, PreparedStatement, Statement}
 import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Full, Failure}
-import net.liftweb.http.{LiftServlet, S}
+import net.liftweb.http.{LiftRules, S}
 import java.util.Date
 import net.liftweb.http.js._
 
@@ -1073,7 +1073,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   
   override def afterSchemifier {
     if (crudSnippets_?) {
-      LiftServlet.addSnippetAfter(crudSnippets)
+      LiftRules.addSnippetAfter(crudSnippets)
     }
   }  
   
@@ -1094,7 +1094,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
    *
    * (No, there's no D in CRUD.)
    */
-  def crudSnippets: LiftServlet.SnippetPf = {
+  def crudSnippets: LiftRules.SnippetPf = {
     val Name = _dbTableName
     
     {

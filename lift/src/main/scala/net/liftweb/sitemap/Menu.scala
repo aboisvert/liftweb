@@ -25,8 +25,8 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
     kids.foreach(_.validate)
   }
   
-  private[sitemap] def testParentAccess: Can[RedirectWithMessage] = _parent.flatMap(_.testAccess)
-  override private[sitemap] def testAccess: Can[RedirectWithMessage] = page.testAccess
+  private[sitemap] def testParentAccess: Can[ResponseIt] = _parent.flatMap(_.testAccess)
+  override private[sitemap] def testAccess: Can[ResponseIt] = page.testAccess
   
   override def isRoot_? = page.isRoot_?
       

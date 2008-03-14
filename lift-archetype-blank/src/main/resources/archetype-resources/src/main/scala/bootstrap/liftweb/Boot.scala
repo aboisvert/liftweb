@@ -13,11 +13,11 @@ import Helpers._
 class Boot {
   def boot {
     // where to search snippet
-    LiftServlet.addToPackages("${groupId}")     
+    LiftRules.addToPackages("${groupId}")     
 
     // Build SiteMap
     val entries = Menu(Loc("Home", "/", "Home")) :: Nil 
-    LiftServlet.setSiteMap(SiteMap(entries:_*))
+    LiftRules.setSiteMap(SiteMap(entries:_*))
   }
 }
 
