@@ -314,7 +314,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
     
     def loop {
       react {
-        case Ping() => 
+        case Ping => 
         val now = System.currentTimeMillis
         try {
         val name = metaOwner.nextTransitionAt.dbColumnName
@@ -334,7 +334,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
       }
     }
     
-    case class Ping
+    case object Ping
   }
     
     private class TimedEventHandler(val metaOwner: Meta) extends Actor {
@@ -354,7 +354,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         }
       }
       
-      case class Ping
+      case object Ping
     }    
   
   val timedEventManager: Actor = {

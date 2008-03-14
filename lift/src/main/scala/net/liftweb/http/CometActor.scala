@@ -334,7 +334,6 @@ case class AskQuestion(what: Any, who: CometActor) extends CometMessage
 case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
 case class Listen(when: Long) extends CometMessage
 case object Unlisten extends CometMessage
-// case class ActionMessage(what: S.AFuncHolder, value: List[String], request: RequestState) extends CometMessage
 case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
 

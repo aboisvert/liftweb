@@ -21,11 +21,6 @@ import Helpers._
  * </ul>
  */
 object Schemifier {
-  /*
-   case class SuperConnection(connection: Connection) {
-   val driverType = calcDriver(connection.getMetaData.getDatabaseProductName)
-   }
-   */
   implicit def superToRegConnection(sc: SuperConnection): Connection = sc.connection
 
   def schemify(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): List[String] = schemify(performWrite, logFunc, DefaultConnectionIdentifier, stables :_*)

@@ -882,7 +882,6 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
 }
 
 abstract class QueryParam[O<:Mapper[O]]
-//case class By[O<:Mapper[O], T](field: MappedField[T,O], value: T) extends QueryParam[O]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
 case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
@@ -890,7 +889,6 @@ case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
 
-//case class NotBy[O<:Mapper[O], T](field: MappedField[T, O], value: T) extends QueryParam[O]
 object By {
   import OprEnum._
   

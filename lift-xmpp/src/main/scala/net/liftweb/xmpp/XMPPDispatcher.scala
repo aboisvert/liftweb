@@ -162,7 +162,7 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
 }
 case class AddListener(actor: Actor)
 case class RemoveListener(actor: Actor)
-case class Start()
+case object Start
 
 
 /**
@@ -184,7 +184,7 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
   def act = loop
   def loop {
     react {
-      case Start() => {
+      case Start => {
         xmpp ! AddListener(this)
         xmpp ! SetPresence(new Presence(Presence.Type.available))
         loop

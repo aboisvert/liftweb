@@ -75,19 +75,6 @@ abstract class JxNodeBase extends Node with JxBase {
   
 }
 
-/*
-case class JxExp(in: JsExp) extends Node with JxBase {
-  def child = Nil
-  
-  def appendToParent(parentName: String): JsCmd = {
-    val ran = "v"+randomString(10)
-    JsCrVar(ran, in) ++
-    JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+".cloneNode(true));} else {"+
-    parentName+".appendChild(document.createTextNode("+ran+"));}")
-  }
-}*/
-
-
 case class JxAttr(in: JsCmd) extends Node with JxBase {
   def child = Nil
   

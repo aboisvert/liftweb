@@ -53,8 +53,9 @@ class Wiki {
 
       <span><a href={uriFor("all")}>Show All Pages</a><br/>{
   if (edit) editEntry(entry, isNew, pageName)
-        else TextileParser.toHtml(entry.entry, Full((a: String) => a)) ++
-             <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
+        else TextileParser.toHtml(entry.entry, 
+				  Some(TextileParser.DefaultRewriter("/wiki"))) ++
+        <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
       }</span>
     }
   }
@@ -81,7 +82,8 @@ class Wiki {
     def view = BindChoice(!toEdit, () => bind("view",
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child,
       TheBindParam("name", Text(pageName)),
-      TheBindParam("value", (TextileParser.toHtml(entry.entry, Full(a => a)) ++
+      TheBindParam("value", (TextileParser.toHtml(entry.entry,
+						  Some(TextileParser.DefaultRewriter("/wiki"))) ++
       <br/><a href={uriFor(pageName+"/edit")}>Edit</a>))))
 
     (showAll :: edit :: view :: Nil).find(_.show == true).map(_.bind()) match {

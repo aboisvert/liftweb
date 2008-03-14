@@ -514,7 +514,7 @@ object LiftRules {
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
 
   var ending = false
-  private case class Never
+  private case object Never
 
   private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
     case Nil => last

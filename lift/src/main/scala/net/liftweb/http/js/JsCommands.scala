@@ -134,11 +134,6 @@ object JE {
     
   }
   
-  /*
-  case class JsArray[T <% JsExp](in: T*) extends JsExp {
-    def toJsCmd = in.map(_.toJsCmd).mkString("[",", ","]\n")
-  }*/
-  
   case class ValById(id: String) extends JsExp {
     def toJsCmd = "document.getElementById("+id.encJs+").value"
   }

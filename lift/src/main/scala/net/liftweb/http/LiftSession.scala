@@ -179,7 +179,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           }
 
           // Process but make sure we're okay, sitemap wise
-          val response = request.testLocation openOr (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri, xml)) match {
+          val response = request.testLocation openOr (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
             case Full(rawXml: NodeSeq) => {
               val xml = HeadHelper.mergeToHtmlHead(rawXml)
               val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {

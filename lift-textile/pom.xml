@@ -14,11 +14,5 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
-    <!-- need net.liftweb.util -->
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lift-webkit</artifactId>
-      <version>${project.version}</version>
-    </dependency>
   </dependencies>
 </project>

@@ -16,10 +16,6 @@ import org.apache.log4j.xml._
 * A thin wrapper around log4j
 */
 object Log extends LiftLogger {
-  // def logger(clz: Class): LiftLogger = new Log4JLogger(LogBoot.loggerByClass(clz))
-  //def logger(name: String): LiftLogger = new Log4JLogger(LogBoot.loggerByName(name))
-  //private val _rootLogger = Lazy(logger("lift"))
-  //val rootLogger: LiftLogger = _rootLogger.get
   lazy val rootLogger: LiftLogger = LogBoot.loggerByName("lift")
   
   override def trace(msg: => AnyRef) = rootLogger.trace(msg)
