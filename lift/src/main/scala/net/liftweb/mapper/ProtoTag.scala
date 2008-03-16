@@ -7,8 +7,8 @@ trait MetaProtoTag[ModelType <: ProtoTag[ModelType], MyType <: ModelType] extend
   override def dbTableName: String //  = "tags"
   def cacheSize: Int
   
-  private val idCache = new LRU[Long, ModelType](cacheSize, Empty)
-  private val tagCache = new LRU[String, ModelType](cacheSize, Empty)
+  private val idCache = new LRU[Long, ModelType](cacheSize)
+  private val tagCache = new LRU[String, ModelType](cacheSize)
   
   def findOrCreate(ntag: String): ModelType = synchronized {
     val tag = capify(ntag)

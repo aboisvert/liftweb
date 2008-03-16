@@ -16,6 +16,9 @@ import org.apache.commons.collections.map.AbstractLinkedMap.LinkEntry
  * @param loadFactor the Load Factor to construct our LRU with.
  */
 class LRU[KeyType, ValueType](size: Int, loadFactor: Can[Float]) {
+  // Alternate constructor that gives you no load factor.
+  def this(size: Int) = this(size, Empty)
+
   private val map = loadFactor match {
     case Full(lf) => new LRUMap(size, lf)
     case Empty => new LRUMap(size)
