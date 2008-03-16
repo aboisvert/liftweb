@@ -24,6 +24,20 @@ package net.liftweb.util
 class KeyedCache[K, T](size: Int, loadFactor: Can[Float], cons: K => Can[T]) {
   val cache = new LRU[K, T](size, loadFactor)
 
+  /**
+   * Evict a value from the cache.
+   */
+  def remove(key: K) = cache.remove(key)
+
+  /**
+   * Update the cache yourself with KeyedCache(1) = "hello"
+   */
+  def update(key: K, value: T) = cache.update(key, value)
+
+  /**
+   * If the cache contains a value mapped to {@code key} then return it,
+   * otherwise run cons and add that value to the cache and return it.
+   */
   def apply(key: K): Can[T] = if (cache.contains(key)) {
     Full(cache(key))
   } else {

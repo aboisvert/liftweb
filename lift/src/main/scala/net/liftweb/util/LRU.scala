@@ -28,6 +28,8 @@ class LRU[KeyType, ValueType](size: Int, loadFactor: Can[Float]) {
     map.put(k, v)
   }
 
+  def remove(k: KeyType) = map.remove(k)
+
   def apply(k: KeyType): ValueType = map.get(k).asInstanceOf[ValueType]
   def contains(k: KeyType): Boolean = map.containsKey(k)
 }
