@@ -163,8 +163,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           runParams(request)
           try {
             sessionDispatch(toMatch)(request) match {
-              case Full(r) => AnswerHolder(r)
-              case _ => AnswerHolder(request.createNotFound)
+              case Full(r) => AnswerHolder(checkRedirect(r))
+              case _ => AnswerHolder(checkRedirect(request.createNotFound))
             }
           } finally {
             notices = S.getNotices

@@ -154,9 +154,9 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
           try {
             val f = LiftRules.dispatchTable(request)(toMatch)
             f(requestState) match {
-              case Full(v) => LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) )
-              case Empty => requestState.createNotFound.toResponse
-              case f: Failure => requestState.createNotFound(f).toResponse
+              case Full(v) => LiftRules.convertResponse( (sessionActor.checkRedirect(v), Nil, S.responseCookies, requestState) )
+              case Empty => sessionActor.checkRedirect(requestState.createNotFound).toResponse
+              case f: Failure => sessionActor.checkRedirect(requestState.createNotFound(f)).toResponse
             }
           } finally {
             sessionActor.notices = S.getNotices

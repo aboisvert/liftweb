@@ -62,6 +62,9 @@ object RedirectState {
 }
 case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)
 
+object MessageState {
+  implicit def tuple2MessageState(msg : (String, NoticeType.Value)) = MessageState(msg)
+}
 case class MessageState(override val msgs : (String, NoticeType.Value)*) extends RedirectState(Empty, msgs:_*)
 
 /**
