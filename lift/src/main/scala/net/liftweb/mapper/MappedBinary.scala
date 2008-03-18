@@ -30,7 +30,7 @@ class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[By
   //  def getTargetSQLType(field : String) = Types.BINARY
   def targetSQLType = Types.BINARY
   
-  def defaultValue = null
+  def defaultValue: Array[Byte] = null
   override def writePermission_? = true
   override def readPermission_? = true
   
@@ -174,7 +174,7 @@ class MappedFakeClob[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   //  def getTargetSQLType(field : String) = Types.BINARY
   def targetSQLType = Types.BINARY
   
-  def defaultValue = null
+  def defaultValue: String = null
   override def writePermission_? = true
   override def readPermission_? = true
   

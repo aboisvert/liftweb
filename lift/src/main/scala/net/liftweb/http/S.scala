@@ -765,6 +765,7 @@ object S {
     
     def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
     def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
+    def ajaxForm(body: NodeSeq, onSubmit: JsCmd) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
     
     /**
     * Create a select box based on the list with a default value and the function to be executed on
