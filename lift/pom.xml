@@ -9,6 +9,9 @@
   <packaging>jar</packaging>
   <name>Lift WebKit</name>
   <description>Tool Kit to create webapp with lift framework</description>
+  <properties>
+    <slf4j.version>1.5.0</slf4j.version>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.scala-lang</groupId>
@@ -17,8 +20,8 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.5.0</version>
-      <scope>provided</scope>
+      <version>${slf4j.version}</version>
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>log4j</groupId>
@@ -41,8 +44,7 @@
       <groupId>postgresql</groupId>
       <artifactId>postgresql</artifactId>
       <version>8.2-507.jdbc3</version>
-      <scope>test</scope>
-      <!-- <optional>true</optional> -->
+      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
@@ -102,6 +104,12 @@
       <groupId>org.mortbay.jetty</groupId>
       <artifactId>jetty</artifactId>
       <version>[6.1.6,)</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
       <scope>test</scope>
     </dependency>
     <dependency>
