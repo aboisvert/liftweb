@@ -195,7 +195,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
               this.synchronized {
                 S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
               }
-              notices = S.getNotices
+              notices = Nil // S.getNotices
               LiftRules.convertResponse((realXml,
 					   S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
 					   S.responseCookies,
