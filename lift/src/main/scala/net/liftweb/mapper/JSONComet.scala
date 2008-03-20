@@ -35,7 +35,7 @@ trait JsonComet {
       case JsonCmd(FieldId, target, value, _) =>
       (for (key <- keyStore.recover(meta, target);
       obj <- meta.find(key);
-      cannedNewValue <- Can(cvt, value);
+      cannedNewValue <- Can(cvt)(value);
       newValue <- cannedNewValue
       ) yield {
         val record = meta.getActualField(obj, field)(newValue)

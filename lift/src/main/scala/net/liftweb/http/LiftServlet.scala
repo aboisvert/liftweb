@@ -851,7 +851,7 @@ class LiftFilter extends Filter
     context = config.getServletContext
     
     LiftRules.setContext(context)       
-    bootLift(Can(config.getInitParameter("bootloader")))
+    bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
     
     actualServlet = new LiftServlet(context)
     actualServlet.init

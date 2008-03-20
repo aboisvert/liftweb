@@ -252,13 +252,20 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
   
   private[http] def checkRedirect(resp: ResponseIt): ResponseIt = resp match {
-    case RedirectWithState(uri, state, cookies @ _*) => {
+    case RedirectWithState(uri, state, cookies @ _*) => 
+    state.msgs.foreach(m => S.message(m._1, m._2))
+    notices = S.getNotices
+    RedirectResponse(attachRedirectFunc(uri, state.func), cookies:_*)
+    /*
+    {
       Can(state) map {
         s => Can(s.msgs) map(_ foreach(m => S.message(m._1, m._2)))
         notices = S.getNotices
         RedirectResponse(attachRedirectFunc(uri, s func), cookies:_*)
       } openOr resp
     }
+    */
+    
     case _ => resp
   }
 
@@ -654,7 +661,7 @@ trait InsecureLiftView
 * the incoming request to an appropriate method
 */
 trait LiftView {
-  implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can(in)
+  implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can.legacyNullTest(in)
   def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
 }
 

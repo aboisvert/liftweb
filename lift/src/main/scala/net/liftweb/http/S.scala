@@ -109,7 +109,7 @@ object S {
    * @return a List of any Cookies that have been set for this Response.
    */
   def receivedCookies: List[Cookie] =
-    for (rc <- Can(_responseCookies.value).toList; c <- rc.inCookies) 
+    for (rc <- Can.legacyNullTest(_responseCookies.value).toList; c <- rc.inCookies) 
       yield c.clone().asInstanceOf[Cookie]
   
   /**
@@ -119,11 +119,11 @@ object S {
    * @return a Can of the cookie
    */
   def findCookie(name: String): Can[Cookie] = 
-  Can(_responseCookies.value).flatMap(
+  Can.legacyNullTest(_responseCookies.value).flatMap(
     rc => Can(rc.inCookies.filter(_.getName == name)).
               map(_.clone().asInstanceOf[Cookie]))
   
-  def responseCookies: List[Cookie] = Can(_responseCookies.value).
+  def responseCookies: List[Cookie] = Can.legacyNullTest(_responseCookies.value).
     toList.flatMap(_.outCookies)
   
   /**
@@ -133,7 +133,7 @@ object S {
    * a MaxAge of 0.
    */
   def addCookie(cookie: Cookie) {
-    Can(_responseCookies.value).foreach(rc =>
+    Can.legacyNullTest(_responseCookies.value).foreach(rc =>
       _responseCookies.set(rc.add(cookie))
     )
   }
@@ -143,7 +143,7 @@ object S {
    * @param cookie the Cookie to delete
    */
   def deleteCookie(cookie: Cookie) {
-    Can(_responseCookies.value).foreach(rc => 
+    Can.legacyNullTest(_responseCookies.value).foreach(rc => 
       _responseCookies.set(rc.delete(cookie))
     )
   }
@@ -153,7 +153,7 @@ object S {
    * @param name the name of the cookie to delete
    */
   def deleteCookie(name: String) {
-    Can(_responseCookies.value).foreach(rc => 
+    Can.legacyNullTest(_responseCookies.value).foreach(rc => 
       _responseCookies.set(rc.delete(name))
     )
   }
@@ -235,7 +235,7 @@ object S {
   /**
   * Get the resource bundle for the current locale
   */
-  def resourceBundle: Can[ResourceBundle] = Can(_resBundle.value).openOr {
+  def resourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_resBundle.value).openOr {
     val rb = tryo(ResourceBundle.getBundle(LiftRules.resourceName, locale))
     _resBundle.set(rb)
     rb
@@ -244,7 +244,7 @@ object S {
   /**
   * Get the lift core resource bundle for the current locale
   */
-  def liftCoreResourceBundle: Can[ResourceBundle] = Can(_liftCoreResBundle.value).openOr {
+  def liftCoreResourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_liftCoreResBundle.value).openOr {
     val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
     _liftCoreResBundle.set(rb)
     rb
@@ -328,19 +328,19 @@ object S {
   /**
   * The current LiftSession
   */
-  def session: Can[LiftSession] = Can(_sessionInfo.value)
+  def session: Can[LiftSession] = Can.legacyNullTest(_sessionInfo.value)
   
   /**
   * Log a query for the given request.  The query log can be tested to see
   * if queries for the particular page rendering took too long
   */
-  def logQuery(query: String, time: Long) = Can(_queryLog.value).foreach(_ += (query, time))
+  def logQuery(query: String, time: Long) = Can.legacyNullTest(_queryLog.value).foreach(_ += (query, time))
   
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
-  Can(_stateSnip.value).flatMap(_.get(cls))
+  Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
   
   private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = 
-  Can(_stateSnip.value).foreach(_(cls) = inst)
+  Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
   
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
@@ -366,7 +366,7 @@ object S {
   /**
   * Get a list of the logged queries
   */
-  def queryLog: List[(String, Long)] = Can(_queryLog.value).map(_.toList).openOr(Nil)
+  def queryLog: List[(String, Long)] = Can.legacyNullTest(_queryLog.value).map(_.toList).openOr(Nil)
   
   private def wrapQuery[B](f:() => B): B = {
     _queryLog.doWith(new ListBuffer) {
@@ -381,14 +381,14 @@ object S {
   }
   
   def setHeader(name: String, value: String) {
-    Can(_responseHeaders.value).foreach(
+    Can.legacyNullTest(_responseHeaders.value).foreach(
     rh =>
     rh.headers = rh.headers + name -> value
     )
   }
   
   def getHeaders(in: List[(String, String)]): List[(String, String)] = {
-    Can(_responseHeaders.value).map(
+    Can.legacyNullTest(_responseHeaders.value).map(
     rh =>
     rh.headers.elements.toList ::: 
     in.filter{case (n, v) => !rh.headers.contains(n)}
@@ -396,14 +396,14 @@ object S {
   }
   
   def setDocType(what: Can[String]) {
-    Can(_responseHeaders.value).foreach(
+    Can.legacyNullTest(_responseHeaders.value).foreach(
     rh =>
     rh.docType = what
     )
   }
   
   def getDocType: (Boolean, Can[String]) =
-  Can(_responseHeaders.value).map(
+  Can.legacyNullTest(_responseHeaders.value).map(
   rh => (rh.overrodeDocType, rh.docType)
   ).openOr( (false, Empty) )
   
@@ -431,8 +431,8 @@ object S {
    * @return a List[Cookie] even if the underlying request's Cookies are null.
    */
   private def getCookies(request: HttpServletRequest): List[Cookie] =
-  for (r <- Can(request).toList;
-  ca <- Can(r.getCookies).toList;
+  for (r <- Can.legacyNullTest(request).toList;
+  ca <- Can.legacyNullTest(r.getCookies).toList;
   c <- ca) yield c
   /*
   Can(request).toList.flatMa
@@ -458,10 +458,10 @@ object S {
     )
   }
   
-  def referer: Can[String] = request.flatMap(r => Can(r.request.getHeader("Referer")))
+  def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
   
   private[http] object requestState {
-    private def rv: Can[HashMap[String, Any]] = Can(_requestVar.value) //  match {case null => Empty case v => Full(v)}
+    private def rv: Can[HashMap[String, Any]] = Can.legacyNullTest(_requestVar.value) //  match {case null => Empty case v => Full(v)}
     
     def apply[T](name: String): Can[T] = rv.flatMap(r => Can(r.get(name).asInstanceOf[Option[T]]))
     
@@ -517,7 +517,7 @@ object S {
   /**
   * The current servlet request
   */
-  def servletRequest: Can[HttpServletRequest] = Can(_servletRequest.value)
+  def servletRequest: Can[HttpServletRequest] = Can.legacyNullTest(_servletRequest.value)
   
   /**
   * The host that the request was made on
@@ -532,7 +532,7 @@ object S {
   /**
   * Get a map of the name/functions
   */
-  def functionMap: Map[String, AFuncHolder] = Can(_functionMap.value).map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
+  def functionMap: Map[String, AFuncHolder] = Can.legacyNullTest(_functionMap.value).map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
   
   /**
   * The current context path
@@ -978,7 +978,7 @@ object S {
     private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg)}
     
     def getNotices: List[(NoticeType.Value, NodeSeq)] = 
-    Can(_notice.value).toList.flatMap(_.toList)
+    Can.legacyNullTest(_notice.value).toList.flatMap(_.toList)
     
     def errors: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(_._2))
     def notices: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(_._2))

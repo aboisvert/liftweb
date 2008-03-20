@@ -58,7 +58,9 @@ case class RedirectResponse(uri: String, cookies: Cookie*) extends ResponseIt {
 case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
 
 object RedirectState {
-  implicit def func2Can(f: () => Unit) = Can(f)
+  //implicit def func2Can(f: () => Unit) = Can(f)
+  
+  def apply(f: () => Unit, msgs: (String, NoticeType.Value)*): RedirectState = new RedirectState(Full(f), msgs :_*)
 }
 case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)
 
