@@ -71,7 +71,7 @@ object Can {
   implicit def can2Option[T](in: Can[T]): Option[T] = in.toOption
   
   /**
-  * This implicit def allows to use any object as a Can, permitting null values to be handled as Empty
+  * This def allows to use any object as a Can, permitting null values to be handled as Empty
   * @returns Full(in) if in is not null Empty otherwise
   */
   def legacyNullTest[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
