@@ -1,7 +1,7 @@
 package net.liftweb.sitemap
 
 /*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
+ (c) 2007-2008 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
@@ -25,8 +25,12 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
     kids.foreach(_.validate)
   }
   
-  private[sitemap] def testParentAccess: Can[ResponseIt] = _parent.flatMap(_.testAccess)
-  override private[sitemap] def testAccess: Can[ResponseIt] = page.testAccess
+  private[sitemap] def testParentAccess: (Boolean, Can[ResponseIt]) = _parent match {
+    case Full(p) => p.testAccess
+    case _ => (true, Empty)
+  }
+  
+  override private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = page.testAccess
   
   override def isRoot_? = page.isRoot_?
       

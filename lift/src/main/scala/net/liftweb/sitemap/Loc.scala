@@ -14,7 +14,27 @@ import Helpers._
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
     
-  def testAccess: Can[ResponseIt] = {
+  def testAccess: (Boolean, Can[ResponseIt]) = {
+    def testStuff(what: List[Loc.LocStuff]): (Boolean, Can[ResponseIt]) = what match {
+      case Nil => (true, Empty)
+      
+      case Loc.If(test, msg) :: xs =>
+      if (!test()) (false, Full(msg.msg()))
+      else testStuff(xs)
+      
+      case Loc.Unless(test, msg) :: xs =>
+      if (test()) (false, Full(msg.msg()))
+      else testStuff(xs)
+      
+      case x :: xs => testStuff(xs)
+    }
+    
+    testStuff(stuff) match {
+      case (true, _) => _menu.testParentAccess
+      case x => x
+    }
+    
+    /*
     first(stuff)(s => 
      s match {
        case Loc.If(test, msg) if (!test()) => Can(msg.msg())
@@ -22,6 +42,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
        case _ => Empty
      }
     ) or _menu.testParentAccess
+    */
   }
   
   private def findTitle(lst: List[Loc.LocStuff]): Can[Loc.Title] = lst match {
@@ -69,7 +90,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
   
   private[sitemap] def buildItem(current: Boolean, path: Boolean) =
-    if (hidden || testAccess.isDefined) Empty
+    if (hidden || !testAccess._1) Empty
     else link.create(Nil).map(t => MenuItem(text.text(),t , current, path, stuff.flatMap{case v: Loc.LocInfo[Any] => v() case _ =>  Empty}))
   
   private def hidden = stuff.contains(Loc.Hidden)

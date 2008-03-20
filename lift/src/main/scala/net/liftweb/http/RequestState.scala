@@ -1,7 +1,7 @@
 package net.liftweb.http
 
 /*                                                *\
-(c) 2007 WorldWide Conferencing, LLC
+(c) 2007-2008 WorldWide Conferencing, LLC
 Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
@@ -161,7 +161,7 @@ object RequestState {
   
   private[liftweb] def defaultCreateNotFound(in: RequestState) = 
     XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
-      ResponseInfo.docType(in), Nil, Nil, 404)
+      ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
   
   def unapply(in: RequestState) = Some((in.path, in.requestType, in.contextPath, in.contentType)) 
 }
@@ -222,9 +222,14 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
   lazy val location = LiftRules.siteMap.flatMap(_.findLoc(this, request))
   
-  def testLocation: Can[ResponseIt] = {
-    if (LiftRules.siteMap.isEmpty) Empty
-    else location.map(_.testAccess) openOr Can(LiftRules.uriNotFound(RequestMatcher(this, path, requestType, S.session), Empty))
+  def testLocation: (Boolean, Can[ResponseIt]) = {
+    if (LiftRules.siteMap.isEmpty) (true, Empty) 
+    else location.map(_.testAccess) match {
+      case Full((true, _)) => (true, Empty)
+      case Full((_, Full(resp))) => (false, Full(resp))
+      case _ => (false, Empty)
+      // openOr (false, Can(LiftRules.uriNotFound(RequestMatcher(this, path, requestType, S.session), Empty)))
+    }
   }
   
   

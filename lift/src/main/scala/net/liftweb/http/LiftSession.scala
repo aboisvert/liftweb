@@ -154,17 +154,17 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     cleanUpSession()
   }
 
-  private[http] def processRequest(request: RequestState, httpRequest: HttpServletRequest): AnswerHolder = {
-    S.init(request, httpRequest, notices, this) {
+  private[http] def processRequest(request: RequestState): Can[ResponseIt] = {
+    S.init(request, request.request, notices, this) {
     try {
         val sessionDispatch = S.highLevelSessionDispatcher
-        val toMatch = RequestMatcher(request, request.path, RequestType(httpRequest), Full(this))
+        val toMatch = RequestMatcher(request, request.path, RequestType(request.request), Full(this))
         if (sessionDispatch.isDefinedAt(toMatch)) {
           runParams(request)
           try {
             sessionDispatch(toMatch)(request) match {
-              case Full(r) => AnswerHolder(checkRedirect(r))
-              case _ => AnswerHolder(checkRedirect(request.createNotFound))
+              case Full(r) => Full(checkRedirect(r))
+              case _ => LiftRules.notFoundOrIgnore(request, Full(this)) // AnswerHolder(checkRedirect(request.createNotFound))
             }
           } finally {
             notices = S.getNotices
@@ -179,7 +179,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           }
 
           // Process but make sure we're okay, sitemap wise
-          val response = request.testLocation openOr (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
+          val response: Can[ResponseIt] = request.testLocation match {
+            case (true, _) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
             case Full(rawXml: NodeSeq) => {
               val xml = HeadHelper.mergeToHtmlHead(rawXml)
               val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
@@ -196,33 +197,38 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
                 S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
               }
               notices = Nil // S.getNotices
-              LiftRules.convertResponse((realXml,
+              Full(LiftRules.convertResponse((realXml,
 					   S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
 					   S.responseCookies,
-					   request))
+					   request)))
             }
-            case _ => request.createNotFound
+            case _ =>
+            if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
           })
+          
+          case (false, msg) => msg
+          }
+     
           // Before returning the response check for redirect and set the appropriate state.
-          AnswerHolder(checkRedirect(response))
+          response.map(checkRedirect) // AnswerHolder(checkRedirect(response))
         }
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
-      handleRedirect(ite.getCause.asInstanceOf[RedirectException], request)
+      Full(handleRedirect(ite.getCause.asInstanceOf[RedirectException], request))
 
-      case rd: net.liftweb.http.RedirectException => handleRedirect(rd, request)
+      case rd: net.liftweb.http.RedirectException => Full(handleRedirect(rd, request))
 
-      case e  => AnswerHolder(LiftRules.logAndReturnExceptionToBrowser(request, e))
+      case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
 
     }
     }
   }
 
-  private def handleRedirect(re: RedirectException, request: RequestState): AnswerHolder = {
+  private def handleRedirect(re: RedirectException, request: RequestState): ResponseIt = {
     notices = S.getNotices
 
     val whereTo: String = attachRedirectFunc(re.to, re.func)
-    AnswerHolder(RedirectResponse(whereTo, S responseCookies:_*))
+    RedirectResponse(whereTo, S responseCookies:_*)
   }
   
   private def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
@@ -245,7 +251,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     
   }
   
-  private[http] def checkRedirect(resp: ResponseIt) = resp match {
+  private[http] def checkRedirect(resp: ResponseIt): ResponseIt = resp match {
     case RedirectWithState(uri, state, cookies @ _*) => {
       Can(state) map {
         s => Can(s.msgs) map(_ foreach(m => S.message(m._1, m._2)))
