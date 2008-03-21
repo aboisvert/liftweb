@@ -45,7 +45,6 @@ import java.util.{Locale, TimeZone, ResourceBundle}
 *
 */
 private[http] class LiftServlet(val getServletContext: ServletContext) extends AnyRef /* HttpServlet */ {
-  private val actorNameConst = "the_actor"
   private var requestCnt = 0
   
   def destroy = {
@@ -89,12 +88,11 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
   }
   
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
-    val ret = session.getValue(actorNameConst) match {
+    val ret = session.getAttribute(LiftRules.sessionNameConst) match {
       case r: LiftSession => r
       case _ =>
       val ret = LiftSession(session, request.contextPath)
-      // ret.start
-      session.putValue(actorNameConst, ret)
+      session.setAttribute(LiftRules.sessionNameConst, ret)
       ret
     }
     ret.breakOutComet()
@@ -314,6 +312,8 @@ object LiftRules {
   val SessionDispatchTableName = "$lift$__DispatchTable__"
   val SessionRewriteTableName = "$lift$__RewriteTable__"
   val SessionTemplateTableName = "$lift$__TemplateTable__"
+  
+  val sessionNameConst = "$lift$__theLiftSession__"
   
   type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]

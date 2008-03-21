@@ -36,23 +36,40 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   import TemplateFinder._
 
   private var running_? = false
+  
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
+  
   private[http] var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
   //  private var _state: Map[String, String] = Map.empty
-  private val asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
-  private val asyncById = new HashMap[String, CometActor]()
+  
+  private var asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
+  
+  private var asyncById = new HashMap[String, CometActor]()
 
   val uniqueId = "LiftSession_"+randomString(20)
 
-  var httpSession: HttpSession = _
+  @transient
+  private[http] var httpSession: HttpSession = _
 
   def sessionDidActivate(se: HttpSessionEvent) = {
     running_? = true
     httpSession = se.getSession
+    messageCallback = new HashMap
+    notices = Nil
+    asyncComponents = new HashMap
+    asyncById = new HashMap
 
   }
   def sessionWillPassivate(se: HttpSessionEvent) = {
+    
+    httpSession.removeAttribute(LiftRules.sessionNameConst)
+    
+    
     httpSession = null
+    messageCallback = new HashMap
+    notices = Nil
+    asyncComponents = new HashMap
+    asyncById = new HashMap
   }
 
   def setSession(session: HttpSession) = {
