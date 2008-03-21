@@ -887,12 +887,6 @@ class LiftFilter extends Filter
     }
   }
   
-  /*
-  private def lift(req: HttpServletRequest, res: HttpServletResponse, session: RequestState): Unit =
-  {
-  actualServlet.service(req, res, session)
-  }
-  */
   
   //This function tells you wether a resource exists or not, could probably be better
   private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
