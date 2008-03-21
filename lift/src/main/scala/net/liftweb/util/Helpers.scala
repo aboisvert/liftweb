@@ -1,64 +1,43 @@
 package net.liftweb.util
 
-/*            
-* (c) 2007-2008 WorldWide Conferencing, LLC
-* Distributed under an Apache License
-* http://www.apache.org/licenses/LICENSE-2.0
-*/
-
+/* 
+ * Copyright 2007 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); 
+ * you may not use this file except in compliance with the License. 
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
+ * Unless required by applicable law or agreed to in writing, software 
+ * distributed under the License is distributed on an "AS IS" BASIS, 
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 import java.net.{URLDecoder, URLEncoder}
 import scala.collection.mutable.{HashSet, ListBuffer}
 import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
-import java.lang.reflect.{Method, Modifier, InvocationTargetException}
-import java.util.Date
-import java.text.SimpleDateFormat
-import java.lang.reflect.Modifier
 import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
 import java.security.{SecureRandom, MessageDigest}
 import scala.actors.Actor
 import scala.actors.Actor._
 import java.util.regex._
-import java.util.{TimeZone, Calendar}
 import java.lang.Character._
 import javax.crypto._
 import javax.crypto.spec._
-// import net.liftweb.mapper.{Mapper, MappedField}
 
 /**
-*  A bunch of helper functions
-*/
-object Helpers {
-  val utc = TimeZone.getTimeZone("UTC")
-  def internetDateFormatter = {
-    val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
-    ret.setTimeZone(utc)
-    ret
-  }
-  
-  def parseInternetDate(dateString: String): Date = tryo {
-    internetDateFormatter.parse(dateString)
-  } openOr new Date(0L)
-  
-  def toInternetDate(in: Date): String = internetDateFormatter.format(in)
-  def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
-  
-  def dateFormatter = new SimpleDateFormat("yyyy/MM/dd")
-  def timeFormatter = new SimpleDateFormat("HH:mm zzz")
-  
-  def formattedTimeNow = timeFormatter.format(timeNow)
-  def formattedDateNow = dateFormatter.format(timeNow)
-  
-  
-  /*
-  
-  */
-  
+ * The Helpers object provides a lot of utility functions:<ul>
+ * <li>Time and date functions: 
+ * <li>URL functions 
+ * </ul>
+ */
+object Helpers extends TimeHelpers {
+    
   /**
-  * URL decode the string.  A pass-through to Java's URL decode with UTF-8
-  */
+   * URL decode the string.  A pass-through to Java's URL decode with UTF-8
+   */
   def urlDecode(in : String) = {URLDecoder.decode(in, "UTF-8")}
   def urlEncode(in : String) = {URLEncoder.encode(in, "UTF-8")}
   
@@ -92,7 +71,6 @@ object Helpers {
     ret
   }
   
-  def ^ [T](i: T*): List[T] = i.toList
   
   def goodPath_?(path : String): Boolean = {
     if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
@@ -465,218 +443,6 @@ object Helpers {
   } 
   
   
-  /**
-  * Find a class with name given name in a list of packages, either by matching 'name'
-  * or by matching 'smartCaps(name)'
-  */
-  def findClass[C <: AnyRef](name : String, where : List[String]) : Can[Class[C]] =
-  findClass[C](name, where, ^[String => String](smartCaps _, (n: String) => n), (s: Class[_]) => Full(s.asInstanceOf[Class[C]]))
-  
-  /**
-  * Find a class with name given name in a list of packages, either by matching 'name'
-  * or by matching 'smartCaps(name)'
-  */
-  def findClass[C <: AnyRef](name : String, where : List[String], guard: Class[AnyRef] => Can[Class[C]]) : Can[Class[C]] = {
-    findClass(name, where, ^(smartCaps, n => n), guard)
-  }
-  
-  def findClass[C <: AnyRef](where : List[(String, List[String])]) : Can[Class[C]] = {
-    where match {
-      case Nil => Empty
-      case s :: rest => {
-        findClass[C](s._1, s._2) match {
-          case Full(s) => Full(s)
-          case _ => findClass[C](rest)
-        }
-      }
-    }
-  }
-  
-  /**
-  * Find a class with name given name in a list of packages, with a list of functions that modify
-  * 'name' (e.g., leave it alone, make it camel case, etc.)
-  */
-  def findClass[C <: AnyRef](name : String, where : List[String], modifiers : List[Function1[String, String]], guard: Class[AnyRef] => Can[Class[C]]) : Can[Class[C]] = {
-    def findClass_s(name : String, where : String) : Can[Class[C]] = {
-      tryo(^(classOf[ClassNotFoundException]), Empty) {
-        val clzName = where+"."+name
-        
-        Class.forName(clzName).asInstanceOf[Class[C]]
-      }
-    }
-    
-    
-    def findClass_l(name : String, where : List[String]) : Can[Class[C]] = {
-      where match {
-        case Nil => Empty
-        case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
-      }
-    }
-    
-    modifiers match {
-      case Nil => Empty
-      case c :: rest => findClass_l(c(name), where) or findClass(name, where, rest, guard)
-    }
-  }
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception with it's class in 'ignore' or of 'ignore' is
-  * null or an empty list, ignore the exception and return None.
-  */
-  def tryo[T, CL <: AnyRef](ignore : List[Class[CL]],onError: Can[Throwable => Unit])(f : => T) : Can[T] = {
-    try {
-      Full(f)
-    } catch {
-      case c if (containsClass(c.getClass, ignore)) => onError.foreach(_(c)); Failure("tryo", Full(c), Nil)
-      case c if (ignore == null || ignore.isEmpty) => onError.foreach(_(c)); Failure("tryo", Full(c), Nil)
-    }
-  }
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception return None
-  */
-  def tryo[T](f: => T): Can[T] = tryo(Nil, Empty)(f)
-  
-  
-  /**
-  * Wraps a "try" block around the function f.  If f throws
-  * an exception return None
-  */
-  def tryo[T](onError: Throwable => Unit)(f: => T): Can[T] = tryo(Nil, Full(onError))(f)  
-  
-  def callableMethod_?(meth : Method) = {
-    meth != null && meth.getParameterTypes.length == 0 && (meth.getModifiers & java.lang.reflect.Modifier.PUBLIC) != 0
-  }
-  
-  /**
-  * Is the clz an instance of (assignable from) any of the classes in the list
-  * 
-  * @param clz the class to test
-  * @param toMatch the list of classes to match against
-  * 
-  * @return true if clz is assignable from of the matching classes
-  */
-  def containsClass[C, CL](clz: Class[C], toMatch : List[Class[CL]]) : Boolean = {
-    toMatch match {
-      case null | Nil => false
-      case c :: rest if (c.isAssignableFrom(clz)) => true
-      case c :: rest => containsClass(clz, rest)
-    }
-  }
-  
-  def classHasControllerMethod(clz: Class[_], methName: String): Boolean = {
-    tryo {
-      clz match {
-        case null => false
-        case _ => callableMethod_?(clz.getMethod(methName, null))
-      }
-    } openOr false
-  }
-  
-  def invokeControllerMethod(clz: Class[_], meth: String) = {
-    try {
-      clz.getMethod(meth, null).invoke(clz.newInstance, null)
-    } catch {
-      case c : InvocationTargetException => {def findRoot(e : Throwable) {if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause)}; findRoot(c)}
-    }
-  }
-  
-  type Garb = T forSome {type T}
-  
-  /**
-  * Invoke the given method for the given class, with the given params.
-  * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
-  */
-  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
-    /*
-    * try to find a method matching the given parameters
-    */
-    def findMethod : Can[Method] = {
-      /* try to find a method with the same name and the same number of arguments. Doesn't check the types.
-      * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
-      * add some extra $ for ex.
-      */
-      def findAlternates : Can[Method] = {
-        val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
-        && Modifier.isPublic(m.getModifiers)
-        && m.getParameterTypes.length == params.length)
-        if (t.length == 1) Full(t(0))
-        else Empty
-      }
-      try {
-        // openOr params.map(_.getClass).asInstanceOf[Array[Class[AnyRef]]]
-        clz.getMethod(meth, ptypes openOr params.map(_.getClass) ) match {
-          case null => findAlternates
-          case m => Full(m)
-        }
-      } catch {
-        case e: java.lang.NoSuchMethodException => findAlternates
-      }
-    }
-    
-    try {
-      findMethod.map(m => if (Modifier.isStatic(m.getModifiers)) m.invoke(null, params)
-      else m.invoke(inst, params))
-    } catch {
-      case e: java.lang.IllegalAccessException => Failure("invokeMethod "+meth, Full(e), Nil)
-      case e: java.lang.IllegalArgumentException => Failure("invokeMethod "+meth, Full(e), Nil)
-    }
-  }
-  
-  def instantiate[C](clz: Class[C]): Can[C] = tryo{clz.newInstance}
-  
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
-    _invokeMethod(clz, inst, meth, params, Empty) or _invokeMethod(clz, inst, smartCaps(meth), params, Empty) or
-    _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
-  }
-  
-  // def runMethod(inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = Empty
-  
-  // def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
-  
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[(Class[CL] forSome {type CL})]): Can[Any] = {
-    _invokeMethod(clz, inst, meth, params, Full(ptypes)) or
-    _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
-    _invokeMethod(clz, inst, methodCaps(meth), params, Full(ptypes))
-  }
-  
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
-  
-  def methodCaps(name: String): String = {
-    val tmp = smartCaps(name)
-    tmp.substring(0,1).toLowerCase + tmp.substring(1)
-  }
-  
-  /**
-  * Turns a string of format "foo_bar" into camel case "FooBar"
-  *
-  * Functional code courtesy of Jamie Webb (j@jmawebb.cjb.net) 2006/11/28 
-  * @param in The String to CamelCase
-  *
-  * @return the CamelCased string
-  */
-  def smartCaps(in : String) = {
-    def loop(x : List[Char]) : List[Char] = (x: @unchecked) match {
-      case '_' :: '_' :: rest => loop('_' :: rest)
-      case '_' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
-      case c :: rest => c :: loop(rest)
-      case Nil => Nil
-    }
-    
-    List.toString(loop('_' :: List.fromString(in)))
-  }
-  
-  def reCamel(in : String) = {
-    def loop(x : List[Char]) : List[Char] = x match {
-      case c :: rest if (Character.isUpperCase(c)) => '_' :: Character.toLowerCase(c) :: loop(rest)
-      case c :: rest => c :: loop(rest)
-      case Nil => Nil
-    }
-    
-    List.toString(Character.toLowerCase(in.charAt(0)) :: loop(List.fromString(in.substring(1))))
-  }
   
   private val random = new java.security.SecureRandom
   
@@ -730,12 +496,6 @@ object Helpers {
     }
     addChar(0, 0, new StringBuilder(size)).toString
   }
-  
-  val hourFormat = new SimpleDateFormat("HH:mm:ss")
-  
-  def hourFormat(in: Date): String = {
-    hourFormat.format(in)
-  }    
   
   /**
   * Remove all the characters from a string exception a-z, A-Z, 0-9, and '_'
@@ -817,72 +577,7 @@ object Helpers {
     }
   }
   
-  //def toDate(in: String): Date = new Date(in)
-  
-  def toDate(in: Any): Can[Date] = {
-    try {
-      in match {
-        case null => Empty
-        case d: java.util.Date => Full(d)
-        case lng: Long => Full(new Date(lng))
-        case lng: Number => Full(new Date(lng.longValue))
-        case Nil | Empty | None | Failure(_, _, _) => Empty
-        case Full(v) => toDate(v)
-        case Some(v) => toDate(v)
-        case v :: vs => toDate(v)
-        case s : String => Full(new Date(s))
-        case o => toDate(o.toString)
-      }
-    } catch {
-      case e => Log.debug("Error parsing date "+in, e); Failure("Bad date: "+in, Full(e), Nil)
-    }
-  }
-  
-  def currentYear: Int =
-  java.util.Calendar.getInstance.get(java.util.Calendar.YEAR)
-  
-  def millis = System.currentTimeMillis
-  
-  def logTime[T](msg: String)(f: => T): T = {
-    val (time, ret) = calcTime(f)
-    Log.info(msg+" took "+time+" Milliseconds")
-    ret
-    /*
-    val start = millis
-    try {
-    f
-    } finally {
-    Log.info(msg+" took "+(millis - start)+" Milliseconds")
-    }*/
-  }
-  
-  def calcTime[T](f: => T): (Long, T) = {
-    val start = millis
-    val ret = f
-    (millis - start, ret)
-  }
-  
-  def createInvoker[C <: AnyRef](name: String, on: C): Can[() => Can[Any]] = {
-    on match {
-      case null => Empty
-      case o => {
-        o.getClass.getDeclaredMethods.filter{
-          m => m.getName == name && 
-          Modifier.isPublic(m.getModifiers) &&
-        m.getParameterTypes.length == 0}.toList match {
-          case Nil => Empty
-          case x :: xs => Full(() => {
-            try {
-              Full(x.invoke(o, null))
-            } catch {
-              case e : InvocationTargetException => throw e.getCause
-            }
-          }
-          )
-        }
-      }
-    }
-  }
+
   
   def base64Encode(in: Array[Byte]): String = {
     new String((new Base64).encode(in))
@@ -1013,60 +708,7 @@ object Helpers {
     bos.toString
   }
   
-  /**
-  * Given the input date, what's the month (0 based)?
-  */
-  def month(in: java.util.Date): Int = {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.setTimeInMillis(in.getTime)
-    cal.get(Calendar.MONTH)
-  }
-  
-  /**
-  * Given the input date, what's the year?
-  */
-  def year(in: java.util.Date): Int =  {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.setTimeInMillis(in.getTime)
-    cal.get(Calendar.YEAR)
-  }
-  
-  /**
-  * Given the input date, what's the day (1 based)?
-  */
-  def day(in: java.util.Date): Int =  {
-    val cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"))
-    cal.setTimeInMillis(in.getTime)
-    cal.get(Calendar.DAY_OF_MONTH)
-  }
-  
-  /**
-  * The current time as a Date object
-  */
-  def timeNow = new java.util.Date
-  
-  /**
-  * Convert the incoming millis to days since epoch
-  */
-  def millisToDays(millis: Long): Long = millis / (1000L * 60L * 60L * 24L)
-  
-  /**
-  * The number of days since epoche
-  */
-  def daysSinceEpoche: Long = millisToDays(millis)
-  
-  /**
-  * The current Day as a Date object
-  */
-  def dayNow: java.util.Date = 0.seconds.later.noTime
-  def time(when: long) = new java.util.Date(when)
-  
-  def seconds(in: long): long = in * 1000L
-  def minutes(in: long): long = seconds(in) * 60L
-  def hours(in:long): long = minutes(in) * 60L
-  def days(in: long): long = hours( in) * 24L
-  def weeks(in: long): long = days(in) * 7L
-  
+
   /**
   * Looks for a named parameter in the XML element and return it if found
   */
@@ -1075,50 +717,6 @@ object Helpers {
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
   
-  class TimeSpan(val len: Long) {
-    def seconds = TimeSpan(Helpers.seconds(len))
-    def second = seconds
-    def minutes = TimeSpan(Helpers.minutes(len))
-    def minute = minutes
-    def hours = TimeSpan(Helpers.hours(len))
-    def hour = hours
-    def days = TimeSpan(Helpers.days(len))
-    def day = days
-    def weeks = TimeSpan(Helpers.weeks(len))
-    def week = weeks
-    def later = TimeSpan(len + millis)
-    def ago = TimeSpan(millis - len)
-    def date = new java.util.Date(len)
-    
-    def noTime = {
-      val div = (12L * 60L * 60L * 1000L)
-      val ret = (len - div) / (div * 2L)
-      new java.util.Date((ret * (div * 2L)) + div)
-    }
-    
-    override def equals(cmp: Any) = {
-      cmp match {
-        case lo: long => lo == this.len
-        case i: int => i == this.len
-        case ti: TimeSpan => ti.len == this.len
-        case _ => false
-      }
-    }
-    
-    def +(in: long) = TimeSpan(this.len + in)
-    def -(in: long) = TimeSpan(this.len - in)
-    override def toString = {
-      def moof(in: long, scales: List[(long, String)]): List[long] = {
-        val hd = scales.head
-        val sc = hd._1
-        if (sc >= 10000L) List(in)
-        else (in % sc) :: moof(in / sc, scales.tail)
-      }
-      
-      val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).filter(_._1 > 0).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
-      lst.mkString("",", ", "")// +" ("+len+")"
-    }
-  }
   
   object backgrounder extends Actor {
     def act {
@@ -1137,26 +735,6 @@ object Helpers {
   def background(f: => Any) {
     backgrounder ! BkgExec(() => f)
   }
-  
-  object TimeSpan {
-    def apply(in: long) = new TimeSpan(in)
-    implicit def timeSpanToLong(in: TimeSpan): long = in.len
-    def format(in: Long): String = {
-      scales.foldLeft[(Long, List[(Long, String)])]((in, Nil)){(total, div) =>
-        (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
-      }._2.filter(_._1 > 0).map{case (amt, measure) if amt == 1 => amt+" "+measure
-        case (amt, measure) => amt+" "+measure+"s"
-      }.mkString(" ")
-      
-    }
-    
-    val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (1000000000L, "week"))
-  }
-  
-  implicit def intToTimeSpan(in: long): TimeSpan = TimeSpan(in)
-  implicit def intToTimeSpan(in: int): TimeSpan = TimeSpan(in)
-  implicit def timeSpanToDate(in: TimeSpan): java.util.Date = new java.util.Date(in.len)
-  
   def processString(msg: String, subst: Map[String, String]): String = {
     val pat = Pattern.compile("\\<\\%\\=([^\\%]*)\\%\\>")
     val m = pat.matcher(msg)
@@ -1386,10 +964,5 @@ class SuperString(val what: String) {
     }
   }
 }
-
-/*
-class DoubleOption[T](val what: Option[Option[T]]) {
-def flatten: Option[T] = what.flatMap(a => a)
-}*/
 
 // vim: set ts=2 sw=2 et:

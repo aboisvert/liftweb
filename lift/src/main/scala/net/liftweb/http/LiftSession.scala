@@ -367,7 +367,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
 
-  private val snippetClasses: HashMap[String, Class[_]] = new HashMap[String, Class[_]]()
+  private val snippetClasses = new HashMap[String, Class[C] forSome {type C}]()
 
   private def findSnippetInstance(cls: String): Can[AnyRef] =
   S.snippetForClass(cls) or
@@ -521,12 +521,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   }
 
-  private def checkIfComet(c: Class[AnyRef]): Can[Class[CometActor]] =
-  if (classOf[CometActor].isAssignableFrom(c)) Full(c.asInstanceOf[Class[CometActor]]) else Empty
-
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil),
-    checkIfComet _).flatMap{
+    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), Full(classOf[CometActor])).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {

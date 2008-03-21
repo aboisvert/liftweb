@@ -8,6 +8,8 @@ http://www.apache.org/licenses/LICENSE-2.0
 
 import scala.xml.{NodeSeq, Group, Unparsed, Elem}
 import net.liftweb.util.Helpers._
+import net.liftweb.util.Helpers
+import net.liftweb.util.TimeHelpers
 import net.liftweb.util._
 import scala.xml.{Node, SpecialNode}
 

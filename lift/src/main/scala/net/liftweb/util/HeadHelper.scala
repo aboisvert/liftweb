@@ -1,7 +1,10 @@
 package net.liftweb.util
-
 import scala.xml._
 
+/**
+ * This object provides functions to setup the head section of html documents.</p>
+ * <code></code> 
+ */
 object HeadHelper {
 
   def identity(xml: NodeSeq) : NodeSeq = xml
