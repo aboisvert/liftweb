@@ -44,10 +44,18 @@ import java.util.{Locale, TimeZone, ResourceBundle}
 * ta-da, you've got a scala-powered Servlet
 *
 */
-private[http] class LiftServlet(val getServletContext: ServletContext) extends AnyRef /* HttpServlet */ {
+private[http] class LiftServlet extends HttpServlet  {
   private var requestCnt = 0
+  private var servletContext: ServletContext = null
+
+  def this(ctx: ServletContext) = {
+    this()
+    this.servletContext = ctx
+  }
   
-  def destroy = {
+  override def getServletContext: ServletContext = servletContext
+
+  override def destroy = {
     try {
       LiftRules.ending = true
       Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
@@ -62,7 +70,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
     }
   }
   
-  def init = {
+  override def init = {
     try {
       // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
       LiftRules.ending = false
