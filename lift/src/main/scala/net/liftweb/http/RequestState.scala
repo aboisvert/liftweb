@@ -228,7 +228,6 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
       case Full((true, _)) => (true, Empty)
       case Full((_, Full(resp))) => (false, Full(resp))
       case _ => (false, Empty)
-      // openOr (false, Can(LiftRules.uriNotFound(RequestMatcher(this, path, requestType, S.session), Empty)))
     }
   }
   

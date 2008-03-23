@@ -198,36 +198,35 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           // Process but make sure we're okay, sitemap wise
           val response: Can[ResponseIt] = request.testLocation match {
             case (true, _) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
-            case Full(rawXml: NodeSeq) => {
-              val xml = HeadHelper.mergeToHtmlHead(rawXml)
-              val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
-                case Nil => xml
-                case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
-                val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
+              case Full(rawXml: NodeSeq) => {
+                val xml = HeadHelper.mergeToHtmlHead(rawXml)
+                val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
+                  case Nil => xml
+                  case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
+                  val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
+                  val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
 
-                val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
-                xform.transform(xml)
-              }
+                  val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
+                  xform.transform(xml)
+                }
 
-              this.synchronized {
-                S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+                this.synchronized {
+                  S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+                }
+                notices = Nil // S.getNotices
+                Full(LiftRules.convertResponse((realXml,
+					        S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
+					        S.responseCookies,
+					        request)))
               }
-              notices = Nil // S.getNotices
-              Full(LiftRules.convertResponse((realXml,
-					   S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
-					   S.responseCookies,
-					   request)))
-            }
-            case _ =>
-            if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
+            case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
           })
-          
+          case (false, Empty) => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
           case (false, msg) => msg
           }
      
           // Before returning the response check for redirect and set the appropriate state.
-          response.map(checkRedirect) // AnswerHolder(checkRedirect(response))
+          response.map(checkRedirect) 
         }
     } catch {
       case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
@@ -270,19 +269,9 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private[http] def checkRedirect(resp: ResponseIt): ResponseIt = resp match {
     case RedirectWithState(uri, state, cookies @ _*) => 
-    state.msgs.foreach(m => S.message(m._1, m._2))
-    notices = S.getNotices
-    RedirectResponse(attachRedirectFunc(uri, state.func), cookies:_*)
-    /*
-    {
-      Can(state) map {
-        s => Can(s.msgs) map(_ foreach(m => S.message(m._1, m._2)))
-        notices = S.getNotices
-        RedirectResponse(attachRedirectFunc(uri, s func), cookies:_*)
-      } openOr resp
-    }
-    */
-    
+            state.msgs.foreach(m => S.message(m._1, m._2))
+            notices = S.getNotices
+            RedirectResponse(attachRedirectFunc(uri, state.func), cookies:_*)
     case _ => resp
   }
 

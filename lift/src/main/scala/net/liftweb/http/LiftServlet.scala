@@ -218,7 +218,7 @@ private[http] class LiftServlet(val getServletContext: ServletContext) extends A
               case (n: Node) :: _ => XmlResponse(n).toResponse
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
               case (r: ResponseIt) :: _ => r.toResponse
-              case (js: JsCmd) :: xs  => (new JsCommands((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
+              case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
               case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
             }
             
@@ -314,6 +314,7 @@ object LiftRules {
   val SessionTemplateTableName = "$lift$__TemplateTable__"
   
   val sessionNameConst = "$lift$__theLiftSession__"
+  val noticesContainerId = "lift__noticesContainer__"
   
   type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
@@ -453,6 +454,21 @@ object LiftRules {
   * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
   */
   var ajaxRequestTimeout: Can[Int] = Empty
+  
+  /**
+  * Meta information for the notices that are applied via Ajax response
+  */
+  var ajaxNoticeMeta: Can[AjaxMessageMeta] = Empty
+  
+  /**
+  * Meta information for the warnings that are applied via Ajax response
+  */
+  var ajaxWarningMeta: Can[AjaxMessageMeta] = Empty
+  
+  /**
+  * Meta information for the errors that are applied via Ajax response
+  */
+  var ajaxErrorMeta: Can[AjaxMessageMeta] = Empty
   
   /**
   * If the request times out (or returns a non-Response) you can
@@ -883,7 +899,7 @@ class LiftFilter extends Filter
     try {
       ResourceBundle getBundle (LiftRules.liftCoreResourceName)
     } catch {
-      case _ => Log.error("LiftWeb core resource bundle was not found ! ")
+      case _ => Log.error("LiftWeb core resource bundle for locale " + Locale.getDefault() + ", was not found ! ")
     }
   }
   
@@ -898,5 +914,7 @@ class LiftFilter extends Filter
     else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
   }
+  
 }
 
+case class AjaxMessageMeta(title: Can[String], cssClass: Can[String])

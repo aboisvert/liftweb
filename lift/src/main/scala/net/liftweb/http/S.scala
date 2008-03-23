@@ -337,10 +337,10 @@ object S {
   def logQuery(query: String, time: Long) = Can.legacyNullTest(_queryLog.value).foreach(_ += (query, time))
   
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
-  Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
+    Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
   
   private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = 
-  Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
+    Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
   
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
@@ -411,12 +411,14 @@ object S {
     _attrs.doWith(new TreeMap) {
       snippetMap.doWith(new HashMap) {
         _resBundle.doWith(null) {
-          inS.doWith(true) {
-            _stateSnip.doWith(new HashMap) {
-              initNotice {
-                _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-                  wrapQuery {
-                    this.currCnt.doWith(0)(f)
+          _liftCoreResBundle.doWith(null){
+            inS.doWith(true) {
+              _stateSnip.doWith(new HashMap) {
+                initNotice {
+                  _functionMap.doWith(new HashMap[String, AFuncHolder]) {
+                    wrapQuery {
+                      this.currCnt.doWith(0)(f)
+                    }
                   }
                 }
               }
@@ -739,6 +741,30 @@ object S {
         case Nil => elem % ("onblur" -> blurCmd)
         case x :: xs => val attrs = elem.attributes.filter(_.key != "onblur")
         Elem(elem.prefix, elem.label, new UnprefixedAttribute("onblur", Text(blurCmd + x.text), attrs), elem.scope, elem.child :_*)
+      }
+    }
+    /**
+    * Returns the JsCmd that holds the notices markup
+    */
+    private[http] def noticesToJsCmd: JsCmd = {
+      
+      val func: (() => List[NodeSeq], String, MetaData) => NodeSeq = (f, title, attr) => f() map (e => <li>{e}</li>) match {
+        case Nil => Nil
+        case list => <div>{title}<ul>{list}</ul></div> % attr
+      }
+  
+      val xml = List((LiftRules.ajaxNoticeMeta, S.notices _, S.??("msg.notice")), 
+                     (LiftRules.ajaxWarningMeta, S.warnings _, S.??("msg.warning")), 
+                     (LiftRules.ajaxErrorMeta, S.errors _, S.??("msg.error"))) flatMap {
+        msg => msg._1 match {
+          case Full(meta) => func(msg._2, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
+          case _ => func(msg._2, msg._3, Null)
+        }
+      }
+      
+      xml match {
+        case Nil => JsCmds.Noop 
+        case _ => JsCmds.SetHtml(LiftRules.noticesContainerId, xml)
       }
     }
     
