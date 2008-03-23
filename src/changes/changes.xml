@@ -23,6 +23,9 @@
         - Changed Loc behavior to use ResponseIt 
         - Added RedirectWithState  
       </action>
+      <action dev="Steve Jenson" type="add">
+       Added a KeyedCache for model objects built on top of the LRU class.
+      </action>
     </release>
     <release version="0.6" date="2008-03-10" description="">
       <action dev="Eric Torreborre" type="update">
