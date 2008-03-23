@@ -17,6 +17,9 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.7" date="2008-03-11" description="">
+      <action dev="Steve Jenson" type="add">
+        Adding a bunch of Response's to help make building RESTful Web Services easier in lift.
+      </action>
       <action dev="Marius Danciu" type="add">
         - Added extensible support for specifying the behavior for invalid URI's (with or without site map)
         - Changes LiftServlet object name to LiftRules
