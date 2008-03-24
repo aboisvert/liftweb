@@ -37,6 +37,7 @@ import javax.servlet._
 import javax.servlet.http._
 import java.io.ByteArrayOutputStream
 import java.util.{Locale, TimeZone, ResourceBundle}
+import scala.collection.mutable.ListBuffer
 
 /**
 * An implementation of HttpServlet.  Just drop this puppy into
@@ -58,6 +59,7 @@ private[http] class LiftServlet extends HttpServlet  {
   override def destroy = {
     try {
       LiftRules.ending = true
+      LiftRules.runUnloadHooks()
       Scheduler.snapshot // pause the Actor scheduler so we don't have threading issues
       Scheduler.shutdown
       ActorPing.shutdown
@@ -368,7 +370,26 @@ object LiftRules {
       case _ => "text/html"
     }
   }
+
+  /**
+   * Hooks to be run when LiftServlet.destroy is called.
+   */
+  val unloadHooks = new ListBuffer[() => Unit]()
   
+  /**
+   * For each unload hook registered, run them during destroy()
+   */
+  def runUnloadHooks() {
+    unloadHooks.foreach(_())
+  }
+
+  /**
+   * Adds a function to get run during Servlet.destroy
+   */
+  def addUnloadHook(f: () => Unit) {
+    unloadHooks += f
+  }
+
   /**
   * The maximum allowed size of a complete mime multi-part POST.  Default
   * 8MB
