@@ -489,7 +489,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
         case _ => <span id={c.uniqueId} lift:when="0">{Comment("FIX"+"ME comet type "+theType+" name "+name+" timeout") ++ kids}</span>
       }) openOr Comment("FIX"+"ME - comet type: "+theType+" name: "+name+" Not Found ") ++ kids
     } catch {
-      case e => e.printStackTrace; kids
+      case e => Log.error("Failed to find a comet actor", e); kids
     }
   }
 

@@ -226,6 +226,13 @@ sealed abstract class Can[+A] extends Product {
 */
 @serializable
 final case class Full[+A](value: A) extends Can[A] {
+  
+  // constructor -- do not allow Full(null)
+  value match {
+    case v: AnyRef if v eq null => throw new NullPointerException("A Full Can[T] cannot be set to null")
+    case _ =>
+  }
+  
   def isEmpty: Boolean = false 
   
   def open_! : A = value

@@ -22,7 +22,9 @@ import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionI
 import java.sql.{Connection, DriverManager}
 import net.liftweb.example.comet.WebServices
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import net.liftweb.example.model._
+import net.liftweb.example._
+import model._
+import lib._
 import net.liftweb.example.snippet.definedLocale
 
 /**
@@ -49,6 +51,11 @@ class Boot {
       case RequestMatcher(r, ParsePath("webservices" :: c :: _, _,_),_, _) => invokeWebService(r, c)
     }
     LiftRules.addDispatchBefore(dispatcher)
+    
+    LiftRules.addDispatchBefore {
+         case RequestMatcher(_, ParsePath("login" :: page , _, _),_,_)  if !LoginStuff.is && page.head != "validate" =>
+         ignore => Full(RedirectResponse("/login/validate"))
+      }
 
     val wiki_rewriter: LiftRules.RewritePf = {
       case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>

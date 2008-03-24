@@ -176,11 +176,6 @@ val nanoStart: Long,
 val nanoEnd: Long,
 val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]])) 
 {
-  /*
-  val paramNames: List[String], val params: Map[String, List[String]],
-  val body: Can[Array[Byte]],
-  val uploadedFiles: List[FileParamHolder]
-  */
   
   override def toString = "RequestState("+paramNames+", "+params+", "+path+
   ", "+contextPath+", "+requestType+", "+contentType+")"
@@ -203,13 +198,6 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     case null => Nil
     case ca => ca.toList
   }
-  
-  /*
-  lazy val paramNames: List[String] = Nil
-  lazy val body: Can[Array[Byte]] = Empty
-  lazy val params: Map[String, List[String]] = Map.empty
-  lazy val uploadedFiles: List[FileParamHolder] = Nil
-  */
   
   lazy val xml: Can[Elem] = if (!xml_?) Empty
   else {

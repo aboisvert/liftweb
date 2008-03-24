@@ -155,20 +155,24 @@ private[http] class LiftServlet extends HttpServlet  {
     } else {
       val sessionActor = getActor(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
-      if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
-        S.init(requestState, requestState.request, sessionActor.notices, sessionActor) {
+      
+      val dispatch: (Boolean, Can[Response]) = S.init(requestState, requestState.request, sessionActor.notices, sessionActor) {
+        if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
           try {
             val f = LiftRules.dispatchTable(request)(toMatch)
             f(requestState) match {
-              case Full(v) => Full(LiftRules.convertResponse( (sessionActor.checkRedirect(v), Nil, S.responseCookies, requestState) ))
-              case Empty => LiftRules.notFoundOrIgnore(requestState, Full(sessionActor))
-              case f: Failure => Full(sessionActor.checkRedirect(requestState.createNotFound(f)).toResponse)
+              case Full(v) => (true, Full(LiftRules.convertResponse( (sessionActor.checkRedirect(v), Nil, S.responseCookies, requestState) )))
+              case Empty => (true, LiftRules.notFoundOrIgnore(requestState, Full(sessionActor)))
+              case f: Failure => (true, Full(sessionActor.checkRedirect(requestState.createNotFound(f)).toResponse))
             }
           } finally {
             sessionActor.notices = S.getNotices
           }
-        }
-      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
+        } else (false, Empty)
+      }
+      
+      if (dispatch._1) dispatch._2 
+      else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
         
         LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
         
