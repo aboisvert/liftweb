@@ -107,7 +107,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return the CamelCased string
    */
-  def camelCase(name : String) = {
+  def camelCase(name : String): String = {
     def loop(x : List[Char]): List[Char] = (x: @unchecked) match {
       case '_' :: '_' :: rest => loop('_' :: rest)
       case '_' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
@@ -130,7 +130,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * @return the CamelCased string
    */
   def camelCaseMethod(name: String): String = {
-    val tmp = camelCase(name)
+    val tmp: String = camelCase(name)
     if (tmp.isEmpty)
       ""
     else
