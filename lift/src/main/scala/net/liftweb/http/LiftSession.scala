@@ -695,7 +695,7 @@ object TemplateFinder {
       case ctl :: _ => (ctl, "index")
       case Nil => ("default_template", "index")
     }
-    val trans = List[String => String](n => n, n => smartCaps(n))
+    val trans = List[String => String](n => n, n => camelCase(n))
     val toTry = trans.flatMap(f => (LiftRules.buildPackage("view") ::: ("lift.app.view" :: Nil)).map(_ + "."+f(controller)))
 
     first(toTry) {

@@ -18,8 +18,7 @@ object ControlHelpersSpec extends Specification with ControlHelpers {
       tryo(classOf[RuntimeException]) { failureBlock } must_== Empty
     }
     "return Empty if the tested block throws an exception whose class is in the ignore list - with 2 elements" in {
-      skip("this test doesn't even compile")
-      // tryo(List(classOf[RuntimeException], classOf[NullPointerException])) { failureBlock } must_== Empty
+      tryo(List(classOf[RuntimeException], classOf[NullPointerException])) { failureBlock } must_== Empty
     }
     "trigger a callback function with the exception if the tested block throws an exception" in {
       val callback = (e: Throwable) => { e must_== exception; () }

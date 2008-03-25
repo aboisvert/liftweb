@@ -17,6 +17,10 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.7" date="2008-03-11" description="">
+      <action dev="Eric Torreborre" type="add">
+        Extracted, documented and tested a ClassHelpers Trait
+        Extracted, documented and tested a ControlHelpers Trait
+      </action>
       <action dev="Steve Jenson" type="add">
         Adding unload hooks so a user's lift app can make sure that certain methods are called when
         the war is unloaded by the servlet container.

@@ -1,12 +1,13 @@
 package net.liftweb.util
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
+import java.lang.reflect.Modifier._
 
 /**
  * ClassHelpers provide several functions to instantiate a Class object given the class name and one or more package names
  */
 trait ClassHelpers { self: ControlHelpers =>
   
-  private val nameModifiers = List[String => String](smartCaps _, n => n)
+  private val nameModifiers = List[String => String](camelCase _, n => n)
   
   /**
    * utility function returning varargs as a List
@@ -106,31 +107,69 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return the CamelCased string
    */
-  def smartCaps(name : String) = {
-    def loop(x : List[Char]) : List[Char] = (x: @unchecked) match {
+  def camelCase(name : String) = {
+    def loop(x : List[Char]): List[Char] = (x: @unchecked) match {
       case '_' :: '_' :: rest => loop('_' :: rest)
       case '_' :: c :: rest => Character.toUpperCase(c) :: loop(rest)
+      case '_' :: Nil => Nil
       case c :: rest => c :: loop(rest)
       case Nil => Nil
     }
-    
-    List.toString(loop('_' :: List.fromString(name)))
+    if (name == null)
+      ""
+    else
+      List.toString(loop('_' :: name.toList))
   }
 
-  
-  def callableMethod_?(meth : Method) = {
-    meth != null && meth.getParameterTypes.length == 0 && (meth.getModifiers & java.lang.reflect.Modifier.PUBLIC) != 0
+  /**
+   * Turn a string of format "foo_bar" into camel case with the first letter in lower case: "fooBar" 
+   * This function is especially used to camelCase method names.
+   *  
+   * @param name the String to CamelCase
+   *
+   * @return the CamelCased string
+   */
+  def camelCaseMethod(name: String): String = {
+    val tmp = camelCase(name)
+    if (tmp.isEmpty)
+      ""
+    else
+      tmp.substring(0,1).toLowerCase + tmp.substring(1)
   }
   
   /**
-  * Is the clz an instance of (assignable from) any of the classes in the list
-  * 
-  * @param clz the class to test
-  * @param toMatch the list of classes to match against
-  * 
-  * @return true if clz is assignable from of the matching classes
-  */
-  def containsClass[C, CL](clz: Class[C], toMatch : List[Class[CL]]) : Boolean = {
+   * Turn a string of format "FooBar" into camel case "foo_bar"
+   *
+   * @return the underscored string
+   */
+  def unCamelCase(name : String) = {
+    def loop(x : List[Char]) : List[Char] = x match {
+      case c :: rest if (Character.isUpperCase(c)) => '_' :: Character.toLowerCase(c) :: loop(rest)
+      case c :: rest => c :: loop(rest)
+      case Nil => Nil
+    }
+    if (name.isEmpty) 
+      ""
+    else
+      List.toString(Character.toLowerCase(name.charAt(0)) :: loop(name.substring(1).toList))
+  }
+
+  /**
+   * @return true if the method is public and has no parameters
+   */
+  def callableMethod_?(meth: Method) = {
+    meth != null && meth.getParameterTypes.length == 0 && isPublic(meth.getModifiers)
+  }
+  
+  /**
+   * Is the clz an instance of (assignable from) any of the classes in the list
+   * 
+   * @param clz the class to test
+   * @param toMatch the list of classes to match against
+   * 
+   * @return true if clz is assignable from any of the matching classes
+   */
+  def containsClass[C](clz: Class[C], toMatch: List[Class[CL] forSome {type CL}]): Boolean = {
     toMatch match {
       case null | Nil => false
       case c :: rest if (c.isAssignableFrom(clz)) => true
@@ -138,115 +177,174 @@ trait ClassHelpers { self: ControlHelpers =>
     }
   }
   
-  def classHasControllerMethod(clz: Class[_], methName: String): Boolean = {
+  /**
+   * Check that the method 'name' is callable for class 'clz'
+   * 
+   * @param clz the class supposed to own the method
+   * @param name name of the method to test
+   * 
+   * @return true if the method exists on the class and is callable
+   */
+  def classHasControllerMethod(clz: Class[_], name: String): Boolean = {
     tryo {
       clz match {
         case null => false
-        case _ => callableMethod_?(clz.getMethod(methName, null))
+        case _ => callableMethod_?(clz.getDeclaredMethod(name, null))
       }
     } openOr false
   }
   
+  /**
+   * Invoke a controller method (parameterless, public) on a class
+   * 
+   * @param clz the class owning the method
+   * @param name name of the method to invoke
+   * 
+   * @return the result of the method invocation or throws the root exception causing an error
+   */
   def invokeControllerMethod(clz: Class[_], meth: String) = {
     try {
       clz.getMethod(meth, null).invoke(clz.newInstance, null)
     } catch {
-      case c : InvocationTargetException => {def findRoot(e : Throwable) {if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause)}; findRoot(c)}
+      case c : InvocationTargetException => {
+        def findRoot(e : Throwable) { if (e.getCause == null || e.getCause == e) throw e else findRoot(e.getCause) }
+        findRoot(c)
+      }
     }
   }
-  
-  type Garb = T forSome {type T}
   
   /**
-  * Invoke the given method for the given class, with the given params.
-  * The class is not instanciated if the method is static, otherwise, a new instance of clz is created.
-  */
-  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
-    /*
-    * try to find a method matching the given parameters
-    */
-    def findMethod : Can[Method] = {
-      /* try to find a method with the same name and the same number of arguments. Doesn't check the types.
-      * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
-      * add some extra $ for ex.
-      */
-      def findAlternates : Can[Method] = {
-        val t = clz.getDeclaredMethods().filter(m=> m.getName.equals(meth)
-        && Modifier.isPublic(m.getModifiers)
-        && m.getParameterTypes.length == params.length)
-        if (t.length == 1) Full(t(0))
-        else Empty
-      }
-      try {
-        // openOr params.map(_.getClass).asInstanceOf[Array[Class[AnyRef]]]
-        clz.getMethod(meth, ptypes openOr params.map(_.getClass) ) match {
-          case null => findAlternates
-          case m => Full(m)
-        }
-      } catch {
-        case e: java.lang.NoSuchMethodException => findAlternates
-      }
-    }
-    
-    try {
-      findMethod.map(m => if (Modifier.isStatic(m.getModifiers)) m.invoke(null, params)
-      else m.invoke(inst, params))
-    } catch {
-      case e: java.lang.IllegalAccessException => Failure("invokeMethod "+meth, Full(e), Nil)
-      case e: java.lang.IllegalArgumentException => Failure("invokeMethod "+meth, Full(e), Nil)
-    }
+   * Invoke the given method for the given class, with no params.
+   * The class is not instanciated if the method is static, otherwise the passed instance is used
+   *
+   * @param clz class whose method should be invoked
+   * @param inst instance of the class who method should be invoked, if the method is not static
+   * @param meth method to invoke
+   * 
+   * @return a Can containing the value returned by the method
+   */
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
+
+  /**
+   * Invoke the given method for the given class, with some parameters.
+   * Tries the method name, then the method as a CamelCased name and the method as a camelCased name
+   * The class is not instanciated if the method is static, otherwise the passed instance is used
+   *
+   * @param clz class whose method should be invoked
+   * @param inst instance of the class who method should be invoked, if the method is not static
+   * @param meth method to invoke
+   * @param params parameters to pass to the method
+   * 
+   * @return a Can containing the value returned by the method
+   */
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = {
+    _invokeMethod(clz, inst, meth, params, Empty) or 
+    _invokeMethod(clz, inst, camelCase(meth), params, Empty) or
+    _invokeMethod(clz, inst, camelCaseMethod(meth), params, Empty)
   }
   
-  def instantiate[C](clz: Class[C]): Can[C] = tryo{clz.newInstance}
-  
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[Object]): Can[Any] = {
-    _invokeMethod(clz, inst, meth, params, Empty) or _invokeMethod(clz, inst, smartCaps(meth), params, Empty) or
-    _invokeMethod(clz, inst, methodCaps(meth), params, Empty)
-  }
-  
-  // def runMethod(inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = Empty
-  
-  // def runMethod(inst: AnyRef, meth: String): Can[Any] = runMethod(inst, meth, Array())
-  
+  /**
+   * Invoke the given method for the given class, with some parameters and their types
+   * Tries the method name, then the method as a CamelCased name and the method as a camelCased name
+   * The class is not instanciated if the method is static, otherwise the passed instance is used
+   * 
+   * @param clz class whose method should be invoked
+   * @param inst instance of the class who method should be invoked, if the method is not static
+   * @param meth method to invoke
+   * @param params parameters to pass to the method
+   * @param ptypes list of types of the parameters
+   * 
+   * @return a Can containing the value returned by the method
+   */
   def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[(Class[CL] forSome {type CL})]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Full(ptypes)) or
-    _invokeMethod(clz, inst, smartCaps(meth), params, Full(ptypes)) or
-    _invokeMethod(clz, inst, methodCaps(meth), params, Full(ptypes))
+    _invokeMethod(clz, inst, camelCase(meth), params, Full(ptypes)) or
+    _invokeMethod(clz, inst, camelCaseMethod(meth), params, Full(ptypes))
   }
   
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
   
-  def methodCaps(name: String): String = {
-    val tmp = smartCaps(name)
-    tmp.substring(0,1).toLowerCase + tmp.substring(1)
-  }
-  
-  def reCamel(in : String) = {
-    def loop(x : List[Char]) : List[Char] = x match {
-      case c :: rest if (Character.isUpperCase(c)) => '_' :: Character.toLowerCase(c) :: loop(rest)
-      case c :: rest => c :: loop(rest)
-      case Nil => Nil
+  /**
+   * Invoke the given method for the given class, with the given params.
+   * The class is not instanciated if the method is static, otherwise the passed instance is used
+   * 
+   * @param clz class whose method should be invoked
+   * @param inst instance of the class who method should be invoked, if the method is not static
+   * @param meth method to invoke
+   * @param params parameters to pass to the method
+   * @param ptypes list of types of the parameters
+   * 
+   * @return a Can containing the value returned by the method
+   */
+  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
+     // try to find a method matching the given parameters
+    def possibleMethods: List[Method] = {
+      /* 
+       * try to find a method with the same name and the same number of arguments. Doesn't check the types.
+       * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
+       * add some extra $ for ex.
+       */
+      def alternatesMethods: List[Method] = clz.getDeclaredMethods.toList.filter( m => m.getName.equals(meth) && 
+                                            isPublic(m.getModifiers) &&
+                                            m.getParameterTypes.length == params.length)
+      
+      try {
+        List(clz.getMethod(meth, ptypes openOr params.map(_.getClass)))
+      } catch {
+        case e: NullPointerException => Nil
+        case e: NoSuchMethodException => alternatesMethods
+      }
     }
-    
-    List.toString(Character.toLowerCase(in.charAt(0)) :: loop(List.fromString(in.substring(1))))
+    def findFirst[T, U](l: List[T], f: T => U, predicate: U => Boolean): Can[U] = {
+      l match {
+        case Nil => Empty
+        case x :: xs => {
+         val result = f(x)
+         if (predicate(result)) Full(result) else findFirst(xs, f, predicate) 
+        }
+      }
+    }
+    try {
+        possibleMethods.elements.filter(m => inst != null || isStatic(m.getModifiers)).
+                                   map((m: Method) => tryo {m.invoke(inst, params)}).
+                                   find((x: Can[Any]) => !x.isEmpty).openOr(Empty)
+    } catch {
+      case e: IllegalAccessException => Failure("invokeMethod " + meth, Full(e), Nil)
+      case e: IllegalArgumentException => Failure("invokeMethod " + meth, Full(e), Nil)
+    }
   }
-  
+
+  /**
+   * Create a new instance of a class
+   * 
+   * @return a Full can with the instance or a Failure if the instance can't be created
+   */
+  def instantiate[C](clz: Class[C]): Can[C] = tryo { clz.newInstance }
+
+  /**
+   * Create a function (the 'invoker') which will trigger any public, parameterless method
+   * That function will throw the cause exception if the method can't be invoked
+   * 
+   * @param clz class whose method should be invoked
+   * @param on instance whose method must be invoked
+   * 
+   * @return Empty if instance is null or Full(invoker)
+   */
   def createInvoker[C <: AnyRef](name: String, on: C): Can[() => Can[Any]] = {
+    def controllerMethods(instance: C) = instance.getClass.getDeclaredMethods.filter { m => 
+      m.getName == name && isPublic(m.getModifiers) && m.getParameterTypes.isEmpty
+    } 
     on match {
       case null => Empty
-      case o => {
-        o.getClass.getDeclaredMethods.filter{
-          m => m.getName == name && 
-          Modifier.isPublic(m.getModifiers) &&
-        m.getParameterTypes.length == 0}.toList match {
-          case Nil => Empty
-          case x :: xs => Full(() => {
-            try {
-              Full(x.invoke(o, null))
-            } catch {
-              case e : InvocationTargetException => throw e.getCause
+      case instance => {
+        controllerMethods(instance).toList match {
+            case Nil => Empty
+            case x :: xs => Full(() => {
+              try {
+                Full(x.invoke(instance, null))
+              } catch {
+                case e : InvocationTargetException => throw e.getCause
+              }
             }
-          }
           )
         }
       }

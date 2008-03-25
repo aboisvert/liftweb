@@ -1,6 +1,11 @@
 package net.liftweb.util
 import org.specs.runner._
 import org.specs._
+import java.lang.reflect.{Method}
+import org.scalacheck.Arbitrary
+import org.scalacheck.Gen
+import org.scalacheck.Gen._
+import org.scalacheck.Prop.{property}
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
 object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers {
@@ -32,5 +37,156 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     "use a list of modifiers functions to try to modify the original name in order to find the class" in {
       findClass("classHelpersSpecTest", List("net.liftweb.util"), List((n: String) => n.capitalize)) must_== Full(classOf[ClassHelpersSpecTest])
     }
+  }
+  "The callableMethod_? function" should {
+    "return true if the method is public and has no parameters" in {
+      val publicParameterLess = classOf[String].getMethod("length", null)
+      callableMethod_?(publicParameterLess) must beTrue
+    }
+    "return false if the method is public and has parameters" in {
+      val publicWithParameters = classOf[String].getMethod("indexOf", Array(classOf[String]))
+      callableMethod_?(publicWithParameters) must beFalse
+    }
+    "return false if the method is private" in {
+      val privateMethod = classOf[java.util.ArrayList[Object]].getDeclaredMethod("readObject", Array(classOf[java.io.ObjectInputStream]))
+      callableMethod_?(privateMethod) must beFalse
+    }
+    "return false if the method is null" in {
+      callableMethod_?(null) must beFalse
+    }
+  }
+  "The containsClass function" should {
+    "return false if the list to match is null or empty" in {
+      containsClass(classOf[String], null) must beFalse
+      containsClass(classOf[String], Nil) must beFalse
+    }
+    "return false if the list to match doesn't contain any class assignable by the tested class" in {
+      containsClass(classOf[String], List(classOf[Float], classOf[Integer])) must beFalse
+    }
+  }
+  "The camelCase function" should {
+    "CamelCase a name which is underscored, removing each underscore and capitalizing the next letter" in {
+      def previousCharacterIsUnderscore(name: String, i: Int) = i > 1 && name.charAt(i - 1) == '_'
+      def underscoresNumber(name: String, i: Int) = if (i == 0) 0 else name.substring(0, i).toList.count(_ == '_')
+      def correspondingIndexIncamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
+      def correspondingCharIncamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexIncamelCase(name, i))
+      import StringGenerators.underscoredStrings
+
+      val doesntContainUnderscores = property((name: String) => !camelCase(name).contains('_'))  
+      val isCamelCased = property ((name: String) => {
+        name.forall(_ == '_') && camelCase(name).isEmpty ||
+        name.toList.zipWithIndex.forall { case (c, i) => 
+          c == '_' || 
+          correspondingIndexIncamelCase(name, i) == 0 && correspondingCharIncamelCase(name, i) == c.toUpperCase ||
+          !previousCharacterIsUnderscore(name, i) && correspondingCharIncamelCase(name, i) == c || 
+          previousCharacterIsUnderscore(name, i) && correspondingCharIncamelCase(name, i) == c.toUpperCase 
+                                 }
+      })
+      doesntContainUnderscores && isCamelCased must pass
+    }
+    "return an empty string if given null" in {
+      camelCase(null) must_== ""
+    }
+  }
+  "The camelCaseMethod function" should {
+    "camelCase a name with the first letter being lower cased" in {
+      import StringGenerators.underscoredStrings
+      val camelCasedMethodIsCamelCaseWithLowerCase = property{(name: String) => 
+        camelCase(name).isEmpty && camelCaseMethod(name).isEmpty ||
+        camelCaseMethod(name).toList.head.isLowerCase && camelCase(name) == camelCaseMethod(name).capitalize                                                  
+      }
+      camelCasedMethodIsCamelCaseWithLowerCase must pass
+    }
+  }
+  "The unCamelCase function" should {
+    "Uncamel a name, replacing upper cases with underscores" in {
+      import StringGenerators.camelCasedStrings
+      property((name: String) => camelCase(unCamelCase(name)) == name) must pass
+    }
+  }
+  "The classHasControllerMethod function" should {
+    "return true if the class has 'name' as a callable method" in {
+      classHasControllerMethod(classOf[String], "length") must beTrue
+    }
+    "return false if the class doesn't have 'name' as a method" in {
+      classHasControllerMethod(classOf[String], "isNotEmpty") must beFalse
+    }
+    "return false if the class has a method but it is not callable" in {
+      classHasControllerMethod(classOf[java.util.ArrayList[Object]], "readObject") must beFalse
+    }
+    "return false if the class is null" in {
+      classHasControllerMethod(null, "readObject") must beFalse
+    }
+  }
+  "The invokeControllerMethod function" should {
+    "return the result of calling the method on a new instance of the class" in {
+      invokeControllerMethod(classOf[String], "length") must_== 0
+    }
+    "throw an exception when the method is not callable" in {
+      invokeControllerMethod(classOf[String], "isNotEmpty") must throwA(new NoSuchMethodException(""))
+    }
+    "throw an exception if the class is null" in {
+      invokeControllerMethod(null, "length") must throwA(new NullPointerException)
+    }
+  }
+  "The invokeMethod function" should {
+    "return Empty if the class is null" in {
+      invokeMethod(null, "", "length") must_== Empty
+    }
+    "return Empty if the instance is null" in {
+      invokeMethod(classOf[String], null, "length") must_== Empty
+    }
+    "return Empty if the method name is null" in {
+      invokeMethod(classOf[String], "", null) must_== Empty
+    }
+    "return Empty if the method doesnt exist on the class" in {
+      invokeMethod(classOf[String], "", "isNotEmpty") must_== Empty
+    }
+    "return a Full can with the result if the method exist on the class" in {
+      invokeMethod(classOf[String], "", "length") must_== Full(0)
+    }
+    "return a Full can with the result if the method is an existing static method on the class" in {
+      invokeMethod(classOf[java.util.Calendar], null, "getInstance").isEmpty must_== false
+    }
+  }
+  "The invokeMethod function" can {
+    "call a method with its parameters" in {
+      invokeMethod(classOf[String], "", "valueOf", Array("1")) must_== Full("1")
+    }
+    "call a method with its parameters and parameter types" in {
+      invokeMethod(classOf[String], "", "valueOf", Array("c"), Array(classOf[String])) must_== Full("c")
+    }
+  }
+  "The instantiate function" should {
+    "return a full can if a class can be instantiated with a new instance" in {
+      instantiate(classOf[String]) must_== Full("")
+    }
+    "return a failure if a class can not be instantiated with a new instance" in {
+      instantiate(classOf[java.util.Calendar]) must beLike { case Failure(_, _, _) => true }
+    }
+  }
+  "The createInvoker function" should {
+    "return Empty if the instance is null" in {
+      createInvoker("length", null) must_== Empty
+    }
+    "return a Full can with the function from Unit to a can containing the result of the method to invoke" in {
+      createInvoker("length", "").open_!.apply().get must_== 0
+    }
+    "The invoker function will throw the cause exception if the method can't be called" in {
+      createInvoker("get", "").open_!.apply must throwA(new Exception)
+    }
+  }
+}
+object StringGenerators {
+  implicit def underscoredStrings: Arbitrary[String] = new Arbitrary[String] {
+    def arbitrary = for {length <- choose(0, 4)
+                         string <- vectorOf(length, frequency((3, alphaChar), (1, elements('_'))))
+                        } yield List.toString(string)
+      }
+  implicit def camelCasedStrings: Arbitrary[String] = new Arbitrary[String] {
+    def arbitrary = for {length <- choose(0, 4)
+                         firstLetter <- alphaNumChar.map(_.toUpperCase)
+                         string <- vectorOf(length, frequency((3, alphaNumChar.map(_.toLowerCase)), (1, alphaNumChar.map(_.toUpperCase))))
+                        } yield List.toString(firstLetter :: string)
   }
 }
