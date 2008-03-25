@@ -373,8 +373,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
 
-  private val snippetClasses = new HashMap[String, Class[C] forSome {type C}]()
-
+  
   private def findSnippetInstance(cls: String): Can[AnyRef] =
   S.snippetForClass(cls) or
   (findSnippetClass[AnyRef](cls).flatMap(c => instantiate(c)) match {
