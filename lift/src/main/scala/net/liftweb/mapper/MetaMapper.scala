@@ -686,7 +686,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
           mappedColumns(colName) = v
         }
         if (mf.dbPrimaryKey_?) {
-          indexMap = Full(v.getName)
+          indexMap = Full(mf.dbColumnName) // Full(v.getName.toLowerCase)
         }
         
         case _ =>

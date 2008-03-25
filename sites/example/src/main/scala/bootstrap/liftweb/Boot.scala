@@ -38,7 +38,7 @@ class Boot {
 
     LiftRules.localeCalculator = r => definedLocale.openOr(LiftRules.defaultLocaleCalculator(r))
 
-    Schemifier.schemify(true, Log.infoF _, User, WikiEntry)
+    Schemifier.schemify(true, Log.infoF _, User, WikiEntry, Person)
 
     val dispatcher: LiftRules.DispatchPf = {
       // if the url is "showcities" then return the showCities function
