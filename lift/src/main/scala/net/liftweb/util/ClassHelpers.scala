@@ -131,7 +131,7 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def camelCaseMethod(name: String): String = {
     val tmp: String = camelCase(name)
-    if (tmp.isEmpty)
+    if (tmp.length == 0)
       ""
     else
       tmp.substring(0,1).toLowerCase + tmp.substring(1)
@@ -283,7 +283,7 @@ trait ClassHelpers { self: ControlHelpers =>
        * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
        * add some extra $ for ex.
        */
-      def alternatesMethods: List[Method] = clz.getDeclaredMethods.toList.filter( m => m.getName.equals(meth) && 
+      def alternateMethods: List[Method] = clz.getDeclaredMethods.toList.filter( m => m.getName.equals(meth) && 
                                             isPublic(m.getModifiers) &&
                                             m.getParameterTypes.length == params.length)
       
@@ -291,7 +291,7 @@ trait ClassHelpers { self: ControlHelpers =>
         List(clz.getMethod(meth, ptypes openOr params.map(_.getClass)))
       } catch {
         case e: NullPointerException => Nil
-        case e: NoSuchMethodException => alternatesMethods
+        case e: NoSuchMethodException => alternateMethods
       }
     }
     def findFirst[T, U](l: List[T], f: T => U, predicate: U => Boolean): Can[U] = {

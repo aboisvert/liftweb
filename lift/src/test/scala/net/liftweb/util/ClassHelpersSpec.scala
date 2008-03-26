@@ -87,6 +87,11 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     "return an empty string if given null" in {
       camelCase(null) must_== ""
     }
+    "leave a CamelCased name untouched" in {
+      import StringGenerators.camelCasedStrings
+      val camelCasedNameDoesntChange = property{ (name: String) => camelCase(name) == name }
+      camelCasedNameDoesntChange must pass
+    }
   }
   "The camelCaseMethod function" should {
     "camelCase a name with the first letter being lower cased" in {
@@ -147,6 +152,11 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     }
     "return a Full can with the result if the method is an existing static method on the class" in {
       invokeMethod(classOf[java.util.Calendar], null, "getInstance").isEmpty must_== false
+    }
+    "return a the result of the invocation of a snippet" in {
+      class TestSnippet { def doThis = 1  }
+      val testSnippet = new TestSnippet 
+      invokeMethod(testSnippet.getClass, testSnippet, Helpers.splitColonPair("lift:TestSnippet.doThis", null, "render")._2).open_! must_== 1
     }
   }
   "The invokeMethod function" can {
