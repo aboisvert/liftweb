@@ -136,10 +136,11 @@ class Misc {
         map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))
 
   // Test function to make sure that camelCase snippet methods are working
-  def tryCamel {
-    Log.debug("trying out camel case")
+  def tryRedirect: NodeSeq = {
+    Log.debug("redirecting you to /")
+    S.redirectTo("/")
+    <span></span>
   }
-
 }
 
 object definedLocale extends SessionVar[Can[Locale]](Empty)
