@@ -135,17 +135,17 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     }
   }
   "The invokeMethod function" should {
-    "return Empty if the class is null" in {
-      invokeMethod(null, "", "length") must_== Empty
+    "return a Failure if the class is null" in {
+      invokeMethod(null, "", "length") must beLike { case Failure(_, _, _) => true }
     }
-    "return Empty if the instance is null" in {
-      invokeMethod(classOf[String], null, "length") must_== Empty
+    "return a Failure if the instance is null" in {
+      invokeMethod(classOf[String], null, "length") must beLike { case Failure(_, _, _) => true }
     }
-    "return Empty if the method name is null" in {
-      invokeMethod(classOf[String], "", null) must_== Empty
+    "return a Failure if the method name is null" in {
+      invokeMethod(classOf[String], "", null) must beLike { case Failure(_, _, _) => true }
     }
-    "return Empty if the method doesnt exist on the class" in {
-      invokeMethod(classOf[String], "", "isNotEmpty") must_== Empty
+    "return a Failure if the method doesnt exist on the class" in {
+      invokeMethod(classOf[String], "", "isNotEmpty") must beLike { case Failure(_, _, _) => true }
     }
     "return a Full can with the result if the method exist on the class" in {
       invokeMethod(classOf[String], "", "length") must_== Full(0)
@@ -153,10 +153,11 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     "return a Full can with the result if the method is an existing static method on the class" in {
       invokeMethod(classOf[java.util.Calendar], null, "getInstance").isEmpty must_== false
     }
-    "return a the result of the invocation of a snippet" in {
-      class TestSnippet { def doThis = 1  }
+    "throw an exception if the method throws an exception" in {
+      class SpecificException extends Exception
+      class TestSnippet { def throwException = throw new SpecificException  }
       val testSnippet = new TestSnippet 
-      invokeMethod(testSnippet.getClass, testSnippet, Helpers.splitColonPair("lift:TestSnippet.doThis", null, "render")._2).open_! must_== 1
+      invokeMethod(testSnippet.getClass, testSnippet, "throwException") must throwA(new SpecificException)
     }
   }
   "The invokeMethod function" can {

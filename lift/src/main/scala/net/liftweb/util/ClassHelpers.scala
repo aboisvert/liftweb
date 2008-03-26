@@ -303,14 +303,17 @@ trait ClassHelpers { self: ControlHelpers =>
         }
       }
     }
-    try {
-        possibleMethods.elements.filter(m => inst != null || isStatic(m.getModifiers)).
-                                   map((m: Method) => tryo {m.invoke(inst, params)}).
-                                   find((x: Can[Any]) => !x.isEmpty).openOr(Empty)
-    } catch {
-      case e: IllegalAccessException => Failure("invokeMethod " + meth, Full(e), Nil)
-      case e: IllegalArgumentException => Failure("invokeMethod " + meth, Full(e), Nil)
-    }
+    possibleMethods.elements.filter(m => inst != null || isStatic(m.getModifiers)).
+                                   map((m: Method) => tryo{m.invoke(inst, params)}).
+                                   find((x: Can[Any]) => x match {
+                                            case result@Full(_) => true
+                                            case Failure(_, Full(c: IllegalAccessException), _) => false
+                                            case Failure(_, Full(c: IllegalArgumentException), _) => false
+                                            case Failure(_, Full(c), _) => if (c.getCause != null) throw c.getCause else throw c
+                                   }) match {
+                                            case Some(result@Full(_)) => result
+                                            case None => Failure("invokeMethod " + meth, Empty, Nil)
+                                   } 
   }
 
   /**

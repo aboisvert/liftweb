@@ -400,7 +400,6 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
         case Full(inst) => {
           val ar: Array[Object] = List(Group(kids)).toArray
-          // val ar: Array[Object] = Array(Group(kids))
           ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
             case Full(md: NodeSeq) => md
             case it => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
