@@ -135,6 +135,11 @@ class Misc {
       "select" --> S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
         map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))
 
+  // Test function to make sure that camelCase snippet methods are working
+  def tryCamel {
+    Log.debug("trying out camel case")
+  }
+
 }
 
 object definedLocale extends SessionVar[Can[Locale]](Empty)
