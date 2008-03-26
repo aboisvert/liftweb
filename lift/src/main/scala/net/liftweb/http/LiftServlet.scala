@@ -158,7 +158,7 @@ private[http] class LiftServlet extends HttpServlet  {
       val sessionActor = getActor(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
       
-      val dispatch: (Boolean, Can[Response]) = S.init(requestState, requestState.request, sessionActor.notices, sessionActor) {
+      val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
         if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
           try {
             val f = LiftRules.dispatchTable(request)(toMatch)

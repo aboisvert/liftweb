@@ -50,7 +50,6 @@ object S {
   * The current session
   */
   private val _request = new ThreadGlobal[RequestState]
-  private val _servletRequest = new ThreadGlobal[HttpServletRequest]
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
   private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]]
   private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
@@ -318,11 +317,9 @@ object S {
   * Initialize the current request session
   */
   def init[B](request: RequestState, session: LiftSession)(f: => B) : B = {
-    _servletRequest.doWith(request.request) {
       _oldNotice.doWith(Nil) {
         _init(request,session)(() => f)
       }
-    }
   }
   
   /**
@@ -436,14 +433,7 @@ object S {
   for (r <- Can.legacyNullTest(request).toList;
   ca <- Can.legacyNullTest(r.getCookies).toList;
   c <- ca) yield c
-  /*
-  Can(request).toList.flatMa
-    request.getCookies match {
-      case null => Nil
-      case xs: Array[Cookie] => xs.toList
-    }
-  }*/
-  
+
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     doAround(aroundRequest,
     this._request.doWith(request) {
@@ -490,24 +480,17 @@ object S {
     else init(RequestState.nil,session)(f)
   }
   
-  def init[B](request: RequestState, servletRequest: HttpServletRequest, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: LiftSession)(f : => B) : B = {
+  def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: LiftSession)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
-      this._servletRequest.doWith(servletRequest) {
         _init(request, session)(() => f)
-      }
     }
   }
   
   def get(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty}) 
   
   
-  def servletSession: Can[HttpSession] = session.map(_.httpSession).or(_servletRequest.value match {
-    case null => Empty
-    case r => Full(r.getSession)
-  })
-  
-  
-  
+  def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
+    
   // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
@@ -519,7 +502,7 @@ object S {
   /**
   * The current servlet request
   */
-  def servletRequest: Can[HttpServletRequest] = Can.legacyNullTest(_servletRequest.value)
+  def servletRequest: Can[HttpServletRequest] = Can.legacyNullTest(_request.value).map(_.request)
   
   /**
   * The host that the request was made on

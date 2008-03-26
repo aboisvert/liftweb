@@ -136,6 +136,13 @@ sealed abstract class Can[+A] extends Product {
   def foreach(f: A => Any): Unit = {}
   
   /**
+  * If the contents of the Can isA instance of
+  * the given class, return a Full[B], otherwise
+  * Empty
+  */
+  def isA[B](cls: Class[B]): Can[B] = Empty
+  
+  /**
   * @returns a this or an alternative Can if this is an Empty Can
   */
   def or[B >: A](alternative: => Can[B]): Can[B] = alternative
@@ -259,6 +266,17 @@ final case class Full[+A](value: A) extends Can[A] {
   
   override def run[T](in: T)(f: (T, A) => T) = f(in, value)
   
+  /**
+  * If the contents of the Can isA instance of
+  * the given class, return a Full[B], otherwise
+  * Empty
+  */
+  override def isA[B](cls: Class[B]): Can[B] = value match {
+    case value: AnyRef =>
+    if (cls.isAssignableFrom(value.getClass)) Full(value.asInstanceOf[B])
+    else Empty
+    case _ => Empty
+  }
 }
 
 /**
@@ -302,6 +320,13 @@ case class Failure(msg: String, exception: Can[Throwable], chain: List[Failure])
   override def map[B](f: A => B): Can[B] = this
   
   override def flatMap[B](f: A => Can[B]): Can[B] = this
+  
+  /**
+  * If the contents of the Can isA instance of
+  * the given class, return a Full[B], otherwise
+  * Empty
+  */
+  override def isA[B](cls: Class[B]): Can[B] = this
   
   def messageChain: String = (this :: chain).map(_.msg).mkString(" <- ")
   

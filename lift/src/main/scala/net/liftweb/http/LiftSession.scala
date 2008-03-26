@@ -172,7 +172,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
 
   private[http] def processRequest(request: RequestState): Can[ResponseIt] = {
-    S.init(request, request.request, notices, this) {
+    S.init(request, notices, this) {
     try {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, request.path, RequestType(request.request), Full(this))
