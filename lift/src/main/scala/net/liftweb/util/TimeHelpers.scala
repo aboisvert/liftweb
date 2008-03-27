@@ -16,21 +16,12 @@ trait TimeHelpers extends ControlHelpers {
   private val outer = this 
 
   /** transforms a long to a TimeSpan object. Usage: 3L.seconds returns a TimeSpan of 3000L millis  */
-  implicit def longToTimeSpan(in: long): TimeSpan = TimeSpan(in)
+  implicit def longToTimeSpan(in: long): TimeSpanBuilder = TimeSpanBuilder(in)
   /** transforms an int to a TimeSpan object. Usage: 3.seconds returns a TimeSpan of 3000L millis  */
-  implicit def intToTimeSpan(in: int): TimeSpan = TimeSpan(in)
+  implicit def intToTimeSpan(in: int): TimeSpanBuilder = TimeSpanBuilder(in)
 
-  /** 
-   * transforms a TimeSpan to a date by converting the TimeSpan expressed as millis and creating
-   * a Date lasting that number of millis from the Epoch time (see the documentation for java.util.Date)  
-   */
-  implicit def timeSpanToDate(in: TimeSpan): java.util.Date = new Date(in.len)
-
-  /** 
-   * The TimeSpan class represents an amount of time. The exact unit for that amount of time is 
-   *   
-   */
-  class TimeSpan(val len: Long) {
+  /** class building TimeSpans given an amount (len) and a method specify the time unit  */
+  case class TimeSpanBuilder(val len: Long) {
     def seconds = TimeSpan(outer.seconds(len))
     def second = seconds
     def minutes = TimeSpan(outer.minutes(len))
@@ -41,55 +32,80 @@ trait TimeHelpers extends ControlHelpers {
     def day = days
     def weeks = TimeSpan(outer.weeks(len))
     def week = weeks
-    def later = TimeSpan(len + millis)
-    def ago = TimeSpan(millis - len)
-    def date = new Date(len)
-    def +(in: long) = TimeSpan(this.len + in)
-    def -(in: long) = TimeSpan(this.len - in)
+  }
+  
+  /** 
+   * transforms a TimeSpan to a date by converting the TimeSpan expressed as millis and creating
+   * a Date lasting that number of millis from the Epoch time (see the documentation for java.util.Date)  
+   */
+  implicit def timeSpanToDate(in: TimeSpan): Date = in.date
 
-    def noTime = {
-      val div = (12L * 60L * 60L * 1000L)
-      val ret = (len - div) / (div * 2L)
-      new Date((ret * (div * 2L)) + div)
-    }
+  /** 
+   * The TimeSpan class represents an amount of time.
+   * It can be translated to a date with the date method. In that case, the number of millis seconds will be used to create a Date 
+   * object starting from the Epoch time (see the documentation for java.util.Date)
+   */
+  class TimeSpan(val millis: Long) {
+    /** @return a Date as the amount of time represented by the TimeSpan after the Epoch date */
+    def date = new Date(millis)
+
+    /** @return a Date as the amount of time represented by the TimeSpan after now */
+    def later = TimeSpan(millis + outer.millis).date
+
+    /** @return a Date as the amount of time represented by the TimeSpan before now */
+    def ago = TimeSpan(outer.millis - millis).date
+
+    /** @return a TimeSpan representing the addition of 2 TimeSpans */
+    def +(in: TimeSpan) = TimeSpan(this.millis + in.millis)
+
+    /** @return a TimeSpan representing the substraction of 2 TimeSpans */
+    def -(in: TimeSpan) = TimeSpan(this.millis - in.millis)
+    
+    /** override the equals method so that TimeSpans can be compared to long, int and TimeSpan */
     override def equals(cmp: Any) = {
       cmp match {
-        case lo: long => lo == this.len
-        case i: int => i == this.len
-        case ti: TimeSpan => ti.len == this.len
+        case lo: long => lo == this.millis
+        case i: int => i == this.millis
+        case ti: TimeSpan => ti.millis == this.millis
         case _ => false
       }
     }
-    override def toString = {
-      def moof(in: long, scales: List[(long, String)]): List[long] = {
-        val hd = scales.head
-        val sc = hd._1
-        if (sc >= 10000L) List(in)
-        else (in % sc) :: moof(in / sc, scales.tail)
-      }
-      
-      val lst = moof(len, TimeSpan.scales).zip(TimeSpan.scales.map(_._2)).reverse.dropWhile(_._1 == 0L).filter(_._1 > 0).map(t => ""+t._1+" "+t._2+(if (t._1 != 1L) "s" else ""))
-        lst.mkString("",", ", "")
-    }
+    
+    /** override the toString method to display a readable amount of time */
+    override def toString = TimeSpan.format(millis)
   }
+  
   object TimeSpan {
-    val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (1000000000L, "week"))
+    val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (10000L, "week"))
+    
+    implicit def timeSpanToLong(in: TimeSpan): long = in.millis
     def apply(in: long) = new TimeSpan(in)
-    implicit def timeSpanToLong(in: TimeSpan): long = in.len
     def format(in: Long): String = {
-      scales.foldLeft[(Long, List[(Long, String)])]((in, Nil)){(total, div) =>
+      scales.foldLeft[(Long, List[(Long, String)])]((in, Nil)){ (total, div) =>
         (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
-      }._2.filter(_._1 > 0).map{case (amt, measure) if amt == 1 => amt+" "+measure
-        case (amt, measure) => amt+" "+measure+"s"
-      }.mkString(" ")
+      }._2.
+      filter(_._1 > 0).
+      map { 
+        case (amt, measure) if (amt == 1) => amt + " " + measure
+        case (amt, measure) => amt + " " + measure + "s"
+      }.mkString(", ")
     }
   }
   def millis = System.currentTimeMillis
   def seconds(in: long): long = in * 1000L
   def minutes(in: long): long = seconds(in) * 60L
   def hours(in: long): long = minutes(in) * 60L
-  def days(in: long): long = hours( in) * 24L
+  def days(in: long): long = hours(in) * 24L
   def weeks(in: long): long = days(in) * 7L
+
+  implicit def toDateExtension(d: Date) = new DateExtension(d)
+  class DateExtension(d: Date) {
+    def noTime = {
+      val div = (12L * 60L * 60L * 1000L)
+      val ret = (d.getTime - div) / (div * 2L)
+      new Date((ret * (div * 2L)) + div)
+    }
+  }
 
   val utc = TimeZone.getTimeZone("UTC")
   def internetDateFormatter = {
@@ -169,7 +185,7 @@ trait TimeHelpers extends ControlHelpers {
   /**
    * The current Day as a Date object
    */
-  def dayNow: Date = TimeSpan(0).seconds.later.noTime
+  def dayNow: Date = 0.seconds.later.noTime
   def time(when: long) = new Date(when)
   
   val hourFormat = new SimpleDateFormat("HH:mm:ss")

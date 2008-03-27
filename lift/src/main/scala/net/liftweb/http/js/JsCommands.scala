@@ -615,11 +615,11 @@ object JsCmds {
   
   trait HasTime {
     def time: Can[Helpers.TimeSpan]
-    def timeStr = time.map(_.len.toString) openOr ""
+    def timeStr = time.map(_.millis.toString) openOr ""
   }
   
-  case class After(millis: Helpers.TimeSpan, toDo: JsCmd) extends JsCmd {
-    def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+millis.len+");"
+  case class After(time: Helpers.TimeSpan, toDo: JsCmd) extends JsCmd {
+    def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+time.millis+");"
   }
   
   object Show {
@@ -636,7 +636,7 @@ object JsCmds {
     def apply(uid: String, time: Helpers.TimeSpan) = new Hide(uid, Full(time))    
   }
   
-  class Hide(val uid: String,val time: Can[Helpers.TimeSpan]) extends JsCmd with HasTime {
+  class Hide(val uid: String, val time: Can[Helpers.TimeSpan]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
   }
   
@@ -701,10 +701,6 @@ object JsCmds {
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def realFadeTime: Long = fadeTime.len
-    
-    def realDuration: Long = duration.len
-    
-    def toJsCmd = (Show(where) & SetHtml(where, msg) & After(realDuration, Hide(where, realFadeTime))).toJsCmd
+    def toJsCmd = (Show(where) & SetHtml(where, msg) & After(duration, Hide(where, fadeTime))).toJsCmd
   }
 }

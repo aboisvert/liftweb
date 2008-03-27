@@ -267,10 +267,10 @@ final case class Full[+A](value: A) extends Can[A] {
   override def run[T](in: T)(f: (T, A) => T) = f(in, value)
   
   /**
-  * If the contents of the Can isA instance of
-  * the given class, return a Full[B], otherwise
-  * Empty
-  */
+   * If the contents of the Can isA instance of
+   * the given class, return a Full[B], otherwise
+   * Empty
+   */
   override def isA[B](cls: Class[B]): Can[B] = value match {
     case value: AnyRef =>
     if (cls.isAssignableFrom(value.getClass)) Full(value.asInstanceOf[B])

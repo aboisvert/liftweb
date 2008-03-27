@@ -48,11 +48,11 @@ class HelperTests extends TestCase("Helper Tests") {
     assert((3.days) == (3L * 24L * 60L * 60L * 1000L))
     assert(52.weeks == (52L * 7L * 24L * 60L * 60L * 1000L))
     
-    val min5:long = (5.minutes.later - System.currentTimeMillis) - 5.minutes
+    val min5:long = (5.minutes.later.getTime - System.currentTimeMillis) - 5.minutes
     
     assert(min5 < 2L)
     
-    assert((5.minutes.ago - System.currentTimeMillis) + 5.minutes < 2L)
+    assert((5.minutes.ago.getTime - System.currentTimeMillis) + 5.minutes < 2L)
     
     val tn = timeNow.toString
     Mailer.sendMail(From("test@liftweb.net"), Subject( "Testing lift's mail sending at "+tn),To("test@liftweb.net"),"Dude... this is kewl! @"+tn,

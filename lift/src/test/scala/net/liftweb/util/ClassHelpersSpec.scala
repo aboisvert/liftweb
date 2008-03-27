@@ -68,8 +68,8 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     "CamelCase a name which is underscored, removing each underscore and capitalizing the next letter" in {
       def previousCharacterIsUnderscore(name: String, i: Int) = i > 1 && name.charAt(i - 1) == '_'
       def underscoresNumber(name: String, i: Int) = if (i == 0) 0 else name.substring(0, i).toList.count(_ == '_')
-      def correspondingIndexIncamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
-      def correspondingCharIncamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexIncamelCase(name, i))
+      def correspondingIndexInCamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
+      def correspondingCharInCamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexInCamelCase(name, i))
       import StringGenerators.underscoredStrings
 
       val doesntContainUnderscores = property((name: String) => !camelCase(name).contains('_'))  
@@ -77,10 +77,10 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
         name.forall(_ == '_') && camelCase(name).isEmpty ||
         name.toList.zipWithIndex.forall { case (c, i) => 
           c == '_' || 
-          correspondingIndexIncamelCase(name, i) == 0 && correspondingCharIncamelCase(name, i) == c.toUpperCase ||
-          !previousCharacterIsUnderscore(name, i) && correspondingCharIncamelCase(name, i) == c || 
-          previousCharacterIsUnderscore(name, i) && correspondingCharIncamelCase(name, i) == c.toUpperCase 
-                                 }
+          correspondingIndexInCamelCase(name, i) == 0 && correspondingCharInCamelCase(name, i) == c.toUpperCase ||
+          !previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c || 
+          previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c.toUpperCase 
+       }
       })
       doesntContainUnderscores && isCamelCased must pass
     }

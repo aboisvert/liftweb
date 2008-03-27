@@ -20,8 +20,7 @@ import net.liftweb.util.Can._
 import org.specs.runner._
 import org.specs.Sugar._
 
-class CanSpecTest extends JUnit3(CanSpec)
-object CanSpecRunner extends ConsoleRunner(CanSpec)
+class CanSpecTest extends Runner(CanSpec) with JUnit with Console
 object CanSpec extends Specification {
   "A Can" can {
     "be created from a Option. It is Empty if the option is None" in {
@@ -49,15 +48,12 @@ object CanSpec extends Specification {
     "be implicitly defined from an Option. The open_! method can be used on an Option for example" in {
       Some(1).open_! must_== 1
     }
-    /*
-    "be implicitly defined from any AnyRef object. If the object is null, the Can is Empty" in {
-      val s: String = null
-      val c: Can[String] = s
-      c mustBe Empty
+    "be defined from some legacy code (possibly passing null values). If the passed value is not null, a Full(value) is returned" in {
+      Can.legacyNullTest("s") must_== Full("s")
     }
-    "be implicitly defined from any AnyRef object. If the object is not null, the Can is Full" in {
-      "hello".open_! must_== "hello"
-    }*/
+    "be defined from some legacy code (possibly passing null values). If the passed value is null, an Empty is returned" in {
+      Can.legacyNullTest(null) must_== Empty
+    }
   }
   "A Can" should {
     "provide a 'choice' method to either apply a function to the Can value or return another default can" in {
@@ -137,6 +133,12 @@ object CanSpec extends Specification {
       def appendToString(s: String, x: Int) = s + x.toString
       Full(1).run("string")(appendToString) must_== "string1"
     }
+    "define a 'isA' method returning a Full(value) if the value is the instance of a given class" in {
+      Full("s").isA(classOf[String]) must_== Full("s")
+    }
+    "define a 'isA' method returning Empty if the value is not the instance of a given class" in {
+      Full("s").isA(classOf[Double]) must_== Empty
+    }
   }
   "An Empty Can" should {
     "beEmpty" in {
@@ -195,6 +197,9 @@ object CanSpec extends Specification {
     }
     "return a failure with a message if asked for its status with the operator ?~!" in {
       Empty ?~! "nothing" must_== Failure("nothing", Empty, Nil)
+    }
+    "define a 'isA' method returning Empty" in {
+      Empty.isA(classOf[Double]) must_== Empty
     }
   }
   "A Failure is an Empty Can which" can {

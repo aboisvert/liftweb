@@ -63,7 +63,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   }
   
   def setupTime(when: TimeSpan) {
-    val trigger = timedEventAt.is + when.len
+    val trigger = timedEventAt.is + when.millis
     if (trigger >= System.currentTimeMillis && (nextTransitionAt.is <= 0L || trigger < nextTransitionAt.is)) nextTransitionAt.set(trigger)
   }
   
@@ -242,7 +242,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   }
   
   // case class TimeTransition(to: StV, time: TimeSpan) extends Transition
-  case class After(when: TimeSpan, override val to: StV) extends ATransition(to, {case TimerEvent(len) if (when.len <= len.len) => true}) {
+  case class After(when: TimeSpan, override val to: StV) extends ATransition(to, {case TimerEvent(len) if (when.millis <= len.millis) => true}) {
     setup ((what, state) => what.setupTime(when))
   }
           
@@ -321,7 +321,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         metaOwner.findAll(By(metaOwner.inProcess, false), BySql(name+" > 0 AND "+name+" <= ?", now)).foreach {
           stateItem =>
           stateItem.inProcess(true).save
-          val event = TimerEvent(now - stateItem.timedEventAt.is)
+          val event = TimerEvent(TimeSpan(now - stateItem.timedEventAt.is))
           timedEventHandler ! (stateItem, event)
         }
         } catch {
