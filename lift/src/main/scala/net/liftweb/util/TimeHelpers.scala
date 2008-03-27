@@ -15,10 +15,15 @@ trait TimeHelpers extends ControlHelpers {
   /** private variable allowing the access to all TimeHelpers functions from inside the TimeSpan class */
   private val outer = this 
 
+  /** transforms a long to a TimeSpanBuilder object. Usage: 3L.seconds returns a TimeSpan of 3000L millis  */
+  implicit def longToTimeSpanBuilder(in: long): TimeSpanBuilder = TimeSpanBuilder(in)
+  /** transforms an int to a TimeSpanBuilder object. Usage: 3.seconds returns a TimeSpan of 3000L millis  */
+  implicit def intToTimeSpanBuilder(in: int): TimeSpanBuilder = TimeSpanBuilder(in)
+  
   /** transforms a long to a TimeSpan object. Usage: 3L.seconds returns a TimeSpan of 3000L millis  */
-  implicit def longToTimeSpan(in: long): TimeSpanBuilder = TimeSpanBuilder(in)
+  implicit def longToTimeSpan(in: long): TimeSpan = TimeSpan(in)
   /** transforms an int to a TimeSpan object. Usage: 3.seconds returns a TimeSpan of 3000L millis  */
-  implicit def intToTimeSpan(in: int): TimeSpanBuilder = TimeSpanBuilder(in)
+  implicit def intToTimeSpan(in: int): TimeSpan = TimeSpan(in)
 
   /** class building TimeSpans given an amount (len) and a method specify the time unit  */
   case class TimeSpanBuilder(val len: Long) {
