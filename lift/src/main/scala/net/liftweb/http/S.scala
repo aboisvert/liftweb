@@ -89,6 +89,7 @@ object S {
   /**
   * Returns session-specific request re-writers
   */
+  /*
   def sessionRewriter: List[RewriteHolder] = 
   servletSession.toList.
   flatMap(_.getAttribute(LiftRules.SessionRewriteTableName) match {
@@ -103,6 +104,7 @@ object S {
     case rw: List[DispatchHolder] => rw
     case _ => Nil
   })
+  */
   
   /**
    * @return a List of any Cookies that have been set for this Response.
@@ -194,20 +196,24 @@ object S {
   def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
   
+  /*
   def addSessionRewriter(name: String, rw: LiftRules.RewritePf) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name)))
   
   def removeSessionRewriter(name: String) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, sessionRewriter.remove(_.name == name)))
+  */
   
   def removeSessionTemplater(name: String) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
   
+  /*
   def addSessionDispatcher(name: String, rw: LiftRules.DispatchPf) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)))
   
   def removeSessionDispatcher(name: String) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, sessionDispatcher.remove(_.name == name)))
+  */
   
   /**
   * Test the current request to see if it's a POST
