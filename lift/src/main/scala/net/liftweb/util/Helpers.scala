@@ -616,6 +616,8 @@ object Helpers extends TimeHelpers {
   
   def md5(in: Array[Byte]): Array[Byte] = (MessageDigest.getInstance("MD5")).digest(in)
   
+  def md5(in: String): String = new String((new Base64) encode md5(in.getBytes("UTF-8")))
+  
   def hash(in: String) : String = {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
   }

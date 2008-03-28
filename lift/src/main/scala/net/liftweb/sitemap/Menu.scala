@@ -1,16 +1,25 @@
 package net.liftweb.sitemap
 
-/*                                                *\
- (c) 2007-2008 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
+ 
+import net.liftweb.http._
+import net.liftweb.util._
+import Helpers._
 
-   import net.liftweb.http._
-   import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
-   import net.liftweb.util._
-   import Helpers._
-   
 case class Menu(page: Loc, kids: Menu*) extends HasKids {
   private[sitemap] var _parent: Can[HasKids] = Empty
   
@@ -36,14 +45,14 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
       
   def isAbsolute_? = page.isAbsolute_?
 
-  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState, httpReq: HttpServletRequest): Can[Loc] = {
-    if (page.doesMatch_?(path, req, httpReq)) Full(page)
+  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState): Can[Loc] = {
+    if (page.doesMatch_?(path, req)) Full(page)
     else page.pathMatch(path) match {
-      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req, httpReq))
+      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req))
       case n =>
       val p2 = path.drop(n)
-      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req, httpReq)) or 
-         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req, httpReq))
+      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req)) or 
+         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req))
     }
   }
   

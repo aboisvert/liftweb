@@ -1,11 +1,20 @@
 package net.liftweb.util
 
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
-
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 /**
  * A class that does lazy evaluation
@@ -70,6 +79,37 @@ object ThreadLazy {
   def apply[T](f: => T) = new ThreadLazy(f)
   
   implicit def what[T](in: ThreadLazy[T]): T = in.get
+}
+
+/**
+  * Sometimes, you want to do pattern matching against a lazy value.  Why?
+  * Because, there may be parts of the pattern that must be evaluated first
+  * and if they evaluate successfully, you then want to test another part of
+  * the pattern.  Thus, the LZ pattern match.
+  */
+object LZ {
+  def apply[T](f: => T): LZ[T] = new LZ(() => f)
+  def unapply[T](in: LZ[T]): Option[T] = Some(in.get)
+  
+ // implicit def lazyToT[T](in: LazyMatcher[T]): T = in.get
+}
+
+/**
+  *
+  */
+class LZ[T](val f: () => T) {
+  private var hasTriggered = false
+  private var actual: T = _
+  
+  def get: T = if (hasTriggered) actual else {
+    synchronized {
+      if (hasTriggered) actual else {
+        actual = f()
+        hasTriggered = true
+        actual
+      }
+    }
+  }
 }
 
 class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
