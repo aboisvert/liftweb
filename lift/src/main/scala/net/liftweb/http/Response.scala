@@ -10,6 +10,7 @@ import scala.xml.{Node, Unparsed, Group, NodeSeq}
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import javax.servlet.http.Cookie
+import js._
 
 trait ToResponse extends ResponseIt {
   def out: Node
@@ -43,6 +44,14 @@ trait ResponseIt {
 
 case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], 
 			 cookies: List[Cookie], code: Int) extends ToResponse
+			
+			
+case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
+	def toResponse = {
+		val bytes = json.toJsCmd.getBytes("UTF-8")
+		Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
+		}
+}
 
 case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
   def toResponse = this
