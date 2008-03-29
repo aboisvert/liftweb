@@ -1,3 +1,4 @@
+
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb</groupId>
@@ -128,8 +129,8 @@ Lift is a scala web framework.
     <url>http://code.google.com/p/liftweb/issues</url>
   </issueManagement>
   <ciManagement>
-   <system>hudson</system>
-   <url>http://scala-tools.org/hudson/job/liftweb/</url>
+    <system>hudson</system>
+    <url>http://scala-tools.org/hudson/job/liftweb/</url>
   </ciManagement>
   <properties>
     <scala.version>2.7.0</scala.version>
@@ -229,6 +230,29 @@ Lift is a scala web framework.
           </classpathContainers>
         </configuration>
       </plugin>
+      <plugin>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <groupId>org.codehaus.mojo</groupId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>clean</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <inherited>true</inherited>
+        <artifactId>maven-source-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>attach-sources</id>
+            <goals>
+              <goal>jar</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
   <reporting>
@@ -257,6 +281,30 @@ Lift is a scala web framework.
           <issueLinkTemplate>%URL%/detail?id=%ISSUE%</issueLinkTemplate>
         </configuration>
       </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>cobertura-maven-plugin</artifactId>
+        <!-- version 2.1 is bugged ouput coverage 100% or 0% -->
+        <version>2.2</version>
+        <configuration>
+          <formats>
+            <format>xml</format>
+            <format>html</format>
+          </formats>
+        </configuration>
+      </plugin>
+      <plugin>
+        <artifactId>maven-surefire-report-plugin</artifactId>
+        <configuration>
+          <!--showSuccess>false</showSuccess--></configuration>
+        <reportSets>
+          <reportSet>
+            <reports>
+              <report>report-only</report>
+            </reports>
+          </reportSet>
+        </reportSets>
+      </plugin>
     </plugins>
   </reporting>
   <distributionManagement>
@@ -271,18 +319,6 @@ Lift is a scala web framework.
       <id>release</id>
       <build>
         <plugins>
-          <plugin>
-            <inherited>true</inherited>
-            <artifactId>maven-source-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>attach-sources</id>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <configuration>
@@ -301,19 +337,6 @@ Lift is a scala web framework.
               </execution>
             </executions>
           </plugin>
-          <!--
-          <plugin>
-            <artifactId>cobertura-maven-plugin</artifactId>
-            <groupId>org.codehaus.mojo</groupId>
-            <executions>
-              <execution>
-                <goals>
-                  <goal>clean</goal>
-                </goals>
-              </execution>
-            </executions>
-          </plugin>
-          -->
         </plugins>
       </build>
       <distributionManagement>
@@ -325,6 +348,23 @@ Lift is a scala web framework.
           <id>scala-tools.org</id>
           <!--url>dav:http://dav.scala-tools.org/mvnsites/liftweb</url-->
           <url>file://${user.home}/.m2/mvnsites/liftweb</url>
+        </site>
+      </distributionManagement>
+    </profile>
+    <profile>
+      <id>hudson</id>
+      <distributionManagement>
+        <repository>
+          <id>hudson.scala-tools.org</id>
+          <url>file://${user.home}/scala-tools.org/repo-snapshots</url>
+        </repository>
+        <snapshotRepository>
+          <id>hudson.scala-tools.org</id>
+          <url>file://${user.home}/scala-tools.org/repo-snapshots</url>
+        </snapshotRepository>
+        <site>
+          <id>hudson.scala-tools.org</id>
+          <url>file://${user.home}/scala-tools.org//mvnsites-snapshots/liftweb</url>
         </site>
       </distributionManagement>
     </profile>

@@ -6,7 +6,7 @@
   <version>0.7-SNAPSHOT</version>
   <packaging>war</packaging>
   <name>HelloDarwin tutorial application</name>
-  <!-- 
+  <!--
     * should not inherit from lift (use lift or site as parent) to mimic a from scratch app
     * include into the lift source to be updated with lift
   -->
@@ -130,12 +130,17 @@
     <repository>
       <id>dummy</id>
       <name>Dummy Repository</name>
-      <url>file://${java.io.tmpdir}</url>
+      <url>file://${java.io.tmpdir}/repo</url>
     </repository>
     <snapshotRepository>
       <id>dummy</id>
       <name>Dummy Repository</name>
-      <url>file://${java.io.tmpdir}</url>
+      <url>file://${java.io.tmpdir}/repo</url>
     </snapshotRepository>
+    <site>
+      <id>dummy</id>
+      <name>Dummy Repository</name>
+      <url>file://${java.io.tmpdir}/site</url>
+    </site>
   </distributionManagement>
 </project>

@@ -8,8 +8,8 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>lift-examples-parent</artifactId>
-  <name>Lift Examples</name>
-  <description>A set of examples application</description>
+  <name>Lift Sites</name>
+  <description>A set of examples site/webapp</description>
   <packaging>pom</packaging>
   <modules>
     <module>example</module>

@@ -11,14 +11,16 @@
       type="add|fix|remove|update"
       issue="(optional) Id of the issue related to this change"
       due-to="(optional)Name of the person 'non-committer' to be credited for this change"
-      > 
+      >
       description
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.7" date="2008-03-11" description="">
+    <release version="0.7" date="2008-03-??" description="">
       <action dev="Eric Torreborre" type="add">
         Extracted, documented and tested a ClassHelpers Trait
+      </action>
+      <action dev="Eric Torreborre" type="add">
         Extracted, documented and tested a ControlHelpers Trait
       </action>
       <action dev="Steve Jenson" type="add">
@@ -29,13 +31,22 @@
         Adding a bunch of Response's to help make building RESTful Web Services easier in lift.
       </action>
       <action dev="Marius Danciu" type="add">
-        - Added extensible support for specifying the behavior for invalid URI's (with or without site map)
-        - Changes LiftServlet object name to LiftRules
-        - Changed Loc behavior to use ResponseIt 
-        - Added RedirectWithState  
+        Added extensible support for specifying the behavior for invalid URI's (with or without site map)
+      </action>
+      <action dev="Marius Danciu" type="update">
+        Changes LiftServlet object name to LiftRules
+      </action>
+      <action dev="Marius Danciu" type="update">
+        Changed Loc behavior to use ResponseIt
+      </action>
+      <action dev="Marius Danciu" type="add">
+        Added RedirectWithState
       </action>
       <action dev="Steve Jenson" type="add">
-       Added a KeyedCache for model objects built on top of the LRU class.
+        Added a KeyedCache for model objects built on top of the LRU class.
+      </action>
+      <action dev="David Bernard" type="updates">
+        Split lift-core into several modules : lift-webkit, lift-amqp, lift-facebook, lift-testkit, lift-textile, lift-xmpp
       </action>
     </release>
     <release version="0.6" date="2008-03-10" description="">
@@ -52,10 +63,10 @@
         Added Cookie support.
       </action>
       <action dev="Steve Jenson" type="update">
-	Updating our version of jQuery to 1.2.3.
+  Updating our version of jQuery to 1.2.3.
       </action>
       <action dev="Steve Jenson" type="add">
-	Added a new method to MetaMapper that lets you find models by PreparedStatement. findByPreparedStatement
+  Added a new method to MetaMapper that lets you find models by PreparedStatement. findByPreparedStatement
       </action>
     </release>
     <release version="0.5" date="2008-02-05" description="">
@@ -101,7 +112,7 @@ Enhanced the resource serving stuff so that:
       <action dev="David Bernard" type="remove">Removing deprecated new_proj (replaced by archetypes)</action>
       <action dev="David Bernard" type="remove">Removing lift-archetype-hellolift (replaced by lift-archetype-basic (and the sample application hellolift))</action>
     </release>
-    
+
     <release version="0.3.0" date="2007-12-07" description="champagne">
       <action dev="David Pollak" type="add">Support for Ajax including integration of jQuery</action>
       <action dev="David Pollak" type="add">Radically improved Comet support</action>
