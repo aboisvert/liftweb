@@ -136,6 +136,7 @@
       <id>dummy</id>
       <name>Dummy Repository</name>
       <url>file://${java.io.tmpdir}/repo</url>
+      <uniqueVersion>false</uniqueVersion>
     </snapshotRepository>
     <site>
       <id>dummy</id>

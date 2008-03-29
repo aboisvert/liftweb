@@ -361,6 +361,7 @@ Lift is a scala web framework.
         <snapshotRepository>
           <id>hudson.scala-tools.org</id>
           <url>file://${user.home}/scala-tools.org/repo-snapshots</url>
+          <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
         <site>
           <id>hudson.scala-tools.org</id>
