@@ -110,6 +110,8 @@ class LZ[T](val f: () => T) {
       }
     }
   }
+  
+  override def toString = "LZ("+get+")"
 }
 
 class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
