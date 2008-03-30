@@ -17,7 +17,7 @@ package net.liftweb.example.snippet
 
 import net.liftweb.example.model._
 import scala.xml.{NodeSeq, Text, Group}
-import net.liftweb.http.S
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.mapper._
 import net.liftweb.http.S._
 import net.liftweb.util._
@@ -98,7 +98,7 @@ class Wiki {
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
     val cancelLink = <a href={uriFor(pageName)}>Cancel</a>
     val textarea = entry.entry.toForm
-    val submitButton = S.submit(isNew ? "Add" | "Edit", s => {entry.save})
+    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", s => {entry.save})
     <form method="GET" action={action}>{ // the form tag
           message ++
           hobixLink ++

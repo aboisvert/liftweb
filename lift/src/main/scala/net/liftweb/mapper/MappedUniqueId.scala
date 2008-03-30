@@ -9,7 +9,7 @@ package net.liftweb.mapper
 import net.liftweb.mapper._
 import net.liftweb.util._
 import Helpers._
-import net.liftweb.http.S
+import net.liftweb.http.{S, SHtml}
 import scala.xml.{Elem, NodeSeq}
 
 class MappedUniqueId[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[T](owner, maxLen) {
@@ -27,8 +27,8 @@ class MappedBirthYear[T <: Mapper[T]](owner: T, minAge: Int) extends MappedInt[T
   
   override def _toForm: Can[NodeSeq] = {
     val end = (year(timeNow) - minAge)
-      val start = end - 100
-    Full(S.select((start to end).
+    val start = end - 100
+    Full(SHtml.select((start to end).
 		  toList.
 		  reverse.
 		  map(y => (y.toString, y.toString)), 

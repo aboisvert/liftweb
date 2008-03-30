@@ -7,7 +7,8 @@ package net.liftweb.mapper
  \*                                                */
 
 import java.util.regex._
-import net.liftweb.http.S
+import scala.xml.Text
+import net.liftweb.http.{S, FieldError}
 
 object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")
@@ -19,7 +20,7 @@ class MappedEmail[T<:Mapper[T]](owner: T, maxLen: Int) extends MappedString[T](o
   override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter 
     
   override def validate =
-    (if (MappedEmail.emailPattern.matcher(i_is_!).matches) Nil else List(ValidationIssue(this, S.??("invalid.email.address")))) :::
+    (if (MappedEmail.emailPattern.matcher(i_is_!).matches) Nil else List(FieldError(this, Text(S.??("invalid.email.address"))))) :::
     super.validate
 
 }

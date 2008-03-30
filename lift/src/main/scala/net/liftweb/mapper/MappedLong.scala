@@ -12,7 +12,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import java.util.Date
 import scala.xml.{NodeSeq, Text, Unparsed}
-import net.liftweb.http.S
+import net.liftweb.http.{S, SHtml}
 import net.liftweb.http.js._
 import S._
 
@@ -192,7 +192,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] = 
-     Full(S.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
+     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
 }
 
 

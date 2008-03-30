@@ -14,6 +14,7 @@ import net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
 import scala.xml._
 import com.skittr.actor._
 import S._
+import SHtml._
 import com.skittr.model.{Friend, User}
 import net.liftweb.mapper._
 

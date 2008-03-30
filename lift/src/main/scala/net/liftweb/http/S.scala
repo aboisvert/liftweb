@@ -8,25 +8,23 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node, HasKeyValue}
 import scala.collection.immutable.{ListMap, TreeMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
-// import scala.util.parsing.json._
-import net.liftweb.mapper.{ValidationIssue}
 import Helpers._
 import js._
 import java.io.InputStream
 import java.util.{Locale, TimeZone, ResourceBundle}
 
 /**
-* An object representing the current state of the HTTP request and response
-* It uses the DynamicVariable construct such that each thread has its own
-* local session info without passing a huge state construct around
-*/
+ * An object representing the current state of the HTTP request and response
+ * It uses the DynamicVariable construct such that each thread has its own
+ * local session info without passing a huge state construct around
+ */
 object S {
   /**
-  * Holds the partial function that re-write an incoming request
-  */
+   * Holds the partial function that re-write an incoming request
+   */
   case class RewriteHolder(name: String, rewrite: LiftRules.RewritePf)
   case class DispatchHolder(name: String, dispatch: LiftRules.DispatchPf)
   case class TemplateHolder(name: String, template: LiftRules.TemplatePf)
@@ -51,11 +49,10 @@ object S {
   */
   private val _request = new ThreadGlobal[RequestState]
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
-  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq)]]
-  private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq)]];
+  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq, Can[String])]]
+  private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq, Can[String])]];
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
-  // private val _attrs = new ThreadGlobal[HashMap[String, String]]
   private val _attrs = new ThreadGlobal[Map[String, String]]
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
@@ -196,24 +193,8 @@ object S {
   def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
   
-  /*
-  def addSessionRewriter(name: String, rw: LiftRules.RewritePf) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, RewriteHolder(name, rw) :: sessionRewriter.filter(_.name != name)))
-  
-  def removeSessionRewriter(name: String) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionRewriteTableName, sessionRewriter.remove(_.name == name)))
-  */
-  
   def removeSessionTemplater(name: String) =
   servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
-  
-  /*
-  def addSessionDispatcher(name: String, rw: LiftRules.DispatchPf) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, DispatchHolder(name, rw) :: sessionDispatcher.filter(_.name != name)))
-  
-  def removeSessionDispatcher(name: String) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionDispatchTableName, sessionDispatcher.remove(_.name == name)))
-  */
   
   /**
   * Test the current request to see if it's a POST
@@ -316,7 +297,7 @@ object S {
   private val currCnt = new ThreadGlobal[Int]
   
   private def initNotice[B](f: => B): B = {
-    _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq)])(f)
+    _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])(f)
   }
   
   /**
@@ -470,14 +451,9 @@ object S {
   
   object attr {
     def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
-    // def update(what: String, value: String) = S._attrs.value(what) = value
   }
   
   def setVars[T](attr: MetaData)(f: => T): T = {
-    //val old = _attrs.value
-    //val ht: HashMap[String, String] = new HashMap
-    //old.elements.foreach(v => ht(v._1) = v._2)
-    //attr.elements.foreach(e => ht(e.key) = e.value.text)
     _attrs.doWith(_attrs.value ++ attr.toList.map(m => (m.key, m.value.text)))(f)
   }
   
@@ -486,7 +462,7 @@ object S {
     else init(RequestState.nil,session)(f)
   }
   
-  def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq)], session: LiftSession)(f : => B) : B = {
+  def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq, Can[String])], session: LiftSession)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
         _init(request, session)(() => f)
     }
@@ -497,7 +473,6 @@ object S {
   
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
     
-  // def invokeSnippet[B](snippetName: String)(f: => B):B = _invokedAs.doWith(snippetName)(f)
   def invokedAs: String = _attrs.value.get("type") getOrElse ""
   
   def set(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value)) 
@@ -543,577 +518,321 @@ object S {
   
   private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
   
-  private def makeFormElement(name: String, func: AFuncHolder): Elem = (<input type={name} name={mapFunc(func)}/>)
-  
-  
   /**
-  * Create an Ajax button. When it's pressed, the function is executed
-  *
-  * @param text -- the name/text of the button
-  * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
-  *
-  * @return a button to put on your page
-  */
-  def ajaxButton(func: => JsCmd, text: String): Elem =
-  <input type="button" value={text}/> % 
-  ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
-    mapFunc(() => func)+"=true', dataType: 'script'});"))
-    
-    /**
-    * Create an Ajax button. When it's pressed, the function is executed
-    *
-    * @param text -- the name/text of the button
-    * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
-    *
-    * @return a button to put on your page
-    */
-    def ajaxButton(text: String)(func: => JsCmd): Elem =
-    <input type="button" value={text}/> % 
-    ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
-      mapFunc(() => func)+"=true', dataType: 'script'});"));
-      
-      def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
-        val key = "F"+System.nanoTime+"_"+randomString(3)
-        
-        def checkCmd(in: Any) = in match {
-          case v: scala.collection.Map[String, Any] if v.isDefinedAt("command") => 
-          JsonCmd(v("command").toString, v.get("target").
-          map {
-            case null => null
-            case x => x.toString
-    } . getOrElse(null),v.get("params").getOrElse(None), v)
-    
-    case v => v
-  }
-  
-  def jsonCallback(in: List[String]): JsCmd = {
-    in.flatMap(s => 
-    try {
-      JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
-  } catch {
-    case e => List(JsCmds.Noop)
-  }).foldLeft(JsCmds.Noop)(_ & _)
-  }
-  
-  addFunctionMap(key, jsonCallback _)
-  
-  (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
-    key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
-  }
-  
-  /**
-  * create an anchor tag around a body which will do an AJAX call and invoke the function
-  *
-  * @param func - the function to invoke when the link is clicked
-  * @param body - the NodeSeq to wrap in the anchor tag
-  */
-  def a(func: () => JsCmd, body: NodeSeq): Elem = {
+   * @param f - function returning a JsCmds
+   * @return (JsonCall, JsCmd)
+   */
+  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
-    addFunctionMap(key, (a: List[String]) => func())
-    (<lift:a key={key}>{body}</lift:a>)
-    }
-    
-    def a(body: NodeSeq)(func: => JsCmd): Elem = a(() => func, body)
-    
-    /**
-    * Create an anchor that will run a JavaScript command when clicked
-    */
-    def a(body: NodeSeq, cmd: JsCmd): Elem = (<a href="javascript://" onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)
-    
-    /**
-    * Create a span that will run a JavaScript command when clicked
-    */
-    def span(body: NodeSeq, cmd: JsCmd): Elem = (<span onclick={cmd.toJsCmd}>{body}</span>)
-    
-    /**
-    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
-    * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
-    * @param func -- the function to call when the data is sent
-    *
-    * @return the JavaScript that makes the call
-    */
-    def ajaxCall(jsCalcValue: String, func: String => JsCmd): String = ajaxCall_*(jsCalcValue, SFuncHolder(func))
-    
-    /**
-    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
-    * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
-    * @param func -- the function to call when the data is sent
-    *
-    * @return the JavaScript that makes the call
-    */
-    private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    "jQuery.ajax( {url: '"+
-    contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
-    
-    def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
-      val funcName = mapFunc(func)
-      val (nk, id) = findOrAddId(kids)
-      val rnk = if (visible) nk else nk % ("style" -> "display: none") 
-      val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-      contextPath+"/"+LiftRules.ajaxPath+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
-      nh ++ rnk
-    }
-    
-    /**
-    * Create a JSON text widget that makes a JSON call on blur or "return".
-    * Note that this is not "Stateful" and will be moved out of S at some
-    * point.
-    *
-    * @param value - the initial value of the text field
-    * @param json - takes a JsExp which describes how to recover the
-    * value of the text field and returns a JsExp containing the thing
-    * to execute on blur/return
-    *
-    * @return a text field
-    */
-    def jsonText(value: String, json: JsExp => JsCmd): Elem = {
-      (<input type="text" value={value}/>) %
-      ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-      ("onblur" -> (json(JE.JsRaw("this.value")).toJsCmd))
-    }
-    
-    def ajaxText(value: String, func: String => JsCmd): Elem = 
-    ajaxText_*(value, SFuncHolder(func))
-    
-    private def ajaxText_*(value: String, func: AFuncHolder): Elem = {
-      val funcName = mapFunc(func) 
-      (<input type="text" value={value}/>) %
-      ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-      ("onblur" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
-    }
-    
-    def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
-    
-    private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
-      val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) %
-      ("onclick" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))        
-    }
-    
-    def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
-    
-    private def ajaxSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
-      val vals = opts.map(_._1)
-      val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
-      val funcName = mapFunc(testFunc)
       
-      (<select>{
-        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
-    }
-    
-    def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
-    mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
-    
-    /**
-    *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
-    * the hidden element blurs, it swaps into the shown element.
-    */
-    def swappable(shown: Elem, hidden: Elem): Elem = {
-      val (rs, sid) = findOrAddId(shown)
-      val (rh, hid) = findOrAddId(hidden)
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}); return false;"))}{
-      dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
-    }
-    
-    def swappable(shown: Elem, hidden: String => Elem): Elem = {
-      val (rs, sid) = findOrAddId(shown)
-      val hid = "S"+randomString(10)
-      val rh = <span id={hid}>{hidden("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();")}</span>
-      
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show(); return false;"))}{
-      (rh % ("style" -> "display: none"))}</span>)      
-    }
-    
-    private def dealWithBlur(elem: Elem, blurCmd: String): Elem = {
-      (elem \ "@onblur").toList match {
-        case Nil => elem % ("onblur" -> blurCmd)
-        case x :: xs => val attrs = elem.attributes.filter(_.key != "onblur")
-        Elem(elem.prefix, elem.label, new UnprefixedAttribute("onblur", Text(blurCmd + x.text), attrs), elem.scope, elem.child :_*)
-      }
-    }
-    /**
-    * Returns the JsCmd that holds the notices markup
-    */
-    private[http] def noticesToJsCmd: JsCmd = {
-      
-      val func: (() => List[NodeSeq], String, MetaData) => NodeSeq = (f, title, attr) => f() map (e => <li>{e}</li>) match {
-        case Nil => Nil
-        case list => <div>{title}<ul>{list}</ul></div> % attr
-      }
+    def checkCmd(in: Any) = in match {
+      case v: scala.collection.Map[String, Any] if v.isDefinedAt("command") => 
+      JsonCmd(v("command").toString, v.get("target").
+        map {
+          case null => null
+          case x => x.toString
+     } . getOrElse(null),v.get("params").getOrElse(None), v)
   
-      val xml = List((LiftRules.ajaxNoticeMeta, S.notices _, S.??("msg.notice")), 
-                     (LiftRules.ajaxWarningMeta, S.warnings _, S.??("msg.warning")), 
-                     (LiftRules.ajaxErrorMeta, S.errors _, S.??("msg.error"))) flatMap {
-        msg => msg._1 match {
-          case Full(meta) => func(msg._2, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
-          case _ => func(msg._2, msg._3, Null)
-        }
-      }
+     case v => v
+    }
+
+    def jsonCallback(in: List[String]): JsCmd = {
+      in.flatMap(s => 
+      try {
+        JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
+      } catch {
+        case e => List(JsCmds.Noop)
+      }).foldLeft(JsCmds.Noop)(_ & _)
+    }
+
+    addFunctionMap(key, jsonCallback _)
+
+    (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+       key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
+  }
+  
+  /**
+   * Returns the JsCmd that holds the notices markup
+   *
+   */
+  private[http] def noticesToJsCmd: JsCmd = {
       
-      xml match {
-        case Nil => JsCmds.Noop 
-        case _ => JsCmds.SetHtml(LiftRules.noticesContainerId, xml)
-      }
+    val func: (() => List[NodeSeq], String, MetaData) => NodeSeq = (f, title, attr) => f() map (e => <li>{e}</li>) match {
+      case Nil => Nil
+      case list => <div>{title}<ul>{list}</ul></div> % attr
     }
-    
-    
-    /**
-    * create an anchor tag around a body 
-    *
-    * @param func - the function to invoke when the link is clicked
-    * @param body - the NodeSeq to wrap in the anchor tag
-    */
-    def link(to: String, func: () => Any, body: NodeSeq): Elem = {
-      val key = mapFunc((a: List[String]) => {func(); true})
-      (<a href={to+"?"+key+"=_"}>{body}</a>)
+  
+    val f = noIdMessages _
+    val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.notice")), 
+                   (LiftRules.ajaxWarningMeta, f(S.warnings ), S.??("msg.warning")), 
+                   (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.error"))) flatMap {
+       msg => msg._1 match {
+         case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
+         case _ => func(msg._2 _, msg._3, Null)
+     }
     }
-    
-    def text_*(value: String, func: AFuncHolder): Elem = makeFormElement("text", func) % new UnprefixedAttribute("value", Text(value), Null)
-    def password_*(value: String, func: AFuncHolder): Elem = makeFormElement("password", func) % new UnprefixedAttribute("value", Text(value), Null)
-    def hidden_*(func: AFuncHolder): Elem = makeFormElement("hidden", func) % ("value" -> "true")
-    def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
-    def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-    def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-    def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func)) % ("value" -> "true")
-    def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-    
-    def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
-    def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
-    def ajaxForm(body: NodeSeq, onSubmit: JsCmd) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
-    
-    /**
-    * Create a select box based on the list with a default value and the function to be executed on
-    * form submission
-    *
-    * @param opts -- the options.  A list of value and text pairs (value, text to display)
-    * @param deflt -- the default value (or Empty if no default value)
-    * @param func -- the function to execute on form submission
-    */
-    def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = select_*(opts, deflt, SFuncHolder(func))
-    
-    /**
-    * Create a select box based on the list with a default value and the function to be executed on
-    * form submission
-    *
-    * @param opts -- the options.  A list of value and text pairs
-    * @param deflt -- the default value (or Empty if no default value)
-    * @param func -- the function to execute on form submission
-    */
-    def select_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
-      val vals = opts.map(_._1)
-      val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
       
-      (<select name={mapFunc(testFunc)}>{
-        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>)
+    val groupMessages = xml match {
+      case Nil => JsCmds.Noop 
+      case _ => JsCmds.SetHtml(LiftRules.noticesContainerId, xml)
     }
-    
-    /**
-    * Create a select box based on the list with a default value and the function to be executed on
-    * form submission.  No check is made to see if the resulting value was in the original list.
-    * For use with DHTML form updating.
-    *
-    * @param opts -- the options.  A list of value and text pairs
-    * @param deflt -- the default value (or Empty if no default value)
-    * @param func -- the function to execute on form submission
-    */
-    def untrustedSelect(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = untrustedSelect_*(opts, deflt, SFuncHolder(func))
-    
-    /**
-    * Create a select box based on the list with a default value and the function to be executed on
-    * form submission.  No check is made to see if the resulting value was in the original list.
-    * For use with DHTML form updating.
-    *
-    * @param opts -- the options.  A list of value and text pairs
-    * @param deflt -- the default value (or Empty if no default value)
-    * @param func -- the function to execute on form submission
-    */
-    def untrustedSelect_*(opts: List[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
-      (<select name={mapFunc(func)}>{
-        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-      }</select>)
-    }
-    
-    
-    private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "true", Null) else Null
-    
-    def multiSelect(opts: List[(String, String)], deflt: List[String], func: String => Any): Elem = multiSelect_*(opts, deflt, SFuncHolder(func))
-    
-    def multiSelect_*(opts: List[(String, String)], deflt: List[String],func: AFuncHolder): Elem = (<select multiple="true" name={mapFunc(func)}>{
-      opts.flatMap(o => (<option value={o._1}>{o._2}</option>) % selected(deflt.contains(o._1)))
-    }</select>)
-    
-    
-    def textarea(value: String, func: String => Any): Elem = textarea_*(value, SFuncHolder(func))
-    
-    def textarea_*(value: String, func: AFuncHolder): Elem = (<textarea name={mapFunc(func)}>{value}</textarea>) 
-    
-    def radio(opts: List[String], deflt: Can[String], func: String => Any): ChoiceHolder[String] =
-    radio_*(opts, deflt, SFuncHolder(func))
-    
-    def radio_*(opts: List[String], deflt: Can[String], func: AFuncHolder): ChoiceHolder[String] = {
-      val name = mapFunc(func)
-      val itemList = opts.map(v => ChoiceItem(v, (<input type="radio" name={name} value={v}/>) % 
-      checked(deflt.filter((s: String) => s == v).isDefined)))
-      ChoiceHolder(itemList)
-    }
-    
-    def fileUpload(func: FileParamHolder => Any): Elem = <input type="file" name={mapFunc(BinFuncHolder(func))} />
-    
-    case class ChoiceItem[T](key: T, xhtml: NodeSeq)
-    
-    case class ChoiceHolder[T](items: List[ChoiceItem[T]]) {
-      def apply(in: T) = items.filter(_.key == in).head.xhtml
-      def apply(in: Int) = items(in).xhtml
-      def map[A](f: ChoiceItem[T] => A) = items.map(f)
-      def flatMap[A](f: ChoiceItem[T] => Iterable[A]) = items.flatMap(f)
-      def filter(f: ChoiceItem[T] => Boolean) = items.filter(f)
-      def toForm: NodeSeq = flatMap(c => (<span>{c.xhtml}&nbsp;{c.key.toString}<br /></span>))
-    }
-    
-    private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null 
-    private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
-    
-    def checkbox[T](possible: List[T], actual: List[T], func: List[T] => Any): ChoiceHolder[T] = {
-      val len = possible.length
-      val name = mapFunc(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
-      // val realParams = params.toList.filter(p => p match {case Val(_) => false; case _ => true})
       
-      ChoiceHolder(possible.zipWithIndex.map(p => 
-      ChoiceItem(p._1, (<input type="checkbox" name={name} value={p._2.toString}/>) % checked(actual.contains(p._1)) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
-    }
+    val g = idMessages _
+    List((LiftRules.ajaxErrorMeta, g(S.errors)), 
+         (LiftRules.ajaxWarningMeta, g(S.warnings)), 
+         (LiftRules.ajaxNoticeMeta, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
+           case (meta, m) => m.foldLeft(car)((left, r) => 
+             left & JsCmds.SetHtml(r._1, <span>{r._2 flatMap(node => node)}</span> % 
+              (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
+         }
+         )
+  }
     
-    /**
-    * Defines a new checkbox set to {@code value} and running {@code func} when the 
-    * checkbox is submitted.
-    */
-    def checkbox(value: Boolean, func: Boolean => Any): NodeSeq = {
-      checkbox_id(value, func, Empty)
-    }
+  implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
+  implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
+  implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, Text(in._2.toString), Null)
     
-    /**
-    * Defines a new checkbox set to {@code value} and running {@code func} when the
-    * checkbox is submitted. Has an id of {@code id}.
-    */
-    def checkbox_id(value: Boolean, func: Boolean => Any, id: Can[String]): NodeSeq = {
-      def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
-        f(in.exists(toBoolean(_)))
-        true
-      }
-      checkbox_*(value, LFuncHolder(from(func)), id)
-    }
+  @serializable
+  abstract class AFuncHolder {
+    def owner: Can[String]
+    def apply(in: List[String]): Any
+    def duplicate(newOwner: String): AFuncHolder
+  }
     
-    def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String]): NodeSeq = {
-      val name = mapFunc(func)
-      (<input type="hidden" name={name} value="false"/>) ++
-      ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
-    }
+  @serializable  
+  class BinFuncHolder(val func: FileParamHolder => Any, val owner: Can[String]) extends AFuncHolder {
+    def apply(in: List[String]) {Log.error("You attempted to call a 'File Upload' function with a normal parameter.  Did you forget to 'enctype' to 'multipart/form-data'?")}
+    def apply(in: FileParamHolder) = func(in)
+    def duplicate(newOwner: String) = new BinFuncHolder(func, Full(newOwner))
+  }
     
-    implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
-    implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
-    implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, Text(in._2.toString), Null)
+  object BinFuncHolder {
+    def apply(func: FileParamHolder => Any) = new BinFuncHolder(func, Empty)
+    def apply(func: FileParamHolder => Any, owner: Can[String]) = new BinFuncHolder(func, owner)
+  }
     
-    @serializable
-    abstract class AFuncHolder {
-      def owner: Can[String]
-      def apply(in: List[String]): Any
-      def duplicate(newOwner: String): AFuncHolder
-    }
+  object SFuncHolder {
+    def apply(func: String => Any) = new SFuncHolder(func, Empty)
+    def apply(func: String => Any, owner: Can[String]) = new SFuncHolder(func, owner)
+  }
     
+  @serializable
+  class SFuncHolder(val func: String => Any,val owner: Can[String]) extends AFuncHolder {
+    def this(func: String => Any) = this(func, Empty)
+    def apply(in: List[String]): Any = in.map(func(_))
+    def duplicate(newOwner: String) = new SFuncHolder(func, Full(newOwner))    
+  }
     
+  object LFuncHolder {
+    def apply(func: List[String] => Any) = new LFuncHolder(func, Empty)
+    def apply(func: List[String] => Any, owner: Can[String]) = new LFuncHolder(func, owner)
+  }
     
-    @serializable  
-    class BinFuncHolder(val func: FileParamHolder => Any, val owner: Can[String]) extends AFuncHolder {
-      def apply(in: List[String]) {Log.error("You attempted to call a 'File Upload' function with a normal parameter.  Did you forget to 'enctype' to 'multipart/form-data'?")}
-      def apply(in: FileParamHolder) = func(in)
-      def duplicate(newOwner: String) = new BinFuncHolder(func, Full(newOwner))
-    }
+  @serializable
+  class LFuncHolder(val func: List[String] => Any,val owner: Can[String]) extends AFuncHolder {
+    def apply(in: List[String]): Any = func(in)
+    def duplicate(newOwner: String) = new LFuncHolder(func, Full(newOwner))    
+  }
     
-    object BinFuncHolder {
-      def apply(func: FileParamHolder => Any) = new BinFuncHolder(func, Empty)
-      def apply(func: FileParamHolder => Any, owner: Can[String]) = new BinFuncHolder(func, owner)
-    }
+  object NFuncHolder {
+    def apply(func: () => Any) = new NFuncHolder(func, Empty)
+    def apply(func: () => Any, owner: Can[String]) = new NFuncHolder(func, owner)
+  }
     
-    object SFuncHolder {
-      def apply(func: String => Any) = new SFuncHolder(func, Empty)
-      def apply(func: String => Any, owner: Can[String]) = new SFuncHolder(func, owner)
-    }
+  @serializable
+  class NFuncHolder(val func: () => Any,val owner: Can[String]) extends AFuncHolder {
+    def apply(in: List[String]): Any = in.map(s => func())
+    def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))        
+  }
     
-    @serializable
-    class SFuncHolder(val func: String => Any,val owner: Can[String]) extends AFuncHolder {
-      def this(func: String => Any) = this(func, Empty)
-      def apply(in: List[String]): Any = in.map(func(_))
-      def duplicate(newOwner: String) = new SFuncHolder(func, Full(newOwner))    
-    }
+  def mapFunc(in: AFuncHolder): String = mapFunc("F"+System.nanoTime+"_"+randomString(3), in)
     
-    object LFuncHolder {
-      def apply(func: List[String] => Any) = new LFuncHolder(func, Empty)
-      def apply(func: List[String] => Any, owner: Can[String]) = new LFuncHolder(func, owner)
-    }
-    
-    @serializable
-    class LFuncHolder(val func: List[String] => Any,val owner: Can[String]) extends AFuncHolder {
-      def apply(in: List[String]): Any = func(in)
-      def duplicate(newOwner: String) = new LFuncHolder(func, Full(newOwner))    
-    }
-    
-    object NFuncHolder {
-      def apply(func: () => Any) = new NFuncHolder(func, Empty)
-      def apply(func: () => Any, owner: Can[String]) = new NFuncHolder(func, owner)
-    }
-    
-    @serializable
-    class NFuncHolder(val func: () => Any,val owner: Can[String]) extends AFuncHolder {
-      def apply(in: List[String]): Any = in.map(s => func())
-      def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))        
-    }
-    
-    def mapFunc(in: AFuncHolder): String = mapFunc("F"+System.nanoTime+"_"+randomString(3), in)
-    
-    def mapFunc(name: String, inf: AFuncHolder): String = {
-      addFunctionMap(name, inf)
+  def mapFunc(name: String, inf: AFuncHolder): String = {
+    addFunctionMap(name, inf)
       name
-    }
+  }
     
     
-    def params(n: String): List[String] = request.map(_.params(n)).openOr(Nil)
-    def param(n: String): Can[String] = request.flatMap(r => Can(r.param(n)))
+  def params(n: String): List[String] = request.map(_.params(n)).openOr(Nil)
+  def param(n: String): Can[String] = request.flatMap(r => Can(r.param(n)))
     
-    def error(n: String) {error(Text(n))}
-    def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n)}
-    def notice(n: String) {notice(Text(n))}
-    def notice(n: NodeSeq) {_notice.value += (NoticeType.Notice, n)}
-    def warning(n: String) {warning(Text(n))}
-    def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n)}
+  def error(n: String) {error(Text(n))}
+  def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n,  Empty)}
+  def error(id:String, n: NodeSeq) {_notice.value += (NoticeType.Error, n,  Full(id))}
+  def error(id:String, n: String) {error(id, Text(n))}
+  def notice(n: String) {notice(Text(n))}
+  def notice(n: NodeSeq) {_notice.value += (NoticeType.Notice, n, Empty)}
+  def notice(id:String, n: NodeSeq) {_notice.value += (NoticeType.Notice, n,  Full(id))}
+  def notice(id:String, n: String) {notice(id, Text(n))}
+  def warning(n: String) {warning(Text(n))}
+  def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n, Empty)}
+  def warning(id:String, n: NodeSeq) {_notice.value += (NoticeType.Warning, n,  Full(id))}
+  def warning(id:String, n: String) {warning(id, Text(n))}
+
+  def error(vi: List[FieldError]) {_notice.value ++= vi.map{i => (NoticeType.Error, i.msg, i.field.uniqueFieldId )}}
     
-    def error(vi: List[ValidationIssue]) {_notice.value ++= vi.map{i => (NoticeType.Error, (<span><b>{i.field.name}</b>: {i.msg}</span>) )}}
     
-    private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
-    private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg)}
+  private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
+  private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg, Empty)}
     
-    def getNotices: List[(NoticeType.Value, NodeSeq)] = 
+  def getNotices: List[(NoticeType.Value, NodeSeq, Can[String])] = 
     Can.legacyNullTest(_notice.value).toList.flatMap(_.toList)
     
-    def errors: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(_._2))
-    def notices: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(_._2))
-    def warnings: List[NodeSeq] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Warning).map(_._2))
-    def clearCurrentNotices {_notice.value.clear}
+  def errors: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(n => (n._2, n._3)))
+  def notices: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(n => (n._2, n._3)))
+  def warnings: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Warning).map(n => (n._2, n._3)))
+  def clearCurrentNotices {_notice.value.clear}
+  
+  /**
+   * Returns the messages provided by list function that are associated with id
+   *
+   * @param id - the lookup id
+   * @param f - the function that returns the messages 
+   */
+  def messagesById(id: String)(f: => List[(NodeSeq, Can[String])]): List[NodeSeq] = f filter( _._2 map (_ equals id ) openOr false) map(_._1)
     
-    }
+  /**
+   *  Returns the messages that are not associated with any id
+   *
+   * @param f - the function that returns the messages 
+   */
+  def noIdMessages(f: => List[(NodeSeq, Can[String])]): List[NodeSeq] = f filter( _._2 isEmpty) map (_._1)
+
+  /**
+   * Returns the messages that are associated with any id. 
+   * Messages associated with the same id will be enlisted.
+   *
+   * @param f - the function that returns the messages 
+   */
+  def idMessages(f: => List[(NodeSeq, Can[String])]):List[(String, List[NodeSeq])] = {
+    val res = new HashMap[String, List[NodeSeq]]
+    f filter(  _._2.isEmpty == false) foreach (_ match {
+      case (node, id) => val key = id open_!; res += key -> (res.getOrElseUpdate(key, Nil) ::: List(node))
+    })
+       
+    res toList
+  }
+
+  implicit def tuple2FieldError(t: (FieldIdentifier, NodeSeq)) = FieldError(t._1, t._2)
     
-    @serializable
-    object NoticeType extends Enumeration {
-      val Notice, Warning, Error = Value
-    }
+}
     
-    abstract class JsonHandler {
-      private val name = "_lift_json_"+getClass.getName
-      private def handlers: (JsonCall, JsCmd) = 
-      S.servletSession.map(s => s.getAttribute(name) match {
-        case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
-        case _ => { 
-          val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
-          s.setAttribute(name, Full(ret))
-          ret
-        }
-      }).openOr( (JsonCall(""), JsCmds.Noop) )
-      
-      def call: JsonCall = handlers._1
-      
-      def jsCmd: JsCmd = handlers._2
-      
-      def apply(in: Any): JsCmd
-    }
+  @serializable
+  object NoticeType extends Enumeration {
+    val Notice, Warning, Error = Value
+  }
     
-    abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
-      private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
-      protected def findFunc(name: String): Can[T]
-      protected def setFunc(name: String, value: T): Unit
-      protected def clearFunc(name: String): Unit
-      
-      /**
-      * The current value of the session variable
-      */
-      def is: T = findFunc(name) match {
-        case Full(v) => v
-        case _ => val ret = dflt
-        apply(ret)
+  abstract class JsonHandler {
+    private val name = "_lift_json_"+getClass.getName
+    private def handlers: (JsonCall, JsCmd) = 
+    S.servletSession.map(s => s.getAttribute(name) match {
+      case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
+       case _ => { 
+        val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+        s.setAttribute(name, Full(ret))
         ret
       }
-      
-      /**
-      * Set the session variable
-      *
-      * @param what -- the value to set the session variable to
-      */
-      def apply(what: T): Unit = setFunc(name, what)
-      
-      /*
-      def apply(what: Can[T]): Unit = what match {
-      case Full(w) => setFunc(name, w)
-      case _ => clearFunc(name)
-      //case Failure(_, _, _) => ()        // no-op (or clear?)
-      //case Empty => clearFunc(name)      // clear (or no-op?)
-      }
-      */
-      
-      def remove(): Unit = clearFunc(name)   
-      
-      override def toString = is.toString
-    }
+    }).openOr( (JsonCall(""), JsCmds.Noop) )
     
+    def call: JsonCall = handlers._1
+      
+    def jsCmd: JsCmd = handlers._2
+      
+    def apply(in: Any): JsCmd
+  }
+    
+  abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
+    private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
+    protected def findFunc(name: String): Can[T]
+    protected def setFunc(name: String, value: T): Unit
+    protected def clearFunc(name: String): Unit
+     
     /**
-    * Keep session information around without the nastiness of naming session variables
-    * or the type-unsafety of casting the results.
-    * SessionVars are type-safe variables that map pretty directly to  
-    * HttpSession attributes.  Put stuff in and they are available for the  
-    * life of the Session.
-    *
-    * @param dflt - the default value of the session variable
-    */
-    abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
-      override protected def findFunc(name: String): Can[T] = S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
-      override protected def setFunc(name: String, value: T): Unit = S.servletSession.foreach(_.setAttribute(name, Full(value)))
-      override protected def clearFunc(name: String): Unit = S.servletSession.foreach(_.removeAttribute(name))
+     * The current value of the session variable
+     */
+    def is: T = findFunc(name) match {
+      case Full(v) => v
+      case _ => val ret = dflt
+        apply(ret)
+        ret
     }
-    
+      
     /**
-    * Keep request-local information around without the nastiness of naming session variables
-    * or the type-unsafety of casting the results.
-    * RequestVars share their value through the scope of the current HTTP  
-    * request.  They have no value at the beginning of request servicing  
-    * and their value is discarded at the end of request processing.  They  
-    * are helpful to share values across many snippets.
-    *
-    * @param dflt - the default value of the session variable
-    */
-    abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
-      override protected def findFunc(name: String): Can[T] = S.requestState(name) // S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
-      override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value // S.servletSession.foreach(_.setAttribute(name, Full(value)))
-      override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
-    }
+     * Set the session variable
+     *
+     * @param what -- the value to set the session variable to
+     */
+    def apply(what: T): Unit = setFunc(name, what)
+      
+    def remove(): Unit = clearFunc(name)   
+      
+    override def toString = is.toString
+  }
+    
+  /**
+   * Keep session information around without the nastiness of naming session variables
+   * or the type-unsafety of casting the results.
+   * SessionVars are type-safe variables that map pretty directly to  
+   * HttpSession attributes.  Put stuff in and they are available for the  
+   * life of the Session.
+   *
+   * @param dflt - the default value of the session variable
+   */
+  abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
+    override protected def findFunc(name: String): Can[T] = S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
+    override protected def setFunc(name: String, value: T): Unit = S.servletSession.foreach(_.setAttribute(name, Full(value)))
+    override protected def clearFunc(name: String): Unit = S.servletSession.foreach(_.removeAttribute(name))
+  }
+    
+  /**
+   * Keep request-local information around without the nastiness of naming session variables
+   * or the type-unsafety of casting the results.
+   * RequestVars share their value through the scope of the current HTTP  
+   * request.  They have no value at the beginning of request servicing  
+   * and their value is discarded at the end of request processing.  They  
+   * are helpful to share values across many snippets.
+   *
+   * @param dflt - the default value of the session variable
+   */
+  abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
+    override protected def findFunc(name: String): Can[T] = S.requestState(name) // S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
+    override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value // S.servletSession.foreach(_.setAttribute(name, Full(value)))
+    override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
+  }
     
     
     
-    object AnyVar {
-      implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
-      implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
-    }
+  object AnyVar {
+    implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
+    implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
+  }
     
-    case class JsonCmd(command: String, target: String, params: Any,
+  case class JsonCmd(command: String, target: String, params: Any,
     all: scala.collection.Map[String, Any])
     
-    class ResponseInfoHolder {
-      var headers: Map[String, String] = Map.empty
-      private var _docType: Can[String] = Empty
-      private var _setDocType = false
+  class ResponseInfoHolder {
+    var headers: Map[String, String] = Map.empty
+    private var _docType: Can[String] = Empty
+    private var _setDocType = false
       
-      def docType = _docType
-      def docType_=(in: Can[String]) {
-        _docType = in
-        _setDocType = true
-      }
-      
-      def overrodeDocType = _setDocType
+    def docType = _docType
+    def docType_=(in: Can[String]) {
+      _docType = in
+      _setDocType = true
     }
+      
+    def overrodeDocType = _setDocType
+  }
+    
+  /**
+   * Defines the association of this reference with an markup tag ID
+   */
+  trait FieldIdentifier {
+    def uniqueFieldId: Can[String] = Empty
+  }
+    
+  /**
+   * Associate a FieldIdentifier with an NodeSeq
+   */
+  case class FieldError(field : FieldIdentifier, msg : NodeSeq)
+    

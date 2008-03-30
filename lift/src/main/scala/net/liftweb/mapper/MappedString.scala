@@ -11,8 +11,8 @@ import java.lang.reflect.Method
 import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
 import java.util.Date
 import java.util.regex._
-import scala.xml.NodeSeq
-import net.liftweb.http.S
+import scala.xml.{NodeSeq, Text}
+import net.liftweb.http.{S, FieldIdentifier, FieldError}
 import net.liftweb.http.js._
 import S._
 
@@ -35,7 +35,7 @@ class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends Mapp
   override protected def setFilter = crop _ :: super.setFilter  
 }
 
-class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] {
+class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] with FieldIdentifier {
   private val data: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   private val orgData: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
@@ -152,32 +152,32 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
    * A validation helper.  Make sure the string is at least a particular
    * length and generate a validation issue if not
    */
-  def valMinLen(len: int, msg: String)(value: String): List[ValidationIssue] = 
-    if ((value eq null) || value.length < len) List(ValidationIssue(this, msg))
+  def valMinLen(len: int, msg: String)(value: String): List[FieldError] = 
+    if ((value eq null) || value.length < len) List(FieldError(this, Text(msg)))
     else Nil
 
   /**
    * A validation helper.  Make sure the string is no more than a particular
    * length and generate a validation issue if not
    */
-  def valMaxLen(len: int, msg: String)(value: String): List[ValidationIssue] = 
-    if ((value ne null) && value.length > len) List(ValidationIssue(this, msg))
+  def valMaxLen(len: int, msg: String)(value: String): List[FieldError] = 
+    if ((value ne null) && value.length > len) List(FieldError(this, Text(msg)))
     else Nil
 
   /**
    * Make sure that the field is unique in the database
    */
-  def valUnique(msg: String)(value: String): List[ValidationIssue] =
+  def valUnique(msg: String)(value: String): List[FieldError] =
     fieldOwner.getSingleton.findAll(By(this,value)).
       filter(!_.comparePrimaryKeys(this.fieldOwner)).
-      map(x =>ValidationIssue(this, msg))
+      map(x =>FieldError(this, Text(msg)))
 
   /**
    * Make sure the field matches a regular expression
    */
-  def valRegex(pat: Pattern, msg: String)(value: String): List[ValidationIssue] = pat.matcher(value).matches match {
+  def valRegex(pat: Pattern, msg: String)(value: String): List[FieldError] = pat.matcher(value).matches match {
     case true => Nil
-    case false => List(ValidationIssue(this, msg))
+    case false => List(FieldError(this, Text(msg)))
   }
 
   /**

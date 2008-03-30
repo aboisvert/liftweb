@@ -6,7 +6,7 @@ import record._
 import scala.xml._
 
 trait TextForm { self: SimpleField =>
-  def toForm: NodeSeq = S.text(toString, v => fromString(v).foreach(set(_)))
+  def toForm: NodeSeq = SHtml.text(toString, v => fromString(v).foreach(set(_)))
 }
 
 class LongField[OwnerType <: Record[OwnerType]](owner: OwnerType) extends LongFieldProto[OwnerType](owner) with JdbcLocator 

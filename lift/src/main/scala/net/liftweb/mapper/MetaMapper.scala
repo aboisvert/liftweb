@@ -12,7 +12,7 @@ import java.sql.{ResultSet, Types, PreparedStatement, Statement}
 import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Empty, Full, Failure}
-import net.liftweb.http.{LiftRules, S}
+import net.liftweb.http.{LiftRules, S, SHtml, FieldError}
 import java.util.Date
 import net.liftweb.http.js._
 
@@ -337,12 +337,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     mappedColumns.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
   
-  def validate(toValidate : A) : List[ValidationIssue] = {
+  def validate(toValidate : A) : List[FieldError] = {
     val saved_? = this.saved_?(toValidate)
     _beforeValidation(toValidate)
     if (saved_?) _beforeValidationOnUpdate(toValidate) else _beforeValidationOnCreate(toValidate)
     
-    var ret : List[ValidationIssue] = Nil
+    var ret : List[FieldError] = Nil
     
     mappedFieldArray.foreach{f => ret = ret ::: ??(f.method, toValidate).validate}
 
@@ -1113,7 +1113,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     }
     
     xbind(name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm.openOr(Text(""))) orElse {
-      case "submit" => label => S.submit(label.text, callback)
+      case "submit" => label => SHtml.submit(label.text, callback)
     })
   }
 

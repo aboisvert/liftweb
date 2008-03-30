@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
-import scala.xml.{NodeSeq}
-import net.liftweb.http.S
+import scala.xml.{NodeSeq, Text}
+import net.liftweb.http.{S, SHtml, FieldIdentifier, FieldError}
 import net.liftweb.util._
 import java.util.{Locale, TimeZone}
 
@@ -58,7 +58,7 @@ class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) 
   }
   
   override def _toForm: Can[NodeSeq] = 
-    Full(S.select(Locale.getAvailableLocales.
+    Full(SHtml.select(Locale.getAvailableLocales.
 		  toList.sort(_.getDisplayName < _.getDisplayName).
 		  map(lo => (lo.toString, lo.getDisplayName)), 
 		  Full(this.is), v => set(v)))
@@ -73,7 +73,7 @@ class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32
   }
   
   override def _toForm: Can[NodeSeq] = 
-    Full(S.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v)))
+    Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v)))
 }
 
 object MappedTimeZone {
@@ -91,10 +91,10 @@ class MappedCountry[T <: Mapper[T]](owner: T) extends MappedEnum[T, Countries.ty
 class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) extends MappedString[T](owner, 32) {
   override def setFilter = notNull _ :: toUpper _ :: trim _ :: super.setFilter
   
-  private def genericCheck(zip: String): List[ValidationIssue] = {
+  private def genericCheck(zip: String): List[FieldError] = {
     zip match {
-      case null => List(ValidationIssue(this, S.??("invalid.postal.code")))
-      case s if s.length < 3 => List(ValidationIssue(this, S.??("invalid.postal.code")))
+      case null => List(FieldError(this, Text(S.??("invalid.postal.code"))))
+      case s if s.length < 3 => List(FieldError(this, Text(S.??("invalid.postal.code"))))
       case _ => Nil
     }
   }

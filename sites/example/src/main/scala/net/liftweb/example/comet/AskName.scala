@@ -17,6 +17,7 @@ package net.liftweb.example.comet
 
 import net.liftweb.http._
 import S._
+import SHtml._
 import net.liftweb.util._
 import scala.xml._
 

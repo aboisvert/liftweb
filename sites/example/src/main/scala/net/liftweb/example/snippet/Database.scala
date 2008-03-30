@@ -21,6 +21,7 @@ import net.liftweb.http._
 import net.liftweb.http.S
 import net.liftweb.mapper._
 import net.liftweb.http.S._
+import net.liftweb.http.SHtml._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 
@@ -38,7 +39,7 @@ class Database {
 	
 	bind("database", in, "count" --> count,
 	"first" --> first.map(_.asHtml).openOr(<b>No Persons in the system</b>),
-	"submit" --> S.submit("Create More Records", ignore => {
+	"submit" --> submit("Create More Records", ignore => {
 		val cnt = 10 + randomInt(50)
 		for (x <- 1 to cnt) Person.create.firstName(randomString(20)).lastName(randomString(20)).personalityType(Personality.rand).save
 		notice("Added "+cnt+" records to the Person table")

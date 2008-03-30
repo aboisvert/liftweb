@@ -3,6 +3,7 @@ package com.skittr.snippet
 import scala.xml._
 import net.liftweb.http._
 import net.liftweb.http.S._
+import net.liftweb.http.SHtml._
 import com.skittr.model._
 import net.liftweb.mapper._
 import net.liftweb.util.Helpers._
@@ -25,9 +26,9 @@ class UserMgt {
         }
       <form method="POST" action={S.uri}>
       <table>
-      <tr><td>name:</td><td>{S.text("", username=_)}</td></tr>
-      <tr><td>pwd:</td><td>{S.password("", pwd=_)}</td></tr>
-      <tr><td><a href="/new_acct">new acct</a></td><td>{S.submit("login", testPwd _)}</td></tr>
+      <tr><td>name:</td><td>{text("", username=_)}</td></tr>
+      <tr><td>pwd:</td><td>{password("", pwd=_)}</td></tr>
+      <tr><td><a href="/new_acct">new acct</a></td><td>{submit("login", testPwd _)}</td></tr>
       </table>
       </form>
     })

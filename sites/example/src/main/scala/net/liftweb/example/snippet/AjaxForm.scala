@@ -20,6 +20,7 @@ import scala.xml.{NodeSeq, Text, Group, Elem}
 import net.liftweb.http._
 import net.liftweb.mapper._
 import S._
+import SHtml._
 import net.liftweb.util._
 import Helpers._
 import js._

@@ -21,6 +21,7 @@ import net.liftweb.http._
 import net.liftweb.http.S
 import net.liftweb.mapper._
 import net.liftweb.http.S._
+import net.liftweb.http.SHtml._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import java.util.Locale
@@ -132,7 +133,7 @@ class Misc {
 
   def lang(xhtml: Group): NodeSeq = bind("showLoc", xhtml,
       "lang" --> locale.getDisplayLanguage(locale),
-      "select" --> S.select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
+      "select" --> select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
         map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))
 
   // Test function to make sure that camelCase snippet methods are working

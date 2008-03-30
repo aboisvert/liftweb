@@ -1,10 +1,19 @@
-package net.liftweb.http
-
 /*
-* (c) 2007-2008 WorldWide Conferencing, LLC
-* Distributed under an Apache License
-* http://www.apache.org/licenses/LICENSE-2.0
+* Copyright 2007-2008 WorldWide Conferencing, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions
+* and limitations under the License.
 */
+package net.liftweb.http
 
 import scala.actors.Actor
 import scala.actors.Actor._
@@ -18,7 +27,6 @@ import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
 import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
-// import net.liftweb.http.S._
 import scala.xml.transform._
 
 object LiftSession {
@@ -39,7 +47,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   
-  private[http] var notices: Seq[(NoticeType.Value, NodeSeq)] = Nil
+  private[http] var notices: Seq[(NoticeType.Value, NodeSeq, Can[String])] = Nil
   //  private var _state: Map[String, String] = Map.empty
   
   private var asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
@@ -393,7 +401,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
         case Full(inst: StatefulSnippet) =>
         if (inst.dispatch.isDefinedAt(method))
-        (if (isForm) S.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
+        (if (isForm) SHtml.hidden(ignore => inst.registerThisSnippet) else Text("")) ++ 
         inst.dispatch(method)(kids)
         else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName, 
         LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}

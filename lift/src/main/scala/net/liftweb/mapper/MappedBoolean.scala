@@ -9,8 +9,7 @@ package net.liftweb.mapper
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import net.liftweb.util.Helpers._
-// import java.lang.{Integer}
-import net.liftweb.http.S
+import net.liftweb.http.{S, SHtml}
 import java.util.Date
 import net.liftweb.util._
 import net.liftweb.http.js._
@@ -93,9 +92,9 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.booleanColumnType
 
   
-    /**
+  /**
    * Create an input field for the item
    */
-  override def _toForm = Full(S.checkbox(is,this.apply _))
+  override def _toForm = Full(SHtml.checkbox(is,this.apply _))
 }
 

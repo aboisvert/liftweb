@@ -3,7 +3,6 @@ package net.liftweb.proto
 import scala.xml.{Node, NodeSeq, Text}
 import net.liftweb.http._
 import S._
-import net.liftweb.mapper.ValidationIssue
 import net.liftweb.util.{Can}
 
 /*
@@ -15,7 +14,7 @@ import net.liftweb.util.{Can}
    /**
      * Validate this field and return a list of Validation Issues
      */
-   def validate: List[ValidationIssue]
+   def validate: List[FieldError]
    
    /**
      * The human name of this field
@@ -336,9 +335,9 @@ type SetReturnType
        case v => v.toString
      }
    
-   def validations: List[FieldType => List[ValidationIssue]] = Nil
+   def validations: List[FieldType => List[FieldError]] = Nil
    
-   def validate : List[ValidationIssue] = {
+   def validate : List[FieldError] = {
      val cv = is
      validations.flatMap(_(cv))
    }

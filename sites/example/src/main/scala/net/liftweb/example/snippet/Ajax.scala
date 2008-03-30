@@ -17,6 +17,7 @@ package net.liftweb.example.snippet
 
 import net.liftweb.http._
 import S._
+import SHtml._
 import js._
 import JsCmds._
 import net.liftweb.util._

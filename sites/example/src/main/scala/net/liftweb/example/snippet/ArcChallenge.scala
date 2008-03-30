@@ -20,6 +20,7 @@ import net.liftweb.http._
 import net.liftweb.http.S
 import net.liftweb.mapper._
 import net.liftweb.http.S._
+import net.liftweb.http.SHtml._
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import scala.xml.{NodeSeq, Text, Group}
@@ -43,16 +44,16 @@ class ArcChallenge extends StatefulSnippet {
   def ask = {
     <p>
     Say Anything:
-    {S.text("", p => phrase = p)}
-    {S.submit("Submit", ignore => dispatch = {case _ => xhtml => think})}
+    {text("", p => phrase = p)}
+    {submit("Submit", ignore => dispatch = {case _ => xhtml => think})}
     </p>
   }
 
   /**
    * Step 2: Show a link that takes you to the Phrase you entered.
    */
-  def think = S.submit("Click here to see what you said",
-		       ignore => dispatch = {case _ => xhtml => answer})
+  def think = submit("Click here to see what you said",
+		     ignore => dispatch = {case _ => xhtml => answer})
 
   /**
    * Step 3: Show the phrase.

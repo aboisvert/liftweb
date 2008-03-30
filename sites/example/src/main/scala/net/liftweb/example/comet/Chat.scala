@@ -22,6 +22,7 @@ import net.liftweb.util.Helpers._
 import scala.collection.immutable.TreeMap
 import scala.xml._
 import S._
+import SHtml._
 import net.liftweb.util._
 import net.liftweb.http.js._
 import JsCmds._
@@ -54,7 +55,7 @@ CometActor(initInfo) {
   override lazy val fixedRender: Can[NodeSeq] = {
     val n = "id"+randomString(10)
     ajaxForm(After(100, SetValueAndFocus(n, "")),
-    (S.text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )
+    (text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )
   }
 
   def line(cl: ChatLine) = (<li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)

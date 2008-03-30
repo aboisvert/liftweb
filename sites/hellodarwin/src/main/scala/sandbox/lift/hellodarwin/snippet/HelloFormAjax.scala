@@ -2,6 +2,7 @@ package sandbox.lift.hellodarwin.snippet
 
 import scala.xml.NodeSeq
 import net.liftweb.http.S._
+import net.liftweb.http.SHtml._
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js.{JsCmd, JsCmds}
 

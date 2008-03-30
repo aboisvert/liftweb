@@ -13,7 +13,7 @@ import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import scala.xml.{Node, Text, NodeSeq}
 import java.util.Date
-import net.liftweb.http.S
+import net.liftweb.http.{S, FieldIdentifier, FieldError}
 import net.liftweb.http.S._
 import net.liftweb.util._
 
@@ -21,7 +21,7 @@ object MappedPassword {
   val blankPw = "*******"
 }
 
-class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T] {
+class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T] with FieldIdentifier {
   override def dbColumnCount = 2
   def dbFieldClass = classOf[String]
   
@@ -69,10 +69,10 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
     hash("{"+toMatch+"} salt={"+salt_i.get+"}") == password.get
   }
   
-  override def validate : List[ValidationIssue] = {
+  override def validate : List[FieldError] = {
     if (!invalidPw && password.get != "*") Nil
-    else if (invalidPw) List(ValidationIssue(this, invalidMsg))
-    else List(ValidationIssue(this, S.??("password.must.set")))
+    else if (invalidPw) List(FieldError(this, Text(invalidMsg)))
+    else List(FieldError(this, Text(S.??("password.must.set"))))
   }
   
   def real_convertToJDBCFriendly(value: String): Object = hash("{"+value+"} salt={"+salt_i.get+"}")

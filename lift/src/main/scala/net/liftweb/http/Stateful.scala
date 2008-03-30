@@ -69,12 +69,12 @@ trait StatefulSnippet {
   def registerThisSnippet = S.setSnippetForClass(snippetName, this);
 
   /**
-     * create an anchor tag around a body
-     *
-     * @param func - the function to invoke when the link is clicked
-     * @param body - the NodeSeq to wrap in the anchor tag
-     */
-   def link(to: String, func: () => Any, body: NodeSeq): Elem = S.link(to, () => {registerThisSnippet; func()}, body)
+   * create an anchor tag around a body
+   *
+   * @param func - the function to invoke when the link is clicked
+   * @param body - the NodeSeq to wrap in the anchor tag
+   */
+  def link(to: String, func: () => Any, body: NodeSeq): Elem = SHtml.link(to, () => {registerThisSnippet; func()}, body)
    
-   def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet _)
+  def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet _)
 }

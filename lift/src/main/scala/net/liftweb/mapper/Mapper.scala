@@ -10,7 +10,7 @@ import scala.collection.mutable._
 import java.lang.reflect.Method
 import java.sql.{ResultSet, Types}
 import scala.xml.{Elem, Node, NodeSeq}
-import net.liftweb.http.S
+import net.liftweb.http.{S, FieldError}
 import S._
 import net.liftweb.http.js._
 import net.liftweb.util.{Can, Empty, Full, Failure}
@@ -82,7 +82,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     */
   def suplementalJs(ob: Can[KeyObfuscator]): List[(String, JsExp)] = Nil
   
-  def validate : List[ValidationIssue] = {
+  def validate : List[FieldError] = {
     runSafe {
       getSingleton.validate(this)
     }

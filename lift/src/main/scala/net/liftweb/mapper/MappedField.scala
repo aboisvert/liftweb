@@ -12,7 +12,7 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Text, Node, NodeSeq, Group,
 		  Elem, Null, PrefixedAttribute, MetaData}
 import java.util.Date
-import net.liftweb.http.S
+import net.liftweb.http.{S, SHtml, FieldError}
 import net.liftweb.http.S._
 import net.liftweb.http.js._
 import net.liftweb.util._
@@ -50,7 +50,7 @@ trait BaseMappedField {
   /**
     * Validate this field and return a list of Validation Issues
     */
-  def validate: List[ValidationIssue]
+  def validate: List[FieldError]
   
   /**
    * Given the driver type, return the string required to create the column in the database
@@ -161,7 +161,7 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
       val mapBack: HashMap[String, KeyType] = new HashMap
     var selected: Can[String] = Empty
     
-    Full(S.select(xs.map{case (value, text) =>
+    Full(SHtml.select(xs.map{case (value, text) =>
       val t = randomString(10)
                          mapBack(t) = value
                          if (value == this.is) selected = Full(t)
@@ -501,9 +501,9 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
       case v => v.toString
     }
   
-  def validations: List[FieldType => List[ValidationIssue]] = Nil
+  def validations: List[FieldType => List[FieldError]] = Nil
   
-  def validate : List[ValidationIssue] = {
+  def validate : List[FieldError] = {
     val cv = is
     validations.flatMap(_(cv))
   }
@@ -529,8 +529,6 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
 object MappedField {
   implicit def mapToType[T, A<:Mapper[A]](in : MappedField[T, A]): T = in.is
 }
-
-case class ValidationIssue(field : BaseMappedField, msg : String)
 
 trait IndexedField[O] extends BaseIndexedField {
   def convertKey(in : String) : Can[O]

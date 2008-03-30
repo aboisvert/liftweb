@@ -25,7 +25,7 @@ class ErrorReport {
       val style = v._4.filter(_.prefix == "lift").take(1).text
       if (msg.isEmpty) Nil
       else {
-        val msgList = msg.flatMap(e => <li>{e}</li>)
+        val msgList = msg.flatMap(e => <li>{e._1}</li>)
         if (style != "") <div class={style}>{title}:<ul>{msgList}</ul></div>
         else <h1>{title}</h1>++{msgList}
       }
