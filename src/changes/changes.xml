@@ -17,6 +17,14 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.7" date="2008-03-??" description="">
+      <action dev="Marius Danciu" type="update">
+        - Separating html functions from S object to SHtml object
+        - Putting LiftRules in its own file
+        - Adding support for associating messages with ID's to allow form fields validation messages. 
+        - ValidationIssue renamed into FieldError and lives in http package
+        - ErrorReport built in snippet was renamed to Msgs
+        - Added Msg built in snippet used for form field messages (Renders only messages associated with this tag id)
+      </action>
       <action dev="Eric Torreborre" type="add">
         Extracted from the Helpers class, documented and tested ClassHelpers, ControlHelpers and TimeHelpers Traits
       </action>
