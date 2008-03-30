@@ -25,6 +25,7 @@ import net.liftweb.util.Helpers._
  * as a place holder for any messages set by user that are not associated with an ID.
  *
  * E.g. (child nodes are optional)
+ * <pre>
  * <lift:snippet type="error_report">
  *   <lift:error_msg>Error!  The details are:</lift:error_msg>
  *   <lift:error_class>errorBox</lift:error_class>
@@ -33,6 +34,8 @@ import net.liftweb.util.Helpers._
  *   <lift:notice_msg>Note:</lift:notice_msg>
  *   <lift:notice_class>noticeBox</lift:notice_class>
  * </lift:snippet>
+ * </pre>
+ *
  */
 class Msgs {
   def render(styles: NodeSeq): NodeSeq = {
