@@ -7,7 +7,7 @@ trait ControlHelpers extends ClassHelpers {
  
   /**
    * Wraps a "try" block around the function f. If f throws
-   * an exception with it's class in 'ignore' or of 'ignore' is
+   * an exception with its class in the 'ignore' list or if 'ignore' is
    * null or an empty list, ignore the exception and return None.
    * 
    * @param ignore list of exception classes to ignore. A thrown exception will be ignored if it is assignable from one of
