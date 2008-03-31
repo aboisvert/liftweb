@@ -25,16 +25,16 @@ import net.liftweb.util.Helpers._
  * as a place holder for any messages set by user that are not associated with an ID.
  *
  * E.g. (child nodes are optional)
- * <pre>
- * <lift:snippet type="error_report">
- *   <lift:error_msg>Error!  The details are:</lift:error_msg>
- *   <lift:error_class>errorBox</lift:error_class>
- *   <lift:warning_msg>Whoops, I had a problem:</lift:warning_msg>
- *   <lift:warning_class>warningBox</lift:warning_class>
- *   <lift:notice_msg>Note:</lift:notice_msg>
- *   <lift:notice_class>noticeBox</lift:notice_class>
- * </lift:snippet>
- * </pre>
+ * 
+ * &lt;lift:snippet type="error_report"&gt;
+ *   &lt;lift:error_msg&gt;Error!  The details are:&lt;/lift:error_msg&gt;
+ *   &lt;lift:error_class&gt;errorBox&lt;/lift:error_class&gt;
+ *   &lt;lift:warning_msg&gt;Whoops, I had a problem:&lt;/lift:warning_msg&gt;
+ *   &lt;lift:warning_class&gt;warningBox&lt;/lift:warning_class&gt;
+ *   &lt;lift:notice_msg&gt;Note:&lt;/lift:notice_msg&gt;
+ *   &lt;lift:notice_class&gt;noticeBox&lt;/lift:notice_class&gt;
+ * &lt;/lift:snippet&gt;
+ * 
  *
  */
 class Msgs {

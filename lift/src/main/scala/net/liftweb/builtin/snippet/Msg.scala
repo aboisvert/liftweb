@@ -28,16 +28,16 @@ import net.liftweb.util.{Can, Full}
  * indicate that a certain field failed the validation.
  *
  * E.g.
- * <pre>
- *   <input type="text" value="" name="132746123548765"/><lift:msg id="user_msg"/>
- * </pre>
+ * 
+ *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg"/&gt;
+ * 
  * or
- * <pre>
- *   <input type="text" value="" name="132746123548765"/><lift:msg id="user_msg" 
+ * 
+ *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg" 
  *                                                        errorClass="error_class" 
  *                                                        warningClass="warning_class" 
- *                                                        noticeClass="notice_class"/>
- * </pre>
+ *                                                        noticeClass="notice_class"/&gt;
+ * 
  */
 class Msg { 
   
