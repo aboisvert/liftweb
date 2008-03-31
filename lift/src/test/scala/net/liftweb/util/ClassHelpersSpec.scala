@@ -3,12 +3,12 @@ import org.specs.runner._
 import org.specs._
 import java.lang.reflect.{Method}
 import org.scalacheck.Arbitrary
-import org.scalacheck.Gen
+import org.scalacheck.{Prop, Gen}
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.{property}
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
-object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers {
+object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators {
   "the findClass function" should {
     "return a Full can with the found class when given the name and package" in {
       findClass("ClassHelpersSpecTest", List("net.liftweb.util")) must_== Full(classOf[ClassHelpersSpecTest])
@@ -70,10 +70,9 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       def underscoresNumber(name: String, i: Int) = if (i == 0) 0 else name.substring(0, i).toList.count(_ == '_')
       def correspondingIndexInCamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
       def correspondingCharInCamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexInCamelCase(name, i))
-      import StringGenerators.underscoredStrings
 
-      val doesntContainUnderscores = property((name: String) => !camelCase(name).contains('_'))  
-      val isCamelCased = property ((name: String) => {
+      val doesntContainUnderscores = forAll(underscoredStrings)((name: String) => !camelCase(name).contains('_'))  
+      val isCamelCased = forAll(underscoredStrings) ((name: String) => {
         name.forall(_ == '_') && camelCase(name).isEmpty ||
         name.toList.zipWithIndex.forall { case (c, i) => 
           c == '_' || 
@@ -88,25 +87,23 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       camelCase(null) must_== ""
     }
     "leave a CamelCased name untouched" in {
-      import StringGenerators.camelCasedStrings
-      val camelCasedNameDoesntChange = property{ (name: String) => camelCase(name) == name }
+      val camelCasedNameDoesntChange = forAll(camelCasedStrings){ (name: String) => camelCase(name) == name }
       camelCasedNameDoesntChange must pass
     }
   }
   "The camelCaseMethod function" should {
     "camelCase a name with the first letter being lower cased" in {
-      import StringGenerators.underscoredStrings
-      val camelCasedMethodIsCamelCaseWithLowerCase = property{(name: String) => 
+      val camelCasedMethodIsCamelCaseWithLowerCase = forAll(underscoredStrings){
+        (name: String) => 
         camelCase(name).isEmpty && camelCaseMethod(name).isEmpty ||
-        camelCaseMethod(name).toList.head.isLowerCase && camelCase(name) == camelCaseMethod(name).capitalize                                                  
+        camelCaseMethod(name).toList.head.isLowerCase && camelCase(name) == camelCaseMethod(name).capitalize
       }
       camelCasedMethodIsCamelCaseWithLowerCase must pass
     }
   }
   "The unCamelCase function" should {
     "Uncamel a name, replacing upper cases with underscores" in {
-      import StringGenerators.camelCasedStrings
-      property((name: String) => camelCase(unCamelCase(name)) == name) must pass
+      forAll(camelCasedStrings)((name: String) => camelCase(unCamelCase(name)) == name) must pass
     }
   }
   "The classHasControllerMethod function" should {
@@ -188,16 +185,13 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     }
   }
 }
-object StringGenerators {
-  implicit def underscoredStrings: Arbitrary[String] = new Arbitrary[String] {
-    def arbitrary = for {length <- choose(0, 4)
-                         string <- vectorOf(length, frequency((3, alphaChar), (1, elements('_'))))
-                        } yield List.toString(string)
-      }
-  implicit def camelCasedStrings: Arbitrary[String] = new Arbitrary[String] {
-    def arbitrary = for {length <- choose(0, 4)
-                         firstLetter <- alphaNumChar.map(_.toUpperCase)
-                         string <- vectorOf(length, frequency((3, alphaNumChar.map(_.toLowerCase)), (1, alphaNumChar.map(_.toUpperCase))))
-                        } yield List.toString(firstLetter :: string)
-  }
+trait StringGenerators {
+  val underscoredStrings = for {length <- choose(0, 4)
+                                string <- vectorOf(length, frequency((3, alphaChar), (1, elements('_'))))
+                                } yield List.toString(string)
+
+  val camelCasedStrings = for {length <- choose(0, 4)
+         firstLetter <- alphaNumChar.map(_.toUpperCase)
+         string <- vectorOf(length, frequency((3, alphaNumChar.map(_.toLowerCase)), (1, alphaNumChar.map(_.toUpperCase))))
+        } yield List.toString(firstLetter :: string)
 }
