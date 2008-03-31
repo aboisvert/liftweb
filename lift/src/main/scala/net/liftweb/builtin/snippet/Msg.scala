@@ -28,7 +28,7 @@ import net.liftweb.util.{Can, Full}
  * indicate that a certain field failed the validation.
  *
  * E.g.
- * 
+ * &lt;pre&gt;
  *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg"/&gt;
  * 
  * or
@@ -37,7 +37,7 @@ import net.liftweb.util.{Can, Full}
  *                                                        errorClass="error_class" 
  *                                                        warningClass="warning_class" 
  *                                                        noticeClass="notice_class"/&gt;
- * 
+ * &lt;/pre&gt;
  */
 class Msg { 
   
