@@ -36,7 +36,7 @@
 			foreach: function(array, func) {
 				var realFunc = func;
 				if (func.apply == null) {
-					realFunc = eval("function(p1) {return "+func+";}");
+					eval("realFunc = function(p1) {return "+func+";}");
 				}
 				
 				for (var x = 0; x < array.length; x++) {
@@ -47,7 +47,7 @@
 			fold: function(array, initVal, func) {
 				var realFunc = func;
 				if (func.apply == null) {
-					realFunc = eval("function(p1, p2) {return "+func+";}");
+					eval("realFunc = function(p1, p2) {return "+func+";}");
 				}
 				lift$.foreach( array,
 					function(e) {initVal = realFunc(initVal, e);});
@@ -57,7 +57,7 @@
 			filter: function(array, func) {
 				var realFunc = func;
 				if (func.apply == null) {
-					realFunc = eval("function(p1) {return "+func+";}");
+					eval("realFunc = function(p1) {return "+func+";}");
 				}
 				var ret = [];
 				lift$.foreach(array, 
@@ -74,7 +74,7 @@
 				} else {
 					var realFunc = func;
 					if (func.apply == null) {
-						realFunc = eval("function(p1) {return "+func+";}");
+						eval("realFunc = function(p1) {return "+func+";}");
 					}
 					return realFunc(val)
 				}
@@ -83,7 +83,7 @@
 			map: function(array, func) {
 				var realFunc = func;
 				if (func.apply == null) {
-					realFunc = eval("function(p1) {return "+func+";}");
+					eval("realFunc = function(p1) {return "+func+";}");
 				}
 				var ret = [];
 				lift$.foreach(array, function(e) {ret.push(realFunc(e));});
@@ -93,7 +93,7 @@
 			flatMap: function(array, func) {
 				var realFunc = func;
 				if (func.apply == null) {
-					realFunc = eval("function(p1) {return "+func+";}");
+					eval("realFunc = function(p1) {return "+func+";}");
 				}
 				var ret = [];
 				lift$.foreach(array, function(e) {
@@ -113,7 +113,7 @@
 				else {
 					var realFunc = func;
 					if (func.apply == null) {
-						realFunc = eval("function(p1, p2) {return "+func+";}");
+						eval("realFunc = function(p1, p2) {return "+func+";}");
 					}
 					return realArray.sort(realFunc);
 				}
