@@ -435,13 +435,13 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
   def lostPassword = {
     bind("user", lostPasswordXhtml, 
 	 "email" --> SHtml.text("", sendPasswordReset _), 
-	 "submit" --> <input type="Submit" value={S.??("sent.it")} />)
+	 "submit" --> <input type="Submit" value={S.??("send.it")} />)
   }
   
   def passwordResetXhtml = {
     (<form method="POST" action={S.uri}>
      <table><tr><td colspan="2">{S.??("reset.your.password")}</td></tr>
-     <tr><td>{S.??("enter.your.new.pasword")}</td><td><user:pwd/></td></tr>
+     <tr><td>{S.??("enter.your.new.password")}</td><td><user:pwd/></td></tr>
      <tr><td>{S.??("repeat.your.new.password")}</td><td><user:pwd/></td></tr>
      <tr><td>&nbsp;</td><td><user:submit/></td></tr>
      </table>
@@ -465,7 +465,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
       bind("user", passwordResetXhtml,
            "pwd" --> SHtml.password_*("",(p: List[String]) => 
 	     user.password.setList(p)),
-           "submit" --> SHtml.submit(?{"set.password"}, finishSet))
+           "submit" --> SHtml.submit(S.??("set.password"), finishSet))
       case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(HomePage)
     }
     
