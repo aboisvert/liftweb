@@ -44,15 +44,27 @@ trait JxBase {
       JsRaw(varName+"."+m.key+" = "+ AnonFunc(cmd).toJsCmd).cmd
       
       case x => 
+      if (m.key == "class") {
+        JsRaw(varName+".setAttribute('className',"+x.text.encJs+");").cmd
+      }
+      
       JsRaw(varName+".setAttribute("+m.key.encJs+","+x.text.encJs+");").cmd
     }.foldLeft(Noop)(_ & _)
   }.foldLeft(Noop)(_ & _)
+  
+  private def fixText(in: String): String = (in, in.trim) match {
+    case (x, y) if x == y => x
+    case (x, y) if x startsWith y => y + " "
+    case (x, y) if y.length == 0 => " "
+    case (x, y) if x endsWith y => " "+y
+    case (_, y) => " "+y+" "
+  }
   
   def addToDocFrag(parent: String, elems: List[Node]): JsCmd = elems.map{
     case Jx(kids) => addToDocFrag(parent, kids.toList)
     case jb: JxBase => jb.appendToParent(parent)      
     case Group(nodes) => addToDocFrag(parent, nodes.toList)
-    case Text(txt) => JsRaw(parent+".appendChild(document.createTextNode("+txt.encJs+"));").cmd
+    case Text(txt) => JsRaw(parent+".appendChild(document.createTextNode("+fixText(txt).encJs+"));").cmd
     case a: Atom[_] => JsRaw(parent+".appendChild(document.createTextNode("+a.text.encJs+"));").cmd
     case e: scala.xml.Elem =>
     val varName = "v"+randomString(10)

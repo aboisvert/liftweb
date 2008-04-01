@@ -68,7 +68,7 @@ trait JsonComet {
     def renderExp: JsExp = (Jx(buildCheckbox).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]")))
     
     def buildCheckbox = <input type="checkbox" onclick={AnonFunc(theCall(JsRaw("this.checked")))} 
-    checked={JsVar("it", field.name)} />
+    defaultChecked={JsVar("it", field.name)} />
     
     def cvt: PartialFunction[Any, Can[Boolean]] = {
       case b: Boolean => Full(b)
