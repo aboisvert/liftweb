@@ -17,6 +17,9 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.7" date="2008-03-??" description="">
+      <action dev="Steve Jenson" type="add">
+        Gave AMQPDispatcher users the ability to auto-reconnect to the amqp server if it restarts.
+      </action>
       <action dev="Marius Danciu" type="update">
         - Separating html functions from S object to SHtml object
         - Putting LiftRules in its own file

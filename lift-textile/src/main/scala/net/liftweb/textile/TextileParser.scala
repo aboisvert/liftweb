@@ -83,7 +83,10 @@ import scala.collection.mutable.HashMap
    def toHtml(toParse: String): NodeSeq = {
      parse(toParse, None).map(_.toHtml) getOrElse Text("")
    }
-   
+
+   /**
+    * Useful helper function for stripping out the surrounding <p> tags.
+    */
    def paraFixer(in: NodeSeq): NodeSeq = in match {
      case g: Group => paraFixer(g.nodes)
      case e: Elem if e.label == "p" => e.child
