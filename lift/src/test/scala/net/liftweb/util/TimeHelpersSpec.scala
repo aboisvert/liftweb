@@ -149,7 +149,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       formattedDateNow must beMatching("\\d\\d\\d\\d/\\d\\d/\\d\\d")
     }
     "provide a formattedTimeNow function to format now's time with the TimeZone" in {
-      formattedTimeNow must beMatching("\\d\\d:\\d\\d ...(\\+|\\-)(\\d\\d:00)?")
+      formattedTimeNow must beMatching("\\d\\d:\\d\\d ...(\\+|\\-\\d\\d:00)?")
     }
 
     "provide a parseInternetDate function to parse a string formatted using the internet format" in {
