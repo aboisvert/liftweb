@@ -67,15 +67,17 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     "have an ago method returning a date relative to now minus the time span" in {
       3.seconds.ago.getTime must beCloseTo(new Date().getTime - 3.seconds.millis, 100L)
     }
-    "return a toString indicating the relevant number of weeks, days, hours, minutes, seconds, millis" in {
-      val conversionIsOk = property((t: TimeAmounts) => {
-        t._2 forall { case (amount, unit) => amount >= 1  && t._1.contains(amount.toString) || true }
+    "have a toString method returning the relevant number of weeks, days, hours, minutes, seconds, millis" in {
+      val conversionIsOk = property((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
+        timeSpanAmounts forall { case (amount, unit) => 
+          amount >= 1  && 
+          timeSpanToString.contains(amount.toString) || true }
       })
-      val timeSpanStringIsPluralized = property((t: TimeAmounts) => {
-        t._2 forall { case (amount, unit) =>  
-               amount > 1  && t._1.contains(unit + "s") || 
-               amount == 1 && t._1.contains(unit) || 
-               amount == 0 && !t._1.contains(unit)
+      val timeSpanStringIsPluralized = property((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
+        timeSpanAmounts forall { case (amount, unit) =>  
+               amount > 1  && timeSpanToString.contains(unit + "s") || 
+               amount == 1 && timeSpanToString.contains(unit) || 
+               amount == 0 && !timeSpanToString.contains(unit)
         }
       })
       conversionIsOk && timeSpanStringIsPluralized must pass
@@ -104,10 +106,10 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       day(today.setTimezone(utc).setDay(3).getTime) must_== 3
     }
     "provide a month function returning the month corresponding to a given date" in {
-      month(today.setMonth(4).getTime) must_== 4
+      month(today.setTimezone(utc).setMonth(4).getTime) must_== 4
     }
     "provide a year function returning the year corresponding to a given date" in {
-      year(today.setYear(2008).getTime) must_== 2008
+      year(today.setTimezone(utc).setYear(2008).getTime) must_== 2008
     }
     "provide a millisToDays function returning the number of days since the epoch time" in {
       millisToDays(new Date(0).getTime) must_== 0
@@ -142,14 +144,14 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     "provide a hourFormat function to format the time of a date object" in {
       hourFormat(Calendar.getInstance(utc).noTime.getTime) must_== "00:00:00"
     }
-    /*
+    
     "provide a formattedDateNow function to format todays date" in {
       formattedDateNow must beMatching("\\d\\d\\d\\d/\\d\\d/\\d\\d")
     }
     "provide a formattedTimeNow function to format now's time with the TimeZone" in {
-      formattedTimeNow must beMatching("\\d\\d:\\d\\d UTC(\\+|\\-)\\d\\d:00")
+      formattedTimeNow must beMatching("\\d\\d:\\d\\d ...(\\+|\\-)(\\d\\d:00)?")
     }
-    */
+
     "provide a parseInternetDate function to parse a string formatted using the internet format" in {
       parseInternetDate(internetDateFormatter.format(now)).getTime.toLong must beCloseTo(now.getTime.toLong, 1000L)
     }
@@ -157,7 +159,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       parseInternetDate("unparsable") must_== new Date(0)
     }
     "provide a toInternetDate function formatting a date to the internet format" in {
-      toInternetDate(now) must beMatching("... .. ... \\d\\d\\d\\d \\d\\d:\\d\\d:\\d\\d .*")
+      toInternetDate(now) must beMatching("..., \\d* ... \\d\\d\\d\\d \\d\\d:\\d\\d:\\d\\d .*")
     }
     "provide a toDate returning a Full(date) from many kinds of objects" in {
       val d = now
@@ -171,10 +173,10 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       day(today.setTimezone(utc).setDay(1).getTime) must_== 1
     }
     "have a setMonth method setting the month and returning the updated Calendar" in {
-      month(today.setMonth(0).getTime) must_== 0
+      month(today.setTimezone(utc).setMonth(0).getTime) must_== 0
     }
-    "have a setMonth method setting the month and returning the updated Calendar" in {
-      year(today.setYear(2008).getTime) must_== 2008
+    "have a setYear method setting the year and returning the updated Calendar" in {
+      year(today.setTimezone(utc).setYear(2008).getTime) must_== 2008
     }
     "have a setTimezone method to setting the time zone and returning the updated Calendar" in {
       today.setTimezone(utc).getTimeZone must_== utc
