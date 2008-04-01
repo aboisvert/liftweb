@@ -4,6 +4,8 @@ import com.rabbitmq.client._
 import scala.actors.Actor
 import java.io.ObjectInputStream
 import java.io.ByteArrayInputStream
+import java.util.Timer
+import java.util.TimerTask
 
 /**
  * @param a The actor to add as a Listener to this Dispatcher.
@@ -17,6 +19,12 @@ case class AMQPAddListener(a: Actor)
  * register a listener, this is the case class that you will be matching on.
  */
 case class AMQPMessage[T](message: T)
+
+
+/**
+ * Reconnect to the AMQP Server after a delay of {@code delay} milliseconds.
+ */
+case class AMQPReconnect(delay: Long)
 
 /**
  * An actor that serves as an endpoint for AMQP messages of serialized type T 
@@ -33,10 +41,15 @@ case class AMQPMessage[T](message: T)
  * @author Steve Jenson (stevej@pobox.com)
  */
 abstract class AMQPDispatcher[T](cf: ConnectionFactory, host: String, port: Int) extends Actor {
-  val conn = cf.newConnection(host, port)
-  val channel = conn.createChannel()
-  configure(channel)
+  var (conn, channel) = connect()
 
+  private def connect(): (Connection, Channel) = {
+    conn = cf.newConnection(host, port)
+    channel = conn.createChannel()
+    configure(channel)
+    (conn, channel)
+  }
+  
   /**
    * Override this to configure the Channel and Consumer.
    */
@@ -44,10 +57,31 @@ abstract class AMQPDispatcher[T](cf: ConnectionFactory, host: String, port: Int)
 
   def act = loop(Nil)
 
+  private val reconnectTimer = new Timer("AMQPReconnectTimer")
+
   def loop(as: List[Actor]) {
     react {
       case AMQPAddListener(a) => loop(a :: as)
       case msg@AMQPMessage(t) => as.foreach(_ ! msg); loop(as)
+      case AMQPReconnect(delay: Long) => {
+	try {
+	  val details = connect()
+	  conn = details._1 
+	  channel = details._2
+	  println("AMQPDispatcher: Successfully reconnected to AMQP Server")
+	} catch {
+	  // Attempts to reconnect again using geometric back-off.
+	  case e: Exception => {
+	    val amqp = this
+	    println("AMQPDispatcher: Will attempt reconnect again in " + (delay * 2) + "ms.")
+	    reconnectTimer.schedule(new TimerTask() {
+	      override def run = {
+		amqp ! AMQPReconnect(delay * 2)
+	      }}, delay)
+	  }
+	}
+	loop(as)
+      }
       case _ => loop(as)
     }
   }
