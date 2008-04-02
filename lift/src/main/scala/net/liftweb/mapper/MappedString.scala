@@ -12,7 +12,7 @@ import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
 import java.util.Date
 import java.util.regex._
 import scala.xml.{NodeSeq, Text}
-import net.liftweb.http.{S, FieldIdentifier, FieldError}
+import net.liftweb.http.{S, FieldError}
 import net.liftweb.http.js._
 import S._
 
@@ -35,7 +35,7 @@ class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends Mapp
   override protected def setFilter = crop _ :: super.setFilter  
 }
 
-class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] with FieldIdentifier {
+class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] {
   private val data: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   private val orgData: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   
