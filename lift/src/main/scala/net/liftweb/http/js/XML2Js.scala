@@ -45,10 +45,13 @@ trait JxBase {
       
       case x => 
       if (m.key == "class") {
-        JsRaw(varName+".setAttribute('className',"+x.text.encJs+");").cmd
-      }
-      
+        // JsRaw(varName+".setAttribute('className',"+x.text.encJs+");").cmd
+        
+        JsRaw(varName+".className = "+x.text.encJs).cmd & 
+        JsRaw(varName+".setAttribute("+m.key.encJs+","+x.text.encJs+");").cmd
+      } else {
       JsRaw(varName+".setAttribute("+m.key.encJs+","+x.text.encJs+");").cmd
+      }
     }.foldLeft(Noop)(_ & _)
   }.foldLeft(Noop)(_ & _)
   
