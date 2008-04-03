@@ -16,7 +16,9 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.7" date="2008-03-??" description="">
+    <release version="0.8" date="2008-05-??" description="">
+    </release>
+    <release version="0.7" date="2008-04-03" description="">
       <action dev="Steve Jenson" type="add">
         Gave AMQPDispatcher users the ability to auto-reconnect to the amqp server if it restarts.
       </action>
@@ -36,7 +38,7 @@
         the war is unloaded by the servlet container.
       </action>
       <action dev="Steve Jenson" type="add">
-        Adding a bunch of Response's to help make building RESTful Web Services easier in lift.
+        Adding a bunch of Responses to help make building RESTful Web Services easier in lift.
       </action>
       <action dev="Marius Danciu" type="add">
         Added extensible support for specifying the behavior for invalid URI's (with or without site map)
