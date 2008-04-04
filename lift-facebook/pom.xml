@@ -3,7 +3,7 @@
   <parent>
     <artifactId>lift</artifactId>
     <groupId>net.liftweb</groupId>
-    <version>0.7</version>
+    <version>0.8-SNAPSHOT</version>
   </parent>
   <artifactId>lift-facebook</artifactId>
   <packaging>jar</packaging>
