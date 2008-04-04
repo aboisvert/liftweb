@@ -4,6 +4,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import scala.xml.{NodeSeq, Text, XML, Elem}
 import java.net._
+import java.util.{Map => JavaMap, Set => JavaSet, Iterator => JavaIterator, List => JavaList}
 
 trait TestFramework {
   def baseUrl: String
@@ -147,26 +148,20 @@ trait TestFramework {
     waitAll(threads)
   }  
 
-  type CRK = java.util.List[String]
+  type CRK = JavaList[String]
+  implicit def jitToIt[T](in: JavaIterator[T]): Iterator[T] = new Iterator[T] {
+    def next: T = in.next
+    def hasNext = in.hasNext
+  }
   
-  private def snurpHeaders(in: java.util.Map[String, CRK]): Map[String, List[String]] = {
-    def entryToPair(e: AnyRef): List[(String, List[String])] = {
-      e match {
-        case null => Nil
-        case e: java.util.Map.Entry[String, CRK] => morePulling(e)
-        case _ => Nil
+  private def snurpHeaders(in: JavaMap[String, CRK]): Map[String, List[String]] = {
+    def morePulling(e: JavaMap.Entry[String, CRK]): (String, List[String]) = {
+      e.getValue match {
+        case null => (e.getKey, Nil)
+        case a => (e.getKey, a.iterator.toList)
       }
     }
     
-    def morePulling(e: java.util.Map.Entry[String, CRK]): List[(String, List[String])] = {
-      (e.getKey, e.getValue) match {
-        case (null, _) => Nil
-        case (s: String, null) => List((s, Nil))
-        case (s: String, a: java.util.List[String]) => List((s, a.toArray.toList.map{case null => null; case s: String => s; case _ => null}.filter(_ ne null)))
-        case _ => Nil
-      }
-    }
-    
-    Map(in.entrySet.toArray.toList.flatMap(e => entryToPair(e)) :_*)
+    Map(in.entrySet.iterator.toList.filter(e => (e ne null) && (e.getKey != null)).map(e => morePulling(e)) :_*)
   }
 }

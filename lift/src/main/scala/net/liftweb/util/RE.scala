@@ -104,6 +104,17 @@ class REMatcher(val str: String,val compiled: Pattern) {
     ab.toList
   }
   
+  def eachFound: List[List[String]] = {
+    val ret = new ListBuffer[List[String]]
+    matcher.reset
+    
+    while (matcher.find) {
+      ret +=  (0 to matcher.groupCount).toList.map(i => matcher.group(i))
+    }
+    
+    ret.toList
+  }
+  
 }
 
 

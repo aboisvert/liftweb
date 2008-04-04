@@ -38,7 +38,11 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
   
   def members = rep1sep(pair, pair, spaces ~ ',' ~ spaces)
   
-  def pair = string ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ v => (s,v)}
+  def pair = (string | pairId) ~ spaces ~ ':' ~ spaces ~ theValue ^^ {case s ~ v => (s,v)}
+  
+  def pairChar(in: Char): Boolean = in.isLetter || in.isDigit || in == '_'
+  
+  def pairId: Parser[String] = rep1(elem("pairChar", pairChar)) ^^ {case s => s.mkString}
   
   def string = ('\'' ~ rep(not('\'') ~ achar) ~ '\'' ^^ {case xs => xs.mkString("")}) |
                ('"' ~ rep(not('"') ~ achar) ~ '"' ^^ {case xs => xs.mkString("")})
