@@ -3,7 +3,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb.demo</groupId>
   <artifactId>hellodarwin</artifactId>
-  <version>0.7-SNAPSHOT</version>
+  <version>0.7</version>
   <packaging>war</packaging>
   <name>HelloDarwin tutorial application</name>
   <!--
@@ -27,7 +27,7 @@
       <id>scala-tools.org.snapshots</id>
       <name>Scala-Tools Maven2 Repository for Snapshots</name>
       <url>http://scala-tools.org/repo-snapshots</url>
-      <snapshots/>
+      <snapshots />
     </repository>
   </repositories>
 
