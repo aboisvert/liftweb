@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 import scala.xml.{NodeSeq, Text}
-import net.liftweb.http.{S, SHtml, FieldIdentifier, FieldError}
+import net.liftweb.http.{S, SHtml, FieldError}
 import net.liftweb.util._
 import java.util.{Locale, TimeZone}
 

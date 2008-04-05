@@ -12,7 +12,7 @@ import java.sql.{ResultSet, Types}
 import scala.xml.{Text, Node, NodeSeq, Group,
 		  Elem, Null, PrefixedAttribute, MetaData}
 import java.util.Date
-import net.liftweb.http.{S, SHtml, FieldError}
+import net.liftweb.http.{S, SHtml, FieldError, FieldIdentifier}
 import net.liftweb.http.S._
 import net.liftweb.http.js._
 import net.liftweb.util._
@@ -177,7 +177,7 @@ trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedFie
   * The strongly typed field that's mapped to a column (or many columns) in the database.
   * FieldType is the type of the field and OwnerType is the Owner of the field 
   */
-trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseOwnedMappedField[OwnerType] {
+trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseOwnedMappedField[OwnerType] with FieldIdentifier {
   /**
     * Should the field be ignored by the OR Mapper?
     */
