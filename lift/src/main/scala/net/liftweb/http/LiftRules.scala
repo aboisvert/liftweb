@@ -578,3 +578,4 @@ private[http] case object DefaultBootstrap extends Bootable
   }
 }
 
+case class AjaxMessageMeta(title: Can[String], cssClass: Can[String])

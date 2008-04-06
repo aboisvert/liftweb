@@ -392,4 +392,3 @@ class LiftFilter extends Filter
   
 }
 
-case class AjaxMessageMeta(title: Can[String], cssClass: Can[String])
