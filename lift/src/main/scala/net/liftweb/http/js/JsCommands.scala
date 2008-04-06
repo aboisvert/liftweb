@@ -373,6 +373,10 @@ object JE {
       def toJsCmd = "function("+params+") {"+in.toJsCmd+"}"
     }
   }
+  
+  object JsReturn {
+    def apply(in: JsExp): JsExp = JsRaw("return " + in.toJsCmd)
+  }
 
   object JsObj {
     def apply(members: (String, JsExp)*): JsExp = 
