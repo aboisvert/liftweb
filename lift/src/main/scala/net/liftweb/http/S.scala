@@ -728,7 +728,7 @@ object S {
     S.servletSession.map(s => s.getAttribute(name) match {
       case Full((x: JsonCall, y: JsCmd)) => { (x, y) }
        case _ => { 
-        val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+        val ret: (JsonCall, JsCmd) = S.buildJsonFunc(x => S.noticesToJsCmd & this.apply(x))
         s.setAttribute(name, Full(ret))
         ret
       }
