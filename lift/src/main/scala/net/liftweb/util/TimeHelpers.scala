@@ -1,6 +1,6 @@
 package net.liftweb.util
 import java.text.SimpleDateFormat
-import java.util.{TimeZone, Calendar, Date}
+import java.util.{TimeZone, Calendar, Date, Locale}
 
 /**
  * The TimeHelpers object extends the TimeHelpers. It can be imported to access all of the trait functions.
@@ -262,7 +262,7 @@ trait TimeHelpers extends ControlHelpers {
 
   /** @return a formatter for internet dates including: the day of week, the month, day of month, time and time zone */
   def internetDateFormatter = {
-    val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z")
+    val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US)
     ret.setTimeZone(utc)
     ret
   }
@@ -290,7 +290,7 @@ trait TimeHelpers extends ControlHelpers {
         case Full(v) => toDate(v)
         case Some(v) => toDate(v)
         case v :: vs => toDate(v)
-        case s : String => Full(new Date(s))
+        case s : String => Full(internetDateFormatter.parse(s))
         case o => toDate(o.toString)
       }
     } catch {

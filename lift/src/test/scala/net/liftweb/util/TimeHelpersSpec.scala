@@ -2,6 +2,7 @@ package net.liftweb.util
 import org.specs.Specification
 import org.specs.runner._
 import java.util._
+import java.text._
 import org.scalacheck.Gen._
 import org.scalacheck.Prop._
 import org.scalacheck.Arbitrary
@@ -165,7 +166,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       val d = now
       (null, Nil, None, Failure("", Empty, Nil)).toList forall { toDate(_) must_== Empty }
       (Full(d), Some(d), d :: d).toList forall { toDate(_) must_== Full(d) }
-      toDate(toInternetDate(d)).get.getTime.toLong must beCloseTo(d.getTime.toLong, 1000L)
+      toDate(internetDateFormatter.format(d)).get.getTime.toLong must beCloseTo(d.getTime.toLong, 1000L)
     }
   }
   "The Calendar class" should {
