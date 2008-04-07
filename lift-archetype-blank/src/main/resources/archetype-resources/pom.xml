@@ -1,6 +1,6 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-#set($dollar = '$')
+#set($sv = '${scala.version}')
 #parse('ext.vm')
   <modelVersion>4.0.0</modelVersion>
   <groupId>$groupId</groupId>
@@ -41,7 +41,7 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
-      <version>$dollar{scala.version}</version>
+      <version>$sv</version>
     </dependency>
     <dependency>
       <groupId>net.liftweb</groupId>
@@ -70,7 +70,7 @@
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-compiler</artifactId>
-      <version>$dollar{scala.version}</version>
+      <version>$sv</version>
       <scope>test</scope>
     </dependency>
   </dependencies>
@@ -91,7 +91,7 @@
           </execution>
         </executions>
         <configuration>
-          <scalaVersion>$dollar{scala.version}</scalaVersion>
+          <scalaVersion>$sv</scalaVersion>
         </configuration>
       </plugin>
       <plugin>
@@ -141,7 +141,7 @@
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
         <configuration>
-          <scalaVersion>$dollar{scala.version}</scalaVersion>
+          <scalaVersion>$sv</scalaVersion>
         </configuration>
       </plugin>
     </plugins>
