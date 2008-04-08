@@ -139,7 +139,7 @@ case class JxMatch(exp: JsExp, cases: JxCase*) extends Node with JxBase {
       addToDocFrag(parentName, c.toDo.toList).toJsCmd+
       "\n}"
     }.mkString("")+
-    " else {throw new Expception('Unmatched: '+"+vn+");}")
+    " else {throw new Exception('Unmatched: '+"+vn+");}")
   }
 }
 
