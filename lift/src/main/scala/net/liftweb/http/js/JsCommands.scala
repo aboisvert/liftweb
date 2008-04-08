@@ -374,8 +374,8 @@ object JE {
     }
   }
   
-  object JsReturn {
-    def apply(in: JsExp): JsExp = JsRaw("return " + in.toJsCmd)
+  case class JsReturn(in: JsExp) extends JsExp {
+    def toJsCmd = "return " + in.toJsCmd
   }
 
   object JsObj {
