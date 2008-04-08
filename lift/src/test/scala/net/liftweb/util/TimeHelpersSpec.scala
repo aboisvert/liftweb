@@ -10,7 +10,7 @@ import org.specs.Products._
 import org.specs.mock.Mocker
 
 class TimeHelpersTest extends Runner(TimeHelpersSpec) with JUnit with Console with ScalaTest
-object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerSetter {
+object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation {
   "A TimeSpan" can {
     "be created from a number of milliseconds" in {
       TimeSpan(3000) must_== TimeSpan(3 * 1000)
@@ -130,7 +130,6 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       result must_== 55
     }
     "provide a logTime function logging the time taken to do something and returning the result" in {
-      skip("this test passes on the command line, passes with ScalaTest but not with Maven")
       val logMock = new LiftLogger {
         override def info(a: => AnyRef) = record { 
           a.toString must beMatching("this test took \\d* Milliseconds") 
@@ -139,8 +138,9 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       expect {
         logMock.info("this test took 10 Milliseconds")
       }
-      setLogger(logMock)
-      logTime("this test")((1 to 10).reduceLeft[Int](_ + _))
+      withLogger(logMock) {
+        logTime("this test")((1 to 10).reduceLeft[Int](_ + _))
+      }
     }
     "provide a hourFormat function to format the time of a date object" in {
       hourFormat(Calendar.getInstance(utc).noTime.getTime) must_== "00:00:00"
@@ -202,9 +202,54 @@ trait TimeAmountsGen { self: TimeHelpers =>
            ((w, "week"), (d, "day"), (h, "hour"), (m, "minute"), (s, "second"), (ml, "milli")))
   }
 }
-trait LoggerSetter {
-  def setLogger(logger: LiftLogger) = {
+
+/**
+ * This trait allows to insert a Logger delegate inside the lift Logging framework and to use it to
+ * temporarily log with a mock logger
+ */
+trait LoggerDelegation {
+  def withLogger(logger: LiftLogger)(block: => Any) = {
+    setLogger(logger)
+    try {
+      block
+    } finally { unsetLogger }
+  }
+  private[this] def setLogger(logger: LiftLogger) {
     LogBoot.loggerSetup = () => true 
-    LogBoot.loggerByName = (s: String) => logger
+    LogBoot.loggerByName = (s: String) => LoggerDelegate(logger)
   } 
+  private[this] def unsetLogger {
+    Log.rootLogger.asInstanceOf[LoggerDelegate].logger = NullLogger
+  }
+  case class LoggerDelegate(var logger: LiftLogger) extends LiftLogger {
+    override def isTraceEnabled: Boolean = logger.isTraceEnabled
+    override def trace(msg: => AnyRef): Unit = logger.trace(msg)
+    override def trace(msg: => AnyRef, t: => Throwable): Unit = logger.trace(msg, t)
+
+    override def isDebugEnabled: Boolean = logger.isDebugEnabled
+    override def debug(msg: => AnyRef): Unit = logger.debug(msg)
+    override def debug(msg: => AnyRef, t: => Throwable): Unit = logger.debug(msg, t)
+
+    override def isErrorEnabled: Boolean = logger.isErrorEnabled
+    override def error(msg: => AnyRef): Unit = logger.error(msg)
+    override def error(msg: => AnyRef, t: => Throwable): Unit = logger.error(msg, t)
+    
+    override def fatal(msg: AnyRef): Unit = logger.fatal(msg)
+    override def fatal(msg: AnyRef, t: Throwable): Unit = logger.fatal(msg, t)
+
+    override def isInfoEnabled: Boolean = logger.isInfoEnabled
+    override def info(msg: => AnyRef): Unit = logger.info(msg)
+    override def info(msg: => AnyRef, t: => Throwable): Unit = logger.info(msg, t)
+
+    override def isWarnEnabled: Boolean = logger.isWarnEnabled
+    override def warn(msg: => AnyRef): Unit = logger.warn(msg)
+    override def warn(msg: => AnyRef, t: => Throwable): Unit = logger.warn(msg, t)
+    override def isEnabledFor(level: LiftLogLevels.Value): Boolean = logger.isEnabledFor(level)
+
+    override def level: LiftLogLevels.Value = LiftLogLevels.Off
+    override def level_=(level: LiftLogLevels.Value): Unit = logger.level = level
+    override def name: String = "LoggerDelegate"
+    override def assertLog(assertion: Boolean, msg: => String): Unit = ()
+
+  }
 }
