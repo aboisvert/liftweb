@@ -14,6 +14,7 @@ import net.liftweb.util._
  * The base trait of Controllers that handle pre-view requests
  */
 
+ /*
 trait SimpleController {
   def request: RequestState
   // private var session: TreeMap[String, Any] = _
@@ -44,4 +45,4 @@ trait SimpleController {
   
   def unset(name: String) {httpRequest.getSession.removeAttribute(name)}
 }
-
+*/

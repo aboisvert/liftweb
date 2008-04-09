@@ -30,9 +30,6 @@ object CometActor {
 
 @serializable 
 abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
-  
-  @serializable
-  private object Never
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
@@ -84,7 +81,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def handleJson(in: Any): JsCmd = Noop
   
-  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(_handleJson)
+  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(defaultPrefix), _handleJson)
   
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes, 
   parentTag.scope, Group(xml)) % (new UnprefixedAttribute("id", Text(uniqueId), Null)) % (new PrefixedAttribute("lift", "when", Text(time.toString), Null))
@@ -353,3 +350,6 @@ case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[
   RenderOut(xhtml, fixedXhtml, script.map(_ & cmd) or Full(cmd),
   destroyScript, ignoreHtmlOnJs)
 }
+
+@serializable
+private[http] object Never

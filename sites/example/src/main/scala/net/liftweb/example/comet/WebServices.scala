@@ -16,12 +16,11 @@
 package net.liftweb.example.comet
 
 import net.liftweb.http._
+import S._
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import net.liftweb.example.model._
 
-class WebServices (val request: RequestState) extends SimpleController {
-  def httpRequest = request.request
-  
+class WebServices (val request: RequestState) {
   def all_users: XmlResponse = {
     XmlResponse(<all_users>{
       User.findAll.map{u => u.toXml}

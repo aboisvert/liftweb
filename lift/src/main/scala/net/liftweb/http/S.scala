@@ -519,10 +519,22 @@ object S {
   private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
   
   /**
+  * Build a handler for incoming JSON commands
+  *
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
-  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = {
+  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, f)
+  
+  /**
+  * Build a handler for incoming JSON commands
+  *
+  * @param name -- the optional name of the command (placed in a comment for testing)
+  *
+   * @param f - function returning a JsCmds
+   * @return (JsonCall, JsCmd)
+   */
+  def buildJsonFunc(name: Can[String], f: Any => JsCmd): (JsonCall, JsCmd) = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
       
     def checkCmd(in: Any) = in match {
@@ -547,7 +559,8 @@ object S {
 
     addFunctionMap(key, jsonCallback _)
 
-    (JsonCall(key), JsCmds.Run("function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+    (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") + 
+    "function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
   }
   

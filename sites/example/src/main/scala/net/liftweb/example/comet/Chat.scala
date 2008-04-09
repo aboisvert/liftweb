@@ -28,8 +28,7 @@ import net.liftweb.http.js._
 import JsCmds._
 
 
-class Chat(initInfo: CometActorInitInfo) extends
-CometActor(initInfo) {
+class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
   def defaultPrefix = "chat"
