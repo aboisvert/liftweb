@@ -126,16 +126,19 @@
         <artifactId>maven-eclipse-plugin</artifactId>
         <configuration>
           <downloadSources>true</downloadSources>
-          <buildcommands>
-            <buildcommand>ch.epfl.lamp.sdt.core.scalabuilder</buildcommand>
-          </buildcommands>
-          <additionalProjectnatures>
-            <projectnature>ch.epfl.lamp.sdt.core.scalanature</projectnature>
-          </additionalProjectnatures>
+          <excludes>
+            <exclude>org.scala-lang:scala-library</exclude>
+          </excludes>
           <classpathContainers>
-            <classpathContainer>org.eclipse.jdt.launching.JRE_CONTAINER</classpathContainer>
             <classpathContainer>ch.epfl.lamp.sdt.launching.SCALA_CONTAINER</classpathContainer>
           </classpathContainers>
+          <projectnatures>
+            <java.lang.String>ch.epfl.lamp.sdt.core.scalanature</java.lang.String>
+            <java.lang.String>org.eclipse.jdt.core.javanature</java.lang.String>
+          </projectnatures>
+          <buildcommands>
+            <java.lang.String>ch.epfl.lamp.sdt.core.scalabuilder</java.lang.String>
+          </buildcommands>
         </configuration>
       </plugin>
     </plugins>
