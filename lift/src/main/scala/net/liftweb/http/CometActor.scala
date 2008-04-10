@@ -1,12 +1,12 @@
 package net.liftweb.http
 
 /*                                                *\
-(c) 2007 WorldWide Conferencing, LLC
+(c) 2007-2008 WorldWide Conferencing, LLC
 Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.actors.{Actor}
+import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
@@ -26,7 +26,20 @@ object CometActor {
   def next: Long = serial.incrementAndGet
 }
 
-// import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent}
+object ActorWatcher extends Actor {
+  def act = loop {
+    react {
+      case Exit(actor, why: Throwable) =>
+      actor.start
+      Log.error("The ActorWatcher restarted "+actor+" because "+why)
+      
+      case _ =>
+    }
+  }
+  
+  this.start
+  this.trapExit = true
+}
 
 @serializable 
 abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
@@ -88,7 +101,6 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   
   def act = {
-    this.trapExit = true
     loop {
       react(composeFunction)
     }
@@ -134,6 +146,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
     
     case PerformSetupComet =>
+    link(ActorWatcher)
     localSetup
     performReRender(true)
     
@@ -172,12 +185,10 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case ReRender(all) => performReRender(all)
     
     case ShutDown =>
+    Log.info("The CometActor "+this+" Received Shutdown")
     theSession.removeCometActor(this)
     localShutdown()
     self.exit("Politely Asked to Exit")
-    
-    // case ReRenderMsg(sendAll) =>
-    
     
     case PartialUpdateMsg(cmd) =>
     val time = CometActor.next

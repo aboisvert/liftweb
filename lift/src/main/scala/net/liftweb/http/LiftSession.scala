@@ -39,6 +39,48 @@ object LiftSession {
   creator(session, contextPath)
 }
 
+
+private[http] case class AddSession(session: LiftSession)
+private[http] case class RemoveSession(session: LiftSession)
+private[http] object CheckAndPurge
+
+object SessionMaster extends Actor {
+  private var sessions: Map[String, LiftSession] = Map.empty
+  
+  def act = loop {
+    react {
+      case AddSession(session) => 
+      sessions = sessions + ( (session.uniqueId -> session) )
+      
+      case RemoveSession(session) =>
+      sessions = sessions - session.uniqueId
+      
+      case CheckAndPurge =>
+      val now = millis
+      for ((id, session) <- sessions.elements) {
+        if (now - session.lastServiceTime > session.inactivityLength) {
+          Log.info(" Session "+id+" expired")
+          session.httpSession.invalidate
+        }
+      }
+      doPing()
+      
+    }
+  }
+  
+  this.start
+  
+  def doPing() {
+    try {
+      ActorPing.schedule(this, CheckAndPurge, 10000L)
+    } catch {
+      case e => Log.error("Couldn't start SessionMaster ping", e)
+    }
+  }
+  
+  doPing()
+}
+
 @serializable
 class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
   import TemplateFinder._
@@ -58,20 +100,26 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   @transient
   private[http] var httpSession: HttpSession = _
+  
+  @volatile
+  private[http] var lastServiceTime = millis
+  
+  @volatile
+  private[http] var inactivityLength = 180000L
 
   def sessionDidActivate(se: HttpSessionEvent) = {
-    running_? = true
-    httpSession = se.getSession
+    this.setSession(se.getSession)
+    
     messageCallback = new HashMap
     notices = Nil
     asyncComponents = new HashMap
     asyncById = new HashMap
-
   }
+  
   def sessionWillPassivate(se: HttpSessionEvent) = {
     
     httpSession.removeAttribute(LiftRules.sessionNameConst)
-    
+    this.shutDown()
     
     httpSession = null
     messageCallback = new HashMap
@@ -82,6 +130,13 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   def setSession(session: HttpSession) = {
     httpSession = session
+    running_? = true
+    
+    inactivityLength = httpSession.getMaxInactiveInterval.toLong * 1000L
+    
+    lastServiceTime = millis
+    SessionMaster ! AddSession(this)
+    
     this
   }
 
@@ -157,9 +212,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   */
   def valueUnbound(event: HttpSessionBindingEvent) {
     try {
-      if (running_?) this.shutDown
+      if (running_?) this.shutDown()
     } finally {
-      // uncomment for Scala 2.6.1 to avoid memory leak
       Actor.clearSelf
       DB.clearThread
     }
@@ -173,6 +227,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
 
   private def shutDown() = synchronized {
+    SessionMaster ! RemoveSession(this)
+    
     Log.debug("Shutting down session")
     running_? = false
     asyncComponents.foreach{case (_, comp) => comp ! ShutDown}

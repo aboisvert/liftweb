@@ -92,9 +92,14 @@ private[http] class LiftServlet extends HttpServlet  {
   
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getAttribute(LiftRules.sessionNameConst) match {
-      case r: LiftSession => r
+      case r: LiftSession =>
+      r.lastServiceTime = millis
+      r
       case _ =>
       val ret = LiftSession(session, request.contextPath)
+      
+      ret.lastServiceTime = millis
+      
       session.setAttribute(LiftRules.sessionNameConst, ret)
       ret
     }
