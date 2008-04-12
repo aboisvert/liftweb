@@ -246,8 +246,7 @@ object LiftRules {
       val setObj = cci.getMethod("setObject", Array(classOf[AnyRef]))
       val suspend = cci.getMethod("suspend", Array(java.lang.Long.TYPE))
       val resume = cci.getMethod("resume", null)
-      /* FIXME disable Jetty Support */
-      (true && false, (cc), (meth), (getObj), (setObj), (suspend), resume)
+      (true, (cc), (meth), (getObj), (setObj), (suspend), resume)
     } catch {
       case e => (false, null, null, null, null, null, null)
     }
@@ -259,24 +258,25 @@ object LiftRules {
     resume.invoke(cont, null)
   }
   
-  def doContinuation(req: HttpServletRequest): Nothing = {
+  def doContinuation(req: HttpServletRequest, timeout: Long): Nothing = {
     try {
       val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
       Log.trace("About to suspend continuation")
-      suspend.invoke(cont, Array(new java.lang.Long(200000L)))
+      suspend.invoke(cont, Array(new java.lang.Long(timeout)))
       throw new Exception("Bail")
     } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") => throw e.getCause
+      case e: java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") =>
+      throw e.getCause
     }
   }
   
-  def checkJetty(req: HttpServletRequest) = {
+  def checkJetty(req: HttpServletRequest): Option[Any] = {
     if (!hasJetty_?) None
     else {
       val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
       val ret = getObject.invoke(cont, null)
       setObject.invoke(cont, Array(null))
-      ret
+      Some(ret)
     }
   }
   

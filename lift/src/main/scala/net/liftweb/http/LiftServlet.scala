@@ -122,7 +122,8 @@ private[http] class LiftServlet extends HttpServlet  {
         case _ => doIt
       }
     } catch {
-      case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw new Exception("Request failed", e)
+      case e if e.getClass.getName.endsWith("RetryRequest") => throw e
+      case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw e
     } finally {
       clearThread
     }
@@ -173,51 +174,7 @@ private[http] class LiftServlet extends HttpServlet  {
       
       if (dispatch._1) dispatch._2 
       else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
-        
-        LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
-        
-        // sessionActor.breakOutComet()
-        sessionActor.enterComet(self)
-        try {
-          S.init(requestState, sessionActor) {
-            val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
-            
-            def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
-              receiveWithin(len) {
-                case TIMEOUT => in
-                case ar: AnswerRender => drainTheSwamp(0, ar :: in)
-                case BreakOut => drainTheSwamp(0, in)
-                case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(0, in)
-              }
-            }
-            
-            drainTheSwamp(0, Nil)
-            
-            if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
-            else {
-              
-              actors.foreach{case (act, when) => act ! Listen(when)}
-              
-              val ret = drainTheSwamp((LiftRules.ajaxRequestTimeout openOr 120) * 1000L, Nil) 
-              
-              actors.foreach{case (act, _) => act ! Unlisten}
-              
-              val ret2 = drainTheSwamp(100L, ret)
-              
-              val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
-              val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
-              
-              val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
-              
-              
-              LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" response: "+all.toJsCmd)
-              
-              Full((new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse)
-            }
-          }
-        } finally {
-          sessionActor.exitComet(self)
-        }
+        handleComet(requestState, sessionActor)
       } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
@@ -264,6 +221,109 @@ private[http] class LiftServlet extends HttpServlet  {
       sendResponse(resp, response, Full(requestState))
       true
       case _ => false
+    }
+  }
+  
+  class JettyContinuationActor(request: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
+    private var answers: List[AnswerRender] = Nil
+    val seqId = CometActor.next
+    
+    def act = loop {
+      react {
+        case BeginJettyContinuation =>
+        val mySelf = self
+        val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
+        
+        actors.foreach{case (act, when) => act ! Listen(when, ListenerId(seqId), sendItToMe)}
+        
+        case (theId: Long, ar: AnswerRender) => 
+        answers = ar :: answers
+        ActorPing.schedule(this, BreakOut, 5L)
+        
+        case BreakOut => 
+        actors.foreach{case (act, _) => act ! Unlisten}
+        LiftRules.resumeRequest(convertAnswersToCometResponse(request, sessionActor, answers.toArray), request.request)
+        sessionActor.exitComet(this)
+        this.exit()
+        
+        case _ => 
+      }
+    }
+    
+    override def toString = "Actor dude "+seqId
+  }
+  
+  private object BeginJettyContinuation
+  
+  private lazy val cometTimeout: Long = (LiftRules.ajaxRequestTimeout openOr 120) * 1000L
+  
+  private def setupJettyContinuation(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Nothing = {
+    val cont = new JettyContinuationActor(requestState, sessionActor, actors)
+    cont.start
+
+    cont ! BeginJettyContinuation
+    
+    sessionActor.enterComet(cont)
+    
+    ActorPing.schedule(cont, BreakOut, cometTimeout)
+    
+    LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
+  }
+  
+  private def handleComet(requestState: RequestState, sessionActor: LiftSession): Can[Response] = {
+    val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+    
+    if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
+    else LiftRules.checkJetty(requestState.request) match {
+      case Some(null) => setupJettyContinuation(requestState, sessionActor, actors)
+      case _ => handleNonJettyComet(requestState, sessionActor, actors)
+    }
+  }
+  
+  private def convertAnswersToCometResponse(requestState: RequestState, sessionActor: LiftSession, ret: Seq[AnswerRender]): Response = {
+    S.init(requestState, sessionActor) {
+      val ret2 = ret.toList
+      val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
+      val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
+      
+      val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
+      
+      (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+    }
+  }
+  
+  private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[Response] = {
+    LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
+    
+    // sessionActor.breakOutComet()
+    sessionActor.enterComet(self)
+    try {
+      val seqId = CometActor.next
+      
+      def drainTheSwamp(len: Long, seqToMatch: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+        receiveWithin(len) {
+          case TIMEOUT => in
+          case (theId: Long, ar: AnswerRender) if theId == seqToMatch => drainTheSwamp(0, seqToMatch, ar :: in)
+          case BreakOut => drainTheSwamp(0, seqToMatch, in)
+          case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(len, seqToMatch, in)
+        }
+      }
+      
+      def mySelf = self
+      
+      // the function that sends an AnswerHandler to me
+      val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
+      
+      actors.foreach{case (act, when) => act ! Listen(when, ListenerId(seqId), sendItToMe)}
+      
+      val ret = drainTheSwamp(cometTimeout, seqId, Nil) 
+      
+      actors.foreach{case (act, _) => act ! Unlisten}
+      
+      val ret2 = drainTheSwamp(5L, seqId, ret)
+      Full(convertAnswersToCometResponse(requestState, sessionActor, ret2))
+    } finally {
+      sessionActor.exitComet(self)
     }
   }
   

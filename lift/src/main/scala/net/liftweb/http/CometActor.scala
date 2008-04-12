@@ -49,7 +49,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   Empty, Empty, Empty, false)
   private var wasLastFullRender = false
   @transient
-  private var t_listeners = new ListBuffer[Actor]()
+  private var listeners: List[(ListenerId, AnswerRender => Unit)] = Nil
   private var askingWho: Can[CometActor] = Empty
   private var whosAsking: Can[CometActor] = Empty
   private var answerWith: Can[Any => Any] = Empty
@@ -58,11 +58,6 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def this(info: CometActorInitInfo) =
   this(info.theSession,info.name,info.defaultXml,info.attributes)
-  
-  private def listeners = {
-    if (t_listeners == null) t_listeners = new ListBuffer
-    t_listeners
-  }
   
   def defaultPrefix: String
   
@@ -125,22 +120,22 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   private def _mediumPriority : PartialFunction[Any, Unit] = {
-    case Unlisten => listeners -= sender.receiver
+    case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
     
-    case l @ Listen(when) =>
+    case l @ Listen(when, seqId, toDo) =>
     askingWho match {
       case Full(who) => who forward l
       case _ =>
       if (when < lastRenderTime) {
-        sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender)
+        toDo(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), whosAsking openOr this, lastRenderTime, wasLastFullRender))
       } else {
         deltas.filter(_.when > when) match { 
-          case Nil => listeners += sender.receiver
+          case Nil => listeners = (seqId, toDo) :: listeners
           
           case all @ (hd :: xs) =>
-          sender.receiver ! AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
+          toDo( AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
           Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false), 
-          whosAsking openOr this, hd.when, false)
+          whosAsking openOr this, hd.when, false))
         }
       }
     }
@@ -199,8 +194,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     if (!listeners.isEmpty) {
       val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty, 
       Full(cmd), Empty, buildSpan, false), whosAsking openOr this, time, false)
-      listeners.toList.foreach(_ ! rendered)
-      listeners.clear
+      listeners.foreach(_._2(rendered))
+      listeners = Nil
     }
   }
   
@@ -232,8 +227,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _), 
       this, lastRenderTime, sendAll)
       
-      listeners.toList.foreach(_ ! rendered)
-      listeners.clear
+      listeners.foreach(_._2(rendered))
+      listeners = Nil
       rendered
     }
   }
@@ -340,11 +335,11 @@ case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displ
 case object PerformSetupComet extends CometMessage
 case class AskQuestion(what: Any, who: CometActor) extends CometMessage
 case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
-case class Listen(when: Long) extends CometMessage
-case object Unlisten extends CometMessage
+case class Listen(when: Long, uniqueId: ListenerId, action: AnswerRender => Unit) extends CometMessage
+case class Unlisten(uniqueId: ListenerId) extends CometMessage
 case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
-
+case class ListenerId(id: Long)
 /**
 * @param xhtml is the "normal" render body
 * @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
