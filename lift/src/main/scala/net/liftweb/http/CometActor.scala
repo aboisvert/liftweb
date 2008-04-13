@@ -371,16 +371,19 @@ object Error {
   def apply(node: NodeSeq): Error = Error(Empty, node)
   def apply(node: String): Error = Error(Empty, Text(node))
   def apply(id: String, node: String): Error = Error(Full(id), Text(node))
+  def apply(id: String, node: NodeSeq): Error = Error(Full(id), node)
 }
 object Warning {
   def apply(node: NodeSeq): Warning = Warning(Empty, node)
   def apply(node: String): Warning = Warning(Empty, Text(node))
   def apply(id: String, node: String): Warning = Warning(Full(id), Text(node))
+  def apply(id: String, node: NodeSeq): Warning = Warning(Full(id), node)
 }
 object Notice {
   def apply(node: NodeSeq): Notice = Notice(Empty, node)
   def apply(node: String): Notice = Notice(Empty, Text(node))
   def apply(id: String, node: String): Notice = Notice(Full(id), Text(node))
+  def apply(id: String, node: NodeSeq): Notice = Notice(Full(id), node)
 }
 
 /**
