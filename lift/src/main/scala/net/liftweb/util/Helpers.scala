@@ -20,8 +20,6 @@ import scala.collection.mutable.HashMap
 import org.apache.commons.codec.binary.Base64
 import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
 import java.security.{SecureRandom, MessageDigest}
-//import scala.actors.Actor
-//import scala.actors.Actor._
 import java.util.regex._
 import java.lang.Character._
 import javax.crypto._
@@ -719,25 +717,6 @@ object Helpers extends TimeHelpers {
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
   
-  /*
-  object backgrounder extends Actor {
-    def act {
-      loop {
-        react {
-          case BkgExec(f) => f()
-        }
-      }
-    }
-  }
-  
-  backgrounder.start
-  
-  case class BkgExec(f:() => Any)
-  
-  def background(f: => Any) {
-    backgrounder ! BkgExec(() => f)
-  }*/
-
   def processString(msg: String, subst: Map[String, String]): String = {
     val pat = Pattern.compile("\\<\\%\\=([^\\%]*)\\%\\>")
     val m = pat.matcher(msg)
