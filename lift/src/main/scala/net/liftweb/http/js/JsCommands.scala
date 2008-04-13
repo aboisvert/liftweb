@@ -59,7 +59,7 @@ case class JsonCall(funcId: String) {
   
 }
 
-abstract class JsExp extends SpecialNode with HtmlFixer with JxBase {
+trait JsExp extends SpecialNode with HtmlFixer with JxBase {
   def toJsCmd: String
   
   // def label: String = "#JS"
@@ -374,10 +374,6 @@ object JE {
     }
   }
   
-  case class JsReturn(in: JsExp) extends JsExp {
-    def toJsCmd = "return " + in.toJsCmd
-  }
-
   object JsObj {
     def apply(members: (String, JsExp)*): JsExp = 
       new JsExp {
@@ -467,6 +463,31 @@ object JE {
   case object JsonSerialize extends JsExp with JQueryRight {
     def toJsCmd = "serializeArray()"
   }
+  
+  case class JsLt(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " < " + right.toJsCmd
+  }
+
+  case class JsGt(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " > " + right.toJsCmd
+  }
+  
+  case class JsEq(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " = " + right.toJsCmd
+  }
+  
+  case class JsNotEQ(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " <> " + right.toJsCmd
+  }
+
+  case class JsLtEq(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " <= " + right.toJsCmd
+  }
+  
+  case class JsGtEq(left: JsExp, right: JsExp) extends JsExp {
+    def toJsCmd = left.toJsCmd + " >= " + right.toJsCmd
+  }
+
 }
 
 trait JQueryRight {
@@ -707,4 +728,50 @@ object JsCmds {
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
     def toJsCmd = (Show(where) & SetHtml(where, msg) & After(duration, Hide(where, fadeTime))).toJsCmd
   }
+
+  case object JsIf {
+    def apply(condition: JsExp, body: JsExp):JsCmd = JE.JsRaw("if ( " + condition.toJsCmd  + " ) { " + body.toJsCmd + " }")  
+
+    def apply(condition: JsExp, bodyTrue: JsExp, bodyFalse: JsExp) : JsCmd = 
+      JE.JsRaw("if ( " + condition.toJsCmd  +" ) { " + bodyTrue.toJsCmd + " } else { " + bodyFalse.toJsCmd + " }")  
+  }
+  
+  case class JsWhile(condition: JsExp, body: JsExp) extends JsCmd {
+    def toJsCmd = "while ( " + condition.toJsCmd + " ) { " + body.toJsCmd + " }" 
+  }
+
+  case class JsWith(reference: String, body: JsExp) extends JsCmd {
+    def toJsCmd = "with ( " + reference + " ) { " + body.toJsCmd + " }" 
+  }
+
+  case class JsDoWhile(body: JsExp, condition: JsExp) extends JsCmd {
+    def toJsCmd = "do { " + body.toJsCmd + " } while ( " + condition.toJsCmd + " )" 
+  }
+
+  case class JsFor(initialExp: JsExp, condition: JsExp, incrementExp: JsExp, body: JsExp) extends JsCmd {
+    def toJsCmd = "for ( " + initialExp.toJsCmd + "; " + 
+                             condition.toJsCmd + "; " + 
+                             incrementExp.toJsCmd + " ) { " + body.toJsCmd + " }" 
+  }
+
+  case class JsForIn(initialExp: JsExp, reference: String, body: JsCmd) extends JsCmd {
+    def toJsCmd = "for ( " + initialExp.toJsCmd + " in " + reference+ ") { " + body.toJsCmd + " }" 
+  }
+  
+  case object JsBreak extends JsCmd {
+     def toJsCmd = "break"  
+  }
+
+  case object JsContinue extends JsCmd {
+     def toJsCmd = "continue"  
+  }
+
+  case class JsReturn(in: JsExp) extends JsCmd {
+     def toJsCmd = "return " + in.toJsCmd
+  }
+
+  
 }
+
+
+
