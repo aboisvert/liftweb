@@ -242,7 +242,7 @@ private[http] class LiftServlet extends HttpServlet  {
         
         case BreakOut => 
         actors.foreach{case (act, _) => act ! Unlisten}
-        LiftRules.resumeRequest(convertAnswersToCometResponse(request, sessionActor, answers.toArray), request.request)
+        LiftRules.resumeRequest(convertAnswersToCometResponse(request, sessionActor, answers.toArray, actors), request.request)
         sessionActor.exitComet(this)
         this.exit()
         
@@ -280,14 +280,14 @@ private[http] class LiftServlet extends HttpServlet  {
     }
   }
   
-  private def convertAnswersToCometResponse(requestState: RequestState, sessionActor: LiftSession, ret: Seq[AnswerRender]): Response = {
+  private def convertAnswersToCometResponse(requestState: RequestState, sessionActor: LiftSession, ret: Seq[AnswerRender], actors: List[(CometActor, Long)]): Response = {
     S.init(requestState, sessionActor) {
       val ret2 = ret.toList
       val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
       val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
-      
-      val all = jsUpdateStuff.reverse.foldLeft(JsCmds.Noop)(_ & _) & JE.JsRaw(jsUpdateTime).cmd
-      
+
+      actors foreach(_._1 ! ClearNotices)
+
       (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
     }
   }
@@ -321,7 +321,7 @@ private[http] class LiftServlet extends HttpServlet  {
       actors.foreach{case (act, _) => act ! Unlisten}
       
       val ret2 = drainTheSwamp(5L, seqId, ret)
-      Full(convertAnswersToCometResponse(requestState, sessionActor, ret2))
+      Full(convertAnswersToCometResponse(requestState, sessionActor, ret2, actors))
     } finally {
       sessionActor.exitComet(self)
     }

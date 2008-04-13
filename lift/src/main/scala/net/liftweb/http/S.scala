@@ -577,9 +577,9 @@ object S {
   
     val f = noIdMessages _
     val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.notice")), 
-                   (LiftRules.ajaxWarningMeta, f(S.warnings ), S.??("msg.warning")), 
+                   (LiftRules.ajaxWarningMeta, f(S.warnings), S.??("msg.warning")), 
                    (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.error"))) flatMap {
-       msg => msg._1 match {
+     msg => msg._1 match {
          case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
          case _ => func(msg._2 _, msg._3, Null)
      }
@@ -687,6 +687,7 @@ object S {
     
   private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
   private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg, Empty)}
+  private [http] def messagesFromList(list: List[(NoticeType.Value, NodeSeq, Can[String])]) { list foreach ( _notice.value += _) } 
     
   def getNotices: List[(NoticeType.Value, NodeSeq, Can[String])] = 
     Can.legacyNullTest(_notice.value).toList.flatMap(_.toList)
