@@ -275,8 +275,11 @@ private[http] class LiftServlet extends HttpServlet  {
     
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
     else LiftRules.checkJetty(requestState.request) match {
-      case Some(null) => setupJettyContinuation(requestState, sessionActor, actors)
-      case _ => handleNonJettyComet(requestState, sessionActor, actors)
+      case Some(null) => 
+	setupJettyContinuation(requestState, sessionActor, actors)
+      
+      case _ =>
+	handleNonJettyComet(requestState, sessionActor, actors)
     }
   }
   
@@ -293,34 +296,42 @@ private[http] class LiftServlet extends HttpServlet  {
   }
   
   private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[Response] = {
+    
     LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
     
-    // sessionActor.breakOutComet()
     sessionActor.enterComet(self)
     try {
       val seqId = CometActor.next
       
-      def drainTheSwamp(len: Long, seqToMatch: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
+      def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
         receiveWithin(len) {
-          case TIMEOUT => in
-          case (theId: Long, ar: AnswerRender) if theId == seqToMatch => drainTheSwamp(0, seqToMatch, ar :: in)
-          case BreakOut => drainTheSwamp(0, seqToMatch, in)
-          case s @ _ => Log.trace("Drained "+s) ; drainTheSwamp(len, seqToMatch, in)
+          case TIMEOUT => 
+	    in
+	  
+          case (theId: Long, ar: AnswerRender) if theId == seqId =>
+	    drainTheSwamp(0, ar :: in)
+	  
+          case BreakOut => in
+	  
+          case s =>
+	    Log.trace("Drained "+s)
+	  drainTheSwamp(len, in)
         }
       }
       
-      def mySelf = self
+      val mySelf = self
       
       // the function that sends an AnswerHandler to me
       val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
       
       actors.foreach{case (act, when) => act ! Listen(when, ListenerId(seqId), sendItToMe)}
       
-      val ret = drainTheSwamp(cometTimeout, seqId, Nil) 
-      
+      val ret = drainTheSwamp(cometTimeout, Nil) 
+
       actors.foreach{case (act, _) => act ! Unlisten}
       
-      val ret2 = drainTheSwamp(5L, seqId, ret)
+      val ret2 = drainTheSwamp(5L, ret)
+      
       Full(convertAnswersToCometResponse(requestState, sessionActor, ret2, actors))
     } finally {
       sessionActor.exitComet(self)

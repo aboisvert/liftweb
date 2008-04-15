@@ -41,6 +41,16 @@ object Mailer {
   implicit def addressToAddress(in: AddressType): Address = new InternetAddress(in.adr)
   implicit def adListToAdArray(in: List[AddressType]): Array[Address] = in.map(a => new InternetAddress(a.adr)).toArray
   
+
+  /**
+   * Passwords cannot be accessed via System.getProperty.  Instead, we
+   provide a means of explicitly
+   * setting the authenticator.
+   */
+  //def authenticator = authenticatorFunc
+  var authenticator: Can[Authenticator] = Empty
+
+
   /**
   * What host should be used to send mail
   */
@@ -64,7 +74,12 @@ object Mailer {
         react {
           case MessageInfo(from, subject, info) =>
           try {
-            val session = Session.getInstance(System.getProperties)
+	    val session =
+	      authenticator match {
+		case Full(a) => Session.getInstance(System.getProperties, a)
+		
+		case _ => Session.getInstance(System.getProperties)
+	      }
             val message = new MimeMessage(session)
             message.setFrom(from)
             message.setRecipients(Message.RecipientType.TO, info.flatMap{case x: To => Some[To](x) case _ => None})
