@@ -576,9 +576,9 @@ object S {
     }
   
     val f = noIdMessages _
-    val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.notice")), 
+    val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.error")), 
                    (LiftRules.ajaxWarningMeta, f(S.warnings), S.??("msg.warning")), 
-                   (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.error"))) flatMap {
+                   (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.notice"))) flatMap {
      msg => msg._1 match {
          case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
          case _ => func(msg._2 _, msg._3, Null)
