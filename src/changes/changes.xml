@@ -18,6 +18,9 @@
   -->
     <release version="0.8" date="2008-05-??" description="">
       <action dev="Marius Danciu" type="add">
+        Added ActorPing#scheduleAtFixedRate
+      </action>
+      <action dev="Marius Danciu" type="add">
         - Added notices support for Comet actors
         - Added JavaScript statements as JsCmd
       </action>
