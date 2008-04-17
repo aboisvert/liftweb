@@ -14,6 +14,7 @@ package net.liftweb.util
  */
 
 import scala.actors.{Actor, Exit}
+import scala.actors.Actor._
 import java.util.concurrent._
 
 /** 
