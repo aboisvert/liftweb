@@ -13,7 +13,7 @@ package net.liftweb.util
  * limitations under the License.
  */
 
-import scala.actors.Actor
+import scala.actors.{Actor, Exit}
 import java.util.concurrent._
 
 /** 
@@ -51,7 +51,42 @@ object ActorPing {
     }
     catch { case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)}
   }
+
+  /** 
+   * Sends the <code>msg</code> to the <code>to<code> Actor, 
+   * after <code>initialDelay</code> and hen subsequently every <code>delay</code> using <code>tu<code> as a TimeUnit
+   */
+  def scheduleAtFixedRate(to: Actor, msg: Any, initialDelay: Long, delay: Long, tu: TimeUnit) {
+    try {
+       val future = service.scheduleAtFixedRate(new java.lang.Runnable { 
+         def run = {
+           to ! msg; 
+         } 
+       }, initialDelay, delay, tu)
+       actor {
+         self.link(to)
+         self.trapExit = true
+         to ! Scheduled 
+         loop {
+            react {
+              case UnSchedule | Exit(_, _) => future cancel(true); exit
+            }
+         }
+       }
+    }
+    catch { case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)}
+  }
+ 
 }
+/**
+ * Send by the scheduled actor to sign off from recurrent scheduling
+ */
+case object UnSchedule
+/**
+ * Send to the actor that we scheduled for recurrent ping
+ */
+case object Scheduled
+
 /** ActorPing Exception thrown if the ping can't be scheduled */
 case class ActorPingException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
