@@ -130,6 +130,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       result must_== 55
     }
     "provide a logTime function logging the time taken to do something and returning the result" in {
+      skip("this way of mock LiftLogger is not robust enough and has to be reworked")
       val logMock = new LiftLogger {
         override def info(a: => AnyRef) = record { 
           a.toString must beMatching("this test took \\d* Milliseconds") 
