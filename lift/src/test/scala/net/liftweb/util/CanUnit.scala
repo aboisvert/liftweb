@@ -50,13 +50,13 @@ object CanUnit extends Specification with CanGen {
 }
 trait CanGen {
 
-  implicit def genThrowable: Arbitrary[Throwable] = new Arbitrary[Throwable] {
+  implicit def genThrowable: Arbitrary[Throwable] = Arbitrary[Throwable] {
     case class UserException extends Throwable
-    def arbitrary = value(UserException())
+    value(UserException())
   }
 
-  implicit def genCan[T](implicit a: Arbitrary[T]): Arbitrary[Can[T]] = new Arbitrary[Can[T]] {
-    def arbitrary = frequency(
+  implicit def genCan[T](implicit a: Arbitrary[T]): Arbitrary[Can[T]] = Arbitrary[Can[T]] {
+    frequency(
       (3, value(Empty)),
       (3, a.arbitrary.map(Full[T])),
       (1, genFailureCan)

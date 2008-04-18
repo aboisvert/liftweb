@@ -69,12 +69,12 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       3.seconds.ago.getTime must beCloseTo(new Date().getTime - 3.seconds.millis, 100L)
     }
     "have a toString method returning the relevant number of weeks, days, hours, minutes, seconds, millis" in {
-      val conversionIsOk = property((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
+      val conversionIsOk = forAll(timeAmounts)((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
         timeSpanAmounts forall { case (amount, unit) => 
           amount >= 1  && 
           timeSpanToString.contains(amount.toString) || true }
       })
-      val timeSpanStringIsPluralized = property((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
+      val timeSpanStringIsPluralized = forAll(timeAmounts)((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
         timeSpanAmounts forall { case (amount, unit) =>  
                amount > 1  && timeSpanToString.contains(unit + "s") || 
                amount == 1 && timeSpanToString.contains(unit) || 
@@ -190,8 +190,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
 }
 trait TimeAmountsGen { self: TimeHelpers =>
   type TimeAmounts = Tuple2[String, Tuple6[(Int, String), (Int, String), (Int, String), (Int, String), (Int, String), (Int, String)]]
-  implicit def timeAmount: Arbitrary[TimeAmounts] = new Arbitrary[TimeAmounts] {
-    def arbitrary = for {
+  val timeAmounts = for {
       w <- choose(0, 2)
       d <- choose(0, 6)
       h <- choose(0, 23)
@@ -201,7 +200,6 @@ trait TimeAmountsGen { self: TimeHelpers =>
     }
     yield (TimeSpan(weeks(w) + days(d) + hours(h) + minutes(m) + seconds(s) + ml).toString,
            ((w, "week"), (d, "day"), (h, "hour"), (m, "minute"), (s, "second"), (ml, "milli")))
-  }
 }
 
 /**

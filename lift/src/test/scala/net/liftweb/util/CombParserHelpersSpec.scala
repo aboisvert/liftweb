@@ -139,31 +139,27 @@ object CombParserHelpersSpec extends Specification {
   }
 }
 object abcdStringGen {
-  implicit def abcdString = new Arbitrary[String] {
-    def arbitrary = for (len <- choose(1, 4);
-                         string <- pick(len, List("a", "b", "c", "d"))
-                         ) yield string.mkString("")
+  implicit def abcdString = Arbitrary {
+    for (len <- choose(1, 4);
+         string <- pick(len, List("a", "b", "c", "d"))
+         ) yield string.mkString("")
   }
-  def pickN(n: Int, elems: List[String]) = new Arbitrary[String] {
-    def arbitrary = for (string <- pick(n, elems)) yield string.mkString("")
+  def pickN(n: Int, elems: List[String]) = Arbitrary {
+    for (string <- pick(n, elems)) yield string.mkString("")
   }
 }
 object whiteStringGen {
   def genWhiteString: Gen[String] = for (len <- choose(1, 4);
                                          string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
                                     ) yield string.mkString("")
-  implicit def whiteString = new Arbitrary[String] {
-    def arbitrary = genWhiteString
-  }
+  implicit def whiteString = Arbitrary(genWhiteString)
 }
 object stringWithWhiteGen {
   import whiteStringGen._
-  implicit def genString: Arbitrary[String] = new Arbitrary[String] {
-    def arbitrary = {
-      for (len <- choose(1, 4);
-           string <- vectorOf(len, frequency((1, value("a")), (2, value("b")), (1, genWhiteString)))
-      ) yield string.mkString("")
-   }
+  implicit def genString: Arbitrary[String] = Arbitrary {
+    for (len <- choose(1, 4);
+         string <- vectorOf(len, frequency((1, value("a")), (2, value("b")), (1, genWhiteString)))
+    ) yield string.mkString("")
   }
 }
 object ParserHelpers extends CombParserHelpers with Parsers
