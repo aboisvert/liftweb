@@ -22,8 +22,9 @@ import java.sql.Connection
 /**
  * The singleton that has methods for accessing the database
  */
-object WikiEntry extends WikiEntry with KeyedMetaMapper[long, WikiEntry] {
-  override def dbTableName = "wiki_entry" // define the DB table name
+trait MetaWikiEntry extends WikiEntry with KeyedMetaMapper[long, WikiEntry]
+object WikiEntry extends MetaWikiEntry {
+  override def dbTableName = "wikientry" // define the DB table name
 
   // define the order fields will appear in forms and output
   override def fieldOrder =  id :: name :: entry :: Nil

@@ -27,23 +27,23 @@ import net.liftweb.textile._
 // show determines which one is used. bind hooks the content into the lift view
 case class BindChoice(show: boolean, bind: () => NodeSeq)
 
-class Wiki {
+class Wiki extends MetaWikiEntry {
   def uriFor(path:String) = "/wiki/" + path
+  
   /**
-    * Display the Textile marked up wiki or an edit box
-    */
+   * Display the Textile marked up wiki or an edit box
+   */
   def main: NodeSeq = {
     val pageName = S.param("wiki_page") openOr "HomePage" // set the name of the page
-
     def showAll = {
-      WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
       <div><a href={uriFor(entry.name)}>{entry.name}</a></div>)
     }
 
     if (pageName == "all") showAll // if the page is "all" display all the pages
     else {
       // find the entry in the database or create a new one
-      val entry = WikiEntry.find(By(WikiEntry.name, pageName)) openOr WikiEntry.create.name(pageName)
+      val entry = find(By(WikiEntry.name, pageName)) openOr create.name(pageName)
 
       // is it a new entry?
       val isNew = !entry.saved_?
@@ -52,7 +52,7 @@ class Wiki {
       val edit = isNew || (S.param("param1").map(_ == "edit") openOr false)
 
       <span><a href={uriFor("all")}>Show All Pages</a><br/>{
-  if (edit) editEntry(entry, isNew, pageName)
+        if (edit) editEntry(entry, isNew, pageName)
         else TextileParser.toHtml(entry.entry, 
 				  Some(TextileParser.DefaultRewriter("/wiki"))) ++
         <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
@@ -65,11 +65,11 @@ class Wiki {
 
     def showAll = BindChoice((pageName == "all"), () => bind("pages",
       (xhtml \\ "showAll").filter(_.prefix == "wiki").toList.head.child,
-      TheBindParam("all", WikiEntry.findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      TheBindParam("all", findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
       <div><a href={"/wikibind/"+entry.name}>{entry.name}</a></div>))))
 
     // find the entry in the database or create a new one
-    def entry = WikiEntry.find(By(WikiEntry.name, pageName)) openOr WikiEntry.create.name(pageName)
+    def entry = find(By(WikiEntry.name, pageName)) openOr create.name(pageName)
 
     // is it a new entry?
     def isNew = !entry.saved_?

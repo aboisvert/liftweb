@@ -16,14 +16,10 @@
 package webapptest
 
 import org.specs._
-import org.specs.runner.JUnit3
-import org.specs.runner.ConsoleRunner
+import org.specs.runner._
 import net.sourceforge.jwebunit.junit.WebTester
 
-class WikiUsagesTest extends JUnit3(WikiUsages)
-object WikiUsagesRunner extends ConsoleRunner(WikiUsages)
-
-
+class WikiUsagesTest extends Runner(WikiUsages) with JUnit with Console
 object WikiUsages extends Specification {
   JettyTestServer.start()
 
