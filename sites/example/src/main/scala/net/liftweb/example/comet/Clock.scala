@@ -25,7 +25,7 @@ import JsCmds._
 class Clock (info: CometActorInitInfo) extends CometActor(info) {
 
   def defaultPrefix = "clk"
-  ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
+  ActorPing.schedule(this, Tick, 1000L) // schedule a ping every 10 seconds so we redraw
 
   private lazy val spanId = uniqueId+"_timespan"
 
@@ -36,7 +36,7 @@ class Clock (info: CometActorInitInfo) extends CometActor(info) {
   override def lowPriority : PartialFunction[Any, Unit] = {
     case Tick =>
       partialUpdate(SetHtml(spanId, Text(timeNow.toString)))
-    ActorPing.schedule(this, Tick, 10000L) // schedule an update in 10 seconds
+    ActorPing.schedule(this, Tick, 1000L) // schedule an update in 10 seconds
   }
 }
 

@@ -15,7 +15,6 @@
  */
 package webapptest
 
-/*
 import org.specs._
 import org.specs.runner._
 import net.sourceforge.jwebunit.junit.WebTester
@@ -57,4 +56,3 @@ object WikiUsages extends Specification {
   //JettyTestServer.stop()
 }
 
-*/
