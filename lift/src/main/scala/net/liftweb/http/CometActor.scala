@@ -141,9 +141,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
     
     case PerformSetupComet =>
-    link(ActorWatcher)
-    localSetup
-    performReRender(true)
+    S.initIfUninitted(theSession) {
+      link(ActorWatcher)
+      localSetup
+      performReRender(true)
+    }
     
     case AskRender =>
     askingWho match {

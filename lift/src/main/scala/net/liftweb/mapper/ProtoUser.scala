@@ -223,7 +223,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     if testLoggedIn(w) => () => validateUser(id)
   }
     
-  def requestLoans: List[LoanWrapper] = List(curUser)
+  def requestLoans: List[LoanWrapper] = Nil // List(curUser)
   
   val LoggedInUserIdentifier = "$_proto_user_current_user"
   
@@ -231,21 +231,26 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
   
   def logUserIn(who: ModelType) {
     S.set(LoggedInUserIdentifier, who.id.toString)
-    curUser.reset()
+    curUser.remove()
   }
   
   def logoutCurrentUser {
     S.unset(LoggedInUserIdentifier)
-    curUser.reset()
+    curUser.remove()
     S.request.foreach(_.request.getSession.invalidate)
   }
     
   def currentUserId: Can[String] = S.get(LoggedInUserIdentifier)
     
+  /*
   private val curUser: ThreadLazy[Can[ModelType]] = 
     ThreadLazy(currentUserId.flatMap(id => getSingleton.find(id)))
+    */
     
-  def currentUser: Can[ModelType] = curUser.get
+    private object curUser extends RequestVar[Can[ModelType]](currentUserId.flatMap(id => getSingleton.find(id)))
+  
+    
+  def currentUser: Can[ModelType] = curUser.is
     
   def signupXhtml(user: ModelType) = {
     (<form method="POST" action={S.uri}><table><tr><td
