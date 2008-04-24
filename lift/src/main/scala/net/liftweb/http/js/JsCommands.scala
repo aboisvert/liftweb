@@ -358,6 +358,14 @@ object JE {
     apply(JsRaw(""))
   }
   
+  case class $(exp: JsExp) extends JsExp with JQueryLeft {
+    def toJsCmd = "$(" + exp.toJsCmd + ")" 
+  }
+  
+  case class JqClick(exp: JsExp) extends JsExp with JQueryLeft with JQueryRight {
+    def toJsCmd = "click(" + exp.toJsCmd + ")"
+  }
+  
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
       def toJsCmd = AnonFunc.this.toJsCmd + "()"
@@ -473,11 +481,11 @@ object JE {
   }
   
   case class JsEq(left: JsExp, right: JsExp) extends JsExp {
-    def toJsCmd = left.toJsCmd + " = " + right.toJsCmd
+    def toJsCmd = left.toJsCmd + " == " + right.toJsCmd
   }
   
   case class JsNotEQ(left: JsExp, right: JsExp) extends JsExp {
-    def toJsCmd = left.toJsCmd + " <> " + right.toJsCmd
+    def toJsCmd = left.toJsCmd + " != " + right.toJsCmd
   }
 
   case class JsLtEq(left: JsExp, right: JsExp) extends JsExp {
