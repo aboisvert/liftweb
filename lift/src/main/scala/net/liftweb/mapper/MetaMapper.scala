@@ -931,14 +931,14 @@ object NotByRef {
 object By_> {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, >, Full(value), Empty)
+  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, >, Full(value), Empty)
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, >, Empty, Full(otherField))  
 }
 
 object By_< {
   import OprEnum._
 
-  def apply[O <: Mapper[O], T](field: MappedField[T, O], value: T) = Cmp[O,T](field, <, Full(value), Empty)
+  def apply[O <: Mapper[O], T, U <% T](field: MappedField[T, O], value: U) = Cmp[O,T](field, <, Full(value), Empty)
   def apply[O <: Mapper[O], T](field: MappedField[T, O], otherField: MappedField[T,O]) = Cmp[O,T](field, <, Empty, Full(otherField))    
 }
 
