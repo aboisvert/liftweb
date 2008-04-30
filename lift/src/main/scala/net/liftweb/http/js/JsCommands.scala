@@ -358,10 +358,6 @@ object JE {
     apply(JsRaw(""))
   }
   
-  case class $(exp: JsExp) extends JsExp with JQueryLeft {
-    def toJsCmd = "$(" + exp.toJsCmd + ")" 
-  }
-  
   case class JqClick(exp: JsExp) extends JsExp with JQueryLeft with JQueryRight {
     def toJsCmd = "click(" + exp.toJsCmd + ")"
   }
