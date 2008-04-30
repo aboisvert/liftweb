@@ -188,7 +188,7 @@ private[http] class LiftServlet extends HttpServlet  {
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
               case (r: ResponseIt) :: _ => r.toResponse
               case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
-              case _ => (new JsCommands(JsCmds.Noop :: Nil)).toResponse
+              case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
             }
             
             LiftRules.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
