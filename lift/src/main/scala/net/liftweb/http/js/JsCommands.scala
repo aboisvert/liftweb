@@ -362,6 +362,10 @@ object JE {
     def toJsCmd = "click(" + exp.toJsCmd + ")"
   }
   
+  case class JqGetAttr(key: String) extends JsExp with JQueryRight with JQueryLeft {
+    def toJsCmd = "attr(" + key.encJs + ")"
+  }
+  
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
       def toJsCmd = AnonFunc.this.toJsCmd + "()"
