@@ -311,7 +311,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     RedirectResponse(whereTo, S responseCookies:_*)
   }
   
-  private def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
+  private[http] def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
     f map { fnc => 
         val func: String = LiftSession.this.synchronized {
           val funcName = "fn"+randomString(20)

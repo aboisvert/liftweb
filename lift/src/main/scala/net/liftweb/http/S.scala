@@ -605,11 +605,8 @@ object S {
   implicit def toNFunc(in: () => Any): AFuncHolder = NFuncHolder(in, Empty)
   implicit def stuff2ToUnpref(in: (Symbol, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1.name, Text(in._2.toString), Null)
   
-  def mapFuncToURI(uri: String, func: AFuncHolder) = {
-    val id = "fn"+randomString(20)
-    mapFunc(id, func)
-    val sep = uri contains("?") match {case true => "&" case _ => "?"}
-    uri + sep + id + "=_"
+  def mapFuncToURI(uri: String, f : Can[() => Unit]): String = {
+    session map (_ attachRedirectFunc(uri, f)) openOr uri
   }
   
   @serializable
