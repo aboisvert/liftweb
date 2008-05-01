@@ -27,6 +27,18 @@ object CalendarMonthView {
             itemClick: Can[AnonFunc], 
             dayClick: Can[AnonFunc], 
             weekClick: Can[AnonFunc]) = new CalendarMonthView().render(calendars, itemClick, dayClick, weekClick)
+            
+  def apply(calendars: Seq[CalendarItem], 
+            itemClick: Can[AnonFunc], 
+            dayClick: Can[AnonFunc], 
+            weekClick: Can[AnonFunc], 
+            meta: CalendarMeta) = {
+    val widget = new CalendarMonthView()
+    widget.meta = meta
+    widget.render(calendars, itemClick, dayClick, weekClick)
+  }
+
+
 }
 
 /**
