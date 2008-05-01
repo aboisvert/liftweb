@@ -1,0 +1,108 @@
+.monthView {
+  width: 1200px; 
+  background-color: rgb(195, 217, 255);
+}
+
+.topHead {
+  background-color: rgb(195, 217, 255);
+  font-family: arial;
+  font-size: 9pt;
+  text-align: center;
+}
+
+.cellHead {
+  font-family: arial;
+  font-size: 8pt;
+  text-align: right;
+  background-color: rgb(205, 227, 255);
+}
+
+.cellBody {
+  font-family: arial;
+  font-size: 8pt;
+  background-color: white;
+  height: 85px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  text-align: left;
+}
+
+.cellWeek {
+  font-family: arial;
+  font-size: 8pt;
+  background-color: white;
+  height: 85px;
+  text-align: center;
+}
+
+.cellHeadToday {
+  font-family: arial;
+  font-size: 8pt;
+  text-align: right;
+  background-color: rgb(170, 192, 220);
+  text-decoration: underline;
+}
+
+.cellBodyToday {
+  font-family: arial;
+  font-size: 8pt;
+  background-color: rgb(255, 255, 240);
+  height: 85px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  text-align: left;
+}
+
+.cellHeadOtherMonth {
+  font-family: arial;
+  font-size: 8pt;
+  text-align: right;
+  background-color: rgb(230, 240, 255);
+  color: gray;
+}
+
+.cellBodyOtherMonth {
+  font-family: arial;
+  font-size: 8pt;
+  background-color: rgb(250, 250, 250);
+  color: gray;
+  height: 85px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  text-align: left;
+}
+
+.calendarItem {
+  padding-left: 5px;
+}
+
+.calendarItem a{
+  color: black;
+  text-decoration: none;
+}
+
+.calendarItem a:hover{
+  font-family: arial;
+  font-size: 8pt;
+  text-align: left;
+  background-color: rgb(245, 245, 245);
+  font-weight: bold;
+  display: block;
+}
+
+#tooltip {
+  position: absolute;
+  z-index: 3000;
+  padding: 5px;
+  border: 1px solid #111;
+  background-color: rgb(230, 240, 255);
+  opacity: 0.85;
+  -moz-opacity:0.85;
+  -khtml-opacity: 0.85;
+  width: 200px;
+}
+
+#tooltip h3 {
+  font-family: arial;
+  font-size: 8pt;
+}
