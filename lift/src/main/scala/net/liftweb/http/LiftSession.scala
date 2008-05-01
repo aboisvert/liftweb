@@ -326,7 +326,8 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           })
           funcName
         }
-        uri + "?" + func +"=_"
+        val sep = uri contains("?") match {case true => "&" case _ => "?"}
+        uri + sep + func +"=_"
     } openOr uri
     
   }
