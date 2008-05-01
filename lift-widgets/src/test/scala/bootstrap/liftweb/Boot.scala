@@ -20,7 +20,7 @@ import net.liftweb.http._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import Helpers._
-
+import net.liftweb.widgets.calendar._
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -31,13 +31,15 @@ class Boot {
     LiftRules.addToPackages("webapptest")
 
     // Build SiteMap
-/*
+
     val entries = Menu(Loc("Home", "/", "Home")) ::
-      Menu(Loc("htmlFragmentWithHead", "/htmlFragmentWithHead", "htmlFragmentWithHead")) ::
-      Menu(Loc("htmlSnippetWithHead", "/htmlSnippetWithHead", "htmlSnippetWithHead")) ::
+      Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
       Nil
+
     LiftRules.setSiteMap(SiteMap(entries:_*))
-*/
+
+    CalendarMonthView init
+
   }
 }
 

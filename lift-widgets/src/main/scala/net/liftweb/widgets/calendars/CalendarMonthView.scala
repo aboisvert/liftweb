@@ -182,8 +182,7 @@ class CalendarMonthView {
         jQuery('.calendarItem').tooltip({ 
           track: true, 
           delay: 0, 
-          showURL: false,
-          extraClass: 'box'
+          showURL: false
         });
       })
       """) & 
