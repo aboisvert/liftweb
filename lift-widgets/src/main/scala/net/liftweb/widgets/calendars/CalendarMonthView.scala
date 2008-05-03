@@ -5,7 +5,7 @@ import java.util.Calendar
 import java.util.Calendar._
 import java.text.SimpleDateFormat
 import net.liftweb.util.Helpers._
-import net.liftweb.util.Can
+import net.liftweb.util.{Can, Full, Empty}
 import net.liftweb.http.js._
 import net.liftweb.http.SHtml._
 import JsCmds._
@@ -23,17 +23,19 @@ object CalendarMonthView {
     })
   }
 
-  def apply(calendars: Seq[CalendarItem], 
+  def apply(when: Calendar,
+            calendars: Seq[CalendarItem], 
             itemClick: Can[AnonFunc], 
             dayClick: Can[AnonFunc], 
-            weekClick: Can[AnonFunc]) = new CalendarMonthView().render(calendars, itemClick, dayClick, weekClick)
+            weekClick: Can[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
             
-  def apply(calendars: Seq[CalendarItem], 
+  def apply(when: Calendar,
+            calendars: Seq[CalendarItem], 
             itemClick: Can[AnonFunc], 
             dayClick: Can[AnonFunc], 
             weekClick: Can[AnonFunc], 
             meta: CalendarMeta) = {
-    val widget = new CalendarMonthView()
+    val widget = new CalendarMonthView(when)
     widget.meta = meta
     widget.render(calendars, itemClick, dayClick, weekClick)
   }
@@ -49,8 +51,10 @@ object CalendarMonthView {
  * class CalendarView {
  * 
  *  def render(html: Group) : NodeSeq = {
+ *    val c = Calendar getInstance;
+ *    c.set(MONTH, 4)
  *    bind("cal", html,
- *         "widget" --> CalendarMonthView(makeCals, itemClick, dayClick, weekClick)
+ *         "widget" --> CalendarMonthView(c, makeCals, itemClick, dayClick, weekClick)
  *    )
  *  }
  *  
@@ -71,9 +75,9 @@ object CalendarMonthView {
  *    c3.set(DAY_OF_MONTH, 1)
  *    c3.set(MONTH, 4)
  * 
- *    val item1 = CalendarItem("1", c1, Full("Meet me"), Full("We really need to meet to settle things down"), CalendarType.MEETING)
- *    val item2 = CalendarItem("2", c2, Full("Meet me again"), Empty, CalendarType.MEETING)
- *    val item3 = CalendarItem("4", c3, Full("Other month"), Empty, CalendarType.MEETING)
+ *    val item1 = CalendarItem(...)
+ *    val item2 = CalendarItem(...)
+ *    val item3 = CalendarItem(...)
  *    
  *    item1 :: item2 :: item3 ::  Nil
  *  }
@@ -81,8 +85,10 @@ object CalendarMonthView {
  * 
  * </pre>
  *
+ * @param when - the Calendar object describing the month that needs tobe rendered
+ *
  */
-class CalendarMonthView {
+class CalendarMonthView(when: Calendar) {
   private val weekDaysFormatter = new SimpleDateFormat("EEEE")
   private val timeFormatter = new SimpleDateFormat("hh:mm")
   private val dateFormatter = new SimpleDateFormat("MM/dd/yyyy")
@@ -108,7 +114,24 @@ class CalendarMonthView {
              dayClick: Can[AnonFunc],
              weekClick: Can[AnonFunc]): NodeSeq = {
      
-    def makeCells(calendar: Calendar, thisMonth: int): NodeSeq = {
+    def makeCells(calendar: Calendar): NodeSeq = {
+      
+      def predicate (current: Calendar, c: CalendarItem) = {
+        // Adjust the precision
+        current.set(MILLISECOND, c.start.get(MILLISECOND))
+        current.set(SECOND, c.start.get(SECOND))
+        current.set(MINUTE, c.start.get(MINUTE))
+        current.set(HOUR_OF_DAY, c.start.get(HOUR_OF_DAY))
+        
+        c end match {
+          case Empty => current.get(DAY_OF_MONTH) >= c.start.get(DAY_OF_MONTH) && current.get(MONTH) >= c.start.get(MONTH)
+          case Full(end) => {
+            val crt = current getTimeInMillis;
+            (crt >= c.start.getTimeInMillis) && (crt <= end.getTimeInMillis)
+          }
+        }
+      }
+      val thisMonth = when get(MONTH)
       val cal = calendar.clone().asInstanceOf[Calendar] 
       val today = Calendar getInstance (meta locale)
       (0 to 5) map (row => <tr><td wk={cal get(WEEK_OF_YEAR) toString} 
@@ -119,12 +142,11 @@ class CalendarMonthView {
          <td>{
             val day = cal.get(DAY_OF_MONTH)
             val month = cal.get(MONTH)
-            val isThisMonth = thisMonth == month
-            val isToday = today.get(DAY_OF_MONTH) == cal.get(DAY_OF_MONTH) && (month == thisMonth)
+            val isToday = today.get(DAY_OF_MONTH) == cal.get(DAY_OF_MONTH) && (month == today.get(MONTH))
             val div = <div>{
-              calendars filter (c => day == c.when.get(DAY_OF_MONTH) && month == c.when.get(MONTH)) map (c => {
+              calendars filter (c => predicate(cal, c)) map (c => {
                 val r = <div><a href="#">{
-                   <span>{timeFormatter format(c.when.getTime)} {c.subject openOr "..."}</span> 
+                   <span>{timeFormatter format(c.start.getTime)} {c.subject openOr "..."}</span> 
                 }</a></div> % ("class" -> meta.calendarItem) % 
                   ("rec_id" -> c.id) % 
                   ("onclick" -> JsFunc("itemClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("rec_id")).toJsCmd)
@@ -162,9 +184,8 @@ class CalendarMonthView {
       }</td>)
     }</tr>
     
-    val cal: Calendar = Calendar getInstance(meta locale)
+    val cal = when.clone().asInstanceOf[Calendar]
     cal set(DAY_OF_MONTH, 1)
-    val thisMonth = cal get(MONTH)
     val delta = cal.get(DAY_OF_WEEK) - meta.firstDayOfWeek
     cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
     
@@ -200,7 +221,7 @@ class CalendarMonthView {
       <div class={meta.monthView}>{
         <table width="100%" cellspacing="1" cellpadding="0" style="table-layout: fixed;" class={meta.topHead}>
           {makeHead(headCal)}
-          {makeCells(cal, thisMonth)}
+          {makeCells(cal)}
         </table> 
       }</div>
   }
