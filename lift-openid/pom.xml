@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>lift</artifactId>
+    <groupId>net.liftweb</groupId>
+    <version>0.8-SNAPSHOT</version>
+  </parent>
+  <artifactId>lift-openid</artifactId>
+  <name>Lift OpenID</name>
+  <description>Integration module for OpenID</description>
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+  </dependencies>
+</project>

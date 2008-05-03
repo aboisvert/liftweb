@@ -17,16 +17,13 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.8" date="2008-05-??" description="">
-      <action dev="Marius Danciu" type="add">
-        Added CalendarMonthView widget
-      </action>
-      <action dev="Marius Danciu" type="add">
-        Added ActorPing#scheduleAtFixedRate
-      </action>
-      <action dev="Marius Danciu" type="add">
-        - Added notices support for Comet actors
-        - Added JavaScript statements as JsCmd
-      </action>
+      <action dev="David Pollack" type="add">Start the lift-openid module</action>
+      <action dev="David Pollack" type="add">Start the lift-oauth module</action>
+      <action dev="Marius Danciu" type="add">Added CalendarMonthView widget</action>
+      <action dev="Marius Danciu" type="add">Start the lift-widgets module</action>
+      <action dev="Marius Danciu" type="add">Added ActorPing#scheduleAtFixedRate</action>
+      <action dev="Marius Danciu" type="add">Added notices support for Comet actors</action>
+      <action dev="Marius Danciu" type="add">Added JavaScript statements as JsCmd</action>
     </release>
     <release version="0.7" date="2008-04-03" description="">
       <action dev="Steve Jenson" type="add">

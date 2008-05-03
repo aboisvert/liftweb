@@ -1,3 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>net.liftweb</groupId>
@@ -142,11 +143,14 @@ Lift is a scala web framework.
     <module>lift-amqp</module>
     <module>lift-xmpp</module>
     <module>lift-widgets</module>
+    <module>lift-openid</module>
+    <module>lift-oauth</module>
     <module>lift-testkit</module>
     <module>lift-core</module>
     <module>sites</module>
     <module>lift-archetype-blank</module>
     <module>lift-archetype-basic</module>
+    <module>lift-openid</module>
   </modules>
   <pluginRepositories>
     <pluginRepository>
@@ -165,7 +169,7 @@ Lift is a scala web framework.
       <id>scala-tools.org.snapshots</id>
       <name>Scala Tools Maven2 Repository</name>
       <url>http://scala-tools.org/repo-snapshots</url>
-      <snapshots />
+      <snapshots/>
     </repository>
   </repositories>
   <dependencyManagement>

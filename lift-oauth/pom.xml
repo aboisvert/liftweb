@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <artifactId>lift</artifactId>
+    <groupId>net.liftweb</groupId>
+    <version>0.8-SNAPSHOT</version>
+  </parent>
+  <artifactId>lift-oauth</artifactId>
+  <name>Lift OAuth</name>
+  <description>Integration module for OAuth</description>
+  <dependencies>
+    <dependency>
+      <groupId>org.scala-lang</groupId>
+      <artifactId>scala-library</artifactId>
+    </dependency>
+  </dependencies>
+</project>
