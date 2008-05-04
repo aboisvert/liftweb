@@ -48,7 +48,7 @@ case class CalendarItem(id: String,
 }
 
 object CalendarType extends Enumeration {
-  val MEETING, ANIVERSARY, TODO, EVENT = Value
+  val MEETING, ANIVERSARY, EVENT, ALLDAY = Value
 }
 
 
