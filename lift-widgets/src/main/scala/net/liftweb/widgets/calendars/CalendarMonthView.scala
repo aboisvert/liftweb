@@ -17,7 +17,7 @@
 package net.liftweb.widgets.calendar;
 
 import scala.xml._
-import java.util.Calendar
+import java.util.{Calendar, Locale}
 import java.util.Calendar._
 import java.text.SimpleDateFormat
 import net.liftweb.util.Helpers._
@@ -46,15 +46,11 @@ object CalendarMonthView {
             weekClick: Can[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
             
   def apply(when: Calendar,
+            meta: CalendarMeta,
             calendars: Seq[CalendarItem], 
             itemClick: Can[AnonFunc], 
             dayClick: Can[AnonFunc], 
-            weekClick: Can[AnonFunc], 
-            meta: CalendarMeta) = {
-    val widget = new CalendarMonthView(when)
-    widget.meta = meta
-    widget.render(calendars, itemClick, dayClick, weekClick)
-  }
+            weekClick: Can[AnonFunc]) = new CalendarMonthView(when, meta) render(calendars, itemClick, dayClick, weekClick)
 
 
 }
@@ -104,11 +100,12 @@ object CalendarMonthView {
  * @param when - the Calendar object describing the month that needs tobe rendered
  *
  */
-class CalendarMonthView(when: Calendar) {
-  private val weekDaysFormatter = new SimpleDateFormat("EEEE")
-  private val timeFormatter = new SimpleDateFormat("hh:mm")
-  private val dateFormatter = new SimpleDateFormat("MM/dd/yyyy")
-  var meta: CalendarMeta = new CalendarMeta
+class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
+  private lazy val weekDaysFormatter = new SimpleDateFormat("EEEE", meta.locale)
+  private lazy val timeFormatter = new SimpleDateFormat("hh:mm", meta.locale)
+  private lazy val dateFormatter = new SimpleDateFormat("MM/dd/yyyy", meta.locale)
+  
+  def this(when: Calendar) = this(when, CalendarMeta(MONDAY, Locale getDefault))
   
   /**
    * Returns the markup for rendering the calendar month view

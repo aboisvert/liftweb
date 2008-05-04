@@ -42,7 +42,7 @@ case class CalendarItem(id: String,
     f.map(c => c(this)).foldLeft(this)((l, r) => CalendarItem(id, start, calendarType,
         choose(l end, r end),
         choose(l subject, r subject),
-        choose(l description, r description)),
+        choose(l description, r description))
     )
   }
 }

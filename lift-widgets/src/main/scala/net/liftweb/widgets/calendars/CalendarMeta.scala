@@ -19,7 +19,7 @@ package net.liftweb.widgets.calendar;
 import java.util.Locale
 import java.util.Calendar._
 
-class CalendarMeta {
+case class CalendarMeta(firstDayOfWeek: Int, locale: Locale) {
   val cellHeadOtherMonth = "cellHeadOtherMonth"
   val cellBodyOtherMonth = "cellBodyOtherMonth"
   val cellHead = "cellHead"
@@ -30,6 +30,4 @@ class CalendarMeta {
   val calendarItem = "calendarItem"
   val cellHeadToday = "cellHeadToday"
   val cellBodyToday = "cellBodyToday"
-  var firstDayOfWeek = MONDAY
-  var locale = Locale getDefault
 }
