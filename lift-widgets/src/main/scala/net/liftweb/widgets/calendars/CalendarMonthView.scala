@@ -207,11 +207,7 @@ class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
     val init = JsRaw("""
       jQuery(function($){
         jQuery('.calendarItem').click(function(e){
-          e = e || window.event
-          if (e.stopPropagation) { 
-            e.stopPropagation()
-          }
-          e.cancelBubble = true;
+          e.stopPropagation();
         });
         jQuery('.calendarItem').tooltip({ 
           track: true, 
