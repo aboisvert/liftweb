@@ -150,7 +150,6 @@ Lift is a scala web framework.
     <module>sites</module>
     <module>lift-archetype-blank</module>
     <module>lift-archetype-basic</module>
-    <module>lift-openid</module>
   </modules>
   <pluginRepositories>
     <pluginRepository>
