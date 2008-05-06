@@ -17,6 +17,7 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.8" date="2008-05-??" description="">
+      <action dev="Jorge Ortiz" type="update">Compiled the project with Scala-2.7.1</action>
       <action dev="David Pollack" type="add">Start the lift-openid module</action>
       <action dev="David Pollack" type="add">Start the lift-oauth module</action>
       <action dev="Marius Danciu" type="add">Added CalendarMonthView widget</action>

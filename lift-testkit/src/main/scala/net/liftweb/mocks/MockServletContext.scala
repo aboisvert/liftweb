@@ -48,9 +48,9 @@ import javax.servlet.http._
  */
 class MockServletContext(var target: String) extends ServletContext {
   def getInitParameter(f: String) = null
-  def getInitParameterNames = new Vector[_]().elements
+  def getInitParameterNames = new Vector[AnyRef]().elements
   def getAttribute(f: String) = null
-  def getAttributeNames = new Vector[_]().elements
+  def getAttributeNames = new Vector[AnyRef]().elements
   def removeAttribute(name: String) {}
   def setAttribute(name: String, o: Object) {}
   def getContext(path: String) = this
@@ -74,8 +74,8 @@ class MockServletContext(var target: String) extends ServletContext {
   def getServerInfo = null
   def getServlet(name: String) = null
   def getServletContextName = null
-  def getServletNames = new Vector[_]().elements
-  def getServlets = new Vector[_]().elements
+  def getServletNames = new Vector[AnyRef]().elements
+  def getServlets = new Vector[AnyRef]().elements
   def log(msg: String, t: Throwable) {
     t.printStackTrace
     log(msg)
@@ -96,7 +96,7 @@ class MockServletContext(var target: String) extends ServletContext {
 class MockFilterConfig(servletContext: ServletContext) extends FilterConfig {
   def getFilterName = "LiftFilter" // as in lift's default web.xml
   def getInitParameter(key: String) = null
-  def getInitParameterNames  = new Vector[_]().elements
+  def getInitParameterNames  = new Vector[AnyRef]().elements
   def getServletContext = servletContext
 }
 
