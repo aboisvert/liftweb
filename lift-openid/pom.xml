@@ -4,7 +4,7 @@
   <parent>
     <artifactId>lift</artifactId>
     <groupId>net.liftweb</groupId>
-    <version>0.8</version>
+    <version>0.9-SNAPSHOT</version>
   </parent>
   <artifactId>lift-openid</artifactId>
   <name>Lift OpenID</name>
