@@ -56,20 +56,23 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
   conn.connect
   login(conn)
   val roster: Roster = conn.getRoster();
-  roster.addRosterListener(new DispatchRosterListener(this) {
-    def entriesDeleted(a: Collection[String]) {
-      dispatch ! RosterEntriesDeleted(a)
-    }
-    def entriesUpdated(a: Collection[String]) {
-      dispatch ! RosterEntriesUpdated(a)
-    }
-    def entriesAdded(a: Collection[String]) {
-      dispatch ! RosterEntriesAdded(a)
-    }
-    def presenceChanged(p: Presence) {
-      dispatch ! RosterPresenceChanged(p)
-    }
-  })
+  // Some XMPP server configs do not give you a Roster.
+  if (roster != null) {
+    roster.addRosterListener(new DispatchRosterListener(this) {
+      def entriesDeleted(a: Collection[String]) {
+	dispatch ! RosterEntriesDeleted(a)
+      }
+      def entriesUpdated(a: Collection[String]) {
+	dispatch ! RosterEntriesUpdated(a)
+      }
+      def entriesAdded(a: Collection[String]) {
+	dispatch ! RosterEntriesAdded(a)
+      }
+      def presenceChanged(p: Presence) {
+	dispatch ! RosterPresenceChanged(p)
+      }
+    })
+  }
   
   // This is a Map of to: address to Chat object.
   val chats: HashMap[String, Chat] = new HashMap[String, Chat]
