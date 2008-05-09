@@ -268,7 +268,11 @@ Lift is a scala web framework.
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
         <configuration>
+          <vscaladocVersion>1.1</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
+          <jvmArgs>
+            <jvmArg>-DpackageLinkDefs=${basedir}/vscaladocs-packageLinkDefs.properties</jvmArg>
+          </jvmArgs>
         </configuration>
       </plugin>
       <plugin>
