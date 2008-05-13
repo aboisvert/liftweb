@@ -174,7 +174,7 @@ object RequestState {
     XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
       ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
   
-  def unapply(in: RequestState) = Some((in.path, in.requestType, in.contextPath, in.contentType)) 
+  def unapply(in: RequestState): Option[(List[String], RequestType)] = Some((in.path.path, in.requestType)) 
 }
 
 @serializable
@@ -235,11 +235,11 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
   
   def createNotFound = {
-    LiftRules.uriNotFound((RequestMatcher(this, path, requestType, S.session), Empty))
+    LiftRules.uriNotFound((RequestMatcher(this, S.session), Empty))
   }
   
   def createNotFound(failure: Failure) = { 
-    LiftRules.uriNotFound((RequestMatcher(this, path, requestType, S.session), Can(failure)))
+    LiftRules.uriNotFound((RequestMatcher(this, S.session), Can(failure)))
   }
   
   
@@ -258,9 +258,10 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
 }
 
 
-case class RequestMatcher(request: RequestState, path: ParsePath, requestType: RequestType, session: Can[LiftSession])
+case class RequestMatcher(request: RequestState, /* path: ParsePath, requestType: RequestType, */ session: Can[LiftSession])
 case class RewriteRequest(path: ParsePath,requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String])
+
 
 @serializable
 case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {

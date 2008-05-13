@@ -70,7 +70,7 @@ private[http] class LiftServlet extends HttpServlet  {
       // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-        case RequestMatcher(r, ParsePath(mainPath :: subPath, _,_),_, _) if mainPath == LiftRules.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
+        case RequestMatcher(r @ RequestState(mainPath :: subPath, _) ,_) if mainPath == LiftRules.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
       })      
       // ResourceServer.allow("/jquery-1.2.2.js")
       // super.init
@@ -142,7 +142,7 @@ private[http] class LiftServlet extends HttpServlet  {
   * Service the HTTP request
   */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
-    val statelessToMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Empty)
+    val statelessToMatch = RequestMatcher(requestState, Empty)
     
     val resp: Can[Response] = if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
@@ -155,7 +155,7 @@ private[http] class LiftServlet extends HttpServlet  {
       }
     } else {
       val sessionActor = getActor(requestState, request.getSession)
-      val toMatch = RequestMatcher(requestState, requestState.path, RequestType(request), Full(sessionActor))
+      val toMatch = RequestMatcher(requestState, Full(sessionActor))
       
       val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
         if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {

@@ -532,7 +532,7 @@ object LiftRules {
   * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
   */
   var uriNotFound: URINotFoundPF = {
-    case (RequestMatcher(r, _, _, _), _) => RequestState.defaultCreateNotFound(r)
+    case (RequestMatcher(r, _), _) => RequestState.defaultCreateNotFound(r)
   }
   
   
