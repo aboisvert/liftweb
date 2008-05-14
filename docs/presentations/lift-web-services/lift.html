@@ -1,0 +1,366 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
+	"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+<head>
+<title>Building Web Services in lift</title>
+<!-- metadata -->
+<meta name="generator" content="S5" />
+<meta name="version" content="S5 1.1" />
+<meta name="presdate" content="20080506" />
+<meta name="author" content="Steve Jenson" />
+<meta name="company" content="" />
+<!-- configuration parameters -->
+<meta name="defaultView" content="slideshow" />
+<meta name="controlVis" content="hidden" />
+<!-- style sheet links -->
+<link rel="stylesheet" href="ui/default/slides.css" type="text/css" media="projection" id="slideProj" />
+<link rel="stylesheet" href="ui/default/outline.css" type="text/css" media="screen" id="outlineStyle" />
+<link rel="stylesheet" href="ui/default/print.css" type="text/css" media="print" id="slidePrint" />
+<link rel="stylesheet" href="ui/default/opera.css" type="text/css" media="projection" id="operaFix" />
+<!-- S5 JS -->
+<script src="ui/default/slides.js" type="text/javascript"></script>
+</head>
+<body>
+
+<div class="layout">
+<div id="controls"><!-- DO NOT EDIT --></div>
+<div id="currentSlide"><!-- DO NOT EDIT --></div>
+<div id="header"></div>
+<div id="footer">
+<h1>Scala liftoff May 10, 2008</h1>
+<h2>Building Web Services in lift</h2>
+</div>
+
+</div>
+
+
+<div class="presentation">
+
+<div class="slide">
+<h1>Building Web Services in lift</h1>
+<h2><!-- [slide show subtitle here] --></h2>
+<h3>Steve Jenson</h3>
+<h4>stevej@pobox.com</h4>
+<h4>http://saladwithsteve.com</h4>
+<h4>http://twitter.com/stevej</h4>
+</div>
+
+
+<div class="slide">
+<h1>What makes it so easy?</h1>
+<ul>
+<li>Pattern Matching</li>
+<li>Higher-Order Functions</li>
+<li>Scala's XML support</li>
+<li>If the first two have not already been explained then this won't go well.</li>
+</ul>
+
+<div class="handout">
+[any material that should appear in print but not on the slide]
+</div>
+</div>
+<div class="slide">
+  <h1>Who am I?</h1>
+<ul>
+  <li>Spent too many years working on Web Services.</li>
+  <li>Blogger.com, a pioneer of web services in the blogging world.</li>
+  <li>Used XML-RPC extensively.</li>
+  <li>Wrote a simple Document Literal SOAP stack at Google.</li>
+  <li>Was in the Atom IETF Working Group.</li>
+  <li>Built Google's first REST API.</li>
+  <li>lift is the easiest framework I've used for building Web Services.</li>
+</ul>
+</div>
+
+<div class="slide">
+<h1>Let's start</h1>
+<ul>
+  <li>Start with a Simple Class</li>
+  <code><pre>
+package com.hellolift.api
+
+import net.liftweb.http._
+import com.hellolift.model._
+import scala.xml._
+
+class BlogAPI(val request: RequestState)
+ extends SimpleController {
+
+  def index: ResponseIt = {
+    // To be filled in.
+  }
+
+  def get(id: String): ResponseIt = {
+    // To be filled in.
+  }
+
+  def create: ResponseIt = {
+    // To be filled in.
+  }
+
+  def delete(id: String): ResponseIt = {
+    // To be filled in.
+  }
+}
+  </pre></code>
+</ul>
+</div>
+
+<div class="slide">
+<h1>GET an existing Item</h1>
+<ul>
+  <li><code>GET /api/$itemid</code></li>
+  <li>Route a request to the proper method via pattern matching</li>
+</ul>
+<br />
+<code><pre>
+def index: ResponseIt {
+  request match {
+    case RequestState(ParsePath("api" :: itemid :: Nil, 
+      _, _), GetRequest, _, _) => get(itemid)
+  }
+}
+
+def get(id: String): ResponseIt = {
+  val it = Item.find(By(Item.id, Helpers.toLong(id)),
+                     By(Item.author, user)
+  it match {
+    case Full(item) => AtomResponse(item.toAtom())
+    case Empty => NotFoundResponse()
+  }
+}
+</pre></code>
+</div>
+
+<div class="slide">
+  <h1>Outputting XML</h1>
+<ul>
+  <li><code>scala.xml</code> makes it really easy to output valid XML.</li>
+  <li>The following is in our Item model object.</li>
+</ul>
+<code><pre>
+def toAtom = {
+  val id = "http://example.com/api/" + this.id
+  val formatter = new
+    SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'")
+  val updated = formatter.format(this.lastedited.is)
+
+  &lt;entry xmlns="http://www.w3.org/2005/Atom"&gt;
+    &lt;id&gt;{id}&lt;/id&gt;
+    &lt;updated&gt;{updated}&lt;/updated&gt;
+    &lt;author&gt;
+      &lt;name&gt;{name}&lt;/name&gt;
+    &lt;/author&gt;
+    &lt;content type="xhtml"&gt;
+      &lt;div xmlns="http://www.w3.org/1999/xhtml"&gt;
+        {body}
+      &lt;/div&gt;
+    &lt;/content&gt;
+  &lt;/entry&gt;
+}
+</pre></code>
+<ul>
+  <li>You can just use xml.</li>
+  <li>Much easier on the eyes</li>
+  <li>Just as correct as DOM.</li>
+</ul>
+</div>
+<div class="slide">
+<h1>Create a New Item (Part 1)</h1>
+<ul>
+  <li>Longer code snippet so this is only the pattern matching</li>
+  <li><code>POST /api/create</code></li>
+  <li>Match against <code>PostRequest</code></li>
+</ul>
+<br /><br />
+<code><pre>
+// the previous pattern matching clause is assumed
+// (for space reasons)
+def index: ResponseIt = {
+  request match {
+    case RequestState(ParsePath("api" :: "create"
+      :: Nil, _, _), PostRequest, _, _) => create
+  }
+}
+</pre></code>
+</div>
+
+
+
+<div class="slide">
+<h1>Create a new Item (Part 2)</h1>
+<ul>
+  <li><code>POST /api/create</code></li>
+</ul>
+<br />
+<code><pre>
+def create: ResponseIt = {
+  try {
+    val xml = XML.load(httpRequest.getInputStream())
+    val body = (xml \\ "content").text
+    val item = Item.create.author(user).body(body)
+    item.save
+    AtomCreatedResponse(item.toAtom)
+  } catch {
+    case e: Exception => BadResponse()
+  }
+}
+</pre></code>
+<ul>
+  <li><code>\\</code> searches the children for the element.</li>
+  <li>You've probably noticed that we are lacking authentication.</li>
+  <li>Are you wondering where <code>user</code> coming from?</li>
+  <li>All will be revealed!</li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1>Delete an Item</h1>
+<ul>
+  <li><code>DELETE /api/$itemid</code></li>
+</ul>
+<br />
+<code><pre>
+def index: ResponseIt = {
+  request match {
+    case RequestState(ParsePath("api" :: itemid ::
+      Nil, _, _), DeleteRequest, _, _)
+        => delete(itemid)
+  }
+}
+def delete(itemid: String): ResponseIt = {
+  Item.find(By(Item.id, Helpers.toLong(itemid)),
+            By(Item.author, user)) match {
+    case Full(item) => {
+      item.delete_!
+      OkResponse()
+    }
+    case _ => NotFoundResponse()
+  }
+}
+</pre></code>
+<ul>
+  <li>I bet you're getting the hang of this now.</li>
+</ul>
+</div>
+
+<div class="slide">
+<h1>Routing Requests to BlogAPI</h1>
+<ul>
+  <li>How do requests get dispatched to <code>BlogAPI</code>?</li>
+  <li>Dispatching happens in <code>Boot.scala</code></li>
+</ul>
+<code><pre>
+class Boot {
+  def boot {
+    val apiDispatcher: LiftRules.DispatchPf = {
+      case RequestMatcher(r, ParsePath("api" :: _ ::
+        Nil, _, _), _, _) => api(r, "index")
+    }
+    LiftRules.statelessDispatchTable = apiDispatcher
+      orElse LiftRules.statelessDispatchTable
+   }
+  // this doesn't format well for presentations.
+  private def api
+   (request: RequestState, methodName: String)
+   (req: RequestState): Can[ResponseIt] =
+    createInvoker(methodName,
+     new BlogAPI(request)).flatMap(_() match {
+      case Full(ret: ResponseIt) => Full(ret)
+      case _ => Empty
+    })
+}
+</pre></code>
+<ul>
+  <li>The <code>api</code> method is really just boilerplate and we should make it go away in lift so you don't have to think about it.</li>
+  <li><code>statlessDispatchTable</code> keeps your api requests from incurring session costs.</li>
+</ul>
+</div>
+
+
+<div class="slide">
+<h1>Authenticating (Part 1)</h1>
+<ul>
+  <li>The Question of the Mystery <code>user</code> is Answered</li>
+  <li>We want each Request to be Authenticated</li>
+  <li>Higher-Order Functions to the Rescue!</li>
+</ul>
+<code><pre>
+// getUser is on the next slide
+def authenticated(f: User => ResponseIt) = {
+  getUser match {
+    case Full(user) => f(user)
+    case Empty => UnauthorizedResponse("Our Realm")
+  }
+}
+// new and improved
+def get(id: String): ResponseIt {
+  authenticated { user => {
+    val it = Item.find(By(Item.id, Helpers.toLong(id)),
+                       By(Item.author, user)
+    it match {
+      case Full(item) => AtomResponse(item.toAtom())
+      case Empty => NotFoundResponse()
+    }
+  }
+}
+</pre></code>
+<ul>
+<li>authenticated takes a function that takes a User and returns
+   a <code>ResponseIt</code>.</li>
+</ul>
+</div>
+
+<div class="slide">
+<h1>Authenticating (Part 2): getUser</h1>
+<ul>
+  <li>We read in the HTTP <code>Authorization</code> header and <code>find</code> the proper User based on it's contents</li>
+</ul>
+<code><pre>
+private def getUser: Can[User] = {
+  Can.legacyNullTest(request.request
+    .getHeader("Authorization")).flatMap(auth => {
+    val up: List[String] = if (auth.length > 5) {
+    new String(Base64.decodeBase64(auth.substring(5,
+      auth.length).getBytes())).split(":").toList
+    } else {
+      Nil
+    }
+
+    if (up.length < 2) {
+      Empty
+    } else {
+      val email = up(0)
+      val password = up(1)	
+      User.find(By(User.email, email)) match {
+        case Full(user) if user.validated && 
+          user.password.match_?(password) => Full(user)
+        case _ => Empty
+      }
+    }
+})}
+</pre></code>
+<ul>
+  <li>Again, this is mostly boilerplate, will soon be in lift.</li>
+  <li><code>Base64</code> is from Apache Commons Codec.</li>
+</ul>
+</div>
+
+
+
+
+
+<div class="slide">
+<h1>Thank you</h1>
+  <br /><br /><br />
+<ul>
+  <li>Any questions?</li>
+</ul>
+</div>
+</div>
+
+</body>
+</html>
