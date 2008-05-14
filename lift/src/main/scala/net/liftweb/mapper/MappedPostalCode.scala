@@ -38,6 +38,7 @@ object Countries extends Enumeration(1) {
   
   val USA = C1
   val Australia = C10
+  val Canada = C32
   val Sweden = C167
   
   
@@ -103,6 +104,7 @@ class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) exte
     case Countries.USA =>  valRegex(java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), S.??("invalid.zip.code")) _ :: super.validations
     case Countries.Sweden => valRegex(java.util.regex.Pattern.compile("[0-9]{3}[ ]?[0-9]{2}"), S.??("invalid.postal.code")) _ :: super.validations
     case Countries.Australia => valRegex(java.util.regex.Pattern.compile("(0?|[1-9])[0-9]{3}"), S.??("invalid.postal.code")) _ :: super.validations
+    case Countries.Canada => valRegex(java.util.regex.Pattern.compile("[A-Z][0-9][A-Z][ ][0-9][A-Z][0-9]"), S.??("invalid.postal.code")) _ :: super.validations
     case _ => genericCheck _ :: super.validations
   }
 }
