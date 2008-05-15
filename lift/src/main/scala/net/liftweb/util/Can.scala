@@ -225,6 +225,8 @@ sealed abstract class Can[+A] extends Product {
     case Full(x) => f1(x)
     case _ => alternative
   }
+  
+  def ===[B >: A](to: B): Boolean = false
 }
 
 /**
@@ -277,6 +279,8 @@ final case class Full[+A](value: A) extends Can[A] {
     else Empty
     case _ => Empty
   }
+  
+    override def ===[B >: A](to: B): Boolean = value == to
 }
 
 /**

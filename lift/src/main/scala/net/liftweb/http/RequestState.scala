@@ -254,6 +254,16 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     case x => x
   }
   
+  /**
+    * The IP address of the request
+    */
+  def remoteAddr: String = request.getRemoteAddr()
+  
+  /**
+  * The user agent of the browser that sent the request
+    */
+  def userAgent: Can[String] = Can.legacyNullTest(request.getHeader("User-Agent"))
+  
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }
 
