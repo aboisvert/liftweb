@@ -20,13 +20,13 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       findClass("ClassHelpersSpecTest", List("net.liftweb.util", "other.package")) must_== Full(classOf[ClassHelpersSpecTest])
     }
     "return a Full can with the found class when given the name, a list of packages and a target type to conform to" in {
-      findClass("ArrayList", List("java.util"), Full(classOf[java.util.List[Object]])) must_== Full(classOf[java.util.ArrayList[Object]])
+      findClass("ArrayList", List("java.util"), classOf[java.util.List[Object]]) must_== Full(classOf[java.util.ArrayList[Object]])
     }
     "return an Empty can if no class is found given a name and package" in {
       findClass("ClassHelpersSpecTest", List("net.liftweb.nothere")) must_== Empty
     }
     "return an Empty can if the class cannot be coerced to the expected type" in {
-      findClass("ClassHelpersSpecTest", List("net.liftweb.util"), Full(classOf[String])) must_== Empty
+      findClass("ClassHelpersSpecTest", List("net.liftweb.util"), classOf[String]) must_== Empty
     }
   }
   "the findClass function" can {

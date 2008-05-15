@@ -25,16 +25,13 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Can[Class[C]]): Can[Class[C]] = {
+  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Can[Class[C]] = {
     
     // Find the class in a single package. Return a can containing the found class or Empty
     def findClass_s(name : String, where: String): Can[Class[C]] = {
       tryo(classOf[ClassNotFoundException]) {
         val c = Class.forName(where + "." + name).asInstanceOf[Class[C]]
-        targetType match {
-          case Empty => c 
-          case Full(t) => tryo(classOf[ClassCastException]) { c.asSubclass(t); c } openOr(throw new ClassNotFoundException) 
-        }
+        tryo(classOf[ClassCastException]) { c.asSubclass(targetType); c } openOr(throw new ClassNotFoundException) 
       }
     }
     
@@ -61,7 +58,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]]): Can[Class[C]] = findClass(name, where, modifiers, Empty)
+  def findClass(name: String, where: List[String], modifiers: List[Function1[String, String]]): Can[Class[AnyRef]] = findClass(name, where, modifiers, classOf[AnyRef])
 
   /**
    * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary.
@@ -71,7 +68,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Can[Class[C]]): Can[Class[C]] = findClass(name, where, nameModifiers, targetType)
+  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Can[Class[C]] = findClass(name, where, nameModifiers, targetType)
 
   /**
    * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary 
@@ -80,8 +77,8 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String]): Can[Class[C]] =
-    findClass[C](name, where, nameModifiers)
+  def findClass(name: String, where: List[String]): Can[Class[AnyRef]] =
+    findClass(name, where, nameModifiers)
   
   /**
    * Find a class given a list of possible names and corresponding packages, turning underscored names to CamelCase if necessary 
@@ -89,12 +86,12 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](where: List[(String, List[String])]): Can[Class[C]] = where match {
+  def findClass(where: List[(String, List[String])]): Can[Class[AnyRef]] = where match {
     case Nil => Empty
     case s :: rest => {
-      findClass[C](s._1, s._2) match {
+      findClass(s._1, s._2) match {
         case Full(s) => Full(s)
-        case _ => findClass[C](rest)
+        case _ => findClass(rest)
       }
     }
   }

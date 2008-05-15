@@ -549,12 +549,10 @@ object S {
     }
 
     def jsonCallback(in: List[String]): JsCmd = {
-      in.flatMap(s => 
-      try {
+      in.flatMap(
+      s => 
         JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
-      } catch {
-        case e => List(JsCmds.Noop)
-      }).foldLeft(JsCmds.Noop)(_ & _)
+      ).foldLeft(JsCmds.Noop)(_ & _)
     }
 
     addFunctionMap(key, jsonCallback _)

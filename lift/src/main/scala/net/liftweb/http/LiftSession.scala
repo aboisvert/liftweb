@@ -411,14 +411,14 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
 
-  private def findSnippetClass[C <: AnyRef](name: String): Can[Class[C]] = {
+  private def findSnippetClass[C <: AnyRef](name: String, bound: Class[C]): Can[Class[C]] = {
     if (name == null) Empty
-    else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
+    else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil), bound)
   }
 
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
-    findSnippetClass[AnyRef](cls).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
+    findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
       case Full(md: MetaData) => Full(md.copy(rest))
       case _ => Empty
     }).flatMap(s => s))).openOr(rest)
@@ -441,7 +441,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   private def findSnippetInstance(cls: String): Can[AnyRef] =
   S.snippetForClass(cls) or
-  (findSnippetClass[AnyRef](cls).flatMap(c => instantiate(c)) match {
+  (findSnippetClass(cls, classOf[AnyRef]).flatMap(c => instantiate(c)) match {
     case Full(inst: StatefulSnippet) =>
     inst.snippetName = cls; S.setSnippetForClass(cls, inst); Full(inst)
     case Full(ret) => Full(ret)
@@ -591,7 +591,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   }
 
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), Full(classOf[CometActor])).flatMap{
+    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), classOf[CometActor]).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
