@@ -62,7 +62,7 @@ class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) 
     Full(SHtml.select(Locale.getAvailableLocales.
 		  toList.sort(_.getDisplayName < _.getDisplayName).
 		  map(lo => (lo.toString, lo.getDisplayName)), 
-		  Full(this.is), v => set(v)))
+		  Full(this.is), set))
 }
 
 class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32) {
@@ -74,7 +74,7 @@ class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32
   }
   
   override def _toForm: Can[NodeSeq] = 
-    Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), v => set(v)))
+    Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), set))
 }
 
 object MappedTimeZone {

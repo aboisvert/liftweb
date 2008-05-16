@@ -20,6 +20,10 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
    extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
   
+  type KeyType = Long
+  type KeyedForeignType = O
+  type OwnerType = T
+  
   override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
   // private val _obj = FatLazy(if(defined_?) foreign.find(i_is_!) else Empty)
@@ -51,6 +55,10 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
         
    def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
    def apply(v: O): T = this(v.primaryKeyField.is)
+   
+  def findFor(key: KeyType): List[OwnerType] = theOwner.getSingleton.findAll(By(this, key))
+  
+  def findFor(key: KeyedForeignType): List[OwnerType] = theOwner.getSingleton.findAll(By(this, key))
    
    def +(in: Long): Long = is + in
    

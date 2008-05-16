@@ -103,14 +103,14 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
     * Build a list for the select.  Return a tuple of (String, String) where the first string
     * is the id.string of the Value and the second string is the Text name of the Value.
     */
-  def buildDisplayList: List[(String, String)] = enum.elements.toList.map(a => (a.id.toString, a.toString))
+  def buildDisplayList: List[(Int, String)] = enum.elements.toList.map(a => (a.id, a.toString))
   
     /**
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] = 
-    Full(SHtml.select(buildDisplayList, 
-		  Full(toInt.toString),v => this(fromInt(Helpers.toInt(v)))))
+    Full(SHtml.selectObj[Int](buildDisplayList, 
+		  Full(toInt), v => this.set(fromInt(v))))
 }
 
 class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {

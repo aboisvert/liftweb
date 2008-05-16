@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
+ (c) 2006-2008 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
@@ -199,12 +199,10 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     case RequestMatcher(RequestState(BasePath :: (w @ LostPassword) :: _, _), _)
     if testLoggedIn(w) => () => lostPassword
 
-    case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: 
-				     id :: _, _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: id :: _, _), _) 
     if testLoggedIn(w) => () => passwordReset(id)
     
-    case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _,
-				     _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _, _), _) 
     if testLoggedIn(w) => () => changePassword
 
     case RequestMatcher(RequestState(BasePath :: (w @ Logout) :: _, _), _)
@@ -213,8 +211,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, _), _)
     if testLoggedIn(w) => () => edit
 
-    case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: 
-				     id :: _, _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: id :: _, _), _) 
     if testLoggedIn(w) => () => validateUser(id)
   }
     
@@ -554,7 +551,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
 	(<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
   }
 
-  protected implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] = 
+  implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] = 
     screenWrap.map{
       theDoc => 
         val rw = new RewriteRule {

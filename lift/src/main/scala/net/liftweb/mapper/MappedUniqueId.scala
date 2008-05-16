@@ -28,11 +28,11 @@ class MappedBirthYear[T <: Mapper[T]](owner: T, minAge: Int) extends MappedInt[T
   override def _toForm: Can[NodeSeq] = {
     val end = (year(timeNow) - minAge)
     val start = end - 100
-    Full(SHtml.select((start to end).
+    Full(SHtml.selectObj((start to end).
 		  toList.
 		  reverse.
-		  map(y => (y.toString, y.toString)), 
-		  Full(is.toString),v => set(v.toInt)))
+		  map(y => (y, y.toString)), 
+		  Full(is), this.set))
   }
 }
 

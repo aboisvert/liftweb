@@ -161,13 +161,15 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
       val mapBack: HashMap[String, KeyType] = new HashMap
     var selected: Can[String] = Empty
     
-    Full(SHtml.select(xs.map{case (value, text) =>
+    Full(SHtml.selectObj(xs, Full(this.is), this.set))
+    /*xs.map{case (value, text) =>
       val t = randomString(10)
                          mapBack(t) = value
                          if (value == this.is) selected = Full(t)
                          (t, text)},
 		  selected, 
 		  v => mapBack.get(v).foreach(x => set(x))))
+      */
   }.openOr(immutableMsg))
 }
 
@@ -547,6 +549,12 @@ trait BaseIndexedField extends BaseMappedField {
  * A trait that defines foreign key references
  */
 trait BaseForeignKey extends BaseMappedField {
+  
+  type KeyType
+  type KeyedForeignType <: KeyedMapper[KeyType, KeyedForeignType]
+  
+  type OwnerType <: Mapper[OwnerType]
+  
   /**
    * Is the key defined?
    */
@@ -560,6 +568,10 @@ trait BaseForeignKey extends BaseMappedField {
      
   def dbKeyToTable: BaseMetaMapper
   def dbKeyToColumn: BaseMappedField
+  
+  def findFor(key: KeyType): List[OwnerType]
+  
+  def findFor(key: KeyedForeignType): List[OwnerType]
   
   /**
     * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier

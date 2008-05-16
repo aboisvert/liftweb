@@ -217,7 +217,30 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem = select_*(opts, deflt, SFuncHolder(func))
+   def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem =
+   select_*(opts, deflt, SFuncHolder(func))
+   
+     /**
+   * Create a select box based on the list with a default value and the function to be executed on
+   * form submission
+   *
+   * @param opts -- the options.  A list of value and text pairs (value, text to display)
+   * @param deflt -- the default value (or Empty if no default value)
+   * @param func -- the function to execute on form submission
+   */
+   def selectObj[T](opts: List[(T, String)], deflt: Can[T], func: T => Any): Elem = {
+     val secure = opts.map{case (obj, txt) => (obj, randomString(20), txt)}
+     val revDflt = deflt.flatMap(o => secure.filter(_._1 == o) match {
+       case x :: _ => Full(x._2)
+       case _ => Empty
+     })
+     val toPass = secure.map{case (obj, ran, txt) => (ran, txt)}
+     def process(in: String): Any = secure.filter(_._2 == in) match {
+       case Nil =>
+       case x :: _ => func(x._1)
+     }
+     select_*(toPass, revDflt, SFuncHolder(process))
+   }
      
   /**
    * Create a select box based on the list with a default value and the function to be executed on
