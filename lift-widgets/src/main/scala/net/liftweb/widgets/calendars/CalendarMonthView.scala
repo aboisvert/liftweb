@@ -36,6 +36,7 @@ object CalendarMonthView {
     import net.liftweb.http.ResourceServer
     ResourceServer.allow({
       case "calendars" :: tail => true
+      case "common" :: _ => true
     })
   }
 
@@ -46,7 +47,7 @@ object CalendarMonthView {
             weekClick: Can[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
             
   def apply(when: Calendar,
-            meta: CalendarMeta,
+            meta: MonthViewMeta,
             calendars: Seq[CalendarItem], 
             itemClick: Can[AnonFunc], 
             dayClick: Can[AnonFunc], 
@@ -100,12 +101,12 @@ object CalendarMonthView {
  * @param when - the Calendar object describing the month that needs tobe rendered
  *
  */
-class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
+class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
   private lazy val weekDaysFormatter = new SimpleDateFormat("EEEE", meta.locale)
   private lazy val timeFormatter = new SimpleDateFormat("hh:mm", meta.locale)
   private lazy val dateFormatter = new SimpleDateFormat("MM/dd/yyyy", meta.locale)
   
-  def this(when: Calendar) = this(when, CalendarMeta(MONDAY, Locale getDefault))
+  def this(when: Calendar) = this(when, MonthViewMeta(MONDAY, Locale getDefault))
   
   /**
    * Returns the markup for rendering the calendar month view
@@ -148,7 +149,7 @@ class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
       val cal = calendar.clone().asInstanceOf[Calendar] 
       val today = Calendar getInstance (meta locale)
       (0 to 5) map (row => <tr><td wk={cal get(WEEK_OF_YEAR) toString} 
-                                   class={meta.cellWeek} 
+                                   class="cellWeek" 
                                    onclick={JsFunc("weekClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("wk")).toJsCmd}>
         {cal get(WEEK_OF_YEAR)}</td>{(0 to 6) map (col => 
         try{
@@ -158,21 +159,21 @@ class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
             val isToday = today.get(DAY_OF_MONTH) == cal.get(DAY_OF_MONTH) && (month == today.get(MONTH))
             val div = <div>{
               calendars filter (c => predicate(cal, c)) map (c => {
-                val r = <div><a href="#">{
+                val r = <div class="calendarItem"><a href="#">{
                    <span>{timeFormatter format(c.start.getTime)} {c.subject openOr "..."}</span> 
-                }</a></div> % ("class" -> meta.calendarItem) % 
-                  ("rec_id" -> c.id) % 
-                  ("onclick" -> JsFunc("itemClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("rec_id")).toJsCmd)
+                }</a></div> % 
+                  ("id" -> c.id) % 
+                  ("onclick" -> JsFunc("itemClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("id")).toJsCmd)
                   
                 c.description map (desc => r % (("title" -> desc))) openOr r
               }
               )
             }</div>
             val (head, cell) = isToday match {
-              case true => (meta.cellHeadToday, meta.cellBodyToday)
+              case true => ("cellHeadToday", "cellBodyToday")
               case _ => (month != thisMonth) match {
-                case true => (meta.cellHeadOtherMonth, meta.cellBodyOtherMonth)
-                case _ => (meta.cellHead, meta.cellBody)
+                case true => ("cellHeadOtherMonth", "cellBodyOtherMonth")
+                case _ => ("cellHead", "cellBody")
               }
             }
             Group(<div>{day}</div> % 
@@ -205,7 +206,7 @@ class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
     val headCal = cal.clone().asInstanceOf[Calendar]
     
     val init = JsRaw("""
-      jQuery(function($){
+      jQuery(document).ready(function() {
         jQuery('.calendarItem').click(function(e){
           e.stopPropagation();
         });
@@ -222,13 +223,13 @@ class CalendarMonthView(val when: Calendar, val meta: CalendarMeta) {
     
       <head>
         <link rel="stylesheet" href="/classpath/calendars/monthview/style.css" type="text/css"/>
-        <script type="text/javascript" src="/classpath/calendars/monthview/jquery.dimensions.js"></script>
-        <script type="text/javascript" src="/classpath/calendars/monthview/jquery.bgiframe.js"></script>
-        <script type="text/javascript" src="/classpath/calendars/monthview/jquery.tooltip.js"></script>
+        <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
+        <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
+        <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
         <script type="text/javascript" charset="utf-8">{Unparsed(init toJsCmd)}</script>
       </head>
-      <div class={meta.monthView}>{
-        <table width="100%" cellspacing="1" cellpadding="0" style="table-layout: fixed;" class={meta.topHead}>
+      <div class="monthView">{
+        <table width="100%" cellspacing="1" cellpadding="0" style="table-layout: fixed;" class="topHead">
           {makeHead(headCal)}
           {makeCells(cal)}
         </table> 

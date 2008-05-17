@@ -21,6 +21,7 @@ import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import Helpers._
 import net.liftweb.widgets.calendar._
+
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -34,11 +35,13 @@ class Boot {
 
     val entries = Menu(Loc("Home", "/", "Home")) ::
       Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
+      Menu(Loc("calweek", "/calweek", "CalendarWeekView")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
 
-    CalendarMonthView init
+    CalendarMonthView init;
+    CalendarWeekView init;
 
   }
 }
