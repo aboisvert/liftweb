@@ -235,17 +235,6 @@ Lift is a scala web framework.
         </configuration>
       </plugin>
       <plugin>
-        <artifactId>cobertura-maven-plugin</artifactId>
-        <groupId>org.codehaus.mojo</groupId>
-        <executions>
-          <execution>
-            <goals>
-              <goal>clean</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <inherited>true</inherited>
         <artifactId>maven-source-plugin</artifactId>
         <executions>
@@ -268,11 +257,14 @@ Lift is a scala web framework.
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
         <configuration>
-          <vscaladocVersion>1.1</vscaladocVersion>
-          <scalaVersion>${scala.version}</scalaVersion>
           <jvmArgs>
-            <jvmArg>-DpackageLinkDefs=${basedir}/vscaladocs-packageLinkDefs.properties</jvmArg>
+            <jvmArg>-Xmx1024m</jvmArg>
+            <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
           </jvmArgs>
+          <args>
+            <!--arg>-unchecked</arg--></args>
+          <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
+          <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>
       <plugin>
@@ -287,18 +279,6 @@ Lift is a scala web framework.
         </reportSets>
         <configuration>
           <issueLinkTemplate>%URL%/detail?id=%ISSUE%</issueLinkTemplate>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>cobertura-maven-plugin</artifactId>
-        <!-- version 2.1 is bugged ouput coverage 100% or 0% -->
-        <version>2.2</version>
-        <configuration>
-          <formats>
-            <format>xml</format>
-            <format>html</format>
-          </formats>
         </configuration>
       </plugin>
       <plugin>
@@ -361,6 +341,36 @@ Lift is a scala web framework.
     </profile>
     <profile>
       <id>hudson</id>
+      <build>
+        <plugins>
+          <plugin>
+            <artifactId>cobertura-maven-plugin</artifactId>
+            <groupId>org.codehaus.mojo</groupId>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>clean</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+      <reporting>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>cobertura-maven-plugin</artifactId>
+            <version>2.2</version>
+            <configuration>
+              <formats>
+                <format>xml</format>
+                <format>html</format>
+              </formats>
+            </configuration>
+          </plugin>
+        </plugins>
+      </reporting>
       <distributionManagement>
         <repository>
           <id>hudson.scala-tools.org</id>
