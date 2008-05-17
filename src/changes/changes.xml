@@ -16,6 +16,9 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
+    <release version="0.9" date="??" description="">
+      <action dev="Marius Danciu" type="add">Added CalendarWeekView widget</action>
+    </release>
     <release version="0.8" date="2008-05-09" description="">
       <action dev="David Bernard" type="update">Use vscaladoc to generate API</action>
       <action dev="Jorge Ortiz" type="update">Compiled the project with Scala-2.7.1</action>
