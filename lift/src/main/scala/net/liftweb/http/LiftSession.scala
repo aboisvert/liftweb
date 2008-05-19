@@ -42,29 +42,36 @@ object LiftSession {
 
 private[http] case class AddSession(session: LiftSession)
 private[http] case class RemoveSession(session: LiftSession)
-private[http] object CheckAndPurge
 
+/**
+* Manages LiftSessions because the servlet container is less than optimal at
+* timing sessions out.
+*/
 object SessionMaster extends Actor {
   private var sessions: Map[String, LiftSession] = Map.empty
+  private object CheckAndPurge
   
-  def act = loop {
-    react {
-      case AddSession(session) => 
-      sessions = sessions + ( (session.uniqueId -> session) )
-      
-      case RemoveSession(session) =>
-      sessions = sessions - session.uniqueId
-      
-      case CheckAndPurge =>
-      val now = millis
-      for ((id, session) <- sessions.elements) {
-        if (now - session.lastServiceTime > session.inactivityLength) {
-          Log.info(" Session "+id+" expired")
-          session.httpSession.invalidate
+  def act = {
+    doPing()
+    loop {
+      react {
+        case AddSession(session) => 
+        sessions = sessions + ( (session.uniqueId -> session) )
+        
+        case RemoveSession(session) =>
+        sessions = sessions - session.uniqueId
+        
+        case CheckAndPurge =>
+        val now = millis
+        for ((id, session) <- sessions.elements) {
+          if (now - session.lastServiceTime > session.inactivityLength) {
+            Log.info(" Session "+id+" expired")
+            session.httpSession.invalidate
+          }
         }
+        doPing()
+        
       }
-      doPing()
-      
     }
   }
   
@@ -78,7 +85,7 @@ object SessionMaster extends Actor {
     }
   }
   
-  doPing()
+  
 }
 
 @serializable
