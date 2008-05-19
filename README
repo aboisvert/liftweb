@@ -13,3 +13,5 @@ And because lift applications are written in Scala, an elegant new JVM
 language, you can still use your favorite Java libraries and deploy to your
 favorite Servlet Container. Use the code you've already written and deploy
 to the container you've already configured!
+
+And it's hosted on GitHub
