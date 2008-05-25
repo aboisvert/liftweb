@@ -108,3 +108,22 @@ table tr td {
 	margin: 0px;
 	padding: 0px;
 }
+
+#tooltip {
+	position: absolute;
+	z-index: 3000;
+	padding: 5px;
+	border: 1px solid #111;
+	background-color: #e6f0ff;
+	opacity: .85;
+	-moz-opacity: .85;
+	-khtml-opacity: .85;
+	width: 200px;
+}
+
+#tooltip h3 {
+	font-family: arial;
+	font-size: 8pt;
+	font-weight:normal;
+	margin-top: 0px;
+}

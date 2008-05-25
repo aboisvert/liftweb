@@ -36,14 +36,16 @@ object CalendarUtils {
         case _ => eh*2
       } 
 
+      var items: List[(String, JsExp)] = ("id", Str(c.id)) ::
+        ("start", JsRaw(startIndex toString)) :: 
+        ("end", c.end map(c => JsRaw(endIndex toString)) openOr JsRaw("48")) ::
+        ("weekDay", Str(weekDay(c start) toString)) ::
+        ("startTime", Str(timeFormatter.format(c.start getTime))) :: 
+        ("subject", Str(c.subject openOr "")) :: Nil
+        
+      items = c.description map(desc => items ++ (("description", Str(desc)) :: Nil) ) openOr items
       
-      
-      JsObj(("id", c.id),
-            ("start", JsRaw(startIndex toString)), 
-            ("end", c.end map(c => JsRaw(endIndex toString)) openOr JsRaw("48")),
-            ("weekDay", weekDay(c start)),
-            ("startTime", Str(timeFormatter.format(c.start getTime))), 
-            ("subject", Str(c.subject openOr "")))
+      JsObj(items:_*)
      
       
     }):_*))) 

@@ -77,12 +77,14 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
     
     cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
     val startIndex = cal.get(DAY_OF_WEEK)
-    
+
     val headCal = cal.clone().asInstanceOf[Calendar]
     <head>
       <link rel="stylesheet" href="/classpath/calendars/weekview/style.css" type="text/css"/>
       <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
       <script type="text/javascript" src="/classpath/calendars/weekview/weekviewcalendars.js"></script>
+      <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
+      <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
       <script type="text/javascript" charset="utf-8">{      
         Unparsed("\nvar itemClick = " + (itemClick openOr JsRaw("function(param){}")).toJsCmd) ++
         Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => c.start.get(WEEK_OF_YEAR) == when.get(WEEK_OF_YEAR))).toJsCmd) ++

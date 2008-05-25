@@ -2,11 +2,14 @@
    size = item.end - item.start
    
    if (size > 1) {
-     parent.append("<div id='" + item.id + "' indent='" + indent + "' class='calendarItem' onclick='itemClick(this, \"" + item.id + "\")'><div class='calendarItemHead'>" + item.startTime + "</div><div class='calendarItemBody'>" + item.subject + "</div></div>");
+     parent.append("<div id='" + item.id + "' title='" + item.description + "' indent='" + indent + "' class='calendarItem' onclick='itemClick(this, \"" + item.id + "\")'><div class='calendarItemHead'>" + item.startTime + "</div><div class='calendarItemBody'>" + item.subject + "</div></div>");
    } else {
-     parent.append("<div id='" + item.id + "' indent='" + indent + "' class='calendarItem' onclick='itemClick(this, \"" + item.id +"\")'><div class='calendarItemHead'>" + item.startTime + " " + item.subject + "</div><div class='calendarItemBody'></div></div>");
+     parent.append("<div id='" + item.id + "' title='" + item.description + "' indent='" + indent + "' class='calendarItem' onclick='itemClick(this, \"" + item.id +"\")'><div class='calendarItemHead'>" + item.startTime + " " + item.subject + "</div><div class='calendarItemBody'></div></div>");
    }
    child = $("#"+item.id);
+   if (item.description) {
+     child.tooltip({track: true, delay: 0, showURL: false});
+   }
    
    width = child.outerWidth();
 
