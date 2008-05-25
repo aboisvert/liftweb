@@ -14,12 +14,21 @@
 * and limitations under the License.
 */
 
-package net.liftweb.widgets.calendar;
+package net.liftweb.widgets.calendars;
 
-import java.util.Locale
+import java.util.{Calendar, Locale}
 import java.util.Calendar._
 import java.text.SimpleDateFormat
 
-case class WeekViewMeta(firstDayOfWeek: Int, locale: Locale) {
-  var timeFormatter = new SimpleDateFormat("h a")
+
+abstract class ViewMeta(locale : Locale) {
+  var timeFormatter = new SimpleDateFormat("h a", locale)
+  var weekDaysFormatter = new SimpleDateFormat("EEEE", locale)
+  var dateFormatter = new SimpleDateFormat("M/dd", locale)
 }
+
+case class WeekViewMeta(firstDayOfWeek: Int, locale: Locale) extends ViewMeta(locale)
+
+case class MonthViewMeta(firstDayOfWeek: Int, locale: Locale) extends ViewMeta(locale)
+
+case class DayViewMeta(locale: Locale) extends ViewMeta(locale)

@@ -13,7 +13,7 @@ import net.liftweb.http.js._
 import java.util.Calendar
 import java.util.Calendar._
 
-import net.liftweb.widgets.calendar._
+import net.liftweb.widgets.calendars._
 
 
 class CalendarMonthViewDemo {

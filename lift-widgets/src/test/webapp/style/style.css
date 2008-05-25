@@ -1,0 +1,31 @@
+h2 {
+	font-family: arial;
+	font-size: 14pt;
+}
+
+h1 {
+	font-family: arial;
+	font-size: 16pt;
+}
+ul {
+
+	width: 200px;
+}
+
+ul li a {
+	color: green;
+	text-decoration: none;
+	display: block;
+}
+
+ul li a:hover {
+	text-decoration: none;
+	background-color: #dddddd;
+	display: block;
+}
+
+#current {
+	font-weight: bold;
+	color: green;
+	color: rgb(41, 82, 122);
+}

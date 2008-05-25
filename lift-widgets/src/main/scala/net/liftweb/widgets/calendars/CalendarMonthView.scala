@@ -14,7 +14,7 @@
 * and limitations under the License.
 */
   
-package net.liftweb.widgets.calendar;
+package net.liftweb.widgets.calendars;
 
 import scala.xml._
 import java.util.{Calendar, Locale}
@@ -102,9 +102,6 @@ object CalendarMonthView {
  *
  */
 class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
-  private lazy val weekDaysFormatter = new SimpleDateFormat("EEEE", meta.locale)
-  private lazy val timeFormatter = new SimpleDateFormat("hh:mm", meta.locale)
-  private lazy val dateFormatter = new SimpleDateFormat("MM/dd/yyyy", meta.locale)
   
   def this(when: Calendar) = this(when, MonthViewMeta(MONDAY, Locale getDefault))
   
@@ -191,7 +188,7 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
     def makeHead(headCal: Calendar) = <tr><td></td>{
       (0 to 6) map(x => <td width="14%">{
         try{
-          weekDaysFormatter format(headCal getTime)
+          meta.weekDaysFormatter format(headCal getTime)
         } finally {
           headCal add(DAY_OF_MONTH, 1)
         }

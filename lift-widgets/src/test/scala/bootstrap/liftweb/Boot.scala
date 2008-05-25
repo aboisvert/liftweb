@@ -20,7 +20,7 @@ import net.liftweb.http._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
 import Helpers._
-import net.liftweb.widgets.calendar._
+import net.liftweb.widgets.calendars._
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -36,12 +36,14 @@ class Boot {
     val entries = Menu(Loc("Home", "/", "Home")) ::
       Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
       Menu(Loc("calweek", "/calweek", "CalendarWeekView")) ::
+      Menu(Loc("calday", "/calday", "CalendarDayView")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
 
     CalendarMonthView init;
     CalendarWeekView init;
+    CalendarDayView init;
 
   }
 }

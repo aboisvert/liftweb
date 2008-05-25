@@ -1,3 +1,19 @@
+/*
+* Copyright 2007-2008 WorldWide Conferencing, LLC
+*
+* Licensed under the Apache License, Version 2.0 (the "License");
+* you may not use this file except in compliance with the License.
+* You may obtain a copy of the License at
+*
+*    http://www.apache.org/licenses/LICENSE-2.0
+*
+* Unless required by applicable law or agreed to in writing,
+* software distributed under the License is distributed on an "AS IS" BASIS,
+* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+* See the License for the specific language governing permissions
+* and limitations under the License.
+*/
+    
 package webapptest.snippet;
 
 import scala.xml._
@@ -12,9 +28,9 @@ import net.liftweb.http.js._
 import java.util.{Calendar, Locale}
 import java.util.Calendar._
 
-import net.liftweb.widgets.calendars._
+import net.liftweb.widgets.calendars.{CalendarDayView, DayViewMeta, CalendarItem, CalendarType}
 
-class CalendarWeekViewDemo {
+class CalendarDayViewDemo {
 
   def render(html: Group) : NodeSeq = {
     
@@ -69,13 +85,13 @@ class CalendarWeekViewDemo {
     val c5 = Calendar getInstance;
     c5.set(HOUR_OF_DAY, 11)
     c5.set(MINUTE, 30)
-    c5.set(DAY_OF_MONTH, 15)
+    c5.set(DAY_OF_MONTH, 17)
     c5.set(MONTH, 4)
 
     val c5End = Calendar getInstance;
     c5End.set(HOUR_OF_DAY, 15)
     c5End.set(MINUTE, 15)
-    c5End.set(DAY_OF_MONTH, 15)
+    c5End.set(DAY_OF_MONTH, 17)
     c5End.set(MONTH, 4)
 
     
@@ -111,7 +127,7 @@ class CalendarWeekViewDemo {
     c.set(DAY_OF_MONTH, 17)
     c.set(MONTH, 4)
     bind("cal", html,
-         "widget" --> CalendarWeekView(c, WeekViewMeta(MONDAY, Locale.getDefault()), list, itemClick)
+         "widget" --> CalendarDayView(c, DayViewMeta(Locale.getDefault()), list, itemClick)
     )
 
   }

@@ -14,7 +14,7 @@
 * and limitations under the License.
 */
   
-package net.liftweb.widgets.calendar;
+package net.liftweb.widgets.calendars;
 
 import java.util.Calendar
 import java.util.Calendar._

@@ -27,7 +27,7 @@ import net.liftweb.http.SHtml._
 import JsCmds._
 import JE._
 
-object CalendarWeekView {
+object CalendarDayView {
   
   /**
    * Call this function typically in boot
@@ -42,18 +42,18 @@ object CalendarWeekView {
   
   def apply(when: Calendar,
       calendars: List[CalendarItem], 
-      itemClick: Can[AnonFunc]) = new CalendarWeekView(when).render(calendars, itemClick)
+      itemClick: Can[AnonFunc]) = new CalendarDayView(when).render(calendars, itemClick)
       
   def apply(when: Calendar,
-      meta: WeekViewMeta,
+      meta: DayViewMeta,
       calendars: List[CalendarItem], 
-      itemClick: Can[AnonFunc]) = new CalendarWeekView(when, meta) render(calendars, itemClick)
+      itemClick: Can[AnonFunc]) = new CalendarDayView(when, meta) render(calendars, itemClick)
   
 }
 
-class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
+class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
  
-  def this(when: Calendar) = this(when, WeekViewMeta(MONDAY, Locale getDefault))
+  def this(when: Calendar) = this(when, DayViewMeta(Locale getDefault))
   
   def makeHead(headCal: Calendar) = <tr><td></td>{
     (0 to 6) map(x => <td width="14%">{
@@ -70,51 +70,37 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
     
     val cal = when.clone().asInstanceOf[Calendar]
     
-    val delta = cal.get(DAY_OF_WEEK) - meta.firstDayOfWeek
-    
-    cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
-    val startIndex = cal.get(DAY_OF_WEEK)
-
-    val headCal = cal.clone().asInstanceOf[Calendar]
     <head>
-      <link rel="stylesheet" href="/classpath/calendars/weekview/style.css" type="text/css"/>
+      <link rel="stylesheet" href="/classpath/calendars/dayview/style.css" type="text/css"/>
       <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
-      <script type="text/javascript" src="/classpath/calendars/weekview/weekviewcalendars.js"></script>
+      <script type="text/javascript" src="/classpath/calendars/dayview/dayviewcalendars.js"></script>
       <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
       <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
       <script type="text/javascript" charset="utf-8">{      
         Unparsed("\nvar itemClick = " + (itemClick openOr JsRaw("function(param){}")).toJsCmd) ++
-        Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameWeek(c start, when))).toJsCmd) ++
+        Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameDay(c.start, when))).toJsCmd) ++
         Unparsed("""
          jQuery(document).ready(function() {
-            buildWeekViewCalendars();
+            buildDayViewCalendars();
           })
          """)
        }
       </script>
     </head>
 
-    <div class="weekView">
-    <div class="wkHead">
+    <div class="dayView">
+    <div class="dayHead">
       <table cellspacing="0" cellpading="0" style="width: 100%;">
        <tr>
-         <td  class="wkHour"><div></div></td>
-         {
-          (for (val day <- 0 to 6) yield 
-              <td class="wkHeadCell">{
-                try{
-                  val time = headCal.getTime
-                  meta.weekDaysFormatter.format(time) + " " + dateFormatter.format(time)
-                } finally {
-                  headCal add(DAY_OF_MONTH, 1)
-                }
-              }</td>
-          )
-         }
+         <td  class="dayHour"><div></div></td>
+            <td class="dayHeadCell">{
+                val time = cal.getTime
+                meta.weekDaysFormatter.format(time) + " " + dateFormatter.format(time)
+            }</td>
         </tr>
       </table>
     </div>
-    <div class="weekViewBody">
+    <div class="dayViewBody">
       <table cellspacing="0" cellpading="0" style="width: 100%;">
       {
         val cal = Calendar getInstance;
@@ -123,21 +109,15 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
         (for (val i <- 0 to 23) yield
         try{
           <tr>
-            <td class="wkHour"><div>{Unparsed(meta.timeFormatter format(cal getTime))}</div></td>
-           {
-              <td id={Unparsed("wkhidx_" + startIndex + "_" + (i*2 toString))} class="wkCell borderDashed"></td> ++ 
-                (for (val day <- 1 to 6) yield 
-                    <td id={Unparsed("wkhidx_" + (day + startIndex) + "_" + (i*2 toString))} class="wkCell borderDashed borderLeft"></td>
-                )
+            <td class="dayHour"><div>{Unparsed(meta.timeFormatter format(cal getTime))}</div></td>
+            {
+              <td id={Unparsed("didx_" + (i*2 toString))} class="dayCell borderDashed"></td> 
             }
           </tr>
           <tr>
-            <td class="wkHour borderSolid"></td>
+            <td class="dayHour borderSolid"></td>
             {
-              <td id={Unparsed("wkhidx_" + startIndex + "_" + ((i*2+1) toString))} class="wkCell borderSolid"></td> ++
-                (for (val day <- 1 to 6) yield 
-                    <td id={Unparsed("wkhidx_" + (day + startIndex) + "_" + ((i*2+1) toString))} class="wkCell borderSolid borderLeft"></td>
-                )
+              <td id={Unparsed("didx_" + ((i*2+1) toString))} class="dayCell borderSolid"></td>
             }
           </tr>  
         } finally {
@@ -149,3 +129,4 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
     </div>
   }
 }
+
