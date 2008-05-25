@@ -14,5 +14,18 @@
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
     </dependency>
+    
+    <dependency>
+      <!-- need net.liftweb.util net.liftweb.http-->
+      <groupId>${project.groupId}</groupId>
+      <artifactId>lift-webkit</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    
+    <dependency>
+      <groupId>org.openid4java</groupId>
+      <artifactId>openid4java</artifactId>
+      <version>0.9.3</version>
+    </dependency>
   </dependencies>
 </project>
