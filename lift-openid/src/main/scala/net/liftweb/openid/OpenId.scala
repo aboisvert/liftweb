@@ -37,6 +37,9 @@ import util._
 
 import scala.xml.{NodeSeq, Text}
 
+/**
+  * A session var that keeps track of the OpenID object through the request/response
+  */
 object OpenIdObject extends SessionVar[OpenIDConsumer](new AnyRef with OpenIDConsumer)
 
 trait OpenIdVendor extends  {
