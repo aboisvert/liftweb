@@ -226,7 +226,9 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     curUser.remove()
   }
   
-  def logoutCurrentUser {
+  def logoutCurrentUser = logUserOut()
+  
+  def logUserOut() {
     S.unset(LoggedInUserIdentifier)
     curUser.remove()
     S.request.foreach(_.request.getSession.invalidate)
