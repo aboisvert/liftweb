@@ -67,13 +67,10 @@ private[http] class LiftServlet extends HttpServlet  {
   
   override def init = {
     try {
-      // if (Scheduler.tasks ne null) {Log.error("Restarting Scheduler"); Scheduler.restart} // restart the Actor scheduler
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
         case RequestMatcher(r @ RequestState(mainPath :: subPath, _) ,_) if mainPath == LiftRules.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
       })      
-      // ResourceServer.allow("/jquery-1.2.2.js")
-      // super.init
     } finally {
       clearThread
     }

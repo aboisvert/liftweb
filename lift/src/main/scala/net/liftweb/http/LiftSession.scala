@@ -28,6 +28,7 @@ import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, Pref
 import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 import scala.xml.transform._
+import java.util.concurrent.TimeUnit
 
 object LiftSession {
 
@@ -59,34 +60,32 @@ object SessionMaster extends Actor {
     Can isA(req.getSession.getAttribute(LiftRules.sessionNameConst), classOf[LiftSession]) 
   
   def act = {
-    doPing()
+    startPing()
     loop {
       react {
         case AddSession(session) => 
-        sessions = sessions + ( (session.uniqueId -> session) )
+          sessions = sessions + ( (session.uniqueId -> session) )
         
         case RemoveSession(session) =>
-        sessions = sessions - session.uniqueId
+          sessions = sessions - session.uniqueId
         
         case CheckAndPurge =>
-        val now = millis
-        for ((id, session) <- sessions.elements) {
-          if (now - session.lastServiceTime > session.inactivityLength) {
-            Log.info(" Session "+id+" expired")
-            session.httpSession.invalidate
+          val now = millis
+          for ((id, session) <- sessions.elements) {
+            if (now - session.lastServiceTime > session.inactivityLength) {
+              Log.info(" Session "+id+" expired")
+              session.httpSession.invalidate
+            }
           }
-        }
-        doPing()
-        
       }
     }
   }
   
   this.start
   
-  def doPing() {
+  def startPing() {
     try {
-      ActorPing.schedule(this, CheckAndPurge, 10000L)
+      ActorPing scheduleAtFixedRate(this, CheckAndPurge, 10L, 10L, TimeUnit.SECONDS)
     } catch {
       case e => Log.error("Couldn't start SessionMaster ping", e)
     }
