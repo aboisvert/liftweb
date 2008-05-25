@@ -287,10 +287,10 @@ object S {
   /**
   * Redirect the browser to a given URL
   */
-  def redirectTo[T](where: String): T = throw new RedirectException("Not Found", where, Empty)
+  def redirectTo[T](where: String): T = throw ResponseShortcutException.redirect(where) 
   
   def redirectTo[T](where: String, func: () => Unit): T = 
-  throw new RedirectException("Not Found", where, Full(func))
+  throw ResponseShortcutException.redirect(where, func)
   
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
   

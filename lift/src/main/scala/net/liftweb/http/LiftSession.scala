@@ -300,10 +300,10 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
           response.map(checkRedirect) 
         }
     } catch {
-      case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) =>
-      Full(handleRedirect(ite.getCause.asInstanceOf[RedirectException], request))
+      case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) =>
+      Full(handleRedirect(ite.getCause.asInstanceOf[ResponseShortcutException], request))
 
-      case rd: net.liftweb.http.RedirectException => Full(handleRedirect(rd, request))
+      case rd: net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
 
       case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
 
@@ -311,14 +311,13 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
     }
   }
 
-  private def handleRedirect(re: RedirectException, request: RequestState): ResponseIt = {
-    notices = S.getNotices
-
-    val whereTo: String = attachRedirectFunc(re.to, re.func)
-    RedirectResponse(whereTo, S responseCookies:_*)
+  private def handleRedirect(re: ResponseShortcutException, request: RequestState): ResponseIt = {
+    if (re.doNotices) notices = S.getNotices
+    
+    re.response 
   }
   
-  private[http] def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
+   private[http] def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
     f map { fnc => 
         val func: String = LiftSession.this.synchronized {
           val funcName = "fn"+randomString(20)
@@ -795,8 +794,8 @@ object TemplateFinder {
           }
         }
       } catch {
-        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[RedirectException]) => throw ite.getCause
-        case re: RedirectException => throw re
+        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) => throw ite.getCause
+        case re: ResponseShortcutException => throw re
         case _ => Empty
       }
     }
