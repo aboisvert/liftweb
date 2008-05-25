@@ -510,7 +510,7 @@ object S {
   def contextPath = session.map(_.contextPath).openOr("")  
   
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
-    val snippet = if (name.indexOf(".") != -1) name.roboSplit(".") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
+    val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
     if (LiftRules.snippetTable.isDefinedAt(snippet)) Full(LiftRules.snippetTable(snippet)) else Empty
   }
   

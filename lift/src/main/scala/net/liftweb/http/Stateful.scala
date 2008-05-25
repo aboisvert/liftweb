@@ -59,24 +59,26 @@ import scala.xml.{NodeSeq, Elem}
  *}
  *</pre>
  */
-trait StatefulSnippet {
-  type DispatchIt = PartialFunction[String, NodeSeq => NodeSeq]
-
-  def dispatch: DispatchIt
-
-  private[http] var snippetName: String = ""
-
-  def registerThisSnippet() = S.setSnippetForClass(snippetName, this);
-  
-  def unregisterThisSnippet() = S.unsetSnippetForClass(snippetName);
-
-  /**
+ trait StatefulSnippet extends DispatchSnippet {
+   private[http] var snippetName: String = ""
+   
+   def registerThisSnippet() = S.setSnippetForClass(snippetName, this);
+   
+   def unregisterThisSnippet() = S.unsetSnippetForClass(snippetName);
+   
+   /**
    * create an anchor tag around a body
    *
    * @param func - the function to invoke when the link is clicked
    * @param body - the NodeSeq to wrap in the anchor tag
    */
-  def link(to: String, func: () => Any, body: NodeSeq): Elem = SHtml.link(to, () => {registerThisSnippet; func()}, body)
+   def link(to: String, func: () => Any, body: NodeSeq): Elem = SHtml.link(to, () => {registerThisSnippet; func()}, body)
    
-  def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet)
-}
+   def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet)
+ }
+ 
+ trait DispatchSnippet {
+   type DispatchIt = PartialFunction[String, NodeSeq => NodeSeq]
+   
+   def dispatch: DispatchIt
+ }
