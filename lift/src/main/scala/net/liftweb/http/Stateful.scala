@@ -66,7 +66,9 @@ trait StatefulSnippet {
 
   private[http] var snippetName: String = ""
 
-  def registerThisSnippet = S.setSnippetForClass(snippetName, this);
+  def registerThisSnippet() = S.setSnippetForClass(snippetName, this);
+  
+  def unregisterThisSnippet() = S.unsetSnippetForClass(snippetName);
 
   /**
    * create an anchor tag around a body
@@ -76,5 +78,5 @@ trait StatefulSnippet {
    */
   def link(to: String, func: () => Any, body: NodeSeq): Elem = SHtml.link(to, () => {registerThisSnippet; func()}, body)
    
-  def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet _)
+  def redirectTo(where: String) = S.redirectTo(where, registerThisSnippet)
 }

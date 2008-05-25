@@ -325,7 +325,11 @@ object S {
   
   private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit = 
     Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
-  
+
+  private[http] def unsetSnippetForClass(cls: String): Unit = 
+    Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
+    
+    
   private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
   
   /**
