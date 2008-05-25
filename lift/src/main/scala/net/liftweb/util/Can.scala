@@ -75,6 +75,11 @@ object Can {
   * @returns Full(in) if in is not null Empty otherwise
   */
   def legacyNullTest[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
+  
+  def isA[A, B](in: A, clz: Class[B]): Can[B] = in match {
+    case null => Empty
+    case v => Full(v).isA(clz)
+  }
 }
 
 /**
