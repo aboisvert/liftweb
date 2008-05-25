@@ -109,6 +109,11 @@ Lift is a scala web framework.
       <name>Marius Danciu</name>
       <timezone>+2</timezone>
     </developer>
+    <developer>
+      <id>tyler.weir</id>
+      <name>Tyler Weir</name>
+      <timezone>-5</timezone>
+    </developer>
   </developers>
 
   <mailingLists>

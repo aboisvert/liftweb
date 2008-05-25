@@ -37,6 +37,8 @@ class Boot {
       Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
       Menu(Loc("calweek", "/calweek", "CalendarWeekView")) ::
       Menu(Loc("calday", "/calday", "CalendarDayView")) ::
+      Menu(Loc("rssfeed", "/rssfeed", "RSSFeed")) ::
+      Menu(Loc("gravatear", "/gravatar", "Gravatar")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))

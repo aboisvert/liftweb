@@ -29,3 +29,45 @@ ul li a:hover {
 	color: green;
 	color: rgb(41, 82, 122);
 }
+
+.rsswidget {
+  padding: 2px;
+  border: 1px solid #EEEEEE;
+  width: 16%;
+}
+
+.rsswidgettitle {
+  background: #336699;
+}
+
+.rsswidget > ul {
+  list-style: none;
+}
+
+.rsswidgettitle a {
+  color: white;
+  padding: 3px;
+} 
+
+.rsswidgetitem {
+  border-bottom: 1px solid #DDDDDD;
+}
+
+.rsswidgetitem a {
+  color: #336699;
+}
+
+#gravatar_wrapper {
+  padding: 5px;
+  border: 1px solid #CCCCCC;
+  background: #EEE;
+  width: 46px;
+}
+
+#gravatar_image {
+
+}
+
+
+
+
