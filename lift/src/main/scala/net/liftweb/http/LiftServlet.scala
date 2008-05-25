@@ -79,18 +79,6 @@ private[http] class LiftServlet extends HttpServlet  {
     }
   }
   
-  /**
-  * Is the file an existing file in the WAR?
-  */
-  /*
-  private def getResourceAsURL(request : HttpServletRequest) : Can[URL] = {
-    if (!goodPath_?(request.getRequestURI)) Empty else
-    getServletContext.getResource(request.getRequestURI.substring(request.getContextPath.length)) match {
-      case null => Empty
-      case u : URL => Full(u)
-    }
-  }*/
-  
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getAttribute(LiftRules.sessionNameConst) match {
       case r: LiftSession =>

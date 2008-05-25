@@ -51,6 +51,12 @@ object SessionMaster extends Actor {
   private var sessions: Map[String, LiftSession] = Map.empty
   private object CheckAndPurge
   
+  def getSession(id: String): Can[LiftSession] = Can(sessions get(id))
+  def getSession(httpSession: HttpSession): Can[LiftSession] = 
+    Can legacyNullTest(httpSession.getAttribute(LiftRules.sessionNameConst).asInstanceOf[LiftSession]) 
+  def getSession(req: HttpServletRequest): Can[LiftSession] = 
+    Can legacyNullTest(req.getSession.getAttribute(LiftRules.sessionNameConst).asInstanceOf[LiftSession]) 
+  
   def act = {
     doPing()
     loop {
@@ -89,7 +95,7 @@ object SessionMaster extends Actor {
 }
 
 @serializable
-class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession( val contextPath: String) extends HttpSessionBindingListener with HttpSessionActivationListener {
   import TemplateFinder._
 
   private var running_? = false
@@ -113,26 +119,30 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
   
   @volatile
   private[http] var inactivityLength = 180000L
+  
+  private [http] var highLevelSessionDispatcher = new HashMap[String, LiftRules.DispatchPf]()
+  private [http] var sessionTemplater = new HashMap[String, LiftRules.TemplatePf]()
+  private [http] var sessionRewriter = new HashMap[String, LiftRules.RewritePf]()
 
   def sessionDidActivate(se: HttpSessionEvent) = {
     this.setSession(se.getSession)
-    
-    messageCallback = new HashMap
-    notices = Nil
-    asyncComponents = new HashMap
-    asyncById = new HashMap
+    refresh
   }
   
   def sessionWillPassivate(se: HttpSessionEvent) = {
-    
-    httpSession.removeAttribute(LiftRules.sessionNameConst)
     this.shutDown()
-    
     httpSession = null
+    refresh
+  }
+  
+  private def refresh() {
     messageCallback = new HashMap
     notices = Nil
     asyncComponents = new HashMap
     asyncById = new HashMap
+    highLevelSessionDispatcher = new HashMap
+    sessionTemplater = new HashMap
+    sessionRewriter = new HashMap
   }
 
   def setSession(session: HttpSession) = {
@@ -365,7 +375,7 @@ class LiftSession( val contextPath: String) extends /*Actor with */ HttpSessionB
 
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
     val toMatch = RequestMatcher(session, Full(this))
-    val templ = LiftRules.templateTable
+    val templ = LiftRules.templateTable(session.request)
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
       val tpath = path.path
       val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {

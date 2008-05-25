@@ -71,39 +71,6 @@ object S {
   def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
   
   /**
-  * Gets the list of templaters (partial functions that match and return a template rather than
-  * loading a template from a file or a class)
-  */
-  def sessionTemplater: List[TemplateHolder] = 
-  servletSession.toList.
-  flatMap(_.getAttribute(LiftRules.SessionTemplateTableName) match {
-    case rw: List[TemplateHolder] => rw
-    case _ => Nil
-  })
-  
-  
-  
-  /**
-  * Returns session-specific request re-writers
-  */
-  /*
-  def sessionRewriter: List[RewriteHolder] = 
-  servletSession.toList.
-  flatMap(_.getAttribute(LiftRules.SessionRewriteTableName) match {
-    case rw: List[RewriteHolder] => rw
-    case _ => Nil
-  })
-  
-  /**
-  * @return a list of session-specific dispatchers
-  */
-  def sessionDispatcher: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(LiftRules.SessionDispatchTableName) match {
-    case rw: List[DispatchHolder] => rw
-    case _ => Nil
-  })
-  */
-  
-  /**
    * @return a List of any Cookies that have been set for this Response.
    */
   def receivedCookies: List[Cookie] =
@@ -166,8 +133,8 @@ object S {
   def locale: Locale = LiftRules.localeCalculator(request.map(_.request))
   
   /**
-  * Return the current timezone
-  */
+   * Return the current timezone
+   */
   def timeZone: TimeZone = 
   LiftRules.timeZoneCalculator(request.map(_.request))
   
@@ -178,35 +145,58 @@ object S {
   }
   
   def highLevelSessionDispatcher: LiftRules.DispatchPf = reduxio(highLevelSessionDispatchList.map(_.dispatch))
-  def highLevelSessionDispatchList: List[DispatchHolder] = servletSession.toList.flatMap(_.getAttribute(HighLevelSessionDispatchTableName) match {
-    case li: List[DispatchHolder] => li
-    case _ => Nil
-  })
+  /**
+   * Return the list of DispatchHolders set for this session. 
+   */
+  def highLevelSessionDispatchList: List[DispatchHolder] = 
+    session map (_.highLevelSessionDispatcher.toList.map(t => DispatchHolder(t._1, t._2))) openOr Nil
   
-  val HighLevelSessionDispatchTableName = "$lift$__HighLelelDispatchTable__"
   def addHighLevelSessionDispatcher(name: String, disp: LiftRules.DispatchPf) = 
-  servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, DispatchHolder(name, disp) :: highLevelSessionDispatchList.filter(_.name != name)))
+    session map (_.highLevelSessionDispatcher += (name -> disp))
   
   def removeHighLevelSessionDispatcher(name: String) =
-  servletSession.foreach(_.setAttribute(HighLevelSessionDispatchTableName, highLevelSessionDispatchList.filter(_.name != name)))
+    session map (_.highLevelSessionDispatcher -= name)
   
-  def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, TemplateHolder(name, rw) :: sessionTemplater.filter(_.name != name)))
-  
-  def removeSessionTemplater(name: String) =
-  servletSession.foreach(_.setAttribute(LiftRules.SessionTemplateTableName, sessionTemplater.remove(_.name == name)))
+  def clearHighLevelSessionDispatcher = session map (_.highLevelSessionDispatcher.clear)
   
   /**
-  * Test the current request to see if it's a POST
-  */
+   * Gets the list of templaters (partial functions that match and return a template rather than
+   * loading a template from a file or a class)
+   */
+  def sessionTemplater: List[TemplateHolder] =
+    session map (_.sessionTemplater.toList.map(t => TemplateHolder(t._1, t._2))) openOr Nil
+
+  def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
+    session map (_.sessionTemplater += (name -> rw))
+
+  def removeSessionTemplater(name: String) =
+    session map (_.sessionTemplater -= name)
+
+  def clearSessionTemplater = session map (_.sessionTemplater.clear)
+
+  
+  def sessionRewriter: List[RewriteHolder] =
+    session map (_.sessionRewriter.toList.map(t => RewriteHolder(t._1, t._2))) openOr Nil
+      
+  def addSessionRewriter(name: String, rw: LiftRules.RewritePf) =
+    session map (_.sessionRewriter += (name -> rw))
+  
+  def removeSessionRewriter(name: String) =
+    session map (_.sessionRewriter -= name)
+  
+  def clearSessionRewriter = session map (_.sessionRewriter.clear)
+
+  /**
+   * Test the current request to see if it's a POST
+   */
   def post_? = request.map(_.post_?).openOr(false);
   
   /**
-  * Localize the incoming string based on a resource bundle for the current locale
-  * @param str the string or ID to localize (the default value is the
-  *
-  * @return the localized XML or Empty if there's no way to do localization
-  */
+   * Localize the incoming string based on a resource bundle for the current locale
+   * @param str the string or ID to localize (the default value is the
+   *
+   * @return the localized XML or Empty if there's no way to do localization
+   */
   def loc(str: String): Can[NodeSeq] =
   resourceBundle.flatMap(r => tryo(r.getObject(str) match {
     case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty

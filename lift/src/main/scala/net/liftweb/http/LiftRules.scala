@@ -28,10 +28,6 @@ import java.io.InputStream
 import java.io.ByteArrayOutputStream
 
 object LiftRules {
-  val SessionDispatchTableName = "$lift$__DispatchTable__"
-  val SessionRewriteTableName = "$lift$__RewriteTable__"
-  val SessionTemplateTableName = "$lift$__TemplateTable__"
-  
   val sessionNameConst = "$lift$__theLiftSession__"
   val noticesContainerId = "lift__noticesContainer__"
   
@@ -298,29 +294,40 @@ object LiftRules {
   var statelessDispatchTable: DispatchPf = Map.empty
   
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
-    // test_boot
-    req.getSession.getAttribute(SessionDispatchTableName) match {
-      case null | Nil  => dispatchTable_i
-      case dt: List[S.DispatchHolder] => rpf(dt.map(_.dispatch), dispatchTable_i)
-      case _ => dispatchTable_i
+    req match {
+      case null => dispatchTable_i
+      case _ => SessionMaster.getSession(req) match {
+        case Full(s) => S.initIfUninitted(s) {
+          rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
+        }
+        case _ => dispatchTable_i
+      }
     }
   }
   
   def rewriteTable(req: HttpServletRequest): RewritePf = {
-    // test_boot
-    req.getSession.getAttribute(SessionRewriteTableName) match {
-      case null | Nil => rewriteTable_i
-      case rt: List[S.RewriteHolder] => rpf(rt.map(_.rewrite), rewriteTable_i)
-      case _ => rewriteTable_i
+    req match {
+      case null => rewriteTable_i
+      case _ => SessionMaster.getSession(req) match {
+        case Full(s) => S.initIfUninitted(s) {
+          rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
+        }
+        case _ => rewriteTable_i
+      } 
     }
   }
   
   def snippetTable: SnippetPf = snippetTable_i
   
-  def templateTable: TemplatePf = {
-    S.sessionTemplater match {
-      case Nil => templateTable_i
-      case rt => rpf(rt.map(_.template), templateTable_i)
+  def templateTable(req: HttpServletRequest): TemplatePf = {
+    req match {
+      case null => templateTable_i
+      case _ => SessionMaster.getSession(req) match {
+        case Full(s) => S.initIfUninitted(s) {
+          rpf(S.sessionTemplater.map(_.template), templateTable_i)
+        }
+        case _ => templateTable_i
+      }
     }
   }
   
