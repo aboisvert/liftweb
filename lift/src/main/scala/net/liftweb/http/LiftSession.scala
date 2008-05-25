@@ -53,9 +53,10 @@ object SessionMaster extends Actor {
   
   def getSession(id: String): Can[LiftSession] = Can(sessions get(id))
   def getSession(httpSession: HttpSession): Can[LiftSession] = 
-    Can legacyNullTest(httpSession.getAttribute(LiftRules.sessionNameConst).asInstanceOf[LiftSession]) 
+    Can isA(httpSession.getAttribute(LiftRules.sessionNameConst), classOf[LiftSession]) 
+    
   def getSession(req: HttpServletRequest): Can[LiftSession] = 
-    Can legacyNullTest(req.getSession.getAttribute(LiftRules.sessionNameConst).asInstanceOf[LiftSession]) 
+    Can isA(req.getSession.getAttribute(LiftRules.sessionNameConst), classOf[LiftSession]) 
   
   def act = {
     doPing()
