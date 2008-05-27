@@ -19,11 +19,35 @@ import org.specs._
 import org.specs.runner._
 import org.specs.Sugar._
 
+import scala.xml._
+
 class TextileSpecTest extends Runner(TextileSpec) with JUnit with Console
 object TextileSpec extends Specification {
+  import TextileParser._
+  
   "A Textile Parse" can {
     "Be a single line of text" in {
-      TextileParser.toHtml("Hello World", None) must_== <b>Hello</b>
+      toHtml("Hello World", None) must ==/(<p>Hello World</p>)
+    }
+    
+    "Make things bold" in {
+      toHtml("**Hello World**", None) must ==/(<p><b>Hello World</b></p>)
+    }
+    
+    "I am <em>very</em> serious" in {
+      toHtml("I am <em>very</em> serious", None) must ==/(<p>I am <em>very</em> serious</p>)
+    }
+    
+    "Observe -- very nice!" in {
+      toHtml("Observe -- very nice!", None) must ==/(<p>Observe &#8212; very nice!</p>)
+    }
+    
+    "Observe - tiny and brief." in {
+      toHtml("Observe - tiny and brief.", None) must ==/(<p>Observe &#8211; tiny and brief.</p>)
+    }
+    
+    "\"Observe!\"" in {
+      toHtml("\"Observe!\"", None) must ==/(<p>&#8220;Observe!&#8221;</p>)
     }
   }
 }
