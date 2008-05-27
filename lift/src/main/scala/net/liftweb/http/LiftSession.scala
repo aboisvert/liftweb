@@ -44,6 +44,8 @@ object LiftSession {
   var onSessionPassivate: List[LiftSession => Unit] = Nil
   var onSetupSession: List[LiftSession => Unit] = Nil
   var onShutdownSession: List[LiftSession => Unit] = Nil
+  var onBeginServicing: List[(LiftSession, RequestState) => Unit] = Nil
+  var onEndServicing: List[(LiftSession, RequestState, Can[ResponseIt]) => Unit] = Nil
 }
 
 
@@ -263,7 +265,8 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
 
   private[http] def processRequest(request: RequestState): Can[ResponseIt] = {
     S.init(request, notices, this) {
-    try {
+      LiftSession.onBeginServicing.foreach(_(this, request))
+    val ret = try {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, Full(this))
         if (sessionDispatch.isDefinedAt(toMatch)) {
@@ -327,6 +330,9 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
       case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
 
     }
+    
+    LiftSession.onEndServicing.foreach(_(this, request, ret))
+    ret
     }
   }
 

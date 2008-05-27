@@ -565,6 +565,9 @@ object LiftRules {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
+  
+    var onBeginServicing: List[RequestState => Unit] = Nil
+  var onEndServicing: List[(RequestState, Can[ResponseIt]) => Unit] = Nil
 }
 
 case object BreakOut
