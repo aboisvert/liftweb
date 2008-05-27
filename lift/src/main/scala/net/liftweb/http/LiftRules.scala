@@ -565,8 +565,6 @@ object LiftRules {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
-  
-  
 }
 
 case object BreakOut
