@@ -128,6 +128,7 @@ private[http] class LiftServlet extends HttpServlet  {
   * Service the HTTP request
   */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
+    LiftRules.onBeginServicing.foreach(_(requestState))
     val statelessToMatch = RequestMatcher(requestState, Empty)
     
     val resp: Can[Response] = if (LiftRules.ending) {
@@ -199,6 +200,8 @@ private[http] class LiftServlet extends HttpServlet  {
         }
       }
     }
+    
+    LiftRules.onEndServicing.foreach(_(requestState, resp))
     
     resp match {
       case Full(resp) =>
