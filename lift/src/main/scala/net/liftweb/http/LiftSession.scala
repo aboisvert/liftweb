@@ -38,6 +38,12 @@ object LiftSession {
 
   def apply(session: HttpSession, contextPath: String) =
   creator(session, contextPath)
+  
+    
+  var onSessionActivate: List[LiftSession => Unit] = Nil
+  var onSessionPassivate: List[LiftSession => Unit] = Nil
+  var onSetupSession: List[LiftSession => Unit] = Nil
+  var onShutdownSession: List[LiftSession => Unit] = Nil
 }
 
 
@@ -127,12 +133,14 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
   def sessionDidActivate(se: HttpSessionEvent) = {
     this.setSession(se.getSession)
     refresh
+    LiftSession.onSessionActivate.foreach(_(this))
   }
   
   def sessionWillPassivate(se: HttpSessionEvent) = {
     this.shutDown()
     httpSession = null
     refresh
+    LiftSession.onSessionPassivate.foreach(_(this))
   }
   
   private def refresh() {
@@ -153,7 +161,7 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
     
     lastServiceTime = millis
     SessionMaster ! AddSession(this)
-    
+    LiftSession.onSetupSession.foreach(_(this))
     this
   }
 
@@ -246,10 +254,11 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
   private def shutDown() = synchronized {
     SessionMaster ! RemoveSession(this)
     
-    Log.debug("Shutting down session")
+    // Log.debug("Shutting down session")
     running_? = false
     asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
     cleanUpSession()
+    LiftSession.onShutdownSession.foreach(_(this))
   }
 
   private[http] def processRequest(request: RequestState): Can[ResponseIt] = {
