@@ -266,7 +266,7 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
   private[http] def processRequest(request: RequestState): Can[ResponseIt] = {
     S.init(request, notices, this) {
       LiftSession.onBeginServicing.foreach(_(this, request))
-    val ret = try {
+      val ret = try {
         val sessionDispatch = S.highLevelSessionDispatcher
         val toMatch = RequestMatcher(request, Full(this))
         if (sessionDispatch.isDefinedAt(toMatch)) {

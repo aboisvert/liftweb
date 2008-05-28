@@ -566,7 +566,7 @@ object LiftRules {
     browserResponseToException(Props.mode, r, e)
   }
   
-    var onBeginServicing: List[RequestState => Unit] = Nil
+  var onBeginServicing: List[RequestState => Unit] = Nil
   var onEndServicing: List[(RequestState, Can[ResponseIt]) => Unit] = Nil
 }
 
