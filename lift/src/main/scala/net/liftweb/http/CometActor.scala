@@ -287,7 +287,6 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   }
   
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty, false)
-  // implicit def xmlNsToXmlOrJsCmd(in: Seq[Node]): RenderOut = new RenderOut(in)
   implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Empty, Full(in), Empty, false)
   implicit def pairToPair(in: (String, Any)): (String, NodeSeq) = (in._1, Text(in._2 match {case null => "null" case s => s.toString}))
   implicit def nodeSeqToFull(in: NodeSeq): Can[NodeSeq] = Full(in)
@@ -350,7 +349,6 @@ spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(No
   
   def outSpan: NodeSeq = Script(Run("var destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"}")) ++
   fixedXhtml.openOr(Text(""))
-  //def asXhtml: NodeSeq = xml.openOr(Text(""))
 }
 
 case class PartialUpdateMsg(cmd: JsCmd) extends CometMessage
