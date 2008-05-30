@@ -10,7 +10,7 @@ import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 import scala.collection.mutable.{ListBuffer}
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure}
+import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure, BindHelpers}
 import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import scala.collection.immutable.TreeMap
 import scala.collection.mutable.{HashSet, ListBuffer}
@@ -41,7 +41,7 @@ object ActorWatcher extends Actor {
 }
 
 @serializable 
-abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor {
+abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
@@ -267,8 +267,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   
   def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
   
-  def bind(prefix: String, vals: (String, NodeSeq)*): NodeSeq = Helpers.bind(prefix, defaultXml, vals.map(a => TheBindParam(a._1, a._2)) :_*)
-  def bind(vals: (String, NodeSeq)*): NodeSeq = bind(defaultPrefix, vals :_*)
+  def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, defaultXml, vals :_*)
+  def bind(vals: BindParam *): NodeSeq = bind(defaultPrefix, vals :_*)
   
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
     who.start
