@@ -17,6 +17,7 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.9" date="??" description="">
+      <action dev="Marius Danciu" type="add">Added URL rewriting support</action>
       <action dev="Marius Danciu" type="add">Added CalendarDayView widget</action>
       <action dev="Marius Danciu" type="add">Added CalendarWeekView widget</action>
     </release>
