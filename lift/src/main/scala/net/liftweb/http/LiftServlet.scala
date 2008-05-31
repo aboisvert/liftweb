@@ -75,7 +75,7 @@ private[http] class LiftServlet extends HttpServlet  {
       clearThread
     }
   }
-  
+
   def getActor(request: RequestState, session: HttpSession): LiftSession = {
     val ret = session.getAttribute(LiftRules.sessionNameConst) match {
       case r: LiftSession =>
@@ -191,7 +191,7 @@ private[http] class LiftServlet extends HttpServlet  {
           this.synchronized {
             this.requestCnt = this.requestCnt + 1
           }
-          
+
           sessionActor.processRequest(requestState).map(_.toResponse) // .what.toResponse
           
         } finally {
@@ -349,7 +349,7 @@ private[http] class LiftServlet extends HttpServlet  {
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
     
     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
-      case ("Location", uri) => (v._1, request map (_ updateWithContextPath(uri)) openOr uri)
+      case ("Location", uri) => (v._1, response.encodeURL(request map (_ updateWithContextPath(uri)) openOr uri))
       case _ => v
     })
     
@@ -396,9 +396,13 @@ class LiftFilter extends Filter
       LiftRules.early.foreach(_(httpReq))
       
       val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
-      
-      if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {}
-      else chain.doFilter(req, res)
+
+      URLRewriter.doWith(httpRes.encodeURL(_)) {
+        if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
+        } else {
+          chain.doFilter(req, res)
+        }
+      }
       
       case _ => chain.doFilter(req, res)
     }

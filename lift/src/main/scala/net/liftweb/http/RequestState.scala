@@ -22,7 +22,7 @@ import javax.servlet.ServletContext
 // import scala.collection.Map
 // import scala.collection.mutable.HashMap
 import net.liftweb.util.Helpers._
-import net.liftweb.util.{Log, Can, Full, Empty, Failure}
+import net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal}
 import net.liftweb.sitemap._
 import java.io.InputStream
 import scala.xml._
@@ -125,11 +125,16 @@ object RequestState {
                      request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
   }
   
+  private def fixURI(uri : String) = uri indexOf ";jsessionid"  match {
+    case -1 => uri
+    case x @ _ => uri substring(0, x)
+  }
+  
   def nil = new RequestState(NilPath, "", GetRequest, "", null, System.nanoTime, System.nanoTime,
                              () => (Nil, Map.empty, Nil, Empty))
   
   def parsePath(in: String): ParsePath = {
-    val p1 = (in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/")
+    val p1 = fixURI((in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/"))
     val front = p1.startsWith("/")
     val back = p1.length > 1 && p1.endsWith("/")
     ParsePath(p1.replaceAll("/$", "/index").split("/").toList.filter(_.length > 0), front, back)
@@ -137,19 +142,25 @@ object RequestState {
   
   var fixHref = _fixHref _
   
-  private def _fixHref(contextPath: String, v : Seq[Node]): Text = {
+  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: boolean): Text = {
     val hv = v.text
-    if (hv.startsWith("/")) Text(contextPath+hv)
+    if (hv.startsWith("/")) {
+      Text(fixURL match {
+        case true => URLRewriter.rewriteFunc map (f => f(contextPath+hv)) openOr contextPath+hv
+        case _ => contextPath+hv
+      })
+    }
     else Text(hv)
   }
   
   def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
     if (contextPath.length == 0) in
     else {
-      def fixAttrs(toFix : String, attrs : MetaData) : MetaData = {
+      def fixAttrs(toFix : String, attrs : MetaData, fixURL: boolean) : MetaData = {
         if (attrs == Null) Null 
-        else if (attrs.key == toFix) new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value),fixAttrs(toFix, attrs.next))
-        else attrs.copy(fixAttrs(toFix, attrs.next))
+        else if (attrs.key == toFix) {
+          new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value, fixURL),fixAttrs(toFix, attrs.next, fixURL))
+        } else attrs.copy(fixAttrs(toFix, attrs.next, fixURL))
       }
       
       in.map{
@@ -157,12 +168,12 @@ object RequestState {
         v match {
           case Group(nodes) => Group(fixHtml(contextPath, nodes))
           
-          case (<form>{ _* }</form>) => Elem(v.prefix, v.label, fixAttrs("action", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<script>{ _* }</script>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<img>{ _* }</img>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<input>{ _* }</input>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<a>{ _* }</a>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<link/>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<form>{ _* }</form>) => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<script>{ _* }</script>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<img>{ _* }</img>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<input>{ _* }</input>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<a>{ _* }</a>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case (<link/>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, v.attributes, v.scope, fixHtml(contextPath, v.child) : _*)
           case _ => v
         }
@@ -251,7 +262,7 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   
   lazy val uri = request.getRequestURI.substring(request.getContextPath.length) match {
     case "" => "/"
-    case x => x
+    case x => RequestState.fixURI(x)
   }
   
   /**
@@ -268,7 +279,7 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
 }
 
 
-case class RequestMatcher(request: RequestState, /* path: ParsePath, requestType: RequestType, */ session: Can[LiftSession])
+case class RequestMatcher(request: RequestState, session: Can[LiftSession])
 case class RewriteRequest(path: ParsePath,requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String])
 
@@ -278,7 +289,24 @@ case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
   def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
 }
 
+/**
+ * Maintains the context of resolving the URL when cookies are disabled from container. It maintains
+ * low coupling such as code within request processing is not aware of the servlet response that
+ * ancodes the URL.
+ */ 
 object RewriteResponse {
   def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, true, false), params)
   def apply(path: List[String]) = new RewriteResponse(ParsePath(path, true, false), Map.empty)
+}
+
+object URLRewriter {
+  private val funcHolder = new ThreadGlobal[(String) => String]
+  
+  def doWith[R](f: (String) => String)(block : => R):R = {
+    funcHolder.doWith(f) {
+      block
+    }
+  }
+  
+  def rewriteFunc: Can[(String) => String] = Can.legacyNullTest(funcHolder value)
 }
