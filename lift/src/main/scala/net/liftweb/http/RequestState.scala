@@ -170,8 +170,6 @@ object RequestState {
           
           case (<form>{ _* }</form>) => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
           case (<script>{ _* }</script>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<img>{ _* }</img>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<input>{ _* }</input>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
           case (<a>{ _* }</a>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
           case (<link/>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
