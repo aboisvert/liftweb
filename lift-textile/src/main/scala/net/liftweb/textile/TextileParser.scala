@@ -31,13 +31,17 @@ import scala.collection.mutable.HashMap
      }
    }
    
+   
+   def parse(toParse: String, urlRewrite: Option[RewriteFunc]): Option[Lst] =
+   parse(toParse, urlRewrite, false)
+   
    /**
    * Take a string and return the parsed value.
    * Lst is a list of Textile parsed elements.  You can do a .toHtml on the Lst
    * to get the XHTML result to send to the browser.
    * int will be the number of characters parsed.
    */
-   def parse(_toParse: String, urlRewrite: Option[RewriteFunc]): Option[Lst] = {
+   def parse(_toParse: String, urlRewrite: Option[RewriteFunc], disableLinks: Boolean): Option[Lst] = {
      val toParse = _toParse match {
        case null => "null\n\n"
        case s if !s.endsWith("\n\n") => s + "\n\n"
@@ -68,7 +72,7 @@ import scala.collection.mutable.HashMap
        case huh => println(huh)
      }
      
-     val parser = new TextileParsers(urlRewrite)
+     val parser = new TextileParsers(urlRewrite, disableLinks)
      val lst = parser.document(new scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
      
      lst map { it =>
@@ -82,13 +86,18 @@ import scala.collection.mutable.HashMap
 	   } getOrElse None
    }
    
-   def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc]): NodeSeq = {
-     parse(toParse, wikiUrlFunc).map(_.toHtml) getOrElse Text("")
+   def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean): NodeSeq = {
+     parse(toParse, wikiUrlFunc, disableLinks).map(_.toHtml) getOrElse Text("")
    }
    
-   def toHtml(toParse: String): NodeSeq = {
-     parse(toParse, None).map(_.toHtml) getOrElse Text("")
-   }
+   def toHtml(toParse: String, disableLinks: Boolean): NodeSeq = 
+   toHtml(toParse, None, disableLinks)
+   
+   def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc]): NodeSeq = 
+   toHtml(toParse, wikiUrlFunc, false)
+   
+   def toHtml(toParse: String): NodeSeq = 
+   toHtml(toParse, None, false)
 
    /**
     * Useful helper function for stripping out the surrounding <p> tags.
@@ -105,11 +114,11 @@ import scala.collection.mutable.HashMap
     /**
    * the thing that actually does the textile parsing
    */
-  class TextileParsers(wikiUrlFunc: Option[RewriteFunc]) extends Parsers with ImplicitConversions {
+  class TextileParsers(wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean) extends Parsers with ImplicitConversions {
     type Elem = char
 
     type UnitParser=Parser[Unit]
-
+/*
     def paraFixer(in: NodeSeq): NodeSeq = in match {
 	    case g: Group => paraFixer(g.nodes)
 	    case e: XmlElem if e.label == "p" => e.child
@@ -118,7 +127,7 @@ import scala.collection.mutable.HashMap
 	    ns(1).text.trim.length == 0 => paraFixer(ns(0))
 	    case x => x
 	  }
-    
+  */  
 /*    def elem(e: Elem): Parser[Elem] = accept(e)
     def elem(k: String, p: Elem => Boolean) = acceptIf(p) expected(k)
 */
@@ -290,7 +299,7 @@ import scala.collection.mutable.HashMap
     * "google":http://google.com
     */
     def quote_url : Parser[Textile] = ('"' ~> chrsExcept('"', '\n')) ~ ('"' ~> ':' ~> httpStr) ^^
-      { case fs ~ url => Anchor(Nil, url, fs, Nil) }
+      { case fs ~ url => Anchor(Nil, url, fs, Nil, disableLinks) }
     
     /**
     * [reference]:http://reference.com
@@ -301,7 +310,7 @@ import scala.collection.mutable.HashMap
     /**
     * http://google.com
     */
-    def url : Parser[Textile] = httpStr ^^ { u => Anchor(Nil, u, u, Nil) }
+    def url : Parser[Textile] = httpStr ^^ { u => Anchor(Nil, u, u, Nil, disableLinks) }
     
     /**
     * a valid character in a URL
@@ -885,9 +894,10 @@ import scala.collection.mutable.HashMap
   }  
 
 
-  case class Anchor(elems : List[Textile], href : String, alt : String, attrs : List[Attribute]) extends ATextile(elems, attrs) {
+  case class Anchor(elems : List[Textile], href : String, alt : String, attrs : List[Attribute], disableLinks: Boolean) extends ATextile(elems, attrs) {
     def allAttrs = AnyAttribute("href", href) :: attrs 
-    override def toHtml : NodeSeq = XmlElem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)
+    override def toHtml : NodeSeq = if (disableLinks) Text(alt) else
+    XmlElem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)
   }
 
   case class RefAnchor(elems : List[Textile], ref : String, alt : String, attrs : List[Attribute]) extends ATextile(elems, attrs) {
