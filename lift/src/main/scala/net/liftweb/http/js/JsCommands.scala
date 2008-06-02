@@ -714,7 +714,7 @@ object JsCmds {
   
   case class RedirectTo(where: String) extends JsCmd {
     private val context = S.contextPath
-    def toJsCmd = "window.location = "+(context + where).encJs+";"
+    def toJsCmd = "window.location = "+S.encodeURL(context + where).encJs+";"
   }
   
   

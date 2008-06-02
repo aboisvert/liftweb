@@ -512,6 +512,11 @@ object S {
   
   private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
   
+  def encodeURL(url: String) = {
+    URLRewriter.rewriteFunc map (f => f(url)) openOr url
+  }
+  
+  
   /**
   * Build a handler for incoming JSON commands
   *
@@ -552,7 +557,7 @@ object S {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") + 
-    "function "+key+"(obj) {jQuery.ajax( {url: '"+contextPath+"/"+LiftRules.ajaxPath+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+    "function "+key+"(obj) {jQuery.ajax( {url: '"+encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', cache: false, timeout: 10000, type: 'POST', data: '"+
        key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
   }
   
