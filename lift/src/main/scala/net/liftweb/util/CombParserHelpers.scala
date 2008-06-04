@@ -57,7 +57,7 @@ trait CombParserHelpers {
   def white = wsc 
   
   /** @return a unit parser for any repetition of whitespaces */
-  def whiteSpace: Parser[Unit] = rep(white) ^^ {case _ => () }
+  def whiteSpace: Parser[Unit] = rep(white) ^^^ ()
 
   /** @return a parser accepting a 'line' space, either ' ' or '\t' */
   def aSpace = accept("whitespace", { case c if (c == ' ') || c == '\t' => true })
@@ -71,29 +71,12 @@ trait CombParserHelpers {
    * of the case (uppercase or lowercase)  
    */  
   def acceptCI[ES <% List[Elem]](es: ES): Parser[List[Elem]] = 
-  es.foldRight[Parser[List[Elem]]](success(Nil)){(x, pxs) => acceptCIChar(x) ~ pxs ^^ mkList}
+  es.foldRight[Parser[List[Elem]]](
+    success(Nil)){(x, pxs) => acceptCIChar(x) ~ pxs ^^ mkList}
 
   def xform(in: Char): Char = Character.toUpperCase(in)
   
   private def acceptCIChar(c: Elem) = acceptIf(a => xform(a) == xform(c))("`"+c+"' expected but " + _ + " found")
-  
-  /*
-  def acceptCI(elements: String): Parser[List[Elem]] = new Parser {
-    def xform(in: Char): Char = Character.toUpperCase(in)
-    def apply(in0: Reader[Char]): ParseResult[List[Char]] = {
-      var these: List[Elem] = elements
-      var in = in0
-
-      while(!these.isEmpty && xform(in.first) == xform(these.head)) {
-        these = these.tail
-        in = in.rest
-      }
-
-      if (these.isEmpty) Success(Nil, in)
-      else Failure("Expected: '"+these.head+"', found: '"+in.first+"'", in0)
-    }                
-  }*/
-  
   
   /**
    * @return a trimmed string of the input (a List of Elem) 
@@ -105,7 +88,7 @@ trait CombParserHelpers {
    */
   implicit def strToLst(in: String): List[Elem] = stringWrapper(in).toList
 
-  implicit def ff(in: Parser[Elem]): List[Elem] = Nil
+  // implicit def ff(in: Parser[Elem]): List[Elem] = Nil
 
   /**
    * @return a parser for a digit 
@@ -117,29 +100,18 @@ trait CombParserHelpers {
    */
   def slash = elem("slash", c => c == '/')
 
-  /*
-  /**
-   * @return a parser for a slash and discard the input 
-   */
-  def dslash = ~>slash
-*/
-
   /**
    * @return a parser for a colon 
    */
   def colon = elem("colon", c => c == ':')
 
-  /*
-  /**
-   * @return a parser for a colon and discard the input 
-   */
-  def dcolon = discard(colon)
-*/
-
   /**
    * @return a parser discarding end of lines 
    */
-   def EOL: Parser[Unit] = (accept("\n\r") | accept("\r\n") | '\r' | '\n' | '\032' ) ^^^ () // elem("EOL", isEol) ^^^ ()
+   def EOL: Parser[Unit] = (accept("\n\r") | accept("\r\n") | '\r' |
+			    '\n' | '\032' ) ^^^ ()
+
+  def notEOL: Parser[Elem] = (not(EOL) ~> anyChar)
 
   def anyChar: Parser[Elem] = elem("Any Char", c => c != '\032')
 
