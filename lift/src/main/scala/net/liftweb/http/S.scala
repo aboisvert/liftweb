@@ -328,10 +328,10 @@ object S {
   def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
   
   private var aroundRequest: List[LoanWrapper] = Nil
-  private def doAround[B](ar: List[LoanWrapper], f: => B): B = 
+  private def doAround[B](ar: List[LoanWrapper])(f: => B): B = 
   ar match {
     case Nil => f
-    case x :: xs => x(doAround(xs, f))
+    case x :: xs => x(doAround(xs)(f))
   }
   
   /**
@@ -394,8 +394,10 @@ object S {
               _stateSnip.doWith(new HashMap) {
                 initNotice {
                   _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-                    wrapQuery {
-                      this.currCnt.doWith(0)(f)
+		    doAround(aroundRequest) {
+		      wrapQuery {
+			this.currCnt.doWith(0)(f)
+		      }
                     }
                   }
                 }
@@ -416,7 +418,6 @@ object S {
   c <- ca) yield c
 
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
-    doAround(aroundRequest,
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
@@ -428,7 +429,6 @@ object S {
         }
       }
     }
-    )
   }
   
   def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
