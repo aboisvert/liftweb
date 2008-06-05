@@ -146,7 +146,8 @@ private[http] class LiftServlet extends HttpServlet  {
       
       val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
         if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
-          try {
+	  LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
+          val ret = try {
             val f = LiftRules.dispatchTable(request)(toMatch)
             f(requestState) match {
               case Full(v) => (true, Full(LiftRules.convertResponse( (sessionActor.checkRedirect(v), Nil, S.responseCookies, requestState) )))
@@ -156,6 +157,10 @@ private[http] class LiftServlet extends HttpServlet  {
           } finally {
             sessionActor.notices = S.getNotices
           }
+	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState, 
+					       ret._2))
+	  ret
+
         } else (false, Empty)
       }
       
@@ -165,7 +170,8 @@ private[http] class LiftServlet extends HttpServlet  {
       } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
-          try {
+	  LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
+          val ret = try {
             LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
             val what = flatten(sessionActor.runParams(requestState))
             
@@ -185,6 +191,9 @@ private[http] class LiftServlet extends HttpServlet  {
           } finally {
             sessionActor.updateFunctionMap(S.functionMap)
           }
+	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState, 
+					       ret))
+	  ret
         }
       } else {
         try {
