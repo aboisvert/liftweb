@@ -170,9 +170,8 @@ private[http] class LiftServlet extends HttpServlet  {
       } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
-	  LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
+	      LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
           val ret = try {
-            LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
             val what = flatten(sessionActor.runParams(requestState))
             
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
@@ -186,14 +185,12 @@ private[http] class LiftServlet extends HttpServlet  {
             }
             
             LiftRules.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
-            LiftSession.onEndServicing.foreach(_(sessionActor, requestState, Full(ret)))
             Full(ret)
           } finally {
             sessionActor.updateFunctionMap(S.functionMap)
           }
-	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState, 
-					       ret))
-	  ret
+	      LiftSession.onEndServicing.foreach(_(sessionActor, requestState, ret))
+	      ret
         }
       } else {
         try {

@@ -394,10 +394,10 @@ object S {
               _stateSnip.doWith(new HashMap) {
                 initNotice {
                   _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-		    doAround(aroundRequest) {
-		      wrapQuery {
-			this.currCnt.doWith(0)(f)
-		      }
+		            doAround(aroundRequest) {
+		              wrapQuery {
+			            this.currCnt.doWith(0)(f)
+		              }
                     }
                   }
                 }
