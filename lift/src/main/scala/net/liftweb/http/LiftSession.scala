@@ -417,18 +417,6 @@ class LiftSession( val contextPath: String) extends HttpSessionBindingListener w
     }
   }
 
-  /**
-  * Update any "Location" headers to add the Context path
-  
-  def fixHeaders(h: List[(String, String)], request: RequestState): List[(String, String)] =
-  h match {
-    case null => Nil
-    case _ => h.map{
-      case ("Location", v) if (v != null && v.startsWith("/")) => ("Location", "/"+S.encodeURL(request.contextPath+v))
-      case (a, b) => (a, b)
-    }
-  }
-*/
 
   private def findAndEmbed(templateName: Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
     templateName match {
