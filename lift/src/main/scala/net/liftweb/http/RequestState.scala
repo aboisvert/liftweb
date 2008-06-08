@@ -146,7 +146,7 @@ object RequestState {
     val hv = v.text
     if (hv.startsWith("/")) {
       Text(fixURL match {
-        case true => URLRewriter.rewriteFunc map (f => f(contextPath+hv)) openOr contextPath+hv
+        case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
         case _ => contextPath+hv
       })
     }
