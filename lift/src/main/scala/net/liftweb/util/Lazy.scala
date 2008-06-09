@@ -101,13 +101,11 @@ class LZ[T](val f: () => T) {
   private var hasTriggered = false
   private var actual: T = _
   
-  def get: T = if (hasTriggered) actual else {
-    synchronized {
-      if (hasTriggered) actual else {
-        actual = f()
-        hasTriggered = true
-        actual
-      }
+  def get: T = synchronized {
+    if (hasTriggered) actual else {
+      actual = f()
+      hasTriggered = true
+      actual
     }
   }
   
