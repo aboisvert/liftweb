@@ -38,7 +38,7 @@ import javax.servlet._
 * ta-da, you've got a scala-powered Servlet
 *
 */
-private[http] class LiftServlet extends HttpServlet  {
+class LiftServlet extends HttpServlet {
   private var requestCnt = 0
   private var servletContext: ServletContext = null
 
@@ -381,7 +381,6 @@ private[http] class LiftServlet extends HttpServlet  {
   * Remove any thread-local associations
   */
   def clearThread: Unit = {
-    // uncomment for Scala 2.6.1 to avoid memory leak
     Actor.clearSelf
     DB.clearThread
   }
