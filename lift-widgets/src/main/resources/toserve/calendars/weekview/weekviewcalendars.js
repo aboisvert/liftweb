@@ -41,33 +41,47 @@
    $(child.children()[1]).height(h - h1 - 2);
 }
 
- function buildWeekViewCalendars(items) {
-   if (!items) {
-     items = calendars.items;
-   }
-   dir = $("html").attr("dir");
-   isRTL = false;
-   if (dir) {
-     isRTL = dir.toLowerCase() == "rtl";
-   }
-   var functions = Array(items.length);
-   for (i = 0; i < items.length; i++) {
-     makeItem($("#wkhidx_" + items[i].weekDay + "_" + items[i].start), items[i], makeIndent(items, i), isRTL);
-   }
- }
+function buildWeekViewCalendars(items) {
+  if (!items) {
+    items = calendars.items;
+  }
+  dir = $("html").attr("dir");
+  isRTL = false;
+  if (dir) {
+    isRTL = dir.toLowerCase() == "rtl";
+  }
+
+  for (i = 0; i < items.length; i++) {
+    makeItem($("#wkhidx_" + items[i].weekDay + "_" + items[i].start), items[i], makeIndent(items, i), isRTL);
+  }
+}
+
+function makeIndent(items, index) {
+  indent = 0;
+  
+  if (index > 0) {
+    for (k = index - 1; k >= 0; k = k - 1) {
+      if (items[index].start >= items[k].start && items[index].start < items[k].end && (items[index].weekDay == items[k].weekDay)) {
+        indent = parseInt($("#"+items[k].id).attr("indent")) + 40;
+        break;
+      } 
+    }
+  }
+  return indent;
+}
  
- function makeIndent(items, index) {
-   indent = 0;
-   
-   if (index > 0) {
-     for (k = index - 1; k >= 0; k = k - 1) {
-       if (items[index].start >= items[k].start && items[index].start < items[k].end && (items[index].weekDay == items[k].weekDay)) {
-         indent = parseInt($("#"+items[k].id).attr("indent")) + 40;
-         break;
-       } 
-     }
-   }
-   return indent;
- }
- 
- 
+function removeItem(id, items) {
+  newItems = jQuery.grep(items, function(item) {
+    return item.id != id;
+  })
+  removeAllItems(items);
+  buildWeekViewCalendars(newItems);
+}
+
+function removeAllItems(items){
+  jQuery.each(items, function(){
+    $("#" + this.id).remove();
+  })
+}
+
+

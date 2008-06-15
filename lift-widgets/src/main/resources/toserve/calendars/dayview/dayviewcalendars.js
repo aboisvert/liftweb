@@ -41,31 +41,46 @@
    $(child.children()[1]).height(h - h1 - 2);
 }
 
- function buildDayViewCalendars(items) {
-   if (!items) {
-     items = calendars.items;
-   }
-   dir = $("html").attr("dir");
-   isRTL = false;
-   if (dir) {
-     isRTL = dir.toLowerCase() == "rtl";
-   }
-   var functions = Array(items.length);
-   for (i = 0; i < items.length; i++) {
-     makeItem($("#didx_" + items[i].start), items[i], makeIndent(items, i), isRTL);
-   }
- }
+function buildDayViewCalendars(items) {
+  if (!items) {
+    items = calendars.items;
+  }
+  dir = $("html").attr("dir");
+  isRTL = false;
+  if (dir) {
+    isRTL = dir.toLowerCase() == "rtl";
+  }
+  var functions = Array(items.length);
+  for (i = 0; i < items.length; i++) {
+    makeItem($("#didx_" + items[i].start), items[i], makeIndent(items, i), isRTL);
+  }
+}
+
+function makeIndent(items, index) {
+  indent = 0;
+  
+  if (index > 0) {
+    for (k = index - 1; k >= 0; k = k - 1) {
+      if (items[index].start >= items[k].start && items[index].start < items[k].end) {
+        indent = parseInt($("#"+items[k].id).attr("indent")) + 40;
+        break;
+      } 
+    }
+  }
+  return indent;
+}
+
+function removeItem(id, items) {
+  newItems = jQuery.grep(items, function(item) {
+    return item.id != id;
+  })
+  removeAllItems(items);
+  buildDayViewCalendars(newItems);
+}
+
+function removeAllItems(items){
+  jQuery.each(items, function(){
+    $("#" + this.id).remove();
+  })
+} 
  
- function makeIndent(items, index) {
-   indent = 0;
-   
-   if (index > 0) {
-     for (k = index - 1; k >= 0; k = k - 1) {
-       if (items[index].start >= items[k].start && items[index].start < items[k].end) {
-         indent = parseInt($("#"+items[k].id).attr("indent")) + 40;
-         break;
-       } 
-     }
-   }
-   return indent;
- }
