@@ -29,12 +29,24 @@ object ActorWatcher extends Actor {
   def act = loop {
     react {
       case Exit(actor, why: Throwable) =>
-      actor.start
-      Log.error("The ActorWatcher restarted "+actor+" because "+why)
+      failureFuncs.foreach(f => tryo(f(actor, why)))
       
       case _ =>
     }
   }
+  
+  private def startAgain(a: Actor, ignore: Throwable) {a.start}
+
+  private def logActorFailure(actor: Actor, why: Throwable) {
+      Log.error("The ActorWatcher restarted "+actor+" because "+why, why)
+  }    
+  
+  /**
+  * If there's something to do in addition to starting the actor up, pre-pend the
+  * actor to this List
+  */
+  var failureFuncs: List[(Actor, Throwable) => Unit] = logActorFailure _ :: 
+  startAgain _ :: Nil
   
   this.start
   this.trapExit = true

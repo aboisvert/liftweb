@@ -51,6 +51,7 @@ object LiftSession {
 
 private[http] case class AddSession(session: LiftSession)
 private[http] case class RemoveSession(sessionId: String)
+case class SessionWatcherInfo(sessions: Map[String, LiftSession])
 
 @serializable
 case class SessionToServletBridge(uniqueId: String) extends HttpSessionBindingListener with HttpSessionActivationListener {
@@ -65,7 +66,7 @@ case class SessionToServletBridge(uniqueId: String) extends HttpSessionBindingLi
   }
   
   def valueBound(event: HttpSessionBindingEvent) {
-    println("  ----------------- Bound "+this)
+
   }
   
   
@@ -90,7 +91,7 @@ object SessionMaster extends Actor {
   private object CheckAndPurge
   
   def getSession(id: String): Can[LiftSession] = {
-    val when = System.nanoTime
+    val when = CometActor.next
     this ! LookupSession(id, when)
     def looper: Can[LiftSession] = 
     self.receiveWithin(100) {
@@ -102,6 +103,13 @@ object SessionMaster extends Actor {
     looper
   }
 
+  /**
+  * Put an Actor in this list and the Actor will receive a message
+  * every 10 seconds with the current list of sessions:
+  * SessionWatcherInfo
+  */
+  var sessionWatchers: List[Actor] = Nil
+  
   def getSession(httpSession: HttpSession): Can[LiftSession] =
   getSession(httpSession.getId())
   
@@ -115,22 +123,37 @@ object SessionMaster extends Actor {
   private val LiftMagicID = "$lift_magic_session_thingy$"
   
   def act = {
-    startPing()
+    doPing()
+    link(ActorWatcher)
     loop {
       react {
-        case AddSession(session) => 
-        if (!sessions.contains(session.uniqueId)) {
-          sessions = sessions + (session.uniqueId -> session)
-          session.startSession()
-          val b = SessionToServletBridge(session.uniqueId)
-          session.httpSession.setAttribute(LiftMagicID, b)
+        case AddSession(session) =>
+        try {
+          if (!sessions.contains(session.uniqueId)) {
+            sessions = sessions + (session.uniqueId -> session)
+            session.startSession()
+            val b = SessionToServletBridge(session.uniqueId)
+            session.httpSession.setAttribute(LiftMagicID, b)
+          }
+        } catch {
+          case e => Log.error("Problem adding session", e)
         }
         
         case RemoveSession(sessionId) =>
         sessions.get(sessionId).foreach{s =>
-          s.doShutDown
-          s.httpSession.removeAttribute(LiftMagicID)
-          sessions = sessions - sessionId
+          try {
+            s.doShutDown
+            try {
+              s.httpSession.removeAttribute(LiftMagicID)
+            } catch {
+              case e => // ignore... sometimes you can't do this and it's okay
+            }
+          } catch {
+            case e => Log.error("Failure in remove session", e)
+            
+          } finally {
+            sessions = sessions - sessionId
+          }
         }
         
         case LookupSession(id, when) =>
@@ -144,15 +167,17 @@ object SessionMaster extends Actor {
             this ! RemoveSession(id)
           }
         }
+        sessionWatchers.foreach(_ ! SessionWatcherInfo(sessions))
+        doPing()
       }
     }
   }
   
   this.start
   
-  def startPing() {
+  private def doPing() {
     try {
-      ActorPing scheduleAtFixedRate(this, CheckAndPurge, 10 seconds, 10 second)
+      ActorPing schedule(this, CheckAndPurge, 10 seconds)
     } catch {
       case e => Log.error("Couldn't start SessionMaster ping", e)
     }
@@ -193,27 +218,10 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   private [http] var sessionTemplater = new HashMap[String, LiftRules.TemplatePf]()
   private [http] var sessionRewriter = new HashMap[String, LiftRules.RewritePf]()
   
-  
-  /*
-  private def refresh() {
-  messageCallback = new HashMap
-  notices = Nil
-  asyncComponents = new HashMap
-  asyncById = new HashMap
-  highLevelSessionDispatcher = new HashMap
-  sessionTemplater = new HashMap
-  sessionRewriter = new HashMap
-  }
-  */
-  
-  
   private[http] def startSession(): Unit = {
     running_? = true
-    
     inactivityLength = httpSession.getMaxInactiveInterval.toLong * 1000L
-    
     lastServiceTime = millis
-    SessionMaster ! AddSession(this)
     LiftSession.onSetupSession.foreach(_(this))
   }
   
