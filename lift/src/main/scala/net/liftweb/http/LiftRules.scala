@@ -28,7 +28,7 @@ import java.io.InputStream
 import java.io.ByteArrayOutputStream
 
 object LiftRules {
-  val sessionNameConst = "$lift$__theLiftSession__"
+  //val sessionNameConst = "$lift$__theLiftSession__"
   val noticesContainerId = "lift__noticesContainer__"
   
   type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];

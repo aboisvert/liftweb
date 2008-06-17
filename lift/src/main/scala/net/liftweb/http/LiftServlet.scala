@@ -76,19 +76,17 @@ class LiftServlet extends HttpServlet {
     }
   }
 
-  def getActor(request: RequestState, session: HttpSession): LiftSession = {
-    val ret = session.getAttribute(LiftRules.sessionNameConst) match {
-      case r: LiftSession =>
-      r.lastServiceTime = millis
-      r
+  def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
+    val ret = SessionMaster.getSession(httpSession) match {
+      case Full(ret) => ret
+      
       case _ =>
-      val ret = LiftSession(session, request.contextPath)
-      
+      val ret = LiftSession(httpSession, request.contextPath)
       ret.lastServiceTime = millis
-      
-      session.setAttribute(LiftRules.sessionNameConst, ret)
+      SessionMaster.addSession(ret)
       ret
     }
+    
     ret.breakOutComet()
     ret
   }
@@ -141,7 +139,7 @@ class LiftServlet extends HttpServlet {
         case f: Failure => Full(requestState.createNotFound(f).toResponse) 
       }
     } else {
-      val sessionActor = getActor(requestState, request.getSession)
+      val sessionActor = getLiftSession(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, Full(sessionActor))
       
       val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
@@ -235,7 +233,7 @@ class LiftServlet extends HttpServlet {
         
         case (theId: Long, ar: AnswerRender) => 
         answers = ar :: answers
-        ActorPing.schedule(this, BreakOut, 5L)
+        ActorPing.schedule(this, BreakOut, TimeSpan(5))
         
         case BreakOut => 
         actors.foreach{case (act, _) => act ! Unlisten}
@@ -262,7 +260,7 @@ class LiftServlet extends HttpServlet {
     
     sessionActor.enterComet(cont)
     
-    ActorPing.schedule(cont, BreakOut, cometTimeout)
+    ActorPing.schedule(cont, BreakOut, TimeSpan(cometTimeout))
     
     LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
   }

@@ -39,16 +39,16 @@ object ActorPing {
   /** 
    * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, every <code>delay</code> milliseconds
    */
-  def schedule(to: Actor, msg: Any, delay: Long): ScheduledFuture[AnyRef] = schedule(to, msg, delay, TimeUnit.MILLISECONDS)
+  // def schedule(to: Actor, msg: Any, delay: TimeHelpers.TimeSpan): ScheduledFuture[AnyRef] = schedule(to, msg, delay)
   
   /** 
    * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, 
    * every <code>delay</code> using <code>tu<code> as a TimeUnit
    */
-  def schedule(to: Actor, msg: Any, delay: Long, tu: TimeUnit): ScheduledFuture[AnyRef] = {
+  def schedule(to: Actor, msg: Any, delay: TimeSpan): ScheduledFuture[AnyRef] = {
     val r = new java.util.concurrent.Callable[AnyRef] { def call: AnyRef = { to ! msg; null } }
     try {
-      service.schedule(r, delay, tu)
+      service.schedule(r, delay.millis, TimeUnit.MILLISECONDS)
     }
     catch { case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)}
   }
@@ -57,13 +57,13 @@ object ActorPing {
    * Sends the <code>msg</code> to the <code>to<code> Actor, 
    * after <code>initialDelay</code> and hen subsequently every <code>delay</code> using <code>tu<code> as a TimeUnit
    */
-  def scheduleAtFixedRate(to: Actor, msg: Any, initialDelay: Long, delay: Long, tu: TimeUnit) {
+  def scheduleAtFixedRate(to: Actor, msg: Any, initialDelay: TimeSpan, delay: TimeSpan) {
     try {
        val future = service.scheduleAtFixedRate(new java.lang.Runnable { 
          def run = {
            to ! msg; 
          } 
-       }, initialDelay, delay, tu)
+       }, initialDelay.millis, delay.millis, TimeUnit.MILLISECONDS)
        actor {
          self.link(to)
          self.trapExit = true
