@@ -187,7 +187,7 @@ object SessionMaster extends Actor {
 }
 
 @serializable
-class LiftSession(val contextPath: String, val uniqueId: String, val httpSession: HttpSession) { // extends HttpSessionBindingListener with HttpSessionActivationListener {
+class LiftSession(val contextPath: String, val uniqueId: String, val httpSession: HttpSession) { 
   import TemplateFinder._
   
   private var running_? = false
@@ -195,19 +195,13 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
   
   private[http] var notices: Seq[(NoticeType.Value, NodeSeq, Can[String])] = Nil
-  //  private var _state: Map[String, String] = Map.empty
   
   private var asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
   
   private var asyncById = new HashMap[String, CometActor]()
   
-  // val uniqueId = "LiftSession_"+randomString(20)
-  
   private var myVariables: Map[String, Any] = Map.empty
-  
-  //@transient
-  //private[http] var httpSession: HttpSession = _
-  
+
   @volatile
   private[http] var lastServiceTime = millis
   
@@ -238,17 +232,6 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   private[http] def exitComet(what: Actor): Unit = synchronized {
     cometList = cometList.remove(_ eq what)
   }
-  
-  // def callbacks = messageCallback
-  
-  /**
-  * What happens when this session is bound to the HTTP session?
-  */
-  /*
-  def valueBound(event: HttpSessionBindingEvent) {
-  httpSession = event.getSession
-  }
-  */
   
   private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Can[String])
   
@@ -515,7 +498,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     findAnyTemplate(splits) or findAnyTemplate("templates-hidden" :: splits)
   }
   
-  def couldBeHtml(in : List[(String, String)]) : boolean = {
+  def couldBeHtml(in : List[(String, String)]) : Boolean = {
     in match {
       case null | Nil => true
       case _ => in.ciGet("Content-Type").map(_.toLowerCase.contains("html")) openOr true
@@ -920,4 +903,3 @@ object TemplateFinder {
   }
 }
 
-// vim: set ts=2 sw=2 et:

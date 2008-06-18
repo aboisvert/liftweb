@@ -361,7 +361,7 @@ object S {
   def setHeader(name: String, value: String) {
     Can.legacyNullTest(_responseHeaders.value).foreach(
     rh =>
-    rh.headers = rh.headers + name -> value
+    rh.headers = rh.headers + (name -> value)
     )
   }
   
