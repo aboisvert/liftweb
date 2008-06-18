@@ -8,9 +8,10 @@ import org.scalacheck.Prop._
 import org.scalacheck.Arbitrary
 import org.specs.Products._
 import org.specs.mock.Mocker
+import org.specs.Scalacheck
 
 class TimeHelpersTest extends Runner(TimeHelpersSpec) with JUnit with Console with ScalaTest
-object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation {
+object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation with ControlHelpers with ClassHelpers {
   "A TimeSpan" can {
     "be created from a number of milliseconds" in {
       TimeSpan(3000) must_== TimeSpan(3 * 1000)
@@ -188,7 +189,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     }
   }
 }
-trait TimeAmountsGen { self: TimeHelpers =>
+trait TimeAmountsGen extends Scalacheck { self: TimeHelpers =>
   type TimeAmounts = Tuple2[String, Tuple6[(Int, String), (Int, String), (Int, String), (Int, String), (Int, String), (Int, String)]]
   val timeAmounts = for {
       w <- choose(0, 2)

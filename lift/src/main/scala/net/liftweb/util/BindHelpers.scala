@@ -19,7 +19,24 @@ package net.liftweb.util
  * The helpers assocated with bindings
  */
 trait BindHelpers {
+  /**
+   * Choose one of many templates from the children.  Looking for the
+   * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
+   *
+   * @param prefix the prefix (e.g., "choose")
+   * @param tag the tag to choose (e.g., "stuff")
+   * @param xhtml the incoming node sequence
+   *
+   * @return the first matching node sequence
+  */
+  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+    case Nil => NodeSeq.Empty
+    case x :: xs => x.child
+  }
   
+    /**
+   * Base class for Bind parameters. A bind parameter has a name and is able to extract its value from a NodeSeq.
+   */
   sealed abstract class BindParam {
     def name: String
     // def value: NodeSeq
@@ -29,22 +46,38 @@ trait BindHelpers {
   implicit def toTheBindParam(in: Product2[String, NodeSeq]): TheBindParam =
   TheBindParam(in._1, in._2)
   
+  /**
+   * Constant BindParam always returning the same value
+   */
   case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value
   }
   
+  /**
+   * BindParam taking its value from an attribute
+   */
   case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value
   }  
-  
+
+  /**
+   * BindParam using a function to calculate its value
+   */
+
   case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
+  /**
+   * BindParam using a function to calculate its value
+   */ 
   case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
   
   
+  /**
+   * transforms a Can into a Text node
+   */ 
   object BindParamAssoc {
     implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
       case null => Text("null")
@@ -52,6 +85,9 @@ trait BindHelpers {
     })
   }
   
+  /**
+   * This class creates a BindParam from an input value
+   */ 
   class BindParamAssoc(val name: String) {
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
@@ -61,6 +97,11 @@ trait BindHelpers {
     def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))    
   }
   
+  /**
+   * transforms a String or a Symbol to a BindParamAssoc object which can be associated to a BindParam object 
+   * using the --> operator.<p/>
+   * Usage: <code>"David" --> "name"</code>
+   */ 
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
   
@@ -185,6 +226,14 @@ trait BindHelpers {
       
     }
   }
+  /**
+   * Looks for a named parameter in the XML element and return it if found
+   */
+  def xmlParam(in: NodeSeq, param: String): Can[String] = {
+    val tmp = (in \ ("@"+param))
+    if (tmp.length == 0) Empty else Full(tmp.text)
+  }
+
 }
 
 
