@@ -22,4 +22,3 @@ object Helpers extends TimeHelpers with StringHelpers with ListHelpers
                                    with SecurityHelpers with BindHelpers with HttpHelpers 
                                    with IoHelpers with BasicTypesHelpers 
                                    with ClassHelpers with ControlHelpers
-
