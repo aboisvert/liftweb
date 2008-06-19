@@ -10,7 +10,7 @@ import javax.crypto.spec._
  * <li> generate random numbers
  * <li> generate keys
  * <li> encrypt/decrypt keys
- * <li> create SHA, SHA-256, MD5 hashs or hexDigests
+ * <li> create SHA, SHA-256, MD5 hashs (can be hex encoded)
  * </ul>
  */
 trait SecurityHelpers { self: StringHelpers with IoHelpers =>

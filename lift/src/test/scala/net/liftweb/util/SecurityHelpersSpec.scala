@@ -33,6 +33,12 @@ object SecurityHelpersSpec extends Specification with SecurityHelpers with IoHel
     "provide a hash256 function to create a SHA-256 digest from a string" in {
       hash256("hello") must_!= hash256("hell0")
     }
+    "provide a hex encoded SHA hash function" in {
+      hexDigest("hello".getBytes) must_!= hexDigest("hell0".getBytes)
+    }
+    "provide a hex encoded SHA-256 hash function" in {
+      hexDigest256("hello".getBytes) must_!= hexDigest256("hell0".getBytes)
+    }
   }
 }
 import org.specs.runner._
