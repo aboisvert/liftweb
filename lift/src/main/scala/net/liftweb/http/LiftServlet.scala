@@ -78,7 +78,9 @@ class LiftServlet extends HttpServlet {
 
   def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
     val ret = SessionMaster.getSession(httpSession) match {
-      case Full(ret) => ret
+      case Full(ret) => 
+	ret.lastServiceTime = millis
+	ret
       
       case _ =>
       val ret = LiftSession(httpSession, request.contextPath)
