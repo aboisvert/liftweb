@@ -212,7 +212,7 @@ object Loc {
     def value: T
   }
   
-  trait LocInfo[T] extends LocStuff { //  with Function0[Can[LocInfoVal[T]]] {
+  trait LocInfo[T] extends LocStuff { 
      def apply(): Can[LocInfoVal[T]]
   }
   

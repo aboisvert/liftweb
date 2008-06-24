@@ -434,7 +434,7 @@ object S {
   def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
   
   private[http] object requestState {
-    private def rv: Can[HashMap[String, Any]] = Can.legacyNullTest(_requestVar.value) //  match {case null => Empty case v => Full(v)}
+    private def rv: Can[HashMap[String, Any]] = Can.legacyNullTest(_requestVar.value) 
     
     def apply[T](name: String): Can[T] = rv.flatMap(r => Can(r.get(name).asInstanceOf[Option[T]]))
     
@@ -462,10 +462,9 @@ object S {
     }
   }
 
-  def get(what: String): Can[String] = session.flatMap(_.get(what))
+  def get(what: String): Can[String] = session.flatMap(_.get(what, classOf[String]))
 
   def getSessionAttribute(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty}) 
-  
   
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
     
@@ -474,7 +473,6 @@ object S {
   def setSessionAttribute(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value)) 
 
   def set(name: String, value: String) = session.foreach(_.set(name,value))
-  
   
   def unsetSessionAttribute(name: String) = servletSession.foreach(_.removeAttribute(name))
 
@@ -519,7 +517,7 @@ object S {
   private def booster(lst: List[String], func: String => Any): Unit = lst.foreach(v => func(v))
   
   def encodeURL(url: String) = {
-    URLRewriter.rewriteFunc map (f => f(url)) openOr url
+    URLRewriter.rewriteFunc map (_(url)) openOr url
   }
   
   
@@ -532,10 +530,10 @@ object S {
   def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, f)
   
   /**
-  * Build a handler for incoming JSON commands
-  *
-  * @param name -- the optional name of the command (placed in a comment for testing)
-  *
+   * Build a handler for incoming JSON commands
+   *
+   * @param name -- the optional name of the command (placed in a comment for testing)
+   *
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
@@ -548,7 +546,7 @@ object S {
         map {
           case null => null
           case x => x.toString
-     } . getOrElse(null),v.get("params").getOrElse(None), v)
+     } getOrElse(null),v.get("params").getOrElse(None), v)
   
      case v => v
     }
@@ -764,13 +762,13 @@ object S {
   }
     
   abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
-    private val name = "_lift_sv_"+getClass.getName // "V"+randomString(10)
+    private val name = "_lift_sv_"+getClass.getName 
     protected def findFunc(name: String): Can[T]
     protected def setFunc(name: String, value: T): Unit
     protected def clearFunc(name: String): Unit
      
     /**
-     * The current value of the session variable
+     * The current value of the variable
      */
     def is: T = findFunc(name) match {
       case Full(v) => v
@@ -797,7 +795,16 @@ object S {
    * SessionVars are type-safe variables that map pretty directly to  
    * HttpSession attributes.  Put stuff in and they are available for the  
    * life of the Session.
-   *
+   * 
+   * To use a SessionVar from a CometActor the following must be used:
+   * <pre>
+   * S.initIfUninitted(liftSession) {
+   *   // safely use the SessionVar
+   * }
+   * </pre>
+   * where liftSession is the LiftSession passed to the CometActor.
+   * 
+   * 
    * @param dflt - the default value of the session variable
    */
   abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
@@ -817,8 +824,8 @@ object S {
    * @param dflt - the default value of the session variable
    */
   abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
-    override protected def findFunc(name: String): Can[T] = S.requestState(name) // S.servletSession.flatMap(_.getAttribute(name) match {case Full(v: T) => Full(v) case _ => Empty})
-    override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value // S.servletSession.foreach(_.setAttribute(name, Full(value)))
+    override protected def findFunc(name: String): Can[T] = S.requestState(name) 
+    override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value 
     override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
   }
     

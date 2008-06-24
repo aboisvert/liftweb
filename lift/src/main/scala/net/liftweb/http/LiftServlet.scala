@@ -113,11 +113,11 @@ class LiftServlet extends HttpServlet {
     }
   }
   
-  private def flatten(in: List[Any]): List[AnyRef] = in match {
+  private def flatten(in: List[Any]): List[Any] = in match {
     case Nil => Nil
     case Some(x: AnyRef) :: xs => x :: flatten(xs)
     case Full(x: AnyRef) :: xs => x :: flatten(xs)
-    case (lst: Iterable[AnyRef]) :: xs => lst.toList ::: flatten(xs)
+    case (lst: Iterable[_]) :: xs => lst.toList ::: flatten(xs)
     case (x: AnyRef) :: xs => x :: flatten(xs)
     case x :: xs => flatten(xs)
   }

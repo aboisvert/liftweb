@@ -261,7 +261,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
         // if it's going to a CometActor, batch up the commands
         case Full(id) =>
         
-        asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {case Some(li: List[Any]) => li case li: List[Any] => li case other => Nil})
+        asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {case Some(li: List[_]) => li case li: List[_] => li case other => Nil})
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
@@ -388,7 +388,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   * @param name -- the name of the variable
   * @param value -- the value of the variable
   */
-  def set[T](name: String, value: T): Unit = synchronized {
+  private [liftweb] def set[T](name: String, value: T): Unit = synchronized {
     myVariables = myVariables + (name -> value)
   }
   
@@ -399,12 +399,13 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   * 
   * @return Full(value) if found, Empty otherwise
   */
-  def get[T](name: String): Can[T] = synchronized {
+  private [liftweb] def get[T](name: String): Can[T] = synchronized {
     myVariables.get(name) match {
       case Some(v: T) => Full(v)
       case _ => Empty
     }
   }
+  
   
   /**
   * Gets the named variable if it exists
@@ -414,7 +415,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   * 
   * @return Full(value) if found, Empty otherwise
   */
-  def get[T](name: String, clz: Class[T]): Can[T] = synchronized {
+  private [liftweb] def get[T](name: String, clz: Class[T]): Can[T] = synchronized {
     myVariables.get(name) match {
       case Some(v) => Full(v) isA clz
       case _ => Empty
@@ -426,7 +427,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   *
   * @param name the variable to unset
   */
-  def unset(name: String): Unit = synchronized {
+  private [liftweb] def unset(name: String): Unit = synchronized {
     myVariables -= name
   }
   
@@ -886,11 +887,11 @@ object TemplateFinder {
             case Some(n: Group) => Full(n)
             case Some(n: Elem) => Full(n)
             case Some(n: NodeSeq) => Full(n)
-            case Some(n: Seq[Node]) => Full(n)
+            case Some(SafeNodeSeq(n)) => Full(n)
             case Full(n: Group) => Full(n)
             case Full(n: Elem) => Full(n)
             case Full(n: NodeSeq) => Full(n)
-            case Full(n: Seq[Node]) => Full(n)
+            case Full(SafeNodeSeq(n)) => Full(n)
             case _ => Empty
           }
         }

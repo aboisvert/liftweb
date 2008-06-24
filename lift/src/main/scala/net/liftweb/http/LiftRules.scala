@@ -371,7 +371,7 @@ object LiftRules {
     stream.close
     out.toByteArray
   }
-  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
+  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s => PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
   
   
@@ -477,7 +477,7 @@ object LiftRules {
     case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: Node, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: NodeSeq, headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
-    case (ns: Seq[Node], headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
+    case (SafeNodeSeq(n), headers, cookies, session) => cvt(Group(n), headers, cookies, session)
     
     case (Full(o), headers, cookies, session) => convertResponse( (o, headers, cookies, session) )
     

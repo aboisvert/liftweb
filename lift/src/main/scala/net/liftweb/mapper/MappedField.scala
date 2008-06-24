@@ -162,14 +162,6 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     var selected: Can[String] = Empty
     
     Full(SHtml.selectObj(xs, Full(this.is), this.set))
-    /*xs.map{case (value, text) =>
-      val t = randomString(10)
-                         mapBack(t) = value
-                         if (value == this.is) selected = Full(t)
-                         (t, text)},
-		  selected, 
-		  v => mapBack.get(v).foreach(x => set(x))))
-      */
   }.openOr(immutableMsg))
 }
 
@@ -227,15 +219,16 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     */
   protected def dirty_?(b: Boolean) = _dirty_? = b
 
-      /**
-         * Called when a column has been added to the database via Schemifier
-         */
-       def dbAddedColumn: Can[() => unit] = Empty
+  /**
+   * Called when a column has been added to the database via Schemifier
+   */
+  def dbAddedColumn: Can[() => unit] = Empty
 
-       /**
-          * Called when a column has indexed via Schemifier
-          */
-        def dbAddedIndex: Can[() => unit] = Empty                                 
+  /**
+   * Called when a column has indexed via Schemifier
+   */
+  def dbAddedIndex: Can[() => unit] = Empty                                 
+  
   /**
    * override this method in indexed fields to indicate that the field has been saved
    */
@@ -262,23 +255,6 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   def readPermission_? = false
   
   /**
-   * pascal-style assignment for syntactic sugar
-   */
-  /*
-  def :=(v: FieldType): FieldType = {
-    if (safe_? || writePermission_?) i_set_!(v)
-    v
-  }
-  
-  /**
-    * pascal style assignment for Can[FieldType]
-    */
-  def :?=(v: Can[FieldType]): Can[FieldType] = {
-    v.foreach(tv => this := tv)
-    v
-  }*/
-  
-  /**
    * Assignment from the underlying type.  It's ugly, but:<br />
    * field() = new_value <br />
    * field := new_value <br />
@@ -294,13 +270,6 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     this.set(v)
     fieldOwner
   }
-    
-  /*
-    def ->(v: FieldType): O = {
-      this := v
-      owner
-    }
-  */
     
   private var _name : String = null
   
@@ -478,10 +447,10 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
 
   def dbPrimaryKey_? : Boolean = false
       
-      /**
-         * Is the field a foreign key reference
-         */
-       def dbForeignKey_? : Boolean = false
+  /**
+   * Is the field a foreign key reference
+   */
+  def dbForeignKey_? : Boolean = false
 
   def jdbcFriendly(field : String) : Object
   
@@ -515,8 +484,8 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   protected def real_convertToJDBCFriendly(value: FieldType): Object
   
   /**
-    * Does the "right thing" comparing mapped fields 
-    */
+   * Does the "right thing" comparing mapped fields 
+   */
   override def equals(other: Any): Boolean = {
     other match {
       case mapped: MappedField[Any, Nothing] => this.is == mapped.is
@@ -559,14 +528,13 @@ trait BaseForeignKey extends BaseMappedField {
    * Is the key defined?
    */
   def defined_? : Boolean
-  //def dbIndexed_? = true
-          
-  //def dbForeignKey_? = true
+
   /**
    * get the object referred to by this foreign key
    */
      
   def dbKeyToTable: BaseMetaMapper
+
   def dbKeyToColumn: BaseMappedField
   
   def findFor(key: KeyType): List[OwnerType]
@@ -574,9 +542,9 @@ trait BaseForeignKey extends BaseMappedField {
   def findFor(key: KeyedForeignType): List[OwnerType]
   
   /**
-    * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
-    * is done with the schemification.
-    */
+   * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
+   * is done with the schemification.
+   */
   def dbAddedForeignKey: Can[() => Unit]
 }
 
