@@ -466,6 +466,13 @@ object JE {
   }
 
   /**
+   * Serialize input elements intoa string data. ALso works for serializing forms
+   */
+  case object JqSerialize extends JsExp with JQueryRight {
+    def toJsCmd = "serialize()"
+  }
+  
+  /**
    * Serialize the jquery into a JSON array
    */
   case object JsonSerialize extends JsExp with JQueryRight {
