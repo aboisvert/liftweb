@@ -6,6 +6,7 @@ import scala.xml.{NodeSeq, Text, XML, Elem}
 import java.net._
 import java.util.{Map => JavaMap, Set => JavaSet, Iterator => JavaIterator, List => JavaList}
 import java.util.regex.Pattern
+import java.io.IOException
 
 trait TestFramework {
   def baseUrl: String
@@ -13,9 +14,9 @@ trait TestFramework {
   def tests: List[Item]
   def buildRunner: TestRunner
   
-  private var assertFunc: (String, () => ReqRes) => ReqRes = _
+  private var assertFunc: (String, () => Response) => Response = _
   def runTests = synchronized {
-    val (runner, tAssert) = buildRunner.setup[ReqRes](tests)
+    val (runner, tAssert) = buildRunner.setup[Response](tests)
     try {
       assertFunc = tAssert
       runner()
@@ -24,15 +25,15 @@ trait TestFramework {
     }
   }
   
-  class TestHandler(res: ReqRes) {
-    def then (f: ReqRes => ReqRes): ReqRes = f(res)
-    def also (f: ReqRes => Any): ReqRes = {f(res); res}
+  class TestHandler(res: Response) {
+    def then (f: Response => Response): Response = f(res)
+    def also (f: Response => Any): Response = {f(res); res}
   }
-  implicit def reqToHander(in: ReqRes): TestHandler = new TestHandler(in)
+  implicit def reqToHander(in: Response): TestHandler = new TestHandler(in)
   
   
-  def get(url: String, params: (String, Any)*): ReqRes = get(url, Nil, params :_*)
-  def post(url: String, params: (String, Any)*): ReqRes = post(url, Nil, params :_*)
+  def get(url: String, params: (String, Any)*): Response = get(url, authFunc, Nil, params :_*)
+  def post(url: String, params: (String, Any)*): Response = post(url, authFunc, Nil, params :_*)
   
   def getCookie(headers: List[(String, String)], respHeaders: Map[String, List[String]]): Can[String] = {
     val ret = (headers.filter{case ("Cookie", _) => true; case _ => false}.map(_._2) ::: respHeaders.get("Set-Cookie").toList.flatMap(x => x)) match {
@@ -45,63 +46,120 @@ trait TestFramework {
     ret
   }
   
-  def get(url: String,headers: List[(String, String)], faux_params: (String, Any)*): ReqRes = {
+  def get(url: String, authFunc: Can[String => (String, String)], headers: List[(String, String)], faux_params: (String, Any)*): Response = {
     val params = faux_params.toList.map(x => (x._1, x._2.toString))
-    val fullUrl = url + (params.map(v => urlEncode(v._1)+"="+urlEncode(v._2)).mkString("&") match {case s if s.length == 0 => ""; case s => "?"+s})  
-    val ret = (baseUrl + fullUrl, new URL(baseUrl + fullUrl).openConnection) match {
-      case (_, u: HttpURLConnection) =>
-      
-      headers.foreach(h => u.setRequestProperty(h._1, h._2))
-      val respHeaders = snurpHeaders(u.getHeaderFields)
-      new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
-      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+    val fullUrl = url + (params.map(v => urlEncode(v._1)+"="+urlEncode(v._2)).mkString("&") match {case s if s.length == 0 => ""; case s => "?"+s})
+    val ret = try {
+      (baseUrl + fullUrl, new URL(baseUrl + fullUrl).openConnection) match {
+        case (_, u: HttpURLConnection) 
+        if u.getResponseCode == HttpURLConnection.HTTP_UNAUTHORIZED && 
+        !authFunc.isEmpty =>
+        val respHeaders = snurpHeaders(u.getHeaderFields)
+        (for (hdrs <- Can(respHeaders.get("WWW-Authenticate"));
+        hdr <- hdrs.headOption;
+        func <- authFunc) yield func(hdr)) match {
+          case Full((name, pwd)) => get(url, Empty, 
+          "Authorization" -> ("Basic "+buildAuth(name, pwd)) :: headers, faux_params :_*)
+          case _ => get(url, Empty, headers, faux_params :_*)
+        }
+        
+        case (_, u: HttpURLConnection) =>
+        headers.foreach(h => u.setRequestProperty(h._1, h._2))
+        val respHeaders = snurpHeaders(u.getHeaderFields)
+        new HttpResponse(u.getResponseCode, u.getResponseMessage, 
+        respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
+        
+        case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+      }
+    } catch {
+      case e: IOException => new CompleteFailure(baseUrl + fullUrl)
     }
     ret
   }
-  def post(url: String,headers: List[(String, String)], faux_params: (String, Any)*): ReqRes = {
+  
+  def buildAuth(userName: String, pwd: String): String = base64Encode((userName+":"+pwd).getBytes("UTF-8"))
+  
+  def post(url: String, authFunc: Can[String => (String, String)], headers: List[(String, String)], faux_params: (String, Any)*): Response = {
     val params = faux_params.toList.map(x => (x._1, x._2.toString))
     val paramStr = params.map(v => urlEncode(v._1)+"="+urlEncode(v._2)).mkString("&")
     val paramByte = paramStr.getBytes("UTF-8")
-    val ret = (baseUrl + url, new URL(baseUrl + url).openConnection) match {
-      case (_, u: HttpURLConnection) =>
-      headers.foreach(h => u.setRequestProperty(h._1, h._2))
-      u.setDoOutput(true)
-      u.setRequestMethod("POST")
-      u.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
-      u.setRequestProperty("Content-Length", paramByte.length.toString)
-      u.getOutputStream.write( paramByte)
-      val respHeaders = snurpHeaders(u.getHeaderFields)
-      new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
-      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+    val ret = try {
+      (baseUrl + url, new URL(baseUrl + url).openConnection) match {        
+        case (_, u: HttpURLConnection) =>
+        headers.foreach(h => u.setRequestProperty(h._1, h._2))
+        u.setDoOutput(true)
+        u.setRequestMethod("POST")
+        u.setRequestProperty("Content-Type", "application/x-www-form-urlencoded")
+        u.setRequestProperty("Content-Length", paramByte.length.toString)
+        u.getOutputStream.write( paramByte)
+        
+        val respHeaders = snurpHeaders(u.getHeaderFields)
+        if (u.getResponseCode == HttpURLConnection.HTTP_UNAUTHORIZED && 
+        !authFunc.isEmpty) {
+          val respHeaders = snurpHeaders(u.getHeaderFields)
+          (for (hdrs <- Can(respHeaders.get("WWW-Authenticate"));
+          hdr <- hdrs.headOption;
+          func <- authFunc) yield func(hdr)) match {
+            case Full((name, pwd)) => post(url, Empty, 
+            "Authorization" -> ("Basic "+buildAuth(name, pwd)) :: headers, faux_params :_*)
+            
+            case _ => new HttpResponse(u.getResponseCode, u.getResponseMessage, 
+            respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
+          }
+        } else {
+          new HttpResponse(u.getResponseCode, u.getResponseMessage, 
+          respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
+        }
+        case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+      }
+    } catch {
+      case e: IOException => new CompleteFailure(baseUrl + url)
     }
     ret
   }
   
-  def post(url: String,body: NodeSeq, headers: List[(String, String)]): ReqRes = {
+  def post(url: String, authFunc: Can[String => (String, String)], body: NodeSeq, headers: List[(String, String)]): Response = {
     val paramByte = body.toString.getBytes("UTF-8")
-    val ret = (baseUrl + url, new URL(baseUrl + url).openConnection) match {
-      case (_, u: HttpURLConnection) =>
-      headers.foreach(h => u.setRequestProperty(h._1, h._2))
-      u.setDoOutput(true)
-      u.setRequestMethod("POST")
-      u.setRequestProperty("Content-Type", "text/xml")
-      u.setRequestProperty("Content-Length", paramByte.length.toString)
-      u.getOutputStream.write( paramByte)
-      val respHeaders = snurpHeaders(u.getHeaderFields)
-      new HttpReqRes(u.getResponseCode, u.getResponseMessage, 
-      respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
-      case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+    val ret = try {
+      (baseUrl + url, new URL(baseUrl + url).openConnection) match {
+        case (_, u: HttpURLConnection) =>
+        headers.foreach(h => u.setRequestProperty(h._1, h._2))
+        u.setDoOutput(true)
+        u.setRequestMethod("POST")
+        u.setRequestProperty("Content-Type", "text/xml")
+        u.setRequestProperty("Content-Length", paramByte.length.toString)
+        u.getOutputStream.write( paramByte)
+        val respHeaders = snurpHeaders(u.getHeaderFields)
+        
+        if (u.getResponseCode == HttpURLConnection.HTTP_UNAUTHORIZED && 
+        !authFunc.isEmpty) {
+          val respHeaders = snurpHeaders(u.getHeaderFields)
+          (for (hdrs <- Can(respHeaders.get("WWW-Authenticate"));
+          hdr <- hdrs.headOption;
+          func <- authFunc) yield func(hdr)) match {
+            case Full((name, pwd)) => post(url, Empty, body,
+            "Authorization" -> ("Basic "+buildAuth(name, pwd)) :: headers)
+            
+            case _ => new HttpResponse(u.getResponseCode, u.getResponseMessage, 
+            respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
+          }
+        } else {
+          new HttpResponse(u.getResponseCode, u.getResponseMessage, 
+          respHeaders, readWholeStream(u.getInputStream), Map.empty, getCookie(headers, respHeaders))
+        }
+        case (server, z) => Log.error("Tried to open an HTTP connection and got "+z); new CompleteFailure(server) 
+      }
+    } catch {
+      case e: IOException => new CompleteFailure(baseUrl + url)
     }
     ret
   }
   
-  abstract class ReqRes {
+  trait Response {
     def assertSuccess = this
     def xml: Elem = <xml:group />
     
-    def assert(f: => Boolean, msg: String): ReqRes = {
+    def assert(f: => Boolean, msg: String): Response = {
       TestFramework.this.assertFunc(msg,{() =>
         if (!f) throw new TestFailureError(msg)
         this
@@ -115,21 +173,25 @@ trait TestFramework {
     def cookie: Can[String] = Empty
     val body: Array[Byte] = new Array(0)
     lazy val bodyAsString = new String(body, "UTF-8")
-    def get(url: String, params: (String, Any)*) = TestFramework.this.get(url, cookie.map( ("Cookie", _) ).toList , params:_*)
+    def get(url: String, params: (String, Any)*) = TestFramework.this.get(url, authFunc, cookie.map( ("Cookie", _) ).toList , params:_*)
     
-    def post(url: String, params: (String, Any)*) = TestFramework.this.post(url, cookie.map( ("Cookie", _) ).toList, params:_*)
+    def post(url: String, params: (String, Any)*) = TestFramework.this.post(url, authFunc, cookie.map( ("Cookie", _) ).toList, params:_*)
     
-    def post(url: String, body: NodeSeq) = TestFramework.this.post(url, body, cookie.map( ("Cookie", _) ).toList)
+    def post(url: String, body: NodeSeq) = TestFramework.this.post(url, authFunc, body, cookie.map( ("Cookie", _) ).toList)
+    
+    def authFunc: Can[String => (String, String)] = Empty
   }
   
-  class HttpReqRes(override val code: Int,override val msg: String,override val headers: Map[String, List[String]],
-  override val body: Array[Byte],override val values: Map[String, String],override val cookie: Can[String]) extends ReqRes {
+  def authFunc: Can[String => (String, String)] = Empty
+  
+  class HttpResponse(override val code: Int,override val msg: String,override val headers: Map[String, List[String]],
+  override val body: Array[Byte],override val values: Map[String, String],override val cookie: Can[String]) extends Response {
     
     override def assertSuccess = assert(code == 200, "Not an HTTP success")
     override lazy val xml = XML.load(new java.io.ByteArrayInputStream(body))
   }
   
-  class CompleteFailure(val serverName: String) extends ReqRes {
+  class CompleteFailure(val serverName: String) extends Response {
     override def assertSuccess = assert(false, "Failed to connect to server: "+serverName)
   }
   
@@ -213,7 +275,7 @@ object TestHelpers {
   * @return the updated sequences
   */
   def toWatchUpdates(old: Seq[(String, String)], body: String): Seq[(String, String)] = {
-      val p = Pattern.compile("""lift_toWatch\[\'(L[^\']*)\'] \= \'([0-9]*)""")
+    val p = Pattern.compile("""lift_toWatch\[\'(L[^\']*)\'] \= \'([0-9]*)""")
     val re = new REMatcher(body, p)
     val np = re.eachFound.foldLeft(Map(old :_*))((a, b) => a + ( (b(1), b(2))) )
     np.elements.toList
