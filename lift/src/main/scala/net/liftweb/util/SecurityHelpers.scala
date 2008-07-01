@@ -10,7 +10,7 @@ import javax.crypto.spec._
  * <li> generate random numbers
  * <li> generate keys
  * <li> encrypt/decrypt keys
- * <li> create SHA, SHA-256, MD5 hashs or hexDigests
+ * <li> create SHA, SHA-256, MD5 hashs (can be hex encoded)
  * </ul>
  */
 trait SecurityHelpers { self: StringHelpers with IoHelpers =>
@@ -24,10 +24,11 @@ trait SecurityHelpers { self: StringHelpers with IoHelpers =>
   /** return a random int modulo a number */
   def randomInt(mod: Int): Int = Math.abs(random.nextInt) % mod
   
-  /** return true iff a random int is strictly inferior to a percentage */
-  def shouldShow(percent: Int): Boolean = Math.abs(random.nextInt) % 100 < percent
-
-  /** return true iff a random double is strictly inferior to a percentage */
+  /**
+   * return true only 'percent' times when asked repeatedly. 
+   * This function is used in the Skittr example to get a random set of users  
+   * @param percent percentage as a double number <= 1.0
+   */
   def shouldShow(percent: Double): Boolean = random.nextDouble <= percent
   
   /** create a Blowfish key as an array of bytes */

@@ -50,21 +50,19 @@ trait IoHelpers {
   }
 
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
-  
+
   def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     val ba = new Array[byte](4096)
-    
+
     def readOnce {
       val len = in.read(ba)
       if (len > 0) bos.write(ba, 0, len)
       if (len >= 0) readOnce
     }
-    
+
     readOnce
-    
+
     bos.toByteArray
   }
-
-
 }

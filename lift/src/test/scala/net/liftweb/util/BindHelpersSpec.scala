@@ -3,7 +3,6 @@ import org.specs._
 import org.specs.runner._
 import scala.xml._
 
-class BindHelpersTest extends JUnit4(BindHelpersSpec)
 object BindHelpersSpec extends Specification with BindHelpers {
   "the chooseTemplate function" should {
     "select the node matching a given tag and prefix" in {
@@ -16,4 +15,12 @@ object BindHelpersSpec extends Specification with BindHelpers {
       chooseTemplate("choose", "tag", <h></h>) must be_==(NodeSeq.Empty)
     }
   }
+  "the bind function" should {
+    "map attribute name to xml nodes in a lift:bind node" in {
+      val map = Map("hello" -> <h1></h1>, "world" -> <b></b>)
+      val liftbind = <lift:bind><node1 name="hello"/></lift:bind>
+      bind(map, liftbind) must_== <e></e>
+    }
+  }
 }
+class BindHelpersTest extends JUnit4(BindHelpersSpec)

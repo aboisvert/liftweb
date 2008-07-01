@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /**
- * The ListHelpers trait provides useful functions which can be applied to List.<p/>
+ * The ListHelpers trait provides useful functions which can be applied to Lists.<p/>
  */
 trait ListHelpers {
 
