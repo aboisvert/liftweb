@@ -134,7 +134,10 @@ trait BindHelpers {
   }
   
   /**
-   * Bind a set of values to parameters and attributes in a block of XML 
+   * Bind a set of values to parameters and attributes in a block of XML.<p/>
+   * Usage:<pre>
+   *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
+   * </pre>
    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
     val map: scala.collection.immutable.Map[String, BindParam] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
@@ -172,12 +175,20 @@ trait BindHelpers {
   }
   
   /**
-   * Bind a set of values to "name" attributes in a block of XML containing lift:bind nodes 
+   * Replace the content of lift:bind nodes with the corresponding nodes found in a map,
+   * according to the value of the "name" attribute.<p/>
+   * Usage: <pre>
+   * bind(Map("a" -> <h1/>), <b><lift:bind name="a">change this</lift:bind></b>) must ==/(<b><h1></h1></b>)
+   * </pre>
+   * 
+   * @param vals map of name/nodes to replace
+   * @param xml nodes containing lift:bind nodes
+   * 
+   * @return the replaced xml nodes
    */
   def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
     xml.flatMap {
-      node =>
-      node match {
+      node => node match {
         case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
           node.attributes.get("name") match {
             case None => bind(vals, node.child)
@@ -197,7 +208,7 @@ trait BindHelpers {
   }
   
   /**
-   * Bind a list of maps name/xml to a block of XML containing lift:bind nodes 
+   * Bind a list of maps name/xml to a block of XML containing lift:bind nodes (see the bind(Map, NodeSeq) function)
    */
   def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Can[NodeSeq] = {
     def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
@@ -212,6 +223,7 @@ trait BindHelpers {
    * Bind parameters to XML.
    * @param around XML with lift:bind elements
    * @param atWhat data to bind
+   * @deprecated use the bind function instead
    */
   def processBind(around: NodeSeq, atWhat: Map[String, NodeSeq]) : NodeSeq = {
     
@@ -237,9 +249,11 @@ trait BindHelpers {
   }
   /**
    * Looks for a named parameter in the XML element and return it if found
+   * 
+   * @return a Full can containing the value of the found attribute if it is not empty 
    */
   def xmlParam(in: NodeSeq, param: String): Can[String] = {
-    val tmp = (in \ ("@"+param))
+    val tmp = (in \ ("@" + param))
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
 
