@@ -14,8 +14,13 @@ package net.liftweb.util
  */
 /**
  * The Helpers object provides a lot of utility functions:<ul>
- * <li>Time and date functions: 
- * <li>URL functions 
+ * <li>Time and date 
+ * <li>URL 
+ * <li>Hash generation 
+ * <li>Class instantiation 
+ * <li>Control abstractions 
+ * <li>Basic types conversions 
+ * <li>XML bindings 
  * </ul>
  */
 object Helpers extends TimeHelpers with StringHelpers with ListHelpers 
