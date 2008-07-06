@@ -43,6 +43,7 @@ object LiftSession {
   var onSessionActivate: List[LiftSession => Unit] = Nil
   var onSessionPassivate: List[LiftSession => Unit] = Nil
   var onSetupSession: List[LiftSession => Unit] = Nil
+  var onAboutToShutdownSession: List[LiftSession => Unit] = Nil
   var onShutdownSession: List[LiftSession => Unit] = Nil
   var onBeginServicing: List[(LiftSession, RequestState) => Unit] = Nil
   var onEndServicing: List[(LiftSession, RequestState, Can[ResponseIt]) => Unit] = Nil
@@ -294,6 +295,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   }
   
   private def shutDown() = synchronized {
+    LiftSession.onAboutToShutdownSession.foreach(_(this))
     SessionMaster ! RemoveSession(this.uniqueId)
     
     // Log.debug("Shutting down session")
@@ -753,7 +755,6 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {
     val attr = in.attributes
     val kids = in.child
-    // case Elem("lift", "surround", attr @ _, _, kids @ _*) =>
     
     val (otherKids, paramElements) = filter2(kids) {
       case Elem("lift", "with-param", _, _, _) => false
