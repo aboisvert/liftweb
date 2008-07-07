@@ -59,19 +59,28 @@ class Boot {
 
 
     LiftRules.addRewriteBefore{
-      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _,_), _, _) =>
+      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_), 
+			  _, _) 
+      =>
 	RewriteResponse("wiki" :: Nil,
-			Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+			Map("wiki_page" -> page :: 
+			    path.path.drop(2).
+			    zipWithIndex.map(p => 
+			      ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-
+    
     val wikibind_rewriter: LiftRules.RewritePf = {
-      case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _,_), _, _) =>
-      RewriteResponse(ParsePath("wikibind" :: Nil, true, false),
-      Map("wiki_page" -> page :: path.path.drop(2).zipWithIndex.map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+      case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_), 
+			  _, _) 
+      =>
+	RewriteResponse(ParsePath("wikibind" :: Nil, "", true, false),
+			Map("wiki_page" -> page :: 
+			    path.path.drop(2).zipWithIndex.
+			    map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-
+    
     LiftRules.appendEarly(makeUtf8)
-
+    
     LiftRules.addRewriteBefore(wikibind_rewriter)
 
   }
