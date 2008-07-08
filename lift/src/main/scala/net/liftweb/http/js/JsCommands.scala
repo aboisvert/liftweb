@@ -736,7 +736,7 @@ object JsCmds {
     opts.map{case (value, text) => "y=document.createElement('option'); "+
       "y.text = "+text.encJs+"; "+
       "y.value = "+value.encJs+"; "+
-      (if (value == dflt) "y.selected = true; " else "") + "x.add(y, null); "
+      (if (value == dflt) "y.selected = true; " else "") + "if (x.add) {x.add(y, null);} else {x.options[x.options.length] = y;} "
     }.mkString("\n")
   }
   
