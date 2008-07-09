@@ -190,28 +190,28 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
   MenuItem("", ValidateUser, false) :: Nil
     
   def templates: LiftRules.TemplatePf = {
-    case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, _), _)
+    case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "", _), _)
     if testLoggedIn(w) => () => signup
     
-    case RequestMatcher(RequestState(BasePath :: (w @ Login) :: _, _), _)
+    case RequestMatcher(RequestState(BasePath :: (w @ Login) :: _, "", _), _)
     if testLoggedIn(w) => () => login
     
-    case RequestMatcher(RequestState(BasePath :: (w @ LostPassword) :: _, _), _)
+    case RequestMatcher(RequestState(BasePath :: (w @ LostPassword) :: _, "", _), _)
     if testLoggedIn(w) => () => lostPassword
 
-    case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: id :: _, _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: id :: _, "", _), _) 
     if testLoggedIn(w) => () => passwordReset(id)
     
-    case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _, _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _, "", _), _) 
     if testLoggedIn(w) => () => changePassword
 
-    case RequestMatcher(RequestState(BasePath :: (w @ Logout) :: _, _), _)
+    case RequestMatcher(RequestState(BasePath :: (w @ Logout) :: _, "", _), _)
     if testLoggedIn(w) => () => logout
     
-    case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, _), _)
+    case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
     if testLoggedIn(w) => () => edit
 
-    case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: id :: _, _), _) 
+    case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: id :: _, "", _), _) 
     if testLoggedIn(w) => () => validateUser(id)
   }
     
@@ -317,7 +317,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
 			   "submit" --> SHtml.submit(S.??("sign.up"), testSignup))
 
     S.addSessionTemplater(theName, {
-      case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _,
+      case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "",
       _), _)
       if testLoggedIn(w) =>  () => innerSignup
     })
@@ -530,7 +530,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
 			 "submit" --> SHtml.submit(S.??("edit"), testEdit))
     
     S.addSessionTemplater(theName, {
-      case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, _), _)
+      case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
       if testLoggedIn(w) => 
 	() => innerEdit})
     innerEdit

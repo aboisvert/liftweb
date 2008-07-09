@@ -42,18 +42,18 @@ class Boot {
 
     val dispatcher: LiftRules.DispatchPf = {
       // if the url is "showcities" then return the showCities function
-      case RequestMatcher(RequestState("showcities":: _, _),_) => XmlServer.showCities
+      case RequestMatcher(RequestState("showcities":: _, "", _),_) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestMatcher(RequestState("showstates":: xs, _),_) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+      case RequestMatcher(RequestState("showstates":: xs, "", _),_) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
       // if it's a web service, pass it to the web services invoker
-      case RequestMatcher(r @RequestState("webservices" :: c :: _, _), _) => invokeWebService(r, c)
+      case RequestMatcher(r @RequestState("webservices" :: c :: _, "", _), _) => invokeWebService(r, c)
     }
     LiftRules.addDispatchBefore(dispatcher)
     
     LiftRules.addDispatchBefore {
-         case RequestMatcher(RequestState("login" :: page , _), _)  if !LoginStuff.is && page.head != "validate" =>
+         case RequestMatcher(RequestState("login" :: page , "", _), _)  if !LoginStuff.is && page.head != "validate" =>
          ignore => Full(RedirectResponse("/login/validate"))
       }
 
