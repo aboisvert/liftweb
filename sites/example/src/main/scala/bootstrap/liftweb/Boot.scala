@@ -64,7 +64,7 @@ class Boot {
       =>
 	RewriteResponse("wiki" :: Nil,
 			Map("wiki_page" -> page :: 
-			    path.path.drop(2).
+			    path.wholePath.drop(2).
 			    zipWithIndex.map(p => 
 			      ("param"+(p._2 + 1)) -> p._1) :_*))
     }
@@ -75,7 +75,7 @@ class Boot {
       =>
 	RewriteResponse(ParsePath("wikibind" :: Nil, "", true, false),
 			Map("wiki_page" -> page :: 
-			    path.path.drop(2).zipWithIndex.
+			    path.wholePath.drop(2).zipWithIndex.
 			    map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
     

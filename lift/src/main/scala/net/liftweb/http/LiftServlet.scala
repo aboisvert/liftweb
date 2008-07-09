@@ -163,9 +163,9 @@ class LiftServlet extends HttpServlet {
       }
       
       if (dispatch._1) dispatch._2 
-      else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
+      else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.cometPath) {
         handleComet(requestState, sessionActor)
-      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
+      } else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
 	      LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
@@ -460,7 +460,7 @@ class LiftFilter extends Filter
   
   private def isLiftRequest_?(session: RequestState): Boolean = {
     if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
-    else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
+    else session.path.endSlash || (session.path.wholePath.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
   }
   

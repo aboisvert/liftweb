@@ -81,11 +81,11 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   def isAbsolute_? = link.isAbsolute_?  
   def pathMatch(path: List[String]): Int = {
     val mod = if (link.path.endSlash) 1 else 0
-    if (link.matchOnPrefix) {if (path.take(link.path.path.length) == link.path.path) path.length else 0}
+    if (link.matchOnPrefix) {if (path.take(link.path.partPath.length) == link.path.partPath) path.length else 0}
     else {
-    val len = link.path.path.length - mod
+    val len = link.path.partPath.length - mod
     val p2 = path.take(len)
-    if (p2 == link.path.path.dropRight(mod)) len else 0}
+    if (p2 == link.path.partPath.dropRight(mod)) len else 0}
   }
   
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
@@ -193,8 +193,8 @@ object Loc {
     def isRoot_? = uri == "/"
     def isAbsolute_? = path.absolute
         
-    def matchPath(toMatch: List[String]): Boolean = if (!matchOnPrefix) path.path == toMatch else {
-      val ret = toMatch.take(path.path.length) == path.path
+    def matchPath(toMatch: List[String]): Boolean = if (!matchOnPrefix) path.partPath == toMatch else {
+      val ret = toMatch.take(path.partPath.length) == path.partPath
       ret
     }
   }

@@ -483,7 +483,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     val toMatch = RequestMatcher(session, Full(this))
     val templ = LiftRules.templateTable(session.request)
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
-      val tpath = path.path
+      val tpath = path.partPath
       val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
         case s @ _ if (!s.isEmpty) => s
         case _ => List("index")

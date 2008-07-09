@@ -194,7 +194,7 @@ object RequestState {
     XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
       ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
   
-  def unapply(in: RequestState): Option[(List[String], RequestType)] = Some((in.path.path, in.requestType)) 
+  def unapply(in: RequestState): Option[(List[String], RequestType)] = Some((in.path.wholePath, in.requestType)) 
 }
 
 @serializable
@@ -215,8 +215,8 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
   val id = pathParam(0)
-  def pathParam(n: Int) = head(path.path.drop(n + 2), "")
-  def path(n: Int):String = head(path.path.drop(n), null)
+  def pathParam(n: Int) = head(path.wholePath.drop(n + 2), "")
+  def path(n: Int):String = head(path.wholePath.drop(n), null)
   def param(n: String) = params.get(n) match {
     case Some(s :: _) => Some(s)
     case _ => None
@@ -293,8 +293,11 @@ case class RewriteResponse(path: ParsePath, params: Map[String, String])
 
 
 @serializable
-case class ParsePath(path: List[String], suffix: String, absolute: Boolean, endSlash: Boolean) {
-  def drop(cnt: Int) = ParsePath(path.drop(cnt), suffix, absolute, endSlash)
+case class ParsePath(partPath: List[String], suffix: String, absolute: Boolean, endSlash: Boolean) {
+  def drop(cnt: Int) = ParsePath(partPath.drop(cnt), suffix, absolute, endSlash)
+  
+  lazy val wholePath = if (suffix.length > 0) partPath.dropRight(1) ::: List(partPath.last + "." + suffix)
+  else partPath
 }
 
 /**
