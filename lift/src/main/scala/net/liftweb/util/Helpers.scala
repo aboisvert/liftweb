@@ -117,8 +117,8 @@ object Helpers extends TimeHelpers with BindHelpers {
     case null => true
     case n => {
       n.get("Content-Type") match {
-        case Some(s) => { (s.toLowerCase == "text/html") ||
-        (s.toLowerCase == "application/xhtml+xml") }
+        case Some(s) => (s.toLowerCase.startsWith("text/html")) ||
+        (s.toLowerCase.startsWith("application/xhtml+xml"))
         case None => true
       }
     }

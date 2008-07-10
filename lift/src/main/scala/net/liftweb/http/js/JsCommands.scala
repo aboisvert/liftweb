@@ -16,6 +16,7 @@ import scala.xml.{Node, SpecialNode}
 object JsCommands {
   def create = new JsCommands(Nil)  
   def apply(in: Seq[JsCmd]) = new JsCommands(in.toList.reverse)
+  def apply(in: JsExp) = new JsCommands(List(in.cmd))
 }
 
 class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
@@ -384,11 +385,11 @@ object JE {
   
   object JsObj {
     def apply(members: (String, JsExp)*): JsExp = 
-      new JsExp {
-	def toJsCmd = members.
-	map{case (n, v) => n.encJs+": "+v.toJsCmd}.
-	mkString("{", ", ", "}\n")
-      }
+    new JsExp {
+      def toJsCmd = members.
+      map{case (n, v) => n.encJs+": "+v.toJsCmd}.
+      mkString("{", ", ", "}\n")
+    }
   }
   
   /**

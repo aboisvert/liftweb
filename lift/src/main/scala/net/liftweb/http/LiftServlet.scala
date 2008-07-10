@@ -361,10 +361,19 @@ class LiftServlet extends HttpServlet {
       case _ => v
     })
     
+    def pairFromRequest(in: Can[RequestState]): (Can[RequestState], Can[String]) = {
+      val acceptHeader = for (req <- in;
+      innerReq <- Can.legacyNullTest(req.request);
+      accept <- Can.legacyNullTest(innerReq.getHeader("Accept"))) yield accept
+      
+      (in, acceptHeader)
+    }
+    
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(fixHeaders(resp.headers), List(("Content-Type", LiftRules.determineContentType(request)),
+    val header = insureField(fixHeaders(resp.headers), List(("Content-Type",
+    LiftRules.determineContentType( pairFromRequest(request) )),
     ("Content-Encoding", "UTF-8"),
     ("Content-Length", len.toString)))
     

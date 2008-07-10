@@ -61,6 +61,38 @@ object LiftRules {
     _afterSend = _afterSend ::: List(f)
   }
   
+/*
+  def determineContentType(request: HttpServletRequest) : String = {
+    request match {
+      case null => "text/html"
+      case request => determineContentType(request.getHeader("Accept"))
+    }
+  }
+*/
+
+  /*
+  def determineContentType(accept: String) : String = {
+    // If application/xhtml+xml is explicitly listed then let's use that.
+    if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
+      "application/xhtml+xml"
+    } else {
+      "text/html"
+    }
+  }*/
+
+  /**
+  * A partial function that determines content type based on an incoming
+  * RequestState and Accept header
+  */
+  var determineContentType: 
+  PartialFunction[(Can[RequestState], Can[String]), String] = {
+    case (_, Full(accept)) if accept.contains("application/xhtml+xml") => 
+      "application/xhtml+xml"
+
+    case _ => "text/html"
+  }
+
+  /*
   /**
   * Determine the proper Content-Type based on the browser's Accept HTTP Header.
   */
@@ -69,7 +101,7 @@ object LiftRules {
       case Full(request) => determineContentType(request.request)
       case _ => "text/html"
     }
-  }
+  }*/
 
   /**
    * Hooks to be run when LiftServlet.destroy is called.
@@ -112,14 +144,7 @@ object LiftRules {
   * The function referenced here is called if there's a localization lookup failure
   */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
-  
-  def determineContentType(request: HttpServletRequest) : String = {
-    request match {
-      case null => "text/html"
-      case request => determineContentType(request.getHeader("Accept"))
-    }
-  }
-  
+    
   private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[Response] = {
     if (passNotFoundToChain) Empty
     else session match {
@@ -135,15 +160,6 @@ object LiftRules {
   * that understand it, then set this to {@code false}
   */
   var useXhtmlMimeType: Boolean = true
-  
-  def determineContentType(accept: String) : String = {
-    // If application/xhtml+xml is explicitly listed then let's use that.
-    if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
-      "application/xhtml+xml"
-    } else {
-      "text/html"
-    }
-  }
   
   
   private def _stringToXml(s: String): NodeSeq = Text(s)
