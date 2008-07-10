@@ -48,9 +48,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
   
   /**
    * Set of all valid files extensions
+   * @return a mutable HashSet[String]
    */
   val validSuffixes = {
-    val ret = new HashSet[String];
+    val ret = new HashSet[String]
     ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
     ret
   }
@@ -72,6 +73,9 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
   /**
    * get a map of HTTP properties and return true if the "Content-type" 
    * is either "text/html" or "application/xhtml+xml"
+   * @param in Map which may contain a key named Content-Type
+   * @return true if there is a pair ("Content-Type", "text/html") or
+   *                                 ("Content-Type", "application/xhtml+xml")
    */
   def couldBeHtml(in: Map[String, String]): Boolean =
     in match {
