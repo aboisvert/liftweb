@@ -1,7 +1,7 @@
 package bootstrap.liftweb
 
 /*                                                *\
-  (c) 2007 WorldWide Conferencing, LLC
+  (c) 2007-2008 WorldWide Conferencing, LLC
   Distributed under an Apache License
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
@@ -33,11 +33,11 @@ class Boot {
     
     // map certain urls to the right place
     val rewriter: LiftRules.RewritePf = {
-    case RewriteRequest(ParsePath("user" :: user :: _, _,_), _, _) => 
+    case RewriteRequest(ParsePath("user" :: user :: _, _, _,_), _, _) => 
        RewriteResponse("user" :: Nil, Map("user" -> user))
-    case RewriteRequest(ParsePath("friend" :: user :: _, _,_), _, _) => 
+    case RewriteRequest(ParsePath("friend" :: user :: _, _, _,_), _, _) => 
        RewriteResponse("friend" :: Nil, Map("user" -> user))
-    case RewriteRequest(ParsePath("unfriend" :: user :: _, _,_), _, _) => 
+    case RewriteRequest(ParsePath("unfriend" :: user :: _, _, _, _), _, _) => 
        RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
   

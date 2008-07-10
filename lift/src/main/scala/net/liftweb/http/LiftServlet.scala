@@ -69,7 +69,11 @@ class LiftServlet extends HttpServlet {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-        case RequestMatcher(r @ RequestState(mainPath :: subPath, _) ,_) if mainPath == LiftRules.ResourceServerPath => ResourceServer.findResourceInClasspath(r, subPath)
+        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) 
+	if mainPath == LiftRules.ResourceServerPath => 
+	  println("In classpath thing {"+subPath+"} {"+suffx+"}")
+	  ResourceServer.
+	findResourceInClasspath(r, r.path.wholePath.drop(1))
       })      
     } finally {
       clearThread
@@ -113,11 +117,11 @@ class LiftServlet extends HttpServlet {
     }
   }
   
-  private def flatten(in: List[Any]): List[AnyRef] = in match {
+  private def flatten(in: List[Any]): List[Any] = in match {
     case Nil => Nil
     case Some(x: AnyRef) :: xs => x :: flatten(xs)
     case Full(x: AnyRef) :: xs => x :: flatten(xs)
-    case (lst: Iterable[AnyRef]) :: xs => lst.toList ::: flatten(xs)
+    case (lst: Iterable[_]) :: xs => lst.toList ::: flatten(xs)
     case (x: AnyRef) :: xs => x :: flatten(xs)
     case x :: xs => flatten(xs)
   }
@@ -163,9 +167,9 @@ class LiftServlet extends HttpServlet {
       }
       
       if (dispatch._1) dispatch._2 
-      else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.cometPath) {
+      else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.cometPath) {
         handleComet(requestState, sessionActor)
-      } else if (requestState.path.path.length == 1 && requestState.path.path.head == LiftRules.ajaxPath) {
+      } else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.ajaxPath) {
         LiftRules.cometLogger.debug("AJAX Request: "+sessionActor.uniqueId+" "+requestState.params)
         S.init(requestState, sessionActor) {
 	      LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
@@ -460,7 +464,7 @@ class LiftFilter extends Filter
   
   private def isLiftRequest_?(session: RequestState): Boolean = {
     if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
-    else session.path.endSlash || (session.path.path.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
+    else session.path.endSlash || (session.path.wholePath.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
   }
   

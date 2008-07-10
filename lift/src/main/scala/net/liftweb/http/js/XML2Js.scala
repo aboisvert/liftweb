@@ -21,8 +21,6 @@ trait JxYieldFunc {
 trait JxBase {
   self: Node =>
   
-  // def ++(other: Node): Seq[Node] = this :: other :: Nil
-  
   def appendToParent(parentName: String): JsCmd
   
   def label = throw new UnsupportedOperationException("Xml2Js does not have a label")

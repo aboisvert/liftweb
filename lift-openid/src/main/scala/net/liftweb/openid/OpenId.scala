@@ -96,13 +96,13 @@ trait OpenIdVendor extends  {
   def logUserOut(): Unit
   
   def dispatchPf: LiftRules.DispatchPf = {
-    case RequestMatcher(RequestState(PathRoot :: LogOutPath :: Nil, _), _) =>
+    case RequestMatcher(RequestState(PathRoot :: LogOutPath :: Nil, "", _), _) =>
     req => {
       logUserOut()
       Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
     }
     
-    case RequestMatcher(r @ RequestState(PathRoot :: LoginPath :: Nil, PostRequest), _)
+    case RequestMatcher(r @ RequestState(PathRoot :: LoginPath :: Nil, "", PostRequest), _)
     if r.param(PostParamName).isDefined =>
     req => {
       try {
@@ -115,7 +115,7 @@ trait OpenIdVendor extends  {
       }
     }
     
-    case RequestMatcher(r @ RequestState(PathRoot :: ResponsePath :: Nil, _), _) =>
+    case RequestMatcher(r @ RequestState(PathRoot :: ResponsePath :: Nil, "", _), _) =>
     req => {
       val (id, res) = OpenIdObject.is.verifyResponse(req.request)
       postLogin(id, res)

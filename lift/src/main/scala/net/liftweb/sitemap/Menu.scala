@@ -48,11 +48,11 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
   def findLoc(orgPath: ParsePath, path: List[String], req: RequestState): Can[Loc] = {
     if (page.doesMatch_?(path, req)) Full(page)
     else page.pathMatch(path) match {
-      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req))
+      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
       case n =>
       val p2 = path.drop(n)
       first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req)) or 
-         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.path, req))
+         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
     }
   }
   
