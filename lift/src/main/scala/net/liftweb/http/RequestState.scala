@@ -88,8 +88,8 @@ object RequestState {
       val files: List[FileParamHolder] = allInfo.flatMap{case v: FileParamHolder => List(v) case _ => Nil}
       
       val params = normal.foldLeft(eMap)((a,b) => a.get(b.name) match {
-        case None => a + b.name -> List(b.value)
-        case Some(v) => a + b.name -> (v ::: List(b.value))
+        case None => a + (b.name -> List(b.value))
+        case Some(v) => a + (b.name -> (v ::: List(b.value)))
       })
       
       (normal.map(_.name).removeDuplicates, localParams ++ params, files, Empty)
@@ -105,8 +105,8 @@ object RequestState {
           val names = pairs.map(_._1).removeDuplicates
           val params = pairs.foldLeft(eMap) (
           (a,b) => a.get(b._1) match {
-            case None => a + b._1 -> List(b._2)
-            case Some(xs) => a + b._1 -> (xs ::: List(b._2))
+            case None => a + (b._1 -> List(b._2))
+            case Some(xs) => a + (b._1 -> (xs ::: List(b._2)))
           }
           )
           
@@ -142,7 +142,7 @@ object RequestState {
   
   var fixHref = _fixHref _
   
-  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: boolean): Text = {
+  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean): Text = {
     val hv = v.text
     if (hv.startsWith("/")) {
       Text(fixURL match {
@@ -156,7 +156,7 @@ object RequestState {
   def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
     if (contextPath.length == 0) in
     else {
-      def fixAttrs(toFix : String, attrs : MetaData, fixURL: boolean) : MetaData = {
+      def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
         if (attrs == Null) Null 
         else if (attrs.key == toFix) {
           new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value, fixURL),fixAttrs(toFix, attrs.next, fixURL))
@@ -204,8 +204,8 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
   val id = pathParam(0)
-  def pathParam(n: int) = head(path.path.drop(n + 2), "")
-  def path(n: int):String = head(path.path.drop(n), null)
+  def pathParam(n: Int) = head(path.path.drop(n + 2), "")
+  def path(n: Int):String = head(path.path.drop(n), null)
   def param(n: String) = params.get(n) match {
     case Some(s :: _) => Some(s)
     case _ => None
@@ -284,7 +284,7 @@ case class RewriteResponse(path: ParsePath, params: Map[String, String])
 
 @serializable
 case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
-  def drop(cnt: int) = ParsePath(path.drop(cnt), absolute, endSlash)
+  def drop(cnt: Int) = ParsePath(path.drop(cnt), absolute, endSlash)
 }
 
 /**
