@@ -5,7 +5,7 @@ import org.specs.specification._
 object HttpHelpersSpec extends Specification with HttpHelpers with ListHelpers with StringHelpers {
 
   "Http helpers" should provide {
-    "urlEncode and urlDecode functions" in {
+    "urlEncode and urlDecode functions" >> {
       urlDecode(urlEncode("hello world")) must_== "hello world"      
       urlEncode(urlDecode("hello+world")) must_== "hello+world"      
     }
