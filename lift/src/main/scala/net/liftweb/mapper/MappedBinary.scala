@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*                                                *\
-(c) 2006-2007 WorldWide Conferencing, LLC
+(c) 2006-2008 WorldWide Conferencing, LLC
 Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
@@ -9,7 +9,7 @@ http://www.apache.org/licenses/LICENSE-2.0
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
 import java.util.Date
-import net.liftweb.util.FatLazy 
+import net.liftweb.util._ 
 import net.liftweb.http.js._
 
 class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[Byte], T] {
@@ -111,12 +111,18 @@ class MappedText[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T]
   
   protected def i_obscure_!(in: String): String = ""
   
-  override def setFromAny(f: Any): String =
-  this.set(f match {
-    case null => null
-    case s: String => s
-    case other => other.toString
-  })
+    override def setFromAny(in: Any): String = {
+    in match {
+      case seq: Seq[_] if !seq.isEmpty => seq.map(setFromAny)(0)
+      case (s: String) :: _ => this.set(s)
+      case null => this.set(null)
+      case s: String => this.set(s)
+      case Some(s: String) => this.set(s)
+      case Full(s: String) => this.set(s)
+      case None | Empty | Failure(_, _, _) => this.set(null)
+      case o => this.set(o.toString)
+    }
+  }
   
   def jdbcFriendly(field : String): Object = real_convertToJDBCFriendly(data.get)
   
@@ -188,12 +194,18 @@ class MappedFakeClob[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
   
   def asJsExp: JsExp = JE.Str(is)
   
-  override def setFromAny(f: Any): String =
-  this.set(f match {
-    case null => null
-    case s: String => s
-    case other => other.toString
-  })
+    override def setFromAny(in: Any): String = {
+    in match {
+      case seq: Seq[_] if !seq.isEmpty => seq.map(setFromAny)(0)
+      case (s: String) :: _ => this.set(s)
+      case null => this.set(null)
+      case s: String => this.set(s)
+      case Some(s: String) => this.set(s)
+      case Full(s: String) => this.set(s)
+      case None | Empty | Failure(_, _, _) => this.set(null)
+      case o => this.set(o.toString)
+    }
+  }
   
   def jdbcFriendly(field : String): Object = real_convertToJDBCFriendly(data.get)
   

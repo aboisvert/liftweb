@@ -112,7 +112,12 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       react(composeFunction)
     }
   }
-  
+
+  override def react(pf: PartialFunction[Any, Unit]) = 
+    S.initIfUninitted(theSession) {
+      super.react(pf)
+    }
+
   def fixedRender: Can[NodeSeq] = Empty
   
   def highPriority : PartialFunction[Any, Unit] = {

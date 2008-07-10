@@ -570,44 +570,6 @@ object Helpers extends TimeHelpers with BindHelpers {
     sb.toString
   }  
   
-  /*
-  private val defaultFinder = getClass.getResource _
-  private var _finder = defaultFinder
-  
-  def setResourceFinder(in: (String) => java.net.URL):unit = synchronized {
-  _finder = in
-  }
-  
-  def resourceFinder = synchronized {_finder}
-  
-  def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)} 
-  def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
-  def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
-  stream =>
-  val buffer = new Array[byte](2048)
-  val out = new ByteArrayOutputStream
-  def reader {
-  val len = stream.read(buffer)
-  if (len < 0) return
-  else if (len > 0) out.write(buffer, 0, len)
-  reader
-  }
-  reader
-  stream.close
-  out.toByteArray
-  }
-  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s =>PCDataXmlParser(s))
-  def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
-  */
-  
-  /*
-  def script(theScript: String): NodeSeq = (<script>
-  // {Unparsed("""<![CDATA[
-  """+theScript+"""
-  // ]]>
-  """)}</script>)
-  */
-  
   /**
   * Optional cons that implements the expression: expr ?> value ::: List
   */
@@ -641,8 +603,6 @@ object Helpers extends TimeHelpers with BindHelpers {
   implicit def boolean2(b: Boolean) = new Boolean2(b) 
   
   implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, Text(in._2.toString), Null)
-  
-  //implicit def optionToDouble[T](in: Option[Option[T]]): DoubleOption[T] = new DoubleOption(in)
   
   implicit def stringToSuper(in: String): SuperString = new SuperString(in)
   
@@ -766,4 +726,19 @@ class SuperString(val what: String) {
   }
 }
 
-// vim: set ts=2 sw=2 et:
+/**
+ * Used for type-safe pattern matching of an Any and returns a Seq[Node] 
+ */
+object SafeNodeSeq {
+  
+  // I didn't use unapplySeq as I ran into a compiler(2.7.1 final) crash at LiftRules#convertResponse.
+  // I opened the scala ticket https://lampsvn.epfl.ch/trac/scala/ticket/1059#comment:1
+  
+  def unapply(any: Any) : Option[Seq[Node]] = any match {
+  case s: Seq[_] =>  Some(s flatMap ( _ match {
+    case n: Node => n
+    case _ => NodeSeq.Empty
+  }))
+  case _ => None
+  }
+}

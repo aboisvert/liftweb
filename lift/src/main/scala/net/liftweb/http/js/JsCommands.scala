@@ -466,6 +466,13 @@ object JE {
   }
 
   /**
+   * Serialize input elements intoa string data. ALso works for serializing forms
+   */
+  case object JqSerialize extends JsExp with JQueryRight {
+    def toJsCmd = "serialize()"
+  }
+  
+  /**
    * Serialize the jquery into a JSON array
    */
   case object JsonSerialize extends JsExp with JQueryRight {
@@ -729,7 +736,7 @@ object JsCmds {
     opts.map{case (value, text) => "y=document.createElement('option'); "+
       "y.text = "+text.encJs+"; "+
       "y.value = "+value.encJs+"; "+
-      (if (value == dflt) "y.selected = true; " else "") + "x.add(y, null); "
+      (if (value == dflt) "y.selected = true; " else "") + "if (x.add) {x.add(y, null);} else {x.options[x.options.length] = y;} "
     }.mkString("\n")
   }
   

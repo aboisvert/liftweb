@@ -38,7 +38,7 @@ case class NormalParamHolder(name: String, value: String) extends ParamHolder
 case class FileParamHolder(name: String, mimeType: String, fileName: String, file: Array[Byte]) extends ParamHolder
 
 object RequestState {
-  object NilPath extends ParsePath(Nil, true, false)
+  object NilPath extends ParsePath(Nil, "", true, false)
   
   def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): RequestState = {
     val reqType = RequestType(request)
@@ -137,7 +137,18 @@ object RequestState {
     val p1 = fixURI((in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/"))
     val front = p1.startsWith("/")
     val back = p1.length > 1 && p1.endsWith("/")
-    ParsePath(p1.replaceAll("/$", "/index").split("/").toList.filter(_.length > 0), front, back)
+    
+    val orgLst = p1.replaceAll("/$", "/index").split("/").
+    toList.map(_.trim).filter(_.length > 0)
+    
+    val last = orgLst.last
+    val idx = last.indexOf(".")
+
+    val (lst, suffix) = if (idx == -1) (orgLst, "")
+    else (orgLst.dropRight(1) ::: List(last.substring(0, idx)),
+	  last.substring(idx + 1))
+
+    ParsePath(lst, suffix, front, back)
   }
   
   var fixHref = _fixHref _
@@ -183,7 +194,7 @@ object RequestState {
     XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
       ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
   
-  def unapply(in: RequestState): Option[(List[String], RequestType)] = Some((in.path.path, in.requestType)) 
+  def unapply(in: RequestState): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType)) 
 }
 
 @serializable
@@ -204,15 +215,14 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
   val id = pathParam(0)
-  def pathParam(n: Int) = head(path.path.drop(n + 2), "")
-  def path(n: Int):String = head(path.path.drop(n), null)
+  def pathParam(n: Int) = head(path.wholePath.drop(n + 2), "")
+  def path(n: Int):String = head(path.wholePath.drop(n), null)
   def param(n: String) = params.get(n) match {
     case Some(s :: _) => Some(s)
     case _ => None
   }
   
-  lazy val (paramNames: List[String], params: Map[String, List[String]], uploadedFiles: List[FileParamHolder], body: Can[Array[Byte]]) =
-  paramCalculator()
+  lazy val (paramNames, params, uploadedFiles, body) = paramCalculator()
   
   lazy val cookies = request.getCookies() match {
     case null => Nil
@@ -278,13 +288,16 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
 
 
 case class RequestMatcher(request: RequestState, session: Can[LiftSession])
-case class RewriteRequest(path: ParsePath,requestType: RequestType, httpRequest: HttpServletRequest)
+case class RewriteRequest(path: ParsePath, requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String])
 
 
 @serializable
-case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
-  def drop(cnt: Int) = ParsePath(path.drop(cnt), absolute, endSlash)
+case class ParsePath(partPath: List[String], suffix: String, absolute: Boolean, endSlash: Boolean) {
+  def drop(cnt: Int) = ParsePath(partPath.drop(cnt), suffix, absolute, endSlash)
+  
+  lazy val wholePath = if (suffix.length > 0) partPath.dropRight(1) ::: List(partPath.last + "." + suffix)
+  else partPath
 }
 
 /**
@@ -293,8 +306,8 @@ case class ParsePath(path: List[String], absolute: Boolean, endSlash: Boolean) {
  * ancodes the URL.
  */ 
 object RewriteResponse {
-  def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, true, false), params)
-  def apply(path: List[String]) = new RewriteResponse(ParsePath(path, true, false), Map.empty)
+  def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, "", true, false), params)
+  def apply(path: List[String]) = new RewriteResponse(ParsePath(path, "", true, false), Map.empty)
 }
 
 object URLRewriter {
