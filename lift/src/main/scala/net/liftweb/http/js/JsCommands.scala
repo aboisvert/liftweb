@@ -60,6 +60,9 @@ case class JsonCall(funcId: String) {
   
 }
 
+  
+trait JsObj extends JsExp
+  
 trait JsExp extends SpecialNode with HtmlFixer with JxBase {
   def toJsCmd: String
   
@@ -384,8 +387,8 @@ object JE {
   }
   
   object JsObj {
-    def apply(members: (String, JsExp)*): JsExp = 
-    new JsExp {
+    def apply(members: (String, JsExp)*): JsObj = 
+    new JsObj {
       def toJsCmd = members.
       map{case (n, v) => n.encJs+": "+v.toJsCmd}.
       mkString("{", ", ", "}\n")

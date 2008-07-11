@@ -86,7 +86,7 @@ object LiftRules {
   */
   var determineContentType: 
   PartialFunction[(Can[RequestState], Can[String]), String] = {
-    case (_, Full(accept)) if accept.contains("application/xhtml+xml") => 
+    case (_, Full(accept)) if accept.toLowerCase.contains("application/xhtml+xml") => 
       "application/xhtml+xml"
 
     case _ => "text/html"
