@@ -19,6 +19,8 @@ import S._
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js._
+import JE._
+import JsCmds._
 import scala.xml._
 
 object SHtml {
@@ -209,6 +211,15 @@ object SHtml {
   def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
   def ajaxForm(body: NodeSeq, onSubmit: JsCmd) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
     
+  def jsonForm(jsonHandler: JsonHandler, body : => NodeSeq): NodeSeq = jsonForm(jsonHandler, Noop, body) 
+  def jsonForm(jsonHandler: JsonHandler, onSubmit: JsCmd, body : => NodeSeq): NodeSeq = {
+    val id = "F"+randomString(15)
+    <form onsubmit={(onSubmit & jsonHandler.call("processForm", FormToJSON(id)) & JsReturn(false)).toJsCmd} id={id}>
+      {body}
+    </form>
+  }
+
+  
   /**
    * Create a select box based on the list with a default value and the function to be executed on
    * form submission
@@ -358,6 +369,5 @@ object SHtml {
     (<input type="hidden" name={name} value="false"/>) ++
       ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
   }
-
 
 }

@@ -92,11 +92,6 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase {
    */
   def -->(right: JsMethod): JsExp = this ! right
 
-  /*
-  def :=(right: JsExp): JsExp = new JsExp {
-    def toJsCmd = JsExp.this.toJsCmd +" = " +right.toJsCmd
-  }*/
-  
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   
   
@@ -121,7 +116,6 @@ object JE {
   implicit def numToJsExp(in: Long): JsExp = Num(in)
   implicit def numToJsExp(in: Double): JsExp = Num(in)
   implicit def numToJsExp(in: Float): JsExp = Num(in)
-  // implicit def setExToArray(in: Seq[JsExp]): JsArray[JsExp] = JsArray[JsExp](in :_*)
   
   case class Num(n: Number) extends JsExp {
     def toJsCmd = n.toString
@@ -272,6 +266,12 @@ object JE {
     }
   }
   
+  object FormToJSON {
+    def apply(formId: String) =  new JsExp {
+      def toJsCmd = "lift$.formToJSON(" + formId.toJsCmd + ")";
+    }
+  }
+
   /**
    * A String (JavaScript encoded)
    */

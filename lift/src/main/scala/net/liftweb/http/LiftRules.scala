@@ -60,25 +60,6 @@ object LiftRules {
   def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
-  
-/*
-  def determineContentType(request: HttpServletRequest) : String = {
-    request match {
-      case null => "text/html"
-      case request => determineContentType(request.getHeader("Accept"))
-    }
-  }
-*/
-
-  /*
-  def determineContentType(accept: String) : String = {
-    // If application/xhtml+xml is explicitly listed then let's use that.
-    if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
-      "application/xhtml+xml"
-    } else {
-      "text/html"
-    }
-  }*/
 
   /**
   * A partial function that determines content type based on an incoming
@@ -92,16 +73,6 @@ object LiftRules {
     case _ => "text/html"
   }
 
-  /*
-  /**
-  * Determine the proper Content-Type based on the browser's Accept HTTP Header.
-  */
-  def determineContentType(req: Can[RequestState]) : String = {
-    req match {
-      case Full(request) => determineContentType(request.request)
-      case _ => "text/html"
-    }
-  }*/
 
   /**
    * Hooks to be run when LiftServlet.destroy is called.

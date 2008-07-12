@@ -71,7 +71,6 @@ class LiftServlet extends HttpServlet {
       LiftRules.addDispatchAfter({
         case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) 
 	if mainPath == LiftRules.ResourceServerPath => 
-	  println("In classpath thing {"+subPath+"} {"+suffx+"}")
 	  ResourceServer.
 	findResourceInClasspath(r, r.path.wholePath.drop(1))
       })      

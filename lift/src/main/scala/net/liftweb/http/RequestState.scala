@@ -222,7 +222,6 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     case _ => None
   }
   
-  // List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]]
   lazy val (paramNames: List[String],
   params: Map[String, List[String]],
   uploadedFiles: List[FileParamHolder],
