@@ -17,6 +17,7 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.10" date="" description="">
+      <action dev="Marius Danciu" type="add">Added JSON forms support</action>
     </release>
     <release version="0.9" date="2008-06-15" description="">
       <action dev="Marius Danciu" type="add">Added URL rewriting support</action>
