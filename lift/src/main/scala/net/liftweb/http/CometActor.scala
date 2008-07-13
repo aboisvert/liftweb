@@ -126,15 +126,15 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   override def react(pf: PartialFunction[Any, Unit]) = {
     val myPf: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
       def apply(in: Any): Unit = {
-	S.initIfUninitted(theSession) {
-	  pf.apply(in)
-	}
+	    S.initIfUninitted(theSession) {
+	      pf.apply(in)
+	    }
       }
       
       def isDefinedAt(in: Any): Boolean = {
-	S.initIfUninitted(theSession) {
-	  pf.isDefinedAt(in)
-	}
+	    S.initIfUninitted(theSession) {
+	      pf.isDefinedAt(in)
+        } 
       }
     }
     
@@ -181,11 +181,9 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
     
     case PerformSetupComet =>
-      //S.initIfUninitted(theSession) {
       link(ActorWatcher)
       localSetup
       performReRender(true)
-    //}
     
     case AskRender =>
     askingWho match {
@@ -268,19 +266,17 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     lastRenderTime = CometActor.next
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
-    //S.initIfUninitted(theSession) {
       
-      lastRendering = render ++ jsonInCode
-      theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
+    lastRendering = render ++ jsonInCode
+    theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
       
-      val rendered: AnswerRender = 
-      AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), 
-      this, lastRenderTime, sendAll)
+    val rendered: AnswerRender = 
+    AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), 
+    this, lastRenderTime, sendAll)
       
-      listeners.foreach(_._2(rendered))
-      listeners = Nil
-      rendered
-    // }
+    listeners.foreach(_._2(rendered))
+    listeners = Nil
+    rendered
   }
   
   protected def partialUpdate(cmd: JsCmd) {
@@ -376,10 +372,9 @@ spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(No
       case (_, Full(js), _) => js
       case _ => JsCmds.Noop
     }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
-    S.initIfUninitted(session) {
-       S.messagesFromList(notices toList)
-       ret = ret & S.noticesToJsCmd
-    }
+
+    S.messagesFromList(notices toList)
+    ret = ret & S.noticesToJsCmd
     ret
   }
   
