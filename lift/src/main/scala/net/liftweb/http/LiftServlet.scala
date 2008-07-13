@@ -69,11 +69,9 @@ class LiftServlet extends HttpServlet {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) 
-	if mainPath == LiftRules.ResourceServerPath => 
-	  ResourceServer.
-	findResourceInClasspath(r, r.path.wholePath.drop(1))
-      })      
+        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath => 
+	      ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
+        })      
     } finally {
       clearThread
     }

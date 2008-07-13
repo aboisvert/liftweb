@@ -237,8 +237,6 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   */
   def render: RenderOut
   
-  // def compute: Map[String, Any] = Map.empty[String, Any]
-  
   def reRender(sendAll: Boolean) {
     this ! ReRender(sendAll)
   }
