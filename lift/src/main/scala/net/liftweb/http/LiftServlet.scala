@@ -410,7 +410,7 @@ class LiftFilter extends Filter
       
       val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-      URLRewriter.doWith(httpRes.encodeURL(_)) {
+      URLRewriter.doWith(url => LiftRules.urlSuffix(httpRes.encodeURL(url))) {
         if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
         } else {
           chain.doFilter(req, res)
