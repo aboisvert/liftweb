@@ -1,10 +1,20 @@
 package net.liftweb.http
 
-/*                                                *\
-(c) 2007-2008 WorldWide Conferencing, LLC
-Distributed under an Apache License
-http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
@@ -113,10 +123,23 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
   }
 
-  override def react(pf: PartialFunction[Any, Unit]) = 
-    S.initIfUninitted(theSession) {
-      super.react(pf)
+  override def react(pf: PartialFunction[Any, Unit]) = {
+    val myPf: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
+      def apply(in: Any): Unit = {
+	S.initIfUninitted(theSession) {
+	  pf.apply(in)
+	}
+      }
+      
+      def isDefinedAt(in: Any): Boolean = {
+	S.initIfUninitted(theSession) {
+	  pf.isDefinedAt(in)
+	}
+      }
     }
+    
+    super.react(myPf)
+  }
 
   def fixedRender: Can[NodeSeq] = Empty
   
@@ -158,11 +181,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     }
     
     case PerformSetupComet =>
-    S.initIfUninitted(theSession) {
+      //S.initIfUninitted(theSession) {
       link(ActorWatcher)
       localSetup
       performReRender(true)
-    }
+    //}
     
     case AskRender =>
     askingWho match {
@@ -245,7 +268,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     lastRenderTime = CometActor.next
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
-    S.initIfUninitted(theSession) {
+    //S.initIfUninitted(theSession) {
       
       lastRendering = render ++ jsonInCode
       theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
@@ -257,7 +280,7 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       listeners.foreach(_._2(rendered))
       listeners = Nil
       rendered
-    }
+    // }
   }
   
   protected def partialUpdate(cmd: JsCmd) {
