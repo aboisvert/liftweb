@@ -747,11 +747,13 @@ object JsCmds {
     while (x.length > 0) {x.remove(0);}
     var y = null;
     """+
-    opts.map{case (value, text) => "y=document.createElement('option'); "+
-      "y.text = "+text.encJs+"; "+
-      "y.value = "+value.encJs+"; "+
-      (if (value == dflt) "y.selected = true; " else "") + "if (x.add) {x.add(y, null);} else {x.options[x.options.length] = y;} "
-    }.mkString("\n")
+    opts.map{case (value, text) => 
+      "y=document.createElement('option'); "+
+	     "y.text = "+text.encJs+"; "+
+	     "y.value = "+value.encJs+"; "+
+	     (if (value == dflt) "y.selected = true; " else "") + 
+	     " try {x.add(y, null);} catch(e) {if (typeof(e) == 'object' && typeof(e.number) == 'number' && (e.number & 0xFFFF) == 5){ x.add(y,x.options.length); } } "
+	   }.mkString("\n")
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
