@@ -36,7 +36,7 @@ object LiftRules {
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), ResponseIt]
-  type URLSuffix = PartialFunction[String, String]
+  type URLDecorator = PartialFunction[String, String]
   
   /**
   * A partial function that allows the application to define requests that should be
@@ -60,7 +60,7 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.  
    */
-  var urlSuffix: URLSuffix = {case arg => arg}
+  var urlDecorate: URLDecorator = {case arg => arg}
   
   private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   

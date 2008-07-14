@@ -113,7 +113,7 @@ trait CombParserHelpers {
 
   def notEOL: Parser[Elem] = (not(EOL) ~> anyChar)
 
-    def notEOF: Parser[Elem] = (not(accept('\032')) ~> anyChar)
+  def notEOF: Parser[Elem] = (not(accept('\032')) ~> anyChar)
 
   def anyChar: Parser[Elem] = elem("Any Char", c => c != '\032')
 
