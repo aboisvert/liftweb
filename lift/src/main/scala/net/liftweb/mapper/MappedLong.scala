@@ -1,10 +1,20 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -82,9 +92,9 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
   
   override def dbIndexFieldIndicatesSaved_? = {i_is_! != defaultValue}
   
-  def makeKeyJDBCFriendly(in : Long) = new java.lang.Long(in)
+  def makeKeyJDBCFriendly(in: Long) = new java.lang.Long(in)
   
-  def convertKey(in : String): Can[Long] = {
+  def convertKey(in: String): Can[Long] = {
     if (in eq null) Empty
     else tryo(toLong(if (in.startsWith(name + "=")) in.substring((name + "=").length) else in))
   }

@@ -502,11 +502,11 @@ object MappedField {
 }
 
 trait IndexedField[O] extends BaseIndexedField {
-  def convertKey(in : String) : Can[O]
-  def convertKey(in : Int) : Can[O]
+  def convertKey(in: String): Can[O]
+  def convertKey(in: Int): Can[O]
   def convertKey(in: Long): Can[O]
-  def convertKey(in : AnyRef) : Can[O]
-  def makeKeyJDBCFriendly(in : O) : AnyRef
+  def convertKey(in: AnyRef): Can[O]
+  def makeKeyJDBCFriendly(in: O): AnyRef
   def dbDisplay_? = false
 }
 
