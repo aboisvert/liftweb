@@ -40,15 +40,15 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
   }
   "The callableMethod_? function" should {
     "return true if the method is public and has no parameters" in {
-      val publicParameterLess = classOf[String].getMethod("length", null)
+      val publicParameterLess = classOf[String].getMethod("length")
       callableMethod_?(publicParameterLess) must beTrue
     }
     "return false if the method is public and has parameters" in {
-      val publicWithParameters = classOf[String].getMethod("indexOf", Array(classOf[String]))
+      val publicWithParameters = classOf[String].getMethod("indexOf", classOf[String])
       callableMethod_?(publicWithParameters) must beFalse
     }
     "return false if the method is private" in {
-      val privateMethod = classOf[java.util.ArrayList[Object]].getDeclaredMethod("readObject", Array(classOf[java.io.ObjectInputStream]))
+      val privateMethod = classOf[java.util.ArrayList[Object]].getDeclaredMethod("readObject", classOf[java.io.ObjectInputStream])
       callableMethod_?(privateMethod) must beFalse
     }
     "return false if the method is null" in {
