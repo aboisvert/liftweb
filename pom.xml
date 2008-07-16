@@ -148,7 +148,7 @@ Lift is a scala web framework.
     <url>http://scala-tools.org/hudson/job/liftweb/</url>
   </ciManagement>
   <properties>
-    <scala.version>2.7.1</scala.version>
+    <scala.version>SNAPSHOT</scala.version>
   </properties>
   <modules>
     <module>lift</module>
@@ -229,6 +229,7 @@ Lift is a scala web framework.
           <args>
             <!--arg>-unchecked</arg-->
             <arg>-deprecation</arg>
+            <arg>-Xno-varargs-conversion</arg>
           </args>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
