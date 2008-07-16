@@ -1,10 +1,20 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -16,16 +26,6 @@ import net.liftweb.http.{S, FieldError}
 import net.liftweb.http.js._
 import S._
 
-/*
-trait NiceLength[MyType <: MappedString[_]] {self: MyType =>
-/**
-   * A list of functions that transform the value before it is set.  The transformations
-   * are also applied before the value is used in a query.  Typical applications
-   * of this are trimming and/or toLowerCase-ing strings
-   */
- override protected def setFilter = crop _ :: super.setFilter	
-}*/
-  
 /**
   * Just like MappedString, except it's defaultValue is "" and the length is auto-cropped to
   * fit in the column

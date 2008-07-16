@@ -36,6 +36,7 @@ object LiftRules {
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), ResponseIt]
+  type URLDecorator = PartialFunction[String, String]
   
   /**
   * A partial function that allows the application to define requests that should be
@@ -55,21 +56,30 @@ object LiftRules {
   */
   var ResourceServerPath = "classpath"
   
+  /**
+   * Use this PartialFunction to to automatically add static URL parameters
+   * to any URL reference from the markup of Ajax request.  
+   */
+  var urlDecorate: URLDecorator = {case arg => arg}
+  
   private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
   
   def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
-  
+
   /**
-  * Determine the proper Content-Type based on the browser's Accept HTTP Header.
+  * A partial function that determines content type based on an incoming
+  * RequestState and Accept header
   */
-  def determineContentType(req: Can[RequestState]) : String = {
-    req match {
-      case Full(request) => determineContentType(request.request)
-      case _ => "text/html"
-    }
+  var determineContentType: 
+  PartialFunction[(Can[RequestState], Can[String]), String] = {
+    case (_, Full(accept)) if accept.toLowerCase.contains("application/xhtml+xml") => 
+      "application/xhtml+xml"
+
+    case _ => "text/html"
   }
+
 
   /**
    * Hooks to be run when LiftServlet.destroy is called.
@@ -112,14 +122,7 @@ object LiftRules {
   * The function referenced here is called if there's a localization lookup failure
   */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
-  
-  def determineContentType(request: HttpServletRequest) : String = {
-    request match {
-      case null => "text/html"
-      case request => determineContentType(request.getHeader("Accept"))
-    }
-  }
-  
+    
   private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[Response] = {
     if (passNotFoundToChain) Empty
     else session match {
@@ -135,15 +138,6 @@ object LiftRules {
   * that understand it, then set this to {@code false}
   */
   var useXhtmlMimeType: Boolean = true
-  
-  def determineContentType(accept: String) : String = {
-    // If application/xhtml+xml is explicitly listed then let's use that.
-    if (useXhtmlMimeType && accept != null && accept.contains("application/xhtml+xml")) {
-      "application/xhtml+xml"
-    } else {
-      "text/html"
-    }
-  }
   
   
   private def _stringToXml(s: String): NodeSeq = Text(s)

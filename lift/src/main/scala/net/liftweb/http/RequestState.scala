@@ -222,7 +222,10 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     case _ => None
   }
   
-  lazy val (paramNames, params, uploadedFiles, body) = paramCalculator()
+  lazy val (paramNames: List[String],
+  params: Map[String, List[String]],
+  uploadedFiles: List[FileParamHolder],
+  body: Can[Array[Byte]]) = paramCalculator()
   
   lazy val cookies = request.getCookies() match {
     case null => Nil

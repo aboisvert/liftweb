@@ -1,10 +1,20 @@
 package net.liftweb.http.js
 
-/*                                                *\
-(c) 2007 WorldWide Conferencing, LLC
-Distributed under an Apache License
-http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import scala.xml.{NodeSeq, Group, Unparsed, Elem}
 import net.liftweb.util.Helpers._
@@ -16,6 +26,7 @@ import scala.xml.{Node, SpecialNode}
 object JsCommands {
   def create = new JsCommands(Nil)  
   def apply(in: Seq[JsCmd]) = new JsCommands(in.toList.reverse)
+  def apply(in: JsExp) = new JsCommands(List(in.cmd))
 }
 
 class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
@@ -59,6 +70,9 @@ case class JsonCall(funcId: String) {
   
 }
 
+  
+trait JsObj extends JsExp
+  
 trait JsExp extends SpecialNode with HtmlFixer with JxBase {
   def toJsCmd: String
   
@@ -88,11 +102,6 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase {
    */
   def -->(right: JsMethod): JsExp = this ! right
 
-  /*
-  def :=(right: JsExp): JsExp = new JsExp {
-    def toJsCmd = JsExp.this.toJsCmd +" = " +right.toJsCmd
-  }*/
-  
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   
   
@@ -117,7 +126,6 @@ object JE {
   implicit def numToJsExp(in: Long): JsExp = Num(in)
   implicit def numToJsExp(in: Double): JsExp = Num(in)
   implicit def numToJsExp(in: Float): JsExp = Num(in)
-  // implicit def setExToArray(in: Seq[JsExp]): JsArray[JsExp] = JsArray[JsExp](in :_*)
   
   case class Num(n: Number) extends JsExp {
     def toJsCmd = n.toString
@@ -268,6 +276,12 @@ object JE {
     }
   }
   
+  object FormToJSON {
+    def apply(formId: String) =  new JsExp {
+      def toJsCmd = "lift$.formToJSON(" + formId.toJsCmd + ")";
+    }
+  }
+
   /**
    * A String (JavaScript encoded)
    */
@@ -383,12 +397,12 @@ object JE {
   }
   
   object JsObj {
-    def apply(members: (String, JsExp)*): JsExp = 
-      new JsExp {
-	def toJsCmd = members.
-	map{case (n, v) => n.encJs+": "+v.toJsCmd}.
-	mkString("{", ", ", "}\n")
-      }
+    def apply(members: (String, JsExp)*): JsObj = 
+    new JsObj {
+      def toJsCmd = members.
+      map{case (n, v) => n.encJs+": "+v.toJsCmd}.
+      mkString("{", ", ", "}\n")
+    }
   }
   
   /**
@@ -733,11 +747,13 @@ object JsCmds {
     while (x.length > 0) {x.remove(0);}
     var y = null;
     """+
-    opts.map{case (value, text) => "y=document.createElement('option'); "+
-      "y.text = "+text.encJs+"; "+
-      "y.value = "+value.encJs+"; "+
-      (if (value == dflt) "y.selected = true; " else "") + "if (x.add) {x.add(y, null);} else {x.options[x.options.length] = y;} "
-    }.mkString("\n")
+    opts.map{case (value, text) => 
+      "y=document.createElement('option'); "+
+	     "y.text = "+text.encJs+"; "+
+	     "y.value = "+value.encJs+"; "+
+	     (if (value == dflt) "y.selected = true; " else "") + 
+	     " try {x.add(y, null);} catch(e) {if (typeof(e) == 'object' && typeof(e.number) == 'number' && (e.number & 0xFFFF) == 5){ x.add(y,x.options.length); } } "
+	   }.mkString("\n")
   }
   
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {

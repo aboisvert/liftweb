@@ -218,9 +218,21 @@
 				df.appendChild(visible);
 				df.appendChild(hidden);
 				return df;
-			}
+			},
+
+		    formToJSON : function(formId) {
+			  qs = jQuery("#" + formId).serialize();
+			  parts = qs.split("&");
+			  json = "";
+			  for (i = 0; i < parts.length; i++) {
+				nvp = parts[i].split("=");
+				json += (i > 0) ? "," : "";
+				json += "\"" + nvp[0] + "\": \"" + nvp[1] + "\"";
+			  }
+			  return JSON.parse("{" + json + "}");
+		    }
+
 		};
 		
 })();
-
 

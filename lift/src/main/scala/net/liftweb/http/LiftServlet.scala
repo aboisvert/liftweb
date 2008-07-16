@@ -69,12 +69,9 @@ class LiftServlet extends HttpServlet {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) 
-	if mainPath == LiftRules.ResourceServerPath => 
-	  println("In classpath thing {"+subPath+"} {"+suffx+"}")
-	  ResourceServer.
-	findResourceInClasspath(r, r.path.wholePath.drop(1))
-      })      
+        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath => 
+	      ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
+        })      
     } finally {
       clearThread
     }
@@ -361,10 +358,19 @@ class LiftServlet extends HttpServlet {
       case _ => v
     })
     
+    def pairFromRequest(in: Can[RequestState]): (Can[RequestState], Can[String]) = {
+      val acceptHeader = for (req <- in;
+      innerReq <- Can.legacyNullTest(req.request);
+      accept <- Can.legacyNullTest(innerReq.getHeader("Accept"))) yield accept
+      
+      (in, acceptHeader)
+    }
+    
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
-    val header = insureField(fixHeaders(resp.headers), List(("Content-Type", LiftRules.determineContentType(request)),
+    val header = insureField(fixHeaders(resp.headers), List(("Content-Type",
+    LiftRules.determineContentType( pairFromRequest(request) )),
     ("Content-Encoding", "UTF-8"),
     ("Content-Length", len.toString)))
     
@@ -404,7 +410,7 @@ class LiftFilter extends Filter
       
       val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-      URLRewriter.doWith(httpRes.encodeURL(_)) {
+      URLRewriter.doWith(url => LiftRules.urlDecorate(httpRes.encodeURL(url))) {
         if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
         } else {
           chain.doFilter(req, res)
