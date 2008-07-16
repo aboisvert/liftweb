@@ -389,7 +389,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   def buildSetStringValue(accessor: Method, columnName: String): (OwnerType, String) => Unit 
   def buildSetDateValue(accessor: Method, columnName: String): (OwnerType, Date) => Unit 
   def buildSetBooleanValue(accessor: Method, columnName: String) : (OwnerType, Boolean, Boolean) => Unit 
-  protected def getField(inst: OwnerType, meth: Method) = meth.invoke(inst, null).asInstanceOf[MappedField[FieldType,OwnerType]];
+  protected def getField(inst: OwnerType, meth: Method) = meth.invoke(inst).asInstanceOf[MappedField[FieldType,OwnerType]];
   protected def doField(inst: OwnerType, meth: Method, func: PartialFunction[MappedField[FieldType, OwnerType], Unit]) {
     val f = getField(inst, meth)
     if (func.isDefinedAt(f)) func(f)

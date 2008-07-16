@@ -314,7 +314,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
   type AnyBound = T forSome {type T}
   
-  private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst, null).asInstanceOf[MappedField[AnyBound, A]]
+  private[mapper] def ??(meth: Method, inst: A) = meth.invoke(inst).asInstanceOf[MappedField[AnyBound, A]]
   
   def dirty_?(toTest: A): Boolean = mappedFieldList.exists(
   mft =>
@@ -431,7 +431,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
 	  for (col <- mappedColumns) {
 	    if (!columnPrimaryKey_?(col._1)) {
-	      val colVal = col._2.invoke(toSave, null).asInstanceOf[MappedField[AnyRef, A]]
+	      val colVal = col._2.invoke(toSave).asInstanceOf[MappedField[AnyRef, A]]
                 colVal.targetSQLType(col._1) match {
                   case Types.VARCHAR => st.setString(colNum, colVal.jdbcFriendly(col._1).asInstanceOf[String])
                   
@@ -533,7 +533,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  val fieldInfo = mappedColumns.get(colName)
 	  val setTo = 
 	    if (fieldInfo != None) {
-              val tField = fieldInfo.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]
+              val tField = fieldInfo.get.invoke(this).asInstanceOf[MappedField[AnyRef, A]]
               Some(colType match {
 		case Types.INTEGER | Types.BIGINT => {
 		  val bsl = tField.buildSetLongValue(fieldInfo.get, colName)
@@ -598,7 +598,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   private def createApplier(name : String, inst : AnyRef /*, clz : Class*/) : (A, AnyRef) => unit = {
     val accessor = mappedColumns.get(name)
     if ((accessor eq null) || accessor == None) null else {
-      (accessor.get.invoke(this, null).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
+      (accessor.get.invoke(this).asInstanceOf[MappedField[AnyRef, A]]).buildSetActualValue(accessor.get, inst, name)
     }
   }
   
@@ -663,7 +663,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     mappedCallbacks = for (v <- this.getClass.getSuperclass.getMethods.toList if isMagicObject(v) && isLifecycle(v)) yield (v.getName, v)
     
     for (v <- this.getClass.getSuperclass.getMethods  if isMagicObject(v) && isMappedField(v)) {
-      v.invoke(this, null) match {
+      v.invoke(this) match {
         case mf: MappedField[AnyRef, A] if !mf.ignoreField_? =>
           mf.setName_!(v.getName)
         tArray += FieldHolder(mf.name, v, mf)
@@ -802,7 +802,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   
   private def eachField(what: A, toRun: List[(A) => Any])(f: (LifecycleCallbacks) => Any) {
     mappedCallbacks.foreach (e =>
-      e._2.invoke(what, null) match {
+      e._2.invoke(what) match {
         case lccb: LifecycleCallbacks => f(lccb)
         case _ =>
       })

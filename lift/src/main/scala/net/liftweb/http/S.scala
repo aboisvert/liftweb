@@ -250,7 +250,7 @@ object S {
   def ?(str: String, params: Any *): String = if (params.length == 0) 
   ?(str)
   else
-  String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray) 
+  String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray :_*)
   
   /**
   * Get a core lift localized string or return the original string
