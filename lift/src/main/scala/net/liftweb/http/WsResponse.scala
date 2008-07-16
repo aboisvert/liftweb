@@ -99,6 +99,18 @@ case class AtomCreatedResponse(xml: Node) extends ResponseIt {
   def toResponse = CreatedResponse(xml, "application/atom+xml").toResponse
 }
 
+object PlainTextResponse {
+  def apply(text: String): PlainTextResponse = PlainTextResponse(text, Nil, 200)
+  def apply(text: String, code: Int): PlainTextResponse = PlainTextResponse(text, Nil, code)
+}
+
+case class PlainTextResponse(text: String, headers: List[(String, String)], code: Int) extends ResponseIt {
+    def toResponse = {
+        val bytes = text.getBytes("UTF-8")
+        Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/plain") :: headers, Nil, code)
+    }
+}
+
 /**
  * Basic 200 response but without body.
  */

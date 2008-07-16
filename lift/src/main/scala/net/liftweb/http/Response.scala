@@ -50,7 +50,7 @@ case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: L
 	def toResponse = {
 		val bytes = json.toJsCmd.getBytes("UTF-8")
 		Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
-		}
+	}
 }
 
 case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
