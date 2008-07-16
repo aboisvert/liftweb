@@ -718,15 +718,15 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       cls =>
       tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
-        val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
-        val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
+        val constr = cls.getConstructor(classOf[CometActorInitInfo])
+        val ret = constr.newInstance(CometActorInitInfo(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
         ret.start
         // ret.link(this)
         ret ! PerformSetupComet
         ret.asInstanceOf[CometActor]
       }  or tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
-        val constr = cls.getConstructor(Array(this.getClass , classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]]))
-        val ret = constr.newInstance(Array(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
+        val constr = cls.getConstructor(this.getClass , classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]])
+        val ret = constr.newInstance(this, name, defaultXml, attributes).asInstanceOf[CometActor];
         ret.start
         // ret.link(this)
         ret ! PerformSetupComet
@@ -890,7 +890,7 @@ object TemplateFinder {
         tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName).asInstanceOf[Class[AnyRef]]).flatMap{
           c =>
           (c.newInstance match {
-            case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
+            case inst: InsecureLiftView => c.getMethod(action).invoke(inst)
             case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
             case _ => Empty
           }) match {

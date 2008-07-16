@@ -108,7 +108,7 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getRequestDispatcher(s: String): RequestDispatcher = null
   def isSecure = false
   type ZZ = Q forSome {type Q}
-  def getLocales = new Vector[ZZ](Arrays.asList(Locale.getAvailableLocales.asInstanceOf[Array[ZZ]])).elements
+  def getLocales = new Vector[ZZ](Arrays.asList(Locale.getAvailableLocales : _*)).elements
   def getLocale = locale
   def removeAttribute(key: String) = attr -= key
   def setAttribute(key: String, value: Any) = attr += (key -> value)
