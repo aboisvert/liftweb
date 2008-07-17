@@ -3,7 +3,7 @@ import org.specs.runner._
 import org.specs._
 
 class ControlHelpersSpecTest extends Runner(ControlHelpersSpec) with JUnit
-object ControlHelpersSpec extends Specification with ControlHelpers {
+object ControlHelpersSpec extends Specification with ControlHelpers with ClassHelpers {
   "the tryo function" should {
     "return a Full can if the tested block doesn't throw an exception" in {
       tryo { "valid" } must_== Full("valid")

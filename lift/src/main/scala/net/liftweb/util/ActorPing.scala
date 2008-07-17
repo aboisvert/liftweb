@@ -16,7 +16,7 @@ package net.liftweb.util
 import scala.actors.{Actor, Exit}
 import scala.actors.Actor._
 import java.util.concurrent._
-
+import Helpers.TimeSpan
 /** 
 * The ActorPing object schedules an actor to be ping-ed with a given message at specific intervals.
 * The schedule methods return a ScheduledFuture object which can be cancelled if necessary
@@ -35,11 +35,6 @@ object ActorPing {
   * shutdown the underlying <code>SingleThreadScheduledExecutor</code>
   */
   def shutdown: Unit = { service.shutdown }
-  
-  /** 
-  * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, every <code>delay</code> milliseconds
-  */
-  // def schedule(to: Actor, msg: Any, delay: TimeHelpers.TimeSpan): ScheduledFuture[AnyRef] = schedule(to, msg, delay)
   
   /** 
   * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor, 

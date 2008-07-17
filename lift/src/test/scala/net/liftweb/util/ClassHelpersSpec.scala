@@ -6,9 +6,10 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.{Prop, Gen}
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.{property}
+import org.specs.Scalacheck
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
-object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators {
+object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators with Scalacheck {
   "the findClass function" should {
     "return a Full can with the found class when given the name and package" in {
       findClass("ClassHelpersSpecTest", List("net.liftweb.util")) must_== Full(classOf[ClassHelpersSpecTest])

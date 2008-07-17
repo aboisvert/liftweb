@@ -20,9 +20,9 @@ import org.specs.runner._
 import org.specs.util.WaitFor
 import scala.actors.Actor
 import java.util.concurrent._
+import Helpers._
 
-class ActorPingUnitTest extends JUnit3(ActorPingUnit)
-object ActorPingUnitRunner extends ConsoleRunner(ActorPingUnit)
+class ActorPingUnitTest extends JUnit4(ActorPingUnit)
 object ActorPingUnit extends Specification with PingedService with WaitFor {
   def pingService = {
     service.start

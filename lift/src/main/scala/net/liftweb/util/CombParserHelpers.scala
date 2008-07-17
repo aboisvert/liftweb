@@ -28,13 +28,6 @@ trait CombParserHelpers {
   /** @return a CharArray input build from a String  */
   implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
   
-  
-  /** @return true if the character is an end of line character or the end of file  */
-  // def isEol(c: Char): Boolean = (c == '\n' || c == '\r' || isEof(c))
-
-  /** @return true if the character is not an end of line character nor the end of file  */
-  // def notEol(c: Char): Boolean = !isEol(c)
-
   /** @return true if the character is an end of file  */
   def isEof(c: Char): Boolean = c == '\032'
 
@@ -87,8 +80,6 @@ trait CombParserHelpers {
    * @return a list of elements (Elem) from a String 
    */
   implicit def strToLst(in: String): List[Elem] = stringWrapper(in).toList
-
-  // implicit def ff(in: Parser[Elem]): List[Elem] = Nil
 
   /**
    * @return a parser for a digit 

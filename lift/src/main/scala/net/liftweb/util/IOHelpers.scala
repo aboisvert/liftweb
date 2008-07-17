@@ -65,7 +65,4 @@ trait IoHelpers {
     
     bos.toByteArray
   }
-  
-
-
 }
