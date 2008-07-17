@@ -48,20 +48,20 @@ class MockHttpServletResponse(var writer: PrintWriter, var outputStream: Servlet
   }
 
   def addIntHeader(s: String, i: Int) {
-    headers += s -> i.toString
+    headers += (s -> i.toString)
   }
   def setIntHeader(s: String, i: Int) {
-    headers += s -> i.toString
+    headers += (s -> i.toString)
   }
   def addHeader(s1: String, s2: String) {
-    headers += s1 -> s2
+    headers += (s1 -> s2)
   }
   def setHeader(s1: String, s2: String) {
-    headers += s1 -> s2
+    headers += (s1 -> s2)
   }
 
   def addDateHeader(s: String, l: Long) {
-    headers += s -> (new Date(l)).toString
+    headers += (s -> (new Date(l)).toString)
   }
   def setDateHeader(s: String, l: Long) {
     addDateHeader(s, l)

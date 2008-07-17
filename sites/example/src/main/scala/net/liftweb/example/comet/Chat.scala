@@ -43,7 +43,7 @@ class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {
 
   override def lowPriority = {
     case ChatServerUpdate(value) =>
-    (value diff currentData) match {
+    (value -- currentData) match {
       case Nil =>
       case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a & AppendHtml(infoId, line(b))))
     }

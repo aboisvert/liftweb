@@ -227,7 +227,9 @@ Lift is a scala web framework.
             <jvmArg>-Xmx1024m</jvmArg>
           </jvmArgs>
           <args>
-            <!--arg>-unchecked</arg--></args>
+            <!--arg>-unchecked</arg-->
+            <arg>-deprecation</arg>
+          </args>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>

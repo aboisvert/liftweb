@@ -148,13 +148,13 @@ class MockHttpSession extends HttpSession {
     case None => Nil
   }
   def removeValue(key: String) = values -= key
-  def putValue(key: String, value: Any) = values += key -> value 
+  def putValue(key: String, value: Any) = values += (key -> value) 
   def getAttribute(key: String) = attr.get(key) match {
       case Some(v) => v.asInstanceOf[Object]
       case None => Nil
     }
   def removeAttribute(key: String) = attr -= key
-  def setAttribute(key: String, value: Any) = attr += key -> value
+  def setAttribute(key: String, value: Any) = attr += (key -> value)
   def getValueNames: Array[String] = values.keySet.toArray
   def getAttributeNames = new Vector[AnyRef](attr.underlying.keySet).elements
   def getSessionContext = sessionContext

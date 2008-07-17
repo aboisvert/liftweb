@@ -26,23 +26,23 @@ class BlogCache extends Actor {
 	// an immediate reply.
 	val blog = cache.getOrElse(id, getEntries(id)).take(20)
 	reply(BlogUpdate(blog))
-	cache += id -> blog
-        sessions += id -> (me :: sessions.getOrElse(id, Nil))
+	cache += (id -> blog)
+        sessions += (id -> (me :: sessions.getOrElse(id, Nil)))
         loop(cache, sessions)
       case AddEntry(e, id) => 
 	// When an Entry is added, place it into the cache and reply to the clients with it.
-	cache += id -> (e :: cache.getOrElse(id, getEntries(id)))
+	cache += (id -> (e :: cache.getOrElse(id, getEntries(id))))
         // Now we have to notify all the listeners
         sessions.getOrElse(id, Nil).foreach(_ ! BlogUpdate(cache.getOrElse(id, Nil)))
 	loop(cache, sessions)
       case DeleteEntry(e, id) =>
 	// When an Entry is deleted
-	cache += id -> cache.getOrElse(id, getEntries(id)).remove(_ == e)
+	cache += (id -> cache.getOrElse(id, getEntries(id)).remove(_ == e))
         sessions.getOrElse(id, Nil).foreach(_ ! BlogUpdate(cache.getOrElse(id, Nil)))
 	loop(cache, sessions)
       case EditEntry(e, id) =>
 	// It's easier to just re-query the database than to slice an dice the list. (for now)
-	cache += id -> getEntries(id)
+	cache += (id -> getEntries(id))
 	loop(cache, sessions)
       case _ => loop(cache, sessions)
     }

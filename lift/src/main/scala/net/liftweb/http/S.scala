@@ -736,7 +736,7 @@ object S {
   def idMessages(f: => List[(NodeSeq, Can[String])]):List[(String, List[NodeSeq])] = {
     val res = new HashMap[String, List[NodeSeq]]
     f filter(  _._2.isEmpty == false) foreach (_ match {
-      case (node, id) => val key = id open_!; res += key -> (res.getOrElseUpdate(key, Nil) ::: List(node))
+      case (node, id) => val key = id open_!; res += (key -> (res.getOrElseUpdate(key, Nil) ::: List(node)))
     })
        
     res toList

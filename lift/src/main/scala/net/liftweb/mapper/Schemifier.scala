@@ -189,7 +189,7 @@ object Schemifier {
 
       
       // FIXME deal with column types
-      (field.dbColumnNames(field.name) diff cols).foreach {
+      (field.dbColumnNames(field.name) -- cols).foreach {
         colName =>
           cmds += maybeWrite(performWrite, logFunc, connection) {
             () => "ALTER TABLE "+table.dbTableName+" ADD COLUMN "+field.fieldCreatorString(connection.driverType, colName)

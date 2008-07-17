@@ -193,7 +193,7 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
         loop
       }
       case NewChat(c) => {
-        chats += c.getParticipant -> Nil
+        chats += (c.getParticipant -> Nil)
         loop
       }
       case RecvMsg(chat, msg) => {
@@ -206,7 +206,7 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
         val e: Array[Object] = r.getEntries.toArray.asInstanceOf[Array[Object]]
         for (entry <- e) {
           val user: String = entry.asInstanceOf[RosterEntry].getUser
-          rosterMap += user -> r.getPresence(user)
+          rosterMap += (user -> r.getPresence(user))
         }
         loop
       }
@@ -216,7 +216,7 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
         // It's best practice to ask the roster for the presence. This is because
         // multiple presences can exist for one user and the roster knows which one
         // has priority.
-        rosterMap += user -> roster.getPresence(user)
+        rosterMap += (user -> roster.getPresence(user))
         loop
       }
       case RosterEntriesDeleted(e) => {

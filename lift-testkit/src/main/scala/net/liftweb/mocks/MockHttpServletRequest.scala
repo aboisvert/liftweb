@@ -96,7 +96,7 @@ class MockHttpServletRequest extends HttpServletRequest {
     Helpers.toLong(headers(h))
   }
   def setDateHeader(s: String, l: Long) {
-    headers += s -> l.toString
+    headers += (s -> l.toString)
   }
   def getCookies = cookies.toArray
   def getAuthType = authType
@@ -111,7 +111,7 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getLocales = new Vector[ZZ](Arrays.asList(Locale.getAvailableLocales.asInstanceOf[Array[ZZ]])).elements
   def getLocale = locale
   def removeAttribute(key: String) = attr -= key
-  def setAttribute(key: String, value: Any) = attr += key -> value
+  def setAttribute(key: String, value: Any) = attr += (key -> value)
   def getRemoteHost = remoteHost
   def getRemoteAddr = remoteAddr
   def getReader = reader

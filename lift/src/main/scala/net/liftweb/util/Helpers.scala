@@ -130,7 +130,7 @@ object Helpers extends TimeHelpers with BindHelpers {
     val ret = new HashMap[A,B];
     in.keys.foreach {
       k =>
-      ret += k -> in(k)
+      ret += (k -> in(k))
     }
     
     ret
