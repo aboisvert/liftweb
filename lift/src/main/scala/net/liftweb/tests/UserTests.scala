@@ -111,7 +111,7 @@ class UserTests extends TestCase("User Tests") {
 }
 
 
-object User extends User with KeyedMetaMapper[long, User] {
+object User extends User with KeyedMetaMapper[Long, User] {
   override def dbTableName = "users"
     
 }
@@ -133,6 +133,6 @@ class Pet extends KeyedMapper[Long, Pet] {
   object icon extends MappedBinary(this)
 }
 
-object Pet extends Pet with KeyedMetaMapper[long, Pet] {
+object Pet extends Pet with KeyedMetaMapper[Long, Pet] {
   override def dbTableName = "pets"
 }

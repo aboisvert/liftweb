@@ -186,7 +186,7 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   
   def asJsExp = JE.Num(is)
   
-  protected def real_i_set_!(value : int) : int = {
+  protected def real_i_set_!(value : Int) : Int = {
     if (value != data) {
       data = value
       this.dirty_?( true)
@@ -198,7 +198,7 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
   
   def +(in: Int): Int = is + in
       
-  def real_convertToJDBCFriendly(value: int): Object = new java.lang.Integer(value)
+  def real_convertToJDBCFriendly(value: Int): Object = new java.lang.Integer(value)
   
   
   def jdbcFriendly(field : String) = new java.lang.Integer(is)
@@ -218,7 +218,7 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
     }
   }
   
-  protected def i_obscure_!(in : int) = 0
+  protected def i_obscure_!(in : Int) = 0
   
   private def st(in: Int) {
     data = in

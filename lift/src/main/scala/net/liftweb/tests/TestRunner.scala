@@ -17,7 +17,7 @@ import scala.actors._
 
 trait Runner {
   def name: String
-  def setupDB: unit
+  def setupDB: Unit
 }
 
 object TestRunner {

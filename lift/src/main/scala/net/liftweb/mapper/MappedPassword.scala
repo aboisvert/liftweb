@@ -119,16 +119,16 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
     }
   }
   
-  def buildSetLongValue(accessor : Method, columnName : String) : (T, long, boolean) => unit = {
+  def buildSetLongValue(accessor : Method, columnName : String) : (T, Long, Boolean) => Unit = {
     if (columnName.endsWith("_slt")) {
-      {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = if (isNull) null else v.toString}}
+      {(inst : T, v: Long, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = if (isNull) null else v.toString}}
     } else if (columnName.endsWith("_pw")) {
-      {(inst : T, v: long, isNull: boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = if (isNull) null else v.toString}}      
+      {(inst : T, v: Long, isNull: Boolean ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = if (isNull) null else v.toString}}      
     } else {
       null
     }
   }
-  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => unit  = {
+  def buildSetStringValue(accessor : Method, columnName : String) : (T, String) => Unit  = {
     if (columnName.endsWith("_slt")) {
       {(inst : T, v: String ) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = v}}
     } else if (columnName.endsWith("_pw")) {
@@ -137,14 +137,14 @@ class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String
       null
     }
   }
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => unit   = {
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit   = {
     null
   }
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, boolean, boolean) => unit   = {
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit   = {
     null
   }
   
-  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => unit = {
+  def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => Unit = {
     if (columnName.endsWith("_slt")) {
       inst match {
 	case null => {(inst : T, v : AnyRef) => {}}

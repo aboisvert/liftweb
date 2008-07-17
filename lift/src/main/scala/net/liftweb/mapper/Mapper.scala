@@ -23,7 +23,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   private[mapper] var addedPostCommit = false
   
   def getSingleton : MetaMapper[A];
-  final def safe_? : boolean = {
+  final def safe_? : Boolean = {
     Safe.safe_?(secure_#)
   }
   
@@ -61,7 +61,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
     this
   }
   
-  def save(): boolean = {
+  def save(): Boolean = {
     runSafe {
       getSingleton.save(this)
     }
@@ -98,7 +98,7 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   }
   */
   
-  def delete_! : boolean = {
+  def delete_! : Boolean = {
     if (!db_can_delete_?) false else
     runSafe {
       was_deleted_? = getSingleton.delete_!(this)

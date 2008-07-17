@@ -22,7 +22,7 @@ import java.sql.Connection
 /**
  * The singleton that has methods for accessing the database
  */
-trait MetaWikiEntry extends WikiEntry with KeyedMetaMapper[long, WikiEntry]
+trait MetaWikiEntry extends WikiEntry with KeyedMetaMapper[Long, WikiEntry]
 object WikiEntry extends MetaWikiEntry {
   override def dbTableName = "wikientry" // define the DB table name
 

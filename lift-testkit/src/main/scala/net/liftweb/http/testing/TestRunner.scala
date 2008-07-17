@@ -12,7 +12,7 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
   def setup[T](what: List[Item]): (() => TestResults, (String,() => T) => T)  = {
   val log = new ListBuffer[Tracker]
   
-   def beforeAssert(name: String): unit = synchronized {
+   def beforeAssert(name: String): Unit = synchronized {
       log += Tracker(name, true, true, true, Empty, Nil)
       beforeAssertListeners.foreach(_(name))
     }
@@ -134,8 +134,8 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
 case class TestResults(res: List[Tracker]) {
   def stats = {
     val rev = res.reverse
-    val start = res.map(_.at).reduceLeft((a: long,b: long) => if (a < b) a else b)
-    val end = res.map(_.at).reduceLeft((a: long,b: long) => if (a > b) a else b)
+    val start = res.map(_.at).reduceLeft((a: Long, b: Long) => if (a < b) a else b)
+    val end = res.map(_.at).reduceLeft((a: Long, b: Long) => if (a > b) a else b)
     val assertCnt = res.filter(a => a.isAssert && !a.isBegin).length
     val testCnt = res.filter(a => a.isTest && !a.isBegin).length
     val failedAsserts = res.filter(a => a.isAssert && !a.success)

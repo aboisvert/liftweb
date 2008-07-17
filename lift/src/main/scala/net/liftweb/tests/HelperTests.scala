@@ -48,7 +48,7 @@ class HelperTests extends TestCase("Helper Tests") {
     assert((3.days) == (3L * 24L * 60L * 60L * 1000L))
     assert(52.weeks == (52L * 7L * 24L * 60L * 60L * 1000L))
     
-    val min5:long = (5.minutes.later.getTime - System.currentTimeMillis) - 5.minutes
+    val min5: Long = (5.minutes.later.getTime - System.currentTimeMillis) - 5.minutes
     
     assert(min5 < 2L)
     

@@ -322,12 +322,12 @@ object Helpers extends TimeHelpers with BindHelpers {
   /**
   * Convert a 
   */
-  def toBoolean(in: Any): boolean = {
+  def toBoolean(in: Any): Boolean = {
     in match {
       case null => false
-      case b : boolean => b
-      case i: int => i != 0
-      case lo: long => lo != 0
+      case b : Boolean => b
+      case i: Int => i != 0
+      case lo: Long => lo != 0
       case n : Number => n.intValue != 0
       case s : String => {
         val sl = s.toLowerCase
@@ -405,7 +405,7 @@ object Helpers extends TimeHelpers with BindHelpers {
   }
   
   def toByteArrayInputStream(in: InputStream) = {
-    val ba = new Array[byte](4096)
+    val ba = new Array[Byte](4096)
     val bos = new ByteArrayOutputStream
     var len = 0
     while (len >= 0) {
@@ -439,11 +439,11 @@ object Helpers extends TimeHelpers with BindHelpers {
     new String((new Base64) encode (MessageDigest.getInstance("SHA")).digest(in.getBytes("UTF-8")))
   }
   
-  def hash(in : Array[Byte]) : Array[byte] = {
+  def hash(in : Array[Byte]) : Array[Byte] = {
     (MessageDigest.getInstance("SHA")).digest(in)
   }
   
-  def hash256(in : Array[Byte]) : Array[byte] = {
+  def hash256(in : Array[Byte]) : Array[Byte] = {
     (MessageDigest.getInstance("SHA-256")).digest(in)
   }
   
@@ -465,13 +465,13 @@ object Helpers extends TimeHelpers with BindHelpers {
   def hexEncode(in: Array[Byte]): String = {
     val sb = new StringBuilder
     val len = in.length
-    def addDigit(in: Array[byte], pos: int, len: int, sb: StringBuilder) {
+    def addDigit(in: Array[Byte], pos: Int, len: Int, sb: StringBuilder) {
       if (pos < len) {
-        val b: int = in(pos)
+        val b: Int = in(pos)
         val msb = (b & 0xf0) >> 4
         val lsb = (b & 0x0f)
-        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[char] else ('a' + (msb - 10)).asInstanceOf[char]))
-        sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[char] else ('a' + (lsb - 10)).asInstanceOf[char]))
+        sb.append((if (msb < 10) ('0' + msb).asInstanceOf[Char] else ('a' + (msb - 10)).asInstanceOf[Char]))
+        sb.append((if (lsb < 10) ('0' + lsb).asInstanceOf[Char] else ('a' + (lsb - 10)).asInstanceOf[Char]))
         
         addDigit(in, pos + 1, len, sb)
       }
@@ -486,7 +486,7 @@ object Helpers extends TimeHelpers with BindHelpers {
   
   def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
-    val ba = new Array[byte](4096)
+    val ba = new Array[Byte](4096)
     
     def readOnce {
       val len = in.read(ba)
@@ -513,7 +513,7 @@ object Helpers extends TimeHelpers with BindHelpers {
   
   def readWholeThing(in: Reader): String = {
     val bos = new StringBuilder
-    val ba = new Array[char](4096)
+    val ba = new Array[Char](4096)
     
     def readOnce {
       val len = in.read(ba)

@@ -26,7 +26,7 @@ class UserActor extends Actor {
   
   // Information about the user
   private var userName: String = _
-  private var userId: long = _
+  private var userId: Long = _
   private var fullName: String = _
   
   // the list of the latest messages for the user
@@ -220,7 +220,7 @@ case class SendMessage(text: String, src: String) extends UserMsg
 * @param who - who sent the message (the user name)
 * @param src - how was the message sent
 */
-case class Message(text: String, when: long, who: String, src: String) extends UserMsg
+case class Message(text: String, when: Long, who: String, src: String) extends UserMsg
 
 /**
 * Tell the UserActor to set itself up with the given user id, name, and full name
@@ -228,7 +228,7 @@ case class Message(text: String, when: long, who: String, src: String) extends U
 * @param userName - the name of the user (e.g., john)
 * @param fullName - the first and last name of the user "John Q. Public"
 */
-case class Setup(userId: long, userName: String, fullName: String) extends UserMsg
+case class Setup(userId: Long, userName: String, fullName: String) extends UserMsg
 
 /**
 * Add a timeline viewer
@@ -325,6 +325,6 @@ case class RemoveFriend(name: String) extends UserMsg
  * @param name the user name
  * @param fullName the full name of the user 
  */
-case class UserIdInfo(id: long, name: String, fullName: String, friends: List[String])
+case class UserIdInfo(id: Long, name: String, fullName: String, friends: List[String])
 
 case object SendRandomMessage

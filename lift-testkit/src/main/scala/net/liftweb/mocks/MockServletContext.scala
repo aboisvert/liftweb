@@ -124,7 +124,7 @@ class MockServletInputStream(is: InputStream) extends ServletInputStream {
  * @author Steve Jenson (stevej@pobox.com)
  */
 class MockServletOutputStream(os: ByteArrayOutputStream) extends ServletOutputStream {
-  def write(b: int) {
+  def write(b: Int) {
     os.write(b)
   }
 }

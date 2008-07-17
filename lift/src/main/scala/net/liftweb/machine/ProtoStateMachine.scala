@@ -84,7 +84,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     * item from the database.  Override this method (please call super at the end of your method)
     * to do any cleanup.
     */
-  def terminate(from: StV,to: StV,event: Meta#Event): unit = {
+  def terminate(from: StV,to: StV,event: Meta#Event): Unit = {
     this.delete_!
   }
     
@@ -93,7 +93,7 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   /**
     * Process an event
     */
-  def processEvent(event: Meta#Event):unit = {
+  def processEvent(event: Meta#Event): Unit = {
     synchronized {
       eventQueue += event
     }
@@ -224,20 +224,20 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   }
   
   abstract class ATransition(val to: StV,val on: PartialFunction[Meta#Event, Any]) {
-    def testGuard(who: MyType, from: StV, to: StV, what: Meta#Event): boolean =
+    def testGuard(who: MyType, from: StV, to: StV, what: Meta#Event): Boolean =
       _guard.isEmpty || _guard.exists(_(who, from, to, what))
       
     def performAction(who: MyType, from: StV, to: StV, what: Meta#Event) {
       _action.foreach(_(who, from, to, what))
     }
     
-    def performSetup(who: MyType, to: StV): unit = _setup.foreach(_(who, to))
+    def performSetup(who: MyType, to: StV): Unit = _setup.foreach(_(who, to))
       
     private var _setup: List[(MyType, StV) => Any] = Nil
     private var _action: List[(MyType, StV, StV, Meta#Event) => Any] = Nil  
-    private var _guard: List[(MyType, StV, StV, Meta#Event) => boolean] = Nil
+    private var _guard: List[(MyType, StV, StV, Meta#Event) => Boolean] = Nil
     def action(act: (MyType, StV, StV, Meta#Event) => Any): this.type = {_action = act :: _action; this}
-    def guard(gurd: (MyType, StV, StV, Meta#Event) => boolean): this.type = {_guard = gurd :: _guard; this}
+    def guard(gurd: (MyType, StV, StV, Meta#Event) => Boolean): this.type = {_guard = gurd :: _guard; this}
     def setup(setp: (MyType, StV) => Any): this.type = {_setup = setp :: _setup; this}
   }
   

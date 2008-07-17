@@ -222,12 +222,12 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   /**
    * Called when a column has been added to the database via Schemifier
    */
-  def dbAddedColumn: Can[() => unit] = Empty
+  def dbAddedColumn: Can[() => Unit] = Empty
 
   /**
    * Called when a column has indexed via Schemifier
    */
-  def dbAddedIndex: Can[() => unit] = Empty                                 
+  def dbAddedIndex: Can[() => Unit] = Empty                                 
   
   /**
    * override this method in indexed fields to indicate that the field has been saved

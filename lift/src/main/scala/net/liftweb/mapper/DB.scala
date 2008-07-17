@@ -80,7 +80,7 @@ object DB {
   
   
   
-  private def releaseConnection(conn : SuperConnection) : unit = conn.close
+  private def releaseConnection(conn : SuperConnection) : Unit = conn.close
   
   private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
     var ret = info.get(name) match {
@@ -222,7 +222,7 @@ object DB {
       }} match {case (time, (query, res)) => runLogger(query, time); res}
   }
   
-  def prepareStatement[T](statement : String, keys: int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
+  def prepareStatement[T](statement : String, keys: Int, conn: SuperConnection)(f : (PreparedStatement) => T) : T = {
     Helpers.calcTime{
       val st = conn.prepareStatement(statement, keys)
       queryTimeout.foreach(to => st.setQueryTimeout(to))

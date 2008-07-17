@@ -14,7 +14,7 @@ import java.util.regex._
 /**
  * The singleton that has methods for accessing the database
  */
-object User extends User with KeyedMetaMapper[long, User] {
+object User extends User with KeyedMetaMapper[Long, User] {
   override def dbTableName = "users" // define the DB table name
   
   // define the order fields will appear in forms and output
@@ -27,8 +27,8 @@ object User extends User with KeyedMetaMapper[long, User] {
   /**
     * Calculate a random persiod of at least 2 minutes and at most 8 minutes
     */
-  def randomPeriod: long = 2.minutes + randomLong(6.minutes)
-  // def randomPeriod: long = 15.seconds + randomLong(45.seconds)
+  def randomPeriod: Long = 2.minutes + randomLong(6.minutes)
+  // def randomPeriod: Long = 15.seconds + randomLong(45.seconds)
     
   def shouldAutogen_? = false
       

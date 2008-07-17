@@ -8,17 +8,17 @@ object Facebook {
   object SessionKey extends SessionVar[Can[String]](sessionKey)
   // object API extends SessionVar[Can[FacebookClient]](SessionKey.map(k => new FacebookClient(k)))
   
-  def canvasPage_? : boolean = S.param("fb_sig_in_canvas") match {
+  def canvasPage_? : Boolean = S.param("fb_sig_in_canvas") match {
     case Full(num) if toInt(num) == 1 => true
     case _ => false
   }
   
-  def addedApplication_? : boolean = S.param("fb_sig_added") match {
+  def addedApplication_? : Boolean = S.param("fb_sig_added") match {
     case Full(num) if toInt(num) == 1 => true
     case _ => false
   }
   
-  def loggedIn_? : boolean = S.param("fb_sig_user") match {
+  def loggedIn_? : Boolean = S.param("fb_sig_user") match {
     case Full(num) if toInt(num) > 0 => true
     case _ => false
   }

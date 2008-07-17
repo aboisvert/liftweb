@@ -19,26 +19,26 @@ object Safe {
    * Get the next "safe" number
    */
   def next = rand.nextLong
-  private val threadLocal = new ThreadGlobal[long]
+  private val threadLocal = new ThreadGlobal[Long]
   
   /**
    * Is the current context "safe" for the object with the
    * given safety code?
    */
-  def safe_?(test : long) : boolean = test == threadLocal.value
+  def safe_?(test : Long) : Boolean = test == threadLocal.value
 
   /**
    * Marks access to a given object as safe for the duration of the function
    */
-  def runSafe[T](x : long)(f : => T) : T = {
+  def runSafe[T](x : Long)(f : => T) : T = {
      threadLocal.doWith(x)(f)
   }
   
 
-  def randomString(len: int) = Helpers.randomString(len)
+  def randomString(len: Int) = Helpers.randomString(len)
 
   /*
-   def randomString(len : int) : String = {
+   def randomString(len : Int) : String = {
    len match {
    case 0 => ""
    case _ => randomChar + randomString(len - 1)

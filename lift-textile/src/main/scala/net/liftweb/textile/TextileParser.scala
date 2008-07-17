@@ -115,7 +115,7 @@ import scala.collection.mutable.HashMap
    * the thing that actually does the textile parsing
    */
   class TextileParsers(wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean) extends Parsers with ImplicitConversions {
-    type Elem = char
+    type Elem = Char
 
     type UnitParser=Parser[Unit]
 /*
@@ -135,7 +135,7 @@ import scala.collection.mutable.HashMap
     
     def document : Parser[Lst] = rep(paragraph) ^^ Lst
     // final val EofCh = '\032'
-    private def chrExcept(cs: Char*): Parser[char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
+    private def chrExcept(cs: Char*): Parser[Char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
     private def mkString(cs: List[Any]) = cs.mkString("")
 
     implicit def str2chars(s: String): List[Char] = stringWrapper(s).toList
@@ -315,7 +315,7 @@ import scala.collection.mutable.HashMap
     /**
     * a valid character in a URL
     */
-    def validUrlChar(c : char) : boolean = {
+    def validUrlChar(c : Char) : Boolean = {
       Character.isLetterOrDigit(c) || c == '/' || c == '%' || c == '&' || c == '?' || c == '#' || 
       c == '$' || c == '.' ||
       c == '-' || c == ':' || c == '_'
@@ -352,9 +352,9 @@ import scala.collection.mutable.HashMap
     def copyright : Parser[Textile] = '(' ~ (accept('c') | 'C') ~ ')' ^^^ Copyright()  // accept necesary because of clash with | on char's
     
     
-    def validTagChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
-    def validStyleChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
-    def validClassChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.'
+    def validTagChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
+    def validStyleChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
+    def validClassChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '.'
 
     def validTag = rep1(elem("valid tag character", validTagChar)) ^^ mkString ^? {case s if isValidTag(s) => s}
     
@@ -381,9 +381,9 @@ import scala.collection.mutable.HashMap
 
     def tag_attr = single_quote_attr | double_quote_attr
     
-    def attr_name(c : char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
+    def attr_name(c : Char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
 
-    def attr_value(c : char) = {c >= ' '}
+    def attr_value(c : Char) = {c >= ' '}
 
     /**
     * an attribute with single quotes
@@ -421,10 +421,10 @@ import scala.collection.mutable.HashMap
     def single_quote : Parser[Textile] = '\'' ^^^ SingleQuote()
 
     
-    def bullet(depth : int, numbered : boolean) : Parser[Textile] = {
+    def bullet(depth : Int, numbered : Boolean) : Parser[Textile] = {
       val oneBullet = if (numbered) accept('#') else accept('*')
         
-      def bullet_line(depth : int, numbered : boolean) : Parser[Textile] =  beginlS ~> repN(depth+1, oneBullet) ~> rep(not(discard('\n')) ~> lineElem) <~ '\n' ^^ {
+      def bullet_line(depth : Int, numbered : Boolean) : Parser[Textile] =  beginlS ~> repN(depth+1, oneBullet) ~> rep(not(discard('\n')) ~> lineElem) <~ '\n' ^^ {
         case elms => BulletLine(reduceCharBlocks(elms), Nil) }
     
       bullet_line(depth, numbered) ~
@@ -555,7 +555,7 @@ import scala.collection.mutable.HashMap
     def table_header : Parser[Textile] = (beginlS ~> opt(row_def)) ~ (rep(' ') ~> accept("|_.") ~> rep1sep(table_element(true), accept("_.")) <~ rep(' ') <~ '\n') ^^ {
       case td ~ re => TableRow(re, td.map(_.attrs) getOrElse Nil)}
     
-    def table_element(isHeader : boolean) : Parser[Textile] = opt(row_def) ~ (rep(not(discard(accept('|') | '\n')) ~> lineElem) <~ '|') ^^ {
+    def table_element(isHeader : Boolean) : Parser[Textile] = opt(row_def) ~ (rep(not(discard(accept('|') | '\n')) ~> lineElem) <~ '|') ^^ {
       case td ~ el => TableElement(reduceCharBlocks(el), isHeader, td.map(_.attrs) getOrElse Nil)}
 
     def paragraph : Parser[Textile] =  
@@ -569,14 +569,14 @@ import scala.collection.mutable.HashMap
   }
   
   case class Style(elms : List[StyleElem]) extends Attribute {
-    def name(which : int) : String = "style"
-    def value(which : int) : String = elms.mkString("",";","")
+    def name(which : Int) : String = "style"
+    def value(which : Int) : String = elms.mkString("",";","")
   }
 
   abstract class Attribute extends Textile {
     def toHtml = null
-    def name(which : int) : String
-    def value(which : int) : String
+    def name(which : Int) : String
+    def value(which : Int) : String
     def fieldCnt = 1
     def toList : List[Pair[String, String]] = {
       var ret : List[Pair[String,String]] = Nil
@@ -592,19 +592,19 @@ import scala.collection.mutable.HashMap
   }
 
   case class AnyAttribute(name : String, value : String) extends Attribute {
-    def name(which : int) : String = name
-    def value(which : int) : String = value
+    def name(which : Int) : String = name
+    def value(which : Int) : String = value
   }
 
   case class ClassAndId(className : String, idName : String) extends Attribute {
     override def fieldCnt = 2
-    def name(which : int) : String = {
+    def name(which : Int) : String = {
       which match {
         case 0 => if ((className ne null) && className.length > 0) "class" else null
         case 1 => if ((idName ne null) && idName.length > 0) "id" else null
       }
     }
-    def value(which : int) : String = {
+    def value(which : Int) : String = {
       which match {
         case 0 => if ((className ne null) && className.length > 0) className else null
         case 1 => if ((idName ne null) && idName.length > 0) idName else null
@@ -614,13 +614,13 @@ import scala.collection.mutable.HashMap
   }
 
   case class Lang(lang : String) extends Attribute {
-    def name(which : int) : String = "lang"
-    def value(which : int) : String = lang
+    def name(which : Int) : String = "lang"
+    def value(which : Int) : String = lang
   }
 
-  case class Align(align : char) extends Attribute {
-    def name(which : int) : String = "style"
-    def value(which : int) : String = {
+  case class Align(align : Char) extends Attribute {
+    def name(which : Int) : String = "style"
+    def value(which : Int) : String = {
       align match {
         case '<' => "text-align:left";
         case '>' => "text-align:right";
@@ -633,9 +633,9 @@ import scala.collection.mutable.HashMap
     }
   }
 
-  case class Em(cnt : int) extends Attribute {
-    def name(which : int) : String = "style"
-    def value(which : int) : String = {
+  case class Em(cnt : Int) extends Attribute {
+    def name(which : Int) : String = "style"
+    def value(which : Int) : String = {
       if (cnt > 0) "padding-left:"+cnt+"em" else "padding-right:"+(-cnt)+"em"
     }
   }
@@ -682,8 +682,8 @@ import scala.collection.mutable.HashMap
 
   case class Lst(elems : List[Textile]) extends ATextile(elems, Nil) {
     /*
-    def performOnWikiAnchor(f : (WikiAnchor) => Any) : unit = {
-      def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : unit = {
+    def performOnWikiAnchor(f : (WikiAnchor) => Any) : Unit = {
+      def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : Unit = {
         in match {
           case (s : WikiAnchor) :: rest => {f(s) ; findWikiAnchor(rest, f)}
           case (s : ATextile) :: rest => {findWikiAnchor(s.theElems, f); findWikiAnchor(rest, f)}
@@ -775,7 +775,7 @@ import scala.collection.mutable.HashMap
     def toHtml : NodeSeq = Unparsed("&#174;")
   }
 
-  case class Header(what : int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
+  case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*)  ++ Text("\n")
   }
 
@@ -840,13 +840,13 @@ import scala.collection.mutable.HashMap
     }
   }
 
-  case class TableElement(elems : List[Textile], isHeader : boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
+  case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
       XmlElem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
-  case class Bullet(elems : List[Textile], numbered : boolean) extends ATextile(elems, Nil) {
+  case class Bullet(elems : List[Textile], numbered : Boolean) extends ATextile(elems, Nil) {
     override def toHtml : NodeSeq = {
       XmlElem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
     }
@@ -1194,11 +1194,11 @@ We use CSS(Cascading Style Sheets).
    * the thing that actually does the textile parsing
    */
    class TextileParsers(wikiUrlFunc: Option[RewriteFunc]) extends Parsers with ImplicitConversions {
-     type Elem = char
+     type Elem = Char
      
      def document : Parser[Lst] = rep(paragraph) ^^ Lst
      // final val EofCh = '\032'
-     private def chrExcept(cs: Char*): Parser[char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
+     private def chrExcept(cs: Char*): Parser[Char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
      private def mkString(cs: List[Any]) = cs.mkString("")
      
      implicit def str2chars(s: String): List[Char] = stringWrapper(s).toList
@@ -1371,7 +1371,7 @@ We use CSS(Cascading Style Sheets).
      /**
      * a valid character in a URL
      */
-     def validUrlChar(c : char) : boolean = {
+     def validUrlChar(c : Char) : Boolean = {
        Character.isLetterOrDigit(c) || c == '/' || c == '%' || c == '&' || c == '?' || c == '#' || 
        c == '$' || c == '.' || c == '=' ||
        c == '-' || c == ':' || c == '_'
@@ -1408,9 +1408,9 @@ We use CSS(Cascading Style Sheets).
      def copyright : Parser[Textile] = '(' ~ (accept('c') | 'C') ~ ')' ^^ Copyright  // accept necesary because of clash with | on char's
      
      
-     def validTagChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
-     def validStyleChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
-     def validClassChar(c : char) = Character.isDigit(c) || Character.isLetter(c) || c == '.'
+     def validTagChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
+     def validStyleChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '.' || c == ' ' || c == ';' || c == '#'
+     def validClassChar(c : Char) = Character.isDigit(c) || Character.isLetter(c) || c == '.'
      
      def validTag = rep1(elem("valid tag character", validTagChar)) ^^ mkString ^? {case s if isValidTag(s) => s}
      
@@ -1437,9 +1437,9 @@ We use CSS(Cascading Style Sheets).
       
       def tag_attr = single_quote_attr | double_quote_attr
       
-      def attr_name(c : char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
+      def attr_name(c : Char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
       
-      def attr_value(c : char) = {c >= ' '}
+      def attr_value(c : Char) = {c >= ' '}
       
       
       /**
@@ -1478,10 +1478,10 @@ We use CSS(Cascading Style Sheets).
       def single_quote : Parser[Textile] = '\'' ^^ SingleQuote
       
       
-      def bullet(depth : int, numbered : boolean) : Parser[Textile] = {
+      def bullet(depth : Int, numbered : Boolean) : Parser[Textile] = {
         val oneBullet: UnitParser = if (numbered) '#' else '*'
         
-        def bullet_line(depth : int, numbered : boolean) : Parser[Textile] =  beginlS ~ repN(depth+1, oneBullet) ~ rep(not('\n') ~ lineElem) ~ '\n' ^^ {
+        def bullet_line(depth : Int, numbered : Boolean) : Parser[Textile] =  beginlS ~ repN(depth+1, oneBullet) ~ rep(not('\n') ~ lineElem) ~ '\n' ^^ {
         case elms => BulletLine(reduceCharBlocks(elms), Nil) }
         
         bullet_line(depth, numbered) ~
@@ -1610,7 +1610,7 @@ We use CSS(Cascading Style Sheets).
       def table_header : Parser[Textile] = beginlS ~ opt(row_def) ~ rep(' ') ~ accept("|_.") ~ rep1sep(table_element(true), accept("_.")) ~ rep(' ') ~ '\n' ^^ {
       case td ~ re => TableRow(re, td.map(_.attrs) getOrElse Nil)}
       
-      def table_element(isHeader : boolean) : Parser[Textile] = opt(row_def) ~ rep(not(accept('|') | '\n') ~ lineElem) ~ '|' ^^ {
+      def table_element(isHeader : Boolean) : Parser[Textile] = opt(row_def) ~ rep(not(accept('|') | '\n') ~ lineElem) ~ '|' ^^ {
       case td ~ el => TableElement(reduceCharBlocks(el), isHeader, td.map(_.attrs) getOrElse Nil)}
       
       def paragraph : Parser[Textile] = 
@@ -1624,14 +1624,14 @@ We use CSS(Cascading Style Sheets).
    }
    
    case class Style(elms : List[StyleElem]) extends Attribute {
-     def name(which : int) : String = "style"
-     def value(which : int) : String = elms.mkString("",";","")
+     def name(which : Int) : String = "style"
+     def value(which : Int) : String = elms.mkString("",";","")
    }
    
    abstract class Attribute extends Textile {
      def toHtml = null
-     def name(which : int) : String
-     def value(which : int) : String
+     def name(which : Int) : String
+     def value(which : Int) : String
      def fieldCnt = 1
      def toList : List[Pair[String, String]] = {
        var ret : List[Pair[String,String]] = Nil
@@ -1647,19 +1647,19 @@ We use CSS(Cascading Style Sheets).
    }
    
    case class AnyAttribute(name : String, value : String) extends Attribute {
-     def name(which : int) : String = name
-     def value(which : int) : String = value
+     def name(which : Int) : String = name
+     def value(which : Int) : String = value
    }
    
    case class ClassAndId(className : String, idName : String) extends Attribute {
      override def fieldCnt = 2
-     def name(which : int) : String = {
+     def name(which : Int) : String = {
        which match {
          case 0 => if ((className ne null) && className.length > 0) "class" else null
          case 1 => if ((idName ne null) && idName.length > 0) "id" else null
        }
      }
-     def value(which : int) : String = {
+     def value(which : Int) : String = {
        which match {
          case 0 => if ((className ne null) && className.length > 0) className else null
          case 1 => if ((idName ne null) && idName.length > 0) idName else null
@@ -1669,13 +1669,13 @@ We use CSS(Cascading Style Sheets).
    }
    
    case class Lang(lang : String) extends Attribute {
-     def name(which : int) : String = "lang"
-     def value(which : int) : String = lang
+     def name(which : Int) : String = "lang"
+     def value(which : Int) : String = lang
    }
    
-   case class Align(align : char) extends Attribute {
-     def name(which : int) : String = "style"
-     def value(which : int) : String = {
+   case class Align(align : Char) extends Attribute {
+     def name(which : Int) : String = "style"
+     def value(which : Int) : String = {
        align match {
          case '<' => "text-align:left";
          case '>' => "text-align:right";
@@ -1688,9 +1688,9 @@ We use CSS(Cascading Style Sheets).
      }
    }
    
-   case class Em(cnt : int) extends Attribute {
-     def name(which : int) : String = "style"
-     def value(which : int) : String = {
+   case class Em(cnt : Int) extends Attribute {
+     def name(which : Int) : String = "style"
+     def value(which : Int) : String = {
        if (cnt > 0) "padding-left:"+cnt+"em" else "padding-right:"+(-cnt)+"em"
      }
    }
@@ -1737,8 +1737,8 @@ We use CSS(Cascading Style Sheets).
    
    case class Lst(elems : List[Textile]) extends ATextile(elems, Nil) {
      /*
-     def performOnWikiAnchor(f : (WikiAnchor) => Any) : unit = {
-     def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : unit = {
+     def performOnWikiAnchor(f : (WikiAnchor) => Any) : Unit = {
+     def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : Unit = {
      in match {
      case (s : WikiAnchor) :: rest => {f(s) ; findWikiAnchor(rest, f)}
      case (s : ATextile) :: rest => {findWikiAnchor(s.theElems, f); findWikiAnchor(rest, f)}
@@ -1830,7 +1830,7 @@ We use CSS(Cascading Style Sheets).
      def toHtml : NodeSeq = Unparsed("&#174;")
    }
    
-   case class Header(what : int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
+   case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
      override def toHtml : NodeSeq = Elem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*)  ++ Text("\n")
    }
    
@@ -1895,13 +1895,13 @@ We use CSS(Cascading Style Sheets).
      }
    }
    
-   case class TableElement(elems : List[Textile], isHeader : boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
+   case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
      override def toHtml : NodeSeq = {
        Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
      }
    }
    
-   case class Bullet(elems : List[Textile], numbered : boolean) extends ATextile(elems, Nil) {
+   case class Bullet(elems : List[Textile], numbered : Boolean) extends ATextile(elems, Nil) {
      override def toHtml : NodeSeq = {
        Elem(null, if (numbered) "ol" else "ul", fromStyle(Nil), TopScope, flattenAndDropLastEOL(elems) : _*) ++ Text("\n")
      }

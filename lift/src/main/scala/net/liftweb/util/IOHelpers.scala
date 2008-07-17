@@ -35,7 +35,7 @@ trait IoHelpers {
   }
     def readWholeThing(in: Reader): String = {
     val bos = new StringBuilder
-    val ba = new Array[char](4096)
+    val ba = new Array[Char](4096)
     
     def readOnce {
       val len = in.read(ba)
@@ -53,7 +53,7 @@ trait IoHelpers {
   
   def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
-    val ba = new Array[byte](4096)
+    val ba = new Array[Byte](4096)
     
     def readOnce {
       val len = in.read(ba)

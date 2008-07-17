@@ -24,7 +24,7 @@ object RE {
   def apply(in: String) = new REDoer(in, Empty)
   def apply[T](in: String, func: PartialFunction[(T, List[String]), T]) = new REDoer(in, Full(func))
 
-  implicit def matchResToBoolean(in: REMatcher): boolean = {
+  implicit def matchResToBoolean(in: REMatcher): Boolean = {
     in match {
       case null => false
       case _ => in.matches

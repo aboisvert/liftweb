@@ -79,7 +79,7 @@ object UserList {
   def remove(name: String) = writeLock(set -= name)
   
   // Find a random set of about cnt users
-  def randomUsers(cnt: int) = {
+  def randomUsers(cnt: Int) = {
     val percent = if (set.size == 0) 1.d else cnt.toDouble / set.size.toDouble 
     readLock(set.filter(z => shouldShow(percent)).map(_._1))
   }

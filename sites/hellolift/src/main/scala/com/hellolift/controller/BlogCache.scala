@@ -12,14 +12,14 @@ import com.hellolift.model.Entry
 class BlogCache extends Actor {
   def act = loop(Map(), Map())
 
-  def getEntries(id : long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, false), MaxRows(20))
+  def getEntries(id : Long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, false), MaxRows(20))
 
   /**
    * This will seem strange to imperative programmers who are expecting the
    * cache to be in a value. The cache is maintained in the arguments to this
    * function that is tail-called.
    */
-  def loop(cache : Map[long, List[Entry]], sessions : Map[long, List[Actor]]) {
+  def loop(cache : Map[Long, List[Entry]], sessions : Map[Long, List[Actor]]) {
     react {
       case AddBlogWatcher(me, id) =>
 	// When somebody new starts watching, add them to the sessions and send
@@ -49,10 +49,10 @@ class BlogCache extends Actor {
   }
 }
 
-case class AddEntry(e : Entry, id : long) // id is the author id
-case class EditEntry(e : Entry, id : long) // id is the author id
-case class DeleteEntry(e : Entry, id : long) // id is the author id
-case class AddBlogWatcher(me : Actor, id : long) // id is the blog id
+case class AddEntry(e : Entry, id : Long) // id is the author id
+case class EditEntry(e : Entry, id : Long) // id is the author id
+case class DeleteEntry(e : Entry, id : Long) // id is the author id
+case class AddBlogWatcher(me : Actor, id : Long) // id is the blog id
 
 // A response sent to the cache listeners with the top 20 blog entries.
 case class BlogUpdate(xs : List[Entry])

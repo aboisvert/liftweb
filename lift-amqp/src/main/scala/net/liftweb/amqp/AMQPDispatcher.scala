@@ -91,7 +91,7 @@ abstract class AMQPDispatcher[T](cf: ConnectionFactory, host: String, port: Int)
  *
  */
 class SerializedConsumer[T](channel: Channel, a: Actor) extends DefaultConsumer(channel) {
-  override def handleDelivery(tag: String, env: Envelope, props: AMQP.BasicProperties, body: Array[byte]) {
+  override def handleDelivery(tag: String, env: Envelope, props: AMQP.BasicProperties, body: Array[Byte]) {
     val routingKey = env.getRoutingKey
     val contentType = props.contentType
     val deliveryTag = env.getDeliveryTag

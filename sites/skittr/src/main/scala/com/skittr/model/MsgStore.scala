@@ -13,14 +13,14 @@ import java.sql.Connection
 /**
  * The singleton that has methods for accessing the database
  */
-object MsgStore extends MsgStore with KeyedMetaMapper[long, MsgStore] {
+object MsgStore extends MsgStore with KeyedMetaMapper[Long, MsgStore] {
   override def dbTableName = "messages" // define the DB table name
 }
 
 /**
  * An O-R mapped "User" class that includes first name, last name, password and we add a "Personal Essay" to it
  */
-class MsgStore extends KeyedMapper[long, MsgStore] {
+class MsgStore extends KeyedMapper[Long, MsgStore] {
   def getSingleton = MsgStore // what's the "meta" server
   def primaryKeyField = id
   

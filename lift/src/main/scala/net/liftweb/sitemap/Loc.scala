@@ -159,7 +159,7 @@ object Loc {
     * @param failMsg -- what to return the the browser (e.g., 304, etc.) if
     * the page is accessed.
     */
-  case class Unless(test: () => boolean, failMsg: FailMsg) extends LocStuff
+  case class Unless(test: () => Boolean, failMsg: FailMsg) extends LocStuff
   
   /**
     * Tests to see if the request actually matches the requirements for access to

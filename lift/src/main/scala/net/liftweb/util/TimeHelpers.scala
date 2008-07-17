@@ -54,19 +54,19 @@ trait TimeHelpers extends ControlHelpers {
   def millis = System.currentTimeMillis
   
   /** @return the number of millis corresponding to 'in' seconds */
-  def seconds(in: long): long = in * 1000L
+  def seconds(in: Long): Long = in * 1000L
   
   /** @return the number of millis corresponding to 'in' minutes */
-  def minutes(in: long): long = seconds(in) * 60L
+  def minutes(in: Long): Long = seconds(in) * 60L
   
   /** @return the number of millis corresponding to 'in' hours */
-  def hours(in: long): long = minutes(in) * 60L
+  def hours(in: Long): Long = minutes(in) * 60L
   
   /** @return the number of millis corresponding to 'in' days */
-  def days(in: long): long = hours(in) * 24L
+  def days(in: Long): Long = hours(in) * 24L
   
   /** @return the number of millis corresponding to 'in' weeks */
-  def weeks(in: long): long = days(in) * 7L
+  def weeks(in: Long): Long = days(in) * 7L
   
   /** implicit def used to add the noTime method to the Date class */
   implicit def toDateExtension(d: Date) = new DateExtension(d)
@@ -127,7 +127,7 @@ trait TimeHelpers extends ControlHelpers {
   def dayNow: Date = 0.seconds.later.noTime
   
   /** alias for new Date(millis) */
-  def time(when: long) = new Date(when)
+  def time(when: Long) = new Date(when)
   
   /** @return the month corresponding to today (0 based, relative to UTC) */
   def month(in: Date): Int = {
@@ -214,7 +214,7 @@ trait TimeHelpers extends ControlHelpers {
   def toInternetDate(in: Date): String = internetDateFormatter.format(in)
   
   /** @return a date formatted with the internet format (from a number of millis) */
-  def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
+  def toInternetDate(in: Long): String = internetDateFormatter.format(new Date(in))
   
   /** @return a Full(date) or a failure if the input couldn't be translated to date (or Empty if the input is null)*/
   def toDate(in: Any): Can[Date] = {
@@ -282,7 +282,7 @@ object TimeSpan {
   val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (10000L, "week"))
   
   /** explicit constructor for a TimeSpan  */
-  def apply(in: long) = new TimeSpan(in)
+  def apply(in: Long) = new TimeSpan(in)
   
   /** 
   * Formats a number of millis to a string representing the number of weeks, days, hours, minutes, seconds, millis  

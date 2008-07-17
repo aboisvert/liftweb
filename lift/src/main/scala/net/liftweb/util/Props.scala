@@ -24,12 +24,12 @@ object Props {
 
   def apply(name: String): String = props(name)
   
-  def getInt(name: String): int = toInt(props.get(name))
-  def getInt(name: String, defVal: int): int = props.get(name).map(toInt(_)) getOrElse defVal
-  def getLong(name: String): long = toLong(props.get(name))
-  def getLong(name: String, defVal: long): long = props.get(name).map(toLong(_)) getOrElse defVal
-  def getBool(name: String): boolean = toBoolean(props.get(name))
-  def getBool(name: String, defVal: boolean): boolean = props.get(name).map(toBoolean(_)) getOrElse defVal
+  def getInt(name: String): Int = toInt(props.get(name))
+  def getInt(name: String, defVal: Int): Int = props.get(name).map(toInt(_)) getOrElse defVal
+  def getLong(name: String): Long = toLong(props.get(name))
+  def getLong(name: String, defVal: Long): Long = props.get(name).map(toLong(_)) getOrElse defVal
+  def getBool(name: String): Boolean = toBoolean(props.get(name))
+  def getBool(name: String, defVal: Boolean): Boolean = props.get(name).map(toBoolean(_)) getOrElse defVal
   def get(name: String, defVal: String) = props.get(name) getOrElse defVal
   
   def require(what: String*) = what.filter(!props.contains(_))
