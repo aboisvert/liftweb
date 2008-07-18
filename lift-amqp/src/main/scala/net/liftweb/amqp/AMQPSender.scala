@@ -7,7 +7,7 @@ import java.io.ByteArrayOutputStream
 import java.io.ObjectOutputStream
 
 /**
- * An actor with a long-lived connection to an AMQP exchange/queue. 
+ * An actor with a long-lived connection to an AMQP exchange/queue.
  *
  * @see ExampleStringAMQPSender for an example use.
  * @author Steve Jenson (stevej@pobox.com)
@@ -70,7 +70,7 @@ class ExampleStringAMQPSender {
   params.setVirtualHost("/")
   params.setRequestedHeartbeat(0)
   val factory = new ConnectionFactory(params)
-  
+
   val amqp = new StringAMQPSender(factory, "localhost", 5672, "mult", "routeroute")
   amqp.start
   amqp ! AMQPMessage("hi")
@@ -78,7 +78,7 @@ class ExampleStringAMQPSender {
 
 /**
  * An example of using AMQP in a short-lived manner, setting up and tearing down
- * the connection whenever you need it. The long-lived example above is more 
+ * the connection whenever you need it. The long-lived example above is more
  * efficient with resources.
  */
 object ExampleDirectAMQPSender {

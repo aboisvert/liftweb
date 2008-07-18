@@ -1,14 +1,14 @@
 package net.liftweb.util
 
-/* 
+/*
  * Copyright 2007-2008 WorldWide Conferencing, LLC
  *
- * Licensed under the Apache License, Version 2.0 (the "License"); 
- * you may not use this file except in compliance with the License. 
- * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0 
- * Unless required by applicable law or agreed to in writing, software 
- * distributed under the License is distributed on an "AS IS" BASIS, 
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
@@ -33,7 +33,7 @@ trait BindHelpers {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child
   }
-  
+
   /**
    * Base class for Bind parameters. A bind parameter has a name and is able to extract its value from a NodeSeq.
    */
@@ -41,25 +41,25 @@ trait BindHelpers {
     def name: String
     def calcValue(in: NodeSeq): NodeSeq
   }
-  
+
   /**
    * transforms a tuple of containing a String and a NodeSeq to a BindParameter
    */
   implicit def toTheBindParam(in: Product2[String, NodeSeq]) = TheBindParam(in._1, in._2)
-  
+
   /**
    * Constant BindParam always returning the same value
    */
   case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value
   }
-  
+
   /**
    * BindParam taking its value from an attribute
    */
   case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value
-  }  
+  }
 
   /**
    * BindParam using a function to calculate its value
@@ -69,49 +69,49 @@ trait BindHelpers {
   }
   /**
    * BindParam using a function to calculate its value
-   */ 
+   */
   case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
-  
+
   /**
    * transforms a Can into a Text node
-   */ 
+   */
   object BindParamAssoc {
     implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
       case null => Text("null")
       case v => Text(v.toString)
     })
   }
-  
+
   /**
    * This class creates a BindParam from an input value
-   */ 
+   */
   class BindParamAssoc(val name: String) {
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
     def -->(value: Symbol): BindParam = TheBindParam(name, Text(value.name))
     def -->(value: Any): BindParam = TheBindParam(name, Text(if (value == null) "null" else value.toString))
     def -->(func: NodeSeq => NodeSeq): BindParam = FuncBindParam(name, func)
-    def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))    
+    def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))
   }
-  
+
   /**
-   * transforms a String to a BindParamAssoc object which can be associated to a BindParam object 
+   * transforms a String to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>"David" --> "name"</code>
-   */ 
+   */
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
 
   /**
-   * transforms a Symbol to a BindParamAssoc object which can be associated to a BindParam object 
+   * transforms a Symbol to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>'David --> "name"</code>
-   */ 
+   */
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
-    
+
   /**
-   * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform 
+   * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
    */
   def xbind(namespace: String, xml: NodeSeq)(transform: PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
@@ -129,10 +129,10 @@ trait BindHelpers {
         }
       }
     }
-    
+
     rec_xbind(xml)
   }
-  
+
   /**
    * Bind a set of values to parameters and attributes in a block of XML.<p/>
    * Usage:<pre>
@@ -141,7 +141,7 @@ trait BindHelpers {
    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
     val map: scala.collection.immutable.Map[String, BindParam] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
-    
+
     def attrBind(attr: MetaData): MetaData = attr match {
       case Null => Null
       case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
@@ -154,7 +154,7 @@ trait BindHelpers {
       }
       case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
     }
-    
+
     def in_bind(xml: NodeSeq): NodeSeq = {
       xml.flatMap {
         node =>
@@ -173,17 +173,17 @@ trait BindHelpers {
     }
     in_bind(xml)
   }
-  
+
   /**
    * Replace the content of lift:bind nodes with the corresponding nodes found in a map,
    * according to the value of the "name" attribute.<p/>
    * Usage: <pre>
    * bind(Map("a" -> <h1/>), <b><lift:bind name="a">change this</lift:bind></b>) must ==/(<b><h1></h1></b>)
    * </pre>
-   * 
+   *
    * @param vals map of name/nodes to replace
    * @param xml nodes containing lift:bind nodes
-   * 
+   *
    * @return the replaced xml nodes
    */
   def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
@@ -206,7 +206,7 @@ trait BindHelpers {
       }
     }
   }
-  
+
   /**
    * Bind a list of maps name/xml to a block of XML containing lift:bind nodes (see the bind(Map, NodeSeq) function)
    */
@@ -218,7 +218,7 @@ trait BindHelpers {
     if (listvals.length > 0) Full(build(listvals.drop(1), bind(listvals.head, xml)))
     else Empty
   }
-  
+
   /**
    * Bind parameters to XML.
    * @param around XML with lift:bind elements
@@ -226,11 +226,11 @@ trait BindHelpers {
    * @deprecated use the bind function instead
    */
   def processBind(around: NodeSeq, atWhat: Map[String, NodeSeq]) : NodeSeq = {
-    
+
     /** Find element matched predicate f(x).isDefined, and return f(x) if found or None otherwise. */
     def findMap[A, B](s: Iterable[A])(f: A => Option[B]): Option[B] =
     s.projection.map(f).find(_.isDefined).getOrElse(None)
-    
+
     around.flatMap {
       v =>
       v match {
@@ -240,17 +240,17 @@ trait BindHelpers {
           case (at, what) if attr("name").text == at => Some(what)
           case _ => None
         }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
-        
+
         case e: Elem => {Elem(e.prefix, e.label, e.attributes, e.scope, processBind(e.child, atWhat): _*)}
         case _ => {v}
       }
-      
+
     }
   }
   /**
    * Looks for a named parameter in the XML element and return it if found
-   * 
-   * @return a Full can containing the value of the found attribute if it is not empty 
+   *
+   * @return a Full can containing the value of the found attribute if it is not empty
    */
   def xmlParam(in: NodeSeq, param: String): Can[String] = {
     val tmp = (in \ ("@" + param))

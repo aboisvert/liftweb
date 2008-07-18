@@ -51,7 +51,7 @@ class Boot {
       case RequestMatcher(r @RequestState("webservices" :: c :: _, "", _), _) => invokeWebService(r, c)
     }
     LiftRules.addDispatchBefore(dispatcher)
-    
+
     LiftRules.addDispatchBefore {
          case RequestMatcher(RequestState("login" :: page , "", _), _)  if !LoginStuff.is && page.head != "validate" =>
          ignore => Full(RedirectResponse("/login/validate"))
@@ -59,28 +59,28 @@ class Boot {
 
 
     LiftRules.addRewriteBefore{
-      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_), 
-			  _, _) 
+      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_),
+			  _, _)
       =>
 	RewriteResponse("wiki" :: Nil,
-			Map("wiki_page" -> page :: 
+			Map("wiki_page" -> page ::
 			    path.wholePath.drop(2).
-			    zipWithIndex.map(p => 
+			    zipWithIndex.map(p =>
 			      ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-    
+
     val wikibind_rewriter: LiftRules.RewritePf = {
-      case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_), 
-			  _, _) 
+      case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_),
+			  _, _)
       =>
 	RewriteResponse(ParsePath("wikibind" :: Nil, "", true, false),
-			Map("wiki_page" -> page :: 
+			Map("wiki_page" -> page ::
 			    path.wholePath.drop(2).zipWithIndex.
 			    map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
-    
+
     LiftRules.appendEarly(makeUtf8)
-    
+
     LiftRules.addRewriteBefore(wikibind_rewriter)
 
   }

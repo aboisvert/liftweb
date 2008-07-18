@@ -30,7 +30,7 @@ import javax.servlet.http._
  *     req.path = "/"
  *     val res = new MockHttpServletResponse(writer, outputStream)
  *
- *     val filter = new LiftFilter   
+ *     val filter = new LiftFilter
  *     filter.init(new MockFilterConfig(new MockServletContext("target/test1-1.0-SNAPSHOT")))
  *     filter.doFilter(req, res,new DoNothingFilterChain)
  *     assertTrue(output.toString.startsWith("<?xml"))
@@ -111,7 +111,7 @@ class DoNothingFilterChain extends FilterChain {
 
 /**
  * A Mock ServletInputStream. Pass in any ol InputStream like a ByteArrayInputStream.
- * 
+ *
  * @author Steve Jenson (stevej@pobox.com)
  */
 class MockServletInputStream(is: InputStream) extends ServletInputStream {
@@ -120,7 +120,7 @@ class MockServletInputStream(is: InputStream) extends ServletInputStream {
 
 /**
  * A Mock ServletOutputStream. Pass in any ol' OutputStream like a ByteArrayOuputStream.
- * 
+ *
  * @author Steve Jenson (stevej@pobox.com)
  */
 class MockServletOutputStream(os: ByteArrayOutputStream) extends ServletOutputStream {
@@ -130,7 +130,7 @@ class MockServletOutputStream(os: ByteArrayOutputStream) extends ServletOutputSt
 }
 
 /**
- * A Mock HttpSession implementation. 
+ * A Mock HttpSession implementation.
  *
  * @author Steve Jenson (stevej@pobox.com)
  */
@@ -148,7 +148,7 @@ class MockHttpSession extends HttpSession {
     case None => Nil
   }
   def removeValue(key: String) = values -= key
-  def putValue(key: String, value: Any) = values += (key -> value) 
+  def putValue(key: String, value: Any) = values += (key -> value)
   def getAttribute(key: String) = attr.get(key) match {
       case Some(v) => v.asInstanceOf[Object]
       case None => Nil

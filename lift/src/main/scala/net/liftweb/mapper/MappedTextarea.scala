@@ -11,11 +11,11 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[
    */
   override def _toForm: Can[NodeSeq] = {
     val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
-    Full(<textarea name={funcName} 
-	 rows={textareaRows.toString} 
+    Full(<textarea name={funcName}
+	 rows={textareaRows.toString}
 	 cols={textareaCols.toString}>{is.toString}</textarea>)
   }
-  
+
   override def toString = {
     val v = is
     if (v == null || v.length < 100) super.toString
@@ -23,9 +23,9 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[
       displayName +"="+v.substring(0,40)+" ... "+v.substring(v.length - 40)
     }
   }
-  
+
   def textareaRows  = 8
-  
+
   def textareaCols = 20
 
 }

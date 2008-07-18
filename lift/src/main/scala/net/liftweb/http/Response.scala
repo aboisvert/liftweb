@@ -18,9 +18,9 @@ trait ToResponse extends ResponseIt {
   def cookies: List[Cookie]
   def code: Int
   def docType: Can[String]
-  
+
   def toResponse = {
-    val encoding = 
+    val encoding =
     (out, headers.ciGet("Content-Type")) match {
     case (up: Unparsed,  _) => ""
     case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -31,9 +31,9 @@ trait ToResponse extends ResponseIt {
 			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     case _ => ""
     }
-    
+
     val doc = docType.map(_ + "\n") openOr ""
-      
+
     Response((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, cookies, code)
     }
 }
@@ -42,10 +42,10 @@ trait ResponseIt {
   def toResponse: Response
 }
 
-case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], 
+case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
 			 cookies: List[Cookie], code: Int) extends ToResponse
-			
-			
+
+
 case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
 	def toResponse = {
 		val bytes = json.toJsCmd.getBytes("UTF-8")
@@ -55,7 +55,7 @@ case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: L
 
 case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
   def toResponse = this
-  
+
   override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
 }
 
@@ -68,7 +68,7 @@ case class RedirectWithState(override val uri: String, state : RedirectState, ov
 
 object RedirectState {
   //implicit def func2Can(f: () => Unit) = Can(f)
-  
+
   def apply(f: () => Unit, msgs: (String, NoticeType.Value)*): RedirectState = new RedirectState(Full(f), msgs :_*)
 }
 case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)

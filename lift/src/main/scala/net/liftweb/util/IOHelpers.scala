@@ -17,7 +17,7 @@ trait IoHelpers {
           done(lines.mkString("\n"))
         }
       }
-      
+
       var stdOut = ""
       var stdErr = ""
       val proc = Runtime.getRuntime.exec(cmds.toArray)
@@ -36,33 +36,33 @@ trait IoHelpers {
     def readWholeThing(in: Reader): String = {
     val bos = new StringBuilder
     val ba = new Array[char](4096)
-    
+
     def readOnce {
       val len = in.read(ba)
       if (len < 0) return
       if (len > 0) bos.append(ba, 0, len)
       readOnce
     }
-    
+
     readOnce
-    
+
     bos.toString
   }
 
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
-  
+
   def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     val ba = new Array[byte](4096)
-    
+
     def readOnce {
       val len = in.read(ba)
       if (len > 0) bos.write(ba, 0, len)
       if (len >= 0) readOnce
     }
-    
+
     readOnce
-    
+
     bos.toByteArray
   }
 }

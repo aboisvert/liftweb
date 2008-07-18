@@ -39,7 +39,7 @@ case class AtomServiceResponse(xml: Node) extends ResponseIt {
 }
 
 /**
- * Allows you to create custom 200 responses for clients using different 
+ * Allows you to create custom 200 responses for clients using different
  * Content-Types.
  */
 case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
@@ -59,7 +59,7 @@ case class BadResponse extends ResponseIt {
 }
 
 /**
- * The Resource was created. We then return the resource, post-processing, to 
+ * The Resource was created. We then return the resource, post-processing, to
  * the client.
  */
 case class CreatedResponse(xml: Node, mime: String) extends ToResponse {
@@ -120,7 +120,7 @@ case class OkResponse extends ResponseIt {
 
 /**
  * This Resource does not allow this method. Use this when the resource can't
- * understand the method no matter the circumstances. 
+ * understand the method no matter the circumstances.
  */
 case class MethodNotAllowedResponse extends ResponseIt {
   def toResponse = Response(Array(), Nil, Nil, 405)
@@ -134,7 +134,7 @@ case class NotFoundResponse extends ResponseIt {
 }
 
 /**
- * The requested Resource used to exist but no longer does. 
+ * The requested Resource used to exist but no longer does.
  */
 case class GoneResponse extends ResponseIt {
   def toResponse = Response(Array(), Nil, Nil, 410)

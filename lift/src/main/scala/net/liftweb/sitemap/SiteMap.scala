@@ -15,7 +15,7 @@ package net.liftweb.sitemap
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
- 
+
 import net.liftweb.http._
 import net.liftweb.util._
 import Helpers._
@@ -24,7 +24,7 @@ case class SiteMap(kids: Menu*) extends HasKids  {
   kids.foreach(_._parent = Full(this))
   kids.foreach(_.init)
   kids.foreach(_.validate)
-  
+
   def findLoc(req: RequestState): Can[Loc] = {
     val ret = first(kids.toList)(_.findLoc(req.path, req.path.partPath, req))
     ret
@@ -36,5 +36,5 @@ trait HasKids {
   def buildUpperLines: List[MenuLine] = Nil
   def isRoot_? = false
   def buildAboveLine(path: Menu): List[MenuLine] = Nil
-  private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = (true, Empty)  
+  private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = (true, Empty)
 }

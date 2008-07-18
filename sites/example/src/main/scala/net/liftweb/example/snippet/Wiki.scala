@@ -29,7 +29,7 @@ case class BindChoice(show: boolean, bind: () => NodeSeq)
 
 class Wiki extends MetaWikiEntry {
   def uriFor(path:String) = "/wiki/" + path
-  
+
   /**
    * Display the Textile marked up wiki or an edit box
    */
@@ -53,7 +53,7 @@ class Wiki extends MetaWikiEntry {
 
       <span><a href={uriFor("all")}>Show All Pages</a><br/>{
         if (edit) editEntry(entry, isNew, pageName)
-        else TextileParser.toHtml(entry.entry, 
+        else TextileParser.toHtml(entry.entry,
 				  Some(TextileParser.DefaultRewriter("/wiki"))) ++
         <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
       }</span>

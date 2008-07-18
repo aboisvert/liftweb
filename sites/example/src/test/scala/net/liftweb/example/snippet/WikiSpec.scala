@@ -14,26 +14,26 @@ object WikiSpec extends Specification with MockEntries {
       withEntries(WikiEntry.create.name("EntryOne"), WikiEntry.create.name("EntryTwo"))
       userRequests("all")
       inSession {
-        wikiMain must \\("a", Map("href" -> "/wiki/EntryOne")) 
-        wikiMain must \\("a", Map("href" -> "/wiki/EntryTwo")) 
+        wikiMain must \\("a", Map("href" -> "/wiki/EntryOne"))
+        wikiMain must \\("a", Map("href" -> "/wiki/EntryTwo"))
       }
     }
     "return a new page with a form for a 'HomePage' entry if the wiki_page parameter is not specified" in {
       withNoEntries; userRequests("nothing")
       inSession {
-        wikiMain must \\("form", Map("action" -> "/wiki/HomePage", "method" -> "GET")) 
+        wikiMain must \\("form", Map("action" -> "/wiki/HomePage", "method" -> "GET"))
       }
     }
     "return a new page with a form for a 'NewEntry' entry if there is no entry with the name 'NewEntry' in the database" in {
       withNoEntries; userRequests("NewEntry")
       inSession {
-        wikiMain must \\("form", Map("action" -> "/wiki/NewEntry", "method" -> "GET")) 
+        wikiMain must \\("form", Map("action" -> "/wiki/NewEntry", "method" -> "GET"))
       }
     }
     "return an existing entry if there is an entry named 'ExistingEntry' in the database" in {
       withEntries(WikiEntry.create.name("ExistingEntry")); userRequests("ExistingEntry")
       inSession {
-        wikiMain must \\("form", Map("action" -> "/wiki/ExistingEntry", "method" -> "GET")) 
+        wikiMain must \\("form", Map("action" -> "/wiki/ExistingEntry", "method" -> "GET"))
       }
     }
   }
@@ -41,13 +41,13 @@ object WikiSpec extends Specification with MockEntries {
     "be named 'HomePage' if pageName is not specified" in {
       withNoEntries; userRequests("nothing")
       inSession {
-        wikiMain.toString must include("Create Entry named HomePage") 
+        wikiMain.toString must include("Create Entry named HomePage")
       }
     }
     "be named 'pageName' if pageName is specified" in {
       withNoEntries; userRequests("MyPage")
       inSession {
-        wikiMain.toString must include("Create Entry named MyPage") 
+        wikiMain.toString must include("Create Entry named MyPage")
       }
     }
   }
@@ -108,7 +108,7 @@ trait MockRequest extends JMocker with ClassMocker {
     request = mock(classOf[RequestState])
     httpRequest = mock(classOf[HttpServletRequest])
     session = mock(classOf[LiftSession])
-    expect {  
+    expect {
       0.atLeastOf(request).request.willReturn(httpRequest)
       0.atLeastOf(httpRequest).getCookies
     }

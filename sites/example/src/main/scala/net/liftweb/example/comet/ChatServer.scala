@@ -32,26 +32,26 @@ import java.util.Date
 object ChatServer extends Actor {
   private var chats: List[ChatLine] = Nil
   private var listeners: List[Actor] = Nil
-  
+
   def act = loop {
     react {
       case ChatServerMsg(user, msg) if msg.length > 0 =>
       chats = ChatLine(user, toHtml(msg), timeNow) :: chats
       val toDistribute = chats.take(15)
       listeners.foreach (_ ! ChatServerUpdate(toDistribute))
-      
+
       case ChatServerAdd(me) =>
       me ! ChatServerUpdate(chats.take(15))
       listeners = me :: listeners
-      
-      
+
+
       case ChatServerRemove(me) =>
       listeners = listeners.remove(_ == me)
-      
+
       case _ =>
     }
   }
-  
+
   /**
   * Convert an incoming string into XHTML using Textile Markup
   *
@@ -62,7 +62,7 @@ object ChatServer extends Actor {
   def toHtml(msg: String): NodeSeq = TextileParser.parse(msg, Empty). // parse it
   map(_.toHtml.toList match {case Nil => Nil case x :: xs => x.child}).  // convert to html and get the first child (to avoid things being wrapped in <p>)
   getOrElse(Text(msg)) // if it wasn't parsable, then just return a Text node of the message
-  
+
   this.start
 }
 

@@ -23,11 +23,11 @@ import net.liftweb.util._
 /**
  * The base trait of Controllers that handle pre-view requests
  */
-trait SimpleController 
+trait SimpleController
 {
   def request: RequestState
   def httpRequest: HttpServletRequest
-  
+
   def param(name: String): Can[String] = {
     request.params.get(name) match {
       case None => Empty
@@ -37,20 +37,20 @@ trait SimpleController
       }
     }
   }
-  
+
   def post_? : Boolean = request.post_?
-  
+
   def get(name: String): Can[String] =
     httpRequest.getSession.getAttribute(name) match {
       case null => Empty
       case n: String => Full(n)
       case _ => Empty
     }
-  
+
   def set(name: String, value: String) {
     httpRequest.getSession.setAttribute(name, value)
   }
-  
+
   def unset(name: String) {
     httpRequest.getSession.removeAttribute(name)
   }

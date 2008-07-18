@@ -6,21 +6,21 @@ import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 
 trait HttpHelpers { self: ListHelpers with StringHelpers =>
-  
+
   /**
-   * URL decode the string.  
-   * 
+   * URL decode the string.
+   *
    * This is a pass-through to Java's URL decode with UTF-8
    */
   def urlDecode(in : String) = URLDecoder.decode(in, "UTF-8")
 
   /**
-   * URL encode the string.  
-   * 
+   * URL encode the string.
+   *
    * This is a pass-through to Java's URL encode with UTF-8
    */
   def urlEncode(in : String) = URLEncoder.encode(in, "UTF-8")
-  
+
   /**
    * Take a list of name/value parse and turn them into a URL query string
    *
@@ -30,8 +30,8 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
   def paramsToUrlParams(params: List[(String, String)]): String = params.map {
     case (n, v) => urlEncode(n) + "=" + urlEncode(v)
   }.mkString("&")
-  
-  
+
+
   /**
    * Append parameters to a URL
    *
@@ -45,7 +45,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
     case xs if !url.contains("?") => url + "?" + paramsToUrlParams(xs)
     case xs => url + "&" + paramsToUrlParams(xs)
   }
-  
+
   /**
    * Set of all valid files extensions
    * @return a mutable HashSet[String]
@@ -55,7 +55,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
     ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
     ret
   }
-  
+
   /**
    * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
    */
@@ -71,7 +71,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
   }
 
   /**
-   * get a map of HTTP properties and return true if the "Content-type" 
+   * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"
    * @param in Map which may contain a key named Content-Type
    * @return true if there is a pair ("Content-Type", "text/html") or
@@ -88,21 +88,21 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
       }
     }
   }
-  
+
   /**
-   * Return true if the xml doesn't contain an <html> tag 
+   * Return true if the xml doesn't contain an <html> tag
    */
   def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
-  
+
   /**
-   * Transform a general Map to a nutable HashMap 
+   * Transform a general Map to a nutable HashMap
    */
   def toHashMap[A,B](in : Map[A,B]) : HashMap[A,B] = {
     val ret = new HashMap[A,B];
     in.keys.foreach { k => ret += Pair(k, in(k)) }
     ret
   }
-  
+
   /**
    * Insure all the appropriate fields are in the header
    */
@@ -112,7 +112,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
       case Full(_) => toInsure
       case _ => field :: toInsure
     }
-    
+
     headers match {
       case Nil => toInsure
       case x :: xs => insureField(insureField_inner(toInsure, x), xs)
@@ -134,10 +134,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
   def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
     case Nil => {
        val id = "R" + randomString(12)
-       (in % ("id" -> id), id)  
+       (in % ("id" -> id), id)
     }
     case x :: xs => (in, x.text)
-  } 
-  
+  }
+
 
 }

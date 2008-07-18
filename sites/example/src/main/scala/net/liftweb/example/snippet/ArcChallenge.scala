@@ -30,7 +30,7 @@ import scala.xml.{NodeSeq, Text, Group}
  *
  * http://www.paulgraham.com/arcchallenge.html
  *
- * This is one potential lift-based solution to it using StatefulSnippets. 
+ * This is one potential lift-based solution to it using StatefulSnippets.
  * There are doubtless many other ways.
  *
  * @author: Steve Jenson

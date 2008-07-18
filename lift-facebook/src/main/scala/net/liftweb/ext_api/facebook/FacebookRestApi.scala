@@ -10,12 +10,12 @@ object FacebookRestApi {
   def apiKey = System.getProperty("com.facebook.api_key")
   def secret = System.getProperty("com.facebook.secret")
   def apiKey_=(key: String) = System.setProperty("com.facebook.api_key", key)
-  def secret_=(key: String) = System.setProperty("com.facebook.secret", key)  
+  def secret_=(key: String) = System.setProperty("com.facebook.secret", key)
 }
 
 object FacebookClient {
   import FacebookRestApi._
-  
+
   val TARGET_API_VERSION = "1.0"
   val FB_SERVER = "api.facebook.com/restserver.php"
   val SERVER_ADDR = "http://" + FB_SERVER
@@ -26,15 +26,15 @@ object FacebookClient {
 
   val CrLf = "\r\n"
   val Pref = "--"
-  
+
   def urlEncode(name: String): String = URLEncoder.encode(name, "UTF-8")
-      
+
   def stripSig(in: String): String =  if (in != null && in.startsWith("fb_sig_")) in.substring(7) else in
 
   def convert(in: List[(String, Any)]): List[String] = in.map{case (name, value) => stripSig(name)+"="+value}
 
   def byteToHex(b: Byte): String = Integer.toHexString((b & 0xf0) >>> 4) + Integer.toHexString(b & 0x0f)
-    
+
   def genSignature(allParams: List[(String, Any)], secret: String): String = {
     val md = java.security.MessageDigest.getInstance("MD5")
     val theStr = convert(allParams).sort(_ < _).mkString("") + secret
@@ -56,7 +56,7 @@ object FacebookClient {
       }
     }
   }
-  
+
   private[facebook] def buildParams(methodName: String, params: FacebookParam*): List[(String, Any)] = {
     val allParams: List[(String, Any)] =
       ("method", methodName) ::
@@ -69,27 +69,27 @@ object FacebookClient {
     val ret = "sig" -> signature :: allParams
     ret
   }
-  
+
   def callMethod(meth: SessionlessFacebookMethod): Node =
     call(buildParams(meth.name, meth.params: _*))
-    
-  def !?(meth: SessionlessFacebookMethod): Node = 
+
+  def !?(meth: SessionlessFacebookMethod): Node =
     callMethod(meth)
-  
+
   def fromSession(session: FacebookSession) : FacebookClient = {
     new FacebookClient(session)
   }
-  
+
   def fromAuthToken(authToken: String) : Option[FacebookClient] = {
     FacebookSession.fromAuthToken(authToken).map(fromSession)
   }
-  
+
   type State = {
     def sessionKey: Option[String]
     def expiration: Option[Long]
     def uid: Option[String]
   }
-  
+
   def fromState(implicit state: State) : Option[FacebookClient] = {
     for (
       key <- state.sessionKey;
@@ -98,13 +98,13 @@ object FacebookClient {
     ) yield fromSession(FacebookSession(key, exp, uid))
   }
 }
-  
+
 class FacebookClient(val apiKey: String, val secret: String, val session: FacebookSession) {
   import FacebookRestApi._
   import FacebookClient._
-  
+
   def this(session: FacebookSession) = this(FacebookRestApi.apiKey, FacebookRestApi.secret, session)
-  
+
   def callMethod(meth: FacebookMethod, fileName: String, mimeType: String, file: Array[Byte], params: FacebookParam* ): Node = {
     val boundary = System.currentTimeMillis.toString
     SERVER_URL.openConnection match {
@@ -140,19 +140,19 @@ class FacebookClient(val apiKey: String, val secret: String, val session: Facebo
       }
     }
   }
-    
+
   def callMethod(meth: FacebookMethod): Node =
     call(buildParams(meth, meth.params: _*))
-    
+
   def callMethod(meth: FacebookMethod, otherParams: FacebookParam*): Node =
     call(buildParams(meth, (meth.params.toList ::: otherParams.toList): _*))
-    
+
   def !?(meth: FacebookMethod): Node = callMethod(meth)
-  
+
   def !?(meth: FacebookMethod, otherParams: UniversalParam*) = callMethod(meth, otherParams: _*)
-  
+
   def !?(meth: UploadPhoto): Node = callMethod(meth, meth.fileName, meth.mimeType, meth.fileData)
-  
+
   private def buildParams(meth: FacebookMethod, params: FacebookParam*): List[(String, Any)] = {
     val allParams: List[FacebookParam] =
       (if (meth.requiresSession)
@@ -160,10 +160,10 @@ class FacebookClient(val apiKey: String, val secret: String, val session: Facebo
       else
         Nil) :::
       params.toList
-    
+
     FacebookClient.buildParams(meth.name, allParams: _*)
   }
-      
+
   def getInfo(users: Collection[Long], fields: FacebookField*): Node = {
     callMethod(GetInfo(users, fields: _*))
   }
@@ -172,13 +172,13 @@ class FacebookClient(val apiKey: String, val secret: String, val session: Facebo
 object FacebookSession {
   def apply(key: String, expiration: Long, uid: String) : FacebookSession =
     new FacebookSession(key, expiration, uid)
-  
+
   def fromAuthToken(authToken: String): Option[FacebookSession] = {
     val response = FacebookClient !? AuthGetSession(authToken)
     val key = (response \\ "session_key").text
     val uid = (response \\ "uid").text
     val expiration = (response \\ "expires").text
-    
+
     if (key == "")
       None
     else
@@ -187,7 +187,7 @@ object FacebookSession {
 }
 
 class FacebookSession(val key: String, val expiration: Long, val uid: String)
-  
+
 class FacebookMethod(val name: String, attachment: Boolean, val params: FacebookParam*) {
   def this(nm: String, params: FacebookParam*) = { this(nm, false, params: _*) }
 
@@ -195,7 +195,7 @@ class FacebookMethod(val name: String, attachment: Boolean, val params: Facebook
 }
 
 class SessionlessFacebookMethod(override val name: String, override val params: FacebookParam*) extends FacebookMethod(name, false, params: _*) {
-  
+
   override def requiresSession = false
 }
 
@@ -229,7 +229,7 @@ case class RefreshRefURL(refUrl: String) extends FacebookMethod("facebook.fbml.r
 case class SetRefHandle(handle: String, markup: NodeSeq) extends FacebookMethod("facebook.fbml.setRefHandle", RefHandle(handle), FBML(markup))
 case class PublishStory(title: NodeSeq, publishParams: PublishStoryParam*) extends FacebookMethod("facebook.feed.publishStoryToUser", (Title(title) :: publishParams.toList): _*)
 case class PublishAction(title: NodeSeq, publishParams: PublishActionParam*) extends FacebookMethod("facebook.feed.publishActionOfUser", (Title(title) :: publishParams.toList): _*)
-  
+
 class FacebookField(val name: String)
 
 case object AboutMe extends FacebookField("about_me")

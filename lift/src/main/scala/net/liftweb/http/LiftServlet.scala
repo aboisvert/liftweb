@@ -46,7 +46,7 @@ class LiftServlet extends HttpServlet {
     this()
     this.servletContext = ctx
   }
-  
+
   override def getServletContext: ServletContext = servletContext
 
   override def destroy = {
@@ -64,14 +64,14 @@ class LiftServlet extends HttpServlet {
       clearThread
     }
   }
-  
+
   override def init = {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath => 
+        case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath =>
 	      ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
-        })      
+        })
     } finally {
       clearThread
     }
@@ -80,18 +80,18 @@ class LiftServlet extends HttpServlet {
   def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
     val ret = SessionMaster.getSession(httpSession) match {
       case Full(ret) => ret
-      
+
       case _ =>
       val ret = LiftSession(httpSession, request.contextPath)
       ret.lastServiceTime = millis
       SessionMaster.addSession(ret)
       ret
     }
-    
+
     ret.breakOutComet()
     ret
   }
-  
+
   def service(req: HttpServletRequest,resp: HttpServletResponse, requestState: RequestState): Boolean = {
     try {
       def doIt: Boolean = {
@@ -113,7 +113,7 @@ class LiftServlet extends HttpServlet {
       clearThread
     }
   }
-  
+
   private def flatten(in: List[Any]): List[Any] = in match {
     case Nil => Nil
     case Some(x: AnyRef) :: xs => x :: flatten(xs)
@@ -122,14 +122,14 @@ class LiftServlet extends HttpServlet {
     case (x: AnyRef) :: xs => x :: flatten(xs)
     case x :: xs => flatten(xs)
   }
-  
+
   /**
   * Service the HTTP request
   */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
     LiftRules.onBeginServicing.foreach(_(requestState))
     val statelessToMatch = RequestMatcher(requestState, Empty)
-    
+
     val resp: Can[Response] = if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
     } else if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
@@ -137,12 +137,12 @@ class LiftServlet extends HttpServlet {
       f(requestState) match {
         case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
         case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
-        case f: Failure => Full(requestState.createNotFound(f).toResponse) 
+        case f: Failure => Full(requestState.createNotFound(f).toResponse)
       }
     } else {
       val sessionActor = getLiftSession(requestState, request.getSession)
       val toMatch = RequestMatcher(requestState, Full(sessionActor))
-      
+
       val dispatch: (Boolean, Can[Response]) = S.init(requestState, sessionActor.notices, sessionActor) {
         if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
 	  LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
@@ -156,14 +156,14 @@ class LiftServlet extends HttpServlet {
           } finally {
             sessionActor.notices = S.getNotices
           }
-	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState, 
+	  LiftSession.onEndServicing.foreach(_(sessionActor, requestState,
 					       ret._2))
 	  ret
 
         } else (false, Empty)
       }
-      
-      if (dispatch._1) dispatch._2 
+
+      if (dispatch._1) dispatch._2
       else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.cometPath) {
         handleComet(requestState, sessionActor)
       } else if (requestState.path.wholePath.length == 1 && requestState.path.wholePath.head == LiftRules.ajaxPath) {
@@ -172,9 +172,9 @@ class LiftServlet extends HttpServlet {
 	      LiftSession.onBeginServicing.foreach(_(sessionActor, requestState))
           val ret = try {
             val what = flatten(sessionActor.runParams(requestState))
-            
+
             val what2 = what.flatMap{case js: JsCmd => List(js); case n: NodeSeq => List(n) case js: JsCommands => List(js)  case r: ResponseIt => List(r); case s => Nil}
-            
+
             val ret = what2 match {
               case (n: Node) :: _ => XmlResponse(n).toResponse
               case (ns: NodeSeq) :: _ => XmlResponse(Group(ns)).toResponse
@@ -182,7 +182,7 @@ class LiftServlet extends HttpServlet {
               case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
               case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
             }
-            
+
             LiftRules.cometLogger.debug("AJAX Response: "+sessionActor.uniqueId+" "+ret)
             Full(ret)
           } finally {
@@ -198,7 +198,7 @@ class LiftServlet extends HttpServlet {
           }
 
           sessionActor.processRequest(requestState).map(_.toResponse) // .what.toResponse
-          
+
         } finally {
           this.synchronized {
             this.requestCnt = this.requestCnt - 1
@@ -207,78 +207,78 @@ class LiftServlet extends HttpServlet {
         }
       }
     }
-    
+
     LiftRules.onEndServicing.foreach(_(requestState, resp))
-    
+
     resp match {
       case Full(resp) =>
       logIfDump(requestState, resp)
-      
+
       sendResponse(resp, response, Full(requestState))
       true
       case _ => false
     }
   }
-  
+
   class JettyContinuationActor(request: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
     private var answers: List[AnswerRender] = Nil
     val seqId = CometActor.next
-    
+
     def act = loop {
       react {
         case BeginJettyContinuation =>
         val mySelf = self
         val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
-        
+
         actors.foreach{case (act, when) => act ! Listen(when, ListenerId(seqId), sendItToMe)}
-        
-        case (theId: Long, ar: AnswerRender) => 
+
+        case (theId: Long, ar: AnswerRender) =>
         answers = ar :: answers
         ActorPing.schedule(this, BreakOut, TimeSpan(5))
-        
-        case BreakOut => 
+
+        case BreakOut =>
         actors.foreach{case (act, _) => act ! Unlisten}
         LiftRules.resumeRequest(convertAnswersToCometResponse(request, sessionActor, answers.toArray, actors), request.request)
         sessionActor.exitComet(this)
         this.exit()
-        
-        case _ => 
+
+        case _ =>
       }
     }
-    
+
     override def toString = "Actor dude "+seqId
   }
-  
+
   private object BeginJettyContinuation
-  
+
   private lazy val cometTimeout: Long = (LiftRules.ajaxRequestTimeout openOr 120) * 1000L
-  
+
   private def setupJettyContinuation(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Nothing = {
     val cont = new JettyContinuationActor(requestState, sessionActor, actors)
     cont.start
 
     cont ! BeginJettyContinuation
-    
+
     sessionActor.enterComet(cont)
-    
+
     ActorPing.schedule(cont, BreakOut, TimeSpan(cometTimeout))
-    
+
     LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
   }
-  
+
   private def handleComet(requestState: RequestState, sessionActor: LiftSession): Can[Response] = {
     val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
-    
+
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
     else LiftRules.checkJetty(requestState.request) match {
-      case Some(null) => 
+      case Some(null) =>
 	setupJettyContinuation(requestState, sessionActor, actors)
-      
+
       case _ =>
 	handleNonJettyComet(requestState, sessionActor, actors)
     }
   }
-  
+
   private def convertAnswersToCometResponse(requestState: RequestState, sessionActor: LiftSession, ret: Seq[AnswerRender], actors: List[(CometActor, Long)]): Response = {
     S.init(requestState, sessionActor) {
       val ret2 = ret.toList
@@ -290,82 +290,82 @@ class LiftServlet extends HttpServlet {
       (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
     }
   }
-  
+
   private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[Response] = {
-    
+
     LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
-    
+
     sessionActor.enterComet(self)
     try {
       val seqId = CometActor.next
-      
+
       def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
         receiveWithin(len) {
-          case TIMEOUT => 
+          case TIMEOUT =>
 	    in
-	  
+
           case (theId: Long, ar: AnswerRender) if theId == seqId =>
 	    drainTheSwamp(0, ar :: in)
-	  
+
           case BreakOut => in
-	  
+
           case s =>
 	    Log.trace("Drained "+s)
 	  drainTheSwamp(len, in)
         }
       }
-      
+
       val mySelf = self
-      
+
       // the function that sends an AnswerHandler to me
       val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
-      
+
       actors.foreach{case (act, when) => act ! Listen(when, ListenerId(seqId), sendItToMe)}
-      
-      val ret = drainTheSwamp(cometTimeout, Nil) 
+
+      val ret = drainTheSwamp(cometTimeout, Nil)
 
       actors.foreach{case (act, _) => act ! Unlisten}
-      
+
       val ret2 = drainTheSwamp(5L, ret)
-      
+
       Full(convertAnswersToCometResponse(requestState, sessionActor, ret2, actors))
     } finally {
       sessionActor.exitComet(self)
     }
   }
-  
+
   val dumpRequestResponse = Props.getBool("dump.request.response")
-  
+
   private def logIfDump(request: RequestState, response: Response) {
     if (dumpRequestResponse) {
       val toDump = request.uri+"\n"+
       request.params + "\n"+
       response.headers+"\n"+
       new String(response.data)
-      
+
       Log.info(toDump)
     }
   }
-  
+
   /**
-  * Sends the {@code HttpServletResponse} to the browser using data from the 
+  * Sends the {@code HttpServletResponse} to the browser using data from the
   * {@link Response} and {@link RequestState}.
   */
   def sendResponse(resp: Response, response: HttpServletResponse, request: Can[RequestState]) {
-    
+
     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
       case ("Location", uri) => (v._1, response.encodeURL(request map (_ updateWithContextPath(uri)) openOr uri))
       case _ => v
     })
-    
+
     def pairFromRequest(in: Can[RequestState]): (Can[RequestState], Can[String]) = {
       val acceptHeader = for (req <- in;
       innerReq <- Can.legacyNullTest(req.request);
       accept <- Can.legacyNullTest(innerReq.getHeader("Accept"))) yield accept
-      
+
       (in, acceptHeader)
     }
-    
+
     val bytes = resp.data
     val len = bytes.length
     // insure that certain header fields are set
@@ -373,18 +373,18 @@ class LiftServlet extends HttpServlet {
     LiftRules.determineContentType( pairFromRequest(request) )),
     ("Content-Encoding", "UTF-8"),
     ("Content-Length", len.toString)))
-    
+
     LiftRules._beforeSend.foreach(_(resp, response, header, request))
     // set the cookies
     resp.cookies.foreach(cookie => response.addCookie(cookie))
-    
+
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
     response setStatus resp.code
-    response.getOutputStream.write(bytes)    
+    response.getOutputStream.write(bytes)
     LiftRules._afterSend.foreach(_(resp, response, header, request))
   }
-  
+
   /**
   * Remove any thread-local associations
   */
@@ -392,7 +392,7 @@ class LiftServlet extends HttpServlet {
     Actor.clearSelf
     DB.clearThread
   }
-  
+
 }
 
 class LiftFilter extends Filter
@@ -400,14 +400,14 @@ class LiftFilter extends Filter
   //The variable holds the current ServletContext (we need it for request URI - handling
   private var context: ServletContext = null
   private var actualServlet: LiftServlet = _
-  
+
   def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
   {
-    
+
     (req, res) match {
       case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
       LiftRules.early.foreach(_(httpReq))
-      
+
       val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
       URLRewriter.doWith(url => LiftRules.urlDecorate(httpRes.encodeURL(url))) {
@@ -416,22 +416,22 @@ class LiftFilter extends Filter
           chain.doFilter(req, res)
         }
       }
-      
+
       case _ => chain.doFilter(req, res)
     }
   }
-  
+
   //We need to capture the ServletContext on init
   def init(config:FilterConfig) {
     context = config.getServletContext
-    
-    LiftRules.setContext(context)       
+
+    LiftRules.setContext(context)
     bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
-    
+
     actualServlet = new LiftServlet(context)
     actualServlet.init
   }
-  
+
   //And throw it away on destruction
   def destroy {
     context = null
@@ -440,20 +440,20 @@ class LiftFilter extends Filter
       actualServlet = null
     }
   }
-  
+
   def bootLift(loader : Can[String]) : Unit =
   {
     try
     {
       val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
-      
+
       b.boot
       postBoot
     } catch {
       case e => Log.error("Failed to Boot", e); None
     }
   }
-  
+
   private def postBoot {
     try {
       ResourceBundle getBundle (LiftRules.liftCoreResourceName)
@@ -461,18 +461,18 @@ class LiftFilter extends Filter
       case _ => Log.error("LiftWeb core resource bundle for locale " + Locale.getDefault() + ", was not found ! ")
     }
   }
-  
-  
+
+
   //This function tells you wether a resource exists or not, could probably be better
   private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
   in.endsWith(".htm") ||
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
-  
+
   private def isLiftRequest_?(session: RequestState): Boolean = {
     if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
     else session.path.endSlash || (session.path.wholePath.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
   }
-  
+
 }
 

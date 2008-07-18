@@ -18,24 +18,24 @@ object BasicTypesHelpersSpec extends Specification with DataTables {
     val failure = Failure(null,null,null)
     "have a toBoolean method converting any object to a reasonable Boolean value" in {
       "object value" | "boolean value" 	|>
-       (0: Any)		 ! false			|				 
-       1  			 ! true				|				 
+       (0: Any)		 ! false			|
+       1  			 ! true				|
        (null:Any)    ! false			|
        true		     ! true				|
-       false		 ! false            | 
-       ""   		 ! false            | 
-       "string"		 ! false            | 
-       "t"  		 ! true             | 
-       "total" 		 ! true             | 
-       "T"  		 ! true             | 
-       "This"  		 ! true             | 
-       "0"  		 ! false            | 
-       None  		 ! false            | 
-       Some("t")	 ! true             | 
-       Empty    	 ! false            | 
-       Full("t")   	 ! true             | 
-       failure   	 ! false             | 
-       List("t", "f")! true             | 
+       false		 ! false            |
+       ""   		 ! false            |
+       "string"		 ! false            |
+       "t"  		 ! true             |
+       "total" 		 ! true             |
+       "T"  		 ! true             |
+       "This"  		 ! true             |
+       "0"  		 ! false            |
+       None  		 ! false            |
+       Some("t")	 ! true             |
+       Empty    	 ! false            |
+       Full("t")   	 ! true             |
+       failure   	 ! false             |
+       List("t", "f")! true             |
        { (o: Any, result: Boolean) =>
           toBoolean(o) must_== result
        }
@@ -45,16 +45,16 @@ object BasicTypesHelpersSpec extends Specification with DataTables {
       "object value"| "int value"	|>
        (null:Any)   ! 0				|
        1	    	! 1				|
-       1L			! 1 	        | 
-       List(1, 2)	! 1 	        | 
-       Some(1)		! 1 	        | 
-       Full(1)		! 1 	        | 
-       None			! 0 	        | 
-       Empty		! 0 	        | 
-       failure		! 0 	        | 
-       "3"			! 3 	        | 
-       "n"			! 0 	        | 
-       date(3000)	! 3 	        | 
+       1L			! 1 	        |
+       List(1, 2)	! 1 	        |
+       Some(1)		! 1 	        |
+       Full(1)		! 1 	        |
+       None			! 0 	        |
+       Empty		! 0 	        |
+       failure		! 0 	        |
+       "3"			! 3 	        |
+       "n"			! 0 	        |
+       date(3000)	! 3 	        |
        { (o: Any, result: Int) =>
           toInt(o) must_== result
        }
@@ -64,16 +64,16 @@ object BasicTypesHelpersSpec extends Specification with DataTables {
       "object value"| "long value"	|>
        (null:Any)   ! 0L			|
        1	    	! 1L			|
-       1L			! 1L 	        | 
-       List(1, 2)	! 1L 	        | 
-       Some(1)		! 1L 	        | 
-       Full(1)		! 1L 	        | 
-       None			! 0L 	        | 
-       Empty		! 0L 	        | 
-       failure		! 0L 	        | 
-       "3"			! 3L 	        | 
-       "n"			! 0L 	        | 
-       date(3000)	! 3000L 	    | 
+       1L			! 1L 	        |
+       List(1, 2)	! 1L 	        |
+       Some(1)		! 1L 	        |
+       Full(1)		! 1L 	        |
+       None			! 0L 	        |
+       Empty		! 0L 	        |
+       failure		! 0L 	        |
+       "3"			! 3L 	        |
+       "n"			! 0L 	        |
+       date(3000)	! 3000L 	    |
        { (o: Any, result: Long) =>
           toLong(o) must_== result
        }

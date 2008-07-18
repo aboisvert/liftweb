@@ -37,7 +37,7 @@ object CalendarUtils {
   def toJSON(items: List[CalendarItem]): JsExp = {
 
     JsObj(("items", JsArray(items.sort((e1, e2) => e1.start before(e2 start)) map(c => {
-      
+
       val (sh, sm) = (c.start.get(HOUR_OF_DAY), c.start.get(MINUTE));
       val (eh, em) = c.end map (c => (c.get(HOUR_OF_DAY), c.get(MINUTE))) openOr (48, 0)
 
@@ -45,38 +45,38 @@ object CalendarUtils {
         case x if sm >= 30 => sh*2 + 1
         case _ => sh*2
       }
-      
+
       val endIndex = em match {
         case x if em > 30 => eh*2 + 2
         case x if em > 0 => eh*2 + 1
         case _ => eh*2
-      } 
+      }
 
       var items: List[(String, JsExp)] = ("id", Str(c.id)) ::
-        ("start", JsRaw(startIndex toString)) :: 
+        ("start", JsRaw(startIndex toString)) ::
         ("end", c.end map(c => JsRaw(endIndex toString)) openOr JsRaw("48")) ::
         ("weekDay", Str(weekDay(c start) toString)) ::
-        ("startTime", Str(timeFormatter.format(c.start getTime))) :: 
+        ("startTime", Str(timeFormatter.format(c.start getTime))) ::
         ("subject", Str(c.subject openOr "")) :: Nil
-        
+
       items = c.description map(desc => items ++ (("description", Str(desc)) :: Nil) ) openOr items
       items = c.baseCSSClassName map(name => items ++ (("cssClass", Str(name)) :: Nil) ) openOr items
-      
+
       JsObj(items:_*)
-     
-      
-    }):_*))) 
+
+
+    }):_*)))
   }
 
   def weekDay(cal: Calendar) = {
     cal get (DAY_OF_WEEK)
   }
-  
-  def sameDay(c1: Calendar, c2: Calendar) = (c1.get(DAY_OF_MONTH) == c2.get(DAY_OF_MONTH)) && 
+
+  def sameDay(c1: Calendar, c2: Calendar) = (c1.get(DAY_OF_MONTH) == c2.get(DAY_OF_MONTH)) &&
                                              (c1.get(MONTH) == c2.get(MONTH)) &&
                                              (c1.get(YEAR) == c2.get(YEAR))
-    
-  def sameWeek(c1: Calendar, c2: Calendar) = (c1.get(WEEK_OF_YEAR) == c2.get(WEEK_OF_YEAR)) && 
+
+  def sameWeek(c1: Calendar, c2: Calendar) = (c1.get(WEEK_OF_YEAR) == c2.get(WEEK_OF_YEAR)) &&
                                              (c1.get(YEAR) == c2.get(YEAR))
-  
+
 }

@@ -8,7 +8,7 @@ package net.liftweb.util
 
 import org.apache.commons.collections.map.{LRUMap, AbstractLinkedMap}
 import org.apache.commons.collections.map.AbstractLinkedMap.LinkEntry
-  
+
 /**
  * LRU Cache wrapping {@link org.apache.commons.collections.map.LRUMap}
  *
@@ -23,7 +23,7 @@ class LRU[KeyType, ValueType](size: Int, loadFactor: Can[Float]) {
     case Full(lf) => new LRUMap(size, lf)
     case Empty => new LRUMap(size)
   }
-  
+
   def update(k: KeyType, v: ValueType) {
     map.put(k, v)
   }

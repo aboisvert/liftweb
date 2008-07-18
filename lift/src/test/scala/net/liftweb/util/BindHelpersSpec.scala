@@ -75,4 +75,3 @@ object BindHelpersSpec extends Specification with BindHelpers {
   }
 }
 class BindHelpersTest extends JUnit4(BindHelpersSpec)
- 

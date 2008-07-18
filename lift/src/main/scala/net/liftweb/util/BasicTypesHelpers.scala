@@ -11,12 +11,12 @@ object BasicTypesHelpers extends BasicTypesHelpers with StringHelpers
  * This trait adds functionalities to Scala standard types
  */
 trait BasicTypesHelpers { self: StringHelpers =>
-  
+
   /**
    * transforms a Boolean to a Boolean2, allowing expressions such as:
    * <code>(1 == 2) ? "a" | "b"</code> (This expression will return "b")
    */
-  implicit def boolean2(b: Boolean) = new Boolean2(b) 
+  implicit def boolean2(b: Boolean) = new Boolean2(b)
 
   /**
    * This class adds a ternary operator to Boolean expressions
@@ -38,14 +38,14 @@ trait BasicTypesHelpers { self: StringHelpers =>
       def |[B](default: => B): B  = default
     }
   }
-  
+
   /**
    * Optional cons that implements the expression: expr ?> value ::: List
    */
   class OptionalCons(expr: Boolean) {
     def ?>[T](f: => T): List[T] = if (expr) List(f) else Nil
   }
-  
+
   /**
    * transforms a Boolean expression in in an OptionalCons object so that an element can
    * be added to a list if the expression is true
@@ -53,7 +53,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
   implicit def toOptiCons(expr: Boolean): OptionalCons = new OptionalCons(expr)
 
   /**
-   * Convert any object to an "equivalent" Boolean depending on its value 
+   * Convert any object to an "equivalent" Boolean depending on its value
    */
   def toBoolean(in: Any): Boolean = {
     in match {
@@ -78,9 +78,9 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case o => toBoolean(o.toString)
     }
   }
-  
+
   /**
-   * Convert any object to an "equivalent" Int depending on its value 
+   * Convert any object to an "equivalent" Int depending on its value
    */
   def toInt(in: Any): Int = {
     in match {
@@ -98,9 +98,9 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case o => toInt(o.toString)
     }
   }
-  
+
   /**
-   * Convert any object to an "equivalent" Long depending on its value 
+   * Convert any object to an "equivalent" Long depending on its value
    */
   def toLong(in: Any): Long = {
     in match {
@@ -118,7 +118,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case o => toLong(o.toString)
     }
   }
-  
+
   /**
    * Convert any InputStream to a ByteArrayInputStream
    */
@@ -134,7 +134,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
     }
     new ByteArrayInputStream(bos.toByteArray)
   }
- 
+
   /**
    * @return true if two Byte arrays don't contain the same bytes
    */

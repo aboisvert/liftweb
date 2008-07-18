@@ -39,7 +39,7 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(toBoolean(Some("true" :: Nil)) == true)
     assert(toBoolean(1 :: Nil) == true)
     assert(toBoolean(0 :: Nil) == false)
-    
+
     assert(seconds(3) == 3000L)
     assert(3.seconds == 3000L)
     assert((4 minutes) + (3 seconds) == (3000L + 4L * 60L * 1000L))
@@ -47,21 +47,21 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(4.hours == (4L * 60L * 60L * 1000L))
     assert((3.days) == (3L * 24L * 60L * 60L * 1000L))
     assert(52.weeks == (52L * 7L * 24L * 60L * 60L * 1000L))
-    
+
     val min5:long = (5.minutes.later.getTime - System.currentTimeMillis) - 5.minutes
-    
+
     assert(min5 < 2L)
-    
+
     assert((5.minutes.ago.getTime - System.currentTimeMillis) + 5.minutes < 2L)
-    
+
     val tn = timeNow.toString
     Mailer.sendMail(From("test@liftweb.net"), Subject( "Testing lift's mail sending at "+tn),To("test@liftweb.net"),"Dude... this is kewl! @"+tn,
         <html><body>Dude... <b>this</b> is kewl<i>! @{tn}</i></body></html>)
     Mailer.sendMail(From("test@liftweb.net"), Subject( "Testing lift's mail sending at "+tn),To("test@liftweb.net"),
         XHTMLPlusImages(<html><body>This is an <a href='http://liftweb.net'><img src="cid:foomoo" /></a> image</body></html>, PlusImageHolder("foomoo", "image/gif", base64Decode(picture))))
-        
+
     Thread.sleep(100) // give the background thread a chance to send the message
-    
+
     assert(try {
       processString("Hello <%= mrdog %> how are you", Map("mrcat" -> "meow"))
       false
@@ -71,7 +71,7 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(processString("Hello <%= mrdog %> how are you", Map("mrdog" -> "meow")).indexOf("meow") > 4)
 
     Log.warn("Hello world")
-    
+
     val key = makeBlowfishKey
     val theMsg = (1 to 100000).mkString("(", ",", ")")
     val msgBytes = theMsg.getBytes
@@ -79,9 +79,9 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(notEq(enc, msgBytes), "The encypted stream is different, but the len is the same "+enc.length+" "+msgBytes.length+" str "+(new String(enc)))
     val dec = new String(readWholeStream(decryptStream(new java.io.ByteArrayInputStream(enc), key)))
     assert (dec == theMsg, "We encrypted and decrypted it")
-    
+
   }
-  
+
   val picture = """R0lGODlhggBcALMAACMhHfDw8KeTV/HQcItxJtPT07Ozs0dCNLiSIJGRkW9rXc+0Yv/cddKkHAAA
   AP///yH5BAAAAAAALAAAAACCAFwAAAT/8MlJq7046y3PKVwoWsZhjGiqcoXjKuAqP+U73zinuC6Q
   5KLAjgcAGo8AHu9zxBSSSkesSU21HEPiqSpJRA/JLXe8MTgAi6hL3MzyCAfHj0zHeAGMuJoNdPMW
