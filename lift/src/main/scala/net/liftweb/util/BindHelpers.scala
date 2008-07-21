@@ -43,11 +43,6 @@ trait BindHelpers {
   }
 
   /**
-   * transforms a tuple of containing a String and a NodeSeq to a BindParameter
-   */
-  implicit def toTheBindParam(in: Product2[String, NodeSeq]) = TheBindParam(in._1, in._2)
-
-  /**
    * Constant BindParam always returning the same value
    */
   case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
@@ -120,7 +115,7 @@ trait BindHelpers {
   case class Function1NodeSeqToNodeSeq(func: NodeSeq => NodeSeq)  
   implicit def function1NodeSeqToNodeSeq(f: NodeSeq => NodeSeq) = Function1NodeSeqToNodeSeq(f)
   
-  implicit def pairToBindParam(p: Tuple2[String, _]): BindParam = {
+  implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
     val (name, value) = p
     value match {
       case v: String => TheBindParam(name, Text(v))
@@ -137,7 +132,7 @@ trait BindHelpers {
     }
   }
   
-  implicit def symbolPairToBindParam(p: Tuple2[Symbol, _]): BindParam =
+  implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
     pairToBindParam((p._1.name, p._2))
     
   /**
