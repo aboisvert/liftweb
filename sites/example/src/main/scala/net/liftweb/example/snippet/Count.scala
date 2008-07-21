@@ -51,8 +51,8 @@ class Count {
     val value = CountHolder.is(attr)
 
     // Bind the incoming view data and the model data
-    bind("count", in, "value" --> value,
-    "incr" --> link("/count", () => CountHolder.is(attr) = value + 1, Text("++")),
-    "decr" --> link("/count", () => CountHolder.is(attr) = 0 max (value - 1), Text("--")))
+    bind("count", in, "value" -> value,
+    "incr" -> link("/count", () => CountHolder.is(attr) = value + 1, Text("++")),
+    "decr" -> link("/count", () => CountHolder.is(attr) = 0 max (value - 1), Text("--")))
   }
 }
