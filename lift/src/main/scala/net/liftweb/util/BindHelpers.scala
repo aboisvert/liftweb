@@ -109,19 +109,36 @@ trait BindHelpers {
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
   
   /**
-   * Wrapper class and implicit converter for the (NodeSeq => NodeSeq) type.
-   * This is used to get around JVM type erasure for Tuple2 -> BindParam conversions.
+   * This extractor is used to determine at runtime if a Function1[_, _] is
+   * actually a NodeSeq => NodeSeq. This is a hack to get around JVM type
+   * erasure.
    */
-  case class Function1NodeSeqToNodeSeq(func: NodeSeq => NodeSeq)  
-  implicit def function1NodeSeqToNodeSeq(f: NodeSeq => NodeSeq) = Function1NodeSeqToNodeSeq(f)
+  object Function1NodeSeqToNodeSeq {
+    def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
+      if (f.getClass.getMethods.exists{ method =>
+        method.getName == "apply" && {
+          val params: Seq[Class[_]] = method.getParameterTypes
+          params.length == 1 && params.exists(classOf[NodeSeq].isAssignableFrom _)
+        } &&
+        classOf[NodeSeq].isAssignableFrom(method.getReturnType)
+      }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
+      else None
+  }
   
+  /**
+   * Transforms a Tuple2[String, _] to a BindParam
+   */
   implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
     val (name, value) = p
     value match {
       case v: String => TheBindParam(name, Text(v))
       case v: NodeSeq => TheBindParam(name, v)
       case v: Symbol => TheBindParam(name, Text(v.name))
-      case Function1NodeSeqToNodeSeq(func) => FuncBindParam(name, func)
+      case fn: Function1[_, _] =>
+        Function1NodeSeqToNodeSeq.unapply(fn) match {
+          case Some(func) => FuncBindParam(name, func)
+          case _ => TheBindParam(name, Text(fn.toString))
+        }
       case v: Can[_] =>
         val ov = v openOr Text("Empty")
         ov match {
@@ -132,6 +149,9 @@ trait BindHelpers {
     }
   }
   
+  /**
+   * Transforms a Tuple2[Symbol, _] to a BindParam
+   */
   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
     pairToBindParam((p._1.name, p._2))
     

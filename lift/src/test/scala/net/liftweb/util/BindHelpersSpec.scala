@@ -49,6 +49,9 @@ object BindHelpersSpec extends Specification with BindHelpers {
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the function application of a FuncBindParam" in {
       bind("user", <t><user:tag>hello</user:tag></t>, FuncBindParam("tag", (n: NodeSeq) => Text(n.text + " world"))) must ==/(<t>hello world</t>)
     }
+    "properly convert a NodeSeq => NodeSeq to a FuncBindParam" in {
+      bind("user", <t><user:tag>hello</user:tag></t>, "tag" -> ((n: NodeSeq) => Text(n.text + " world"))) must ==/(<t>hello world</t>)
+    }
     "replace an attribute value named 'namespace:bindparam name' in a NodeSeq with a value from a BindParam" in {
       bind("user", <t user:hello="toreplace"></t>, "hello" -> Text("world")) must ==/(<t user:hello="world"></t>)
     }
