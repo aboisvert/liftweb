@@ -87,6 +87,7 @@ trait BindHelpers {
   /**
    * This class creates a BindParam from an input value
    */
+  @deprecated
   class BindParamAssoc(val name: String) {
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
@@ -100,16 +101,45 @@ trait BindHelpers {
    * transforms a String to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>"David" --> "name"</code>
-   */
+   */ 
+  @deprecated
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
 
   /**
    * transforms a Symbol to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>'David --> "name"</code>
-   */
+   */ 
+  @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
-
+  
+  /**
+   * Wrapper class and implicit converter for the (NodeSeq => NodeSeq) type.
+   * This is used to get around JVM type erasure for Tuple2 -> BindParam conversions.
+   */
+  case class Function1NodeSeqToNodeSeq(func: NodeSeq => NodeSeq)  
+  implicit def function1NodeSeqToNodeSeq(f: NodeSeq => NodeSeq) = Function1NodeSeqToNodeSeq(f)
+  
+  implicit def pairToBindParam(p: Tuple2[String, _]): BindParam = {
+    val (name, value) = p
+    value match {
+      case v: String => TheBindParam(name, Text(v))
+      case v: NodeSeq => TheBindParam(name, v)
+      case v: Symbol => TheBindParam(name, Text(v.name))
+      case Function1NodeSeqToNodeSeq(func) => FuncBindParam(name, func)
+      case v: Can[_] =>
+        val ov = v openOr Text("Empty")
+        ov match {
+          case o: NodeSeq => TheBindParam(name, o)
+          case _ => TheBindParam(name, Text(v.toString))
+        }
+      case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
+    }
+  }
+  
+  implicit def symbolPairToBindParam(p: Tuple2[Symbol, _]): BindParam =
+    pairToBindParam((p._1.name, p._2))
+    
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
