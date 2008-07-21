@@ -118,7 +118,7 @@ trait BindHelpers {
       if (f.getClass.getMethods.exists{ method =>
         method.getName == "apply" && {
           val params: Seq[Class[_]] = method.getParameterTypes
-          params.length == 1 && params.exists(classOf[NodeSeq].isAssignableFrom _)
+          params.length == 1 && params.exists(_.isAssignableFrom(classOf[NodeSeq]))
         } &&
         classOf[NodeSeq].isAssignableFrom(method.getReturnType)
       }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
