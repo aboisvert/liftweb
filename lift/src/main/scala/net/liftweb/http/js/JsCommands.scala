@@ -71,7 +71,9 @@ case class JsonCall(funcId: String) {
 }
 
 
-trait JsObj extends JsExp
+trait JsObj extends JsExp {
+  def props: List[(String,JsExp)]
+}
 
 trait JsExp extends SpecialNode with HtmlFixer with JxBase {
   def toJsCmd: String
@@ -93,14 +95,12 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase {
     parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
   }
 
-  def !(right: JsMethod): JsExp = new JsExp {
+  /**
+   * ~> accesses a property in the current JsExp
+   */
+  def ~>(right: JsMethod): JsExp =  new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + "." + right.toJsCmd
   }
-
-  /**
-   * --> accesses a property in the current JsExp
-   */
-  def -->(right: JsMethod): JsExp = this ! right
 
   def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
 
@@ -399,9 +399,8 @@ object JE {
   object JsObj {
     def apply(members: (String, JsExp)*): JsObj =
     new JsObj {
-      def toJsCmd = members.
-      map{case (n, v) => n.encJs+": "+v.toJsCmd}.
-      mkString("{", ", ", "}\n")
+      def toJsCmd = members.map{case (n, v) => n.encJs+": "+v.toJsCmd}.mkString("{", ", ", "}\n")
+      def props = members.toList
     }
   }
 

@@ -45,8 +45,11 @@ trait ResponseIt {
 case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
 			 cookies: List[Cookie], code: Int) extends ToResponse
 
+object JsonResponse {
+  def apply(json: JsExp): ResponseIt = JsonResponse(json, Nil, Nil, 200)
+}
 
-case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
+case class JsonResponse(json: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
 	def toResponse = {
 		val bytes = json.toJsCmd.getBytes("UTF-8")
 		Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)

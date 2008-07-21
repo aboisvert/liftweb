@@ -65,7 +65,7 @@ trait JsonComet {
       (renderExp).appendToParent(parentName)
     }
 
-    def renderExp: JsExp = (Jx(buildCheckbox).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]")))
+    def renderExp: JsExp = (Jx(buildCheckbox).toJs ~> JsFunc("apply", JsRaw("null"), JsRaw("[it]")))
 
     def buildCheckbox = <input type="checkbox" onclick={AnonFunc(theCall(JsRaw("this.checked")))}
     defaultChecked={JsVar("it", field.name)} />
@@ -87,7 +87,7 @@ trait JsonComet {
       (renderExp).appendToParent(parentName)
     }
 
-    def renderExp: JsExp = Jx(buildInput).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
+    def renderExp: JsExp = Jx(buildInput).toJs ~> JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
 
     def buildInput: NodeSeq = <input type="text" onblur={AnonFunc(onBlurCmd)}
     value={JsVar("it", field.name)} />
@@ -109,7 +109,7 @@ trait JsonComet {
       (renderExp).appendToParent(parentName)
     }
 
-    def renderExp: JsExp = Jx(buildInput).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
+    def renderExp: JsExp = Jx(buildInput).toJs ~> JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
 
     def buildInput: NodeSeq = <select onchange={AnonFunc(onChangeCmd)}>
     {
@@ -137,7 +137,7 @@ trait JsonComet {
       (renderExp).appendToParent(parentName)
     }
 
-    def renderExp: JsExp = Jx(buildInput).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
+    def renderExp: JsExp = Jx(buildInput).toJs ~> JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
 
     /**
     * A JavaScript expression that builds an array of Name, Value pairs for valid
@@ -170,7 +170,7 @@ trait JsonComet {
       (renderExp).appendToParent(parentName)
     }
 
-    def renderExp: JsExp = Jx(buildInput).toJs ! JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
+    def renderExp: JsExp = Jx(buildInput).toJs ~> JsFunc("apply", JsRaw("null"), JsRaw("[it]"))
 
     def buildInput: NodeSeq = <select onchange={AnonFunc(onChangeCmd)}>
     {
