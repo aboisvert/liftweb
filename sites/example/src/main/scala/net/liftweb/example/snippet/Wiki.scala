@@ -77,7 +77,7 @@ class Wiki extends MetaWikiEntry {
 
     def edit = BindChoice(toEdit, () => bind("edit",
       (xhtml \\ "editting").filter(_.prefix == "wiki").toList.head.child,
-      "form" --> editEntry(entry, isNew, pageName)))
+      "form" -> editEntry(entry, isNew, pageName)))
 
     def view = BindChoice(!toEdit, () => bind("view",
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child,

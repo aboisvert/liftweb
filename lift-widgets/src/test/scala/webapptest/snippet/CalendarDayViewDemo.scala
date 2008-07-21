@@ -128,7 +128,7 @@ class CalendarDayViewDemo {
     c.set(DAY_OF_MONTH, 17)
     c.set(MONTH, 4)
     bind("cal", html,
-         "widget" --> CalendarDayView(c, DayViewMeta(Locale.getDefault()), list, itemClick)
+         "widget" -> CalendarDayView(c, DayViewMeta(Locale.getDefault()), list, itemClick)
     )
 
   }

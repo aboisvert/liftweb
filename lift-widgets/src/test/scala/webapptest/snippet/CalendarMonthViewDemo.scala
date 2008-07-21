@@ -22,7 +22,7 @@ class CalendarMonthViewDemo {
     val c = Calendar getInstance;
     c.set(MONTH, 4)
     bind("cal", html,
-         "widget" --> CalendarMonthView(c, makeCals, itemClick, dayClick, weekClick)
+         "widget" -> CalendarMonthView(c, makeCals, itemClick, dayClick, weekClick)
     )
   }
   
