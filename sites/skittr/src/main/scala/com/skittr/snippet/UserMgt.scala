@@ -92,17 +92,10 @@ class UserMgt {
           userActor <- UserList.find(userName);
           user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) ; case _ => Empty};
           messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Full(m.messages); case _ => Empty}) yield {
-<<<<<<< HEAD:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
       bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++ 
         messages.flatMap{
         msg => 
         Helpers.bind("sk", xhtml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
-=======
-      bind("sk", xhtml, "username" --> (user.name+" -> "+user.fullName), "content" --> friendList(user)) ++
-        messages.flatMap{
-        msg =>
-        Helpers.bind("sk", xhtml, "username" --> (msg.who+" @ "+toInternetDate(msg.when)), "content" --> msg.text)
->>>>>>> master:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
       }
     }) openOr {S.error("User "+(S.param("user") openOr "")+" not found"); S.redirectTo("/")}
   }
@@ -115,13 +108,8 @@ class UserMgt {
     }
     </lift:comet>
     }) openOr {
-<<<<<<< HEAD:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
       Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>, 
           "content" -> <span>See what others are up to:<ul>{
-=======
-      Helpers.bind("sk", xhtml, "username" --> <a href="/new_acct">Create a New Account</a>,
-          "content" --> <span>See what others are up to:<ul>{
->>>>>>> master:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
             UserList.randomUsers(40).flatMap {
               u =>
               <li><a href={"/user/"+u}>{u}</a></li>
@@ -157,13 +145,8 @@ class UserMgt {
   }
 
   def random(xhtml: Group): NodeSeq = {
-<<<<<<< HEAD:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
     Helpers.bind("sk", xhtml, "username" -> "A Random List of Users", 
         "content" -> <span>See what others are up to:<ul>{
-=======
-    Helpers.bind("sk", xhtml, "username" --> "A Random List of Users",
-        "content" --> <span>See what others are up to:<ul>{
->>>>>>> master:sites/skittr/src/main/scala/com/skittr/snippet/UserMgt.scala
           UserList.randomUsers(40).flatMap {
             u =>
             <li><a href={"/user/"+u}>{u}</a></li>

@@ -98,7 +98,6 @@ trait BindHelpers {
    * Usage: <code>"David" --> "name"</code>
    */ 
   @deprecated
-   */
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
 
   /**
