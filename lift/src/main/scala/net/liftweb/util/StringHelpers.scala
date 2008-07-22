@@ -12,7 +12,7 @@ trait StringHelpers {
   /**
    * Replaces the value found in a string surrounded by <%= ... %> by a replacement according to the value found in the subst Map.<p/>
    * Throws an exception if no correspondance can be found.
-   * 
+   *
    * @param msg string where replacements should be done
    * @param subst map of [regular expression with groups, replacement]
    */
@@ -26,12 +26,12 @@ trait StringHelpers {
     m.appendTail(ret)
     ret.toString
   }
-  
+
   /**
-   * Capitalize every "word" in the string. A word is either separated by spaces or underscores. 
+   * Capitalize every "word" in the string. A word is either separated by spaces or underscores.
    * @param in string to capify
    * @return the capified string
-   */ 
+   */
   def capify(in: String): String = {
     val tmp = ((in match {
       case null => ""
@@ -43,7 +43,7 @@ trait StringHelpers {
     val sb = new StringBuilder
     capify(tmp, 0, 250, false, false, sb)
     sb.toString
-  }  
+  }
 
   /**
    * Replaces the groups found in the msg string with a replacement according to the value found in the subst Map
@@ -61,11 +61,11 @@ trait StringHelpers {
       }
     }
   }
-  
+
   /**
    * Remove all the characters from a string exception a-z, A-Z, 0-9, and '_'
    * @return the cleaned string and an empty string if the input is null
-   */ 
+   */
   def clean(in : String) =  if (in == null) "" else in.replaceAll("[^a-zA-Z0-9_]", "")
 
   /**
@@ -75,7 +75,7 @@ trait StringHelpers {
    */
   def randomString(size: Int): String = {
     def addChar(pos: Int, lastRand: Int, sb: StringBuilder): StringBuilder = {
-      if (pos >= size) sb 
+      if (pos >= size) sb
       else {
         val randNum = if ((pos % 6) == 0) random.nextInt else lastRand
         sb.append((randNum & 0x1f) match {
@@ -116,19 +116,19 @@ trait StringHelpers {
       case _ => (first, second)
     }
   }
-  
+
   /** @return an Empty can if the node seq is empty and a full can with the NodeSeq text otherwise */
   implicit def nodeSeqToOptionString(in: NodeSeq): Can[String] = if (in.length == 0) Empty else Full(in.text)
-  
+
   /**
-   * Parse a string and return the Long value of that string.<p/> 
+   * Parse a string and return the Long value of that string.<p/>
    * The string can start with '-' if it is a negative number or '+' for a positive number
-   * @return an Empty can if the node seq is empty and a full can with the NodeSeq text otherwise 
+   * @return an Empty can if the node seq is empty and a full can with the NodeSeq text otherwise
    */
   def parseNumber(tin: String): Long = {
     def cToL(in: Char) = in.toLong - '0'.toLong
     def p(in: List[Char]) = in.takeWhile(isDigit).foldLeft(0L)((acc,c) => (acc * 10L) + cToL(c))
-    
+
     if (tin eq null) 0L
     else {
       tin.trim.toList match {
@@ -142,11 +142,11 @@ trait StringHelpers {
   /** @return a SuperString with more available methods such as roboSplit or commafy */
   implicit def stringToSuper(in: String): SuperString = new SuperString(in)
 
-  /** 
-   * The SuperString class adds functionalities to the String class 
+  /**
+   * The SuperString class adds functionalities to the String class
    */
   class SuperString(val what: String) {
-    
+
     /**
      * Split a string according to a separator
      * @param sep a regexp to use with the String::split method
@@ -155,7 +155,7 @@ trait StringHelpers {
     def roboSplit(sep: String): List[String] = what match {case null => Nil case s => s.split(sep).toList.map(_.trim).filter(_.length > 0)}
 
     /**
-     * Split a string in 2 parts at the first place where a separator is found 
+     * Split a string in 2 parts at the first place where a separator is found
      * @return a List containing a pair of the 2 trimmed parts
      */
     def splitAt(sep: String): List[(String, String)] = {
@@ -166,10 +166,10 @@ trait StringHelpers {
           case -1 => Nil
           case n => List((what.substring(0, n).trim, what.substring(n + sep.length).trim))
         }
-    } 
-  
+    }
+
     /**
-     * Encode the string to be including in JavaScript, replacing '\' or '\\' or non-ASCII characters by their unicode value 
+     * Encode the string to be including in JavaScript, replacing '\' or '\\' or non-ASCII characters by their unicode value
      * @return the encoded string inserted into quotes
      */
     def encJs: String = {
@@ -183,7 +183,7 @@ trait StringHelpers {
           what.charAt(pos) match {
             case c @ ('\\' | '\'') => sb.append(escChar(c))
             case c if c < ' ' || c > '~' => sb.append(escChar(c))
-            case c => sb.append(c) 
+            case c => sb.append(c)
           }
           pos += 1
         }
@@ -199,7 +199,7 @@ trait StringHelpers {
       if (what eq null) null
       else {
         val toDo = what.toList.reverse
-      
+
         def commaIt(in: List[Char]): List[Char] = in match {
           case Nil => in
           case x :: Nil => in

@@ -28,7 +28,7 @@ object Schemifier {
    case class Collector(funcs: List[() => Any], cmds: List[String]) {
      def +(other: Collector) = Collector(funcs ::: other.funcs, cmds ::: other.cmds)
    }
-  
+
    private def using[RetType <: Any, VarType <: ResultSet](f: => VarType)(f2: VarType => RetType): RetType = {
      val theVar = f
      try {
@@ -37,7 +37,7 @@ object Schemifier {
        theVar.close()
      }
    }
-   
+
   def schemify(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, dbId: ConnectionIdentifier, stables: BaseMetaMapper*): List[String] = {
     val tables = stables.toList
     DB.use(dbId) {
@@ -46,11 +46,11 @@ object Schemifier {
       val driver = con.calcDriver(connection.getMetaData.getDatabaseProductName)
       val actualTableNames = new HashMap[String, String]
       if (performWrite) tables.foreach(_.beforeSchemifier)
-      val toRun = 
+      val toRun =
       tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureTable(performWrite, logFunc, t, connection, actualTableNames)) +
       tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureColumns(performWrite, logFunc, t, connection, actualTableNames)) +
       tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureIndexes(performWrite, logFunc, t, connection, actualTableNames)) +
-      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureConstraints(performWrite, logFunc, t, connection, actualTableNames)) 
+      tables.foldLeft(Collector(Nil, Nil))((b, t) => b + ensureConstraints(performWrite, logFunc, t, connection, actualTableNames))
 
       /*
       val toRun = tables.flatMap(t => ensureTable(performWrite, t, connection, actualTableNames) ) :::
@@ -58,19 +58,19 @@ object Schemifier {
       tables.flatMap{t => ensureIndexes(performWrite, t, connection, actualTableNames)} :::
       tables.flatMap{t => ensureConstraints(performWrite, t, connection, actualTableNames)}
       */
-        
+
       if (performWrite) {
 	tables.foreach(_.afterSchemifier)
 	toRun.funcs.foreach(f => f())
       }
-      
+
       toRun.cmds
     }
   }
-  
+
   def destroyTables_!!(logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): Unit = destroyTables_!!(DefaultConnectionIdentifier, logFunc, stables :_*)
 
-  def destroyTables_!!(dbId: ConnectionIdentifier, logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): Unit = 
+  def destroyTables_!!(dbId: ConnectionIdentifier, logFunc: (=> AnyRef) => Unit, stables: BaseMetaMapper*): Unit =
     destroyTables_!!(dbId, 0, logFunc,  stables.toList)
 
   def destroyTables_!!(dbId: ConnectionIdentifier,cnt: Int, logFunc: (=> AnyRef) => Unit, stables: List[BaseMetaMapper]) {
@@ -79,7 +79,7 @@ object Schemifier {
       conn =>
 	val sConn = conn // SuperConnection(conn)
       val tables = stables.toList.filter(t => hasTable_?(t, sConn, th))
-      
+
       tables.foreach{
         table =>
           try {
@@ -92,14 +92,14 @@ object Schemifier {
             case e: Exception => // dispose... probably just an SQL Exception
           }
       }
-      
+
       tables
     }) match {
       case t if t.length > 0 && cnt < 1000 => destroyTables_!!(dbId, cnt + 1, logFunc, t)
       case _ =>
     }
   }
-  
+
   /**
    * Retrieves schema name where the unqualified db objects are searched.
    */
@@ -110,7 +110,7 @@ object Schemifier {
   private def hasTable_? (table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Boolean = {
     val md = connection.getMetaData
     using(md.getTables(null, getDefaultSchemaName(connection), null, null)){ rs =>
-    def hasTable(rs: ResultSet): Boolean = 
+    def hasTable(rs: ResultSet): Boolean =
       if (!rs.next) false
       else rs.getString(3) match {
         case s if s.toLowerCase == table.dbTableName.toLowerCase => actualTableNames(table.dbTableName) = s; true
@@ -118,18 +118,18 @@ object Schemifier {
       }
 
     hasTable(rs)
-    }  
+    }
   }
-  
+
 
   /**
    * Creates an SQL command and optionally executes it.
-   * 
+   *
    * @param performWrite Whether the SQL command should be executed.
    * @param logFunc Logger.
    * @param connection Database connection.
    * @param makeSql Factory for SQL command.
-   * 
+   *
    * @returns SQL command.
    */
   private def maybeWrite(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, connection: SuperConnection) (makeSql: () => String) : String ={
@@ -163,7 +163,7 @@ object Schemifier {
       Collector(table.dbAddTable.toList, cmds.toList)
     } else Collector(Nil, cmds.toList)
   }
-  
+
   private def createColumns(table: BaseMetaMapper, connection: SuperConnection): Seq[String] = {
     table.mappedFields.flatMap(_.fieldCreatorString(connection.driverType))
   }
@@ -180,14 +180,14 @@ object Schemifier {
       while (hasColumn < totalColCnt && rs.next) {
         val tableName = rs.getString(3).toLowerCase
         val columnName = rs.getString(4).toLowerCase
-        
+
         if (tableName == table.dbTableName.toLowerCase && field.dbColumnNames(field.name).contains(columnName)) {
           cols = columnName :: cols
           hasColumn = hasColumn + 1
         }
       })
 
-      
+
       // FIXME deal with column types
       (field.dbColumnNames(field.name) -- cols).foreach {
         colName =>
@@ -203,18 +203,18 @@ object Schemifier {
       }
 
       field.dbAddedColumn.toList
-      
+
     }
-    
+
     Collector(rc, cmds.toList)
-    
+
   }
 
   private def ensureIndexes(performWrite: Boolean, logFunc: (=> AnyRef) => Unit, table: BaseMetaMapper, connection: SuperConnection, actualTableNames: HashMap[String, String]): Collector = {
-    val cmds = new ListBuffer[String]() 
+    val cmds = new ListBuffer[String]()
     // val byColumn = new HashMap[String, List[(String, String, Int)]]()
     val byName = new HashMap[String, List[String]]()
-    
+
     val md = connection.getMetaData
     val q = using(md.getIndexInfo(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), false, false)) {rs =>
     def quad(rs: ResultSet): List[(String, String, Int)] = {
@@ -231,7 +231,7 @@ object Schemifier {
     q.foreach{case (name, col, pos) => byName.get(name) match {case Some(li) => byName(name) = col :: li case _ => byName(name) = List(col)}}
     val indexedFields: List[List[String]] = byName.map{case (name, value) => value.sort(_ < _)}.toList
     //rs.close
-    
+
     val single = table.mappedFields.filter{f => f.dbIndexed_?}.toList.flatMap {
       field =>
 	if (!indexedFields.contains(List(field.dbColumnName.toLowerCase))) {
@@ -241,7 +241,7 @@ object Schemifier {
           field.dbAddedIndex.toList
 	} else Nil
     }
-    
+
     table.dbIndexes.foreach {
       index =>
 	val columns = index.columns.toList
@@ -265,7 +265,7 @@ object Schemifier {
 	  val other = field.dbKeyToTable
 	val otherTable = actualTableNames(other.dbTableName)
 	val myTable = actualTableNames(table.dbTableName)
-	
+
 	val md = connection.getMetaData
 	// val rs = md.getCrossReference(null, null,otherTable , null, null, myTable)
 	var foundIt = false
@@ -285,7 +285,7 @@ object Schemifier {
 	} else Nil
       }
     } else Nil
-    
+
     Collector(ret, cmds.toList)
   }
 }

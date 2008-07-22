@@ -32,19 +32,19 @@ import S._
   */
 class MappedPoliteString[T <: Mapper[T]](towner: T, theMaxLen: Int) extends MappedString[T](towner, theMaxLen) {
   override def defaultValue = ""
-  override protected def setFilter = crop _ :: super.setFilter  
+  override protected def setFilter = crop _ :: super.setFilter
 }
 
 class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends MappedField[String, T] {
   private val data: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
   private val orgData: FatLazy[String] =  FatLazy(defaultValue) // defaultValue
-  
+
   def dbFieldClass = classOf[String]
 
   final def crop(in: String): String = in.substring(0, Math.min(in.length, maxLen))
-  
+
   final def removeRegExChars(regEx: String)(in: String): String = in.replaceAll(regEx, "")
-  
+
   final def toLower(in: String): String = in match {
     case null => null
     case s => s.toLowerCase
@@ -58,13 +58,13 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     case null => null
     case s => s.trim
   }
-  
+
   final def notNull(in: String): String = in match {
     case null => ""
     case s => s
   }
 
-  
+
   protected def real_i_set_!(value : String) : String = {
     if (!data.defined_? || value != data.get) {
       data() = value
@@ -72,12 +72,12 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     }
     data.get
   }
-  
+
   /**
   * Get the JDBC SQL Type for this field
   */
   def targetSQLType = Types.VARCHAR
-  
+
   def defaultValue = ""
 
   override def writePermission_? = true
@@ -92,16 +92,16 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   override protected[mapper] def doneWithSave() {
     orgData.setFrom(data)
   }
-  
-  override def _toForm: Can[NodeSeq] = 
-    Full(<input type='text' maxlength={maxLen.toString} 
-	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})} 
-	 value={is match {case null => "" case s => s.toString}}/>)  
-  
+
+  override def _toForm: Can[NodeSeq] =
+    Full(<input type='text' maxlength={maxLen.toString}
+	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
+	 value={is match {case null => "" case s => s.toString}}/>)
+
   protected def i_obscure_!(in : String) : String = {
     ""
   }
-  
+
   override def setFromAny(in: Any): String = {
     in match {
       case seq: Seq[_] if !seq.isEmpty => seq.map(setFromAny)(0)
@@ -114,29 +114,29 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
       case o => this.set(o.toString)
     }
   }
-  
-  
+
+
   def apply(ov: Can[String]): T = {
     ov.foreach(v => this.set(v))
     fieldOwner
   }
 
   def asJsExp: JsExp = JE.Str(is)
-  
+
   def apply(ov: String): T = apply(Full(ov))
-  
+
   def jdbcFriendly(field : String): String = data.get
-  
+
   def real_convertToJDBCFriendly(value: String): Object = value
-  
+
   private def wholeSet(in: String) {
     this.data() = in
     this.orgData() = in
   }
-  
+
   def buildSetActualValue(accessor: Method, inst: AnyRef, columnName: String): (T, AnyRef) => Unit =
     (inst, v) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (v eq null) null else v.toString)})
-  
+
   def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
     (inst, v, isNull) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (isNull) null else v.toString)})
 
@@ -146,14 +146,14 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
     (inst, v) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (v eq null) null else v.toString)})
 
-  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit = 
+  def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit =
     (inst, v, isNull) => doField(inst, accessor, {case f: MappedString[T] => f.wholeSet(if (isNull) null else v.toString)})
-  
+
   /**
    * A validation helper.  Make sure the string is at least a particular
    * length and generate a validation issue if not
    */
-  def valMinLen(len: int, msg: String)(value: String): List[FieldError] = 
+  def valMinLen(len: int, msg: String)(value: String): List[FieldError] =
     if ((value eq null) || value.length < len) List(FieldError(this, Text(msg)))
     else Nil
 
@@ -161,7 +161,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
    * A validation helper.  Make sure the string is no more than a particular
    * length and generate a validation issue if not
    */
-  def valMaxLen(len: int, msg: String)(value: String): List[FieldError] = 
+  def valMaxLen(len: int, msg: String)(value: String): List[FieldError] =
     if ((value ne null) && value.length > len) List(FieldError(this, Text(msg)))
     else Nil
 
@@ -185,5 +185,5 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
    * Given the driver type, return the string required to create the column in the database
    */
   def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" VARCHAR("+maxLen+")"
-  
+
 }

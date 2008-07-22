@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions
 * and limitations under the License.
 */
-  
+
 package net.liftweb.widgets.calendars;
 
 import scala.xml._
@@ -41,16 +41,16 @@ object CalendarMonthView {
   }
 
   def apply(when: Calendar,
-            calendars: Seq[CalendarItem], 
-            itemClick: Can[AnonFunc], 
-            dayClick: Can[AnonFunc], 
+            calendars: Seq[CalendarItem],
+            itemClick: Can[AnonFunc],
+            dayClick: Can[AnonFunc],
             weekClick: Can[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
-            
+
   def apply(when: Calendar,
             meta: MonthViewMeta,
-            calendars: Seq[CalendarItem], 
-            itemClick: Can[AnonFunc], 
-            dayClick: Can[AnonFunc], 
+            calendars: Seq[CalendarItem],
+            itemClick: Can[AnonFunc],
+            dayClick: Can[AnonFunc],
             weekClick: Can[AnonFunc]) = new CalendarMonthView(when, meta) render(calendars, itemClick, dayClick, weekClick)
 
 
@@ -58,11 +58,11 @@ object CalendarMonthView {
 
 /**
  * CalendarMonthView renders a month view representation of a collection of CalendarItem
- * <br> 
+ * <br>
  * Usage example - assume CalendarView is a typical LiftWeb snippet
  * <pre>
  * class CalendarView {
- * 
+ *
  *  def render(html: Group) : NodeSeq = {
  *    val c = Calendar getInstance;
  *    c.set(MONTH, 4)
@@ -70,70 +70,70 @@ object CalendarMonthView {
  *         "widget" --> CalendarMonthView(c, makeCals, itemClick, dayClick, weekClick)
  *    )
  *  }
- *  
+ *
  *  import JE._
  *  import JsCmds._
- *  
+ *
  *  def itemClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
  *  def dayClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
  *  def weekClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
- * 
- *  
+ *
+ *
  *  private def makeCals = {
  *    val c1 = Calendar getInstance
  *    val c2 = Calendar getInstance;
  *    val c3 = Calendar getInstance;
- * 
+ *
  *    c2.set(DAY_OF_MONTH, 3)
  *    c3.set(DAY_OF_MONTH, 1)
  *    c3.set(MONTH, 4)
- * 
+ *
  *    val item1 = CalendarItem(...)
  *    val item2 = CalendarItem(...)
  *    val item3 = CalendarItem(...)
- *    
+ *
  *    item1 :: item2 :: item3 ::  Nil
  *  }
  * }
- * 
+ *
  * </pre>
  *
  * @param when - the Calendar object describing the month that needs tobe rendered
  *
  */
 class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
-  
+
   def this(when: Calendar) = this(when, MonthViewMeta(MONDAY, Locale getDefault))
-  
+
   /**
    * Returns the markup for rendering the calendar month view
    *
    * @param calendars - the calendar items than need to be rendered
-   * @param itemClick - Ajax function to be called when a calendar item was clicked. 
-   *                    It takes two parameters: elem the node that was clicked and 
+   * @param itemClick - Ajax function to be called when a calendar item was clicked.
+   *                    It takes two parameters: elem the node that was clicked and
    *                    param the identifier if this CalendarItem
    * @param dayClick - Ajax function to be called when a day number(cell header) item was clicked
-   *                   It takes two parameters: elem the node that was clicked and 
+   *                   It takes two parameters: elem the node that was clicked and
    *                   param the date of the clicked day in MM/dd/yyyy format
    * @param weekClick - Ajax function to be called when a day number(cell header) item was clicked
-   *                   It takes two parameters: elem the node that was clicked and 
+   *                   It takes two parameters: elem the node that was clicked and
    *                   the week number
-   * @return NodeSeq - the markup to be rendered  
+   * @return NodeSeq - the markup to be rendered
    */
-  def render(calendars: Seq[CalendarItem], 
-             itemClick: Can[AnonFunc], 
+  def render(calendars: Seq[CalendarItem],
+             itemClick: Can[AnonFunc],
              dayClick: Can[AnonFunc],
              weekClick: Can[AnonFunc]): NodeSeq = {
-     
+
     def makeCells(calendar: Calendar): NodeSeq = {
-      
+
       def predicate (current: Calendar, c: CalendarItem) = {
         // Adjust the precision
         current.set(MILLISECOND, c.start.get(MILLISECOND))
         current.set(SECOND, c.start.get(SECOND))
         current.set(MINUTE, c.start.get(MINUTE))
         current.set(HOUR_OF_DAY, c.start.get(HOUR_OF_DAY))
-        
+
         c end match {
           case Empty => current.get(DAY_OF_MONTH) >= c.start.get(DAY_OF_MONTH) && current.get(MONTH) >= c.start.get(MONTH)
           case Full(end) => {
@@ -143,12 +143,12 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
         }
       }
       val thisMonth = when get(MONTH)
-      val cal = calendar.clone().asInstanceOf[Calendar] 
+      val cal = calendar.clone().asInstanceOf[Calendar]
       val today = Calendar getInstance (meta locale)
-      (0 to 5) map (row => <tr><td wk={cal get(WEEK_OF_YEAR) toString} 
-                                   class="cellWeek" 
+      (0 to 5) map (row => <tr><td wk={cal get(WEEK_OF_YEAR) toString}
+                                   class="cellWeek"
                                    onclick={JsFunc("weekClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("wk")).toJsCmd}>
-        {cal get(WEEK_OF_YEAR)}</td>{(0 to 6) map (col => 
+        {cal get(WEEK_OF_YEAR)}</td>{(0 to 6) map (col =>
         try{
          <td>{
             val day = cal.get(DAY_OF_MONTH)
@@ -157,11 +157,11 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
             val div = <div>{
               calendars filter (c => predicate(cal, c)) map (c => {
                 val r = <div class="calendarItem"><a href="#">{
-                   <span>{timeFormatter format(c.start.getTime)} {c.subject openOr "..."}</span> 
-                }</a></div> % 
-                  ("id" -> c.id) % 
+                   <span>{timeFormatter format(c.start.getTime)} {c.subject openOr "..."}</span>
+                }</a></div> %
+                  ("id" -> c.id) %
                   ("onclick" -> JsFunc("itemClick", JsRaw("this"), Jq(JsRaw("this")) >> JqGetAttr("id")).toJsCmd)
-                  
+
                 c.description map (desc => r % (("title" -> desc))) openOr r
               }
               )
@@ -173,18 +173,18 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
                 case _ => ("cellHead", "cellBody")
               }
             }
-            Group(<div>{day}</div> % 
-              ("class" -> head) :: 
+            Group(<div>{day}</div> %
+              ("class" -> head) ::
               div % ("class" -> cell) :: Nil)
           }</td> % ("date" -> (dateFormatter format(cal getTime))) %
             ("onclick" -> JsFunc("dayClick", JsRaw("this"), (Jq(JsRaw("this")) >> JqGetAttr("date"))).toJsCmd)
         } finally {
           cal add(DAY_OF_MONTH, 1)
         }
-        ) 
+        )
       }</tr>)
     }
-    
+
     def makeHead(headCal: Calendar) = <tr><td></td>{
       (0 to 6) map(x => <td width="14%">{
         try{
@@ -194,30 +194,30 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
         }
       }</td>)
     }</tr>
-    
+
     val cal = when.clone().asInstanceOf[Calendar]
     cal set(DAY_OF_MONTH, 1)
     val delta = cal.get(DAY_OF_WEEK) - meta.firstDayOfWeek
     cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
-    
+
     val headCal = cal.clone().asInstanceOf[Calendar]
-    
+
     val init = JsRaw("""
       jQuery(document).ready(function() {
         jQuery('.calendarItem').click(function(e){
           e.stopPropagation();
         });
-        jQuery('.calendarItem').tooltip({ 
-          track: true, 
-          delay: 0, 
+        jQuery('.calendarItem').tooltip({
+          track: true,
+          delay: 0,
           showURL: false
         });
       })
-      """) & 
+      """) &
       JsCrVar("itemClick", itemClick openOr JsRaw("function(param){}")) &
-      JsCrVar("dayClick", dayClick openOr JsRaw("function(param){}")) & 
+      JsCrVar("dayClick", dayClick openOr JsRaw("function(param){}")) &
       JsCrVar("weekClick", weekClick openOr JsRaw("function(param){}"))
-    
+
       <head>
         <link rel="stylesheet" href="/classpath/calendars/monthview/style.css" type="text/css"/>
         <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
@@ -229,7 +229,7 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
         <table width="100%" cellspacing="1" cellpadding="0" style="table-layout: fixed;" class="topHead">
           {makeHead(headCal)}
           {makeCells(cal)}
-        </table> 
+        </table>
       }</div>
   }
 }

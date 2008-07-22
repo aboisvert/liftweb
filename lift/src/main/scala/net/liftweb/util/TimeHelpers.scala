@@ -11,19 +11,19 @@ object TimeHelpers extends TimeHelpers with ControlHelpers with ClassHelpers
  * or general utility functions (get the date for today, get year/month/day number,...)
  */
 trait TimeHelpers { self: ControlHelpers =>
-  
+
   /** private variable allowing the access to all TimeHelpers functions from inside the TimeSpan class */
-  private val outer = this 
+  private val outer = this
 
   /** transforms a long to a TimeSpanBuilder object. Usage: 3L.seconds returns a TimeSpan of 3000L millis  */
   implicit def longToTimeSpanBuilder(in: long): TimeSpanBuilder = TimeSpanBuilder(in)
-  
+
   /** transforms an int to a TimeSpanBuilder object. Usage: 3.seconds returns a TimeSpan of 3000L millis  */
   implicit def intToTimeSpanBuilder(in: int): TimeSpanBuilder = TimeSpanBuilder(in)
-  
+
   /** transforms a long to a TimeSpan object. Usage: 3000L returns a TimeSpan of 3000L millis  */
   implicit def longToTimeSpan(in: long): TimeSpan = TimeSpan(in)
-  
+
   /** transforms an int to a TimeSpan object. Usage: 3000 returns a TimeSpan of 3000L millis  */
   implicit def intToTimeSpan(in: int): TimeSpan = TimeSpan(in)
 
@@ -40,19 +40,19 @@ trait TimeHelpers { self: ControlHelpers =>
     def weeks = TimeSpan(outer.weeks(len))
     def week = weeks
   }
-  
-  /** 
+
+  /**
    * transforms a TimeSpan to a date by converting the TimeSpan expressed as millis and creating
-   * a Date lasting that number of millis from the Epoch time (see the documentation for java.util.Date)  
+   * a Date lasting that number of millis from the Epoch time (see the documentation for java.util.Date)
    */
   implicit def timeSpanToDate(in: TimeSpan): Date = in.date
 
   /** transforms a TimeSpan to its long value as millis */
   implicit def timeSpanToLong(in: TimeSpan): long = in.millis
 
-  /** 
+  /**
    * The TimeSpan class represents an amount of time.
-   * It can be translated to a date with the date method. In that case, the number of millis seconds will be used to create a Date 
+   * It can be translated to a date with the date method. In that case, the number of millis seconds will be used to create a Date
    * object starting from the Epoch time (see the documentation for java.util.Date)
    */
   class TimeSpan(val millis: Long) {
@@ -70,7 +70,7 @@ trait TimeHelpers { self: ControlHelpers =>
 
     /** @return a TimeSpan representing the substraction of 2 TimeSpans */
     def -(in: TimeSpan) = TimeSpan(this.millis - in.millis)
-    
+
     /** override the equals method so that TimeSpans can be compared to long, int and TimeSpan */
     override def equals(cmp: Any) = {
       cmp match {
@@ -80,31 +80,31 @@ trait TimeHelpers { self: ControlHelpers =>
         case _ => false
       }
     }
-    
+
     /** override the toString method to display a readable amount of time */
     override def toString = TimeSpan.format(millis)
   }
-  
-  /** 
+
+  /**
    * The TimeSpan object provides class represents an amount of time.
-   * It can be translated to a date with the date method. In that case, the number of millis seconds will be used to create a Date 
+   * It can be translated to a date with the date method. In that case, the number of millis seconds will be used to create a Date
    * object starting from the Epoch time (see the documentation for java.util.Date)
    */
   object TimeSpan {
     /** time units and values used when converting a total number of millis to those units (see the format function)  */
     val scales = List((1000L, "milli"), (60L, "second"), (60L, "minute"), (24L, "hour"), (7L, "day"), (10000L, "week"))
-    
+
     /** explicit constructor for a TimeSpan  */
     def apply(in: long) = new TimeSpan(in)
 
-    /** 
-     * Formats a number of millis to a string representing the number of weeks, days, hours, minutes, seconds, millis  
+    /**
+     * Formats a number of millis to a string representing the number of weeks, days, hours, minutes, seconds, millis
      */
     def format(millis: Long): String = {
       def divideInUnits(millis: Long) = scales.foldLeft[(Long, List[(Long, String)])]((millis, Nil)){ (total, div) =>
-          (total._1 / div._1, (total._1 % div._1, div._2) :: total._2) 
-        }._2 
-      def formatAmount(amountUnit: (Long, String)) = amountUnit match { 
+          (total._1 / div._1, (total._1 % div._1, div._2) :: total._2)
+        }._2
+      def formatAmount(amountUnit: (Long, String)) = amountUnit match {
         case (amount, unit) if (amount == 1) => amount + " " + unit
         case (amount, unit) => amount + " " + unit + "s"
       }
@@ -126,7 +126,7 @@ trait TimeHelpers { self: ControlHelpers =>
 
   /** @return the number of millis corresponding to 'in' days */
   def days(in: long): long = hours(in) * 24L
-  
+
   /** @return the number of millis corresponding to 'in' weeks */
   def weeks(in: long): long = days(in) * 7L
 
@@ -178,16 +178,16 @@ trait TimeHelpers { self: ControlHelpers =>
 
   /**
    * @deprecated use now instead
-   * @return the current time as a Date object 
+   * @return the current time as a Date object
    */
   def timeNow = new Date
 
-  /** 
+  /**
    * @deprecated use today instead
-   * @return the current Day as a Date object 
+   * @return the current Day as a Date object
    */
   def dayNow: Date = 0.seconds.later.noTime
-  
+
   /** alias for new Date(millis) */
   def time(when: long) = new Date(when)
 
@@ -197,14 +197,14 @@ trait TimeHelpers { self: ControlHelpers =>
     cal.setTimeInMillis(in.getTime)
     cal.get(Calendar.MONTH)
   }
-  
+
   /** @return the year corresponding to today (relative to UTC) */
   def year(in: Date): Int =  {
     val cal = Calendar.getInstance(utc)
     cal.setTimeInMillis(in.getTime)
     cal.get(Calendar.YEAR)
   }
-  
+
   /** @return the day of month corresponding to the input date (1 based) */
   def day(in: Date): Int =  {
     val cal = Calendar.getInstance(utc)
@@ -214,10 +214,10 @@ trait TimeHelpers { self: ControlHelpers =>
 
   /** The UTC TimeZone */
   val utc = TimeZone.getTimeZone("UTC")
-  
+
   /** @return the number of days since epoch converted from millis */
   def millisToDays(millis: Long): Long = millis / (1000L * 60L * 60L * 24L)
-  
+
   /** @return the number of days since epoch */
   def daysSinceEpoch: Long = millisToDays(millis)
 
@@ -227,10 +227,10 @@ trait TimeHelpers { self: ControlHelpers =>
     val result = f
     (millis - start, result)
   }
-  
-  /** 
+
+  /**
    * Log a message with the time taken in millis to do something and retrun the result
-   * @return the result 
+   * @return the result
    */
   def logTime[T](msg: String)(f: => T): T = {
     val (time, ret) = calcTime(f)
@@ -238,22 +238,22 @@ trait TimeHelpers { self: ControlHelpers =>
     ret
   }
 
-  /** 
-   * @return a standard format HH:mm:ss 
+  /**
+   * @return a standard format HH:mm:ss
    */
   val hourFormat = new SimpleDateFormat("HH:mm:ss")
-  
-  /** 
-   * @return the formatted time for a given Date 
+
+  /**
+   * @return the formatted time for a given Date
    */
-  def hourFormat(in: Date): String = hourFormat.format(in)    
+  def hourFormat(in: Date): String = hourFormat.format(in)
 
   /** @return a standard format for the date yyyy/MM/dd */
   def dateFormatter = new SimpleDateFormat("yyyy/MM/dd")
 
   /** @return a format for the time which includes the TimeZone: HH:mm zzz*/
   def timeFormatter = new SimpleDateFormat("HH:mm zzz")
-  
+
   /** @return today's date formatted as yyyy/MM/dd */
   def formattedDateNow = dateFormatter.format(now)
 
@@ -266,18 +266,18 @@ trait TimeHelpers { self: ControlHelpers =>
     ret.setTimeZone(utc)
     ret
   }
-  
+
   /** @return a date from a string using the internet format. Return the Epoch date if the parse is unsuccesfull */
   def parseInternetDate(dateString: String): Date = tryo {
     internetDateFormatter.parse(dateString)
   } openOr new Date(0L)
-  
+
   /** @return a date formatted with the internet format */
   def toInternetDate(in: Date): String = internetDateFormatter.format(in)
 
   /** @return a date formatted with the internet format (from a number of millis) */
   def toInternetDate(in: long): String = internetDateFormatter.format(new Date(in))
-  
+
   /** @return a Full(date) or a failure if the input couldn't be translated to date (or Empty if the input is null)*/
   def toDate(in: Any): Can[Date] = {
     try {

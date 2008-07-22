@@ -34,7 +34,7 @@ import scala.collection.mutable.HashMap
   * This snippet handles counting
   */
 class ValidateSession {
-  
+
    /**
     * This method is invoked by the &lt;lift:Count /&gt; tag
     */

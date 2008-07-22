@@ -22,7 +22,7 @@ class RSSFeed {
   def getFeed(feedUrl: String): Elem = {
     val u = new URL(feedUrl)
     val con = u.openConnection
-    
+
     XML.load(con.getInputStream)
   }
 

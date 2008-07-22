@@ -18,7 +18,7 @@ object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[
 /**
  * An O-R mapped "User" class that includes first name, last name, password. LiftNote: 1
  */
-class User extends MegaProtoUser[User] {  
+class User extends MegaProtoUser[User] {
   def getSingleton = User // what's the "meta" server
   def primaryKeyField = id
   object blogtitle extends MappedString(this, 128)

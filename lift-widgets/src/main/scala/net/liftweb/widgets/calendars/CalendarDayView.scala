@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions
 * and limitations under the License.
 */
-  
+
 package net.liftweb.widgets.calendars;
 
 import scala.xml._
@@ -28,7 +28,7 @@ import JsCmds._
 import JE._
 
 object CalendarDayView {
-  
+
   /**
    * Call this function typically in boot
    */
@@ -39,22 +39,22 @@ object CalendarDayView {
       case "common" :: _ => true
     })
   }
-  
+
   def apply(when: Calendar,
-      calendars: List[CalendarItem], 
+      calendars: List[CalendarItem],
       itemClick: Can[AnonFunc]) = new CalendarDayView(when).render(calendars, itemClick)
-      
+
   def apply(when: Calendar,
       meta: DayViewMeta,
-      calendars: List[CalendarItem], 
+      calendars: List[CalendarItem],
       itemClick: Can[AnonFunc]) = new CalendarDayView(when, meta) render(calendars, itemClick)
-  
+
 }
 
 class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
- 
+
   def this(when: Calendar) = this(when, DayViewMeta(Locale getDefault))
-  
+
   def makeHead(headCal: Calendar) = <tr><td></td>{
     (0 to 6) map(x => <td width="14%">{
       try{
@@ -65,18 +65,18 @@ class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
     }</td>)
   }</tr>
 
-  
+
   def render(calendars: List[CalendarItem], itemClick: Can[AnonFunc]): NodeSeq = {
-    
+
     val cal = when.clone().asInstanceOf[Calendar]
-    
+
     <head>
       <link rel="stylesheet" href="/classpath/calendars/dayview/style.css" type="text/css"/>
       <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
       <script type="text/javascript" src="/classpath/calendars/dayview/dayviewcalendars.js"></script>
       <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
       <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
-      <script type="text/javascript" charset="utf-8">{      
+      <script type="text/javascript" charset="utf-8">{
         Unparsed("\nvar itemClick = " + (itemClick openOr JsRaw("function(param){}")).toJsCmd) ++
         Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameDay(c.start, when))).toJsCmd) ++
         Unparsed("""
@@ -111,7 +111,7 @@ class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
           <tr>
             <td class="dayHour"><div>{Unparsed(meta.timeFormatter format(cal getTime))}</div></td>
             {
-              <td id={Unparsed("didx_" + (i*2 toString))} class="dayCell borderDashed"></td> 
+              <td id={Unparsed("didx_" + (i*2 toString))} class="dayCell borderDashed"></td>
             }
           </tr>
           <tr>
@@ -119,7 +119,7 @@ class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
             {
               <td id={Unparsed("didx_" + ((i*2+1) toString))} class="dayCell borderSolid"></td>
             }
-          </tr>  
+          </tr>
         } finally {
           cal add(HOUR_OF_DAY, 1)
         }

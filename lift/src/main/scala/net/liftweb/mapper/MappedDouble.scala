@@ -83,13 +83,13 @@ class MappedDouble[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Double, 
 	def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =
 		(inst, v) => doField(inst, accessor, {case f: MappedDouble[T] => f.st(if (v == null) defaultValue else v.getTime)})
 
-	def buildSetStringValue(accessor: Method, columnName: String): (T, String) => 
+	def buildSetStringValue(accessor: Method, columnName: String): (T, String) =>
 		Unit = (inst, v) => doField(inst, accessor, {case f: MappedDouble[T] => f.st(toDouble(v))})
 
-	def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) => 
+	def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) =>
 		Unit = (inst, v, isNull) => doField(inst, accessor, {case f: MappedDouble[T] => f.st(if (isNull) defaultValue else v)})
 
-	def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => 
+	def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) =>
 		Unit = (inst, v) => doField(inst, accessor, {case f: MappedDouble[T] => f.st(toDouble(v))})
 
 	def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.doubleColumnType

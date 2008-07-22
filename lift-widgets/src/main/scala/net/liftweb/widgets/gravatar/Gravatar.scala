@@ -25,7 +25,7 @@ class Gravatar {
     var src = "http://www.gravatar.com/avatar.php?gravatar_id=" + getMD5(e)
     src = src + "&size=" + S.attr("s").openOr("42")
     src = src + "&rating=" + S.attr("r").openOr("G")
-    
+
     <div id="gravatar_wrapper"><div id="gravatar_image"><img src={src}></img></div></div>
   }
 }

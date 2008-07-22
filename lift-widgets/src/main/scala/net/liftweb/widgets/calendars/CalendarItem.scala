@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions
 * and limitations under the License.
 */
-  
+
 package net.liftweb.widgets.calendars;
 
 import java.util.Calendar
@@ -23,35 +23,35 @@ import net.liftweb.util.{Can, Empty, Full}
 object CalendarItem {
   def apply(id: String, start: Calendar, calendarType: CalendarType.Value) = new CalendarItem(id, start, calendarType)
 }
-case class CalendarItem(id: String, 
-                        start: Calendar, 
+case class CalendarItem(id: String,
+                        start: Calendar,
                         calendarType: CalendarType.Value,
                         end: Can[Calendar],
-                        subject: Can[String], 
+                        subject: Can[String],
                         description: Can[String],
                         baseCSSClassName: Can[String]) {
 
   def this(id: String, start: Calendar, calendarType: CalendarType.Value) = this(id, start, calendarType, Empty, Empty, Empty, Empty)
-  
+
   def end (end: Calendar) = CalendarItem(id, start, calendarType, Can.legacyNullTest(end), Empty, Empty, Empty)
   def subject (subject: String) = CalendarItem(id, start, calendarType, Empty, Can.legacyNullTest(subject), Empty, Empty)
   def description(description: String) = CalendarItem(id, start, calendarType, Empty, Empty, Can.legacyNullTest(description), Empty)
   /**
-   * Defines the base name of the css classes describing the calendar items rendered. 
+   * Defines the base name of the css classes describing the calendar items rendered.
    * For instance if "greenItem" is provided the css needs to have the following classes:
-   * greenItem, greenItemHead and greenItemBody. For exemplification please see calendarItem, 
-   * calendarItemHead and calendarItemBody classes. If this is missing calendarItem base name 
+   * greenItem, greenItemHead and greenItemBody. For exemplification please see calendarItem,
+   * calendarItemHead and calendarItemBody classes. If this is missing calendarItem base name
    * will be assumed by JS code.
    */
   def baseCSSClassName(name: String) = CalendarItem(id, start, calendarType, Empty, Empty, Empty, Can.legacyNullTest(name))
-  
-  private def choose[T](l: Can[T], r: Can[T]): Can[T] = l match {case Empty => r case _ => l} 
-  
+
+  private def choose[T](l: Can[T], r: Can[T]): Can[T] = l match {case Empty => r case _ => l}
+
   def optional(f: (CalendarItem) => CalendarItem*): CalendarItem = {
     f.map(c => c(this)).foldLeft(this)((l, r) => CalendarItem(id, start, calendarType,
         choose(l end, r end),
         choose(l subject, r subject),
-        choose(l description, r description), 
+        choose(l description, r description),
         choose(l baseCSSClassName, r baseCSSClassName))
     )
   }

@@ -95,7 +95,7 @@ object ListHelpersSpec extends Specification with ListHelpers {
   }
   "The ListHelpers permuteWithSublists function (permuteAll method on a List object)" should {
     "create a List of all the permutations of a given list" in {
-      List(1, 2, 3).permuteAll must_== List(List(2, 1, 3), List(3, 2, 1), List(1, 3, 2), 
+      List(1, 2, 3).permuteAll must_== List(List(2, 1, 3), List(3, 2, 1), List(1, 3, 2),
                                                       List(2, 3, 1), List(3, 1, 2), List(1, 2, 3),
                                                       List(3, 2), List(1, 2), List(1, 3),
                                                       List(2, 3), List(2, 1), List(3, 1),
@@ -120,7 +120,7 @@ object ListHelpersSpec extends Specification with ListHelpers {
       List().?  must beFalse
       List(1).?  must beTrue
     }
-    "provide a replace method to replace one element of the list at a given position (0-based index)." + 
+    "provide a replace method to replace one element of the list at a given position (0-based index)." +
     " If the position is negative, the first element is replaced" in {
       List(1, 2, 3).replace(1, 4)  must_== List(1, 4, 3)
       List(1, 2, 3).replace(4, 4)  must_== List(1, 2, 3)

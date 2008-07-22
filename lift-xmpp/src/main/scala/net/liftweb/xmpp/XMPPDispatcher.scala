@@ -23,7 +23,7 @@ import scala.collection.mutable.Map
 /** These messages are sent to the XMPPDispatcher Actor. */
 // Send the Presence to the XMPP server
 case class SetPresence(presence: Presence)
-case class CreateChat(to: String) 
+case class CreateChat(to: String)
 case class SendMsg(to: String, msg: String)
 case class CloseChat(to: String)
 case class GetPendingMsg(to: String)
@@ -73,12 +73,12 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
       }
     })
   }
-  
+
   // This is a Map of to: address to Chat object.
   val chats: HashMap[String, Chat] = new HashMap[String, Chat]
   val pendingMsg: HashMap[String, List[String]] = new HashMap[String, List[String]]
   val md = new MessageDispatcher(this)
-  
+
   // Manage the remotely created chats, so we don't miss incomming messages
   // The only thing we need to do is add our message listener, the rest
   // will be managed by the dispatching actor.
@@ -89,9 +89,9 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
       }
     }
   })
-  
+
   def act = loop(Nil)
-  
+
   def loop(clients: List[Actor]) {
     react {
       /* These are all messages we process from the client Actors. */
@@ -104,7 +104,7 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
       case GetPendingMsg(to) => pendingMsg.getOrElse(to, Nil) match {
         case Nil => pendingMsg -= to; loop(clients)
         case xs: List[Message] => {
-          pendingMsg -= to; 
+          pendingMsg -= to;
           clients.foreach(_ ! BulkMsg(chats.getOrElse(to, null), xs)); loop(clients)
         }
         case _ => loop(clients)
@@ -131,7 +131,7 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
         loop(clients)
       }
       case CloseChat(to) => chats -= to; loop(clients)
-      
+
       /* From here on are Messages we process from the XMPP server */
       case r@RosterEntriesDeleted(_) => clients.foreach(_ ! r); loop(clients)
       case r@RosterEntriesUpdated(_) => clients.foreach(_ ! r); loop(clients)
@@ -155,7 +155,7 @@ class XMPPDispatcher(val connf: () => ConnectionConfiguration, val login: XMPPCo
       case a => loop(clients)
     }
   }
-  
+
   // Accepts messages from XMPP and sends them to the local actor for dispatching.
   class MessageDispatcher(dispatch: Actor) extends MessageListener {
     def processMessage(chat: Chat, msg: Message) {
@@ -179,11 +179,11 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
   def login(conn: XMPPConnection) = conn.login(username, password)
   val xmpp = new XMPPDispatcher(connf, login)
   xmpp.start
-  
+
   val chats: Map[String, List[Message]] = new HashMap[String, List[Message]]
   val rosterMap: HashMap[String, Presence] = new HashMap[String, Presence]
   var roster: Roster = null
-  
+
   def act = loop
   def loop {
     react {
@@ -197,7 +197,7 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
         loop
       }
       case RecvMsg(chat, msg) => {
-        println("RecvMsg from: " + msg.getFrom + ": " + msg.getBody); 
+        println("RecvMsg from: " + msg.getFrom + ": " + msg.getBody);
         loop
       }
       case NewRoster(r) => {
@@ -234,15 +234,15 @@ class ConsoleChatActor(val username: String, val password: String) extends Actor
       case a => println(a); loop
     }
   }
-  
+
   def createChat(to: String) {
     xmpp ! CreateChat(to)
   }
-  
+
   def sendMessage(to: String, msg: String) {
     xmpp ! SendMsg(to, msg)
   }
-  
+
   /**
   * @returns an Iterable of all users who aren't unavailable along with their Presence
   */

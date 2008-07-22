@@ -10,14 +10,14 @@ import com.hellolift.model.Entry
 import com.hellolift.model.User
 
 class BlogUtil {
-  def entry = (new Entry).author(User.currentUser).toForm(Full("Post"), 
-				 (t: Entry) => { 
+  def entry = (new Entry).author(User.currentUser).toForm(Full("Post"),
+				 (t: Entry) => {
 				   t.save
 				   S.redirectTo("/view?id=" + t.id)})
 
   def viewentry(xhtml : Group) : NodeSeq = {
     val t = Entry.find(S.param("id"))
-    t.map(t => 
+    t.map(t =>
       bind("entry", xhtml,
 	   'name -> t.title.toString,
 	   'body -> t.body.toString)) openOr <span>Not found!</span>
@@ -31,18 +31,18 @@ class BlogUtil {
   }
 
   def viewblog(xhtml : Group) : NodeSeq = {
-    // Find all Entries by author using the parameter 
-    val t = Entry.findAll(By(Entry.author, toLong(S.param("id"))), 
+    // Find all Entries by author using the parameter
+    val t = Entry.findAll(By(Entry.author, toLong(S.param("id"))),
 			OrderBy(Entry.id, false), MaxRows(20))
     t match {
       // If no 'id' was requested, then show a listing of all users.
-      case Nil => User.findAll().map(u => <span><a href={"/blog?id=" + u.id}> 
+      case Nil => User.findAll().map(u => <span><a href={"/blog?id=" + u.id}>
 				      {u.firstName + " " + u.lastName}</a>
 				      <br /></span>)
-      case entries => 
+      case entries =>
 	<lift:comet type="DynamicBlogView" name={toLong(S.param("id")).toString}>
           <blog:view>Loading...</blog:view>
-        </lift:comet> 
+        </lift:comet>
     }
   }
 

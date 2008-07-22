@@ -21,28 +21,28 @@ import scala.xml._
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Full}
 
- 
+
 /**
  * This class is a built in snippet that allows rendering only messages (Errors, Warnings, Notices)
- * that are associated with the id provided. Typically this will be used near by form fields to 
+ * that are associated with the id provided. Typically this will be used near by form fields to
  * indicate that a certain field failed the validation.
  *
  * E.g.
  * <pre>
  *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg"/&gt;
- * 
+ *
  * or
- * 
- *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg" 
- *                                                        errorClass="error_class" 
- *                                                        warningClass="warning_class" 
+ *
+ *   &lt;input type="text" value="" name="132746123548765"/&gt;&lt;lift:msg id="user_msg"
+ *                                                        errorClass="error_class"
+ *                                                        warningClass="warning_class"
  *                                                        noticeClass="notice_class"/&gt;
  * </pre>
  */
-class Msg { 
-  
+class Msg {
+
   def render(styles: NodeSeq): NodeSeq = {
-    
+
      val msgs: (String) => NodeSeq = (id) => {
        val f = messagesById(id) _
        List((f(S.errors), attr("errorClass")),
@@ -52,17 +52,17 @@ class Msg {
                    msg.toList match {
                      case Nil => Nil
                      case msgList => style match {
-                       case Full(s) => msgList flatMap (t => <span>{t}</span> % ("class" -> s)) 
+                       case Full(s) => msgList flatMap (t => <span>{t}</span> % ("class" -> s))
                        case _ => msgList flatMap ( n => n )
                      }
                    }
        }
     }
-    
+
     attr("id") match {
       case Full(id) => <span>{msgs(id)}</span> % ("id" -> id)
       case _ => NodeSeq.Empty
     }
-    
+
   }
 }

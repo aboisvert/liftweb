@@ -11,12 +11,12 @@ package net.liftweb.util
  *
  * An example of using it with a ProtoUser subclass:
  *
- * object UserCache extends KeyedCache[Long, User](100, Full(0.75f), 
+ * object UserCache extends KeyedCache[Long, User](100, Full(0.75f),
  *   (id: Long) => User.find(By(User.id, id)))
  *
  * @param size the size of the cache
  * @param loadFactor the optional Load Factor
- * @param cons A function that will take a value of type K and return a Can[T] 
+ * @param cons A function that will take a value of type K and return a Can[T]
  *   populated into the cache if the return value is Full.
  *
  * @author Steve Jenson (stevej@pobox.com)

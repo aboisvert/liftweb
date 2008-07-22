@@ -15,12 +15,12 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
                      ThroughType <: Any](owner: From,
 					 otherSingleton: MetaMapper[To],
 					 through: MetaMapper[Through],
-					 throughFromField: MappedField[ThroughType, Through], 
-					 throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks 
+					 throughFromField: MappedField[ThroughType, Through],
+					 throughToField: MappedField[ThroughType, Through]) extends LifecycleCallbacks
 {
   private var theSetList: Seq[ThroughType] = Nil
-  
-  private val others = FatLazy[List[To]] { 
+
+  private val others = FatLazy[List[To]] {
     DB.use(owner.connectionIdentifier) {
       conn =>
 	val query = "SELECT DISTINCT "+otherSingleton.dbTableName+".* FROM "+otherSingleton.dbTableName+","+
@@ -41,9 +41,9 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
       }
     }
   }
-  
+
   def apply(): List[To] = others.get
-  
+
   def get: List[To] = this()
 
   def reset = others.reset
@@ -58,16 +58,16 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
       toDelete => toDelete.delete_!
     }
   }
-  
+
   override def afterUpdate {
     val current = through.findAll(By(throughFromField,owner.primaryKeyField))
-    
+
     val newKeys = new HashSet[ThroughType];
-    
+
     theSetList.foreach(i => newKeys += i)
     val toDelete = current.filter(c => !newKeys.contains(throughToField.actualField(c).is))
     toDelete.foreach(_.delete_!)
-    
+
     val oldKeys = new HashSet[ThroughType];
     current.foreach(i => oldKeys += throughToField.actualField(i))
 
@@ -83,7 +83,7 @@ class HasManyThrough[From <: KeyedMapper[ThroughType, From],
     others.reset
     super.afterUpdate
   }
-  
+
   override def afterCreate {
     theSetList.toList.removeDuplicates.foreach {
       i =>

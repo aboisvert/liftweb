@@ -16,12 +16,9 @@
 package net.liftweb.util
 
 import org.specs._
-import org.specs.runner.JUnit3
-import org.specs.runner.ConsoleRunner
+import org.specs.runner._
 
-class ToHeadTest extends JUnit3(ToHeadSpecs)
-object ToHeadSpecsRunner extends ConsoleRunner(ToHeadSpecs)
-
+class ToHeadTest extends JUnit4(ToHeadSpecs)
 object ToHeadSpecs extends Specification {
    "lift <head> merger" should {
      "merge /html/body//head into existing /html/head section" >> {
@@ -37,11 +34,11 @@ object ToHeadSpecs extends Specification {
            <div>
              sub section
              <head>
-               <style>
-               .myClass {{
+               <style><![CDATA[
+               .myClass {
                  text-align:right;
-                 }}
-               </style>
+                 }
+               ]]></style>
              </head>
            </div>
          </body>
@@ -64,7 +61,7 @@ object ToHeadSpecs extends Specification {
            </div>
          </body>
        </html>
-       HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
+       HeadHelper.mergeToHtmlHead(actual).toString.replaceAll("\\s", "") must_==(expected.toString.replaceAll("\\s", ""))
      }
 
      "merge <head> from real example" >> {
@@ -100,7 +97,7 @@ object ToHeadSpecs extends Specification {
             <ul><li><a href="/">Home</a></li><li><a href="/htmlFragmentWithHead" id="current">htmlFragmentWithHead</a></li><li><a href="/htmlSnippetWithHead">htmlSnippetWithHead</a></li></ul>
           </body>
         </html>
-       HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
+       HeadHelper.mergeToHtmlHead(actual) must ==/(expected)
      }
 
      "merge <lift:tohead> into a new head if not previously exist" >> {
@@ -139,7 +136,7 @@ object ToHeadSpecs extends Specification {
            </div>
          </body>
        </html>
-       HeadHelper.mergeToHtmlHead(actual) must equalIgnoreSpace(expected)
+       HeadHelper.mergeToHtmlHead(actual).toString.replaceAll("\\s", "") must_==(expected.toString.replaceAll("\\s", ""))
      }
    }
 

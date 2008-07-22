@@ -7,7 +7,7 @@ package net.liftweb.util
 \*                                                 */
 
 import scala.collection.mutable.ListBuffer
-  
+
 /**
   * Calculate the edit distance between words
   */
@@ -24,7 +24,7 @@ object LD extends Application {
     * @return a Tuple containing the word with the shortest edit distance and the edit distance
     */
   def apply(root: String, ly: List[String]): (String, Int) = this(root,ly, (a: String) => a)
-  
+
   /**
     * Find the word that has the closest edit distance to the root string
     *
@@ -37,8 +37,8 @@ object LD extends Application {
   def apply[T](root: String, ly: List[T], f: T => String): (T, Int) =
     (ly: @unchecked) match {
       case w :: Nil => (w, this(root, f(w)))
-        
-        case w :: ws => 
+
+        case w :: ws =>
           val tv = this(root, f(w))
       val rest = this(root, ws, f)
       if (tv < rest._2) (w, tv)
@@ -58,12 +58,12 @@ object LD extends Application {
     val x1 = x.trim.toLowerCase.toList
     val y1 = y.trim.toLowerCase.toList
 
-    def column(word: List[Char], dist: List[Int], 
+    def column(word: List[Char], dist: List[Int],
                left: Int, top: Int, ch: Char,
              acc: ListBuffer[Int]): List[Int] =
       word match {
         case Nil => acc.toList
-        case c :: cs => 
+        case c :: cs =>
           val cost = if (c == ch) 0 else 1
         val i = dist.head
         val calc = min(left + cost, i + 1, top + 1)
@@ -74,8 +74,8 @@ object LD extends Application {
     def matrix(word: List[Char], pos: Int, dist: List[Int]): List[Int] =
       word match {
         case Nil => dist
-        case c :: cs => matrix(cs, pos + 1, 
-                               column(x1, dist, pos, pos + 1, c, 
+        case c :: cs => matrix(cs, pos + 1,
+                               column(x1, dist, pos, pos + 1, c,
                                       new ListBuffer))
       }
 

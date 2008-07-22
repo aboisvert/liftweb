@@ -20,7 +20,7 @@ object Safe {
    */
   def next = rand.nextLong
   private val threadLocal = new ThreadGlobal[long]
-  
+
   /**
    * Is the current context "safe" for the object with the
    * given safety code?
@@ -33,7 +33,7 @@ object Safe {
   def runSafe[T](x : long)(f : => T) : T = {
      threadLocal.doWith(x)(f)
   }
-  
+
 
   def randomString(len: int): String = StringHelpers.randomString(len)
 }

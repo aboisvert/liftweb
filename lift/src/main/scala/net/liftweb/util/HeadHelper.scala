@@ -3,12 +3,12 @@ import scala.xml._
 
 /**
  * This object provides functions to setup the head section of html documents.</p>
- * <code></code> 
+ * <code></code>
  */
 object HeadHelper {
 
   def identity(xml: NodeSeq) : NodeSeq = xml
- 
+
   def mergeToHtmlHead(xhtml: NodeSeq) : NodeSeq = {
     val headChildren = new NodeBuffer();
     def extractHead2(nodes: Iterable[Node]): NodeSeq = {
@@ -30,18 +30,18 @@ object HeadHelper {
       case Elem(namespace, label, attrs, scp, ns @ _*) => Elem(namespace, label, attrs, scp, extractHead2(ns):_* )
       case Group(nodes) => nodes.flatMap(extractHead)
       case _ if (node.isInstanceOf[Node]) => node
-      case _ => node.flatMap(extractHead2) 
+      case _ => node.flatMap(extractHead2)
     }
     extractHead2(xhtml)
   }
- 
+
   def cleanHead(htmlHead: NodeSeq) : NodeSeq = {
     val newHead = new NodeBuffer()
     htmlHead.foreach(node => if (!newHead.exists(sameAs(node, _))) newHead &+ node)
     //identity(head)
     newHead
   }
-  
+
   def sameAs(node1: Node, node2: Node): Boolean = {
     if (node1.label.equals(node2.label)) {
       node1.label match {
@@ -59,4 +59,4 @@ object HeadHelper {
     }
   }
 }
- 
+

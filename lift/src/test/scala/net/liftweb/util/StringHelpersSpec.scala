@@ -17,7 +17,7 @@ object StringHelpersSpec extends Specification with StringHelpers {
     "throw an exception if no correspondance is found" in {
       processString("<%=hello%>", Map("hallo" -> "bonjour")) must throwA(new Exception)
     }
-  } 
+  }
   "The StringHelpers capify function" should {
     "capitalize a word" in {
       capify("hello") must_== "Hello"
@@ -133,10 +133,10 @@ object StringHelpersSpec extends Specification with StringHelpers {
       "hello".roboSplit("tt") must_== List("hello")
     }
     "return an empty list if the string is null" in {
-      (null: String).roboSplit("a") must_== List() 
+      (null: String).roboSplit("a") must_== List()
     }
     "return a list containing the string if the string is empty" in {
-      "".roboSplit("a") must_== List() 
+      "".roboSplit("a") must_== List()
     }
   }
   "The SuperString class splitAt method" should {

@@ -17,16 +17,16 @@ import java.util.Vector
 import javax.servlet._
 import javax.servlet.http._
 
-/** 
+/**
  * A Mock HttpServletResponse. Take a peek at it's writer or
  * outputStream to see what lift has written in response to your request
- * 
+ *
  * @param writer a PrintWriter that the response will be written with
  * @param outputStream an OutputStream that the response will be written to.
- * 
+ *
  * @author Steve Jenson (stevej@pobox.com)
  */
-class MockHttpServletResponse(var writer: PrintWriter, var outputStream: ServletOutputStream) 
+class MockHttpServletResponse(var writer: PrintWriter, var outputStream: ServletOutputStream)
   extends HttpServletResponse {
   var statusCode : Int = 200
   var statusString : String = "OK"
@@ -74,7 +74,7 @@ class MockHttpServletResponse(var writer: PrintWriter, var outputStream: Servlet
   }
 
   def sendError(code: Int) {
-    statusCode = code    
+    statusCode = code
   }
 
   def sendError(code: Int, s: String) {
@@ -104,8 +104,8 @@ class MockHttpServletResponse(var writer: PrintWriter, var outputStream: Servlet
     // well, reset all the state to it's original values. yikes. later.
   }
   def isCommitted = false
-  def resetBuffer { 
-    // reset the buffer. 
+  def resetBuffer {
+    // reset the buffer.
   }
   def flushBuffer {
     // flush the buffer

@@ -47,7 +47,7 @@ object RequestType {
       case null => false
       case s @ _ => s.toUpperCase == "XMLHttpRequest".toUpperCase
     }*/
-    
+
     req.getMethod.toUpperCase match {
       case "GET" => GetRequest
       case "POST" => PostRequest

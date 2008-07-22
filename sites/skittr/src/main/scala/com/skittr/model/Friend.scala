@@ -23,7 +23,7 @@ object Friend extends Friend with KeyedMetaMapper[long, Friend] {
 class Friend extends KeyedMapper[long, Friend] {
   def getSingleton = Friend // what's the "meta" server
   def primaryKeyField = id
-  
+
   object id extends MappedLongIndex(this)
 
   object owner extends MappedLongForeignKey(this, User)

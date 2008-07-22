@@ -61,7 +61,7 @@ class Ajax {
                4 seconds, 1 second)
        & SetHtml("the_text", Text(v))))
     } <br />
-    
+
 
 
     <textarea id="the_area" cols="50" rows="10"></textarea>
@@ -83,14 +83,14 @@ class Ajax {
             5 seconds, 1 second)
       }
     }
-    
+
     <br/>
     <br/>
 
     {
       ajaxForm(hidden(ignore => JsCmds.Alert("Test Passed")) ++ submit("Test Ajax Form", s => ()))
     } <br />
-    
+
     </span>
   }
 

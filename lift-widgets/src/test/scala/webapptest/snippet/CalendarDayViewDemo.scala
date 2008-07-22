@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions
 * and limitations under the License.
 */
-    
+
 package webapptest.snippet;
 
 import scala.xml._
@@ -33,7 +33,7 @@ import net.liftweb.widgets.calendars.{CalendarDayView, DayViewMeta, CalendarItem
 class CalendarDayViewDemo {
 
   def render(html: Group) : NodeSeq = {
-    
+
     val c1 = Calendar getInstance;
     c1.set(HOUR_OF_DAY, 0)
     c1.set(MINUTE, 40)
@@ -94,7 +94,7 @@ class CalendarDayViewDemo {
     c5End.set(DAY_OF_MONTH, 17)
     c5End.set(MONTH, 4)
 
-    
+
     val item1 = CalendarItem("1234", c1, CalendarType.MEETING) optional (
         _ end (c1End),
         _ subject("Hi there"),
@@ -123,7 +123,7 @@ class CalendarDayViewDemo {
         )
 
     val list = item1 :: item2 :: item3 :: item4 :: item5 :: Nil;
-    
+
     val c = Calendar getInstance;
     c.set(DAY_OF_MONTH, 17)
     c.set(MONTH, 4)
@@ -135,8 +135,8 @@ class CalendarDayViewDemo {
 
   import JE._
   import JsCmds._
-  
-  
+
+
   def itemClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
 
 }

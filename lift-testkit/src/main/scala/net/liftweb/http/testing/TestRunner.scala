@@ -11,17 +11,17 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
 
   def setup[T](what: List[Item]): (() => TestResults, (String,() => T) => T)  = {
   val log = new ListBuffer[Tracker]
-  
+
    def beforeAssert(name: String): unit = synchronized {
       log += Tracker(name, true, true, true, Empty, Nil)
       beforeAssertListeners.foreach(_(name))
     }
-    
+
     def afterAssert(name: String, success: Boolean): Unit = synchronized {
       log += Tracker(name, true, false, success, Empty, Nil)
-      afterAssertListeners.foreach(_(name, success))    
+      afterAssertListeners.foreach(_(name, success))
     }
-    
+
     def applyAssert(name: String, f:() => T): T = synchronized {
       var success = false
       beforeAssert(name)
@@ -33,39 +33,39 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
         afterAssert(name, success)
       }
     }
-    
+
     def beforeTest(name: String) {
       log += Tracker(name, false, true, true, Empty, Nil)
       beforeTestListeners.foreach(_(name))
     }
-    
+
     def afterTest(name: String, success: Boolean, excp: Can[Throwable], trace: List[StackTraceElement]) {
-      log += Tracker(name, false, false, success, excp, trace) 
+      log += Tracker(name, false, false, success, excp, trace)
       afterTestListeners.foreach(_(name, success, excp, trace))
     }
-    
 
-    
+
+
   def run: TestResults = {
-    
+
     def doResetDB {
       clearDB.foreach(_())
       setupDB.foreach(_())
     }
-    
+
     doResetDB
-    
-    
+
+
     def runASingleTest(testItem: Item) {
       beforeTest(testItem.name)
-      
+
       val myTrace = (try{throw new Exception("")} catch {case e => e}).getStackTrace.toList.tail.head
       if (testItem.resetDB) doResetDB
       val (success, trace, excp) = try {
         testItem.getFunc(0)()
         (true, Nil, Empty)
       } catch {
-        case e => 
+        case e =>
         def combineStack(ex: Throwable,base: List[StackTraceElement]): List[StackTraceElement] = ex match {
           case null => base
           case e => combineStack(e.getCause,e.getStackTrace.toList ::: base)
@@ -73,22 +73,22 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
         val trace = combineStack(e, Nil).takeWhile(e => e.getClassName != myTrace.getClassName || e.getFileName != myTrace.getFileName || e.getMethodName != myTrace.getMethodName).dropRight(2)
         (false, trace, Full(e))
       }
-      
-      afterTest(testItem.name, success, excp, trace)      
+
+      afterTest(testItem.name, success, excp, trace)
     }
-    
+
     def runForkTest(testItem: Item, cnt: Int) {
       val threads = for (n <- (1 to cnt).toList) yield {
         val thread = new Thread(new Runnable {def run {
       beforeTest(testItem.name+" thread "+n)
-      
+
       val myTrace = (try{throw new Exception("")} catch {case e => e}).getStackTrace.toList.tail.head
       if (testItem.resetDB) doResetDB
       val (success, trace, excp) = try {
         testItem.getFunc(n)()
         (true, Nil, Empty)
       } catch {
-        case e => 
+        case e =>
         def combineStack(ex: Throwable,base: List[StackTraceElement]): List[StackTraceElement] = ex match {
           case null => base
           case e => combineStack(e.getCause,e.getStackTrace.toList ::: base)
@@ -96,37 +96,37 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
         val trace = combineStack(e, Nil).takeWhile(e => e.getClassName != myTrace.getClassName || e.getFileName != myTrace.getFileName || e.getMethodName != myTrace.getMethodName).dropRight(2)
         (false, trace, Full(e))
       }
-      
+
       afterTest(testItem.name+" thread "+n, success, excp, trace)
       }
         })
         thread.start
         thread
       }
-      
+
       def waitAll(in: List[Thread]) {
         in match {
           case Nil =>
           case x :: xs => x.join; waitAll(xs)
         }
       }
-      
-      waitAll(threads)      
-    }    
-    
+
+      waitAll(threads)
+    }
+
     what.foreach{
       testItem =>
-      
+
       testItem.forkCnt match {
         case 0 => runASingleTest(testItem)
         case n => runForkTest(testItem, n)
       }
-      
-              
+
+
     }
     TestResults(log.toList)
   }
-  
+
   (run _, applyAssert _)
 }
 }
@@ -140,15 +140,15 @@ case class TestResults(res: List[Tracker]) {
     val testCnt = res.filter(a => a.isTest && !a.isBegin).length
     val failedAsserts = res.filter(a => a.isAssert && !a.success)
     val failedTests = res.filter(a => a.isTest && !a.success)
-    
+
     val append = (failedTests, failedAsserts) match {
       case (ft,fa) if ft.length == 0 && fa.length == 0 => ""
-      case (ft, fa) => 
+      case (ft, fa) =>
         "\n"+ft.length+" Failed Tests:\n"+ft.map(v => v.name+" "+v.exception.open_!.getMessage+" \n"+
           v.trace.map(st => "           "+st.toString).mkString("\n")).mkString("\n")
     }
-    
-    "Ran "+testCnt+" tests and "+assertCnt+" asserts in "+(end - start)/1000L+" seconds"+append 
+
+    "Ran "+testCnt+" tests and "+assertCnt+" asserts in "+(end - start)/1000L+" seconds"+append
   }
 }
 
@@ -159,7 +159,7 @@ class Item(val name: String, val resetDB: Boolean, val func: Can[() => Any], val
     (func, forkFunc) match {
       case (Full(f), _) => f
       case (_, Full(cf)) => () => cf(cnt)
-      case _ => () => 
+      case _ => () =>
     }
   }
 }

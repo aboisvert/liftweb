@@ -25,15 +25,15 @@ class CalendarMonthViewDemo {
          "widget" -> CalendarMonthView(c, makeCals, itemClick, dayClick, weekClick)
     )
   }
-  
+
   import JE._
   import JsCmds._
-  
+
   def itemClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
   def dayClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
   def weekClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
 
-  
+
   private def makeCals = {
     val c1 = Calendar getInstance
     val c2 = Calendar getInstance
@@ -49,17 +49,17 @@ class CalendarMonthViewDemo {
 
     val item1 = CalendarItem("1", c1, CalendarType.MEETING) optional (
         _ end(c1),
-        _ subject("Meet me"), 
+        _ subject("Meet me"),
         _ description("We really need to meet to settle things down. This is just a dumb comment to have something in it."))
-        
+
     val item2 = CalendarItem("2", c2, CalendarType.MEETING) optional (
-        _ end(c2End), 
+        _ end(c2End),
         _ subject("Meet me again"))
-        
-    val item3 = CalendarItem("4", c3, CalendarType.MEETING) optional ( 
+
+    val item3 = CalendarItem("4", c3, CalendarType.MEETING) optional (
         _ end(c3),
         _ subject("Other month"))
-    
+
     item1 :: item2 :: item3 ::  Nil
   }
 }

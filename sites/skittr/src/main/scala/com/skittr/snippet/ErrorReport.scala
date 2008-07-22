@@ -6,7 +6,7 @@ package com.skittr.snippet
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
-   
+
 import net.liftweb.http._
 import scala.xml._
 
@@ -21,7 +21,7 @@ class ErrorReport {
         case s if (s.length > 0) => s
         case _ => v._3
       }
-      
+
       val style = v._4.filter(_.prefix == "lift").take(1).text
       if (msg.isEmpty) Nil
       else {

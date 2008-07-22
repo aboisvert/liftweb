@@ -27,10 +27,10 @@ case class AMQPMessage[T](message: T)
 case class AMQPReconnect(delay: Long)
 
 /**
- * An actor that serves as an endpoint for AMQP messages of serialized type T 
- * coming into a specific queue/exchange. 
+ * An actor that serves as an endpoint for AMQP messages of serialized type T
+ * coming into a specific queue/exchange.
  *
- * To listen for messages coming into that queue/exchange, send 
+ * To listen for messages coming into that queue/exchange, send
  * this actor an AMQPAddListener message.
  *
  * For each message containing a value of type T, all listeners will be send
@@ -49,7 +49,7 @@ abstract class AMQPDispatcher[T](cf: ConnectionFactory, host: String, port: Int)
     configure(channel)
     (conn, channel)
   }
-  
+
   /**
    * Override this to configure the Channel and Consumer.
    */
@@ -66,7 +66,7 @@ abstract class AMQPDispatcher[T](cf: ConnectionFactory, host: String, port: Int)
       case AMQPReconnect(delay: Long) => {
 	try {
 	  val details = connect()
-	  conn = details._1 
+	  conn = details._1
 	  channel = details._2
 	  println("AMQPDispatcher: Successfully reconnected to AMQP Server")
 	} catch {
@@ -108,7 +108,7 @@ class SerializedConsumer[T](channel: Channel, a: Actor) extends DefaultConsumer(
  * as your guiding example for creating your own Dispatcher.
  *
  */
-class ExampleSerializedAMQPDispatcher[T](factory: ConnectionFactory, host: String, port: Int) 
+class ExampleSerializedAMQPDispatcher[T](factory: ConnectionFactory, host: String, port: Int)
     extends AMQPDispatcher[T](factory, host, port) {
   override def configure(channel: Channel) {
     // Get the ticket.
@@ -123,9 +123,9 @@ class ExampleSerializedAMQPDispatcher[T](factory: ConnectionFactory, host: Strin
 }
 
 /**
- * Example class that accepts Strings coming in from the 
+ * Example class that accepts Strings coming in from the
  * ExampleSerializedAMQPDispatcher.
- */ 
+ */
 class ExampleStringAMQPListener {
   val params = new ConnectionParameters
   params.setUsername("guest")
