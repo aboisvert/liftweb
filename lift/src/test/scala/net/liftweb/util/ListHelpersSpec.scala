@@ -4,9 +4,6 @@ import org.specs.runner._
 
 object ListHelpersSpec extends Specification with ListHelpers {
   "The ListHelpers first_? function" should {
-    "return an Empty can if the list is null" in {
-      first_?((null: List[Int]))((i: Int) => true) must_== Empty
-    }
     "return an Empty can if the list is empty" in {
       first_?((Nil: List[Int]))((i: Int) => true) must_== Empty
     }
@@ -18,9 +15,6 @@ object ListHelpersSpec extends Specification with ListHelpers {
     }
   }
   "The ListHelpers first function" should {
-    "return an Empty can if the list is null" in {
-      first((null: List[Int]))((i: Int) => Full(1)) must_== Empty
-    }
     "return an Empty can if the list is empty" in {
       first((Nil: List[Int]))((i: Int) => Full(1)) must_== Empty
     }
@@ -33,9 +27,6 @@ object ListHelpersSpec extends Specification with ListHelpers {
     }
   }
   "The ciGet function on Lists of pairs of string" should {
-    "return Empty if the list is null" in {
-      (null: List[(String, String)]).ciGet("") must_== Empty
-    }
     "return Empty if the list is Nil" in {
       (Nil: List[(String, String)]).ciGet("") must_== Empty
     }

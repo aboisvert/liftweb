@@ -16,7 +16,7 @@ trait ListHelpers {
    * @return a Can containing the found element (or Empty if not found)
    */
   def first_? [B](in: List[B])(f: => B => Boolean): Can[B] = in match {
-    case null | Nil => Empty
+    case Nil => Empty
     case x :: xs => if (f(x)) Full(x) else first_? (xs)(f)
   }
 
@@ -34,7 +34,7 @@ trait ListHelpers {
    */
   def first[B,C](in : List[B])(f : B => Can[C]): Can[C] = {
     in match {
-      case null | Nil => Empty
+      case Nil => Empty
       case x :: xs => {
         f(x) match {
           case s @ Full(_) =>  s
@@ -60,7 +60,7 @@ trait ListHelpers {
       val what = swhat.toLowerCase
       def tGet(in: List[(String, String)]): Can[String] =
       in match {
-        case null | Nil => Empty
+        case Nil => Empty
         case x :: xs if (x._1.toLowerCase == what) => Full(x._2)
         case x :: xs => tGet(xs)
       }
