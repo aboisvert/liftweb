@@ -35,22 +35,25 @@ object BindHelpersSpec extends Specification with BindHelpers {
   }
   "the bind(namespace, NodeSeq, BindParams*) function" should {
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the String value of the BindParam" in {
-      bind("user", <t><user:tag>replacethis</user:tag></t>, "tag" --> "world") must ==/(<t>world</t>)
+      bind("user", <t><user:tag>replacethis</user:tag></t>, "tag" -> "world") must ==/(<t>world</t>)
     }
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the Symbol value of the BindParam" in {
-      bind("user", <t><user:tag>replacethis</user:tag></t>, "tag" --> 'world) must ==/(<t>world</t>)
+      bind("user", <t><user:tag>replacethis</user:tag></t>, "tag" -> 'world) must ==/(<t>world</t>)
     }
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the NodeSeq value of the BindParam" in {
-      bind("user", <user:tag>replacethis</user:tag>, "tag" --> <world></world>) must ==/(<world></world>)
+      bind("user", <user:tag>replacethis</user:tag>, "tag" -> <world></world>) must ==/(<world></world>)
     }
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the NodeSeq value of the BindParam" in {
-      bind("user", <user:tag>replacethis</user:tag>, "tag" --> <world></world>) must ==/(<world></world>)
+      bind("user", <user:tag>replacethis</user:tag>, "tag" -> <world></world>) must ==/(<world></world>)
     }
     "replace a node named 'namespace:bindparam name' in a NodeSeq with the function application of a FuncBindParam" in {
       bind("user", <t><user:tag>hello</user:tag></t>, FuncBindParam("tag", (n: NodeSeq) => Text(n.text + " world"))) must ==/(<t>hello world</t>)
     }
+    "properly convert a NodeSeq => NodeSeq to a FuncBindParam" in {
+      bind("user", <t><user:tag>hello</user:tag></t>, "tag" -> ((n: NodeSeq) => Text(n.text + " world"))) must ==/(<t>hello world</t>)
+    }
     "replace an attribute value named 'namespace:bindparam name' in a NodeSeq with a value from a BindParam" in {
-      bind("user", <t user:hello="toreplace"></t>, "hello" --> Text("world")) must ==/(<t user:hello="world"></t>)
+      bind("user", <t user:hello="toreplace"></t>, "hello" -> Text("world")) must ==/(<t user:hello="world"></t>)
     }
     "replace an attribute value named 'namespace:bindparam name' in a NodeSeq with a calculated value from a FuncBindParam" in {
       bind("user", <t user:tag="hello"></t>, FuncBindParam("tag", (n: NodeSeq) => Text(n.text + " world"))) must ==/(<t user:tag="hello world"></t>)

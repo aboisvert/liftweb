@@ -43,11 +43,6 @@ trait BindHelpers {
   }
 
   /**
-   * transforms a tuple of containing a String and a NodeSeq to a BindParameter
-   */
-  implicit def toTheBindParam(in: Product2[String, NodeSeq]) = TheBindParam(in._1, in._2)
-
-  /**
    * Constant BindParam always returning the same value
    */
   case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
@@ -87,6 +82,7 @@ trait BindHelpers {
   /**
    * This class creates a BindParam from an input value
    */
+  @deprecated
   class BindParamAssoc(val name: String) {
     def -->(value: String): BindParam = TheBindParam(name, Text(value))
     def -->(value: NodeSeq): BindParam = TheBindParam(name, value)
@@ -100,16 +96,65 @@ trait BindHelpers {
    * transforms a String to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>"David" --> "name"</code>
-   */
+   */ 
+  @deprecated
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
 
   /**
    * transforms a Symbol to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>'David --> "name"</code>
-   */
+   */ 
+  @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
-
+  
+  /**
+   * This extractor is used to determine at runtime if a Function1[_, _] is
+   * actually a NodeSeq => NodeSeq. This is a hack to get around JVM type
+   * erasure.
+   */
+  object Function1NodeSeqToNodeSeq {
+    def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
+      if (f.getClass.getMethods.exists{ method =>
+        method.getName == "apply" && {
+          val params: Seq[Class[_]] = method.getParameterTypes
+          params.length == 1 && params.exists(_.isAssignableFrom(classOf[NodeSeq]))
+        } &&
+        classOf[NodeSeq].isAssignableFrom(method.getReturnType)
+      }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
+      else None
+  }
+  
+  /**
+   * Transforms a Tuple2[String, _] to a BindParam
+   */
+  implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
+    val (name, value) = p
+    value match {
+      case v: String => TheBindParam(name, Text(v))
+      case v: NodeSeq => TheBindParam(name, v)
+      case v: Symbol => TheBindParam(name, Text(v.name))
+      case fn: Function1[_, _] =>
+        Function1NodeSeqToNodeSeq.unapply(fn) match {
+          case Some(func) => FuncBindParam(name, func)
+          case _ => TheBindParam(name, Text(fn.toString))
+        }
+      case v: Can[_] =>
+        val ov = v openOr Text("Empty")
+        ov match {
+          case o: NodeSeq => TheBindParam(name, o)
+          case _ => TheBindParam(name, Text(v.toString))
+        }
+      case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
+    }
+  }
+  
+  /**
+   * Transforms a Tuple2[Symbol, _] to a BindParam
+   */
+  implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
+    pairToBindParam((p._1.name, p._2))
+    
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
