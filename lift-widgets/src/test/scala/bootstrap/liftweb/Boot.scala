@@ -22,6 +22,8 @@ import net.liftweb.sitemap.Loc._
 import Helpers._
 import net.liftweb.widgets.calendars._
 
+import net.liftweb.widgets.tree.TreeView
+
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -39,6 +41,7 @@ class Boot {
       Menu(Loc("calday", "/calday", "CalendarDayView")) ::
       Menu(Loc("rssfeed", "/rssfeed", "RSSFeed")) ::
       Menu(Loc("gravatear", "/gravatar", "Gravatar")) ::
+      Menu(Loc("tree", "/tree", "Tree")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
@@ -46,6 +49,7 @@ class Boot {
     CalendarMonthView init;
     CalendarWeekView init;
     CalendarDayView init;
+    TreeView init
 
   }
 }
