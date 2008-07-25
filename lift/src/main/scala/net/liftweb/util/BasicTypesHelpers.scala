@@ -67,6 +67,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
         if (sl.length == 0) false
         else {
           if (sl.charAt(0) == 't') true
+          else if (sl == "yes") true
           else toInt(s) != 0
         }
       }
