@@ -32,7 +32,7 @@ class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq,
 	    bind("username" -> Text(user.name+" -> "+user.fullName),
 		 "content" -> <span>{friendList(user) ++
 		              ajaxForm(textarea("", msg => ua ! SendMessage(msg, "web")) % ("cols" -> "40") ++
-                                       submit("msg", ignore => true))
+                                       submit("msg", true))
                               }</span>) ++
 	    messages.flatMap(msg => bind("username" -> Text(msg.who+" @ "+toInternetDate(msg.when)), "content" -> Text(msg.text)))
 	  }) openOr bind("username" -> Text("N/A"), "content" -> Text("N/A"))

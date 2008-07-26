@@ -32,7 +32,7 @@ object SHtml {
    *
    * @return a button to put on your page
    */
-  def ajaxButton(func: => JsCmd, text: String): Elem =
+  def ajaxButton(text: String, func: => JsCmd): Elem =
     <input type="button" value={text}/> %
      ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
        mapFunc(() => func)+"=true', dataType: 'script'});"))
@@ -45,10 +45,12 @@ object SHtml {
    *
    * @return a button to put on your page
    */
+   /*
   def ajaxButton(text: String)(func: => JsCmd): Elem =
     <input type="button" value={text}/> %
     ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
       mapFunc(() => func)+"=true', dataType: 'script'});"));
+      */
 
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -134,7 +136,13 @@ object SHtml {
         ("onblur" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
   }
 
-  def ajaxCheckbox(value: Boolean, func: String => JsCmd): Elem = ajaxCheckbox_*(value, SFuncHolder(func))
+  def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
+  
+  /*def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
+      f(in.exists(toBoolean(_)))
+        true
+    }func))
+*/
 
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
@@ -204,8 +212,8 @@ object SHtml {
   def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
   def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
   def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-  def hidden(func: String => Any): Elem = makeFormElement("hidden", SFuncHolder(func)) % ("value" -> "true")
-  def submit(value: String, func: String => Any): Elem = makeFormElement("submit", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
+  def hidden(func: => Unit): Elem = makeFormElement("hidden", NFuncHolder(() => func)) % ("value" -> "true")
+  def submit(value: String, func: => Unit): Elem = makeFormElement("submit", NFuncHolder(() => func)) % new UnprefixedAttribute("value", Text(value), Null)
 
   def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
   def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)

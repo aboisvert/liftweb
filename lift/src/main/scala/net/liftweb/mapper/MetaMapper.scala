@@ -1091,12 +1091,12 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
   def modSnippet(xhtml: NodeSeq, obj: A, cleanup: (A => Unit)): NodeSeq = {
     val name = _dbTableName
 
-    def callback(ignore: String) {
+    def callback() {
       cleanup(obj)
     }
 
     xbind(name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm.openOr(Text(""))) orElse {
-      case "submit" => label => SHtml.submit(label.text, callback)
+      case "submit" => label => SHtml.submit(label.text, callback())
     })
   }
 

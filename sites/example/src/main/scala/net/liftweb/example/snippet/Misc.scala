@@ -52,7 +52,7 @@ class Misc {
   def confirmDelete(xhtml: Group): NodeSeq = {
     (for (user <- selectedUser.is) // find the user
      yield {
-       def deleteUser(ignore: String) {
+       def deleteUser() {
          notice("User "+(user.firstName+" "+user.lastName)+" deleted")
          user.delete_!
          redirectTo("/simple/index.html")
@@ -63,7 +63,7 @@ class Misc {
        // function (which is a closure and bound the "user" object
        // in the current content)
        bind("xmp", xhtml, "username" -> (user.firstName.is+" "+user.lastName.is),
-      "delete" -> submit("Delete", deleteUser))
+      "delete" -> submit("Delete", deleteUser()))
 
        // if the was no ID or the user couldn't be found,
        // display an error and redirect

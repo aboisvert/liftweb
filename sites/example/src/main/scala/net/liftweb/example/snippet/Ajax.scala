@@ -88,7 +88,7 @@ class Ajax {
     <br/>
 
     {
-      ajaxForm(hidden(ignore => JsCmds.Alert("Test Passed")) ++ submit("Test Ajax Form", s => ()))
+      ajaxForm(hidden(JsCmds.Alert("Test Passed")) ++ submit("Test Ajax Form", ()))
     } <br />
 
     </span>

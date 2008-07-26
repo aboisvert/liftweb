@@ -568,7 +568,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
         case Full(inst: StatefulSnippet) =>
         if (inst.dispatch.isDefinedAt(method))
-        (if (isForm) SHtml.hidden(ignore => inst.registerThisSnippet) else Text("")) ++
+        (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
         inst.dispatch(method)(kids)
         else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
         LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}

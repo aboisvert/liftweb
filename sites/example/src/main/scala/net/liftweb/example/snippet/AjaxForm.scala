@@ -49,7 +49,7 @@ class AjaxForm {
         "state" -> select(AjaxForm.states.map(s => (s,s)), Full(state), state = _) %
           ("onchange" -> ajaxCall("this.value", s => After(200, replace(s)))),
         "city" -> cityChoice(state) % ("id" -> "city_select"),
-        "submit" -> submit(?("Save"), ignore => {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
+        "submit" -> submit(?("Save"), {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
 }
 
 object AjaxForm {

@@ -16,7 +16,7 @@ class HelloForm3 {
       <br/>
       <label for="whoField">Who :</label>
       { text(who.openOr(""), v => who(Full(v))) % ("size" -> "10") % ("id" -> "whoField") }
-      { submit(?("Send"), ignore => {println("value:" + who.openOr(""))}) }
+      { submit(?("Send"), println("value:" + who.openOr(""))) }
     </xml:group>
   }
 }
