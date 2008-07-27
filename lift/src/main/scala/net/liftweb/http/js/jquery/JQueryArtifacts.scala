@@ -1,8 +1,12 @@
 package net.liftweb.http.js.jquery
 
+import scala.xml.{Elem, NodeSeq}
+
 import net.liftweb.http.S
 import net.liftweb.http.js.JE
+import net.liftweb.http.js.JsCmds
 import JE._
+import JqJE._
 
 
 object JQueryArtifacts extends LiftUIArtifacts {
@@ -23,6 +27,11 @@ object JQueryArtifacts extends LiftUIArtifacts {
   def each(func: String): JsChain = new JsExp {
     def toJsCmd = "each(" + func + ")" 
   }
+  
+  def setHtml(id: String, xml: NodeSeq): JsCmd = JqJsCmds.SetHtml(id, xml)
+  
+  def focusOnLoad(xml: Elem): NodeSeq = JqJsCmds.FocusOnLoad(xml)
+
   
 }
 

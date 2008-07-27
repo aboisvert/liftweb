@@ -1,6 +1,7 @@
 package net.liftweb.http.js
 
 import net.liftweb.http.js._
+import scala.xml.{Elem, NodeSeq}
 
 trait LiftUIArtifacts {
 
@@ -14,7 +15,9 @@ trait LiftUIArtifacts {
   def hide(id: String): JsChain
   def show(id: String): JsChain
   def each(func: String) : JsChain
- 
+
+  def setHtml(id: String, xml: NodeSeq): JsCmd
+  def focusOnLoad(xml: Elem): NodeSeq
 }
 
 trait LiftAjax {

@@ -363,11 +363,11 @@ spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(No
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     var ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
     ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match {
-      case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) & JsCmds.JsTry(js, false)
-      case (Full(xml), _, false) => JsCmds.SetHtml(id, xml)
-      case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
+      case (Full(xml), Full(js), false) => LiftRules.liftUIArtifacts.setHtml(id, xml) & JsCmds.JsTry(js, false)
+      case (Full(xml), _, false) => LiftRules.liftUIArtifacts.setHtml(id, xml)
+      case (Full(xml), Full(js), true) => LiftRules.liftUIArtifacts.setHtml(id+"_outer", (spanFunc(0, xml) ++
         fixedXhtml.openOr(Text("")))) & JsCmds.JsTry(js, false)
-      case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
+      case (Full(xml), _, true) => LiftRules.liftUIArtifacts.setHtml(id+"_outer", (spanFunc(0, xml) ++
         fixedXhtml.openOr(Text(""))))
       case (_, Full(js), _) => js
       case _ => JsCmds.Noop

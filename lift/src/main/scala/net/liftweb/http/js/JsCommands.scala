@@ -344,42 +344,6 @@ object JE {
     def toJsCmd = "true"
   }
 
-  case object JqTabsSelected extends JsExp with JQueryRight {
-    def toJsCmd = "tabsSelected()"
-  }
-
-  case object JqScrollToBottom extends JsExp with JQueryRight with JQueryLeft {
-    def toJsCmd = "each(function(i) {this.scrollTop=this.scrollHeight;})"
-  }
-
-  object JqTabsClick {
-    def apply(tab: JsExp): JsExp with JQueryRight with JQueryLeft =
-    new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "tabsClick("+tab.toJsCmd+")"
-    }
-
-    def apply(tab: Int): JsExp with JQueryRight with JQueryLeft =
-    apply(Num(tab))
-  }
-
-  object JqTabs {
-    def apply(in: JsExp): JsExp with JQueryRight with JQueryLeft =
-    new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "tabs("+in.toJsCmd+")"
-    }
-
-    def apply(): JsExp with JQueryRight with JQueryLeft =
-    apply(JsRaw(""))
-  }
-
-  case class JqClick(exp: JsExp) extends JsExp with JQueryLeft with JQueryRight {
-    def toJsCmd = "click(" + exp.toJsCmd + ")"
-  }
-
-  case class JqGetAttr(key: String) extends JsExp with JQueryRight with JQueryLeft {
-    def toJsCmd = "attr(" + key.encJs + ")"
-  }
-
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
       def toJsCmd = AnonFunc.this.toJsCmd + "()"
@@ -402,94 +366,6 @@ object JE {
       def toJsCmd = members.map{case (n, v) => n.encJs+": "+v.toJsCmd}.mkString("{", ", ", "}\n")
       def props = members.toList
     }
-  }
-
-  /**
-   * A JQuery query
-   */
-  case class Jq(query: JsExp) extends JsExp with JQueryLeft {
-    override def toJsCmd = "jQuery("+query.toJsCmd+")"
-  }
-
-  /**
-   * A JQuery query for an element based on the id of the element
-   */
-  case class JqId(id: JsExp) extends JsExp with JQueryLeft {
-    override def toJsCmd = "jQuery('#'+"+id.toJsCmd+")"
-  }
-
-  case class JqAttr(key: String, value: JsExp) extends JsExp with JQueryRight with JQueryLeft {
-    def toJsCmd = "attr("+key.encJs+", "+value.toJsCmd+")"
-  }
-
-  /**
-   * Append content to a JQuery
-   */
-  case class JqAppend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
-    override def toJsCmd = "append("+fixHtml("inline", content)+")"
-  }
-
-  /**
-   * AppendTo content to a JQuery
-   */
-  case class JqAppendTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
-    override def toJsCmd = "appendTo("+fixHtml("inline", content)+")"
-  }
-
-  /**
-   * Prepend content to a JQuery
-   */
-  case class JqPrepend(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
-    override def toJsCmd = "prepend("+fixHtml("inline", content)+")"
-  }
-
-  /**
-   * PrependTo content to a JQuery
-   */
-  case class JqPrependTo(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
-    override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
-  }
-
-  /**
-   * EmptyAfter will empty the node at the given uid and stick the given content behind it. Like
-   * a cleaner innerHTML.
-   */
-  case class JqEmptyAfter(content: NodeSeq) extends JsExp with JQueryRight with JQueryLeft {
-    override def toJsCmd = "empty().after("+fixHtml("inline", content)+")"
-  }
-
-  object JqHtml {
-    def apply() = new JsExp with JQueryRight {
-      def toJsCmd = "html()"
-    }
-
-    def apply(content: NodeSeq) = new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "html("+fixHtml("inline", content)+")"
-    }
-  }
-
-  object JqText {
-    def apply() = new JsExp with JQueryRight {
-      def toJsCmd = "text()"
-    }
-
-    def apply(content: String) = new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "text("+content.encJs+")"
-    }
-  }
-
-  /**
-   * Serialize input elements intoa string data. ALso works for serializing forms
-   */
-  case object JqSerialize extends JsExp with JQueryRight {
-    def toJsCmd = "serialize()"
-  }
-
-  /**
-   * Serialize the jquery into a JSON array
-   */
-  case object JsonSerialize extends JsExp with JQueryRight {
-    def toJsCmd = "serializeArray()"
   }
 
   case class JsLt(left: JsExp, right: JsExp) extends JsExp {
@@ -518,24 +394,6 @@ object JE {
 
 }
 
-trait JQueryRight {
-  this: JsExp =>
-  def toJsCmd: String
-}
-
-trait JQueryLeft {
-  this: JsExp =>
-  def >>(that: JQueryRight): JsExp = new JsExp {
-    def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
-  }
-
-
-  def >>(that: JQueryLeft with JQueryRight): JsExp with JQueryLeft =
-    new JsExp with JQueryLeft {
-      def toJsCmd = JQueryLeft.this.toJsCmd + "."+ that.toJsCmd
-  }
-}
-
 trait HtmlFixer {
   def fixHtml(uid: String, content: NodeSeq): String =
   AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)),
@@ -560,20 +418,6 @@ object JsCmds {
     </script>
   }
 
-  /**
-  * Makes the parameter the selected HTML element on load of the page
-  *
-  * @param in the element that should have focus
-  *
-  * @return the element and a script that will give the element focus
-  */
-  object FocusOnLoad {
-    def apply(in: Elem): NodeSeq = {
-      val (elem, id) = findOrAddId(in)
-      elem ++ Script(OnLoad(Run("document.getElementById("+id.encJs+").focus();")))
-    }
-  }
-
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+
     right.toJsCmd+";"
@@ -595,11 +439,6 @@ object JsCmds {
 
   implicit def jsExpToJsCmd(in: JsExp) = in.cmd
 
-
-  case class OnLoad(cmd: JsCmd) extends JsCmd {
-    def toJsCmd = "jQuery(document).ready(function() {"+cmd.toJsCmd+"});"
-  }
-
   case class CmdPair(left: JsCmd, right: JsCmd) extends JsCmd {
     def toJsCmd = {
       val sb = new StringBuilder
@@ -618,54 +457,6 @@ object JsCmds {
     }
   }
 
-  /**
-   * Append a NodeSeq to a node specified by uid using jQuery's append() method.
-   */
-  object AppendHtml {
-    def apply(uid: String, content: NodeSeq): JsCmd =
-      JE.JqId(JE.Str(uid)) >> JE.JqAppend(content)
-  }
-
-  /**
-   * AppendTo a NodeSeq to a node specified by uid using jQuery's appendTo() method.
-   */
-  object AppendToHtml {
-    def apply(uid: String, content: NodeSeq): JsCmd =
-      JE.JqId(JE.Str(uid)) >> JE.JqAppendTo(content)
-  }
-
-  /**
-   * Prepends a NodeSeq to a node specified by uid using jQuery's prepend() method.
-   */
-  object PrependHtml {
-    def apply(uid: String, content: NodeSeq): JsCmd =
-      JE.JqId(JE.Str(uid)) >> JE.JqPrepend(content)
-  }
-
-  /**
-   * Replaces the children of the node at {@code uid} with {@code content}
-   */
-  object EmptyAfter {
-    def apply(uid: String, content: NodeSeq): JsCmd =
-      JE.JqId(JE.Str(uid)) >> JE.JqEmptyAfter(content)
-  }
-
-  /**
-   * Prepends a NodeSeq to a node specified by uid using jQuery prependTo() method.
-   */
-  object PrependToHtml {
-    def apply(uid: String, content: NodeSeq): JsCmd =
-      JE.JqId(JE.Str(uid)) >> JE.JqPrependTo(content)
-  }
-
-
-  case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
-    def toJsCmd = {
-      val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+fixHtml(uid, content)+";});} catch (e) {}"
-      ret
-    }
-  }
-
   trait HasTime {
     def time: Can[TimeSpan]
     def timeStr = time.map(_.millis.toString) openOr ""
@@ -675,37 +466,8 @@ object JsCmds {
     def toJsCmd = "setTimeout(function() {"+toDo.toJsCmd+"}, "+time.millis+");"
   }
 
-  object Show {
-    def apply(uid: String) = new Show(uid, Empty)
-    def apply(uid: String, time: TimeSpan) = new Show(uid, Full(time))
-  }
-
-  class Show(val uid: String,val time: Can[TimeSpan]) extends JsCmd with HasTime {
-    def toJsCmd = "try{jQuery("+("#"+uid).encJs+").show("+timeStr+");} catch (e) {}"
-  }
-
-  object Hide {
-    def apply(uid: String) = new Hide(uid, Empty)
-    def apply(uid: String, time: TimeSpan) = new Hide(uid, Full(time))
-  }
-
-  class Hide(val uid: String, val time: Can[TimeSpan]) extends JsCmd with HasTime {
-    def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
-  }
-
   case class Alert(text: String) extends JsCmd {
     def toJsCmd = "alert("+text.encJs+");"
-  }
-
-  object ModalDialog {
-    def apply(html: NodeSeq) = new ModalDialog(html, Empty)
-    def apply(html: NodeSeq, width: String) = new ModalDialog(html, Full(width))
-  }
-
-  class ModalDialog(html: NodeSeq, width: Can[String]) extends JsCmd {
-    def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s =>
-    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true).encJs+
-    (width.map(w => ", { width: '"+w+"' }").openOr("")) + ");"
   }
 
   case class Run(text: String) extends JsCmd {
@@ -720,16 +482,8 @@ object JsCmds {
 
   val Noop: JsCmd = _Noop
 
-  case object Unblock extends JsCmd {
-    def toJsCmd = "jQuery.unblockUI();"
-  }
-
   case class JsTry(what: JsCmd, alert: Boolean) extends JsCmd {
     def toJsCmd = "try { "+what.toJsCmd+" } catch (e) {"+(if (alert) "alert(e);" else "")+"}"
-  }
-
-  case class SetValueAndFocus(id: String, value: String) extends JsCmd {
-    def toJsCmd = "jQuery('#"+id+"').attr('value', "+value.encJs+"); document.getElementById("+id.encJs+").focus();"
   }
 
   case class RedirectTo(where: String) extends JsCmd {
@@ -753,10 +507,6 @@ object JsCmds {
 	     (if (value == dflt) "y.selected = true; " else "") +
 	     " try {x.add(y, null);} catch(e) {if (typeof(e) == 'object' && typeof(e.number) == 'number' && (e.number & 0xFFFF) == 5){ x.add(y,x.options.length); } } "
 	   }.mkString("\n")
-  }
-
-  case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def toJsCmd = (Show(where) & SetHtml(where, msg) & After(duration, Hide(where, fadeTime))).toJsCmd
   }
 
   case object JsIf {

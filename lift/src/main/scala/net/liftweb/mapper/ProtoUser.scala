@@ -380,7 +380,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelTy
     }
     
     bind("user", loginXhtml,
-    "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
+    "email" -> (LiftRules.liftUIArtifacts.focusOnLoad(<input type="text" name="username"/>)),
     "password" -> (<input type="password" name="password"/>),
     "submit" -> (<input type="submit" value={S.??("log.in")}/>))
   }

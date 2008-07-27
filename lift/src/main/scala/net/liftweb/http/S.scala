@@ -598,7 +598,7 @@ object S {
 
     val groupMessages = xml match {
       case Nil => JsCmds.Noop
-      case _ => JsCmds.SetHtml(LiftRules.noticesContainerId, xml)
+      case _ => LiftRules.liftUIArtifacts.setHtml(LiftRules.noticesContainerId, xml)
     }
 
     val g = idMessages _
@@ -606,7 +606,7 @@ object S {
          (LiftRules.ajaxWarningMeta, g(S.warnings)),
          (LiftRules.ajaxNoticeMeta, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
            case (meta, m) => m.foldLeft(car)((left, r) =>
-             left & JsCmds.SetHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
+             left & LiftRules.liftUIArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
               (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
          }
          )
