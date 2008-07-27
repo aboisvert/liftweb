@@ -33,24 +33,7 @@ object SHtml {
    * @return a button to put on your page
    */
   def ajaxButton(text: String, func: => JsCmd): Elem =
-    <input type="button" value={text}/> %
-     ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
-       mapFunc(() => func)+"=true', dataType: 'script'});"))
-
-  /**
-   * Create an Ajax button. When it's pressed, the function is executed
-   *
-   * @param text -- the name/text of the button
-   * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
-   *
-   * @return a button to put on your page
-   */
-   /*
-  def ajaxButton(text: String)(func: => JsCmd): Elem =
-    <input type="button" value={text}/> %
-    ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
-      mapFunc(() => func)+"=true', dataType: 'script'});"));
-      */
+    <input type="button" value={text}/> % ("onclick" -> (LiftRules.liftAjax.ajax(mapFunc(() => func)+"=true")))
 
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -97,15 +80,13 @@ object SHtml {
    * @return the JavaScript that makes the call
    */
   private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    "jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+    LiftRules.liftAjax.ajax("'" + mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+")")
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
-    val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+    val nh = head % ("onclick" -> (LiftRules.liftUIArtifacts.toggle(id).toJsCmd + ";" + LiftRules.liftAjax.ajax(funcName+"=true")))
     nh ++ rnk
   }
 
@@ -133,21 +114,14 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+        ("onblur" -> (LiftRules.liftAjax.ajax("'" + funcName+"='+encodeURIComponent(this.value)")))
   }
 
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
   
-  /*def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
-      f(in.exists(toBoolean(_)))
-        true
-    }func))
-*/
-
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) %
-        ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))
+      (<input type="checkbox"/>) % checked(value) % ("onclick" -> (LiftRules.liftAjax.ajax("'" + funcName+"='+this.checked")))
   }
 
   def ajaxSelect(opts: List[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -159,28 +133,33 @@ object SHtml {
 
     (<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+    }</select>) % ("onchange" -> (LiftRules.liftAjax.ajax("'" + funcName+"='+this.options[this.selectedIndex].value")))
   }
 
-  def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
-     mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
+  def ajaxInvoke(func: () => JsCmd): String = LiftRules.liftAjax.ajax("'" + mapFunc(NFuncHolder(func)) + "=true'")
 
   /**
-   *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
+   * Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
    * the hidden element blurs, it swaps into the shown element.
    */
   def swappable(shown: Elem, hidden: Elem): Elem = {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
-    (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}); return false;"))}{
-      dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
+    val ui = LiftRules.liftUIArtifacts
+    (<span>{rs % ("onclick" -> ((ui.hide(sid) ~> 
+                                   ui.show(hid) ~> 
+                                   ui.each("function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}")).toJsCmd + "; return false;"))} 
+           {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";"))}
+     </span>)
   }
 
   def swappable(shown: Elem, hidden: String => Elem): Elem = {
     val (rs, sid) = findOrAddId(shown)
     val hid = "S"+randomString(10)
-    val rh = <span id={hid}>{hidden("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();")}</span>
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show(); return false;"))}{
+    val ui = LiftRules.liftUIArtifacts
+
+    val rh = <span id={hid}>{hidden(ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";")}</span>
+      (<span>{rs % ("onclick" -> (ui.hide(sid).toJsCmd + ";" + ui.show(hid).toJsCmd + "; return false;"))}{
          (rh % ("style" -> "display: none"))}</span>)
   }
 

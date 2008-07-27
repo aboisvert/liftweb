@@ -19,6 +19,8 @@ package net.liftweb.http;
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import net.liftweb.sitemap._
+import net.liftweb.http.js.{LiftUIArtifacts, LiftAjax}
+import net.liftweb.http.js.jquery._
 import scala.xml._
 import scala.collection.mutable.{ListBuffer}
 import java.util.{Locale, TimeZone}
@@ -55,6 +57,16 @@ object LiftRules {
   * The path to handle served resources
   */
   var ResourceServerPath = "classpath"
+  
+  /**
+   * Set the Ajax strategy to use. By default it uses JQuery Ajax facilities
+   */
+  var liftAjax: LiftAjax = JQueryAjax
+
+  /**
+   * Holds the JS library specific UI artifacts. By efault it uses JQuery's artifacts 
+   */
+  var liftUIArtifacts: LiftUIArtifacts = JQueryArtifacts
 
   /**
    * Use this PartialFunction to to automatically add static URL parameters
