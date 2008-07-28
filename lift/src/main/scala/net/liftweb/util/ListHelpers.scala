@@ -15,10 +15,8 @@ trait ListHelpers {
    *
    * @return a Can containing the found element (or Empty if not found)
    */
-  def first_? [B](in: List[B])(f: => B => Boolean): Can[B] = in match {
-    case Nil => Empty
-    case x :: xs => if (f(x)) Full(x) else first_? (xs)(f)
-  }
+  def first_? [B](in: List[B])(f: => B => Boolean): Can[B] = 
+    Can(in.projection.filter(f).firstOption)
 
   /**
    * Returns the first application of f to an element of in that
@@ -32,16 +30,9 @@ trait ListHelpers {
    *
    * @return a Can containing the first Full can or Empty if f never returns a Full can
    */
-  def first[B,C](in : List[B])(f : B => Can[C]): Can[C] = {
-    in match {
-      case Nil => Empty
-      case x :: xs => {
-        f(x) match {
-          case s @ Full(_) =>  s
-          case _ => first(xs)(f)
-        }
-      }
-    }
+  def first[B,C](in : List[B])(_f : B => Can[C]): Can[C] = { 
+    val f: B => Iterable[C] = _f andThen Can.can2Iterable[C]
+    Can(in.projection.flatMap(f).firstOption)
   }
 
   /**
@@ -89,10 +80,8 @@ trait ListHelpers {
   /**
    * Return the first element of a List or a default value if the list is empty
    */
-  def head[T](l : List[T], deft: => T) = l match {
-    case Nil => deft
-    case x :: xs => x
-  }
+  def head[T](l : List[T], deft: => T) =
+    l.firstOption.getOrElse(deft)
 
   /**
    * Return a list containing the element f if the expression is true
