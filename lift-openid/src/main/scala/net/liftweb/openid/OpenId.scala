@@ -37,13 +37,10 @@ import util._
 
 import scala.xml.{NodeSeq, Text}
 
-/**
-  * A session var that keeps track of the OpenID object through the request/response
-  */
-object OpenIdObject extends SessionVar[OpenIDConsumer](new AnyRef with OpenIDConsumer)
-
 trait OpenIdVendor {
   type UserType
+  
+  type ConsumerType <: OpenIDConsumer
   
   private object RedirectBackTo extends SessionVar[Can[String]](Empty)
   val PathRoot = "openid"
@@ -62,6 +59,13 @@ trait OpenIdVendor {
 
   def postUrl = "/"+ PathRoot + "/" + LoginPath
 
+  /**
+  * A session var that keeps track of the OpenID object through the request/response
+  */
+  object OpenIdObject extends SessionVar[ConsumerType](createAConsumer)
+  
+  def createAConsumer: ConsumerType
+  
   def currentUser: Can[UserType]
 
   def snippetPf: LiftRules.SnippetPf = {
@@ -96,6 +100,12 @@ trait OpenIdVendor {
   }
 
   def logUserOut(): Unit
+  
+  /**
+  * Try to log a user into the system with a given openId
+  */
+  def loginAndRedirect(openId: String, onSuccess: Can[UserType => Unit], onFailure: Can[String => Unit]) {
+  }
 
   def dispatchPf: LiftRules.DispatchPf = {
     case RequestMatcher(RequestState(PathRoot :: LogOutPath :: Nil, "", _), _) =>
@@ -129,6 +139,7 @@ trait OpenIdVendor {
 
 trait SimpleOpenIdVendor extends OpenIdVendor {
   type UserType = Identifier
+  type ConsumerType = OpenIDConsumer
   
   def currentUser = OpenIdUser.is
 
@@ -147,6 +158,8 @@ trait SimpleOpenIdVendor extends OpenIdVendor {
   }
   
   def displayUser(in: UserType): NodeSeq = Text("Welcome "+in)
+  
+  def createAConsumer = new AnyRef with OpenIDConsumer
 }
 
 object SimpleOpenIdVendor extends SimpleOpenIdVendor
