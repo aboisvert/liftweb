@@ -42,7 +42,9 @@ import scala.xml.{NodeSeq, Text}
   */
 object OpenIdObject extends SessionVar[OpenIDConsumer](new AnyRef with OpenIDConsumer)
 
-trait OpenIdVendor extends  {
+trait OpenIdVendor {
+  type UserType
+  
   private object RedirectBackTo extends SessionVar[Can[String]](Empty)
   val PathRoot = "openid"
 
@@ -60,7 +62,7 @@ trait OpenIdVendor extends  {
 
   def postUrl = "/"+ PathRoot + "/" + LoginPath
 
-  def currentUser: Can[Identifier]
+  def currentUser: Can[UserType]
 
   def snippetPf: LiftRules.SnippetPf = {
     case SnippetPrefix :: "ifLoggedIn" :: Nil => showIfLoggedIn
@@ -68,7 +70,7 @@ trait OpenIdVendor extends  {
     case SnippetPrefix :: "userBox" :: Nil => showUserBox
   }
 
-  def displayUser(id: Identifier): NodeSeq = Text("Welcome "+id)
+  def displayUser(id: UserType): NodeSeq
 
   def logoutLink: NodeSeq = <xml:group> <a href={"/"+PathRoot+"/"+LogOutPath}>Log Out</a></xml:group>
 
@@ -126,6 +128,8 @@ trait OpenIdVendor extends  {
 }
 
 trait SimpleOpenIdVendor extends OpenIdVendor {
+  type UserType = Identifier
+  
   def currentUser = OpenIdUser.is
 
   def postLogin(id: Can[Identifier],res: VerificationResult): Unit = {
@@ -141,6 +145,8 @@ trait SimpleOpenIdVendor extends OpenIdVendor {
   def logUserOut() {
     OpenIdUser.remove
   }
+  
+  def displayUser(in: UserType): NodeSeq = Text("Welcome "+in)
 }
 
 object SimpleOpenIdVendor extends SimpleOpenIdVendor
