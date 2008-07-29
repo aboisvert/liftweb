@@ -29,7 +29,7 @@ import net.liftweb.util._
 import net.liftweb.util.Mailer._
 import S._
 
-trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
+trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsString {
   self: T =>
 
   override def primaryKeyField = id
@@ -37,6 +37,8 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
   // the primary key for the database
   object id extends MappedLongIndex(this)
   
+  def userIdAsString: String = id.is.toString
+
   // First Name
   object firstName extends MappedString(this, 32)
   
@@ -82,8 +84,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   override def fieldOrder: List[BaseOwnedMappedField[ModelType]] = firstName :: lastName :: email :: locale :: timezone :: password :: Nil
   
   /**
-  * If the
-  */
+   * If the
+   */
   def screenWrap: Can[Node] = Empty
   
   val BasePath = "user_mgt"
@@ -109,8 +111,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def thePath(end: String) = "/" + BasePath + "/" + end
   
   /**
-  * Return the URL of the "login" page
-  */
+   * Return the URL of the "login" page
+   */
   def loginPageURL = "/"+BasePath+"/"+Login
   
   def notLoggedIn_? = !loggedIn_? ;
@@ -118,70 +120,69 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   lazy val testLogginIn = If(loggedIn_? _, S.??("must.be.logged.in")) ;
   
   /**
-  * The menu item for login (make this "Empty" to disable)
-  */
+   * The menu item for login (make this "Empty" to disable)
+   */
   def loginMenuLoc: Can[Menu] = {
     Full(Menu(Loc("Login", thePath(Login), S.??("login"),
-    If(notLoggedIn_? _, S.??("already.logged.in")))))
+                  If(notLoggedIn_? _, S.??("already.logged.in")))))
   }
   
-  
   /**
-  * The menu item for logout (make this "Empty" to disable)
-  */
+   * The menu item for logout (make this "Empty" to disable)
+   */
   def logoutMenuLoc: Can[Menu] =
   Full(Menu(Loc("Logout", thePath(Logout), S.??("logout"), testLogginIn)))
   
   /**
-  * The menu item for creating the user/sign up (make this "Empty" to disable)
-  */
+   * The menu item for creating the user/sign up (make this "Empty" to disable)
+   */
   def createUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("CreateUser", thePath(SignUp),
-  S.??("sign.up"), If(notLoggedIn_? _, S.??("logout.first")))))
+                S.??("sign.up"), If(notLoggedIn_? _, S.??("logout.first")))))
   
   /**
-  * The menu item for lost password (make this "Empty" to disable)
-  */
+   * The menu item for lost password (make this "Empty" to disable)
+   */
   def lostPasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("LostPassword", thePath(LostPassword),
-  S.??("lost.password"),
-  If(notLoggedIn_? _, S.??("logout.first"))))) // not logged in
+                S.??("lost.password"),
+                If(notLoggedIn_? _, S.??("logout.first"))))) // not logged in
   
   /**
-  * The menu item for resetting the password (make this "Empty" to disable)
-  */
+   * The menu item for resetting the password (make this "Empty" to disable)
+   */
   def resetPasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("ResetPassword", (thePath(PasswordReset), true),
-  S.??("reset.password"), Hidden,
-  If(notLoggedIn_? _,
-  S.??("logout.first"))))) //not Logged in
+                S.??("reset.password"), Hidden,
+                If(notLoggedIn_? _,
+                   S.??("logout.first"))))) //not Logged in
   
   /**
-  * The menu item for editing the user (make this "Empty" to disable)
-  */
+   * The menu item for editing the user (make this "Empty" to disable)
+   */
   def editUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("EditUser", thePath(Edit), S.??("edit.user"), testLogginIn)))
   
   /**
-  * The menu item for changing password (make this "Empty" to disable)
-  */
+   * The menu item for changing password (make this "Empty" to disable)
+   */
   def changePasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("ChangePassword", thePath(ChangePassword),
-  S.??("change.password"), testLogginIn)))
+                S.??("change.password"), testLogginIn)))
   
   /**
-  * The menu item for validating a user (make this "Empty" to disable)
-  */
+   * The menu item for validating a user (make this "Empty" to disable)
+   */
   def validateUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("ValidateUser", (thePath(ValidateUser), true),
-  S.??("validate.user"), Hidden,
-  If(notLoggedIn_? _, S.??("logout.first")))))
+                S.??("validate.user"), Hidden,
+                If(notLoggedIn_? _, S.??("logout.first")))))
   
   lazy val sitemap : List[Menu] =
   List(loginMenuLoc, logoutMenuLoc, createUserMenuLoc,
-  lostPasswordMenuLoc, resetPasswordMenuLoc,
-  editUserMenuLoc, changePasswordMenuLoc,
-  validateUserMenuLoc).flatten(a => a)
+       lostPasswordMenuLoc, resetPasswordMenuLoc,
+       editUserMenuLoc, changePasswordMenuLoc,
+       validateUserMenuLoc).flatten(a => a)
   
   
   def skipEmailValidation = false
@@ -204,87 +205,92 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   def templates: LiftRules.TemplatePf = {
     case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "", _), _)
-    if testLoggedIn(w) => () => signup
+      if testLoggedIn(w) => () => signup
     
     case RequestMatcher(RequestState(BasePath :: (w @ Login) :: _, "", _), _)
-    if testLoggedIn(w) => () => login
+      if testLoggedIn(w) => () => login
     
     case RequestMatcher(RequestState(BasePath :: (w @ LostPassword) :: _, "", _), _)
-    if testLoggedIn(w) => () => lostPassword
+      if testLoggedIn(w) => () => lostPassword
     
     case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: id :: _, "", _), _)
-    if testLoggedIn(w) => () => passwordReset(id)
+      if testLoggedIn(w) => () => passwordReset(id)
     
     case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _, "", _), _)
-    if testLoggedIn(w) => () => changePassword
+      if testLoggedIn(w) => () => changePassword
     
     case RequestMatcher(RequestState(BasePath :: (w @ Logout) :: _, "", _), _)
-    if testLoggedIn(w) => () => logout
+      if testLoggedIn(w) => () => logout
     
     case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
-    if testLoggedIn(w) => () => edit
+      if testLoggedIn(w) => () => edit
     
     case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: id :: _, "", _), _)
-    if testLoggedIn(w) => () => validateUser(id)
+      if testLoggedIn(w) => () => validateUser(id)
   }
   
   def requestLoans: List[LoanWrapper] = Nil // List(curUser)
   
-  val LoggedInUserIdentifier = "$_proto_user_current_user"
-  
+  var onLogIn: List[ModelType => Unit] = Nil
+
+  var onLogOut: List[Can[ModelType] => Unit] = Nil
+   
   def loggedIn_? : Boolean = currentUserId.isDefined
-  
-  def logUserIn(who: ModelType) {
-    S.set(LoggedInUserIdentifier, who.id.toString)
+
+  def logUserIdIn(id: String) {
     curUser.remove()
+    curUserId(Full(id))
   }
-  
+  def logUserIn(who: ModelType) {
+    curUser.remove()
+    curUserId(Full(who.id.toString))
+    onLogIn.foreach(_(who))
+  }
+
   def logoutCurrentUser = logUserOut()
-  
+
   def logUserOut() {
-    S.unset(LoggedInUserIdentifier)
+    onLogOut.foreach(_(curUser))
+    curUserId.remove()
     curUser.remove()
     S.request.foreach(_.request.getSession.invalidate)
   }
-  
-  def currentUserId: Can[String] = S.get(LoggedInUserIdentifier)
-  
-  /*
-  private val curUser: ThreadLazy[Can[ModelType]] =
-  ThreadLazy(currentUserId.flatMap(id => getSingleton.find(id)))
-  */
-  
+
+  private object curUserId extends SessionVar[Can[String]](Empty)
+
+  def currentUserId: Can[String] = curUserId.is
+
   private object curUser extends RequestVar[Can[ModelType]](currentUserId.flatMap(id => getSingleton.find(id)))
-  
-  
+
+
   def currentUser: Can[ModelType] = curUser.is
-  
+
   def signupXhtml(user: ModelType) = {
     (<form method="POST" action={S.uri}><table><tr><td
-    colspan="2">Sign Up</td></tr>
-    {localForm(user, false)}
-    <tr><td>&nbsp;</td><td><user:submit/></td></tr>
-    </table></form>)
+              colspan="2">Sign Up</td></tr>
+          {localForm(user, false)}
+          <tr><td>&nbsp;</td><td><user:submit/></td></tr>
+                                        </table></form>)
   }
   
   
   def signupMailBody(user: ModelType, validationLink: String) = {
     (<html>
-    <head>
-    <title>Sign Up Confirmation</title>
-    </head>
-    <body>
-    <p>Dear {user.firstName},
-    <br/>
-    <br/>
-    Click on this link to complete signup
-    <br/><a href={validationLink}>{validationLink}</a>
-    <br/>
-    <br/>
-    Thanks
-    </p>
-    </body>
-    </html>)
+        <head>
+          <title>Sign Up Confirmation</title>
+        </head>
+        <body>
+          <p>Dear {user.firstName},
+            <br/>
+            <br/>
+            Click on this link to complete signup
+            <br/><a href={validationLink}>{validationLink}</a>
+            <br/>
+            <br/>
+            Thanks
+          </p>
+        </body>
+     </html>)
   }
   
   def signupMailSubject = S.??("sign.up.confirmation")
@@ -298,8 +304,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     val msgXml = signupMailBody(user, resetLink)
     
     Mailer.sendMail(From(emailFrom),Subject(signupMailSubject),
-    (To(user.email) :: xmlToMailBodyType(msgXml) ::
-    (bccEmail.toList.map(BCC(_)))) :_* )
+                    (To(user.email) :: xmlToMailBodyType(msgXml) ::
+                     (bccEmail.toList.map(BCC(_)))) :_* )
   }
   
   def signup = {
@@ -309,31 +315,31 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     def testSignup() {
       theUser.validate match {
         case Nil => S.removeSessionTemplater(theName)
-        theUser.validated(skipEmailValidation).uniqueId.reset()
-        theUser.save
-        if (!skipEmailValidation) {
-          sendValidationEmail(theUser)
-          S.notice(S.??("sign.up.message"))
-        } else {
-          S.notice(S.??("welcome"))
-          logUserIn(theUser)
-        }
+          theUser.validated(skipEmailValidation).uniqueId.reset()
+          theUser.save
+          if (!skipEmailValidation) {
+            sendValidationEmail(theUser)
+            S.notice(S.??("sign.up.message"))
+          } else {
+            S.notice(S.??("welcome"))
+            logUserIn(theUser)
+          }
         
-        S.redirectTo(HomePage)
+          S.redirectTo(HomePage)
         
         case xs => S.error(xs)
       }
     }
     
     def innerSignup = bind("user", 
-    signupXhtml(theUser), 
-    "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
+                           signupXhtml(theUser),
+                           "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
     
     S.addSessionTemplater(theName, {
-      case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "",
-      _), _)
-      if testLoggedIn(w) =>  () => innerSignup
-    })
+        case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "",
+                                         _), _)
+          if testLoggedIn(w) =>  () => innerSignup
+      })
     innerSignup
   }
   
@@ -350,21 +356,21 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   def validateUser(id: String): NodeSeq = getSingleton.find(By(uniqueId, id)) match {
     case Full(user) if !user.validated =>
-    user.validated(true).uniqueId.reset().save
-    S.notice(S.??("account.validated"))
-    logUserIn(user)
-    S.redirectTo(HomePage)
+      user.validated(true).uniqueId.reset().save
+      S.notice(S.??("account.validated"))
+      logUserIn(user)
+      S.redirectTo(HomePage)
     
     case _ => S.error(S.??("invalid.validation.link")); S.redirectTo(HomePage)
   }
   
   def loginXhtml = {
     (<form method="POST" action={S.uri}><table><tr><td
-    colspan="2">{S.??("log.in")}</td></tr>
-    <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
-    <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
-    <tr><td><a href={"/"+BasePath+"/"+LostPassword}>{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
-    </form>)
+              colspan="2">{S.??("log.in")}</td></tr>
+          <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
+          <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
+          <tr><td><a href={"/"+BasePath+"/"+LostPassword}>{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
+     </form>)
   }
   
   def login = {
@@ -372,49 +378,49 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
       S.param("username").
       flatMap(username => getSingleton.find(By(email, username))) match {
         case Full(user) if user.validated &&
-        user.password.match_?(S.param("password").openOr("*")) =>
-        logUserIn(user); S.notice(S.??("logged.in")); S.redirectTo(HomePage)
+          user.password.match_?(S.param("password").openOr("*")) =>
+          logUserIn(user); S.notice(S.??("logged.in")); S.redirectTo(HomePage)
         
         case Full(user) if !user.validated =>
-        S.error(S.??("account.validation.error"))
+          S.error(S.??("account.validation.error"))
         
         case _ => S.error(S.??("invalid.credentials"))
       }
     }
     
     bind("user", loginXhtml,
-    "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
-    "password" -> (<input type="password" name="password"/>),
-    "submit" -> (<input type="submit" value={S.??("log.in")}/>))
+         "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
+         "password" -> (<input type="password" name="password"/>),
+         "submit" -> (<input type="submit" value={S.??("log.in")}/>))
   }
   
   def lostPasswordXhtml = {
     (<form method="POST" action={S.uri}>
-    <table><tr><td
-    colspan="2">{S.??("enter.email")}</td></tr>
-    <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
-    <tr><td>&nbsp;</td><td><user:submit /></td></tr>
-    </table>
-    </form>)
+        <table><tr><td
+              colspan="2">{S.??("enter.email")}</td></tr>
+          <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
+          <tr><td>&nbsp;</td><td><user:submit /></td></tr>
+        </table>
+     </form>)
   }
   
   def passwordResetMailBody(user: ModelType, resetLink: String) = {
     (<html>
-    <head>
-    <title>{S.??("reset.password.confirmation")}</title>
-    </head>
-    <body>
-    <p>{S.??("dear")} {user.firstName},
-    <br/>
-    <br/>
-    {S.??("click.reset.link")}
-    <br/><a href={resetLink}>{resetLink}</a>
-    <br/>
-    <br/>
-    {S.??("thank.you")}
-    </p>
-    </body>
-    </html>)
+        <head>
+          <title>{S.??("reset.password.confirmation")}</title>
+        </head>
+        <body>
+          <p>{S.??("dear")} {user.firstName},
+            <br/>
+            <br/>
+            {S.??("click.reset.link")}
+            <br/><a href={resetLink}>{resetLink}</a>
+            <br/>
+            <br/>
+            {S.??("thank.you")}
+          </p>
+        </body>
+     </html>)
   }
   
   def passwordResetEmailSubject = S.??("reset.password.request")
@@ -422,24 +428,24 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def sendPasswordReset(email: String) {
     getSingleton.find(By(this.email, email)) match {
       case Full(user) if user.validated =>
-      user.uniqueId.reset().save
-      val resetLink = S.hostAndPath+"/"+
-      BasePath+"/"+PasswordReset+"/"+user.uniqueId
+        user.uniqueId.reset().save
+        val resetLink = S.hostAndPath+"/"+
+        BasePath+"/"+PasswordReset+"/"+user.uniqueId
       
-      val email: String = user.email
+        val email: String = user.email
       
-      val msgXml = passwordResetMailBody(user, resetLink)
-      Mailer.sendMail(From(emailFrom),Subject(passwordResetEmailSubject),
-      (To(user.email) :: xmlToMailBodyType(msgXml) ::
-      (bccEmail.toList.map(BCC(_)))) :_*)
+        val msgXml = passwordResetMailBody(user, resetLink)
+        Mailer.sendMail(From(emailFrom),Subject(passwordResetEmailSubject),
+                        (To(user.email) :: xmlToMailBodyType(msgXml) ::
+                         (bccEmail.toList.map(BCC(_)))) :_*)
       
-      S.notice(S.??("password.reset.email.sent"))
-      S.redirectTo(HomePage)
+        S.notice(S.??("password.reset.email.sent"))
+        S.redirectTo(HomePage)
       
       case Full(user) =>
-      sendValidationEmail(user)
-      S.notice(S.??("account.validation.resent"))
-      S.redirectTo(HomePage)
+        sendValidationEmail(user)
+        S.notice(S.??("account.validation.resent"))
+        S.redirectTo(HomePage)
       
       case _ => S.error(S.??("email.address.not.found"))
     }
@@ -447,50 +453,50 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   def lostPassword = {
     bind("user", lostPasswordXhtml, 
-    "email" -> SHtml.text("", sendPasswordReset _), 
-    "submit" -> <input type="Submit" value={S.??("send.it")} />)
+         "email" -> SHtml.text("", sendPasswordReset _),
+         "submit" -> <input type="Submit" value={S.??("send.it")} />)
   }
   
   def passwordResetXhtml = {
     (<form method="POST" action={S.uri}>
-    <table><tr><td colspan="2">{S.??("reset.your.password")}</td></tr>
-    <tr><td>{S.??("enter.your.new.password")}</td><td><user:pwd/></td></tr>
-    <tr><td>{S.??("repeat.your.new.password")}</td><td><user:pwd/></td></tr>
-    <tr><td>&nbsp;</td><td><user:submit/></td></tr>
-    </table>
-    </form>)
+        <table><tr><td colspan="2">{S.??("reset.your.password")}</td></tr>
+          <tr><td>{S.??("enter.your.new.password")}</td><td><user:pwd/></td></tr>
+          <tr><td>{S.??("repeat.your.new.password")}</td><td><user:pwd/></td></tr>
+          <tr><td>&nbsp;</td><td><user:submit/></td></tr>
+        </table>
+     </form>)
   }
   
   def passwordReset(id: String) =
   getSingleton.find(By(uniqueId, id)) match {
     case Full(user) =>
-    def finishSet() {
-      user.validate match {
-        case Nil => S.notice(S.??("password.changed"))
-        user.save
-        logUserIn(user); S.redirectTo(HomePage)
+      def finishSet() {
+        user.validate match {
+          case Nil => S.notice(S.??("password.changed"))
+            user.save
+            logUserIn(user); S.redirectTo(HomePage)
         
-        case xs => S.error(xs)
+          case xs => S.error(xs)
+        }
       }
-    }
-    user.uniqueId.reset().save
+      user.uniqueId.reset().save
     
-    bind("user", passwordResetXhtml,
-    "pwd" -> SHtml.password_*("",(p: List[String]) => 
-    user.password.setList(p)),
-    "submit" -> SHtml.submit(S.??("set.password"), finishSet()))
+      bind("user", passwordResetXhtml,
+           "pwd" -> SHtml.password_*("",(p: List[String]) =>
+                                     user.password.setList(p)),
+           "submit" -> SHtml.submit(S.??("set.password"), finishSet()))
     case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(HomePage)
   }
   
   def changePasswordXhtml = {
     (<form method="POST" action={S.uri}>
-    <table><tr><td colspan="2">{S.??("change.password")}</td></tr>
-    <tr><td>{S.??("old.password")}</td><td><user:old_pwd /></td></tr>
-    <tr><td>{S.??("new.password")}</td><td><user:new_pwd /></td></tr>
-    <tr><td>{S.??("repeat.password")}</td><td><user:new_pwd /></td></tr>
-    <tr><td>&nbsp;</td><td><user:submit /></td></tr>
-    </table>
-    </form>)
+        <table><tr><td colspan="2">{S.??("change.password")}</td></tr>
+          <tr><td>{S.??("old.password")}</td><td><user:old_pwd /></td></tr>
+          <tr><td>{S.??("new.password")}</td><td><user:new_pwd /></td></tr>
+          <tr><td>{S.??("repeat.password")}</td><td><user:new_pwd /></td></tr>
+          <tr><td>&nbsp;</td><td><user:submit /></td></tr>
+        </table>
+     </form>)
   }
   
   def changePassword = {
@@ -510,18 +516,18 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     }
     
     bind("user", changePasswordXhtml,
-    "old_pwd" -> SHtml.password("", oldPassword = _), 
-    "new_pwd" -> SHtml.password_*("", LFuncHolder(newPassword = _)), 
-    "submit" -> SHtml.submit(S.??("change"), testAndSet()))
+         "old_pwd" -> SHtml.password("", oldPassword = _),
+         "new_pwd" -> SHtml.password_*("", LFuncHolder(newPassword = _)),
+         "submit" -> SHtml.submit(S.??("change"), testAndSet()))
   }
   
   def editXhtml(user: ModelType) = {
     (<form method="POST" action={S.uri}>
-    <table><tr><td colspan="2">{S.??("edit")}</td></tr>
-    {localForm(user, true)}
-    <tr><td>&nbsp;</td><td><user:submit/></td></tr>
-    </table>
-    </form>)
+        <table><tr><td colspan="2">{S.??("edit")}</td></tr>
+          {localForm(user, true)}
+          <tr><td>&nbsp;</td><td><user:submit/></td></tr>
+        </table>
+     </form>)
   }
   
   def edit = {
@@ -531,21 +537,21 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     def testEdit() {
       theUser.validate match {
         case Nil => S.removeSessionTemplater(theName)
-        theUser.save
-        S.notice(S.??("profle.updated"))
-        S.redirectTo(HomePage)
+          theUser.save
+          S.notice(S.??("profle.updated"))
+          S.redirectTo(HomePage)
         
         case xs => S.error(xs)
       }
     }
     
     def innerEdit = bind("user", editXhtml(theUser), 
-    "submit" -> SHtml.submit(S.??("edit"), testEdit()))
+                         "submit" -> SHtml.submit(S.??("edit"), testEdit()))
     
     S.addSessionTemplater(theName, {
-      case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
-      if testLoggedIn(w) =>
-    () => innerEdit})
+        case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
+          if testLoggedIn(w) =>
+          () => innerEdit})
     innerEdit
   }
   
@@ -558,12 +564,12 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     signupFields.
     map(fi => getSingleton.getActualBaseField(user, fi)).
     filter(f => !ignorePassword || (f match {
-      case f: MappedPassword[ModelType] => false
-      case _ => true
-    })).
+          case f: MappedPassword[ModelType] => false
+          case _ => true
+        })).
     flatMap(f =>
-    f.toForm.toList.map(form =>
-    (<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
+            f.toForm.toList.map(form =>
+                                (<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
   }
   
   implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] =
