@@ -1,10 +1,20 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import scala.collection.mutable.{ListBuffer, HashMap}
 import java.lang.reflect.Method
@@ -27,6 +37,31 @@ trait BaseMetaMapper {
   def dbAddTable: Can[() => Unit]
 
   def dbIndexes: List[Index[RealType]]
+}
+
+/**
+ * Rules and functions shared by all Mappers
+ */
+object MapperRules {
+  /**
+   * This function converts a header name into the appropriate
+   * XHTML format for displaying across the headers of a
+   * formatted block.  The default is &lt;th&gt; for use
+   * in XHTML tables.  If you change this function, the change
+   * will be used for all MetaMappers, unless they've been 
+   * explicitly changed.
+   */
+  var displayNameToHeaderElement: String => NodeSeq = in => <th>{in}</th>
+
+  /**
+   * This function converts a header name into the appropriate
+   * XHTML format for displaying across the headers of a
+   * formatted block.  The default is &lt;th&gt; for use
+   * in XHTML tables.  If you change this function, the change
+   * will be used for all MetaMappers, unless they've been 
+   * explicitly changed.
+   */
+  var displayFieldAsLineElement: NodeSeq => NodeSeq = in => <td>{in}</td>
 }
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
@@ -707,14 +742,25 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     case name => name
   }
 
-  private def internalTableName_$_$ = getClass.getSuperclass.getName.split("\\.").toList.last
+  private def internalTableName_$_$ = 
+    getClass.getSuperclass.getName.split("\\.").toList.last;
 
-  def htmlHeaders : NodeSeq =
-    mappedFieldList.filter(_.field.dbDisplay_?).map(mft => <th>{mft.field.displayName}</th>)
+  var displayNameToHeaderElement: String => NodeSeq =
+    MapperRules.displayNameToHeaderElement
+
+  def htmlHeaders: NodeSeq =
+    mappedFieldList.filter(_.field.dbDisplay_?).
+      flatMap(mft => displayNameToHeaderElement(mft.field.displayName))
 
   def mappedFields: Seq[BaseMappedField] = mappedFieldList.map(f => f.field)
 
-  def doHtmlLine(toLine: A): NodeSeq = mappedFieldList.filter(_.field.dbDisplay_?).map(mft => <td>{??(mft.method, toLine).asHtml}</td>)
+  var displayFieldAsLineElement: NodeSeq => NodeSeq = 
+    MapperRules.displayFieldAsLineElement
+  
+
+  def doHtmlLine(toLine: A): NodeSeq = 
+    mappedFieldList.filter(_.field.dbDisplay_?).
+      flatMap(mft => displayFieldAsLineElement(??(mft.method, toLine).asHtml))
 
   def asJs(actual: A): JsExp = {
     JE.JsObj(("$lift_class", JE.Str(dbTableName)) :: mappedFieldList.
