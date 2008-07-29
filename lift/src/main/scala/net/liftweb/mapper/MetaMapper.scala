@@ -54,14 +54,29 @@ object MapperRules {
   var displayNameToHeaderElement: String => NodeSeq = in => <th>{in}</th>
 
   /**
-   * This function converts a header name into the appropriate
-   * XHTML format for displaying across the headers of a
-   * formatted block.  The default is &lt;th&gt; for use
+   * This function converts an element into the appropriate
+   * XHTML format for displaying across a line 
+   * formatted block.  The default is &lt;td&gt; for use
    * in XHTML tables.  If you change this function, the change
    * will be used for all MetaMappers, unless they've been 
    * explicitly changed.
    */
   var displayFieldAsLineElement: NodeSeq => NodeSeq = in => <td>{in}</td>
+
+  /**
+   * This function is the global (for all MetaMappers that have
+   * not changed their formatFormElement function) that 
+   * converts a name and form for a given field in the
+   * model to XHTML for presentation in the browser.  By
+   * default, a table row ( &lt;tr&gt; ) is presented, but
+   * you can change the function to display something else.
+   */
+  var formatFormElement: (NodeSeq, NodeSeq) => NodeSeq =
+    (name, form) => 
+      <xml:group><tr>
+  <td>{name}</td>
+  <td>{form}</td>
+  </tr></xml:group>
 }
 
 trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
@@ -745,6 +760,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   private def internalTableName_$_$ = 
     getClass.getSuperclass.getName.split("\\.").toList.last;
 
+  /**
+   * This function converts a header name into the appropriate
+   * XHTML format for displaying across the headers of a
+   * formatted block.  The default is &lt;th&gt; for use
+   * in XHTML tables.  If you change this function, the change
+   * will be used for this MetaMapper unless you override the
+   * htmlHeades method
+   */
   var displayNameToHeaderElement: String => NodeSeq =
     MapperRules.displayNameToHeaderElement
 
@@ -754,6 +777,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 
   def mappedFields: Seq[BaseMappedField] = mappedFieldList.map(f => f.field)
 
+  /**
+   * This function converts an element into the appropriate
+   * XHTML format for displaying across a line 
+   * formatted block.  The default is &lt;td&gt; for use
+   * in XHTML tables.  If you change this function, the change
+   * will be used for this MetaMapper unless you override the
+   * doHtmlLine method.
+   */
   var displayFieldAsLineElement: NodeSeq => NodeSeq = 
     MapperRules.displayFieldAsLineElement
   
@@ -792,15 +823,24 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   ) :::List(Text(" }"))
 
 
-  def formatFormLine(displayName: NodeSeq, form: NodeSeq): Node = (<xml:group><tr>
-  <td>{displayName}</td>
-  <td>{form}</td>
-  </tr></xml:group>)
+  /**
+   * This function converts a name and form for a given field in the
+   * model to XHTML for presentation in the browser.  By
+   * default, a table row ( &lt;tr&gt; ) is presented, but
+   * you can change the function to display something else.
+   */
+  var formatFormElement: (NodeSeq, NodeSeq) => NodeSeq =
+    MapperRules.formatFormElement
+								      
+  def formatFormLine(displayName: NodeSeq, form: NodeSeq): NodeSeq = 
+    formatFormElement(displayName, form)
 
   def toForm(toMap: A): NodeSeq =
-    mappedFieldList.map(e => ??(e.method, toMap)).filter(_.dbDisplay_?).flatMap (
+    mappedFieldList.map(e => ??(e.method, toMap)).
+      filter(_.dbDisplay_?).flatMap (
       field =>
-        field.toForm.toList.map(form => formatFormLine(Text(field.displayName), form))
+        field.toForm.toList.
+          flatMap(form => formatFormLine(Text(field.displayName), form))
     )
 
   /**
