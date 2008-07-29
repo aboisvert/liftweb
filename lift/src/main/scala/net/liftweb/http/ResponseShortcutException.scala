@@ -25,6 +25,9 @@ class ResponseShortcutException(_response: => ResponseIt, val doNotices: Boolean
 }
 
 object ResponseShortcutException {
+  def shortcutResponse(responseIt: => ResponseIt) = 
+    new ResponseShortcutException(responseIt, true)
+
   def redirect(to: String): ResponseShortcutException =
   new ResponseShortcutException(RedirectResponse(to, S responseCookies :_*), true)
 
