@@ -120,7 +120,6 @@ class User extends ProtoUser[User] {
   def getSingleton = User
 
   def pets = Pet.findAll(By(Pet.owner, this.id))
-  def primaryKeyField = id
 }
 
 class Pet extends KeyedMapper[Long, Pet] {

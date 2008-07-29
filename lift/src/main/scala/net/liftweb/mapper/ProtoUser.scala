@@ -31,6 +31,9 @@ import S._
 
 trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
   self: T =>
+
+  override def primaryKeyField = id
+
   // the primary key for the database
   object id extends MappedLongIndex(this)
   
@@ -71,8 +74,8 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] {
   def niceNameWEmailLink = <a href={"mailto:"+email.is}>{niceName}</a>
 }
 
-trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType], MyType <: ModelType] extends KeyedMetaMapper[Long, ModelType] {
-  self: MyType =>
+trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMetaMapper[Long, ModelType] {
+  self: ModelType =>
   
   def signupFields: List[BaseOwnedMappedField[ModelType]] = firstName :: lastName :: email :: locale :: timezone :: password :: Nil
   

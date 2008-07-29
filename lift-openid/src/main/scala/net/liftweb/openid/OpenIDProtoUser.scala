@@ -29,8 +29,8 @@ import org.openid4java.consumer._
 import org.openid4java.discovery.Identifier;
 
 
-trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType], MyType <: ModelType with MetaMegaProtoUser[ModelType, MyType]] extends MetaMegaProtoUser[ModelType, MyType] {
-  self: MyType =>
+trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaMegaProtoUser[ModelType] {
+  self: ModelType =>
   
   def superUser_? : Boolean = currentUser.map(_.superUser.is).openOr(false)
   
@@ -135,9 +135,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType], MyType <: Mod
 trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
   self: T =>
   
-  def primaryKeyField = id
-  
-  override def getSingleton: KeyedMetaMapper[Long, T] with MetaOpenIDProtoUser[OpenIDProtoUser[T], T]
+ override def getSingleton: MetaOpenIDProtoUser[T]
   
   object openId extends MappedString(this, 512) {
     override def dbIndexed_? = true
