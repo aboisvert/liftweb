@@ -6,7 +6,7 @@ import net.liftweb.util._
 /**
  * The singleton that has methods for accessing the database. LiftNote: 2
  */
-object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[Long, User]] {
+object User extends User with MetaMegaProtoUser[User] {
   override def dbTableName = "users"
   override def screenWrap = Full(<lift:surround with="default" at="content">
 			       <lift:bind /></lift:surround>) // LiftNote: 6
@@ -20,7 +20,7 @@ object User extends User with MetaMegaProtoUser[User, User with KeyedMetaMapper[
  */
 class User extends MegaProtoUser[User] {
   def getSingleton = User // what's the "meta" server
-  def primaryKeyField = id
+
   object blogtitle extends MappedString(this, 128)
 }
 

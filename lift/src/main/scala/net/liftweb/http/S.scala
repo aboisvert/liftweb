@@ -318,7 +318,8 @@ object S {
   * Log a query for the given request.  The query log can be tested to see
   * if queries for the particular page rendering took too long
   */
-  def logQuery(query: String, time: Long) = Can.legacyNullTest(_queryLog.value).foreach(_ += (query, time))
+  def logQuery(query: String, time: Long) =
+  Can.legacyNullTest(_queryLog.value).foreach(_ += (query, time))
 
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
     Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
@@ -330,12 +331,15 @@ object S {
     Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
 
 
-  private var _queryAnalyzer: List[(Can[RequestState], Long, List[(String, Long)]) => Any] = Nil
+  private var _queryAnalyzer: List[(Can[RequestState], Long,
+                                    List[(String, Long)]) => Any] = Nil
 
   /**
   * Add a query analyzer (passed queries for analysis or logging)
   */
-  def addAnalyzer(f: (Can[RequestState], Long, List[(String, Long)]) => Any): Unit = _queryAnalyzer = _queryAnalyzer ::: List(f)
+  def addAnalyzer(f: (Can[RequestState], Long, 
+                      List[(String, Long)]) => Any): Unit =
+  _queryAnalyzer = _queryAnalyzer ::: List(f)
 
   private var aroundRequest: List[LoanWrapper] = Nil
   private def doAround[B](ar: List[LoanWrapper])(f: => B): B =

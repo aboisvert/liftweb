@@ -81,6 +81,8 @@ trait BindHelpers {
 
   /**
    * This class creates a BindParam from an input value
+   *
+   * @deprecated use -> instead
    */
   @deprecated
   class BindParamAssoc(val name: String) {
@@ -96,6 +98,8 @@ trait BindHelpers {
    * transforms a String to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>"David" --> "name"</code>
+   *
+   * @deprecated use -> instead
    */ 
   @deprecated
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
@@ -104,6 +108,8 @@ trait BindHelpers {
    * transforms a Symbol to a BindParamAssoc object which can be associated to a BindParam object
    * using the --> operator.<p/>
    * Usage: <code>'David --> "name"</code>
+   *
+   * @deprecated use -> instead
    */ 
   @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
@@ -116,11 +122,11 @@ trait BindHelpers {
   object Function1NodeSeqToNodeSeq {
     def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
       if (f.getClass.getMethods.exists{ method =>
-        method.getName == "apply" && {
-          val params: Seq[Class[_]] = method.getParameterTypes
-          params.length == 1 && params.exists(_.isAssignableFrom(classOf[NodeSeq]))
-        } &&
-        classOf[NodeSeq].isAssignableFrom(method.getReturnType)
+        lazy val params: Seq[Class[_]] = method.getParameterTypes
+        method.getName == "apply" &&
+          params.length == 1 &&
+          params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
+          classOf[NodeSeq].isAssignableFrom(method.getReturnType)
       }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
       else None
   }
@@ -158,7 +164,10 @@ trait BindHelpers {
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
+   *
+   * @deprecated use bind instead
    */
+   @deprecated
   def xbind(namespace: String, xml: NodeSeq)(transform: PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
     def rec_xbind(xml: NodeSeq): NodeSeq = {
       xml.flatMap {

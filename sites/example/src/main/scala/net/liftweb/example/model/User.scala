@@ -22,7 +22,7 @@ import java.sql.Connection
 /**
  * The singleton that has methods for accessing the database
  */
-object User extends User with KeyedMetaMapper[long, User] {
+object User extends User with KeyedMetaMapper[Long, User] {
   override def dbTableName = "users" // define the DB table name
 
   // define the order fields will appear in forms and output
@@ -35,7 +35,6 @@ object User extends User with KeyedMetaMapper[long, User] {
  */
 class User extends ProtoUser[User] {
   def getSingleton = User // what's the "meta" server
-  def primaryKeyField = id
 
   // define an additional field for a personal essay
   object textArea extends MappedTextarea(this, 2048) {
