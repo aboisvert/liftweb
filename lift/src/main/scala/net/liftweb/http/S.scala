@@ -575,8 +575,7 @@ object S {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-    "function "+key+"(obj) {jQuery.ajax( {url: '"+encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', cache: false, timeout: 10000, type: 'POST', data: '"+
-       key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
+    "function "+key+"(obj) {" + LiftRules.jsArtifacts.ajax("'" + key + "='+encodeURIComponent(JSON.stringify(obj))") + "}"))
   }
 
   /**
@@ -602,7 +601,7 @@ object S {
 
     val groupMessages = xml match {
       case Nil => JsCmds.Noop
-      case _ => LiftRules.liftUIArtifacts.setHtml(LiftRules.noticesContainerId, xml)
+      case _ => LiftRules.jsArtifacts.setHtml(LiftRules.noticesContainerId, xml)
     }
 
     val g = idMessages _
@@ -610,7 +609,7 @@ object S {
          (LiftRules.ajaxWarningMeta, g(S.warnings)),
          (LiftRules.ajaxNoticeMeta, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
            case (meta, m) => m.foldLeft(car)((left, r) =>
-             left & LiftRules.liftUIArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
+             left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
               (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
          }
          )

@@ -3,7 +3,7 @@ package net.liftweb.http.js
 import net.liftweb.http.js._
 import scala.xml.{Elem, NodeSeq}
 
-trait LiftUIArtifacts {
+trait JSArtifacts {
 
   type JsChain = JsExp with JsMethod
   
@@ -15,14 +15,15 @@ trait LiftUIArtifacts {
   def hide(id: String): JsChain
   def show(id: String): JsChain
   def each(func: String) : JsChain
+  def serialize(id: String): JsChain
 
   def setHtml(id: String, xml: NodeSeq): JsCmd
   def focusOnLoad(xml: Elem): NodeSeq
+  def onLoad(cmd: JsCmd): JsCmd
+  
+  
+  def ajax(data: String,  props: (String, String)*): String 
+  def ajaxRaw(props: (String, String)*) : String
+  
 }
 
-trait LiftAjax {
-
-  def ajax(data: String): String;
-  def ajax(data: String, dataType: String): String;
-  def ajax(action: String, timeout: long, cache: Boolean, data: String, dataType: String) : String
-}

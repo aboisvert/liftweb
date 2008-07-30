@@ -9,7 +9,7 @@ import JE._
 import JqJE._
 
 
-object JQueryArtifacts extends LiftUIArtifacts {
+object JQueryArtifacts extends JSArtifacts {
 
  
   def toggle(id: String): JsChain = JqId(id) ~> new JsMethod {
@@ -28,31 +28,28 @@ object JQueryArtifacts extends LiftUIArtifacts {
     def toJsCmd = "each(" + func + ")" 
   }
   
+  def serialize(id: String): JsChain = JqId(id) ~> new JsMethod {
+    def toJsCmd = "serialize()" 
+  }
+  
   def setHtml(id: String, xml: NodeSeq): JsCmd = JqJsCmds.SetHtml(id, xml)
   
   def focusOnLoad(xml: Elem): NodeSeq = JqJsCmds.FocusOnLoad(xml)
-
   
-}
+  def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.OnLoad(cmd)
 
-object JQueryAjax extends LiftAjax {
-  
-  def ajax(data: String): String = {
-    ajax(data, "script");
+  def ajax(data: String,  props: (String, String)*): String = {
+    ajaxRaw((List("data" -> data, 
+                  "type" -> "POST", 
+                  "timeout" -> "1000", 
+                  "cache" -> "false", 
+                  "dataType" -> "script") ++ props.toList):_*);
   }
   
-  def ajax(data: String, dataType: String) : String = {
-    ajax("POST", 1000, false, data, dataType);
-  }
-
-  def ajax(action: String, timeout: long, cache: Boolean, data: String, dataType: String) : String = {
+  def ajaxRaw(props: (String, String)*) : String = {
     "jQuery.ajax( {url: '" +S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath) +
-      "',  type: '" + action + 
-      "', timeout: " + timeout +
-      ", cache: " + cache +
-      ", data: " + data + 
-      ", dataType: '" + dataType +
-      "'});";
+     props.map(t => t._1 + ": " + t._2).mkString(", ", ", ", "") +
+     "});";
   }
 
   

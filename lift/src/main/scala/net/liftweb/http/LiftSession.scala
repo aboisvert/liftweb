@@ -22,6 +22,7 @@ import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.mapper.DB
 import net.liftweb.util._
+import net.liftweb.http.js.JsCmd
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
@@ -738,7 +739,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
+    val ajax = LiftRules.jsArtifacts.ajax("'"+attr("key")+"=true'")
     new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
@@ -748,7 +749,8 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
+    val ajax = LiftRules.jsArtifacts.ajax(LiftRules.jsArtifacts.serialize(id).toJsCmd) + pre + " return false;"
+
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
@@ -812,15 +814,21 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     override def transform(n: Node) = n match {
       case Elem(null, "body", attr @ _, scope @ _, kids @ _*) if !done =>
       done = true
-      Elem(null, "body", attr,  scope, (kids ++ <span id="lift_bind"/><script>
-      // {
+      Elem(null, "body", attr,  scope, (kids ++ <span id="lift_bind"/><script>{
       Unparsed("""<![CDATA[
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {jQuery.ajax( {url: '"""+S.encodeURL(contextPath+"/"+LiftRules.cometPath)+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
-      jQuery(document).ready(function(){lift_handlerSuccessFunc();});
-      // ]]>
+      function lift_cometEntry() {""" + LiftRules.jsArtifacts.ajaxRaw("data" -> "lift_toWatch",  
+                                                                      "timeout" -> "140000",
+                                                                      "cache" -> "false", 
+                                                                      "dataType" -> "script",
+                                                                      "success" -> "lift_handlerSuccessFunc",
+                                                                      "error" -> "lift_handlerFailureFunc") + """ } """ +
+                  LiftRules.jsArtifacts.onLoad(new JsCmd() {
+                                                 def toJsCmd = "lift_handlerSuccessFunc()"
+                                               })
+                 + """// ]]>
       """)}</script>) :_*)
 
       case _ => n
