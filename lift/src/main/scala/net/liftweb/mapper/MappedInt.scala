@@ -100,17 +100,26 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.enumColumnType
 
   /**
+   * Whether or not to use autocomplete in toForm
+   */
+  def autocomplete_? = false
+
+  /**
     * Build a list for the select.  Return a tuple of (String, String) where the first string
     * is the id.string of the Value and the second string is the Text name of the Value.
     */
   def buildDisplayList: List[(Int, String)] = enum.elements.toList.map(a => (a.id, a.toString))
 
-    /**
+  /**
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-    Full(SHtml.selectObj[Int](buildDisplayList,
-		  Full(toInt), v => this.set(fromInt(v))))
+    if (autocomplete_?)
+      Full(SHtml.autocompleteObj[Int](buildDisplayList, Full(toInt),
+                                      v => this.set(fromInt(v))))
+    else
+      Full(SHtml.selectObj[Int](buildDisplayList, Full(toInt),
+                                v => this.set(fromInt(v))))
 }
 
 class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with IndexedField[Int] {
