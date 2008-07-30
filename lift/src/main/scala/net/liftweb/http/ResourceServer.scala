@@ -26,6 +26,8 @@ object ResourceServer {
     case "json.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jlift.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.css" :: Nil => true
   }
 
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
