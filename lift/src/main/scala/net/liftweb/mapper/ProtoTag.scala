@@ -3,8 +3,8 @@ package net.liftweb.mapper
 import net.liftweb.util._
 import Helpers._
 
-trait MetaProtoTag[ModelType <: ProtoTag[ModelType], MyType <: ModelType] extends KeyedMetaMapper[Long, ModelType] {
-  self: MyType =>
+trait MetaProtoTag[ModelType <: ProtoTag[ModelType]] extends KeyedMetaMapper[Long, ModelType] {
+  self: ModelType =>
   override def dbTableName: String //  = "tags"
   def cacheSize: Int
 
@@ -49,7 +49,7 @@ trait MetaProtoTag[ModelType <: ProtoTag[ModelType], MyType <: ModelType] extend
 abstract class ProtoTag[MyType <: ProtoTag[MyType]] extends KeyedMapper[Long, MyType] with Ordered[MyType] {
   self: MyType =>
 
-  def getSingleton: MetaProtoTag[MyType, MyType]
+  def getSingleton: MetaProtoTag[MyType]
 
   // the primary key for the database
   object id extends MappedLongIndex(this)
