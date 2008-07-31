@@ -311,6 +311,8 @@ case class ParsePath(partPath: List[String], suffix: String, absolute: Boolean, 
 object RewriteResponse {
   def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, "", true, false), params)
   def apply(path: List[String]) = new RewriteResponse(ParsePath(path, "", true, false), Map.empty)
+
+  def apply(path: List[String], suffix: String) = new RewriteResponse(ParsePath(path, suffix, true, false), Map.empty)
 }
 
 object URLRewriter {
