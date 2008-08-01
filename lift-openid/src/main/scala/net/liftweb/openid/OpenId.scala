@@ -196,6 +196,8 @@ trait OpenIDConsumer[UserType]
     // configure the return_to URL where your application will receive
     // the authentication responses from the OpenID provider
     val returnToUrl = S.hostAndPath + targetUrl
+
+    Log.info("Creating openId auth request.  returnToUrl: "+returnToUrl)
     
     // perform discovery on the user-supplied identifier
     val discoveries = manager.discover(userSuppliedString)
