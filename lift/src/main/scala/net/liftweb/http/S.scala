@@ -580,7 +580,7 @@ object S {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-    "function "+key+"(obj) {" + LiftRules.jsArtifacts.ajax("'" + key + "='+encodeURIComponent(JSON.stringify(obj))") + "}"))
+    "function "+key+"(obj) {" + LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+encodeURIComponent(JSON.stringify(obj))")) + "}"))
   }
 
   /**

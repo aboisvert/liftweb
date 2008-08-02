@@ -16,6 +16,8 @@
 package net.liftweb.builtin.snippet
 
 import net.liftweb.http._
+import net.liftweb.util.Full
+import js.AjaxInfo
 import scala.xml._
 
 class CometScript {
@@ -32,12 +34,13 @@ class CometScript {
       }
 
       function lift_cometEntry() {""" +
-         LiftRules.jsArtifacts.ajaxRaw("type" -> "PUT",  
-                                       "timeout" -> "140000",
-                                       "cache" -> "false", 
-                                       "dataType" -> "'script'",
-                                       "success" -> "lift_handlerSuccessFunc",
-                                       "error" -> "lift_handlerFailureFunc") + """}""")
+                LiftRules.jsArtifacts.comet(AjaxInfo("", 
+                                                     "PUT", 
+                                                     140000, 
+                                                     false, 
+                                                     "script",
+                                                     Full("lift_handlerSuccessFunc"),
+                                                     Full("lift_handlerFailureFunc"))) + """}""")
     }</script>)
   }
 

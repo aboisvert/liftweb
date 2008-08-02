@@ -27,10 +27,8 @@ trait JSArtifacts {
   def onLoad(cmd: JsCmd): JsCmd
   
   
-  def ajax(data: String,  props: (String, String)*): String 
-  def ajaxRaw(props: (String, String)*) : String
-  
-  def cometRequest(props: (String, String)*): String
+  def ajax(data: AjaxInfo): String 
+  def comet(data: AjaxInfo): String
 
 }
 

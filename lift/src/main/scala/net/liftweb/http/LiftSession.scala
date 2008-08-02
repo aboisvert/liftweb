@@ -22,7 +22,7 @@ import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import scala.xml.{NodeSeq, Unparsed, Text}
 import net.liftweb.mapper.DB
 import net.liftweb.util._
-import net.liftweb.http.js.JsCmd
+import net.liftweb.http.js.{JsCmd, AjaxInfo}
 import net.liftweb.util.Helpers._
 import java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
@@ -739,7 +739,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = LiftRules.jsArtifacts.ajax("'"+attr("key")+"=true'")
+    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo("'"+attr("key")+"=true'"))
     new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
@@ -749,7 +749,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = LiftRules.jsArtifacts.ajax(LiftRules.jsArtifacts.serialize(id).toJsCmd) + pre + " return false;"
+    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd)) + pre + " return false;"
 
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
@@ -819,12 +819,13 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {""" + LiftRules.jsArtifacts.ajaxRaw("data" -> "lift_toWatch",  
-                                                                      "timeout" -> "140000",
-                                                                      "cache" -> "false", 
-                                                                      "dataType" -> "'script'",
-                                                                      "success" -> "lift_handlerSuccessFunc",
-                                                                      "error" -> "lift_handlerFailureFunc") + """ } """ +
+      function lift_cometEntry() {""" + LiftRules.jsArtifacts.comet(AjaxInfo("lift_toWatch", 
+                                                                             "POST", 
+                                                                             140000, 
+                                                                             false, 
+                                                                             "script",
+                                                                             Full("lift_handlerSuccessFunc"),
+                                                                             Full("lift_handlerFailureFunc"))) + " } " +
                   LiftRules.jsArtifacts.onLoad(new JsCmd() {
                                                  def toJsCmd = "lift_handlerSuccessFunc()"
                                                }).toJsCmd
