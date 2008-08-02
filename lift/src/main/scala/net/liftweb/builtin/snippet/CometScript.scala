@@ -20,11 +20,8 @@ import scala.xml._
 
 class CometScript {
   def javaScript: NodeSeq = {
-    val uri = S.encodeURL(S.request.map(_.contextPath).openOr("") + S.uri)
-
     (<script type="text/javascript">
-    // {Unparsed(
-    """<![CDATA[
+    {Unparsed("""
       function lift_handlerSuccessFunc(foo) {
         setTimeout("lift_cometEntry();",100);
       }
@@ -34,11 +31,14 @@ class CometScript {
         setTimeout("lift_cometEntry();",10000);
       }
 
-      function lift_cometEntry() {
-        new Ajax.Request('"""+uri+"""', { asynchronous:true, onSuccess:lift_handlerSuccessFunc, onFailure:lift_handlerFailureFunc, method: 'put', requestHeaders:{ Accept:'text/javascript' }});
-      }
-      // ]]>""")}
-    </script>)
+      function lift_cometEntry() {""" +
+         LiftRules.jsArtifacts.ajaxRaw("type" -> "PUT",  
+                                       "timeout" -> "140000",
+                                       "cache" -> "false", 
+                                       "dataType" -> "'script'",
+                                       "success" -> "lift_handlerSuccessFunc",
+                                       "error" -> "lift_handlerFailureFunc") + """}""")
+    }</script>)
   }
 
   def bodyAttr: MetaData = new UnprefixedAttribute("onload", Text("lift_cometEntry();"), Null)

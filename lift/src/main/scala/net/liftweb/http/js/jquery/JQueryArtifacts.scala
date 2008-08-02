@@ -40,17 +40,29 @@ object JQueryArtifacts extends JSArtifacts {
 
   def ajax(data: String,  props: (String, String)*): String = {
     ajaxRaw((List("data" -> data, 
-                  "type" -> "POST", 
+                  "type" -> "'POST'", 
                   "timeout" -> "1000", 
                   "cache" -> "false", 
-                  "dataType" -> "script") ++ props.toList):_*);
+                  "dataType" -> "'script'") ++ props.toList):_*);
   }
   
   def ajaxRaw(props: (String, String)*) : String = {
-    "jQuery.ajax( {url: '" +S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath) +
+    "jQuery.ajax( {url: '" +S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath) + "'" +
      props.map(t => t._1 + ": " + t._2).mkString(", ", ", ", "") +
      "});";
   }
 
+  def cometRequest(props: (String, String)*): String = {
+    "jQuery.ajax( {url: '" +S.encodeURL(S.contextPath+"/"+LiftRules.cometPath) + "'" +
+     props.map(t => t._1 + ": " + t._2).mkString(", ", ", ", "") +
+     "});";
+  }
   
+  def toJSon(info: AjaxInfo): String = ("data : " + info.data ::
+    "type : '" + info.action + "'" ::
+    "dataType : '" + info.dataType + "'"  ::
+    "timeout : " + info.timeout ::
+    "cache : " + info.cache :: Nil) ++ 
+    info.successFunc.map(f => "success : " + f).toList ++ 
+    info.failFunc.map(f => "error : " + f).toList mkString("{ ", ", ", " }")
 }

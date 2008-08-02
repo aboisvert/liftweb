@@ -815,21 +815,20 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       case Elem(null, "body", attr @ _, scope @ _, kids @ _*) if !done =>
       done = true
       Elem(null, "body", attr,  scope, (kids ++ <span id="lift_bind"/><script>{
-      Unparsed("""<![CDATA[
+      Unparsed("""
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
       function lift_cometEntry() {""" + LiftRules.jsArtifacts.ajaxRaw("data" -> "lift_toWatch",  
                                                                       "timeout" -> "140000",
                                                                       "cache" -> "false", 
-                                                                      "dataType" -> "script",
+                                                                      "dataType" -> "'script'",
                                                                       "success" -> "lift_handlerSuccessFunc",
                                                                       "error" -> "lift_handlerFailureFunc") + """ } """ +
                   LiftRules.jsArtifacts.onLoad(new JsCmd() {
                                                  def toJsCmd = "lift_handlerSuccessFunc()"
-                                               })
-                 + """// ]]>
-      """)}</script>) :_*)
+                                               }).toJsCmd
+       )}</script>) :_*)
 
       case _ => n
     }
