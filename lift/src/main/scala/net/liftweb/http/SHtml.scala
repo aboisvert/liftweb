@@ -191,8 +191,8 @@ object SHtml {
   def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
   def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
   def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-  def hidden(func: => Unit): Elem = makeFormElement("hidden", NFuncHolder(() => func)) % ("value" -> "true")
-  def submit(value: String, func: => Unit): Elem = makeFormElement("submit", NFuncHolder(() => func)) % new UnprefixedAttribute("value", Text(value), Null)
+  def hidden(func: => Any): Elem = makeFormElement("hidden", NFuncHolder(() => func)) % ("value" -> "true")
+  def submit(value: String, func: => Any): Elem = makeFormElement("submit", NFuncHolder(() => func)) % new UnprefixedAttribute("value", Text(value), Null)
 
   def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
   def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)

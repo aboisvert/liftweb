@@ -1,10 +1,20 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import java.sql.{ResultSet, Types}
 import java.lang.reflect.Method
@@ -13,6 +23,7 @@ import net.liftweb.http.{S, SHtml}
 import java.util.Date
 import net.liftweb.util._
 import net.liftweb.http.js._
+import scala.xml.NodeSeq
 
 class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)
@@ -95,6 +106,6 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   /**
    * Create an input field for the item
    */
-  override def _toForm = Full(SHtml.checkbox(is,this.apply _))
+  override def _toForm: Can[NodeSeq] = Full(SHtml.checkbox(is,this.apply _))
 }
 

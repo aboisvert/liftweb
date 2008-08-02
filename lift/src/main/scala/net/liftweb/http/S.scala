@@ -505,7 +505,12 @@ object S {
   /**
   * The host and path of the quest
   */
-  def hostAndPath: String = servletRequest.map(r => r.getScheme + "://"+r.getServerName+":"+r.getServerPort+r.getContextPath).openOr("")
+  def hostAndPath: String = 
+    servletRequest.map(r => (r.getScheme, r.getServerPort) match {
+      case ("http", 80) => "http://"+r.getServerName+r.getContextPath
+	case ("https", 443) => "https://"+r.getServerName+r.getContextPath
+	  case (sch, port) => sch + "://"+r.getServerName+":"+port+r.getContextPath
+      }).openOr("")
 
   /**
   * Get a map of the name/functions
