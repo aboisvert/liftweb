@@ -227,6 +227,57 @@ object SHtml {
     </form>
   }
 
+  private def secureOptions[T](options: List[(T, String)], default: Can[T],
+                    onSubmit: T => Unit) = {
+     val secure = options.map{case (obj, txt) => (obj, randomString(20), txt)}
+     val defaultNonce = default.flatMap(d => secure.find(_._1 == d).map(_._2))
+     val nonces = secure.map{case (obj, nonce, txt) => (nonce, txt)}
+     def process(nonce: String): Unit =
+       secure.find(_._2 == nonce).map(x => onSubmit(x._1))
+    (nonces, defaultNonce, SFuncHolder(process))
+  }
+  
+  /**
+   * Create an autocomplete form based on a sequence.
+   */
+  def autocompleteObj[T](options: List[(T, String)], default: Can[T],
+                         onSubmit: T => Unit): Elem = {
+    val (nonces, defaultNonce, secureOnSubmit) =
+      secureOptions(options, default, onSubmit)
+    val defaultString = default.flatMap(d => options.find(_._1 == d).map(_._2))
+
+    autocomplete_*(nonces, defaultString, defaultNonce, secureOnSubmit)
+  }
+
+  def autocomplete_*(options: List[(String, String)], default: Can[String], 
+                     defaultNonce: Can[String], onSubmit: AFuncHolder): Elem = {
+    val id = randomString(20)
+    val hidden = mapFunc(onSubmit)
+    val data = JsArray(options.map { case (nonce, name) =>
+          JsObj("name" -> name, "nonce" -> nonce)} :_*)
+    val autocompleteOptions = JsRaw("""{
+      minChars: 0,
+      matchContains: true,
+      formatItem: function(row, i, max) { return row.name; },
+    }""")
+    val onLoad = JsRaw("""
+      $(document).ready(function(){
+        var data = """+data.toJsCmd+""";
+        $("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
+          $("#"""+hidden+"""").val(dt.nonce);
+        });
+      });""")
+
+    (<span>
+    <head>
+      <link rel="stylesheet" href="/classpath/jquery-autocomplete/jquery.autocomplete.css" type="text/css" />
+      <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
+      <script>{Unparsed(onLoad.toJsCmd)}</script>
+    </head>
+    <input type="text" id={id} value={default.openOr("")} />
+    <input type="hidden" name={hidden} id={hidden} value={defaultNonce.openOr("")} />
+    </span>)
+  }
 
   /**
    * Create a select box based on the list with a default value and the function to be executed on
@@ -237,28 +288,22 @@ object SHtml {
    * @param func -- the function to execute on form submission
    */
    def select(opts: List[(String, String)], deflt: Can[String], func: String => Any): Elem =
-   select_*(opts, deflt, SFuncHolder(func))
+     select_*(opts, deflt, SFuncHolder(func))
 
-     /**
-   * Create a select box based on the list with a default value and the function to be executed on
-   * form submission
+  /**
+   * Create a select box based on the list with a default value and the function
+   * to be executed on form submission
    *
-   * @param opts -- the options.  A list of value and text pairs (value, text to display)
-   * @param deflt -- the default value (or Empty if no default value)
-   * @param func -- the function to execute on form submission
+   * @param options  -- a list of value and text pairs (value, text to display)
+   * @param default  -- the default value (or Empty if no default value)
+   * @param onSubmit -- the function to execute on form submission
    */
-   def selectObj[T](opts: List[(T, String)], deflt: Can[T], func: T => Any): Elem = {
-     val secure = opts.map{case (obj, txt) => (obj, randomString(20), txt)}
-     val revDflt = deflt.flatMap(o => secure.filter(_._1 == o) match {
-       case x :: _ => Full(x._2)
-       case _ => Empty
-     })
-     val toPass = secure.map{case (obj, ran, txt) => (ran, txt)}
-     def process(in: String): Any = secure.filter(_._2 == in) match {
-       case Nil =>
-       case x :: _ => func(x._1)
-     }
-     select_*(toPass, revDflt, SFuncHolder(process))
+   def selectObj[T](options: List[(T, String)], default: Can[T],
+                    onSubmit: T => Unit): Elem = {
+    val (nonces, defaultNonce, secureOnSubmit) =
+      secureOptions(options, default, onSubmit)
+
+    select_*(nonces, defaultNonce, secureOnSubmit)
    }
 
   /**

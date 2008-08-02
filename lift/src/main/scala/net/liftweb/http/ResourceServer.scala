@@ -26,10 +26,12 @@ object ResourceServer {
     case "json.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jlift.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.css" :: Nil => true
   }
 
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
-     case "jquery.js" :: Nil => List("jquery-1.2.3-min.js")
+     case "jquery.js" :: Nil => List("jquery-1.2.6-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
      case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
