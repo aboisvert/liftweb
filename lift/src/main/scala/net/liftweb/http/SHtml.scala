@@ -147,9 +147,8 @@ object SHtml {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
     val ui = LiftRules.jsArtifacts
-    (<span>{rs % ("onclick" -> ((ui.hide(sid) ~> 
-                                   ui.show(hid) ~> 
-                                   ui.each("function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}")).toJsCmd + "; return false;"))} 
+    (<span>{rs % ("onclick" -> ((ui.hide(sid).toJsCmd + ";" +
+                                 ui.showAndFocus(hid)).toJsCmd + "; return false;"))} 
            {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";"))}
      </span>)
   }
@@ -241,10 +240,10 @@ object SHtml {
       formatItem: function(row, i, max) { return row.name; },
     }""")
     val onLoad = JsRaw("""
-      $(document).ready(function(){
+      jQuery(document).ready(function(){
         var data = """+data.toJsCmd+""";
-        $("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
-          $("#"""+hidden+"""").val(dt.nonce);
+        jQuery("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
+          jQuery("#"""+hidden+"""").val(dt.nonce);
         });
       });""")
 

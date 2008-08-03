@@ -389,7 +389,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     }
     
     bind("user", loginXhtml,
-    "email" -> (LiftRules.jsArtifacts.focusOnLoad(<input type="text" name="username"/>)),
+    "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
     "password" -> (<input type="password" name="password"/>),
     "submit" -> (<input type="submit" value={S.??("log.in")}/>))
   }

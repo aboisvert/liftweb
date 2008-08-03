@@ -12,29 +12,27 @@ import JqJE._
 object JQueryArtifacts extends JSArtifacts {
 
  
-  def toggle(id: String): JsChain = JqId(id) ~> new JsMethod {
+  def toggle(id: String) = JqId(id) ~> new JsMethod {
     def toJsCmd = "toggle()" 
   }
   
-  def hide(id: String): JsChain = JqId(id) ~> new JsMethod {
+  def hide(id: String) = JqId(id) ~> new JsMethod {
     def toJsCmd = "hide()" 
   }
   
-  def show(id: String): JsChain = JqId(id) ~> new JsMethod {
+  def show(id: String) = JqId(id) ~> new JsMethod {
     def toJsCmd = "show()" 
   }
-
-  def each(func: String): JsChain = new JsExp {
-    def toJsCmd = "each(" + func + ")" 
-  }
   
-  def serialize(id: String): JsChain = JqId(id) ~> new JsMethod {
+  def showAndFocus(id: String) = JqId(id) ~> new JsMethod {
+    def toJsCmd = "show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);})" 
+  } 
+
+  def serialize(id: String) = JqId(id) ~> new JsMethod {
     def toJsCmd = "serialize()" 
   }
   
   def setHtml(id: String, xml: NodeSeq): JsCmd = JqJsCmds.SetHtml(id, xml)
-  
-  def focusOnLoad(xml: Elem): NodeSeq = JqJsCmds.FocusOnLoad(xml)
   
   def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.OnLoad(cmd)
   

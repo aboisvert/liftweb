@@ -7,27 +7,22 @@ import scala.xml.{Elem, NodeSeq}
 
 trait JSArtifacts {
 
-  type JsChain = JsExp with JsMethod
+  def toggle(id: String): JsExp
+
+  def hide(id: String): JsExp
   
-  implicit def exp2(exp: JsExp): JsChain = new JsExp with JsMethod {
-    def toJsCmd = exp.toJsCmd
-  }
-
-  /**
-   * Used to toggle a xhtml node
-   */
-  def toggle(id: String): JsChain
-  def hide(id: String): JsChain
-  def show(id: String): JsChain
-  def each(func: String) : JsChain
-  def serialize(id: String): JsChain
-
+  def show(id: String): JsExp
+  
+  def showAndFocus(id: String): JsExp
+  
+  def serialize(id: String): JsExp
+  
   def setHtml(id: String, xml: NodeSeq): JsCmd
-  def focusOnLoad(xml: Elem): NodeSeq
+  
   def onLoad(cmd: JsCmd): JsCmd
-  
-  
+    
   def ajax(data: AjaxInfo): String 
+  
   def comet(data: AjaxInfo): String
 
 }

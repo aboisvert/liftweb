@@ -160,20 +160,6 @@ object JqJsCmds {
   
   implicit def jsExpToJsCmd(in: JsExp) = in.cmd
 
-  /**
-  * Makes the parameter the selected HTML element on load of the page
-  *
-  * @param in the element that should have focus
-  *
-  * @return the element and a script that will give the element focus
-  */
-  object FocusOnLoad {
-    def apply(in: Elem): NodeSeq = {
-      val (elem, id) = findOrAddId(in)
-      elem ++ Script(OnLoad(Run("document.getElementById("+id.encJs+").focus();")))
-    }
-  }
-
   case class OnLoad(cmd: JsCmd) extends JsCmd {
     def toJsCmd = "jQuery(document).ready(function() {"+cmd.toJsCmd+"});"
   }

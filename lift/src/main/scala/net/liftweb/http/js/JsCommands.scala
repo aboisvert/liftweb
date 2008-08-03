@@ -418,6 +418,20 @@ object JsCmds {
     </script>
   }
 
+  /**
+  * Makes the parameter the selected HTML element on load of the page
+  *
+  * @param in the element that should have focus
+  *
+  * @return the element and a script that will give the element focus
+  */
+  object FocusOnLoad {
+    def apply(in: Elem): NodeSeq = {
+      val (elem, id) = findOrAddId(in)
+      elem ++ Script(LiftRules.jsArtifacts.onLoad(Run("document.getElementById("+id.encJs+").focus();")))
+    }
+  }
+
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+
     right.toJsCmd+";"
