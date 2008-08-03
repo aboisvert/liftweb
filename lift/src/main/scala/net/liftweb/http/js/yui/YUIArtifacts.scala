@@ -64,11 +64,11 @@ object YUIArtifacts extends JSArtifacts {
       ")"
   }
 
-  def toJson(info: AjaxInfo): String = 
+  private def toJson(info: AjaxInfo): String = 
     ("timeout : " + info.timeout ::
      "cache : " + info.cache ::  
      "success : function(resp) { if (resp.getResponseHeader('Content-Type') == 'text/javascript') {YAHOO.lift.eval(resp);}" + 
-       info.successFunc.map(f => f + "(resp)").openOr("") + "}" ::
+       info.successFunc.map(_ + "(resp)").openOr("") + "}" ::
      "failure : " + info.failFunc.openOr ("function (arg) {YAHOO.log('Ajax request failed');}") :: 
      Nil) mkString("{ ", ", ", " }")
 

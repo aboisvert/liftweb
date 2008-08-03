@@ -45,12 +45,12 @@ object JQueryArtifacts extends JSArtifacts {
   }
 
   
-  def toJson(info: AjaxInfo, path: String): String = ("url : '" + S.encodeURL(S.contextPath+"/"+path) + "'" ::
+  private def toJson(info: AjaxInfo, path: String): String = ("url : '" + S.encodeURL(S.contextPath+"/"+path) + "'" ::
     "data : " + info.data ::
     "type : '" + info.action + "'" ::
     "dataType : '" + info.dataType + "'"  ::
     "timeout : " + info.timeout ::
     "cache : " + info.cache :: Nil) ++ 
-    info.successFunc.map(f => "success : " + f).toList ++ 
-    info.failFunc.map(f => "error : " + f).toList mkString("{ ", ", ", " }")
+    info.successFunc.map("success : " + _).toList ++ 
+    info.failFunc.map("error : " + _).toList mkString("{ ", ", ", " }")
 }
