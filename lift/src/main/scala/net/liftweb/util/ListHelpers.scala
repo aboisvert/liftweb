@@ -16,7 +16,7 @@ trait ListHelpers {
    * @return a Can containing the found element (or Empty if not found)
    */
   def first_? [B](in: List[B])(f: => B => Boolean): Can[B] = 
-    Can(in.projection.filter(f).firstOption)
+    Can(in.find(f))
 
   /**
    * Returns the first application of f to an element of in that
