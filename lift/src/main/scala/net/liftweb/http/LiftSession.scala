@@ -287,7 +287,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
   }
   
-  def addSessionCleanup(f: LiftSession => Unit) {
+  def addSessionCleanup(f: LiftSession => Unit): Unit = synchronized {
     onSessionEnd = f :: onSessionEnd
   }
 

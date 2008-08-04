@@ -72,6 +72,7 @@ object S {
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
+  private val _postFuncs = new ThreadGlobal[ListBuffer[() => Unit]]
 
   /**
   * Get the current RequestState
@@ -294,8 +295,6 @@ object S {
 
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
 
-  private val currCnt = new ThreadGlobal[Int]
-
   private def initNotice[B](f: => B): B = {
     _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])(f)
   }
@@ -399,6 +398,29 @@ object S {
   rh => (rh.overrodeDocType, rh.docType)
   ).openOr( (false, Empty) )
 
+  def addCleanupFunc(f: () => Unit): Unit = 
+  for (lst <- Can.legacyNullTest(_postFuncs.value))
+    lst += f
+
+  private def _nest2InnerInit[B](f: () => B): B = {
+    initNotice {
+      _functionMap.doWith(new HashMap[String, AFuncHolder]) {
+	_postFuncs.doWith(new ListBuffer) {
+	  doAround(aroundRequest) {
+	    try {
+	      wrapQuery {
+		f
+	      }
+	    } finally {
+	      for (lst <- Can.legacyNullTest(_postFuncs.value);
+		   func <- lst) tryo(func())
+	    }
+	  }
+        }
+      }
+    }
+  }
+
   private def _innerInit[B](f: () => B): B = {
     _attrs.doWith(new TreeMap) {
       snippetMap.doWith(new HashMap) {
@@ -406,15 +428,7 @@ object S {
           _liftCoreResBundle.doWith(null){
             inS.doWith(true) {
               _stateSnip.doWith(new HashMap) {
-                initNotice {
-                  _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-		            doAround(aroundRequest) {
-		              wrapQuery {
-			            this.currCnt.doWith(0)(f)
-		              }
-                    }
-                  }
-                }
+		_nest2InnerInit(f)
               }
             }
           }
@@ -780,7 +794,8 @@ object S {
     def apply(in: Any): JsCmd
   }
 
-  abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { self: MyType =>
+  abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { 
+    self: MyType =>
     private val name = "_lift_sv_"+getClass.getName
     protected def findFunc(name: String): Can[T]
     protected def setFunc(name: String, value: T): Unit
@@ -793,6 +808,7 @@ object S {
       case Full(v) => v
       case _ => val ret = dflt
         apply(ret)
+      cleanupFunc.foreach(registerCleanupFunc)
         ret
     }
 
@@ -804,6 +820,10 @@ object S {
     def apply(what: T): Unit = setFunc(name, what)
 
     def remove(): Unit = clearFunc(name)
+
+    def cleanupFunc: Can[() => Unit] = Empty
+
+    def registerCleanupFunc(in: () => Unit): Unit
 
     override def toString = is.toString
   }
@@ -830,6 +850,10 @@ object S {
     override protected def findFunc(name: String): Can[T] = S.session.flatMap(_.get(name))
     override protected def setFunc(name: String, value: T): Unit = S.session.foreach(_.set(name, value))
     override protected def clearFunc(name: String): Unit = S.session.foreach(_.unset(name))
+
+    def registerCleanupFunc(in: () => Unit): Unit = 
+      S.session.foreach(_.addSessionCleanup(ignore => in()))
+
   }
 
   /**
@@ -846,6 +870,9 @@ object S {
     override protected def findFunc(name: String): Can[T] = S.requestState(name)
     override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value
     override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
+
+    def registerCleanupFunc(in: () => Unit): Unit = 
+      S.addCleanupFunc(in)
   }
 
 
