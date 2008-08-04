@@ -34,8 +34,8 @@ class Boot {
     LiftRules.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftRules.defaultLocaleCalculator(r))
 
     // Build SiteMap
-    val entries = Menu(Loc("Home", "/", "Home")) ::
-    Menu(Loc("Request Details", "/request", "Request Details")) ::
+    val entries = Menu(Loc("Home", List("index"), "Home")) ::
+    Menu(Loc("Request Details", List("request"), "Request Details")) ::
     User.sitemap ::: Entry.sitemap
 
     LiftRules.setSiteMap(SiteMap(entries:_*))

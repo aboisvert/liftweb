@@ -12,9 +12,12 @@ import com.hellolift.controller.AddEntry
 object Entry extends Entry with KeyedMetaMapper[Long, Entry] {
   override def dbTableName = "entries"
   // sitemap entry
-  val sitemap = List(Menu(Loc("CreateEntry", "/entry", "Create An Entry", If(User.loggedIn_? _, "Please login"))),
-		     Menu(Loc("ViewEntry", "/view", "View An Entry", Hidden)),
-		     Menu(Loc("ViewBlog", "/blog", "View Blog")))
+  val sitemap = List(Menu(Loc("CreateEntry", List("entry"), 
+			      "Create An Entry",
+			      If(User.loggedIn_? _, "Please login"))),
+		     Menu(Loc("ViewEntry", List("view"), 
+			      "View An Entry", Hidden)),
+		     Menu(Loc("ViewBlog", List("blog"), "View Blog")))
 
   // Once the transaction is committed, fill in the blog cache with this entry.
   override def afterCommit =

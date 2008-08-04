@@ -33,7 +33,7 @@ class BlogUtil {
   def viewblog(xhtml : Group) : NodeSeq = {
     // Find all Entries by author using the parameter
     val t = Entry.findAll(By(Entry.author, toLong(S.param("id"))),
-			OrderBy(Entry.id, false), MaxRows(20))
+			OrderBy(Entry.id, Descending), MaxRows(20))
     t match {
       // If no 'id' was requested, then show a listing of all users.
       case Nil => User.findAll().map(u => <span><a href={"/blog?id=" + u.id}>

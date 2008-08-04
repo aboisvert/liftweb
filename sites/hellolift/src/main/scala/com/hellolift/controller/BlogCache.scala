@@ -12,7 +12,7 @@ import com.hellolift.model.Entry
 class BlogCache extends Actor {
   def act = loop(Map(), Map())
 
-  def getEntries(id : long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, false), MaxRows(20))
+  def getEntries(id : long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, Descending), MaxRows(20))
 
   /**
    * This will seem strange to imperative programmers who are expecting the

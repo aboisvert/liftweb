@@ -20,13 +20,13 @@ import net.liftweb.http._
 import net.liftweb.util._
 import Helpers._
 
-case class Menu(page: Loc, kids: Menu*) extends HasKids {
+case class Menu(loc: Loc, kids: Menu*) extends HasKids {
   private[sitemap] var _parent: Can[HasKids] = Empty
 
   private[sitemap] def init {
     kids.foreach(_._parent = Full(this))
     kids.foreach(_.init)
-    page.setMenu(this)
+    loc.setMenu(this)
   }
 
   private[sitemap] def validate {
@@ -39,41 +39,30 @@ case class Menu(page: Loc, kids: Menu*) extends HasKids {
     case _ => (true, Empty)
   }
 
-  override private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = page.testAccess
+  override private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = loc.testAccess
 
-  override def isRoot_? = page.isRoot_?
-
-  def isAbsolute_? = page.isAbsolute_?
-
-  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState): Can[Loc] = {
-    if (page.doesMatch_?(path, req)) Full(page)
-    else page.pathMatch(path) match {
-      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
-      case n =>
-      val p2 = path.drop(n)
-      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req)) or
-         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
-    }
-  }
-
+  def findLoc(req: RequestState): Can[Loc] = 
+  if (loc.doesMatch_?(req)) Full(loc)
+  else first(kids.toList)(_.findLoc(req))
+ 
   def buildThisLine(loc: Loc) = {
     val menuList = _parent.map(_.kids.toList) openOr List(this)
     MenuLine(menuList.flatMap{
       mi =>
-      val p = mi.page
+      val p = mi.loc
       val same = loc eq p
       p.buildItem(same, same).toList
     })
   }
 
-  def buildChildLine = MenuLine(kids.toList.flatMap(m => m.page.buildItem(false, false).toList))
+  def buildChildLine = MenuLine(kids.toList.flatMap(m => m.loc.buildItem(false, false).toList))
   override def buildUpperLines: List[MenuLine] = _parent match {
     case Full(p) => p.buildUpperLines ::: p.buildAboveLine(this)
     case _ => Nil
   }
 
   override def buildAboveLine(path: Menu): List[MenuLine] = _parent match {
-    case Full(p) => List(MenuLine(p.kids.toList.flatMap(m => m.page.buildItem(false, m eq path).toList)))
+    case Full(p) => List(MenuLine(p.kids.toList.flatMap(m => m.loc.buildItem(false, m eq path).toList)))
     case _ => Nil
   }
 }

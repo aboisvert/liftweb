@@ -40,7 +40,7 @@ class Misc {
     // the header
     <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
   // get and display each of the users
-  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine}
+  User.findAll(OrderBy(User.id, Ascending)).flatMap(u => <tr>{u.htmlLine}
            <td>{link("/simple/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
            <td>{link("/simple/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
            </tr>)

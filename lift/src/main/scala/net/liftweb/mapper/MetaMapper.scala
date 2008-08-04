@@ -256,7 +256,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  // of fields you add onto the query is equal to vals.length
 	  case ByList(field, vals) =>
 	    vals match {
-	      case Nil => // Do nothing if there are no vals sent
+	      case Nil => 
+		val start = if (wav) "AND " else {wav=true; "WHERE "}
+	      updatedWhat = updatedWhat + start + " 0 = 1 "
+	      
 	      case _ => {
 		val start = if (wav) "AND " else {wav=true; "WHERE "}
 		updatedWhat = updatedWhat +
@@ -322,9 +325,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   // def find(by: QueryParam): Can[A] = find(List(by))
 
   private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
-    val lst = params.flatMap{p => p match {case OrderBy(field, ascending) => List(field.dbColumnName+" "+(if (ascending) "ASC" else "DESC")); case _ => Nil}}
-    if (lst.length == 0) in
-    else in+" ORDER BY "+lst.mkString(" , ")
+    params.flatMap{
+      case OrderBy(field, order) => List(field.dbColumnName+" "+order.sql)
+      case OrderBySql(sql) => List(sql) 
+      case _ => Nil
+    } match {
+      case Nil => in
+      case xs => in + " ORDER BY "+xs.mkString(" , ")
+    }
   }
 
   def addEndStuffs(in: String, params: List[QueryParam[A]], conn: SuperConnection): (String, Can[Long], Can[Long]) = {
@@ -952,7 +960,23 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
 
 abstract class QueryParam[O<:Mapper[O]]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
-case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],ascending: boolean) extends QueryParam[O]
+case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O], 
+				    order: AscOrDesc) extends QueryParam[O]
+
+trait AscOrDesc {
+  def sql: String
+}
+
+case object Ascending extends AscOrDesc {
+  def sql: String = " ASC "
+}
+
+case object Descending extends AscOrDesc {
+  def sql: String = " DESC "
+}
+
+case class OrderBySql[O <: Mapper[O]](sql: String) extends QueryParam[O]
+
 case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]

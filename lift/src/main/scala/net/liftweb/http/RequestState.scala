@@ -253,7 +253,8 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   }
 
 
-  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)
+  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr 
+  CompleteMenu(Nil)
 
 
   def createNotFound = {

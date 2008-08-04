@@ -36,7 +36,7 @@ class Wiki extends MetaWikiEntry {
   def main: NodeSeq = {
     val pageName = S.param("wiki_page") openOr "HomePage" // set the name of the page
     def showAll = {
-      findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={uriFor(entry.name)}>{entry.name}</a></div>)
     }
 
@@ -65,7 +65,7 @@ class Wiki extends MetaWikiEntry {
 
     def showAll = BindChoice((pageName == "all"), () => bind("pages",
       (xhtml \\ "showAll").filter(_.prefix == "wiki").toList.head.child,
-      TheBindParam("all", findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      TheBindParam("all", findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={"/wikibind/"+entry.name}>{entry.name}</a></div>))))
 
     // find the entry in the database or create a new one
