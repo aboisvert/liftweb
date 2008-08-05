@@ -83,7 +83,7 @@ trait XMLApiHelper {
   protected def buildResponse(success: Boolean, msg: Can[NodeSeq],
                             body: NodeSeq): ResponseIt =
   XmlResponse(createTag(body) % (successAttrName -> success) %
-              (operationAttrName -> operation) %
+              (new UnprefixedAttribute(operationAttrName, operation, Null)) %
               (new UnprefixedAttribute(msgAttrName, msg, Null)))
 
   //<harpoon_api success={success.toString}

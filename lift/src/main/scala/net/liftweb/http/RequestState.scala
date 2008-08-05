@@ -148,7 +148,7 @@ object RequestState {
     else (orgLst.dropRight(1) ::: List(last.substring(0, idx)),
 	  last.substring(idx + 1))
 
-    ParsePath(lst, suffix, front, back)
+    ParsePath(lst.map(urlDecode), suffix, front, back)
   }
 
   var fixHref = _fixHref _

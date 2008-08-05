@@ -38,21 +38,6 @@ object SHtml {
        mapFunc(() => func)+"=true', dataType: 'script'});"))
 
   /**
-   * Create an Ajax button. When it's pressed, the function is executed
-   *
-   * @param text -- the name/text of the button
-   * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
-   *
-   * @return a button to put on your page
-   */
-   /*
-  def ajaxButton(text: String)(func: => JsCmd): Elem =
-    <input type="button" value={text}/> %
-    ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+
-      mapFunc(() => func)+"=true', dataType: 'script'});"));
-      */
-
-  /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
    *
    * @param func - the function to invoke when the link is clicked
