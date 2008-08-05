@@ -53,6 +53,8 @@ trait XMLApiHelper {
     case Failure(msg, _, _) => buildResponse(false, Full(Text(msg)), Text(""))
     case _ => buildResponse(false, Empty, Text(""))
   }
+  
+  implicit def putResponseInCan(in: ResponseIt): Can[ResponseIt] = Full(in)
 
   /**
   * The method that wraps the outer-most tag around the body
