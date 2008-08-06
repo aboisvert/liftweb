@@ -102,7 +102,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
       )
     }
     
-    def performLogUserIn(openid: Can[Identifier], fo: Can[VerificationResult], exp: Can[Exception]): ResponseIt = {
+    def performLogUserIn(openid: Can[Identifier], fo: Can[VerificationResult], exp: Can[Exception]): ConvertableResponse = {
       (openid, exp) match {
         case (Full(id), _) =>
           val user = self.findOrCreate(id.getIdentifier)

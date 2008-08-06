@@ -20,7 +20,7 @@ import scala.xml._
 import net.liftweb.http._
 import net.liftweb.http.S._
 import net.liftweb.http.SHtml._
-import net.liftweb.http.{RequestVar, ResponseIt, Response, JsonResponse}
+import net.liftweb.http.{RequestVar, ConvertableResponse, BasicResponse, JsonResponse}
 import net.liftweb.util.Helpers._
 import net.liftweb.util._
 import net.liftweb.util.Can._

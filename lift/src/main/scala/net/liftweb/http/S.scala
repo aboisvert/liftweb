@@ -59,20 +59,20 @@ object S {
   */
   private val _request = new ThreadGlobal[RequestState]
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
-  private val _notice = new ThreadGlobal[ListBuffer[(NoticeType.Value, NodeSeq, Can[String])]]
-  private val _oldNotice = new ThreadGlobal[Seq[(NoticeType.Value, NodeSeq, Can[String])]];
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[Map[String, String]]
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
-  private val _queryLog = new ThreadGlobal[ListBuffer[(String, Long)]]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _liftCoreResBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
-  private val _postFuncs = new ThreadGlobal[ListBuffer[() => Unit]]
+  
+private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
+private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
+private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
 
   /**
   * Get the current RequestState
@@ -295,17 +295,15 @@ object S {
 
   private val executionInfo = new ThreadGlobal[HashMap[String, Function[Array[String], Any]]]
 
-  private def initNotice[B](f: => B): B = {
-    _notice.doWith(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])(f)
-  }
+
+  private[http] object oldNotices extends
+  RequestVar[Seq[(NoticeType.Value, NodeSeq, Can[String])]](Nil)
 
   /**
   * Initialize the current request session
   */
   def init[B](request: RequestState, session: LiftSession)(f: => B) : B = {
-      _oldNotice.doWith(Nil) {
         _init(request,session)(() => f)
-      }
   }
 
   /**
@@ -317,8 +315,7 @@ object S {
   * Log a query for the given request.  The query log can be tested to see
   * if queries for the particular page rendering took too long
   */
-  def logQuery(query: String, time: Long) =
-  Can.legacyNullTest(_queryLog.value).foreach(_ += (query, time))
+  def logQuery(query: String, time: Long) = p_queryLog.is += (query, time)
 
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
     Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
@@ -357,10 +354,10 @@ object S {
   /**
   * Get a list of the logged queries
   */
-  def queryLog: List[(String, Long)] = Can.legacyNullTest(_queryLog.value).map(_.toList).openOr(Nil)
+  def queryLog: List[(String, Long)] = p_queryLog.is.toList
+  // Can.legacyNullTest(_queryLog.value).map(_.toList).openOr(Nil)
 
   private def wrapQuery[B](f:() => B): B = {
-    _queryLog.doWith(new ListBuffer) {
       val begin = millis
       try {
         f()
@@ -368,7 +365,6 @@ object S {
         val time = millis - begin
         _queryAnalyzer.foreach(_(request, time, queryLog))
       }
-    }
   }
 
   def setHeader(name: String, value: String) {
@@ -398,27 +394,20 @@ object S {
   rh => (rh.overrodeDocType, rh.docType)
   ).openOr( (false, Empty) )
 
-  def addCleanupFunc(f: () => Unit): Unit = 
-  for (lst <- Can.legacyNullTest(_postFuncs.value))
-    lst += f
+  def addCleanupFunc(f: () => Unit): Unit = postFuncs.is += f
 
   private def _nest2InnerInit[B](f: () => B): B = {
-    initNotice {
       _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-	_postFuncs.doWith(new ListBuffer) {
 	  doAround(aroundRequest) {
 	    try {
 	      wrapQuery {
 		f
 	      }
 	    } finally {
-	      for (lst <- Can.legacyNullTest(_postFuncs.value);
-		   func <- lst) tryo(func())
+              postFuncs.is.foreach(f => tryo(f()))
 	    }
-	  }
-        }
+	  }        
       }
-    }
   }
 
   private def _innerInit[B](f: () => B): B = {
@@ -484,11 +473,13 @@ object S {
     else init(RequestState.nil,session)(f)
   }
 
+/*
   def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq, Can[String])], session: LiftSession)(f : => B) : B = {
     _oldNotice.doWith(oldNotices) {
         _init(request, session)(() => f)
     }
   }
+*/
 
   def get(what: String): Can[String] = session.flatMap(_.get(what, classOf[String]))
 
@@ -708,32 +699,31 @@ object S {
   def param(n: String): Can[String] = request.flatMap(r => Can(r.param(n)))
 
   def error(n: String) {error(Text(n))}
-  def error(n: NodeSeq) {_notice.value += (NoticeType.Error, n,  Empty)}
-  def error(id:String, n: NodeSeq) {_notice.value += (NoticeType.Error, n,  Full(id))}
+  def error(n: NodeSeq) {p_notice.is += (NoticeType.Error, n,  Empty)}
+  def error(id:String, n: NodeSeq) {p_notice.is += (NoticeType.Error, n,  Full(id))}
   def error(id:String, n: String) {error(id, Text(n))}
   def notice(n: String) {notice(Text(n))}
-  def notice(n: NodeSeq) {_notice.value += (NoticeType.Notice, n, Empty)}
-  def notice(id:String, n: NodeSeq) {_notice.value += (NoticeType.Notice, n,  Full(id))}
+  def notice(n: NodeSeq) {p_notice.is += (NoticeType.Notice, n, Empty)}
+  def notice(id:String, n: NodeSeq) {p_notice.is += (NoticeType.Notice, n,  Full(id))}
   def notice(id:String, n: String) {notice(id, Text(n))}
   def warning(n: String) {warning(Text(n))}
-  def warning(n: NodeSeq) {_notice.value += (NoticeType.Warning, n, Empty)}
-  def warning(id:String, n: NodeSeq) {_notice.value += (NoticeType.Warning, n,  Full(id))}
+  def warning(n: NodeSeq) {p_notice += (NoticeType.Warning, n, Empty)}
+  def warning(id:String, n: NodeSeq) {p_notice += (NoticeType.Warning, n,  Full(id))}
   def warning(id:String, n: String) {warning(id, Text(n))}
 
-  def error(vi: List[FieldError]) {_notice.value ++= vi.map{i => (NoticeType.Error, i.msg, i.field.uniqueFieldId )}}
+  def error(vi: List[FieldError]) {p_notice ++= vi.map{i => (NoticeType.Error, i.msg, i.field.uniqueFieldId )}}
 
 
   private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
-  private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { _notice.value += (notice, msg, Empty)}
-  private [http] def messagesFromList(list: List[(NoticeType.Value, NodeSeq, Can[String])]) { list foreach ( _notice.value += _) }
+  private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { p_notice += (notice, msg, Empty)}
+  private [http] def messagesFromList(list: List[(NoticeType.Value, NodeSeq, Can[String])]) { list foreach ( p_notice += _) }
 
-  def getNotices: List[(NoticeType.Value, NodeSeq, Can[String])] =
-    Can.legacyNullTest(_notice.value).toList.flatMap(_.toList)
+  def getNotices: List[(NoticeType.Value, NodeSeq, Can[String])] = p_notice.toList
 
-  def errors: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Error).map(n => (n._2, n._3)))
-  def notices: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Notice).map(n => (n._2, n._3)))
-  def warnings: List[(NodeSeq, Can[String])] = List(_oldNotice.value, _notice.value).flatMap(_.filter(_._1 == NoticeType.Warning).map(n => (n._2, n._3)))
-  def clearCurrentNotices {_notice.value.clear}
+  def errors: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Error).map(n => (n._2, n._3)))
+  def notices: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Notice).map(n => (n._2, n._3)))
+  def warnings: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Warning).map(n => (n._2, n._3)))
+  def clearCurrentNotices {p_notice.is.clear}
 
   /**
    * Returns the messages provided by list function that are associated with id

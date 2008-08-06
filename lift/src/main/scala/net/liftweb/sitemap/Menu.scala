@@ -34,12 +34,12 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
     kids.foreach(_.validate)
   }
 
-  private[sitemap] def testParentAccess: (Boolean, Can[ResponseIt]) = _parent match {
+  private[sitemap] def testParentAccess: (Boolean, Can[ConvertableResponse]) = _parent match {
     case Full(p) => p.testAccess
     case _ => (true, Empty)
   }
 
-  override private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = loc.testAccess
+  override private[sitemap] def testAccess: (Boolean, Can[ConvertableResponse]) = loc.testAccess
 
   def findLoc(req: RequestState): Can[Loc] = 
   if (loc.doesMatch_?(req)) Full(loc)
