@@ -18,14 +18,14 @@ package net.liftweb.http
 
 import net.liftweb.util._
 
-class ResponseShortcutException(_response: => ResponseIt, val doNotices: Boolean) extends Exception("Shortcut") {
+class ResponseShortcutException(_response: => ConvertableResponse, val doNotices: Boolean) extends Exception("Shortcut") {
   lazy val response = _response
 
-  def this(resp: => ResponseIt) = this(resp, false)
+  def this(resp: => ConvertableResponse) = this(resp, false)
 }
 
 object ResponseShortcutException {
-  def shortcutResponse(responseIt: => ResponseIt) = 
+  def shortcutResponse(responseIt: => ConvertableResponse) = 
     new ResponseShortcutException(responseIt, true)
 
   def redirect(to: String): ResponseShortcutException =

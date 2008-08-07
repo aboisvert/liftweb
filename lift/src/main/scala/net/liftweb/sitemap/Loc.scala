@@ -26,8 +26,8 @@ import Helpers._
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
 
-  def testAccess: (Boolean, Can[ResponseIt]) = {
-    def testStuff(what: List[Loc.LocStuff]): (Boolean, Can[ResponseIt]) = what match {
+  def testAccess: (Boolean, Can[ConvertableResponse]) = {
+    def testStuff(what: List[Loc.LocStuff]): (Boolean, Can[ConvertableResponse]) = what match {
       case Nil => (true, Empty)
 
       case Loc.If(test, msg) :: xs =>
@@ -58,7 +58,6 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     */
   def title: String = findTitle(stuff).map(_.title()) openOr text.text()
 
-  def isRoot_? = link.isRoot_?
   private[sitemap] def setMenu(p: Menu) {_menu = p}
   private var _menu: Menu = _
   def menu = _menu
@@ -74,11 +73,19 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     }
   }
 
-  def doesMatch_?(path: List[String], req: RequestState): Boolean =
-    link.matchPath(path) && link.test(req) && testAllStuff(stuff, req)
+  def doesMatch_?(req: RequestState): Boolean =
+  if (link.isDefinedAt( req ) ) {
+    link(req) match {
+      case Full(x) if testAllStuff(stuff, req) => x
+        case Full(x) => false
+      case x => x.openOr(false)
+    }
+  } else false
 
 
-  def isAbsolute_? = link.isAbsolute_?
+  // def isAbsolute_? = link.isAbsolute_?
+
+  /*
   def pathMatch(path: List[String]): Int = {
     val mod = if (link.path.endSlash) 1 else 0
     if (link.matchOnPrefix) {if (path.take(link.path.partPath.length) == link.path.partPath) path.length else 0}
@@ -87,12 +94,13 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     val p2 = path.take(len)
     if (p2 == link.path.partPath.dropRight(mod)) len else 0}
   }
+*/
 
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
 
   private[sitemap] def buildItem(current: Boolean, path: Boolean) =
     if (hidden || !testAccess._1) Empty
-    else link.create(Nil).map(t => MenuItem(text.text(),t , current, path,
+    else link.createLink(Nil).map(t => MenuItem(text.text(),t , current, path,
     stuff.flatMap{case v: Loc.LocInfo[(T forSome {type T})] => v() case _ =>  Empty}))
 
   private def hidden = stuff.contains(Loc.Hidden)
@@ -102,7 +110,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   * The Loc companion object, complete with a nice constructor
   */
 object Loc {
-  type FailMsg = () => ResponseIt
+  type FailMsg = () => ConvertableResponse
 
   /**
     * Create a Loc (Location) instance
@@ -123,8 +131,10 @@ object Loc {
     * Unapply to do pattern matching against a Loc.
     * (name, link_uri, link_text)
     */
+   /*
   def unapplySeq(loc: Loc) : Option[(String, String, String)] =
     Some((loc.name, loc.link.uri, loc.text.text()))
+    */
 
   trait LocStuff
   /**
@@ -159,7 +169,7 @@ object Loc {
     * @param failMsg -- what to return the the browser (e.g., 304, etc.) if
     * the page is accessed.
     */
-  case class Unless(test: () => boolean, failMsg: FailMsg) extends LocStuff
+  case class Unless(test: () => Boolean, failMsg: FailMsg) extends LocStuff
 
   /**
     * Tests to see if the request actually matches the requirements for access to
@@ -183,28 +193,39 @@ object Loc {
     * @param matchOnPrefix -- false -- absolute match.  true -- match anything
     * that begins with the same path.  Useful for opening a set of directories
     * (for example, help pages)
-    * @param test -- a function to do further testing
     * @param create -- create a URL based on incoming parameters (NO IMPLEMENTED **TODO**)
     */
-  case class Link(uri: String, matchOnPrefix: Boolean, test: RequestState => Boolean,
-                 create: (List[(String, String)]) => Can[String]) {
-    lazy val path = RequestState.parsePath(uri)
+  class Link(val buildUri: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
+  def this(b: List[String]) = this(b, false)
 
-    def isRoot_? = uri == "/"
-    def isAbsolute_? = path.absolute
+  def isDefinedAt(req: RequestState): Boolean =
+  if (matchHead_?) true
+  else true
 
+  def apply(in: RequestState): Can[Boolean] = if (isDefinedAt(in)) Full(true)
+  else throw new MatchError("Failed for Link "+buildUri)
+
+
+  def createLink(params: List[(String, String)]): Can[String] = Full(buildUri.mkString("/", "/", ""))
+    // lazy val path = RequestState.parsePath(uri)
+
+    //def isRoot_? = uri == "/"
+    //def isAbsolute_? = path.absolute
+
+  /*
     def matchPath(toMatch: List[String]): Boolean = if (!matchOnPrefix) path.partPath == toMatch else {
       val ret = toMatch.take(path.partPath.length) == path.partPath
       ret
     }
+    */
   }
 
   /**
     * A companion object to create some variants on Link
     */
   object Link {
-    def apply(uri: String, matchOnPrefix: Boolean): Link = new Link(uri, matchOnPrefix, alwaysTrue _, retString(uri) _ )
-    def apply(uri: String): Link = new Link(uri, false, alwaysTrue _, retString(uri) _ )
+    //def apply(uri: String, matchOnPrefix: Boolean): Link = new Link(uri, matchOnPrefix, alwaysTrue _, retString(uri) _ )
+    //def apply(uri: String): Link = new Link(uri, false, alwaysTrue _, retString(uri) _ )
   }
 
 
@@ -220,8 +241,8 @@ object Loc {
   def retString(toRet: String)(other: List[(String, String)]) = Full(toRet)
 
   implicit def strToLinkText(in: => String): LinkText = LinkText(() => in)
-  implicit def strToLink(in: String): Link = Link(in, false, alwaysTrue _, retString(in) _)
-  implicit def strPairToLink(in: (String, Boolean)): Link = Link(in._1, in._2, alwaysTrue _, retString(in._1) _)
+  implicit def strLstToLink(in: List[String]): Link = new Link(in)
+  implicit def strPairToLink(in: (List[String], Boolean)): Link = new Link(in._1, in._2)
   implicit def strToFailMsg(in: String): FailMsg = f(RedirectWithState("/", RedirectState(Empty, in -> NoticeType.Error)))
   implicit def redirectToFailMsg(in: RedirectResponse): FailMsg = f(in)
 

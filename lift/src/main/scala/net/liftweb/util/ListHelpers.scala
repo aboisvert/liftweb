@@ -15,7 +15,7 @@ trait ListHelpers {
    *
    * @return a Can containing the found element (or Empty if not found)
    */
-  def first_? [B](in: List[B])(f: => B => Boolean): Can[B] = 
+  def first_? [B](in: Seq[B])(f: => B => Boolean): Can[B] =
     Can(in.find(f))
 
   /**
@@ -30,7 +30,7 @@ trait ListHelpers {
    *
    * @return a Can containing the first Full can or Empty if f never returns a Full can
    */
-  def first[B,C](in : List[B])(_f : B => Can[C]): Can[C] = { 
+  def first[B,C](in: Seq[B])(_f : B => Can[C]): Can[C] = {
     val f: B => Iterable[C] = _f andThen Can.can2Iterable[C]
     Can(in.projection.flatMap(f).firstOption)
   }
@@ -38,7 +38,7 @@ trait ListHelpers {
   /**
    * This class add a case insensitive get to a List of Pairs of String, as if it was a Map
    */
-  class ListMapish(val theList: List[(String, String)]) {
+  class ListMapish(val theList: Seq[(String, String)]) {
     /**
      * Return a Can containing the second element of the first pair having key as the first element
      * The comparison is made ignoring the case of the keys
@@ -49,7 +49,7 @@ trait ListHelpers {
      */
     def ciGet(swhat: String): Can[String] = {
       val what = swhat.toLowerCase
-      def tGet(in: List[(String, String)]): Can[String] =
+      def tGet(in: Seq[(String, String)]): Can[String] =
       in match {
         case Nil => Empty
         case x :: xs if (x._1.toLowerCase == what) => Full(x._2)
@@ -59,12 +59,12 @@ trait ListHelpers {
     }
   }
   /** adds the ciGet method to a List of Pairs of Strings */
-  implicit def listToListMapish(in: List[(String, String)]): ListMapish = new ListMapish(in)
+  implicit def listToListMapish(in: Seq[(String, String)]): ListMapish = new ListMapish(in)
 
   /**
    * Convert a java.util.Enumeration to a List[T]
    */
-  def enumToList[T](enum: java.util.Enumeration[T]) : List[T] = {
+  def enumToList[T](enum: java.util.Enumeration[T]): List[T] = {
     if (enum.hasMoreElements) {
       val next = enum.nextElement
       next :: enumToList(enum)
@@ -74,13 +74,13 @@ trait ListHelpers {
   /**
    * Convert a java.util.Enumeration to a List[String] using the toString method on each element
    */
-  def enumToStringList[C](enum: java.util.Enumeration[C]) : List[String] =
+  def enumToStringList[C](enum: java.util.Enumeration[C]): List[String] =
   if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
 
   /**
    * Return the first element of a List or a default value if the list is empty
    */
-  def head[T](l : List[T], deft: => T) =
+  def head[T](l: Seq[T], deft: => T) =
     l.firstOption.getOrElse(deft)
 
   /**
@@ -95,12 +95,12 @@ trait ListHelpers {
    *
    * @return all the rotations of the list
    */
-  def rotateList[T](in: List[T]): List[List[T]] = {
+  def rotateList[T](in: Seq[T]): List[List[T]] = {
     def doIt(in: List[T], cnt: Int): List[List[T]] = ((in, cnt): @unchecked) match {
       case (_, 0) => Nil
       case (x :: xs, cnt) => in :: doIt(xs ::: List(x), cnt - 1)
     }
-    doIt(in, in.length)
+    doIt(in.toList, in.length)
   }
 
   /**
@@ -110,7 +110,7 @@ trait ListHelpers {
    *
    * @return all the permutations of the list
    */
-  def permuteList[T](in: List[T]): List[List[T]] = (in: @unchecked) match {
+  def permuteList[T](in: Seq[T]): List[List[T]] = (in.toList: @unchecked) match {
     case Nil => Nil
     case x :: Nil => List(List(x))
     case xs => rotateList(xs).flatMap(x => (x: @unchecked) match{case x :: xs => permuteList(xs).map(x :: _) case _ => Nil})
@@ -123,7 +123,7 @@ trait ListHelpers {
    *
    * @return all the permutations of the list including sublists, sorted in longest to shortest
    */
-  def permuteWithSublists[T](in: List[T]): List[List[T]] = {
+  def permuteWithSublists[T](in: Seq[T]): List[List[T]] = {
     def internal(in: List[T]): List[List[T]] = in match {
       case Nil => Nil
       case x :: Nil => List(List(x))
@@ -131,7 +131,7 @@ trait ListHelpers {
       val ret = rot.flatMap(z => (z: @unchecked) match {case x :: xs => permuteList(xs).map(x :: _)})
       ret ::: rot.map(z => (z: @unchecked) match {case x :: xs => xs}).flatMap(internal(_))
     }
-    internal(in).removeDuplicates.sort(_.length > _.length)
+    internal(in.toList).removeDuplicates.sort(_.length > _.length)
   }
 
   /** Add utility methods to Lists */

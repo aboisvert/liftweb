@@ -148,7 +148,7 @@ object RequestState {
     else (orgLst.dropRight(1) ::: List(last.substring(0, idx)),
 	  last.substring(idx + 1))
 
-    ParsePath(lst, suffix, front, back)
+    ParsePath(lst.map(urlDecode), suffix, front, back)
   }
 
   var fixHref = _fixHref _
@@ -243,7 +243,7 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
 
   lazy val location = LiftRules.siteMap.flatMap(_.findLoc(this))
 
-  def testLocation: (Boolean, Can[ResponseIt]) = {
+  def testLocation: (Boolean, Can[ConvertableResponse]) = {
     if (LiftRules.siteMap.isEmpty) (true, Empty)
     else location.map(_.testAccess) match {
       case Full((true, _)) => (true, Empty)
@@ -253,7 +253,8 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   }
 
 
-  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr CompleteMenu(Nil)
+  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr 
+  CompleteMenu(Nil)
 
 
   def createNotFound = {

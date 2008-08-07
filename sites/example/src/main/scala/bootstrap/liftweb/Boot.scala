@@ -85,9 +85,9 @@ class Boot {
 
   }
 
-  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[ResponseIt] =
+  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[ConvertableResponse] =
   createInvoker(methodName, new WebServices(request)).flatMap(_() match {
-    case Full(ret: ResponseIt) => Full(ret)
+    case Full(ret: ConvertableResponse) => Full(ret)
     case _ => Empty
   })
 

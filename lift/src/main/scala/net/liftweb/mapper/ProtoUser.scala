@@ -108,7 +108,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     }
   }
   
-  def thePath(end: String) = "/" + BasePath + "/" + end
+  def thePath(end: String): List[String] = BasePath :: end :: Nil
   
   /**
    * Return the URL of the "login" page

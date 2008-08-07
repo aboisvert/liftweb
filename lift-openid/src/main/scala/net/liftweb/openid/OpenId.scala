@@ -104,7 +104,7 @@ trait OpenIdVendor {
 /**
  * Try to log a user into the system with a given openId
  */
-def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => ResponseIt) {
+def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => ConvertableResponse) {
   val oid = OpenIdObject.is
   oid.onComplete = Full(onComplete)
 
@@ -188,10 +188,10 @@ trait OpenIDConsumer[UserType]
 {
   val manager = new ConsumerManager
   
-  var onComplete: Can[(Can[Identifier], Can[VerificationResult], Can[Exception]) => ResponseIt] = Empty 
+  var onComplete: Can[(Can[Identifier], Can[VerificationResult], Can[Exception]) => ConvertableResponse] = Empty 
   
   // --- placing the authentication request ---
-  def authRequest(userSuppliedString: String, targetUrl: String): ResponseIt =
+  def authRequest(userSuppliedString: String, targetUrl: String): ConvertableResponse =
   {
     // configure the return_to URL where your application will receive
     // the authentication responses from the OpenID provider

@@ -35,13 +35,13 @@ class Boot {
 
     // Build SiteMap
 
-    val entries = Menu(Loc("Home", "/", "Home")) ::
-      Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
-      Menu(Loc("calweek", "/calweek", "CalendarWeekView")) ::
-      Menu(Loc("calday", "/calday", "CalendarDayView")) ::
-      Menu(Loc("rssfeed", "/rssfeed", "RSSFeed")) ::
-      Menu(Loc("gravatear", "/gravatar", "Gravatar")) ::
-      Menu(Loc("tree", "/tree", "Tree")) ::
+    val entries = Menu(Loc("Home", List("index"), "Home")) ::
+      Menu(Loc("calmonth", List("calmonth"), "CalendarMonthView")) ::
+      Menu(Loc("calweek", List("calweek"), "CalendarWeekView")) ::
+      Menu(Loc("calday", List("calday"), "CalendarDayView")) ::
+      Menu(Loc("rssfeed", List("rssfeed"), "RSSFeed")) ::
+      Menu(Loc("gravatear", List("gravatar"), "Gravatar")) ::
+      Menu(Loc("tree", List("tree"), "Tree")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))

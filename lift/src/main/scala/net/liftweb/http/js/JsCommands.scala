@@ -29,13 +29,13 @@ object JsCommands {
   def apply(in: JsExp) = new JsCommands(List(in.cmd))
 }
 
-class JsCommands(val reverseList: List[JsCmd]) extends ResponseIt {
+class JsCommands(val reverseList: List[JsCmd]) {
   def &(in: JsCmd) = new JsCommands(in :: reverseList)
   def &(in: List[JsCmd]) = new JsCommands(in.reverse ::: reverseList)
 
   def toResponse = {
     val data = reverseList.reverse.map(_.toJsCmd).mkString("\n").getBytes("UTF-8")
-    Response(data, List("Content-Length" -> data.length.toString, "Content-Type" -> "text/javascript"), Nil, 200)
+    InMemoryResponse(data, List("Content-Length" -> data.length.toString, "Content-Type" -> "text/javascript"), Nil, 200)
   }
 }
 

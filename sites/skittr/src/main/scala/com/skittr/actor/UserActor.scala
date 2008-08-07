@@ -91,7 +91,7 @@ class UserActor extends Actor {
           UserList.add(userName, this) // add the user to the list
           // get the latest messages from the database
           latestMsgs = MsgStore.findAll(By(MsgStore.who, userId),
-                                      OrderBy(MsgStore.when, false),
+                                      OrderBy(MsgStore.when, Descending),
                                       MaxRows(maxMessages)).map(s => Message(s.message, s.when, userName, s.source))
           localTimeline = latestMsgs  // set the local timeline to our messages (the folks we follow will update us)
           // get friends

@@ -80,8 +80,8 @@ class UserTests extends TestCase("User Tests") {
     assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)
     val u = User.find(33).open_!
     assert(User.findAll(BySql[User]("email = ?", u.email)).length == 1)
-    assert(User.findAll(OrderBy(User.firstName, true))(0).firstName == "1")
-    assert(User.findAll(OrderBy(User.firstName, false))(0).firstName == "99")
+    assert(User.findAll(OrderBy(User.firstName, Ascending))(0).firstName == "1")
+    assert(User.findAll(OrderBy(User.firstName, Descending))(0).firstName == "99")
   }
 
   def countTest {

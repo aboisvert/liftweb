@@ -35,7 +35,7 @@ class Database {
     */
   def render(in: NodeSeq): NodeSeq = {
 	val count = Person.count()
-	val first = Person.find(OrderBy(Person.firstName, true), MaxRows[Person](1))
+	val first = Person.find(OrderBy(Person.firstName, Ascending), MaxRows[Person](1))
 	
 	bind("database", in, "count" -> count,
 	"first" -> first.map(_.asHtml).openOr(<b>No Persons in the system</b>),
