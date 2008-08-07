@@ -38,7 +38,7 @@ object JQueryArtifacts extends JSArtifacts {
   
   def ajax(data: AjaxInfo): String = {
     "jQuery.ajax(" + toJson(data, LiftRules.ajaxPath) + ");"
-  } 
+  }
   
   def comet(data: AjaxInfo): String = {
     "jQuery.ajax(" + toJson(data, LiftRules.cometPath) + ");"
