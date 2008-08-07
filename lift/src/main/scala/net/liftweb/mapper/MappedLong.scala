@@ -120,12 +120,12 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
 
 }
 
-class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[List[ENUM#Value], T] {
-  private var data: List[ENUM#Value] = defaultValue
-  private var orgData: List[ENUM#Value] = defaultValue
+class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[Seq[ENUM#Value], T] {
+  private var data: Seq[ENUM#Value] = defaultValue
+  private var orgData: Seq[ENUM#Value] = defaultValue
 
-  def defaultValue: List[ENUM#Value] = Nil
-  def dbFieldClass = classOf[List[ENUM#Value]]
+  def defaultValue: Seq[ENUM#Value] = Nil
+  def dbFieldClass = classOf[Seq[ENUM#Value]]
 
   /**
    * Get the JDBC SQL Type for this field
@@ -141,7 +141,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
     orgData = data
   }
 
-  protected def real_i_set_!(value: List[ENUM#Value]): List[ENUM#Value] = {
+  protected def real_i_set_!(value: Seq[ENUM#Value]): Seq[ENUM#Value] = {
     if (value != data) {
       data = value
       dirty_?(true)
@@ -153,18 +153,18 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
 
    def asJsExp: JsExp = JE.JsArray(is.map(v => JE.Num(v.id)) :_*)
 
-  def real_convertToJDBCFriendly(value: List[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
+  def real_convertToJDBCFriendly(value: Seq[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
 
   private def toLong: Long = is.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong
 
-  def fromLong(in: Long): List[ENUM#Value] = enum.Set64(in).toList
+  def fromLong(in: Long): Seq[ENUM#Value] = enum.Set64(in).toList
 
   def jdbcFriendly(field: String) = new java.lang.Long(toLong)
   override def jdbcFriendly = new java.lang.Long(toLong)
 
 
 
-  override def setFromAny(in: Any): List[ENUM#Value] = {
+  override def setFromAny(in: Any): Seq[ENUM#Value] = {
     in match {
       case n: Long => this.set( fromLong(n))
       case n: Number => this.set(fromLong(n.longValue))
@@ -179,9 +179,9 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
     }
   }
 
-  protected def i_obscure_!(in : List[ENUM#Value]) = Nil
+  protected def i_obscure_!(in : Seq[ENUM#Value]) = Nil
 
-  private def st(in: List[ENUM#Value]) {
+  private def st(in: Seq[ENUM#Value]) {
     data = in
     orgData = in
   }
