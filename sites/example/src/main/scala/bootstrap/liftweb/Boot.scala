@@ -83,6 +83,12 @@ class Boot {
 
     LiftRules.addRewriteBefore(wikibind_rewriter)
 
+    LiftSession.onBeginServicing = RequestLogger.beginServicing _ ::
+    LiftSession.onBeginServicing
+
+    LiftSession.onEndServicing = RequestLogger.endServicing _ ::
+    LiftSession.onEndServicing
+
   }
 
   private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[ConvertableResponse] =
@@ -92,6 +98,22 @@ class Boot {
   })
 
   private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
+}
+
+object RequestLogger {
+  object startTime extends RequestVar(0L)
+
+  def beginServicing(session: LiftSession, req: RequestState) {
+    startTime(millis)
+  }
+
+  def endServicing(session: LiftSession, req: RequestState,
+                   response: Can[ConvertableResponse]) {
+    val delta = millis - startTime.is
+    Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(
+        response.map(r => " Headers: "+r.toResponse.headers) openOr ""
+      ))
+  }
 }
 
 object XmlServer {
