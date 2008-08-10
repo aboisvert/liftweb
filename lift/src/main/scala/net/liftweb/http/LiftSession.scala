@@ -347,10 +347,8 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
                       val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
                         case Nil => xml
                         case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
-                          val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                          val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
-
-                          val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
+                          val cometVar = "var lift_toWatch = "+comets.map {case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
+                          val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: Nil :_*)
                           xform.transform(xml)
                       }
 
@@ -803,14 +801,6 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     openOr(atWhat.values.flatMap(_.elements).toList)
   }
 
-  class AddScriptTag extends RewriteRule {
-    override def transform(n: Node) = n match {
-      case Elem(null, "head", attr @ _, scope @ _, kids @ _*) =>
-        Elem(null, "head", attr,  scope, (kids ++ <script src="/classpath/jquery.js" type="text/javascript"/>) :_*)
-      case _ => n
-    }
-  }
-
   /**
    * Add comet script juste before the &lt;/body> tag.
    * Instance of the class can't be reused, because it does the transformation once,
@@ -827,12 +817,12 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
       function lift_cometEntry() {""" + LiftRules.jsArtifacts.comet(AjaxInfo("lift_toWatch", 
-                                                                             "POST", 
+                                                                             "GET", 
                                                                              140000, 
                                                                              false, 
                                                                              "script",
                                                                              Full("lift_handlerSuccessFunc"),
-                                                                             Full("lift_handlerFailureFunc"))) + " } " +
+                                                                             Full("lift_handlerFailureFunc"))) + " } \n" +
                   LiftRules.jsArtifacts.onLoad(new JsCmd() {
                                                  def toJsCmd = "lift_handlerSuccessFunc()"
                                                }).toJsCmd

@@ -23,9 +23,12 @@ import java.text.SimpleDateFormat
 import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Full, Empty}
 import net.liftweb.http.js._
+import net.liftweb.http.js.jquery._
 import net.liftweb.http.SHtml._
 import JsCmds._
 import JE._
+import JqJsCmds._
+import JqJE._
 
 object CalendarMonthView {
 

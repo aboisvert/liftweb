@@ -278,7 +278,7 @@ object JE {
 
   object FormToJSON {
     def apply(formId: String) =  new JsExp {
-      def toJsCmd = "lift$.formToJSON(" + formId.toJsCmd + ")";
+      def toJsCmd = LiftRules.jsArtifacts.formToJSON(formId).toJsCmd; 
     }
   }
 
@@ -410,13 +410,15 @@ object JsCmds {
   implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ & _)
 
   object Script {
-    def apply(script: JsCmd): NodeSeq = <script>{Unparsed("""
-      // <![CDATA[
-      """+script.toJsCmd+"""
-      // ]]>""")
-    }
-    </script>
+    def apply(script: JsCmd): NodeSeq = <script>{
+      Unparsed(script.toJsCmd)
+    }</script>
   }
+  
+  case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
+    def toJsCmd = LiftRules.jsArtifacts.setHtml(uid, content).toJsCmd
+  }
+
 
   /**
   * Makes the parameter the selected HTML element on load of the page

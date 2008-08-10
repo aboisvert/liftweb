@@ -1,3 +1,19 @@
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
+
 package net.liftweb.http.js.yui
 
 import scala.xml.{Elem, NodeSeq}
@@ -37,7 +53,7 @@ object YUIArtifacts extends JSArtifacts {
   }
   
   def serialize(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.util.Connect.setForm('" + id+"', false);" 
+    def toJsCmd = "YAHOO.util.Connect.setForm('" + id+"', false)" 
   }
   
   def setHtml(uid: String, content: NodeSeq): JsCmd = new JsCmd {
@@ -49,26 +65,29 @@ object YUIArtifacts extends JSArtifacts {
   }
   
   def ajax(data: AjaxInfo): String = {
-    "YAHOO.util.Connect.asyncRequest('POST', " + 
-      S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath) + ", " +
-      toJson(data) + ", " +    
-      data.data +
-      ")"
+    val url = S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath);
+    "url = YAHOO.lift.buildURI('" + url + "', " + data.data + ");" + 
+    "YAHOO.util.Connect.asyncRequest('" + data.action + "', url, " + toJson(data) + ");";
   }
   
   def comet(data: AjaxInfo): String = {
-    "YAHOO.util.Connect.asyncRequest('POST', " + 
-      S.encodeURL(S.contextPath+"/"+LiftRules.cometPath) + ", " +
-      toJson(data) + ", " +    
-      data.data +
-      ")"
+    val url = S.encodeURL(S.contextPath+"/"+LiftRules.cometPath);
+    "url = YAHOO.lift.buildURI('" + url + "', YAHOO.lift.simpleJsonToQS(" + data.data + "));" + 
+    "YAHOO.util.Connect.asyncRequest('" + data.action + "', url, " + toJson(data) + ");";
+  }
+  
+  def jsonStringify(in: JsExp) : JsExp = new JsExp {
+    def toJsCmd = "YAHOO.lang.JSON.stringify(" + in.toJsCmd + ")"
+  }
+  
+  def formToJSON(formId: String):JsExp = new JsExp() {
+    def toJsCmd = "YAHOO.lift.formToJSON('" + formId + "')";
   }
 
   private def toJson(info: AjaxInfo): String = 
     ("timeout : " + info.timeout ::
      "cache : " + info.cache ::  
-     "success : function(resp) { if (resp.getResponseHeader('Content-Type') == 'text/javascript') {YAHOO.lift.eval(resp);}" + 
-       info.successFunc.map(_ + "(resp)").openOr("") + "}" ::
+     "success : function(resp) { res = YAHOO.lift.eval(resp);" +  info.successFunc.map(_ + "(res);").openOr("") + "}" ::
      "failure : " + info.failFunc.openOr ("function (arg) {YAHOO.log('Ajax request failed');}") :: 
      Nil) mkString("{ ", ", ", " }")
 

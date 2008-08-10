@@ -25,7 +25,9 @@ import S._
 import SHtml._
 import net.liftweb.util._
 import net.liftweb.http.js._
+import net.liftweb.http.js.jquery._
 import JsCmds._
+import JqJsCmds._
 
 
 class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {

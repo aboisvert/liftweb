@@ -19,7 +19,8 @@ import net.liftweb.http._
 import S._
 import SHtml._
 import js._
-import JsCmds._
+import js.jquery._
+import JqJsCmds._
 import net.liftweb.util._
 import Helpers._
 import scala.xml. _

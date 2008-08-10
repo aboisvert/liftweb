@@ -7,8 +7,11 @@ import net.liftweb.http.S._
 import net.liftweb.http.LiftRules
 import net.liftweb.http.{ConvertableResponse, JsonResponse}
 import net.liftweb.http.js._
+import net.liftweb.http.js.jquery._
 import JsCmds._
 import JE._
+import JqJsCmds._
+import JqJE._
 
 object TreeView {
   

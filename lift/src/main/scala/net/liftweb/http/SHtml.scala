@@ -81,7 +81,7 @@ object SHtml {
    * @return the JavaScript that makes the call
    */
   private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+")"))
+    LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(func)+"='+"+jsCalcValue))
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
@@ -115,7 +115,7 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+encodeURIComponent(this.value)"))))
+        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.value"))))
   }
 
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
@@ -206,7 +206,7 @@ object SHtml {
     </form>
   }
 
-  private def secureOptions[T](options: Seq[(T, String)], default: Can[T],
+  private[http] def secureOptions[T](options: Seq[(T, String)], default: Can[T],
                     onSubmit: T => Unit) = {
      val secure = options.map{case (obj, txt) => (obj, randomString(20), txt)}
      val defaultNonce = default.flatMap(d => secure.find(_._1 == d).map(_._2))
@@ -214,48 +214,6 @@ object SHtml {
      def process(nonce: String): Unit =
        secure.find(_._2 == nonce).map(x => onSubmit(x._1))
     (nonces, defaultNonce, SFuncHolder(process))
-  }
-  
-  /**
-   * Create an autocomplete form based on a sequence.
-   */
-  def autocompleteObj[T](options: Seq[(T, String)], default: Can[T],
-                         onSubmit: T => Unit): Elem = {
-    val (nonces, defaultNonce, secureOnSubmit) =
-      secureOptions(options, default, onSubmit)
-    val defaultString = default.flatMap(d => options.find(_._1 == d).map(_._2))
-
-    autocomplete_*(nonces, defaultString, defaultNonce, secureOnSubmit)
-  }
-
-  def autocomplete_*(options: Seq[(String, String)], default: Can[String],
-                     defaultNonce: Can[String], onSubmit: AFuncHolder): Elem = {
-    val id = randomString(20)
-    val hidden = mapFunc(onSubmit)
-    val data = JsArray(options.map { case (nonce, name) =>
-          JsObj("name" -> name, "nonce" -> nonce)} :_*)
-    val autocompleteOptions = JsRaw("""{
-      minChars: 0,
-      matchContains: true,
-      formatItem: function(row, i, max) { return row.name; },
-    }""")
-    val onLoad = JsRaw("""
-      jQuery(document).ready(function(){
-        var data = """+data.toJsCmd+""";
-        jQuery("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
-          jQuery("#"""+hidden+"""").val(dt.nonce);
-        });
-      });""")
-
-    (<span>
-    <head>
-      <link rel="stylesheet" href="/classpath/jquery-autocomplete/jquery.autocomplete.css" type="text/css" />
-      <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
-      <script>{Unparsed(onLoad.toJsCmd)}</script>
-    </head>
-    <input type="text" id={id} value={default.openOr("")} />
-    <input type="hidden" name={hidden} id={hidden} value={defaultNonce.openOr("")} />
-    </span>)
   }
 
   /**

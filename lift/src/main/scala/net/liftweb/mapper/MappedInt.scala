@@ -22,6 +22,7 @@ import net.liftweb.util._
 import Helpers._
 import java.util.Date
 import net.liftweb.http._
+import net.liftweb.http.jquery.{JqSHtml}
 import scala.xml.NodeSeq
 import js._
 
@@ -125,7 +126,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
    */
   override def _toForm: Can[NodeSeq] =
     if (autocomplete_?)
-      Full(SHtml.autocompleteObj[Int](buildDisplayList, Full(toInt),
+      Full(JqSHtml.autocompleteObj[Int](buildDisplayList, Full(toInt),
                                       v => this.set(fromInt(v))))
     else
       Full(SHtml.selectObj[Int](buildDisplayList, Full(toInt),

@@ -304,11 +304,8 @@ class LiftServlet extends HttpServlet {
 
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
     else LiftRules.checkJetty(requestState.request) match {
-      case Some(null) =>
-	setupJettyContinuation(requestState, sessionActor, actors)
-
-      case _ =>
-	handleNonJettyComet(requestState, sessionActor, actors)
+      case Some(null) => setupJettyContinuation(requestState, sessionActor, actors)
+      case _ => handleNonJettyComet(requestState, sessionActor, actors)
     }
   }
 

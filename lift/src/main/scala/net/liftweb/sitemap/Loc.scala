@@ -83,19 +83,6 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   } else false
 
 
-  // def isAbsolute_? = link.isAbsolute_?
-
-  /*
-  def pathMatch(path: List[String]): Int = {
-    val mod = if (link.path.endSlash) 1 else 0
-    if (link.matchOnPrefix) {if (path.take(link.path.partPath.length) == link.path.partPath) path.length else 0}
-    else {
-    val len = link.path.partPath.length - mod
-    val p2 = path.take(len)
-    if (p2 == link.path.partPath.dropRight(mod)) len else 0}
-  }
-*/
-
   def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines ::: List(_menu.buildThisLine(this)) ::: List(_menu.buildChildLine))
 
   private[sitemap] def buildItem(current: Boolean, path: Boolean) =
@@ -126,15 +113,6 @@ object Loc {
       link: Link,
       text: LinkText,
       params: LocStuff*): Loc = new Loc(name, link, text, params.toList)
-
-  /**
-    * Unapply to do pattern matching against a Loc.
-    * (name, link_uri, link_text)
-    */
-   /*
-  def unapplySeq(loc: Loc) : Option[(String, String, String)] =
-    Some((loc.name, loc.link.uri, loc.text.text()))
-    */
 
   trait LocStuff
   /**
@@ -207,25 +185,12 @@ object Loc {
 
 
   def createLink(params: List[(String, String)]): Can[String] = Full(buildUri.mkString("/", "/", ""))
-    // lazy val path = RequestState.parsePath(uri)
-
-    //def isRoot_? = uri == "/"
-    //def isAbsolute_? = path.absolute
-
-  /*
-    def matchPath(toMatch: List[String]): Boolean = if (!matchOnPrefix) path.partPath == toMatch else {
-      val ret = toMatch.take(path.partPath.length) == path.partPath
-      ret
-    }
-    */
   }
 
   /**
     * A companion object to create some variants on Link
     */
   object Link {
-    //def apply(uri: String, matchOnPrefix: Boolean): Link = new Link(uri, matchOnPrefix, alwaysTrue _, retString(uri) _ )
-    //def apply(uri: String): Link = new Link(uri, false, alwaysTrue _, retString(uri) _ )
   }
 
 
