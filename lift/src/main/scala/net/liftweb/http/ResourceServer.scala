@@ -23,6 +23,11 @@ import java.net.{URLConnection}
 object ResourceServer {
   private var allowedPaths: PartialFunction[List[String], Boolean] = {
     case "jquery.js" :: Nil => true
+    case "yahoo.js" :: Nil => true
+    case "event.js" :: Nil => true
+    case "dom.js" :: Nil => true
+    case "connection.js" :: Nil => true
+    case "liftYUI.js" :: Nil => true
     case "json.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jlift.js" :: Nil => true
