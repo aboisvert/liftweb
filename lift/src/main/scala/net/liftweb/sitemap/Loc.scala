@@ -26,8 +26,8 @@ import Helpers._
 class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
 
-  def testAccess: (Boolean, Can[ConvertableResponse]) = {
-    def testStuff(what: List[Loc.LocStuff]): (Boolean, Can[ConvertableResponse]) = what match {
+  def testAccess: (Boolean, Can[LiftResponse]) = {
+    def testStuff(what: List[Loc.LocStuff]): (Boolean, Can[LiftResponse]) = what match {
       case Nil => (true, Empty)
 
       case Loc.If(test, msg) :: xs =>
@@ -110,7 +110,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   * The Loc companion object, complete with a nice constructor
   */
 object Loc {
-  type FailMsg = () => ConvertableResponse
+  type FailMsg = () => LiftResponse
 
   /**
     * Create a Loc (Location) instance

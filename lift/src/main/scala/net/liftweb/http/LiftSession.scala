@@ -46,7 +46,7 @@ object LiftSession {
   var onAboutToShutdownSession: List[LiftSession => Unit] = Nil
   var onShutdownSession: List[LiftSession => Unit] = Nil
   var onBeginServicing: List[(LiftSession, RequestState) => Unit] = Nil
-  var onEndServicing: List[(LiftSession, RequestState, Can[ConvertableResponse]) => Unit] = Nil
+  var onEndServicing: List[(LiftSession, RequestState, Can[LiftResponse]) => Unit] = Nil
 }
 
 
@@ -313,7 +313,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     LiftSession.onShutdownSession.foreach(_(this))
   }
 
-  private[http] def processRequest(request: RequestState): Can[ConvertableResponse] = {
+  private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
    S.oldNotices(notices)
       LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
       val ret = try {
@@ -339,7 +339,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
           }
 
           // Process but make sure we're okay, sitemap wise
-          val response: Can[ConvertableResponse] = request.testLocation match {
+          val response: Can[LiftResponse] = request.testLocation match {
             case (true, _) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
                   case Full(rawXml: NodeSeq) => {
                       val xml = HeadHelper.mergeToHtmlHead(rawXml)
@@ -385,7 +385,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       ret
   }
 
-  private def handleRedirect(re: ResponseShortcutException, request: RequestState): ConvertableResponse = {
+  private def handleRedirect(re: ResponseShortcutException, request: RequestState): LiftResponse = {
     if (re.doNotices) notices = S.getNotices
 
     re.response
@@ -461,7 +461,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
   }
 
-  private[http] def checkRedirect(resp: ConvertableResponse): ConvertableResponse = resp match {
+  private[http] def checkRedirect(resp: LiftResponse): LiftResponse = resp match {
     case RedirectWithState(uri, state, cookies @ _*) =>
       state.msgs.foreach(m => S.message(m._1, m._2))
       notices = S.getNotices
@@ -843,7 +843,7 @@ abstract class SessionMessage
  */
 case object ShutDown
 
-case class AnswerHolder(what: ConvertableResponse)
+case class AnswerHolder(what: LiftResponse)
 
 /**
  * If a class is to be used as a lift view (rendering from code rather than a static template)

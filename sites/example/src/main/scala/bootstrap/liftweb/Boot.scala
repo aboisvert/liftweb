@@ -91,9 +91,9 @@ class Boot {
 
   }
 
-  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[ConvertableResponse] =
+  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[LiftResponse] =
   createInvoker(methodName, new WebServices(request)).flatMap(_() match {
-    case Full(ret: ConvertableResponse) => Full(ret)
+    case Full(ret: LiftResponse) => Full(ret)
     case _ => Empty
   })
 
@@ -108,7 +108,7 @@ object RequestLogger {
   }
 
   def endServicing(session: LiftSession, req: RequestState,
-                   response: Can[ConvertableResponse]) {
+                   response: Can[LiftResponse]) {
     val delta = millis - startTime.is
     Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(
         response.map(r => " Headers: "+r.toResponse.headers) openOr ""

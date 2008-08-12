@@ -101,8 +101,8 @@ class LiftServlet extends HttpServlet {
       LiftRules.checkJetty(req) match {
         case None => doIt
         case r if r eq null => doIt
-        case r: ConvertableResponse => sendResponse(r.toResponse, resp, Empty) ; true
-        case Some(r: ConvertableResponse) => sendResponse(r.toResponse, resp, Empty); true
+        case r: LiftResponse => sendResponse(r.toResponse, resp, Empty) ; true
+        case Some(r: LiftResponse) => sendResponse(r.toResponse, resp, Empty); true
         case _ => doIt
       }
     } catch {
@@ -130,7 +130,7 @@ class LiftServlet extends HttpServlet {
     val statelessToMatch = RequestMatcher(requestState, Empty)
 
 
-    val resp: Can[ConvertableResponse] = 
+    val resp: Can[LiftResponse] = 
     // if the servlet is shutting down, return a 404
     if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
@@ -173,13 +173,13 @@ class LiftServlet extends HttpServlet {
   private def dispatchStatefulRequest(request: HttpServletRequest,
                                       liftSession: LiftSession,
                                       requestState: RequestState):
-  Can[ConvertableResponse] =
+  Can[LiftResponse] =
   {
     val toMatch = RequestMatcher(requestState, Full(liftSession))
-    val dispatch: (Boolean, Can[ConvertableResponse]) =
+    val dispatch: (Boolean, Can[LiftResponse]) =
     if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
       LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
-      val ret: (Boolean, Can[ConvertableResponse]) = try {
+      val ret: (Boolean, Can[LiftResponse]) = try {
         val f = LiftRules.dispatchTable(request)(toMatch)
         f(requestState) match {
           case Full(v) =>
@@ -203,7 +203,7 @@ class LiftServlet extends HttpServlet {
       
     val wp = requestState.path.wholePath
     
-    val toTransform: Can[ConvertableResponse] =
+    val toTransform: Can[LiftResponse] =
     if (dispatch._1) dispatch._2
     else if (wp.length == 1 && wp.head == LiftRules.cometPath) 
     handleComet(requestState, liftSession)
@@ -216,7 +216,7 @@ class LiftServlet extends HttpServlet {
   }
  
   private def handleAjax(liftSession: LiftSession,
-                         requestState: RequestState): Can[ConvertableResponse] =
+                         requestState: RequestState): Can[LiftResponse] =
   {
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
     LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
@@ -226,14 +226,14 @@ class LiftServlet extends HttpServlet {
       val what2 = what.flatMap{case js: JsCmd => List(js)
         case n: NodeSeq => List(n)
         case js: JsCommands => List(js)
-        case r: ConvertableResponse => List(r)
+        case r: LiftResponse => List(r)
         case s => Nil
       }
 	    
-      val ret: ConvertableResponse = what2 match {
+      val ret: LiftResponse = what2 match {
         case (n: Node) :: _ => XmlResponse(n)
         case (ns: NodeSeq) :: _ => XmlResponse(Group(ns))
-        case (r: ConvertableResponse) :: _ => r
+        case (r: LiftResponse) :: _ => r
         case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
         case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
       }
@@ -299,7 +299,7 @@ class LiftServlet extends HttpServlet {
     LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
   }
 
-  private def handleComet(requestState: RequestState, sessionActor: LiftSession): Can[ConvertableResponse] = {
+  private def handleComet(requestState: RequestState, sessionActor: LiftSession): Can[LiftResponse] = {
     val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
 
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
@@ -312,7 +312,7 @@ class LiftServlet extends HttpServlet {
     }
   }
 
-  private def convertAnswersToCometResponse(sessionActor: LiftSession, ret: Seq[AnswerRender], actors: List[(CometActor, Long)]): ConvertableResponse = {
+  private def convertAnswersToCometResponse(sessionActor: LiftSession, ret: Seq[AnswerRender], actors: List[(CometActor, Long)]): LiftResponse = {
     val ret2 = ret.toList
     val jsUpdateTime = ret2.map(ar => "lift_toWatch['"+ar.who.uniqueId+"'] = '"+ar.when+"';").mkString("\n")
     val jsUpdateStuff = ret2.map(ar => ar.response.toJavaScript(sessionActor, ar.displayAll))
@@ -322,7 +322,7 @@ class LiftServlet extends HttpServlet {
   (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
   }
 
-  private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[ConvertableResponse] = {
+  private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[LiftResponse] = {
 
     LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
 

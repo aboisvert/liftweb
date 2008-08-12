@@ -30,12 +30,12 @@ import java.io.ByteArrayOutputStream
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ConvertableResponse]];
+  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[LiftResponse]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), ConvertableResponse]
+  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
 
   /**
@@ -123,7 +123,7 @@ object LiftRules {
   */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
 
-  private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[ConvertableResponse] = {
+  private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[LiftResponse] = {
     if (passNotFoundToChain) Empty
     else session match {
       case Full(session) => Full(session.checkRedirect(requestState.createNotFound))
@@ -201,7 +201,7 @@ object LiftRules {
   * If the request times out (or returns a non-Response) you can
   * intercept the response here and create your own response
   */
-  var requestTimedOut: Can[(RequestState, Any) => Can[ConvertableResponse]] = Empty
+  var requestTimedOut: Can[(RequestState, Any) => Can[LiftResponse]] = Empty
 
   def early = {
     // test_boot
@@ -462,22 +462,22 @@ object LiftRules {
     case _ => List(("Expires", "0"))
   }
 
-  def performTransform(in: ConvertableResponse): ConvertableResponse =
+  def performTransform(in: LiftResponse): LiftResponse =
     responseTransformers.foldLeft(in){
-      case (in, pf: PartialFunction[ConvertableResponse, ConvertableResponse]) => 
+      case (in, pf: PartialFunction[LiftResponse, LiftResponse]) => 
 	if (pf.isDefinedAt(in)) pf(in) else in
       case (in, f) => f(in)
     }
 
-  var responseTransformers: List[ConvertableResponse => ConvertableResponse] =
+  var responseTransformers: List[LiftResponse => LiftResponse] =
     Nil
 
   /**
   * convertResponse is a PartialFunction that reduces a given Tuple4 into a
-  * ConvertableResponse that can then be sent to the browser.
+  * LiftResponse that can then be sent to the browser.
   */
-  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), ConvertableResponse] = {
-    case (r: ConvertableResponse, _, _, _) => r
+  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), LiftResponse] = {
+    case (r: LiftResponse, _, _, _) => r
     case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: Node, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: NodeSeq, headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
@@ -510,10 +510,10 @@ object LiftRules {
   * The function that deals with how exceptions are presented to the user during processing
   * of an HTTP request.  Put a new function here to change the behavior.
   *
-  * The function takes the RequestState and the Exception and returns a ConvertableResponse that's
+  * The function takes the RequestState and the Exception and returns a LiftResponse that's
   * sent to the browser.
   */
-  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => ConvertableResponse = showException
+  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => LiftResponse = showException
 
   /**
   * The partial function (pattern matching) for handling converting an exception to something to
@@ -522,7 +522,7 @@ object LiftRules {
   * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
   * so that your response over-rides the default, but the processing falls through to the default.
   */
-  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), ConvertableResponse] = {
+  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), LiftResponse] = {
     case (Props.RunModes.Development, r, e) =>
     XhtmlResponse((<html><body>Exception occured while processing {r.uri}
     <pre>{
@@ -564,13 +564,13 @@ object LiftRules {
     ret + also
   }
 
-  private def showException(r: RequestState, e: Throwable): ConvertableResponse = {
+  private def showException(r: RequestState, e: Throwable): LiftResponse = {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
 
   var onBeginServicing: List[RequestState => Unit] = Nil
-  var onEndServicing: List[(RequestState, Can[ConvertableResponse]) => Unit] = Nil
+  var onEndServicing: List[(RequestState, Can[LiftResponse]) => Unit] = Nil
 }
 
 case object BreakOut
