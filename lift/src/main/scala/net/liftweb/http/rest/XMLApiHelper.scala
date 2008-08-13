@@ -20,7 +20,7 @@ import net.liftweb._
 import util._
 import Helpers._
 
-import scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null}
+import scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null, Node}
 
 /**
 * Mix this trait into your REST service provider to convert between different
@@ -38,15 +38,24 @@ trait XMLApiHelper {
 
   implicit def pairToResponse(in: (Boolean, String)): LiftResponse =
   buildResponse(in._1, Full(Text(in._2)), <xml:group/>)
-  
+
+  /*
   implicit def unitToSuccess(in: Unit): LiftResponse = 
   buildResponse(true, Empty, <xml:group/>)
-  
+  */
+ 
   protected def operation: Option[NodeSeq] =
   (for (req <- S.request) yield req.path.partPath match {
       case _ :: name :: _ => name
       case _ => ""
     }).map(Text)
+  
+  implicit def nodeSeqToResponse(in: NodeSeq): LiftResponse =
+  buildResponse(true, Empty, in)
+
+  implicit def listElemToResponse(in: Seq[Node]): LiftResponse =
+  buildResponse(true, Empty, in)
+  
 
   implicit def canNodeToResponse(in: Can[NodeSeq]): LiftResponse = in match {
     case Full(n) => buildResponse(true, Empty, n)
