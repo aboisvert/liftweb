@@ -98,7 +98,7 @@ class LiftServlet extends HttpServlet {
           doService(req, resp, requestState)
         }
       }
-      LiftRules.checkJetty(req) match {
+      LiftRules.checkContinuations(req) match {
         case None => doIt
         case r if r eq null => doIt
         case r: LiftResponse => sendResponse(r.toResponse, resp, Empty) ; true
@@ -247,13 +247,13 @@ class LiftServlet extends HttpServlet {
     ret
   }
 
-  class JettyContinuationActor(request: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
+  class ContinuationActor(request: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
     private var answers: List[AnswerRender] = Nil
     val seqId = CometActor.next
 
     def act = loop {
       react {
-        case BeginJettyContinuation =>
+        case BeginContinuation =>
           val mySelf = self
           val sendItToMe: AnswerRender => Unit = ah => mySelf ! (seqId, ah)
 
@@ -282,15 +282,15 @@ class LiftServlet extends HttpServlet {
     override def toString = "Actor dude "+seqId
   }
 
-  private object BeginJettyContinuation
+  private object BeginContinuation
 
   private lazy val cometTimeout: Long = (LiftRules.ajaxRequestTimeout openOr 120) * 1000L
 
-  private def setupJettyContinuation(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Nothing = {
-    val cont = new JettyContinuationActor(requestState, sessionActor, actors)
+  private def setupContinuation(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Nothing = {
+    val cont = new ContinuationActor(requestState, sessionActor, actors)
     cont.start
 
-    cont ! BeginJettyContinuation
+    cont ! BeginContinuation
 
     sessionActor.enterComet(cont)
 
@@ -303,12 +303,12 @@ class LiftServlet extends HttpServlet {
     val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
 
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
-    else LiftRules.checkJetty(requestState.request) match {
+    else LiftRules.checkContinuations(requestState.request) match {
       case Some(null) =>
-	setupJettyContinuation(requestState, sessionActor, actors)
+	setupContinuation(requestState, sessionActor, actors)
 
       case _ =>
-	handleNonJettyComet(requestState, sessionActor, actors)
+	handleNonContinuationComet(requestState, sessionActor, actors)
     }
   }
 
@@ -322,7 +322,7 @@ class LiftServlet extends HttpServlet {
   (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
   }
 
-  private def handleNonJettyComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[LiftResponse] = {
+  private def handleNonContinuationComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[LiftResponse] = {
 
     LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
 

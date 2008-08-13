@@ -226,7 +226,7 @@ object LiftRules {
   def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
 
 
-  val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
+  val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
       val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
       val meth = cc.getMethod("getContinuation", Array(classOf[HttpServletRequest], classOf[AnyRef]))
@@ -259,8 +259,8 @@ object LiftRules {
     }
   }
 
-  def checkJetty(req: HttpServletRequest): Option[Any] = {
-    if (!hasJetty_?) None
+  def checkContinuations(req: HttpServletRequest): Option[Any] = {
+    if (!hasContinuations_?) None
     else {
       val cont = getContinuation.invoke(contSupport, Array(req, LiftRules))
       val ret = getObject.invoke(cont, null)
