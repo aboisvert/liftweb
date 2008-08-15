@@ -158,7 +158,9 @@ object SessionMaster extends Actor {
           }
 
         case LookupSession(id, when) =>
-          reply( (when, Can(sessions.get(id))) )
+          val ret = Can(sessions.get(id))
+          ret.foreach(_.lastServiceTime = millis)
+          reply( (when, ret) )
 
         case CheckAndPurge =>
           val now = millis
