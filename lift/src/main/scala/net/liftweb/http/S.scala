@@ -462,6 +462,9 @@ object S {
     def clear(name: String): Unit = rv.foreach(_ -= name)
   }
 
+  /**
+   * Get a list of current attributes
+   */
   def attrs: List[(Either[String, (String, String)], String)] = S._attrs.value match {
     case null => Nil
     case xs => xs
