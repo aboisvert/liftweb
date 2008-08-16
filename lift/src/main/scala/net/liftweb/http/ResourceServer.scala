@@ -23,14 +23,11 @@ import java.net.{URLConnection}
 object ResourceServer {
   private var allowedPaths: PartialFunction[List[String], Boolean] = {
     case "jquery.js" :: Nil => true
-    case "yahoo.js" :: Nil => true
-    case "event.js" :: Nil => true
-    case "dom.js" :: Nil => true
-    case "connection.js" :: Nil => true
+    case "yui" :: _ => true
     case "liftYUI.js" :: Nil => true
-    case "json.js" :: Nil => true
-    case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
+    case "json2.js" :: Nil => true
     case "jlift.js" :: Nil => true
+    case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
     case "jquery-autocomplete" :: "jquery.autocomplete.css" :: Nil => true
   }
