@@ -13,7 +13,7 @@ import javax.servlet.http.Cookie
 import js._
 import java.io.InputStream
 
-trait ToResponse extends ConvertableResponse {
+trait ToResponse extends LiftResponse {
   def out: Node
   def headers: List[(String, String)]
   def cookies: List[Cookie]
@@ -39,7 +39,7 @@ trait ToResponse extends ConvertableResponse {
     }
 }
 
-trait ConvertableResponse {
+trait LiftResponse {
   def toResponse: BasicResponse
 }
 
@@ -47,17 +47,17 @@ case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String,
 			 cookies: List[Cookie], code: Int) extends ToResponse
 
 object JsonResponse {
-  def apply(json: JsExp): ConvertableResponse = JsonResponse(json, Nil, Nil, 200)
+  def apply(json: JsExp): LiftResponse = JsonResponse(json, Nil, Nil, 200)
 }
 
-case class JsonResponse(json: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ConvertableResponse {
+case class JsonResponse(json: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
 	def toResponse = {
 		val bytes = json.toJsCmd.getBytes("UTF-8")
 		InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
 	}
 }
 
-sealed trait BasicResponse extends ConvertableResponse {
+sealed trait BasicResponse extends LiftResponse {
   def headers: List[(String, String)]
   def cookies: List[Cookie]
   def code: Int
@@ -77,7 +77,7 @@ final case class StreamingResponse(data: {def read(buf: Array[Byte]): Int}, onEn
     override def toString="StreamingResponse( steaming_data , "+headers+", "+cookies+", "+code+")"
 }
 
-case class RedirectResponse(uri: String, cookies: Cookie*) extends ConvertableResponse {
+case class RedirectResponse(uri: String, cookies: Cookie*) extends LiftResponse {
   // The Location URI is not resolved here, instead it is resolved with context path prior of sending the actual response
   def toResponse = InMemoryResponse(Array(0), List("Location" -> uri), cookies toList, 302)
 }

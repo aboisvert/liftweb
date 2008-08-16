@@ -18,7 +18,9 @@ package net.liftweb.http
 
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, Group, Node, HasKeyValue}
+import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, 
+                  PrefixedAttribute,
+                  Group, Node, HasKeyValue}
 import scala.collection.immutable.{ListMap, TreeMap}
 import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
 import Helpers._
@@ -55,13 +57,13 @@ object S {
   }
 
   /**
-  * The current session
-  */
+   * The current session
+   */
   private val _request = new ThreadGlobal[RequestState]
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
-  private val _attrs = new ThreadGlobal[Map[String, String]]
+  private val _attrs = new ThreadGlobal[List[(Either[String, (String, String)], String)]]
   private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
@@ -70,23 +72,23 @@ object S {
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
   
-private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
-private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
-private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
+  private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
+  private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
+  private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
 
   /**
-  * Get the current RequestState
-  *
-  * @return the current RequestState
-  */
+   * Get the current RequestState
+   *
+   * @return the current RequestState
+   */
   def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
 
   /**
    * @return a List of any Cookies that have been set for this Response.
    */
   def receivedCookies: List[Cookie] =
-    for (rc <- Can.legacyNullTest(_responseCookies.value).toList; c <- rc.inCookies)
-      yield c.clone().asInstanceOf[Cookie]
+  for (rc <- Can.legacyNullTest(_responseCookies.value).toList; c <- rc.inCookies)
+  yield c.clone().asInstanceOf[Cookie]
 
   /**
    * Finds a cookie with the given name
@@ -97,10 +99,10 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   def findCookie(name: String): Can[Cookie] =
   Can.legacyNullTest(_responseCookies.value).flatMap(
     rc => Can(rc.inCookies.filter(_.getName == name)).
-              map(_.clone().asInstanceOf[Cookie]))
+    map(_.clone().asInstanceOf[Cookie]))
 
   def responseCookies: List[Cookie] = Can.legacyNullTest(_responseCookies.value).
-    toList.flatMap(_.outCookies)
+  toList.flatMap(_.outCookies)
 
   /**
    * Adds a Cookie to the List[Cookies] that will be sent with the Response.
@@ -136,11 +138,11 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
 
   /**
-  * Returns the Locale for this request based on the HTTP request's
-  * Accept-Language header. If that header corresponds to a Locale
-  * that's installed on this JVM then return it, otherwise return the
-  * default Locale for this JVM.
-  */
+   * Returns the Locale for this request based on the HTTP request's
+   * Accept-Language header. If that header corresponds to a Locale
+   * that's installed on this JVM then return it, otherwise return the
+   * default Locale for this JVM.
+   */
   def locale: Locale = LiftRules.localeCalculator(request.map(_.request))
 
   /**
@@ -160,13 +162,13 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
    * Return the list of DispatchHolders set for this session.
    */
   def highLevelSessionDispatchList: List[DispatchHolder] =
-    session map (_.highLevelSessionDispatcher.toList.map(t => DispatchHolder(t._1, t._2))) openOr Nil
+  session map (_.highLevelSessionDispatcher.toList.map(t => DispatchHolder(t._1, t._2))) openOr Nil
 
   def addHighLevelSessionDispatcher(name: String, disp: LiftRules.DispatchPf) =
-    session map (_.highLevelSessionDispatcher += (name -> disp))
+  session map (_.highLevelSessionDispatcher += (name -> disp))
 
   def removeHighLevelSessionDispatcher(name: String) =
-    session map (_.highLevelSessionDispatcher -= name)
+  session map (_.highLevelSessionDispatcher -= name)
 
   def clearHighLevelSessionDispatcher = session map (_.highLevelSessionDispatcher.clear)
 
@@ -175,25 +177,25 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
    * loading a template from a file or a class)
    */
   def sessionTemplater: List[TemplateHolder] =
-    session map (_.sessionTemplater.toList.map(t => TemplateHolder(t._1, t._2))) openOr Nil
+  session map (_.sessionTemplater.toList.map(t => TemplateHolder(t._1, t._2))) openOr Nil
 
   def addSessionTemplater(name: String, rw: LiftRules.TemplatePf) =
-    session map (_.sessionTemplater += (name -> rw))
+  session map (_.sessionTemplater += (name -> rw))
 
   def removeSessionTemplater(name: String) =
-    session map (_.sessionTemplater -= name)
+  session map (_.sessionTemplater -= name)
 
   def clearSessionTemplater = session map (_.sessionTemplater.clear)
 
 
   def sessionRewriter: List[RewriteHolder] =
-    session map (_.sessionRewriter.toList.map(t => RewriteHolder(t._1, t._2))) openOr Nil
+  session map (_.sessionRewriter.toList.map(t => RewriteHolder(t._1, t._2))) openOr Nil
 
   def addSessionRewriter(name: String, rw: LiftRules.RewritePf) =
-    session map (_.sessionRewriter += (name -> rw))
+  session map (_.sessionRewriter += (name -> rw))
 
   def removeSessionRewriter(name: String) =
-    session map (_.sessionRewriter -= name)
+  session map (_.sessionRewriter -= name)
 
   def clearSessionRewriter = session map (_.sessionRewriter.clear)
 
@@ -210,18 +212,18 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
    */
   def loc(str: String): Can[NodeSeq] =
   resourceBundle.flatMap(r => tryo(r.getObject(str) match {
-    case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
-    case s: String => Full(LiftRules.localizeStringToXml(s))
-    case g: Group => Full(g)
-    case e: Elem => Full(e)
-    case n: Node => Full(n)
-    case ns: NodeSeq => Full(ns)
-    case x => Full(Text(x.toString))
-  }).flatMap(s => s))
+        case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
+        case s: String => Full(LiftRules.localizeStringToXml(s))
+        case g: Group => Full(g)
+        case e: Elem => Full(e)
+        case n: Node => Full(n)
+        case ns: NodeSeq => Full(ns)
+        case x => Full(Text(x.toString))
+      }).flatMap(s => s))
 
   /**
-  * Get the resource bundle for the current locale
-  */
+   * Get the resource bundle for the current locale
+   */
   def resourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_resBundle.value).openOr {
     val rb = tryo(ResourceBundle.getBundle(LiftRules.resourceName, locale))
     _resBundle.set(rb)
@@ -229,8 +231,8 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   }
 
   /**
-  * Get the lift core resource bundle for the current locale
-  */
+   * Get the lift core resource bundle for the current locale
+   */
   def liftCoreResourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_liftCoreResBundle.value).openOr {
     val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
     _liftCoreResBundle.set(rb)
@@ -238,14 +240,14 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   }
 
   /**
-  * Get a localized string or return the original string
-  *
-  * @param str the string to localize
-  *
-  * @return the localized version of the string
-  */
+   * Get a localized string or return the original string
+   *
+   * @param str the string to localize
+   *
+   * @return the localized version of the string
+   */
   def ?(str: String): String = resourceBundle.flatMap(r => tryo(r.getObject(str) match
-  {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
+                                                                {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
   openOr{LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); str}
 
   def ?(str: String, params: Any *): String = if (params.length == 0)
@@ -254,40 +256,40 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray)
 
   /**
-  * Get a core lift localized string or return the original string
-  *
-  * @param str the string to localize
-  *
-  * @return the localized version of the string
-  */
+   * Get a core lift localized string or return the original string
+   *
+   * @param str the string to localize
+   *
+   * @return the localized version of the string
+   */
   def ??(str: String): String = liftCoreResourceBundle.flatMap(r => tryo(r.getObject(str) match
-  {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
+                                                                         {case s: String => Full(s) case _ => Empty}).flatMap(s => s)).
   openOr{LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); str
   }
 
   /**
-  * Localize the incoming string based on a resource bundle for the current locale
-  * @param str the string or ID to localize
-  * @param dflt the default string to return if localization fails
-  *
-  * @return the localized XHTML or default value
-  */
+   * Localize the incoming string based on a resource bundle for the current locale
+   * @param str the string or ID to localize
+   * @param dflt the default string to return if localization fails
+   *
+   * @return the localized XHTML or default value
+   */
   def loc(str: String, dflt: NodeSeq): NodeSeq = loc(str).openOr(dflt)
 
 
   /**
-  * Test the current request to see if it's a GET
-  */
+   * Test the current request to see if it's a GET
+   */
   def get_? = request.map(_.get_?).openOr(false)
 
   /**
-  * The URI of the current request (not re-written)
-  */
+   * The URI of the current request (not re-written)
+   */
   def uri: String = request.map(_.uri).openOr("/")
 
   /**
-  * Redirect the browser to a given URL
-  */
+   * Redirect the browser to a given URL
+   */
   def redirectTo[T](where: String): T = throw ResponseShortcutException.redirect(where)
 
   def redirectTo[T](where: String, func: () => Unit): T =
@@ -300,39 +302,39 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   RequestVar[Seq[(NoticeType.Value, NodeSeq, Can[String])]](Nil)
 
   /**
-  * Initialize the current request session
-  */
+   * Initialize the current request session
+   */
   def init[B](request: RequestState, session: LiftSession)(f: => B) : B = {
-        _init(request,session)(() => f)
+    _init(request,session)(() => f)
   }
 
   /**
-  * The current LiftSession
-  */
+   * The current LiftSession
+   */
   def session: Can[LiftSession] = Can.legacyNullTest(_sessionInfo.value)
 
   /**
-  * Log a query for the given request.  The query log can be tested to see
-  * if queries for the particular page rendering took too long
-  */
+   * Log a query for the given request.  The query log can be tested to see
+   * if queries for the particular page rendering took too long
+   */
   def logQuery(query: String, time: Long) = p_queryLog.is += (query, time)
 
   private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
-    Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
+  Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
 
   private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit =
-    Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
+  Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
 
   private[http] def unsetSnippetForClass(cls: String): Unit =
-    Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
+  Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
 
 
   private var _queryAnalyzer: List[(Can[RequestState], Long,
                                     List[(String, Long)]) => Any] = Nil
 
   /**
-  * Add a query analyzer (passed queries for analysis or logging)
-  */
+   * Add a query analyzer (passed queries for analysis or logging)
+   */
   def addAnalyzer(f: (Can[RequestState], Long, 
                       List[(String, Long)]) => Any): Unit =
   _queryAnalyzer = _queryAnalyzer ::: List(f)
@@ -345,73 +347,73 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   }
 
   /**
-  * You can wrap the handling of an HTTP request with your own wrapper.  The wrapper can
-  * execute code before and after the request is processed (but still have S scope).
-  * This allows for query analysis, etc.
-  */
+   * You can wrap the handling of an HTTP request with your own wrapper.  The wrapper can
+   * execute code before and after the request is processed (but still have S scope).
+   * This allows for query analysis, etc.
+   */
   def addAround(lw: List[LoanWrapper]): Unit = aroundRequest = lw ::: aroundRequest
 
   /**
-  * Get a list of the logged queries
-  */
+   * Get a list of the logged queries
+   */
   def queryLog: List[(String, Long)] = p_queryLog.is.toList
   // Can.legacyNullTest(_queryLog.value).map(_.toList).openOr(Nil)
 
   private def wrapQuery[B](f:() => B): B = {
-      val begin = millis
-      try {
-        f()
-      } finally {
-        val time = millis - begin
-        _queryAnalyzer.foreach(_(request, time, queryLog))
-      }
+    val begin = millis
+    try {
+      f()
+    } finally {
+      val time = millis - begin
+      _queryAnalyzer.foreach(_(request, time, queryLog))
+    }
   }
 
   def setHeader(name: String, value: String) {
     Can.legacyNullTest(_responseHeaders.value).foreach(
-    rh =>
-    rh.headers = rh.headers + (name -> value)
+      rh =>
+      rh.headers = rh.headers + (name -> value)
     )
   }
 
   def getHeaders(in: List[(String, String)]): List[(String, String)] = {
     Can.legacyNullTest(_responseHeaders.value).map(
-    rh =>
-    rh.headers.elements.toList :::
-    in.filter{case (n, v) => !rh.headers.contains(n)}
+      rh =>
+      rh.headers.elements.toList :::
+      in.filter{case (n, v) => !rh.headers.contains(n)}
     ).openOr(Nil)
   }
 
   def setDocType(what: Can[String]) {
     Can.legacyNullTest(_responseHeaders.value).foreach(
-    rh =>
-    rh.docType = what
+      rh =>
+      rh.docType = what
     )
   }
 
   def getDocType: (Boolean, Can[String]) =
   Can.legacyNullTest(_responseHeaders.value).map(
-  rh => (rh.overrodeDocType, rh.docType)
+    rh => (rh.overrodeDocType, rh.docType)
   ).openOr( (false, Empty) )
 
   def addCleanupFunc(f: () => Unit): Unit = postFuncs.is += f
 
   private def _nest2InnerInit[B](f: () => B): B = {
-      _functionMap.doWith(new HashMap[String, AFuncHolder]) {
-	  doAround(aroundRequest) {
-	    try {
-	      wrapQuery {
-		f
-	      }
-	    } finally {
-              postFuncs.is.foreach(f => tryo(f()))
-	    }
-	  }        
+    _functionMap.doWith(new HashMap[String, AFuncHolder]) {
+      doAround(aroundRequest) {
+        try {
+          wrapQuery {
+            f
+          }
+        } finally {
+          postFuncs.is.foreach(f => tryo(f()))
+        }
       }
+    }
   }
 
   private def _innerInit[B](f: () => B): B = {
-    _attrs.doWith(new TreeMap) {
+    _attrs.doWith(Nil) {
       snippetMap.doWith(new HashMap) {
         _resBundle.doWith(null) {
           _liftCoreResBundle.doWith(null){
@@ -431,8 +433,8 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
    */
   private def getCookies(request: HttpServletRequest): List[Cookie] =
   for (r <- Can.legacyNullTest(request).toList;
-  ca <- Can.legacyNullTest(r.getCookies).toList;
-  c <- ca) yield c
+       ca <- Can.legacyNullTest(r.getCookies).toList;
+       c <- ca) yield c
 
   private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
     this._request.doWith(request) {
@@ -460,12 +462,46 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
     def clear(name: String): Unit = rv.foreach(_ -= name)
   }
 
+  def attrs: List[(Either[String, (String, String)], String)] = S._attrs.value match {
+    case null => Nil
+    case xs => xs
+  }
+
+  def prefixedAttrsToMap(prefix: String, start: Map[String, String]):
+  Map[String, String] =
+  attrs.flatMap {
+    case (Right( (pre, name)), value) if pre == prefix => List((name, value))
+    case _ => Nil
+  }.foldRight(start){
+    case ((name, value), at) => at + (name -> value)
+  }
+
+  def prefixedAttrsToMap(prefix: String): Map[String, String] =
+  prefixedAttrsToMap(prefix: String, Map.empty)
+
+  def prefixedAttrsToMetaData(prefix: String, start: Map[String, String]): MetaData =
+  mapToAttrs(prefixedAttrsToMap(prefix, start))
+
+  def mapToAttrs(in: Map[String, String]): MetaData =
+  in.foldLeft[MetaData](Null) {
+    case (md, (name, value)) => new UnprefixedAttribute(name, value, md)
+  }
+
+  def prefixedAttrsToMetaData(prefix: String): MetaData =
+  prefixedAttrsToMetaData(prefix, Map.empty)
+
   object attr {
-    def apply(what: String): Can[String] = Can(S._attrs.value.get(what))
+    def apply(what: String): Can[String] = Can(attrs.find{
+        case (Left(v), _) if v == what => true
+        case _ => false
+      }).map(_._2)
   }
 
   def setVars[T](attr: MetaData)(f: => T): T = {
-    _attrs.doWith(_attrs.value ++ attr.toList.map(m => (m.key, m.value.text)))(f)
+    _attrs.doWith(attr.toList.map{
+        case pa: PrefixedAttribute => (Right(pa.pre, pa.key), pa.value.text)
+        case m => (Left(m.key), m.value.text)
+      } ::: attrs)(f)
   }
 
   def initIfUninitted[B](session: LiftSession)(f: => B) : B = {
@@ -473,13 +509,13 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
     else init(RequestState.nil,session)(f)
   }
 
-/*
-  def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq, Can[String])], session: LiftSession)(f : => B) : B = {
-    _oldNotice.doWith(oldNotices) {
-        _init(request, session)(() => f)
-    }
-  }
-*/
+  /*
+   def init[B](request: RequestState, oldNotices: Seq[(NoticeType.Value, NodeSeq, Can[String])], session: LiftSession)(f : => B) : B = {
+   _oldNotice.doWith(oldNotices) {
+   _init(request, session)(() => f)
+   }
+   }
+   */
 
   def get(what: String): Can[String] = session.flatMap(_.get(what, classOf[String]))
 
@@ -487,7 +523,7 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
   def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
 
-  def invokedAs: String = _attrs.value.get("type") getOrElse ""
+  def invokedAs: String = attr("type") openOr ""
 
   def setSessionAttribute(name: String, value: String) = servletSession.foreach(_.setAttribute(name, value))
 
@@ -498,33 +534,33 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   def unset(name: String) = session.foreach(_.unset(name))
 
   /**
-  * The current servlet request
-  */
+   * The current servlet request
+   */
   def servletRequest: Can[HttpServletRequest] = Can.legacyNullTest(_request.value).map(_.request)
 
   /**
-  * The host that the request was made on
-  */
+   * The host that the request was made on
+   */
   def hostName: String = servletRequest.map(_.getServerName).openOr("nowhere_123.com")
 
   /**
-  * The host and path of the quest
-  */
+   * The host and path of the quest
+   */
   def hostAndPath: String = 
-    servletRequest.map(r => (r.getScheme, r.getServerPort) match {
+  servletRequest.map(r => (r.getScheme, r.getServerPort) match {
       case ("http", 80) => "http://"+r.getServerName+r.getContextPath
-	  case ("https", 443) => "https://"+r.getServerName+r.getContextPath
-	  case (sch, port) => sch + "://"+r.getServerName+":"+port+r.getContextPath
-      }).openOr("")
+      case ("https", 443) => "https://"+r.getServerName+r.getContextPath
+      case (sch, port) => sch + "://"+r.getServerName+":"+port+r.getContextPath
+    }).openOr("")
 
   /**
-  * Get a map of the name/functions
-  */
+   * Get a map of the name/functions
+   */
   def functionMap: Map[String, AFuncHolder] = Can.legacyNullTest(_functionMap.value).map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
 
   /**
-  * The current context path
-  */
+   * The current context path
+   */
   def contextPath = session.map(_.contextPath).openOr("")
 
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
@@ -546,8 +582,8 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
 
   /**
-  * Build a handler for incoming JSON commands
-  *
+   * Build a handler for incoming JSON commands
+   *
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
@@ -566,18 +602,18 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
     def checkCmd(in: Any) = in match {
       case v: scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
-      JsonCmd(v("command").toString, v.get("target").
-        map {
-          case null => null
-          case x => x.toString
-     } getOrElse(null),v.get("params").getOrElse(None), v)
+        JsonCmd(v("command").toString, v.get("target").
+                map {
+            case null => null
+            case x => x.toString
+          } getOrElse(null),v.get("params").getOrElse(None), v)
 
-     case v => v
+      case v => v
     }
 
     def jsonCallback(in: List[String]): JsCmd = {
       in.flatMap(
-      s =>
+        s =>
         JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
       ).foldLeft(JsCmds.Noop)(_ & _)
     }
@@ -603,10 +639,10 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
     val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.error")),
                    (LiftRules.ajaxWarningMeta, f(S.warnings), S.??("msg.warning")),
                    (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.notice"))) flatMap {
-     msg => msg._1 match {
-         case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
-         case _ => func(msg._2 _, msg._3, Null)
-     }
+      msg => msg._1 match {
+        case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
+        case _ => func(msg._2 _, msg._3, Null)
+      }
     }
 
     val groupMessages = xml match {
@@ -690,7 +726,7 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
   def mapFunc(name: String, inf: AFuncHolder): String = {
     addFunctionMap(name, inf)
-      name
+    name
   }
 
 
@@ -748,8 +784,8 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
   def idMessages(f: => List[(NodeSeq, Can[String])]):List[(String, List[NodeSeq])] = {
     val res = new HashMap[String, List[NodeSeq]]
     f filter(  _._2.isEmpty == false) foreach (_ match {
-      case (node, id) => val key = id open_!; res += (key -> (res.getOrElseUpdate(key, Nil) ::: List(node)))
-    })
+        case (node, id) => val key = id open_!; res += (key -> (res.getOrElseUpdate(key, Nil) ::: List(node)))
+      })
 
     res toList
   }
@@ -758,145 +794,145 @@ private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, Nod
 
 }
 
-  @serializable
-  object NoticeType extends Enumeration {
-    val Notice, Warning, Error = Value
-  }
+@serializable
+object NoticeType extends Enumeration {
+  val Notice, Warning, Error = Value
+}
 
-  abstract class JsonHandler {
-    private val name = "_lift_json_"+getClass.getName
-    private def handlers: (JsonCall, JsCmd) =
-      S.session.map(s => s.get[Any](name) match {
+abstract class JsonHandler {
+  private val name = "_lift_json_"+getClass.getName
+  private def handlers: (JsonCall, JsCmd) =
+  S.session.map(s => s.get[Any](name) match {
       case Full((x: JsonCall, y: JsCmd)) =>  (x, y)
 
-       case _ =>
-         val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
-         s.set(name, ret)
-         ret
-      }
-      ).openOr( (JsonCall(""), JsCmds.Noop) )
-
-    def call: JsonCall = handlers._1
-
-    def jsCmd: JsCmd = handlers._2
-
-    def apply(in: Any): JsCmd
-  }
-
-  abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { 
-    self: MyType =>
-    private val name = "_lift_sv_"+getClass.getName
-    protected def findFunc(name: String): Can[T]
-    protected def setFunc(name: String, value: T): Unit
-    protected def clearFunc(name: String): Unit
-
-    /**
-     * The current value of the variable
-     */
-    def is: T = findFunc(name) match {
-      case Full(v) => v
-      case _ => val ret = dflt
-        apply(ret)
-      cleanupFunc.foreach(registerCleanupFunc)
+      case _ =>
+        val ret: (JsonCall, JsCmd) = S.buildJsonFunc(this.apply)
+        s.set(name, ret)
         ret
     }
+  ).openOr( (JsonCall(""), JsCmds.Noop) )
 
-    /**
-     * Set the session variable
-     *
-     * @param what -- the value to set the session variable to
-     */
-    def apply(what: T): Unit = setFunc(name, what)
+  def call: JsonCall = handlers._1
 
-    def remove(): Unit = clearFunc(name)
+  def jsCmd: JsCmd = handlers._2
 
-    def cleanupFunc: Can[() => Unit] = Empty
+  def apply(in: Any): JsCmd
+}
 
-    def registerCleanupFunc(in: () => Unit): Unit
+abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { 
+  self: MyType =>
+  private val name = "_lift_sv_"+getClass.getName
+  protected def findFunc(name: String): Can[T]
+  protected def setFunc(name: String, value: T): Unit
+  protected def clearFunc(name: String): Unit
 
-    override def toString = is.toString
+  /**
+   * The current value of the variable
+   */
+  def is: T = findFunc(name) match {
+    case Full(v) => v
+    case _ => val ret = dflt
+      apply(ret)
+      cleanupFunc.foreach(registerCleanupFunc)
+      ret
   }
 
   /**
-   * Keep session information around without the nastiness of naming session variables
-   * or the type-unsafety of casting the results.
-   * SessionVars are type-safe variables that map pretty directly to
-   * HttpSession attributes.  Put stuff in and they are available for the
-   * life of the Session.
+   * Set the session variable
    *
-   * To use a SessionVar from a CometActor the following must be used:
-   * <pre>
-   * S.initIfUninitted(liftSession) {
-   *   // safely use the SessionVar
-   * }
-   * </pre>
-   * where liftSession is the LiftSession passed to the CometActor.
-   *
-   *
-   * @param dflt - the default value of the session variable
+   * @param what -- the value to set the session variable to
    */
-  abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
-    override protected def findFunc(name: String): Can[T] = S.session.flatMap(_.get(name))
-    override protected def setFunc(name: String, value: T): Unit = S.session.foreach(_.set(name, value))
-    override protected def clearFunc(name: String): Unit = S.session.foreach(_.unset(name))
+  def apply(what: T): Unit = setFunc(name, what)
 
-    def registerCleanupFunc(in: () => Unit): Unit = 
-      S.session.foreach(_.addSessionCleanup(ignore => in()))
+  def remove(): Unit = clearFunc(name)
 
+  def cleanupFunc: Can[() => Unit] = Empty
+
+  def registerCleanupFunc(in: () => Unit): Unit
+
+  override def toString = is.toString
+}
+
+/**
+ * Keep session information around without the nastiness of naming session variables
+ * or the type-unsafety of casting the results.
+ * SessionVars are type-safe variables that map pretty directly to
+ * HttpSession attributes.  Put stuff in and they are available for the
+ * life of the Session.
+ *
+ * To use a SessionVar from a CometActor the following must be used:
+ * <pre>
+ * S.initIfUninitted(liftSession) {
+ *   // safely use the SessionVar
+ * }
+ * </pre>
+ * where liftSession is the LiftSession passed to the CometActor.
+ *
+ *
+ * @param dflt - the default value of the session variable
+ */
+abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
+  override protected def findFunc(name: String): Can[T] = S.session.flatMap(_.get(name))
+  override protected def setFunc(name: String, value: T): Unit = S.session.foreach(_.set(name, value))
+  override protected def clearFunc(name: String): Unit = S.session.foreach(_.unset(name))
+
+  def registerCleanupFunc(in: () => Unit): Unit =
+  S.session.foreach(_.addSessionCleanup(ignore => in()))
+
+}
+
+/**
+ * Keep request-local information around without the nastiness of naming session variables
+ * or the type-unsafety of casting the results.
+ * RequestVars share their value through the scope of the current HTTP
+ * request.  They have no value at the beginning of request servicing
+ * and their value is discarded at the end of request processing.  They
+ * are helpful to share values across many snippets.
+ *
+ * @param dflt - the default value of the session variable
+ */
+abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
+  override protected def findFunc(name: String): Can[T] = S.requestState(name)
+  override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value
+  override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
+
+  def registerCleanupFunc(in: () => Unit): Unit =
+  S.addCleanupFunc(in)
+}
+
+
+
+object AnyVar {
+  implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
+  implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
+}
+
+case class JsonCmd(command: String, target: String, params: Any,
+                   all: scala.collection.Map[String, Any])
+
+class ResponseInfoHolder {
+  var headers: Map[String, String] = Map.empty
+  private var _docType: Can[String] = Empty
+  private var _setDocType = false
+
+  def docType = _docType
+  def docType_=(in: Can[String]) {
+    _docType = in
+    _setDocType = true
   }
 
-  /**
-   * Keep request-local information around without the nastiness of naming session variables
-   * or the type-unsafety of casting the results.
-   * RequestVars share their value through the scope of the current HTTP
-   * request.  They have no value at the beginning of request servicing
-   * and their value is discarded at the end of request processing.  They
-   * are helpful to share values across many snippets.
-   *
-   * @param dflt - the default value of the session variable
-   */
-  abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
-    override protected def findFunc(name: String): Can[T] = S.requestState(name)
-    override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value
-    override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
+  def overrodeDocType = _setDocType
+}
 
-    def registerCleanupFunc(in: () => Unit): Unit = 
-      S.addCleanupFunc(in)
-  }
+/**
+ * Defines the association of this reference with an markup tag ID
+ */
+trait FieldIdentifier {
+  def uniqueFieldId: Can[String] = Empty
+}
 
-
-
-  object AnyVar {
-    implicit def whatSessionVarIs[T](in: SessionVar[T]): T = in.is
-    implicit def whatRequestVarIs[T](in: RequestVar[T]): T = in.is
-  }
-
-  case class JsonCmd(command: String, target: String, params: Any,
-    all: scala.collection.Map[String, Any])
-
-  class ResponseInfoHolder {
-    var headers: Map[String, String] = Map.empty
-    private var _docType: Can[String] = Empty
-    private var _setDocType = false
-
-    def docType = _docType
-    def docType_=(in: Can[String]) {
-      _docType = in
-      _setDocType = true
-    }
-
-    def overrodeDocType = _setDocType
-  }
-
-  /**
-   * Defines the association of this reference with an markup tag ID
-   */
-  trait FieldIdentifier {
-    def uniqueFieldId: Can[String] = Empty
-  }
-
-  /**
-   * Associate a FieldIdentifier with an NodeSeq
-   */
-  case class FieldError(field : FieldIdentifier, msg : NodeSeq)
+/**
+ * Associate a FieldIdentifier with an NodeSeq
+ */
+case class FieldError(field : FieldIdentifier, msg : NodeSeq)
 

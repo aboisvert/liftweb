@@ -5,7 +5,7 @@ import net.liftweb.util.Helpers._
 import net.liftweb.util.{Can, Full, Empty}
 import net.liftweb.http.S._
 import net.liftweb.http.LiftRules
-import net.liftweb.http.{ConvertableResponse, JsonResponse}
+import net.liftweb.http.{LiftResponse, JsonResponse}
 import net.liftweb.http.js._
 import net.liftweb.http.js.jquery._
 import JsCmds._
@@ -87,7 +87,7 @@ class TreeView {
    * 
    */
   def makeTreeView(id: String, jsObj: JsObj, loadTree : () => List[Tree], loadNode: (String) => List[Tree]): JsExp = {
-     val treeFunc : () => ConvertableResponse = {
+     val treeFunc : () => LiftResponse = {
      case _ => request match {
        case Full(req) => req.params.get("root") match {
          case Some("source" :: _) => JsonResponse(JsRaw(Tree.toJSON(loadTree())))

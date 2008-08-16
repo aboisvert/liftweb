@@ -47,7 +47,7 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[ConvertableResponse] = {
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[LiftResponse] = {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)

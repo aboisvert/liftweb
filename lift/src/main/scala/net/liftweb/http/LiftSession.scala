@@ -47,7 +47,7 @@ object LiftSession {
   var onAboutToShutdownSession: List[LiftSession => Unit] = Nil
   var onShutdownSession: List[LiftSession => Unit] = Nil
   var onBeginServicing: List[(LiftSession, RequestState) => Unit] = Nil
-  var onEndServicing: List[(LiftSession, RequestState, Can[ConvertableResponse]) => Unit] = Nil
+  var onEndServicing: List[(LiftSession, RequestState, Can[LiftResponse]) => Unit] = Nil
 }
 
 
@@ -159,7 +159,9 @@ object SessionMaster extends Actor {
           }
 
         case LookupSession(id, when) =>
-          reply( (when, Can(sessions.get(id))) )
+          val ret = Can(sessions.get(id))
+          ret.foreach(_.lastServiceTime = millis)
+          reply( (when, ret) )
 
         case CheckAndPurge =>
           val now = millis
@@ -314,77 +316,80 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     LiftSession.onShutdownSession.foreach(_(this))
   }
 
-  private[http] def processRequest(request: RequestState): Can[ConvertableResponse] = {
-   S.oldNotices(notices)
-      LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
-      val ret = try {
-        val sessionDispatch = S.highLevelSessionDispatcher
-        val toMatch = RequestMatcher(request, Full(this))
-        if (sessionDispatch.isDefinedAt(toMatch)) {
-          runParams(request)
-          try {
-            sessionDispatch(toMatch)(request) match {
-              case Full(r) => Full(checkRedirect(r))
-              case _ => LiftRules.notFoundOrIgnore(request, Full(this))
-            }
-          } finally {
-            notices = S.getNotices
-          }
-        } else {
-          runParams(request)
-
-          def idAndWhen(in: Node): Can[(String, String)] =
-          ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
-            case (x :: _, y :: _) => Full((x.text,y.value.text))
-            case _ => Empty
-          }
-
-          // Process but make sure we're okay, sitemap wise
-          val response: Can[ConvertableResponse] = request.testLocation match {
-            case (true, _) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
-                  case Full(rawXml: NodeSeq) => {
-                      val xml = HeadHelper.mergeToHtmlHead(rawXml)
-                      val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
-                        case Nil => xml
-                        case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
-                          val cometVar = "var lift_toWatch = "+comets.map {case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                          val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: Nil :_*)
-                          xform.transform(xml)
-                      }
-
-                      this.synchronized {
-                        S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
-                      }
-                      notices = Nil // S.getNotices
-                      Full(LiftRules.convertResponse((realXml,
-                                                      S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
-                                                      S.responseCookies,
-                                                      request)))
-                    }
-                  case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
-                })
-            case (false, Empty) => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
-            case (false, msg) => msg
-          }
-
-          // Before returning the response check for redirect and set the appropriate state.
-          response.map(checkRedirect)
+private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
+  S.oldNotices(notices)
+  LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
+  val ret = try {
+    val sessionDispatch = S.highLevelSessionDispatcher
+    
+    val toMatch = RequestMatcher(request, Full(this))
+    if (sessionDispatch.isDefinedAt(toMatch)) {
+      runParams(request)
+      try {
+        sessionDispatch(toMatch)(request) match {
+          case Full(r) => Full(checkRedirect(r))
+          case _ => LiftRules.notFoundOrIgnore(request, Full(this))
         }
-      } catch {
-        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) =>
-          Full(handleRedirect(ite.getCause.asInstanceOf[ResponseShortcutException], request))
+      } finally {
+        notices = S.getNotices
+      }
+    } else {
+      runParams(request)
 
-        case rd: net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
-
-        case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
-
+      def idAndWhen(in: Node): Can[(String, String)] =
+      ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
+        case (x :: _, y :: _) => Full((x.text,y.value.text))
+        case _ => Empty
       }
 
-      LiftSession.onEndServicing.foreach(f => tryo(f(this, request, ret)))
-      ret
+      // Process but make sure we're okay, sitemap wise
+      val response: Can[LiftResponse] = request.testLocation match {
+        case Left(true) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
+              case Full(rawXml: NodeSeq) => {
+                  val xml = HeadHelper.mergeToHtmlHead(rawXml)
+                  val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
+                    case Nil => xml
+                    case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
+                      val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
+                      val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
+
+                      val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
+                      xform.transform(xml)
+                  }
+
+                  this.synchronized {
+                    S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+                  }
+                  notices = Nil // S.getNotices
+                  Full(LiftRules.convertResponse((realXml,
+                                                  S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
+                                                  S.responseCookies,
+                                                  request)))
+                }
+              case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
+            })
+        case Right(msg) => msg
+        case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
+      }
+
+      // Before returning the response check for redirect and set the appropriate state.
+      response.map(checkRedirect)
+    }
+  } catch {
+    case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) =>
+      Full(handleRedirect(ite.getCause.asInstanceOf[ResponseShortcutException], request))
+
+    case rd: net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
+
+    case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
+
   }
 
-  private def handleRedirect(re: ResponseShortcutException, request: RequestState): ConvertableResponse = {
+  LiftSession.onEndServicing.foreach(f => tryo(f(this, request, ret)))
+  ret
+}
+
+  private def handleRedirect(re: ResponseShortcutException, request: RequestState): LiftResponse = {
     if (re.doNotices) notices = S.getNotices
 
     re.response
@@ -460,7 +465,7 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
 
   }
 
-  private[http] def checkRedirect(resp: ConvertableResponse): ConvertableResponse = resp match {
+  private[http] def checkRedirect(resp: LiftResponse): LiftResponse = resp match {
     case RedirectWithState(uri, state, cookies @ _*) =>
       state.msgs.foreach(m => S.message(m._1, m._2))
       notices = S.getNotices
@@ -841,7 +846,7 @@ abstract class SessionMessage
  */
 case object ShutDown
 
-case class AnswerHolder(what: ConvertableResponse)
+case class AnswerHolder(what: LiftResponse)
 
 /**
  * If a class is to be used as a lift view (rendering from code rather than a static template)

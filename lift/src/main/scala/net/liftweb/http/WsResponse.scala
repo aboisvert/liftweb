@@ -13,28 +13,28 @@ import javax.servlet.http.Cookie
 /**
  * 401 Unauthorized Response.
  */
-case class UnauthorizedResponse(realm: String) extends ConvertableResponse {
+case class UnauthorizedResponse(realm: String) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("WWW-Authenticate" -> ("Basic realm=\"" + realm + "\"")), Nil, 401)
 }
 
 /**
  * 301 Redirect.
  */
-case class PermRedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends ConvertableResponse {
+case class PermRedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
 }
 
 /**
  * Returning an Atom category document.
  */
-case class AtomCategoryResponse(xml: Node) extends ConvertableResponse {
+case class AtomCategoryResponse(xml: Node) extends LiftResponse {
   def toResponse = XmlMimeResponse(xml, "application/atomcat+xml").toResponse
 }
 
 /**
  * Returning an Atom Service Document.
  */
-case class AtomServiceResponse(xml: Node) extends ConvertableResponse {
+case class AtomServiceResponse(xml: Node) extends LiftResponse {
   def toResponse = XmlMimeResponse(xml, "application/atomsvc+xml").toResponse
 }
 
@@ -54,7 +54,7 @@ case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
  * Your Request was missing an important element. Use this as a last resort if
  * the request appears incorrect.
  */
-case class BadResponse extends ConvertableResponse {
+case class BadResponse extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 400)
 }
 
@@ -95,7 +95,7 @@ case class OpenSearchResponse(xml: Node) extends ToResponse {
 /**
  * The Atom entity was successfully created and is shown to the client.
  */
-case class AtomCreatedResponse(xml: Node) extends ConvertableResponse {
+case class AtomCreatedResponse(xml: Node) extends LiftResponse {
   def toResponse = CreatedResponse(xml, "application/atom+xml").toResponse
 }
 
@@ -104,7 +104,7 @@ object PlainTextResponse {
   def apply(text: String, code: Int): PlainTextResponse = PlainTextResponse(text, Nil, code)
 }
 
-case class PlainTextResponse(text: String, headers: List[(String, String)], code: Int) extends ConvertableResponse {
+case class PlainTextResponse(text: String, headers: List[(String, String)], code: Int) extends LiftResponse {
     def toResponse = {
         val bytes = text.getBytes("UTF-8")
         InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/plain") :: headers, Nil, code)
@@ -114,7 +114,7 @@ case class PlainTextResponse(text: String, headers: List[(String, String)], code
 /**
  * Basic 200 response but without body.
  */
-case class OkResponse extends ConvertableResponse {
+case class OkResponse extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 200)
 }
 
@@ -122,20 +122,20 @@ case class OkResponse extends ConvertableResponse {
  * This Resource does not allow this method. Use this when the resource can't
  * understand the method no matter the circumstances.
  */
-case class MethodNotAllowedResponse extends ConvertableResponse {
+case class MethodNotAllowedResponse extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 405)
 }
 
 /**
  * The requested Resource does not exist.
  */
-case class NotFoundResponse extends ConvertableResponse {
+case class NotFoundResponse extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 404)
 }
 
 /**
  * The requested Resource used to exist but no longer does.
  */
-case class GoneResponse extends ConvertableResponse {
+case class GoneResponse extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 410)
 }

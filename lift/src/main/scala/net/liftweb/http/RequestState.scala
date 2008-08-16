@@ -241,14 +241,14 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
     }
   }
 
-  lazy val location = LiftRules.siteMap.flatMap(_.findLoc(this))
+  lazy val location: Can[Loc] = LiftRules.siteMap.flatMap(_.findLoc(this))
 
-  def testLocation: (Boolean, Can[ConvertableResponse]) = {
-    if (LiftRules.siteMap.isEmpty) (true, Empty)
+  def testLocation: Either[Boolean, Can[LiftResponse]] = {
+    if (LiftRules.siteMap.isEmpty) Left(true)
     else location.map(_.testAccess) match {
-      case Full((true, _)) => (true, Empty)
-      case Full((_, Full(resp))) => (false, Full(resp))
-      case _ => (false, Empty)
+      case Full(Left(true)) => Left(true)
+      case Full(Right(Full(resp))) => Right(Full(resp))
+      case _ => Right(Empty)
     }
   }
 
