@@ -221,7 +221,7 @@ object JqJsCmds {
   }
 
 
-  case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
+  case class JqSetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = {
       val ret = "try{jQuery("+("#"+uid).encJs+").each(function(i) {this.innerHTML = "+fixHtml(uid, content)+";});} catch (e) {}"
       ret
@@ -247,7 +247,7 @@ object JqJsCmds {
   }
 
   case class DisplayMessage(where: String, msg: NodeSeq, duration: TimeSpan, fadeTime: TimeSpan) extends JsCmd {
-    def toJsCmd = (Show(where) & SetHtml(where, msg) & After(duration, Hide(where, fadeTime))).toJsCmd
+    def toJsCmd = (Show(where) & JqSetHtml(where, msg) & After(duration, Hide(where, fadeTime))).toJsCmd
   }
 
   object ModalDialog {
