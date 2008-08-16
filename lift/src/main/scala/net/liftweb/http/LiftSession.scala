@@ -351,9 +351,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
                     case Nil => xml
                     case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
                       val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                      val hasJQuery: Boolean = !(xml \\ "script").toList.filter(s => (s \ "@src").toList.map(_.text).mkString("").toLowerCase.indexOf("jquery") >= 0).isEmpty
-
-                      val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: (if (!hasJQuery) List(new AddScriptTag) else Nil) :_*)
+                      val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: Nil :_*)
                       xform.transform(xml)
                   }
 
