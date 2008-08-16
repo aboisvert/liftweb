@@ -123,6 +123,11 @@ object LiftRules {
   */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
 
+  /**
+  * The default location to send people if SiteMap access control fails
+  */
+  var siteMapFailRedirectLocation: List[String] = List()
+
   private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[LiftResponse] = {
     if (passNotFoundToChain) Empty
     else session match {

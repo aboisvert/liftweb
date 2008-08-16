@@ -22,14 +22,32 @@ import scala.xml._
 class Menu {
   def builder: NodeSeq = {
     S.request.map(_.buildMenu.lines match {
-      case Nil => Text("No Navigation Defined.")
-      case x :: xs => <ul>{x.items.flatMap(buildANavItem(_))}</ul>
-    }).openOr(Text("No Navigation Defined."))
+        case Nil => Text("No Navigation Defined.")
+        case x :: xs =>
+          val map = S.prefixedAttrsToMap("li")
+          val md = S.mapToAttrs(map)
+
+          <ul>{x.items.flatMap(buildANavItem(md, map))}</ul> %
+          S.prefixedAttrsToMetaData("ul")
+        
+      }).openOr(Text("No Navigation Defined."))
   }
 
-  private def buildANavItem(i: MenuItem) = i match {
-    case MenuItem(text, uri, true, _, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, true, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, _, _) => (<li><a href={uri}>{text}</a></li>)
+  private def buildANavItem(li: MetaData, liMap: Map[String, String])(i: MenuItem) = i match {
+    case MenuItem(text, uri, true, _, _) => 
+      (<li><span>{text}</span></li>) % S.prefixedAttrsToMetaData("li_item", liMap)
+    case MenuItem(text, uri, _, true, _) => 
+      (<li><a href={uri}>{text}</a></li>) % S.prefixedAttrsToMetaData("li_path", liMap)
+    case MenuItem(text, uri, _, _, _) => (<li><a href={uri}>{text}</a></li> % li)
+  }
+  
+  def item(text: NodeSeq): NodeSeq = 
+  for (name <- S.attr("name").toList;
+       request <- S.request.toList;
+       loc <- request.location.toList if loc.name != name;
+       item <- SiteMap.buildLink(name, text))
+  yield item match {
+    case e: Elem => e % S.prefixedAttrsToMetaData("a")
+    case x => x
   }
 }
