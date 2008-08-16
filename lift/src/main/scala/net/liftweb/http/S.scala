@@ -469,7 +469,7 @@ object S {
 
   def prefixedAttrsToMap(prefix: String, start: Map[String, String]):
   Map[String, String] =
-  attrs.flatMap {
+  attrs.reverse.flatMap {
     case (Right( (pre, name)), value) if pre == prefix => List((name, value))
     case _ => Nil
   }.foldRight(start){
