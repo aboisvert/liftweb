@@ -32,7 +32,7 @@ object CSSHelpers extends ControlHelpers {
    * @param rootPrefix - the prefix to be added
    */
   def fixCSS(in: BufferedReader, rootPrefix: String): Can[String] = {
-    tryo {
+    tryo ((t: Throwable) => Log.error("ERROR ", t)) {
       val tokens = new HashSet[String]();
       val res = new StringBuilder;
       var line: String = null;
@@ -50,6 +50,27 @@ object CSSHelpers extends ControlHelpers {
      (css /: tokens)((left, right) => left.replaceAll(right,  rootPrefix + right))
      
     } 
+  }
+  
+  
+  /**
+   * Fixes a CSS content provided by source parameter and writes int into dest
+   * @source - the CSS reader
+   * @dest - where to put the transformed CSS
+   * @rootPefix - the prefix to be added to root relative URL's
+   */
+  def fixCSSAndWrite(source: Reader, dest: Writer, rootPrefix: String) {
+    tryo ((t: Throwable) => Log.error("ERROR ", t)) {
+      fixCSS(new BufferedReader(source), rootPrefix) map (css => {
+          val pw = new PrintWriter(dest);
+          pw.print(css);
+          pw.flush
+        }
+      )
+    }
+    tryo {source close()}
+    tryo {dest close()}
+
   }
   
 }
