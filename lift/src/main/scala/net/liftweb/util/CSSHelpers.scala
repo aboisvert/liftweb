@@ -41,9 +41,11 @@ object CSSHelpers extends ControlHelpers {
         res append line + "\n"
       }
       
-     val css = res toString
-     val paths = "url\\([^\\)]*\\)".r.findAllIn(css) map (URLParser.parse(_))
-     tokens ++= paths.filter( !_.isEmpty ).map(_ open_!)
+     val css = res toString;
+     tokens ++= "url\\([^\\)]*\\)".r.findAllIn(css).
+       map(URLParser.parse(_)).
+       filter( !_.isEmpty ).
+       map(_ open_!)
     
      (css /: tokens)((left, right) => left.replaceAll(right,  rootPrefix + right))
      
