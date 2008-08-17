@@ -462,6 +462,9 @@ object S {
     def clear(name: String): Unit = rv.foreach(_ -= name)
   }
 
+  /**
+   * Get a list of current attributes
+   */
   def attrs: List[(Either[String, (String, String)], String)] = S._attrs.value match {
     case null => Nil
     case xs => xs
@@ -469,7 +472,7 @@ object S {
 
   def prefixedAttrsToMap(prefix: String, start: Map[String, String]):
   Map[String, String] =
-  attrs.flatMap {
+  attrs.reverse.flatMap {
     case (Right( (pre, name)), value) if pre == prefix => List((name, value))
     case _ => Nil
   }.foldRight(start){
