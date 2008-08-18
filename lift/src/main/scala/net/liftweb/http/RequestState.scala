@@ -69,8 +69,9 @@ object RequestState {
 
     //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Can[Array[Byte]]) =
     val paramCalculator = () =>
-    if (reqType.post_? && request.getContentType == "text/xml") {
-      (Nil,localParams, Nil, Full(readWholeStream(request.getInputStream)))
+    if ((reqType.post_? ||
+	 reqType.put_?) && request.getContentType == "text/xml") {
+      (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
         val mimeUpload = (new ServletFileUpload)
