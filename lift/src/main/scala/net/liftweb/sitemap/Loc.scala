@@ -275,13 +275,6 @@ implicit def nodeSeqToLinkText(in: => NodeSeq): LinkText = LinkText(() => in)
 case class CompleteMenu(lines: Seq[MenuItem]) {
   lazy val breadCrumbs: Seq[MenuItem] = lines.flatMap(_.breadCrumbs)
 }
-/*
-case class MenuLine(items: Seq[MenuItem]) {
-  private[sitemap] def breadCrumbs: Seq[MenuItem] = items.filter(_.path)
-}
-*/
-
-
 
 case class MenuItem(text: NodeSeq, uri: String,  kids: Seq[MenuItem],
                     current: Boolean,
