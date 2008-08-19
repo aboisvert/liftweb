@@ -47,6 +47,7 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
  
+  /*
   def buildThisLine(loc: Loc) = {
     val menuList = _parent.map(_.kids) openOr List(this)
     MenuLine(menuList.flatMap{
@@ -56,16 +57,27 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
       p.buildItem(same, same)
     })
   }
+  */
 
-  def buildChildLine = MenuLine(kids.flatMap(m => m.loc.buildItem(false, false)))
+  override def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
+  = {
+    val kids: List[MenuItem] = _parent.toList.flatMap(_.kids.toList.flatMap(m => m.loc.buildItem(if (m == this) populate else Nil, m == actual, m == pathAt)))
+    _parent.toList.flatMap(p => p.buildUpperLines(p, actual, kids))
+  }
+  // def buildChildLine: List[MenuItem] = kids.toList.flatMap(m => m.loc.buildItem(Nil, false, false))
+
+  /*
   override def buildUpperLines: Seq[MenuLine] = _parent match {
     case Full(p) => p.buildUpperLines.toList ::: p.buildAboveLine(this).toList
     case _ => Nil
   }
+  */
 
+  /*
   override def buildAboveLine(path: Menu): Seq[MenuLine] = _parent match {
     case Full(p) => List(MenuLine(p.kids.flatMap(m => m.loc.buildItem(false, m eq path))))
     case _ => Nil
   }
+  */
 }
 

@@ -89,15 +89,22 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     }
   } else false
 
-  def buildMenu: CompleteMenu = CompleteMenu(_menu.buildUpperLines.toList ::: 
+  def buildMenu: CompleteMenu = {
+    val theKids = _menu.kids.toList.flatMap(_.loc.buildItem(Nil, false, false))
+    
+    CompleteMenu(_menu.buildUpperLines(_menu, _menu, theKids))
+  }
+  /*
+  CompleteMenu(_menu.buildUpperLines.toList ::: 
                                              List(_menu.buildThisLine(this)) :::
                                              List(_menu.buildChildLine))
-
-  private[sitemap] def buildItem(current: Boolean, path: Boolean): Can[MenuItem] =
+                                             */
+                                            
+  private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Can[MenuItem] =
   (hidden, testAccess) match {
     case (false, Left(true)) =>
       link.createLink(Nil).map(t =>
-        MenuItem(text.text(),t , current, path,
+        MenuItem(text.text(),t, kids, current, path,
                  stuff.
                  flatMap
                  {
@@ -223,10 +230,20 @@ object Loc {
    * A companion object to create some variants on Link
    */
   object Link {
-    //def apply(uri: String, matchOnPrefix: Boolean): Link = new Link(uri, matchOnPrefix, alwaysTrue _, retString(uri) _ )
-    //def apply(uri: String): Link = new Link(uri, false, alwaysTrue _, retString(uri) _ )
+    def apply(urlLst: List[String], matchHead_? : Boolean, url: String) =
+    new Link(urlLst, matchHead_?) {
+    override def createLink(params: Seq[(String, String)]): Can[String] =
+    Full(url)
+  }
+    
   }
 
+object ExtLink {
+  def apply(url: String) = new Link(List(randomString(20)), false) {
+    override def createLink(params: Seq[(String, String)]): Can[String] =
+    Full(url)
+  }
+}
 
   trait LocInfoVal[T] {
     def value: T
@@ -254,14 +271,23 @@ implicit def nodeSeqToLinkText(in: => NodeSeq): LinkText = LinkText(() => in)
 }
 
 
-case class CompleteMenu(lines: Seq[MenuLine]) {
+
+case class CompleteMenu(lines: Seq[MenuItem]) {
   lazy val breadCrumbs: Seq[MenuItem] = lines.flatMap(_.breadCrumbs)
 }
+/*
 case class MenuLine(items: Seq[MenuItem]) {
   private[sitemap] def breadCrumbs: Seq[MenuItem] = items.filter(_.path)
 }
+*/
 
 
 
-case class MenuItem(text: NodeSeq, uri: String, current: Boolean,
-                    path: Boolean, info: List[Loc.LocInfoVal[(T forSome {type T})]])
+case class MenuItem(text: NodeSeq, uri: String,  kids: Seq[MenuItem],
+                    current: Boolean,
+                    path: Boolean, 
+                    info: List[Loc.LocInfoVal[(T forSome {type T})]])
+{
+  def breadCrumbs: Seq[MenuItem] = if (!path) Nil
+  else this :: kids.toList.flatMap(_.breadCrumbs)
+}
