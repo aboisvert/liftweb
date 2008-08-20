@@ -574,6 +574,17 @@ object JsCmds {
     }
   }
 
+object Function {
+  def apply(name: String, params: List[String], body: JsCmd): JsCmd =
+  new JsCmd {
+    def toJsCmd = "function "+name+"("+
+    params.mkString(", ")+""") {
+    """+body.toJsCmd+"""
+    }
+"""
+  }
+}
+
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+
     right.toJsCmd+";"
