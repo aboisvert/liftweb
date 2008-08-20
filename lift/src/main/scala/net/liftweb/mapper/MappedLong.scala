@@ -39,7 +39,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
   // private val _obj = FatLazy(if(defined_?) foreign.find(i_is_!) else Empty)
   lazy val obj: Can[O] = if(defined_?) foreign.find(i_is_!) else Empty
 
-  def dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
+  lazy val dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
 
   override def dbIndexed_? = true

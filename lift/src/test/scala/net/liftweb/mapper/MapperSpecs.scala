@@ -55,6 +55,17 @@ object MapperSpecs extends Specification {
  private def ignoreLogger(f: => AnyRef): Unit = ()
 }
 
+object SampleTag extends SampleTag with KeyedMetaMapper[Long, SampleTag]
+
+class SampleTag extends KeyedMapper[Long, SampleTag] {
+  def getSingleton = SampleTag // what's the "meta" server
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+  object tag extends MappedString(this, 32)
+  object model extends MappedLongForeignKey(this, SampleModel)
+}
+
 object SampleModel extends SampleModel with KeyedMetaMapper[Long, SampleModel] {
   override def dbAddTable = Full(populate _)
 
