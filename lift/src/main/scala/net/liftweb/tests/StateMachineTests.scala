@@ -16,18 +16,18 @@ import net.liftweb.machine._
 
 class StateMachineTests extends TestCase("State Machine Tests") {
   override def runTest() {
-    
+
     TestStateMachine.didExitInitial = false
     TestStateMachine.didEnterFirst = false
     TestStateMachine.didExitFirst = false
     TestStateMachine.didEnterSecond = false
-    
+
     val user = new User
     user.save
     TestStateMachine.stateEnumeration // cause the singleton to get loaded
     val tran = TestStateMachine.FirstTransition
     val toTest = TestStateMachine.createNewInstance(tran) {i => i.managedItem(user)}
-    
+
     assert(TestStateMachine.didExitInitial)
     assert(TestStateMachine.didEnterFirst)
     assert(!TestStateMachine.didExitFirst)
@@ -35,7 +35,7 @@ class StateMachineTests extends TestCase("State Machine Tests") {
     Thread.sleep(3000L)
     assert(TestStateMachine.didExitFirst)
     assert(TestStateMachine.didEnterSecond)
-    
+
     val toTest2 = TestStateMachine.find(toTest.id).open_!
     assert(toTest2.state == TestState.Second)
 
@@ -46,12 +46,12 @@ class StateMachineTests extends TestCase("State Machine Tests") {
 
 object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[TestStateMachine, TestState.type] {
   def managedMetaMapper = User
-  
+
   var didExitInitial = false
   var didEnterFirst = false
   var didExitFirst = false
   var didEnterSecond = false
-  
+
   def initialState = TestState.Initial
   protected def states = {
     (State(TestState.Initial, On({case FirstTransition => }, TestState.First)) exit {(a,b,c,d) => didExitInitial = true; true}) ::
@@ -64,15 +64,15 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
     (State(TestState.Third) entry (terminate) exit (terminate)) ::
     Nil
   }
-  
-  
+
+
   /**
    * Any transitions that are applied to all states can be listed here
    */
-  protected override def globalTransitions: List[ATransition] = Nil       
+  protected override def globalTransitions: List[ATransition] = Nil
 
   def stateEnumeration = TestState
-  
+
   protected def instantiate = new TestStateMachine
 
   /**
@@ -80,12 +80,12 @@ object TestStateMachine extends TestStateMachine with MetaProtoStateMachine[Test
    * specify a time
    */
   override def timedEventInitialWait = 1000L
-  
+
   /**
-   * After the initial test, how long do we wait 
+   * After the initial test, how long do we wait
    */
   override def timedEventPeriodicWait = 200L
-  
+
   case object FirstTransition extends Event
   case object TestEvent1 extends Event
   case object TestEvent2 extends Event
@@ -101,17 +101,17 @@ object TestState extends Enumeration {
 class TestStateMachine extends ProtoStateMachine[TestStateMachine, TestState.type] {
   def getSingleton = TestStateMachine
   def woof = "Hello"
-  
-  
+
+
   /**
    * This method is called on a transition from one state to another.  Override this method
-   * to perform an action.  Please call super to actually change the state and save the instance 
+   * to perform an action.  Please call super to actually change the state and save the instance
    */
   override def transition(from: StV, to: StV, why: Meta#Event): Unit = {
     Log.debug("Transition from "+from+" to "+to+" why "+why+" at "+timeNow)
     super.transition(from, to, why)
   }
-  
-  
-  object managedItem extends MappedLongForeignKey(this, User) 
+
+
+  object managedItem extends MappedLongForeignKey(this, User)
 }

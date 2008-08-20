@@ -23,9 +23,9 @@ object MsgStore extends MsgStore with KeyedMetaMapper[Long, MsgStore] {
 class MsgStore extends KeyedMapper[Long, MsgStore] {
   def getSingleton = MsgStore // what's the "meta" server
   def primaryKeyField = id
-  
+
   object id extends MappedLongIndex(this)
-  
+
   object message extends MappedString(this, 200)
   object who extends MappedLongForeignKey(this, User)
   object when extends MappedLong(this) {

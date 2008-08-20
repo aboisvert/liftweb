@@ -30,7 +30,7 @@ import scala.xml.{NodeSeq, Text, Group}
  *
  * http://www.paulgraham.com/arcchallenge.html
  *
- * This is one potential lift-based solution to it using StatefulSnippets. 
+ * This is one potential lift-based solution to it using StatefulSnippets.
  * There are doubtless many other ways.
  *
  * @author: Steve Jenson
@@ -45,7 +45,7 @@ class ArcChallenge extends StatefulSnippet {
     <p>
     Say Anything:
     {text("", p => phrase = p)}
-    {submit("Submit", ignore => dispatch = {case _ => xhtml => think})}
+    {submit("Submit", dispatch = {case _ => xhtml => think})}
     </p>
   }
 
@@ -53,7 +53,7 @@ class ArcChallenge extends StatefulSnippet {
    * Step 2: Show a link that takes you to the Phrase you entered.
    */
   def think = submit("Click here to see what you said",
-		     ignore => dispatch = {case _ => xhtml => answer})
+		     dispatch = {case _ => xhtml => answer})
 
   /**
    * Step 3: Show the phrase.

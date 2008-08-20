@@ -11,16 +11,17 @@ import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import javax.servlet.http.Cookie
 import js._
+import java.io.InputStream
 
-trait ToResponse extends ResponseIt {
+trait ToResponse extends LiftResponse {
   def out: Node
   def headers: List[(String, String)]
   def cookies: List[Cookie]
   def code: Int
   def docType: Can[String]
-  
+
   def toResponse = {
-    val encoding = 
+    val encoding =
     (out, headers.ciGet("Content-Type")) match {
     case (up: Unparsed,  _) => ""
     case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
@@ -31,44 +32,61 @@ trait ToResponse extends ResponseIt {
 			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
     case _ => ""
     }
-    
+
     val doc = docType.map(_ + "\n") openOr ""
-      
-    Response((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, cookies, code)
+
+    InMemoryResponse((encoding + doc + AltXML.toXML(out, false, false)).getBytes("UTF-8"), headers, cookies, code)
     }
 }
 
-trait ResponseIt {
-  def toResponse: Response
+trait LiftResponse {
+  def toResponse: BasicResponse
 }
 
-case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)], 
+case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
 			 cookies: List[Cookie], code: Int) extends ToResponse
-			
-			
-case class JsonResponse(json: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
+
+object JsonResponse {
+  def apply(json: JsExp): LiftResponse = JsonResponse(json, Nil, Nil, 200)
+}
+
+case class JsonResponse(json: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
 	def toResponse = {
 		val bytes = json.toJsCmd.getBytes("UTF-8")
-		Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
+		InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
 	}
 }
 
-case class Response(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends ResponseIt {
-  def toResponse = this
-  
-  override def toString="Response("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
+sealed trait BasicResponse extends LiftResponse {
+  def headers: List[(String, String)]
+  def cookies: List[Cookie]
+  def code: Int
+  def size: Long
 }
 
-case class RedirectResponse(uri: String, cookies: Cookie*) extends ResponseIt {
+final case class InMemoryResponse(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
+  def toResponse = this
+  def size = data.length
+  
+  override def toString="InMemoryResponse("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
+}
+
+final case class StreamingResponse(data: {def read(buf: Array[Byte]): Int}, onEnd: () => Unit, size: Long, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
+  def toResponse = this
+  
+    override def toString="StreamingResponse( steaming_data , "+headers+", "+cookies+", "+code+")"
+}
+
+case class RedirectResponse(uri: String, cookies: Cookie*) extends LiftResponse {
   // The Location URI is not resolved here, instead it is resolved with context path prior of sending the actual response
-  def toResponse = Response(Array(0), List("Location" -> uri), cookies toList, 302)
+  def toResponse = InMemoryResponse(Array(0), List("Location" -> uri), cookies toList, 302)
 }
 
 case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
 
 object RedirectState {
   //implicit def func2Can(f: () => Unit) = Can(f)
-  
+
   def apply(f: () => Unit, msgs: (String, NoticeType.Value)*): RedirectState = new RedirectState(Full(f), msgs :_*)
 }
 case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)

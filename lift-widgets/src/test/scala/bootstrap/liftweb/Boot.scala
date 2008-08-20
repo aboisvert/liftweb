@@ -22,6 +22,8 @@ import net.liftweb.sitemap.Loc._
 import Helpers._
 import net.liftweb.widgets.calendars._
 
+import net.liftweb.widgets.tree.TreeView
+
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -33,12 +35,13 @@ class Boot {
 
     // Build SiteMap
 
-    val entries = Menu(Loc("Home", "/", "Home")) ::
-      Menu(Loc("calmonth", "/calmonth", "CalendarMonthView")) ::
-      Menu(Loc("calweek", "/calweek", "CalendarWeekView")) ::
-      Menu(Loc("calday", "/calday", "CalendarDayView")) ::
-      Menu(Loc("rssfeed", "/rssfeed", "RSSFeed")) ::
-      Menu(Loc("gravatear", "/gravatar", "Gravatar")) ::
+    val entries = Menu(Loc("Home", List("index"), "Home")) ::
+      Menu(Loc("calmonth", List("calmonth"), "CalendarMonthView")) ::
+      Menu(Loc("calweek", List("calweek"), "CalendarWeekView")) ::
+      Menu(Loc("calday", List("calday"), "CalendarDayView")) ::
+      Menu(Loc("rssfeed", List("rssfeed"), "RSSFeed")) ::
+      Menu(Loc("gravatear", List("gravatar"), "Gravatar")) ::
+      Menu(Loc("tree", List("tree"), "Tree")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
@@ -46,6 +49,7 @@ class Boot {
     CalendarMonthView init;
     CalendarWeekView init;
     CalendarDayView init;
+    TreeView init
 
   }
 }

@@ -14,17 +14,17 @@ import scala.actors.Actor._
 import net.liftweb.util._
 
 /**
- *  This trait manages state/workflow transition 
+ *  This trait manages state/workflow transition
  */
-trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType], 
-			StateType <: Enumeration] extends KeyedMapper[long, MyType] 
+trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
+			StateType <: Enumeration] extends KeyedMapper[Long, MyType]
 {
   self: MyType =>
   /**
     * Shorthand for one of the states
     */
   type StV = StateType#Value
-  
+
   /**
     *  Shorthand for the meta state machine
     */
@@ -34,51 +34,51 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     * the primary key for the database
     */
   object id extends MappedLongIndex[MyType](this)
-  
+
   object inProcess extends MappedBoolean[MyType](this)
-  
+
   /**
     * get the primary key field
     */
   override def primaryKeyField = id
-  
+
   /**
     * Implement a method that returns the singleton
     */
   def getSingleton: Meta
-  
+
   /**
     * The column in the database that stores the current state
     */
   object currentState extends MappedInt[MyType](this)
-  
+
   /**
     * The column in the database that stores the next time an event should go off
     */
-  object timedEventAt extends MappedLong[MyType](this) 
-  
+  object timedEventAt extends MappedLong[MyType](this)
+
   object nextTransitionAt extends MappedLong[MyType](this) with LifecycleCallbacks {
     override def beforeSave {if (this.is < System.currentTimeMillis) this.set(-1L)}
     override def dbIndexed_?  = true
   }
-  
+
   def setupTime(when: TimeSpan) {
     val trigger = timedEventAt.is + when.millis
     if (trigger >= System.currentTimeMillis && (nextTransitionAt.is <= 0L || trigger < nextTransitionAt.is)) nextTransitionAt.set(trigger)
   }
-  
+
   /**
     * Get the current state
     */
   def state: StateType#Value = getSingleton.stateEnumeration(currentState.is)
-  
-  
+
+
   /**
     * This method is called on a transition from one state to another.  Override this method
-    * to perform an action.  Please call super to actually change the state and save the instance 
+    * to perform an action.  Please call super to actually change the state and save the instance
     */
   def transition(from: StV, to: StV, why: Meta#Event): Unit = this.currentState(to.id).inProcess(false).save
-  
+
   /**
     * This item has reached a terminating state.  This method will remove the
     * item from the database.  Override this method (please call super at the end of your method)
@@ -87,9 +87,9 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
   def terminate(from: StV,to: StV,event: Meta#Event): Unit = {
     this.delete_!
   }
-    
-  def !(event: Meta#Event): Unit = processEvent(event)  
-  
+
+  def !(event: Meta#Event): Unit = processEvent(event)
+
   /**
     * Process an event
     */
@@ -97,13 +97,13 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
     synchronized {
       eventQueue += event
     }
-    
+
     def processIt {
       val toProcess = synchronized {
         if (_isProcessing || eventQueue.isEmpty) None
         else {_isProcessing = true; Some(eventQueue.dequeue)}
       }
-      
+
       toProcess.foreach {
         event =>
         try {
@@ -114,34 +114,34 @@ trait ProtoStateMachine[MyType <: ProtoStateMachine[MyType, StateType],
         }
       }
     }
-    
+
     processIt
   }
-  
+
   private var _isProcessing = false
-  private val eventQueue = new Queue[Meta#Event] 
+  private val eventQueue = new Queue[Meta#Event]
 }
 
 /**
   * A singleton that implements this trait will manage transitions, etc. for the state machine instance
   */
-trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType], 
-                             StateType <: Enumeration] extends KeyedMetaMapper[long, MyType] with ProtoStateMachine[MyType, StateType] {
+trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
+                             StateType <: Enumeration] extends KeyedMetaMapper[Long, MyType] with ProtoStateMachine[MyType, StateType] {
   self: MyType =>
   /**
     * This method must be implemented.  It defines the states and legal state transitions
     */
   protected def states : List[Meta#State];
-  
+
   /**
     * Any transitions that are applied to all states can be listed here
     */
   protected def globalTransitions: List[Meta#ATransition]
-  
+
   // the state transition table
   private val stateInfo = new HashMap[StV, Seq[Meta#ATransition]]
   private val stateList = new HashMap[StV, Meta#State]
-                                      
+
   // process the states
   states.foreach {
     st =>
@@ -149,38 +149,38 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
     stateInfo(st.name) = st.trans ++ globalTransitions
     stateList(st.name) = st
   }
-                     
-                              
+
+
   /**
     * The default initial state
     */
   def initialState : StV
-  
+
   /**
     * The enumeration of states
     */
   def stateEnumeration: StateType
-  
+
   /**
     *  Terminate an instance
     */
   def terminate(what: MyType,from: StV,to: StV,event: Meta#Event) {what.terminate(from, to, event)}
-  
+
 
   protected def instantiate: MyType
 
-  def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, Empty)  
+  def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, Empty)
   def createNewInstance(firstEvent: Meta#Event, setup: Can[MyType => Unit]): MyType = {
     val state = instantiate
     setup.foreach(_(state))
     state.processEvent(firstEvent)
     state
   }
-  
+
   def createNewInstance(firstEvent: Meta#Event)(setup: MyType => Unit): MyType = createNewInstance(firstEvent, Full(setup))
 
-  
-  
+
+
   /**
     *  Process an event for an instance
     */
@@ -206,46 +206,46 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
       stateList.get(to).foreach(_.performEntry(who, old, to, what))
     }
   }
-                       
+
   class State(val name: StV,val trans: Seq[Meta#ATransition]) {
     def entry(act: (MyType, StV, StV, Meta#Event) => Any): Meta#State = {_entry = act :: _entry; this}
     def exit(act: (MyType, StV, StV, Meta#Event) => Any): Meta#State = {_exit = act :: _exit; this}
     private var _entry: List[(MyType, StV, StV, Meta#Event) => Any] = Nil
     private var _exit: List[(MyType, StV, StV, Meta#Event) => Any] = Nil
-    
+
     def performSetup(who: MyType) = trans.foreach(_.performSetup(who, name))
-    
+
     def performEntry(who: MyType, from: StV, to: StV, why: Meta#Event) {_entry.foreach(e => e(who, from, to, why))}
     def performExit(who: MyType, from: StV, to: StV, why: Meta#Event) {_exit.foreach(e => e(who, from, to, why))}
   }
-  
+
   object State {
     def apply(name: StV, trans: Meta#ATransition*) = new State(name, trans)
   }
-  
+
   abstract class ATransition(val to: StV,val on: PartialFunction[Meta#Event, Any]) {
     def testGuard(who: MyType, from: StV, to: StV, what: Meta#Event): Boolean =
       _guard.isEmpty || _guard.exists(_(who, from, to, what))
-      
+
     def performAction(who: MyType, from: StV, to: StV, what: Meta#Event) {
       _action.foreach(_(who, from, to, what))
     }
-    
+
     def performSetup(who: MyType, to: StV): Unit = _setup.foreach(_(who, to))
-      
+
     private var _setup: List[(MyType, StV) => Any] = Nil
-    private var _action: List[(MyType, StV, StV, Meta#Event) => Any] = Nil  
+    private var _action: List[(MyType, StV, StV, Meta#Event) => Any] = Nil
     private var _guard: List[(MyType, StV, StV, Meta#Event) => Boolean] = Nil
     def action(act: (MyType, StV, StV, Meta#Event) => Any): this.type = {_action = act :: _action; this}
     def guard(gurd: (MyType, StV, StV, Meta#Event) => Boolean): this.type = {_guard = gurd :: _guard; this}
     def setup(setp: (MyType, StV) => Any): this.type = {_setup = setp :: _setup; this}
   }
-  
+
   // case class TimeTransition(to: StV, time: TimeSpan) extends Transition
   case class After(when: TimeSpan, override val to: StV) extends ATransition(to, {case TimerEvent(len) if (when.millis <= len.millis) => true}) {
     setup ((what, state) => what.setupTime(when))
   }
-          
+
   case class TimerEvent(len: TimeSpan) extends Event {
     /**
        * An unhandled event has occurred.  By default, throw an exception.  However,
@@ -263,13 +263,13 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
        }
        if (who.nextTransitionAt.is == -1) super.unmatchedEventHandler(who, state)
        else who.inProcess(false).save
-     }    
+     }
   }
-  
+
   /// case class FirstTransition extends Event
-                                                  
+
   case class On(override val on: PartialFunction[Meta#Event, Any], override val to: StV) extends ATransition(to, on)
-  
+
   object Event {
     def unmatchedHandler: Can[(MyType, Meta#State, Event) => Any] = Empty
     def unmatchedEventHandler(who: MyType, state: Meta#State, event: Event) {
@@ -277,7 +277,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
       f(who, state, event)
     }
   }
-  
+
   abstract class Event {
     /**
        * An unhandled event has occurred.  By default, throw an exception.  However,
@@ -289,32 +289,32 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
      }
 
   }
-  
-  class DuplicateStateException(msg: String) extends Exception(msg) 
-  
+
+  class DuplicateStateException(msg: String) extends Exception(msg)
+
   class UnmatchedEventException(msg: String,val who: MyType,
                                     val what: Event)  extends Exception(msg)
-  
+
   /**
     * How long to wait to start looking for timed events.  Override this method to
     * specify a time
     */
   def timedEventInitialWait = 120000L
-  
+
   /**
-    * After the initial test, how long do we wait 
+    * After the initial test, how long do we wait
     */
   def timedEventPeriodicWait = 10000L
-  
+
   private class TimedEventManager(val metaOwner: Meta) extends Actor {
     def act = {
-      ActorPing.schedule(this, Ping, TimeSpan(timedEventInitialWait)) // give the system 2 minutes to "warm up" then start pinging  
+      ActorPing.schedule(this, Ping, TimeSpan(timedEventInitialWait)) // give the system 2 minutes to "warm up" then start pinging
       loop
     }
-    
+
     def loop {
       react {
-        case Ping => 
+        case Ping =>
         val now = System.currentTimeMillis
         try {
         val name = metaOwner.nextTransitionAt.dbColumnName
@@ -327,42 +327,42 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         } catch {
           case e => Log.error("State machine loop", e)
         }
-        ActorPing.schedule(this, Ping, TimeSpan(timedEventPeriodicWait)) 
+        ActorPing.schedule(this, Ping, TimeSpan(timedEventPeriodicWait))
         loop
-        
+
         case _ => loop
       }
     }
-    
+
     case object Ping
   }
-    
+
     private class TimedEventHandler(val metaOwner: Meta) extends Actor {
       def act = loop
-      
+
       def loop {
         react {
-          case (item: MyType, event: Event) => 
+          case (item: MyType, event: Event) =>
           try {
           item.processEvent(event)
           } catch {
             case e => Log.error("Timed Event Handler"+e)
           }
           loop
-          
+
           case _ => loop
         }
       }
-      
+
       case object Ping
-    }    
-  
+    }
+
   val timedEventManager: Actor = {
     val ret = new TimedEventManager(getSingleton)
     ret.start
     ret
   }
-  
+
   val timedEventHandler: Actor = {
     val ret = new TimedEventHandler(getSingleton)
     ret.start

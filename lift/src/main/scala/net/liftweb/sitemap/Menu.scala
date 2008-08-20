@@ -15,67 +15,69 @@ package net.liftweb.sitemap
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
- 
+
 import net.liftweb.http._
 import net.liftweb.util._
 import Helpers._
 
-case class Menu(page: Loc, kids: Menu*) extends HasKids {
+case class Menu(loc: Loc, kids: Menu*) extends HasKids {
   private[sitemap] var _parent: Can[HasKids] = Empty
-  
-  private[sitemap] def init {
+  private[sitemap] var siteMap: SiteMap = _
+
+  private[sitemap] def init(siteMap: SiteMap) {
+    this.siteMap = siteMap
     kids.foreach(_._parent = Full(this))
-    kids.foreach(_.init)
-    page.setMenu(this)
+    kids.foreach(_.init(siteMap))
+    loc.setMenu(this)
   }
-  
+
   private[sitemap] def validate {
     _parent.foreach(p => if (p.isRoot_?) throw new SiteMapException("Menu items with root location (\"/\") cannot have children"))
     kids.foreach(_.validate)
   }
-  
-  private[sitemap] def testParentAccess: (Boolean, Can[ResponseIt]) = _parent match {
-    case Full(p) => p.testAccess
-    case _ => (true, Empty)
-  }
-  
-  override private[sitemap] def testAccess: (Boolean, Can[ResponseIt]) = page.testAccess
-  
-  override def isRoot_? = page.isRoot_?
-      
-  def isAbsolute_? = page.isAbsolute_?
 
-  def findLoc(orgPath: ParsePath, path: List[String], req: RequestState): Can[Loc] = {
-    if (page.doesMatch_?(path, req)) Full(page)
-    else page.pathMatch(path) match {
-      case 0 => first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
-      case n =>
-      val p2 = path.drop(n)
-      first(kids.filter(!_.isAbsolute_?).toList)(_.findLoc(orgPath, p2, req)) or 
-         first(kids.filter(_.isAbsolute_?).toList)(_.findLoc(orgPath, orgPath.partPath, req))
-    }
+  private[sitemap] def testParentAccess: Either[Boolean, Can[LiftResponse]] = _parent match {
+    case Full(p) => p.testAccess
+    case _ => Left(true)
   }
-  
+
+  override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess 
+
+  def findLoc(req: RequestState): Can[Loc] = 
+  if (loc.doesMatch_?(req)) Full(loc)
+  else first(kids)(_.findLoc(req))
+ 
+  /*
   def buildThisLine(loc: Loc) = {
-    val menuList = _parent.map(_.kids.toList) openOr List(this)
+    val menuList = _parent.map(_.kids) openOr List(this)
     MenuLine(menuList.flatMap{
       mi =>
-      val p = mi.page
+      val p = mi.loc
       val same = loc eq p
-      p.buildItem(same, same).toList
+      p.buildItem(same, same)
     })
   }
-  
-  def buildChildLine = MenuLine(kids.toList.flatMap(m => m.page.buildItem(false, false).toList))
-  override def buildUpperLines: List[MenuLine] = _parent match {
-    case Full(p) => p.buildUpperLines ::: p.buildAboveLine(this)
+  */
+
+  override def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
+  = {
+    val kids: List[MenuItem] = _parent.toList.flatMap(_.kids.toList.flatMap(m => m.loc.buildItem(if (m == this) populate else Nil, m == actual, m == pathAt)))
+    _parent.toList.flatMap(p => p.buildUpperLines(p, actual, kids))
+  }
+  // def buildChildLine: List[MenuItem] = kids.toList.flatMap(m => m.loc.buildItem(Nil, false, false))
+
+  /*
+  override def buildUpperLines: Seq[MenuLine] = _parent match {
+    case Full(p) => p.buildUpperLines.toList ::: p.buildAboveLine(this).toList
     case _ => Nil
   }
-  
-  override def buildAboveLine(path: Menu): List[MenuLine] = _parent match {
-    case Full(p) => List(MenuLine(p.kids.toList.flatMap(m => m.page.buildItem(false, m eq path).toList)))
+  */
+
+  /*
+  override def buildAboveLine(path: Menu): Seq[MenuLine] = _parent match {
+    case Full(p) => List(MenuLine(p.kids.flatMap(m => m.loc.buildItem(false, m eq path))))
     case _ => Nil
   }
+  */
 }
 
-class SiteMapException(msg: String) extends Exception(msg)

@@ -21,7 +21,7 @@ import DB._
 import java.sql.Connection
 
 object Person extends Person with KeyedMetaMapper[Long,Person] {
-	
+
 }
 
 class Person extends KeyedMapper[Long,Person] {
@@ -41,7 +41,7 @@ object Personality extends Enumeration {
 	val TypeB = Value(2, "Type B")
 	val ENTJ = Value(3, "ENTJ")
 	val INTJ = Value(4, "INTJ")
-	
+
 	val allTypes = Array(TypeA, TypeB, ENTJ, INTJ)
 	def rand = allTypes(Helpers.randomInt(allTypes.length))
 }

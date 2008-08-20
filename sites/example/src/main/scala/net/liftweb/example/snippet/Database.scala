@@ -29,17 +29,17 @@ import net.liftweb.util._
   * This snippet handles counting
   */
 class Database {
-  
+
   /**
     * This method is invoked by the &lt;lift:Count /&gt; tag
     */
   def render(in: NodeSeq): NodeSeq = {
 	val count = Person.count()
-	val first = Person.find(OrderBy(Person.firstName, true), MaxRows[Person](1))
+	val first = Person.find(OrderBy(Person.firstName, Ascending), MaxRows[Person](1))
 	
-	bind("database", in, "count" --> count,
-	"first" --> first.map(_.asHtml).openOr(<b>No Persons in the system</b>),
-	"submit" --> submit("Create More Records", ignore => {
+	bind("database", in, "count" -> count,
+	"first" -> first.map(_.asHtml).openOr(<b>No Persons in the system</b>),
+	"submit" -> submit("Create More Records", {
 		val cnt = 10 + randomInt(50)
 		for (x <- 1 to cnt) Person.create.firstName(randomString(20)).lastName(randomString(20)).personalityType(Personality.rand).save
 		notice("Added "+cnt+" records to the Person table")

@@ -6,9 +6,10 @@ import org.scalacheck.Arbitrary
 import org.scalacheck.{Prop, Gen}
 import org.scalacheck.Gen._
 import org.scalacheck.Prop.{property}
+import org.specs.Scalacheck
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
-object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators {
+object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators with Scalacheck {
   "the findClass function" should {
     "return a Full can with the found class when given the name and package" in {
       findClass("ClassHelpersSpecTest", List("net.liftweb.util")) must_== Full(classOf[ClassHelpersSpecTest])
@@ -71,14 +72,14 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       def correspondingIndexInCamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
       def correspondingCharInCamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexInCamelCase(name, i))
 
-      val doesntContainUnderscores = forAll(underscoredStrings)((name: String) => !camelCase(name).contains('_'))  
+      val doesntContainUnderscores = forAll(underscoredStrings)((name: String) => !camelCase(name).contains('_'))
       val isCamelCased = forAll(underscoredStrings) ((name: String) => {
         name.forall(_ == '_') && camelCase(name).isEmpty ||
-        name.toList.zipWithIndex.forall { case (c, i) => 
-          c == '_' || 
+        name.toList.zipWithIndex.forall { case (c, i) =>
+          c == '_' ||
           correspondingIndexInCamelCase(name, i) == 0 && correspondingCharInCamelCase(name, i) == c.toUpperCase ||
-          !previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c || 
-          previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c.toUpperCase 
+          !previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c ||
+          previousCharacterIsUnderscore(name, i) && correspondingCharInCamelCase(name, i) == c.toUpperCase
        }
       })
       doesntContainUnderscores && isCamelCased must pass
@@ -94,7 +95,7 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
   "The camelCaseMethod function" should {
     "camelCase a name with the first letter being lower cased" in {
       val camelCasedMethodIsCamelCaseWithLowerCase = forAll(underscoredStrings){
-        (name: String) => 
+        (name: String) =>
         camelCase(name).isEmpty && camelCaseMethod(name).isEmpty ||
         camelCaseMethod(name).toList.head.isLowerCase && camelCase(name) == camelCaseMethod(name).capitalize
       }
@@ -153,7 +154,7 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
     "throw an exception if the method throws an exception" in {
       class SpecificException extends Exception
       class TestSnippet { def throwException = throw new SpecificException  }
-      val testSnippet = new TestSnippet 
+      val testSnippet = new TestSnippet
       invokeMethod(testSnippet.getClass, testSnippet, "throwException") must throwA(new SpecificException)
     }
   }

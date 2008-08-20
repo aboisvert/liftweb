@@ -6,13 +6,13 @@ import scala.actors.Actor
 import scala.actors.Actor.{react}
 import com.hellolift.model.Entry
 
-/** 
+/**
  * An asynchronous cache for Blog Entries built on top of Scala Actors.
  */
 class BlogCache extends Actor {
   def act = loop(Map(), Map())
 
-  def getEntries(id : Long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, false), MaxRows(20))
+  def getEntries(id : Long) : List[Entry] = Entry.findAll(By(Entry.author, id), OrderBy(Entry.id, Descending), MaxRows(20))
 
   /**
    * This will seem strange to imperative programmers who are expecting the
@@ -29,7 +29,7 @@ class BlogCache extends Actor {
 	cache += (id -> blog)
         sessions += (id -> (me :: sessions.getOrElse(id, Nil)))
         loop(cache, sessions)
-      case AddEntry(e, id) => 
+      case AddEntry(e, id) =>
 	// When an Entry is added, place it into the cache and reply to the clients with it.
 	cache += (id -> (e :: cache.getOrElse(id, getEntries(id))))
         // Now we have to notify all the listeners

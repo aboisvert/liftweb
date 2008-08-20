@@ -13,7 +13,7 @@
 * See the License for the specific language governing permissions
 * and limitations under the License.
 */
- 
+
 package net.liftweb.http;
 
 import net.liftweb.util._
@@ -29,42 +29,42 @@ import java.io.ByteArrayOutputStream
 
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
-  
-  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[ResponseIt]];
+
+  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[LiftResponse]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
   type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), ResponseIt]
+  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
-  
+
   /**
   * A partial function that allows the application to define requests that should be
   * handled by lift rather than the default servlet handler
   */
   type LiftRequestPf = PartialFunction[RequestState, Boolean]
-  
+
   private var _early: List[(HttpServletRequest) => Any] = Nil
-  private[http] var _beforeSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
-  
-  def appendBeforeSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
+  private[http] var _beforeSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
+
+  def appendBeforeSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _beforeSend = _beforeSend ::: List(f)
   }
-  
+
   /**
   * The path to handle served resources
   */
   var ResourceServerPath = "classpath"
-  
+
   /**
    * Use this PartialFunction to to automatically add static URL parameters
-   * to any URL reference from the markup of Ajax request.  
+   * to any URL reference from the markup of Ajax request.
    */
   var urlDecorate: URLDecorator = {case arg => arg}
-  
-  private[http] var _afterSend: List[(Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
-  
-  def appendAfterSend(f: (Response, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
+
+  private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
+
+  def appendAfterSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
 
@@ -72,9 +72,9 @@ object LiftRules {
   * A partial function that determines content type based on an incoming
   * RequestState and Accept header
   */
-  var determineContentType: 
+  var determineContentType:
   PartialFunction[(Can[RequestState], Can[String]), String] = {
-    case (_, Full(accept)) if accept.toLowerCase.contains("application/xhtml+xml") => 
+    case (_, Full(accept)) if accept.toLowerCase.contains("application/xhtml+xml") =>
       "application/xhtml+xml"
 
     case _ => "text/html"
@@ -85,7 +85,7 @@ object LiftRules {
    * Hooks to be run when LiftServlet.destroy is called.
    */
   val unloadHooks = new ListBuffer[() => Unit]()
-  
+
   /**
    * For each unload hook registered, run them during destroy()
    */
@@ -105,43 +105,48 @@ object LiftRules {
   * 8MB
   */
   var maxMimeSize: Long = 8 * 1024 * 1024
-  
+
   /**
   * Should pages that are not found be passed along the servlet chain to the
   * next handler?
   */
   var passNotFoundToChain = true
-  
+
   /**
   * The maximum allowed size of a single file in a mime multi-part POST.
   * Default 7MB
   */
   var maxMimeFileSize: Long = 7 * 1024 * 1024
-  
+
   /**
   * The function referenced here is called if there's a localization lookup failure
   */
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
-    
-  private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[Response] = {
+
+  /**
+  * The default location to send people if SiteMap access control fails
+  */
+  var siteMapFailRedirectLocation: List[String] = List()
+
+  private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[LiftResponse] = {
     if (passNotFoundToChain) Empty
     else session match {
-      case Full(session) => Full(session.checkRedirect(requestState.createNotFound).toResponse)
-      case _ => Full(requestState.createNotFound.toResponse)
+      case Full(session) => Full(session.checkRedirect(requestState.createNotFound))
+      case _ => Full(requestState.createNotFound)
     }
   }
-  
+
   var liftTagProcessing: LiftTagPF = Map.empty
-  
+
   /**
   * If you don't want lift to send the application/xhtml+xml mime type to those browsers
   * that understand it, then set this to {@code false}
   */
   var useXhtmlMimeType: Boolean = true
-  
-  
+
+
   private def _stringToXml(s: String): NodeSeq = Text(s)
-  
+
   /**
   * A function that defines how a String should be converted to XML
   * for the localization stuff.  By default, Text(s) is returned,
@@ -149,84 +154,84 @@ object LiftRules {
   * return the NodeSeq.
   */
   var localizeStringToXml: String => NodeSeq = _stringToXml _
-  
+
   /**
   * The base name of the resource bundle
   */
   var resourceName = "lift"
-  
+
   /**
   * The base name of the resource bundle of the lift core code
   */
   var liftCoreResourceName = "i18n.lift-core"
-  
+
   /**
   * Where to send the user if there's no comet session
   */
   var noCometSessionPage = "/"
-  
+
   /**
   * Put a function that will calculate the request timeout based on the
   * incoming request.
   */
   var calcRequestTimeout: Can[RequestState => Int] = Empty
-  
+
   /**
   * If you want the standard (non-AJAX) request timeout to be something other than
   * 10 seconds, put the value here
   */
   var stdRequestTimeout: Can[Int] = Empty
-  
+
   /**
   * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
   */
   var ajaxRequestTimeout: Can[Int] = Empty
-  
+
   /**
   * Meta information for the notices that are applied via Ajax response
   */
   var ajaxNoticeMeta: Can[AjaxMessageMeta] = Empty
-  
+
   /**
   * Meta information for the warnings that are applied via Ajax response
   */
   var ajaxWarningMeta: Can[AjaxMessageMeta] = Empty
-  
+
   /**
   * Meta information for the errors that are applied via Ajax response
   */
   var ajaxErrorMeta: Can[AjaxMessageMeta] = Empty
-  
+
   /**
   * If the request times out (or returns a non-Response) you can
   * intercept the response here and create your own response
   */
-  var requestTimedOut: Can[(RequestState, Any) => Can[Response]] = Empty
-  
+  var requestTimedOut: Can[(RequestState, Any) => Can[LiftResponse]] = Empty
+
   def early = {
     // test_boot
     _early
   }
-  
+
   /**
   * A function that takes the current HTTP request and returns the current
   */
   var timeZoneCalculator: Can[HttpServletRequest] => TimeZone =
   defaultTimeZoneCalculator _
-  
+
   def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone =
   TimeZone.getDefault
-  
-  
+
+
   /**
   * A function that takes the current HTTP request and returns the current
   */
   var localeCalculator: Can[HttpServletRequest] => Locale = defaultLocaleCalculator _
-  
+
   def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
-  
-  
-  val (hasJetty_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
+
+
+  val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
       val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
       val meth = cc.getMethod("getContinuation", classOf[HttpServletRequest], classOf[AnyRef])
@@ -240,13 +245,13 @@ object LiftRules {
       case e => (false, null, null, null, null, null, null)
     }
   }
-  
+
   def resumeRequest(what: AnyRef, req: HttpServletRequest) {
     val cont = getContinuation.invoke(contSupport, req, LiftRules)
     setObject.invoke(cont, what)
     resume.invoke(cont)
   }
-  
+
   def doContinuation(req: HttpServletRequest, timeout: Long): Nothing = {
     try {
       val cont = getContinuation.invoke(contSupport, req, LiftRules)
@@ -258,9 +263,9 @@ object LiftRules {
       throw e.getCause
     }
   }
-  
-  def checkJetty(req: HttpServletRequest): Option[Any] = {
-    if (!hasJetty_?) None
+
+  def checkContinuations(req: HttpServletRequest): Option[Any] = {
+    if (!hasContinuations_?) None
     else {
       val cont = getContinuation.invoke(contSupport, req, LiftRules)
       val ret = getObject.invoke(cont)
@@ -268,24 +273,24 @@ object LiftRules {
       Some(ret)
     }
   }
-  
+
   private var _sitemap: Can[SiteMap] = Empty
-  
+
   def setSiteMap(sm: SiteMap) {_sitemap = Full(sm)}
   def siteMap: Can[SiteMap] = _sitemap
-  
+
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
-  
+
   var ending = false
   private case object Never
-  
+
   private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
     case Nil => last
     case x :: xs => x orElse rpf(xs, last)
   }
-  
+
   var statelessDispatchTable: DispatchPf = Map.empty
-  
+
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
     req match {
       case null => dispatchTable_i
@@ -297,7 +302,7 @@ object LiftRules {
       }
     }
   }
-  
+
   def rewriteTable(req: HttpServletRequest): RewritePf = {
     req match {
       case null => rewriteTable_i
@@ -306,12 +311,12 @@ object LiftRules {
           rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
         }
         case _ => rewriteTable_i
-      } 
+      }
     }
   }
-  
+
   def snippetTable: SnippetPf = snippetTable_i
-  
+
   def templateTable(req: HttpServletRequest): TemplatePf = {
     req match {
       case null => templateTable_i
@@ -323,15 +328,15 @@ object LiftRules {
       }
     }
   }
-  
+
   var ajaxPath = "ajax_request"
-  
+
   var cometPath = "comet_request"
-  
+
   private var _context: ServletContext = _
-  
+
   def context: ServletContext = synchronized {_context}
-  
+
   def setContext(in: ServletContext): Unit =  synchronized {
     if (in ne _context) {
       // Helpers.setResourceFinder(in.getResource)
@@ -339,16 +344,16 @@ object LiftRules {
       //   performBoot(in)
     }
   }
-  
+
   private var otherPackages: List[String] = Nil
-  
+
   def buildPackage(end: String)  = synchronized (otherPackages.map(_+"."+end))
-  
+
   def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}
-  
+
   private val defaultFinder = getClass.getResource _
   private def resourceFinder(name: String): java.net.URL = _context.getResource(name)
-  
+
   def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
   def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
@@ -367,9 +372,9 @@ object LiftRules {
   }
   def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s => PCDataXmlParser(s))
   def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
-  
-  
-  
+
+
+
   def finder(name: String): Can[InputStream] = {
     LiftRules.context match {
       case null => Empty
@@ -379,77 +384,77 @@ object LiftRules {
       }
     }
   }
-  
+
   /**
   * Get the partial function that defines if a request should be handled by
   * the application (rather than the default servlet handler)
   */
   def isLiftRequest_? : LiftRequestPf = i_isLiftRequest_?
-  
+
   /**
   * Append a partial function to the list of interceptors to test
   * if the request should be handled by lift
   */
   def addLiftRequest(what: LiftRequestPf) {i_isLiftRequest_? = i_isLiftRequest_? orElse what}
-  
+
   private var i_isLiftRequest_? : LiftRequestPf = Map.empty
-  
+
   private var dispatchTable_i : DispatchPf = Map.empty
-  
+
   private var rewriteTable_i : RewritePf = Map.empty
-  
+
   private var templateTable_i: TemplatePf = Map.empty
-  
+
   private var snippetTable_i: SnippetPf = Map.empty
-  
+
   var cometLoggerBuilder: () => LiftLogger = () => {
     val ret = LogBoot.loggerByName("comet_trace")
     ret.level = LiftLogLevels.Off
     ret
   }
-  
+
   lazy val cometLogger: LiftLogger = cometLoggerBuilder()
-  
+
   def addSnippetBefore(pf: SnippetPf) = {
     snippetTable_i = pf orElse snippetTable_i
     snippetTable_i
   }
-  
+
   def addSnippetAfter(pf: SnippetPf) = {
     snippetTable_i = snippetTable_i orElse pf
     snippetTable_i
   }
-  
+
   def addTemplateBefore(pf: TemplatePf) = {
     templateTable_i = pf orElse templateTable_i
     templateTable_i
   }
-  
+
   def addTemplateAfter(pf: TemplatePf) = {
     templateTable_i = templateTable_i orElse pf
     templateTable_i
   }
-  
+
   def addRewriteBefore(pf: RewritePf) = {
     rewriteTable_i = pf orElse rewriteTable_i
     rewriteTable_i
   }
-  
+
   def addRewriteAfter(pf: RewritePf) = {
     rewriteTable_i = rewriteTable_i orElse pf
     rewriteTable_i
   }
-  
+
   def addDispatchBefore(pf: DispatchPf) = {
     dispatchTable_i = pf orElse dispatchTable_i
     dispatchTable_i
   }
-  
+
   def addDispatchAfter(pf: DispatchPf) = {
     dispatchTable_i = dispatchTable_i orElse pf
     dispatchTable_i
   }
-  
+
   /**
   * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
   */
@@ -457,37 +462,47 @@ object LiftRules {
   convertResponse((XhtmlResponse(Group(session.fixHtml(ns)),
   ResponseInfo.docType(session),
   headers, cookies, 200), headers, cookies, session))
-  
+
   var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
     case _ => List(("Expires", "0"))
   }
-  
+
+  def performTransform(in: LiftResponse): LiftResponse =
+    responseTransformers.foldLeft(in){
+      case (in, pf: PartialFunction[LiftResponse, LiftResponse]) => 
+	if (pf.isDefinedAt(in)) pf(in) else in
+      case (in, f) => f(in)
+    }
+
+  var responseTransformers: List[LiftResponse => LiftResponse] =
+    Nil
+
   /**
   * convertResponse is a PartialFunction that reduces a given Tuple4 into a
-  * ResponseIt that can then be sent to the browser.
+  * LiftResponse that can then be sent to the browser.
   */
-  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), Response] = {
-    case (r: ResponseIt, _, _, _) => r.toResponse
+  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), LiftResponse] = {
+    case (r: LiftResponse, _, _, _) => r
     case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: Node, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: NodeSeq, headers, cookies, session) => cvt(Group(ns), headers, cookies, session)
     case (SafeNodeSeq(n), headers, cookies, session) => cvt(Group(n), headers, cookies, session)
-    
+
     case (Full(o), headers, cookies, session) => convertResponse( (o, headers, cookies, session) )
-    
+
     case (Some(o), headers, cookies, session) => convertResponse( (o, headers, cookies, session) )
-    case (bad, _, _, session) => session.createNotFound.toResponse
+    case (bad, _, _, session) => session.createNotFound
   }
-  
+
   /**
   * Set a snippet failure handler here.  The class and method for the snippet are passed in
   */
   var snippetFailedFunc: List[SnippetFailure => Unit] = logSnippetFailure _ :: Nil
-  
+
   private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
-  
+
   case class SnippetFailure(page: String, typeName: Can[String], failure: SnippetFailures.Value)
-  
+
   object SnippetFailures extends Enumeration {
     val NoTypeDefined = Value(1, "No Type Defined")
     val ClassNotFound = Value(2, "Class Not Found")
@@ -495,16 +510,16 @@ object LiftRules {
     val MethodNotFound = Value(4, "Method Not Found")
     val NoNameSpecified = Value(5, "No Snippet Name Specified")
   }
-  
+
   /**
   * The function that deals with how exceptions are presented to the user during processing
   * of an HTTP request.  Put a new function here to change the behavior.
   *
-  * The function takes the RequestState and the Exception and returns a ResponseIt that's
+  * The function takes the RequestState and the Exception and returns a LiftResponse that's
   * sent to the browser.
   */
-  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => ResponseIt = showException
-  
+  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => LiftResponse = showException
+
   /**
   * The partial function (pattern matching) for handling converting an exception to something to
   * be sent to the browser depending on the current RunMode (development, etc.)
@@ -512,20 +527,20 @@ object LiftRules {
   * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
   * so that your response over-rides the default, but the processing falls through to the default.
   */
-  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), ResponseIt] = {
+  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), LiftResponse] = {
     case (Props.RunModes.Development, r, e) =>
     XhtmlResponse((<html><body>Exception occured while processing {r.uri}
     <pre>{
       _showException(e)
     }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
-    
+
     case (_, r, e) =>
     XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri}
     </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
   }
-  
+
   /**
-  * The partial function for defining the behavior of what happens when 
+  * The partial function for defining the behavior of what happens when
   * URI is invalid and you're not using a site map
   *
   * It is strongly recommended to use partial functions composition like:
@@ -534,8 +549,8 @@ object LiftRules {
   var uriNotFound: URINotFoundPF = {
     case (RequestMatcher(r, _), _) => RequestState.defaultCreateNotFound(r)
   }
-  
-  
+
+
   /**
   * A utility method to convert an exception to a string of stack traces
   * @param le the exception
@@ -545,22 +560,22 @@ object LiftRules {
   def _showException(le: Throwable): String = {
     val ret = "Message: "+le.toString+"\n\t"+
     le.getStackTrace.map(_.toString).mkString("\n\t") + "\n"
-    
+
     val also = le.getCause match {
       case null => ""
       case sub: Throwable => "\nCaught and thrown by:\n"+ _showException(sub)
     }
-    
+
     ret + also
   }
-  
-  private def showException(r: RequestState, e: Throwable): ResponseIt = {
+
+  private def showException(r: RequestState, e: Throwable): LiftResponse = {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
-  
+
   var onBeginServicing: List[RequestState => Unit] = Nil
-  var onEndServicing: List[(RequestState, Can[ResponseIt]) => Unit] = Nil
+  var onEndServicing: List[(RequestState, Can[LiftResponse]) => Unit] = Nil
 }
 
 case object BreakOut

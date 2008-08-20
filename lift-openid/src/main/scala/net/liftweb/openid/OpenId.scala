@@ -37,12 +37,11 @@ import util._
 
 import scala.xml.{NodeSeq, Text}
 
-/**
-  * A session var that keeps track of the OpenID object through the request/response
-  */
-object OpenIdObject extends SessionVar[OpenIDConsumer](new AnyRef with OpenIDConsumer)
-
-trait OpenIdVendor extends  {
+trait OpenIdVendor {
+  type UserType
+  
+  type ConsumerType <: OpenIDConsumer[UserType]
+  
   private object RedirectBackTo extends SessionVar[Can[String]](Empty)
   val PathRoot = "openid"
   
@@ -60,15 +59,22 @@ trait OpenIdVendor extends  {
   
   def postUrl = "/"+ PathRoot + "/" + LoginPath
   
-  def currentUser: Can[Identifier]
-
+  /**
+  * A session var that keeps track of the OpenID object through the request/response
+  */
+  object OpenIdObject extends SessionVar[ConsumerType](createAConsumer)
+  
+  def createAConsumer: ConsumerType
+  
+  def currentUser: Can[UserType]
+  
   def snippetPf: LiftRules.SnippetPf = {
     case SnippetPrefix :: "ifLoggedIn" :: Nil => showIfLoggedIn
     case SnippetPrefix :: "ifLoggedOut" :: Nil => showIfLoggedOut
     case SnippetPrefix :: "userBox" :: Nil => showUserBox
   }
   
-  def displayUser(id: Identifier): NodeSeq = Text("Welcome "+id)
+  def displayUser(id: UserType): NodeSeq
   
   def logoutLink: NodeSeq = <xml:group> <a href={"/"+PathRoot+"/"+LogOutPath}>Log Out</a></xml:group>
   
@@ -78,9 +84,9 @@ trait OpenIdVendor extends  {
   
   def showUserBox(ignore: NodeSeq): NodeSeq = <div class="openidbox">{
     currentUser match {
-    case Full(user) => displayUser(user) ++ logoutLink
-    case _ => loginForm 
-  }
+      case Full(user) => displayUser(user) ++ logoutLink
+      case _ => loginForm
+    }
   }</div>
   
   def showIfLoggedIn(in: NodeSeq): NodeSeq = currentUser match {
@@ -95,6 +101,20 @@ trait OpenIdVendor extends  {
   
   def logUserOut(): Unit
   
+/**
+ * Try to log a user into the system with a given openId
+ */
+def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse) {
+  val oid = OpenIdObject.is
+  oid.onComplete = Full(onComplete)
+
+  throw ResponseShortcutException.shortcutResponse(try {
+      oid.authRequest(openId, "/"+PathRoot+"/"+ResponsePath)
+    } catch {
+      case e: Exception => onComplete(Empty, Empty, Full(e))
+    })
+}
+  
   def dispatchPf: LiftRules.DispatchPf = {
     case RequestMatcher(RequestState(PathRoot :: LogOutPath :: Nil, "", _), _) =>
     req => {
@@ -106,8 +126,8 @@ trait OpenIdVendor extends  {
     if r.param(PostParamName).isDefined =>
     req => {
       try {
-      RedirectBackTo(S.referer)
-    Full(OpenIdObject.is.authRequest(r.param(PostParamName).get, "/"+PathRoot+"/"+ResponsePath))
+        RedirectBackTo(S.referer)
+        Full(OpenIdObject.is.authRequest(r.param(PostParamName).get, "/"+PathRoot+"/"+ResponsePath))
       } catch {
         case e => S.error("OpenID Failure: "+e.getMessage)
         // FIXME -- log the name and the error
@@ -118,14 +138,24 @@ trait OpenIdVendor extends  {
     case RequestMatcher(r @ RequestState(PathRoot :: ResponsePath :: Nil, "", _), _) =>
     req => {
       val (id, res) = OpenIdObject.is.verifyResponse(req.request)
-      postLogin(id, res)
-      val rb = RedirectBackTo.is
-      Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
+      
+      OpenIdObject.onComplete match {
+        case Full(f) => Full(f(id, Full(res), Empty))
+        
+        case _ => postLogin(id, res)
+        val rb = RedirectBackTo.is
+        Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
+      }
+      
+      
     }
   }
 }
 
 trait SimpleOpenIdVendor extends OpenIdVendor {
+  type UserType = Identifier
+  type ConsumerType = OpenIDConsumer[UserType]
+  
   def currentUser = OpenIdUser.is
   
   def postLogin(id: Can[Identifier],res: VerificationResult): Unit = {
@@ -141,6 +171,10 @@ trait SimpleOpenIdVendor extends OpenIdVendor {
   def logUserOut() {
     OpenIdUser.remove
   }
+  
+  def displayUser(in: UserType): NodeSeq = Text("Welcome "+in)
+  
+  def createAConsumer = new AnyRef with OpenIDConsumer[UserType]
 }
 
 object SimpleOpenIdVendor extends SimpleOpenIdVendor
@@ -150,16 +184,20 @@ object SimpleOpenIdVendor extends SimpleOpenIdVendor
 object OpenIdUser extends SessionVar[Can[Identifier]](Empty)
 
 /** * Sample Consumer (Relying Party) implementation.  */
-trait OpenIDConsumer
+trait OpenIDConsumer[UserType]
 {
   val manager = new ConsumerManager
   
+  var onComplete: Can[(Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse] = Empty 
+  
   // --- placing the authentication request ---
-  def authRequest(userSuppliedString: String, targetUrl: String): ResponseIt =
+  def authRequest(userSuppliedString: String, targetUrl: String): LiftResponse =
   {
     // configure the return_to URL where your application will receive
     // the authentication responses from the OpenID provider
     val returnToUrl = S.hostAndPath + targetUrl
+
+    Log.info("Creating openId auth request.  returnToUrl: "+returnToUrl)
     
     // perform discovery on the user-supplied identifier
     val discoveries = manager.discover(userSuppliedString)
@@ -207,10 +245,10 @@ trait OpenIDConsumer
 	    <body onload="document.forms['openid-form-redirection'].submit();">
 	    <form name="openid-form-redirection" action={authReq.getDestinationUrl(false)} method="post" accept-charset="utf-8">
 	    {
-        info.map{ case(key, value) => 
+        info.map{ case(key, value) =>
           <input type="hidden" name={key} value={value}/>
         }
-	    }       
+	    }
 	    <button type="submit">Continue...</button>
 	    </form>
 	    </body>
@@ -229,6 +267,7 @@ trait OpenIDConsumer
     // retrieve the previously stored discovery information
     val discovered = httpReq.getSession().getAttribute("openid-disc") match {
       case d: DiscoveryInformation => d
+      case null => throw ResponseShortcutException.redirect("/")
     }
     
     // extract the receiving URL from the HTTP request

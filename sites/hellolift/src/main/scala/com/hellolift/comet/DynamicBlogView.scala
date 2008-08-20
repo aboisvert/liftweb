@@ -11,7 +11,7 @@ import com.hellolift.controller.BlogCache
 import com.hellolift.controller.BlogUpdate
 import com.hellolift.controller.AddBlogWatcher
 
-class DynamicBlogView(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends 
+class DynamicBlogView(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends
 CometActor(theSession, name, defaultXml, attributes) {
   def defaultPrefix = "blog"
   var blogtitle = ""
@@ -30,7 +30,7 @@ CometActor(theSession, name, defaultXml, attributes) {
     bind("view" -> <span>{blog.flatMap(e => _entryview(e))}</span>)
   }
 
-  // localSetup is the first thing run, we use it to setup the blogid or 
+  // localSetup is the first thing run, we use it to setup the blogid or
   // redirect them to / if no blogid was given.
   override def localSetup {
     name match {
@@ -39,10 +39,10 @@ CometActor(theSession, name, defaultXml, attributes) {
 
     // Let the BlogCache know that we are watching for updates for this blog.
     (BlogCache.cache !? AddBlogWatcher(this, this.blogid)) match {
-      case BlogUpdate(entries) => this.blog = entries 
+      case BlogUpdate(entries) => this.blog = entries
     }
   }
-  
+
   // lowPriority will receive messages sent from the BlogCache
   override def lowPriority : PartialFunction[Any, Unit] = {
     case BlogUpdate(entries : List[Entry]) => this.blog = entries; reRender(false)

@@ -8,9 +8,10 @@ import org.scalacheck.Prop._
 import org.scalacheck.Arbitrary
 import org.specs.Products._
 import org.specs.mock.Mocker
+import org.specs.Scalacheck
 
 class TimeHelpersTest extends Runner(TimeHelpersSpec) with JUnit with Console with ScalaTest
-object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation {
+object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation with ControlHelpers with ClassHelpers {
   "A TimeSpan" can {
     "be created from a number of milliseconds" in {
       TimeSpan(3000) must_== TimeSpan(3 * 1000)
@@ -70,14 +71,14 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     }
     "have a toString method returning the relevant number of weeks, days, hours, minutes, seconds, millis" in {
       val conversionIsOk = forAll(timeAmounts)((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
-        timeSpanAmounts forall { case (amount, unit) => 
-          amount >= 1  && 
+        timeSpanAmounts forall { case (amount, unit) =>
+          amount >= 1  &&
           timeSpanToString.contains(amount.toString) || true }
       })
       val timeSpanStringIsPluralized = forAll(timeAmounts)((t: TimeAmounts) => { val (timeSpanToString, timeSpanAmounts) = t
-        timeSpanAmounts forall { case (amount, unit) =>  
-               amount > 1  && timeSpanToString.contains(unit + "s") || 
-               amount == 1 && timeSpanToString.contains(unit) || 
+        timeSpanAmounts forall { case (amount, unit) =>
+               amount > 1  && timeSpanToString.contains(unit + "s") ||
+               amount == 1 && timeSpanToString.contains(unit) ||
                amount == 0 && !timeSpanToString.contains(unit)
         }
       })
@@ -101,7 +102,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       weeks(3) must_== 3 * 7 * 24 * 60 * 60 * 1000
     }
     "provide a noTime function on Date objects to transform a date into a date at the same day but at 00:00" in {
-      hourFormat(timeNow.noTime) must_== "00:00:00"      
+      hourFormat(timeNow.noTime) must_== "00:00:00"
     }
     "provide a day function returning the day of month corresponding to a given date (relative to UTC)" in {
       day(today.setTimezone(utc).setDay(3).getTime) must_== 3
@@ -116,7 +117,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       millisToDays(new Date(0).getTime) must_== 0
       millisToDays(today.setYear(1970).setMonth(0).setDay(1).getTime.getTime) must_== 0 // the epoch time
       // on the 3rd day after the epoch time, 2 days are passed
-      millisToDays(today.setTimezone(utc).setYear(1970).setMonth(0).setDay(3).getTime.getTime) must_== 2  
+      millisToDays(today.setTimezone(utc).setYear(1970).setMonth(0).setDay(3).getTime.getTime) must_== 2
     }
     "provide a daysSinceEpoch function returning the number of days since the epoch time" in {
       daysSinceEpoch must_== millisToDays(now.getTime)
@@ -125,16 +126,16 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
       time(1000) must_== new Date(1000)
     }
     "provide a calcTime function returning the time taken to evaluate a block in millis and the block's result" in {
-      val (time, result) = calcTime((1 to 10).reduceLeft[Int](_ + _)) 
+      val (time, result) = calcTime((1 to 10).reduceLeft[Int](_ + _))
       time.toInt must beCloseTo(0, 1000)  // it should take less than 1 second!
       result must_== 55
     }
     "provide a logTime function logging the time taken to do something and returning the result" in {
       skip("this way of mock LiftLogger is not robust enough and has to be reworked")
       val logMock = new LiftLogger {
-        override def info(a: => AnyRef) = record { 
-          a.toString must beMatching("this test took \\d* Milliseconds") 
-        } 
+        override def info(a: => AnyRef) = record {
+          a.toString must beMatching("this test took \\d* Milliseconds")
+        }
       }
       expect {
         logMock.info("this test took 10 Milliseconds")
@@ -146,7 +147,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     "provide a hourFormat function to format the time of a date object" in {
       hourFormat(Calendar.getInstance(utc).noTime.getTime) must_== "00:00:00"
     }
-    
+
     "provide a formattedDateNow function to format todays date" in {
       formattedDateNow must beMatching("\\d\\d\\d\\d/\\d\\d/\\d\\d")
     }
@@ -188,7 +189,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     }
   }
 }
-trait TimeAmountsGen { self: TimeHelpers =>
+trait TimeAmountsGen extends Scalacheck { self: TimeHelpers =>
   type TimeAmounts = Tuple2[String, Tuple6[(Int, String), (Int, String), (Int, String), (Int, String), (Int, String), (Int, String)]]
   val timeAmounts = for {
       w <- choose(0, 2)
@@ -214,9 +215,9 @@ trait LoggerDelegation {
     } finally { unsetLogger }
   }
   private[this] def setLogger(logger: LiftLogger) {
-    LogBoot.loggerSetup = () => true 
+    LogBoot.loggerSetup = () => true
     LogBoot.loggerByName = (s: String) => LoggerDelegate(logger)
-  } 
+  }
   private[this] def unsetLogger {
     Log.rootLogger.asInstanceOf[LoggerDelegate].logger = NullLogger
   }
@@ -232,7 +233,7 @@ trait LoggerDelegation {
     override def isErrorEnabled: Boolean = logger.isErrorEnabled
     override def error(msg: => AnyRef): Unit = logger.error(msg)
     override def error(msg: => AnyRef, t: => Throwable): Unit = logger.error(msg, t)
-    
+
     override def fatal(msg: AnyRef): Unit = logger.fatal(msg)
     override def fatal(msg: AnyRef, t: Throwable): Unit = logger.fatal(msg, t)
 

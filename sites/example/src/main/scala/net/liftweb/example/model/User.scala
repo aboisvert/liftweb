@@ -35,7 +35,6 @@ object User extends User with KeyedMetaMapper[Long, User] {
  */
 class User extends ProtoUser[User] {
   def getSingleton = User // what's the "meta" server
-  def primaryKeyField = id
 
   // define an additional field for a personal essay
   object textArea extends MappedTextarea(this, 2048) {

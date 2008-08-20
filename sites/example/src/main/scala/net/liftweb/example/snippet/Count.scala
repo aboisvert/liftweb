@@ -39,20 +39,20 @@ object CountHolder extends SessionVar[HashMap[String, Int]](new HashMap[String, 
   * This snippet handles counting
   */
 class Count {
-  
+
   /**
     * This method is invoked by the &lt;lift:Count /&gt; tag
     */
   def render(in: NodeSeq): NodeSeq = {
     // get the attribute name (the name of the thing to count)
     val attr: String = S.attr("name").openOr("N/A")
-    
+
     // Get the value from the session variable
     val value = CountHolder.is(attr)
-    
+
     // Bind the incoming view data and the model data
-    bind("count", in, "value" --> value,
-    "incr" --> link("/count", () => CountHolder.is(attr) = value + 1, Text("++")),
-    "decr" --> link("/count", () => CountHolder.is(attr) = 0 max (value - 1), Text("--")))
+    bind("count", in, "value" -> value,
+    "incr" -> link("/count", () => CountHolder.is(attr) = value + 1, Text("++")),
+    "decr" -> link("/count", () => CountHolder.is(attr) = 0 max (value - 1), Text("--")))
   }
 }

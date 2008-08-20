@@ -19,7 +19,7 @@ import javax.servlet.http._
 import net.liftweb.util.Helpers
 
 /**
- * A Mock ServletRequest. Change it's state to to create the request you are 
+ * A Mock ServletRequest. Change it's state to to create the request you are
  * interested in. At the very least, you will need to change method and path.
  *
  * @author Steve Jenson (stevej@pobox.com)
@@ -30,15 +30,15 @@ class MockHttpServletRequest extends HttpServletRequest {
   var contextPath = ""
   var path = ""
   var method = "GET"
-  val headers: scala.collection.jcl.HashMap[String, String] = 
+  val headers: scala.collection.jcl.HashMap[String, String] =
     new scala.collection.jcl.HashMap[String, String](new java.util.HashMap)
-  val attr: scala.collection.jcl.HashMap[String, Any] = 
+  val attr: scala.collection.jcl.HashMap[String, Any] =
     new scala.collection.jcl.HashMap[String, Any](new java.util.HashMap)
   var cookies: List[Cookie] = Nil
-  var authType = null 
+  var authType = null
   var localPort = 0
-  var localAddr = null 
-  var localName = null 
+  var localAddr = null
+  var localName = null
   var remotePort = 0
   var remoteHost = null
   var remoteAddr = null
@@ -48,7 +48,7 @@ class MockHttpServletRequest extends HttpServletRequest {
   var serverName = null
   var scheme = "http"
   var protocol = "http 1.0"
-  var parameterMap: scala.collection.jcl.HashMap[String, String] = 
+  var parameterMap: scala.collection.jcl.HashMap[String, String] =
     new scala.collection.jcl.HashMap[String, String](new java.util.HashMap)
   val sbis = new StringBufferInputStream("")
   var inputStream: ServletInputStream = new MockServletInputStream(sbis)
@@ -120,7 +120,7 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getScheme = scheme
   def getProtocol = protocol
   def getParameterMap = parameterMap.underlying
-  def getParameterValues(key: String) = 
+  def getParameterValues(key: String) =
     parameterMap.underlying.values.toArray.asInstanceOf[Array[String]]
   def getParameterNames = new Vector[ZZ](parameterMap.underlying.keySet.asInstanceOf[java.util.Set[ZZ]]).elements
   def getParameter(key: String) = parameterMap(key)

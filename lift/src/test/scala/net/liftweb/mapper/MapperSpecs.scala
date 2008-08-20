@@ -29,40 +29,51 @@ object MapperSpecsRunner extends ConsoleRunner(MapperSpecs)
 
 object MapperSpecs extends Specification {
   def providers = DBProviders.asList
-   
+
   providers.foreach(provider => {
     ("Mapper for " + provider.name) should {
 
       "schemify" in {
         try { provider.setupDB } catch { case e => skip(e.getMessage) }
-        
+
         Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
         Schemifier.schemify(true, ignoreLogger _, SampleModel)
-        
+
         val elwood = SampleModel.find(By(SampleModel.firstName, "Elwood")).open_!
         val madeline = SampleModel.find(By(SampleModel.firstName, "Madeline")).open_!
         val archer = SampleModel.find(By(SampleModel.firstName, "Archer")).open_!
-        
+
         elwood.firstName.toString must_== "Elwood"
         madeline.firstName.toString must_== "Madeline"
         archer.firstName.toString must_== "Archer"
-        
+
         elwood.id.is must be_<(madeline.id.is)
       }
     }
  })
 
  private def ignoreLogger(f: => AnyRef): Unit = ()
-} 
+}
+
+object SampleTag extends SampleTag with KeyedMetaMapper[Long, SampleTag]
+
+class SampleTag extends KeyedMapper[Long, SampleTag] {
+  def getSingleton = SampleTag // what's the "meta" server
+  def primaryKeyField = id
+
+  object id extends MappedLongIndex(this)
+  object tag extends MappedString(this, 32)
+  object model extends MappedLongForeignKey(this, SampleModel)
+}
 
 object SampleModel extends SampleModel with KeyedMetaMapper[Long, SampleModel] {
   override def dbAddTable = Full(populate _)
-  
+
   private def populate {
     create.firstName("Elwood").save
     create.firstName("Madeline").save
     create.firstName("Archer").save
-  }  
+  }
 }
 
 class SampleModel extends KeyedMapper[Long, SampleModel] {
@@ -70,5 +81,5 @@ class SampleModel extends KeyedMapper[Long, SampleModel] {
   def primaryKeyField = id
 
   object id extends MappedLongIndex(this)
-  object firstName extends MappedString(this, 32)  
+  object firstName extends MappedString(this, 32)
 }

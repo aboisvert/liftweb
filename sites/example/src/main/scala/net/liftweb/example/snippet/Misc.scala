@@ -40,7 +40,7 @@ class Misc {
     // the header
     <tr>{User.htmlHeaders}<th>Edit</th><th>Delete</th></tr> ::
   // get and display each of the users
-  User.findAll(OrderBy(User.id, true)).flatMap(u => <tr>{u.htmlLine}
+  User.findAll(OrderBy(User.id, Ascending)).flatMap(u => <tr>{u.htmlLine}
            <td>{link("/simple/edit", () => selectedUser(Full(u)), Text("Edit"))}</td>
            <td>{link("/simple/delete", () => selectedUser(Full(u)), Text("Delete"))}</td>
            </tr>)
@@ -52,7 +52,7 @@ class Misc {
   def confirmDelete(xhtml: Group): NodeSeq = {
     (for (user <- selectedUser.is) // find the user
      yield {
-       def deleteUser(ignore: String) {
+       def deleteUser() {
          notice("User "+(user.firstName+" "+user.lastName)+" deleted")
          user.delete_!
          redirectTo("/simple/index.html")
@@ -62,8 +62,8 @@ class Misc {
        // when the delete button is pressed, call the "deleteUser"
        // function (which is a closure and bound the "user" object
        // in the current content)
-       bind("xmp", xhtml, "username" --> (user.firstName.is+" "+user.lastName.is),
-      "delete" --> submit("Delete", deleteUser))
+       bind("xmp", xhtml, "username" -> (user.firstName.is+" "+user.lastName.is),
+      "delete" -> submit("Delete", deleteUser()))
 
        // if the was no ID or the user couldn't be found,
        // display an error and redirect
@@ -116,12 +116,12 @@ class Misc {
   /**
     * Bind the appropriate XHTML to the form
     */
-  def upload(xhtml: Group): NodeSeq = if (S.get_?) bind("ul", chooseTemplate("choose", "get", xhtml), 'file_upload --> fileUpload(ul => theUpload(Full(ul))))
+  def upload(xhtml: Group): NodeSeq = if (S.get_?) bind("ul", chooseTemplate("choose", "get", xhtml), 'file_upload -> fileUpload(ul => theUpload(Full(ul))))
   else bind("ul", chooseTemplate("choose", "post", xhtml),
-      "file_name" --> theUpload.is.map(v => Text(v.fileName)),
-      "mime_type" --> theUpload.is.map(v => Can.legacyNullTest(v.mimeType).map(Text).openOr(Text("No mime type supplied"))), // Text(v.mimeType)),
-      "length" --> theUpload.is.map(v => Text(v.file.length.toString)),
-      "md5" --> theUpload.is.map(v => Text(hexEncode(md5(v.file))))
+      "file_name" -> theUpload.is.map(v => Text(v.fileName)),
+      "mime_type" -> theUpload.is.map(v => Can.legacyNullTest(v.mimeType).map(Text).openOr(Text("No mime type supplied"))), // Text(v.mimeType)),
+      "length" -> theUpload.is.map(v => Text(v.file.length.toString)),
+      "md5" -> theUpload.is.map(v => Text(hexEncode(md5(v.file))))
       );
 
   private def setLocale(lc: String) {
@@ -132,8 +132,8 @@ class Misc {
   }
 
   def lang(xhtml: Group): NodeSeq = bind("showLoc", xhtml,
-      "lang" --> locale.getDisplayLanguage(locale),
-      "select" --> select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
+      "lang" -> locale.getDisplayLanguage(locale),
+      "select" -> select(Locale.getAvailableLocales.toList.sort(_.getDisplayName < _.getDisplayName).
         map(lo => (lo.toString, lo.getDisplayName)), definedLocale.is.map(_.toString), v => setLocale(v)))
 
   // Test function to make sure that camelCase snippet methods are working

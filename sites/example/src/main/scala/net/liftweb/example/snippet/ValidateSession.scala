@@ -34,13 +34,13 @@ import scala.collection.mutable.HashMap
   * This snippet handles counting
   */
 class ValidateSession {
-  
+
    /**
     * This method is invoked by the &lt;lift:Count /&gt; tag
     */
-    def render(in: NodeSeq): NodeSeq = SHtml.ajaxButton("Validate"){
+    def render(in: NodeSeq): NodeSeq = SHtml.ajaxButton("Validate", {
       LoginStuff(true)
       S.notice("Your session is validated")
       RedirectTo("/login/index")
-    }
+    })
 }

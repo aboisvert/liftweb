@@ -29,14 +29,14 @@ case class BindChoice(show: Boolean, bind: () => NodeSeq)
 
 class Wiki extends MetaWikiEntry {
   def uriFor(path:String) = "/wiki/" + path
-  
+
   /**
    * Display the Textile marked up wiki or an edit box
    */
   def main: NodeSeq = {
     val pageName = S.param("wiki_page") openOr "HomePage" // set the name of the page
     def showAll = {
-      findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={uriFor(entry.name)}>{entry.name}</a></div>)
     }
 
@@ -53,7 +53,7 @@ class Wiki extends MetaWikiEntry {
 
       <span><a href={uriFor("all")}>Show All Pages</a><br/>{
         if (edit) editEntry(entry, isNew, pageName)
-        else TextileParser.toHtml(entry.entry, 
+        else TextileParser.toHtml(entry.entry,
 				  Some(TextileParser.DefaultRewriter("/wiki"))) ++
         <br/><a href={uriFor(pageName+"/edit")}>Edit</a> // and add an "edit" link
       }</span>
@@ -65,7 +65,7 @@ class Wiki extends MetaWikiEntry {
 
     def showAll = BindChoice((pageName == "all"), () => bind("pages",
       (xhtml \\ "showAll").filter(_.prefix == "wiki").toList.head.child,
-      TheBindParam("all", findAll(OrderBy(WikiEntry.name, true)).flatMap(entry =>
+      TheBindParam("all", findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={"/wikibind/"+entry.name}>{entry.name}</a></div>))))
 
     // find the entry in the database or create a new one
@@ -77,7 +77,7 @@ class Wiki extends MetaWikiEntry {
 
     def edit = BindChoice(toEdit, () => bind("edit",
       (xhtml \\ "editting").filter(_.prefix == "wiki").toList.head.child,
-      "form" --> editEntry(entry, isNew, pageName)))
+      "form" -> editEntry(entry, isNew, pageName)))
 
     def view = BindChoice(!toEdit, () => bind("view",
       (xhtml \\ "displaying").filter(_.prefix == "wiki").toList.head.child,
@@ -98,7 +98,7 @@ class Wiki extends MetaWikiEntry {
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
     val cancelLink = <a href={uriFor(pageName)}>Cancel</a>
     val textarea = entry.entry.toForm
-    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", s => {entry.save})
+    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", entry.save)
     <form method="GET" action={action}>{ // the form tag
           message ++
           hobixLink ++

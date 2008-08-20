@@ -23,7 +23,7 @@ package net.liftweb.util
  */
 class FatLazy[T](f: => T) {
   private var value: Can[T] = Empty
-  
+
   /**
    * Get the value of the instance.  If it's not yet been set, call f to calculate it
    *
@@ -36,12 +36,12 @@ class FatLazy[T](f: => T) {
       value.open_!
     }
   }
-  
+
   def defined_? = synchronized {
     value != None
   }
-  
- 
+
+
   /**
    * Set the instance to a new value and return that value
    *
@@ -53,20 +53,20 @@ class FatLazy[T](f: => T) {
     value = Full(v)
     v
   }
-  
+
   def setFrom(other: FatLazy[T]): Unit = synchronized {
     value = other.value
   }
-  
+
   /**
    * and the lazy() = foo style of assignment
    */
   def update(v: T): Unit = set(v)
-    
+
   def reset = synchronized {value = Empty}
-  
+
   def calculated_? = synchronized {value.isDefined}
-  
+
   // implicit def fromLazy[T](in: Lazy[T]): T = in.get
 }
 
@@ -77,7 +77,7 @@ object FatLazy {
 
 object ThreadLazy {
   def apply[T](f: => T) = new ThreadLazy(f)
-  
+
   implicit def what[T](in: ThreadLazy[T]): T = in.get
 }
 
@@ -90,7 +90,7 @@ object ThreadLazy {
 object LZ {
   def apply[T](f: => T): LZ[T] = new LZ(f)
   def unapply[T](in: LZ[T]): Option[T] = Some(in.get)
-  
+
  // implicit def lazyToT[T](in: LazyMatcher[T]): T = in.get
 }
 
@@ -107,7 +107,7 @@ class LZ[T](f: => T) {
 class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
   private val calced = new ThreadGlobal[Boolean]
   private val value = new ThreadGlobal[TheType]
-  
+
   def apply[T](f: => T): T = {
     val old = value.value
     calced.set(false)
@@ -118,9 +118,9 @@ class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
       value.set(old)
     }
   }
-  
+
   def reset(): Unit = calced.set(false)
-  
+
   def get: TheType = {
     if (calced.value) value.value
     else {
@@ -129,6 +129,6 @@ class ThreadLazy[TheType](theFunc: => TheType) extends LoanWrapper {
       value.value
     }
   }
-  
+
 }
 

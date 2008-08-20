@@ -25,24 +25,24 @@ class Boot {
   def boot {
     if (!DB.jndiJdbcConnAvailable_?) DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
     LiftRules.addToPackages("com.skittr")
-     
+
     // make sure the database is up to date
     Schemifier.schemify(true, Log.infoF _, modelList :_*)
-    
+
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
-    
+
     // map certain urls to the right place
     val rewriter: LiftRules.RewritePf = {
-    case RewriteRequest(ParsePath("user" :: user :: _, _, _,_), _, _) => 
+    case RewriteRequest(ParsePath("user" :: user :: _, _, _,_), _, _) =>
        RewriteResponse("user" :: Nil, Map("user" -> user))
-    case RewriteRequest(ParsePath("friend" :: user :: _, _, _,_), _, _) => 
+    case RewriteRequest(ParsePath("friend" :: user :: _, _, _,_), _, _) =>
        RewriteResponse("friend" :: Nil, Map("user" -> user))
-    case RewriteRequest(ParsePath("unfriend" :: user :: _, _, _, _), _, _) => 
+    case RewriteRequest(ParsePath("unfriend" :: user :: _, _, _, _), _, _) =>
        RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
-  
+
   LiftRules.addRewriteBefore(rewriter)
-  
+
   // load up the list of user actors
   UserList.create
   }

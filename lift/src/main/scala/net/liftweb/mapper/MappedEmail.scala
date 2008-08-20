@@ -17,8 +17,8 @@ object MappedEmail {
 
 class MappedEmail[T<:Mapper[T]](owner: T, maxLen: Int) extends MappedString[T](owner, maxLen) {
 
-  override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter 
-    
+  override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter
+
   override def validate =
     (if (MappedEmail.emailPattern.matcher(i_is_!).matches) Nil else List(FieldError(this, Text(S.??("invalid.email.address"))))) :::
     super.validate

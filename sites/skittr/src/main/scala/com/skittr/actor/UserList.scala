@@ -5,7 +5,7 @@ package com.skittr.actor
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
-  
+
 import scala.actors._
 import scala.actors.Actor._
 import com.skittr.model._
@@ -16,7 +16,7 @@ import net.liftweb.util._
 import net.liftweb.util.Helpers._
 /**
   * A singleton the holds the map between user names and Actors that service
-  * the users.  Right now, this assumes that the Actors are all local, but 
+  * the users.  Right now, this assumes that the Actors are all local, but
   * it could also be extended to choose other machines (remote actors)
   * by using a hash on the username to choose the machine that's hosting
   * the user
@@ -26,7 +26,7 @@ object UserList {
   private val rwl = new ReentrantReadWriteLock // lots of readers, few writers
   private val r = rwl.readLock
   private val w = rwl.writeLock
-  
+
   /**
     * Load all the users from the database and create actors for each of them
     */
@@ -35,12 +35,12 @@ object UserList {
         val ua = new UserActor // create a new Actor
         ua.start // start it up
         ua !? Setup(u.id, u.name, u.wholeName) // tell it to set up
-        Full(ua) // return it 
+        Full(ua) // return it
       }
       // load all the users
       User.findMap()(userToUserActor).foreach (_ !? ConfigFollowers) // for each of the UserActors, tell them to configure their followers
   }
-  
+
   // We've just added a new user to the system
   // add that user to the list
   def startUser(who: User) {
@@ -51,36 +51,36 @@ object UserList {
     ua ! ConfigFollowers
     }
   }
-  
+
   def shutdown = foreach(_ ! Bye) // shutdown by telling each of the Actors a "Bye" message
-  
+
   private def writeLock[T](f: => T): T = {
     w.lock
     try {f} finally {w.unlock}
   }
-  
+
   private def readLock[T](f: => T): T = {
     r.lock
     try {f} finally {r.unlock}
   }
-  
+
   // iterate over all the actors in the system
   // and perform a function
   def foreach(f: UserActor => Any) = readLock(set.foreach(i => f(i._2)))
-  
+
   // add a user to the list by mapping
   // the name to the UserActor
   def add(name: String, who: UserActor) = writeLock(set(name) = who)
-  
+
   // find a user by name
   def find(name: String): Can[UserActor] = readLock(Can(set.get(name)))
-  
+
   // remove a user
   def remove(name: String) = writeLock(set -= name)
-  
+
   // Find a random set of about cnt users
   def randomUsers(cnt: Int) = {
-    val percent = if (set.size == 0) 1.d else cnt.toDouble / set.size.toDouble 
+    val percent = if (set.size == 0) 1.d else cnt.toDouble / set.size.toDouble
     readLock(set.filter(z => shouldShow(percent)).map(_._1))
   }
 }

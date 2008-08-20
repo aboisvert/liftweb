@@ -13,33 +13,33 @@ import javax.servlet.http.Cookie
 /**
  * 401 Unauthorized Response.
  */
-case class UnauthorizedResponse(realm: String) extends ResponseIt {
-  def toResponse = Response(Array(), List("WWW-Authenticate" -> ("Basic realm=\"" + realm + "\"")), Nil, 401)
+case class UnauthorizedResponse(realm: String) extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), List("WWW-Authenticate" -> ("Basic realm=\"" + realm + "\"")), Nil, 401)
 }
 
 /**
  * 301 Redirect.
  */
-case class PermRedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends ResponseIt {
-  def toResponse = Response(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
+case class PermRedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
 }
 
 /**
  * Returning an Atom category document.
  */
-case class AtomCategoryResponse(xml: Node) extends ResponseIt {
+case class AtomCategoryResponse(xml: Node) extends LiftResponse {
   def toResponse = XmlMimeResponse(xml, "application/atomcat+xml").toResponse
 }
 
 /**
  * Returning an Atom Service Document.
  */
-case class AtomServiceResponse(xml: Node) extends ResponseIt {
+case class AtomServiceResponse(xml: Node) extends LiftResponse {
   def toResponse = XmlMimeResponse(xml, "application/atomsvc+xml").toResponse
 }
 
 /**
- * Allows you to create custom 200 responses for clients using different 
+ * Allows you to create custom 200 responses for clients using different
  * Content-Types.
  */
 case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
@@ -54,12 +54,12 @@ case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
  * Your Request was missing an important element. Use this as a last resort if
  * the request appears incorrect.
  */
-case class BadResponse extends ResponseIt {
-  def toResponse = Response(Array(), Nil, Nil, 400)
+case class BadResponse extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 400)
 }
 
 /**
- * The Resource was created. We then return the resource, post-processing, to 
+ * The Resource was created. We then return the resource, post-processing, to
  * the client.
  */
 case class CreatedResponse(xml: Node, mime: String) extends ToResponse {
@@ -95,7 +95,7 @@ case class OpenSearchResponse(xml: Node) extends ToResponse {
 /**
  * The Atom entity was successfully created and is shown to the client.
  */
-case class AtomCreatedResponse(xml: Node) extends ResponseIt {
+case class AtomCreatedResponse(xml: Node) extends LiftResponse {
   def toResponse = CreatedResponse(xml, "application/atom+xml").toResponse
 }
 
@@ -104,38 +104,38 @@ object PlainTextResponse {
   def apply(text: String, code: Int): PlainTextResponse = PlainTextResponse(text, Nil, code)
 }
 
-case class PlainTextResponse(text: String, headers: List[(String, String)], code: Int) extends ResponseIt {
+case class PlainTextResponse(text: String, headers: List[(String, String)], code: Int) extends LiftResponse {
     def toResponse = {
         val bytes = text.getBytes("UTF-8")
-        Response(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/plain") :: headers, Nil, code)
+        InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/plain") :: headers, Nil, code)
     }
 }
 
 /**
  * Basic 200 response but without body.
  */
-case class OkResponse extends ResponseIt {
-  def toResponse = Response(Array(), Nil, Nil, 200)
+case class OkResponse extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 200)
 }
 
 /**
  * This Resource does not allow this method. Use this when the resource can't
- * understand the method no matter the circumstances. 
+ * understand the method no matter the circumstances.
  */
-case class MethodNotAllowedResponse extends ResponseIt {
-  def toResponse = Response(Array(), Nil, Nil, 405)
+case class MethodNotAllowedResponse extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 405)
 }
 
 /**
  * The requested Resource does not exist.
  */
-case class NotFoundResponse extends ResponseIt {
-  def toResponse = Response(Array(), Nil, Nil, 404)
+case class NotFoundResponse extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 404)
 }
 
 /**
- * The requested Resource used to exist but no longer does. 
+ * The requested Resource used to exist but no longer does.
  */
-case class GoneResponse extends ResponseIt {
-  def toResponse = Response(Array(), Nil, Nil, 410)
+case class GoneResponse extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 410)
 }

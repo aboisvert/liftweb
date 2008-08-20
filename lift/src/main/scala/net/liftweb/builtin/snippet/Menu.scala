@@ -17,19 +17,50 @@ package net.liftweb.builtin.snippet
 
 import net.liftweb.http.S
 import net.liftweb.sitemap._
+import net.liftweb.util._
 import scala.xml._
 
 class Menu {
   def builder: NodeSeq = {
-    S.request.map(_.buildMenu.lines match {
-      case Nil => Text("No Navigation Defined.")
-      case x :: xs => <ul>{x.items.flatMap(buildANavItem(_))}</ul>
-    }).openOr(Text("No Navigation Defined."))
+    var r: Can[NodeSeq] =
+    
+    S.request.map(_.buildMenu.lines.toList match {
+        case Nil => List(Text("No Navigation Defined."))
+        case xs =>
+          val liMap = S.prefixedAttrsToMap("li")
+          val li = S.mapToAttrs(liMap)
+
+           def buildANavItem(i: MenuItem) = {
+             i match {
+    case MenuItem(text, uri, kids, true, _, _) =>
+      (<li><span>{text}</span>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_item", liMap)
+    case MenuItem(text, uri, kids,  _, true, _) =>
+      (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_path", liMap)
+    case MenuItem(text, uri, kids, _, _, _) =>
+      (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li> % li)
+             }
   }
 
-  private def buildANavItem(i: MenuItem) = i match {
-    case MenuItem(text, uri, true, _, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, true, _) => (<li><a href={uri} id="current">{text}</a></li>)
-    case MenuItem(text, uri, _, _, _) => (<li><a href={uri}>{text}</a></li>)
+          def buildUlLine(in: Seq[MenuItem]): Node = if (in.isEmpty) Text("")
+          else <ul>{in.flatMap(buildANavItem)}</ul> %
+          S.prefixedAttrsToMetaData("ul")
+
+          buildUlLine(xs)
+        
+      })
+    
+    r.openOr(List(Text("No Navigation Defined.")))
+  }
+
+ 
+  
+  def item(text: NodeSeq): NodeSeq = 
+  for (name <- S.attr("name").toList;
+       request <- S.request.toList;
+       loc <- request.location.toList if loc.name != name;
+       item <- SiteMap.buildLink(name, text))
+  yield item match {
+    case e: Elem => e % S.prefixedAttrsToMetaData("a")
+    case x => x
   }
 }

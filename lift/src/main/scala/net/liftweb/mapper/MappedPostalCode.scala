@@ -1,12 +1,28 @@
 package net.liftweb.mapper
 
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
+
 import scala.xml.{NodeSeq, Text}
 import net.liftweb.http.{S, SHtml, FieldError}
 import net.liftweb.util._
 import java.util.{Locale, TimeZone}
 
 object Countries extends Enumeration(1) {
-  
+
   val C1,  C2,  C3,  C4,  C5,  C6,  C7,  C8,  C9,  C10,
       C11,  C12,  C13,  C14,  C15,  C16,  C17,  C18,  C19,  C20,
       C21,  C22,  C23,  C24,  C25,  C26,  C27,  C28,  C29,  C30,
@@ -35,13 +51,13 @@ object Countries extends Enumeration(1) {
       C251,  C252,  C253,  C254,  C255,  C256,  C257,  C258,  C259,  C260,
       C261,  C262,  C263,  C264,  C265,  C266,  C267,  C268,  C269,  C270,
       C271,  C272 = I18NCountry
-  
+
   val USA = C1
   val Australia = C10
   val Canada = C32
   val Sweden = C167
-  
-  
+
+
   def I18NCountry = new I18NCountry
 
   class I18NCountry extends Val {
@@ -52,33 +68,33 @@ object Countries extends Enumeration(1) {
 
 class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) {
   override def defaultValue = Locale.getDefault.toString
-  
+
   def isAsLocale: Locale = Locale.getAvailableLocales.filter(_.toString == is).toList match {
     case Nil => Locale.getDefault
     case x :: xs => x
   }
-  
-  override def _toForm: Can[NodeSeq] = 
+
+  override def _toForm: Can[NodeSeq] =
     Full(SHtml.select(Locale.getAvailableLocales.
 		  toList.sort(_.getDisplayName < _.getDisplayName).
-		  map(lo => (lo.toString, lo.getDisplayName)), 
+		  map(lo => (lo.toString, lo.getDisplayName)),
 		  Full(this.is), set))
 }
 
 class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32) {
   override def defaultValue = TimeZone.getDefault.getID
-  
+
   def isAsTimeZone: TimeZone = TimeZone.getTimeZone(is) match {
     case null => TimeZone.getDefault
     case x => x
   }
-  
-  override def _toForm: Can[NodeSeq] = 
+
+  override def _toForm: Can[NodeSeq] =
     Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), set))
 }
 
 object MappedTimeZone {
-  lazy val timeZoneList = 
+  lazy val timeZoneList =
     TimeZone.getAvailableIDs.toList.
   filter(!_.startsWith("SystemV/")).
   filter(!_.startsWith("Etc/")).filter(_.length > 3).
@@ -86,12 +102,12 @@ object MappedTimeZone {
 }
 
 class MappedCountry[T <: Mapper[T]](owner: T) extends MappedEnum[T, Countries.type](owner, Countries) {
-  
+
 }
 
 class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) extends MappedString[T](owner, 32) {
   override def setFilter = notNull _ :: toUpper _ :: trim _ :: super.setFilter
-  
+
   private def genericCheck(zip: String): List[FieldError] = {
     zip match {
       case null => List(FieldError(this, Text(S.??("invalid.postal.code"))))
@@ -99,7 +115,7 @@ class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) exte
       case _ => Nil
     }
   }
-  
+
   override def validations = country.is match {
     case Countries.USA =>  valRegex(java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), S.??("invalid.zip.code")) _ :: super.validations
     case Countries.Sweden => valRegex(java.util.regex.Pattern.compile("[0-9]{3}[ ]?[0-9]{2}"), S.??("invalid.postal.code")) _ :: super.validations

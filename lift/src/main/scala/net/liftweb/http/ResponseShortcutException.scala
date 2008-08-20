@@ -18,20 +18,23 @@ package net.liftweb.http
 
 import net.liftweb.util._
 
-class ResponseShortcutException(_response: => ResponseIt, val doNotices: Boolean) extends Exception("Shortcut") {
+class ResponseShortcutException(_response: => LiftResponse, val doNotices: Boolean) extends Exception("Shortcut") {
   lazy val response = _response
-  
-  def this(resp: => ResponseIt) = this(resp, false)
+
+  def this(resp: => LiftResponse) = this(resp, false)
 }
 
 object ResponseShortcutException {
-  def redirect(to: String): ResponseShortcutException = 
+  def shortcutResponse(responseIt: => LiftResponse) = 
+    new ResponseShortcutException(responseIt, true)
+
+  def redirect(to: String): ResponseShortcutException =
   new ResponseShortcutException(RedirectResponse(to, S responseCookies :_*), true)
-  
+
   def redirect(to: String, func: () => Unit): ResponseShortcutException =
   S.session match {
     case Full(liftSession) => redirect(liftSession.attachRedirectFunc(to, Full(func)))
     case _ => redirect(to)
   }
-  
+
 }

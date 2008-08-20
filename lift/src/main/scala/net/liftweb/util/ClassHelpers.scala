@@ -6,9 +6,9 @@ import java.lang.reflect.Modifier._
  * ClassHelpers provide several functions to instantiate a Class object given the class name and one or more package names
  */
 trait ClassHelpers { self: ControlHelpers =>
-  
+
   private val nameModifiers = List[String => String](camelCase _, n => n)
-  
+
   /**
    * utility function returning varargs as a List
    * @return the list of arguments passed as varargs
@@ -16,7 +16,7 @@ trait ClassHelpers { self: ControlHelpers =>
   def ^ [T](i: T*): List[T] = i.toList
 
   /**
-   * General method to in find a class according to its name, a list of possible packages and a list of functions modifying the given name 
+   * General method to in find a class according to its name, a list of possible packages and a list of functions modifying the given name
    * create a target name to look for (e.g: 'name' is hello_world and the target name may be 'HelloWorld').
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
@@ -26,29 +26,29 @@ trait ClassHelpers { self: ControlHelpers =>
    * @return a Can, either containing the found class or an Empty can.
    */
   def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Can[Class[C]] = {
-    
+
     // Find the class in a single package. Return a can containing the found class or Empty
     def findClass_s(name : String, where: String): Can[Class[C]] = {
       tryo(classOf[ClassNotFoundException]) {
         val c = Class.forName(where + "." + name).asInstanceOf[Class[C]]
-        tryo(classOf[ClassCastException]) { c.asSubclass(targetType); c } openOr(throw new ClassNotFoundException) 
+        tryo(classOf[ClassCastException]) { c.asSubclass(targetType); c } openOr(throw new ClassNotFoundException)
       }
     }
-    
+
     // Find the class in a list of packages. Return a can containing the found class or Empty
     def findClass_l(name: String, where: List[String]): Can[Class[C]] = {
       where match {
         case Nil => Empty
-        case c :: rest => findClass_s(name, c) or findClass_l(name, rest) 
+        case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
       }
     }
-    
+
     modifiers match {
       case Nil => Empty
       case tryName :: rest => findClass_l(tryName(name), where) or findClass[C](name, where, rest, targetType)
     }
   }
- 
+
   /**
    * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary.
    * It doesn't check that the resulting class isAssignable by Class[C]
@@ -71,7 +71,7 @@ trait ClassHelpers { self: ControlHelpers =>
   def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Can[Class[C]] = findClass(name, where, nameModifiers, targetType)
 
   /**
-   * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary 
+   * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    *
@@ -79,9 +79,9 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def findClass(name: String, where: List[String]): Can[Class[AnyRef]] =
     findClass(name, where, nameModifiers)
-  
+
   /**
-   * Find a class given a list of possible names and corresponding packages, turning underscored names to CamelCase if necessary 
+   * Find a class given a list of possible names and corresponding packages, turning underscored names to CamelCase if necessary
    * @parameter where list of pairs (name, package names) which may contain the class
    *
    * @return a Can, either containing the found class or an Empty can.
@@ -95,11 +95,11 @@ trait ClassHelpers { self: ControlHelpers =>
       }
     }
   }
-  
+
   /**
    * Turns a string of format "foo_bar" into camel case "FooBar"
    *
-   * Functional code courtesy of Jamie Webb (j@jmawebb.cjb.net) 2006/11/28 
+   * Functional code courtesy of Jamie Webb (j@jmawebb.cjb.net) 2006/11/28
    * @param name the String to CamelCase
    *
    * @return the CamelCased string
@@ -119,9 +119,9 @@ trait ClassHelpers { self: ControlHelpers =>
   }
 
   /**
-   * Turn a string of format "foo_bar" into camel case with the first letter in lower case: "fooBar" 
+   * Turn a string of format "foo_bar" into camel case with the first letter in lower case: "fooBar"
    * This function is especially used to camelCase method names.
-   *  
+   *
    * @param name the String to CamelCase
    *
    * @return the CamelCased string
@@ -133,7 +133,7 @@ trait ClassHelpers { self: ControlHelpers =>
     else
       tmp.substring(0,1).toLowerCase + tmp.substring(1)
   }
-  
+
   /**
    * Turn a string of format "FooBar" into camel case "foo_bar"
    *
@@ -145,7 +145,7 @@ trait ClassHelpers { self: ControlHelpers =>
       case c :: rest => c :: loop(rest)
       case Nil => Nil
     }
-    if (name.isEmpty) 
+    if (name.isEmpty)
       ""
     else
       List.toString(Character.toLowerCase(name.charAt(0)) :: loop(name.substring(1).toList))
@@ -157,13 +157,13 @@ trait ClassHelpers { self: ControlHelpers =>
   def callableMethod_?(meth: Method) = {
     meth != null && meth.getParameterTypes.length == 0 && isPublic(meth.getModifiers)
   }
-  
+
   /**
    * Is the clz an instance of (assignable from) any of the classes in the list
-   * 
+   *
    * @param clz the class to test
    * @param toMatch the list of classes to match against
-   * 
+   *
    * @return true if clz is assignable from any of the matching classes
    */
   def containsClass[C](clz: Class[C], toMatch: List[Class[CL] forSome {type CL}]): Boolean = {
@@ -173,13 +173,13 @@ trait ClassHelpers { self: ControlHelpers =>
       case c :: rest => containsClass(clz, rest)
     }
   }
-  
+
   /**
    * Check that the method 'name' is callable for class 'clz'
-   * 
+   *
    * @param clz the class supposed to own the method
    * @param name name of the method to test
-   * 
+   *
    * @return true if the method exists on the class and is callable
    */
   def classHasControllerMethod(clz: Class[_], name: String): Boolean = {
@@ -190,13 +190,13 @@ trait ClassHelpers { self: ControlHelpers =>
       }
     } openOr false
   }
-  
+
   /**
    * Invoke a controller method (parameterless, public) on a class
-   * 
+   *
    * @param clz the class owning the method
    * @param name name of the method to invoke
-   * 
+   *
    * @return the result of the method invocation or throws the root exception causing an error
    */
   def invokeControllerMethod(clz: Class[_], meth: String) = {
@@ -209,7 +209,7 @@ trait ClassHelpers { self: ControlHelpers =>
       }
     }
   }
-  
+
   /**
    * Invoke the given method for the given class, with no params.
    * The class is not instanciated if the method is static, otherwise the passed instance is used
@@ -217,7 +217,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param clz class whose method should be invoked
    * @param inst instance of the class who method should be invoked, if the method is not static
    * @param meth method to invoke
-   * 
+   *
    * @return a Can containing the value returned by the method
    */
   def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
@@ -231,26 +231,26 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param inst instance of the class who method should be invoked, if the method is not static
    * @param meth method to invoke
    * @param params parameters to pass to the method
-   * 
+   *
    * @return a Can containing the value returned by the method
    */
   def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = {
-    _invokeMethod(clz, inst, meth, params, Empty) or 
+    _invokeMethod(clz, inst, meth, params, Empty) or
     _invokeMethod(clz, inst, camelCase(meth), params, Empty) or
     _invokeMethod(clz, inst, camelCaseMethod(meth), params, Empty)
   }
-  
+
   /**
    * Invoke the given method for the given class, with some parameters and their types
    * Tries the method name, then the method as a CamelCased name and the method as a camelCased name
    * The class is not instanciated if the method is static, otherwise the passed instance is used
-   * 
+   *
    * @param clz class whose method should be invoked
    * @param inst instance of the class who method should be invoked, if the method is not static
    * @param meth method to invoke
    * @param params parameters to pass to the method
    * @param ptypes list of types of the parameters
-   * 
+   *
    * @return a Can containing the value returned by the method
    */
   def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[(Class[CL] forSome {type CL})]): Can[Any] = {
@@ -258,32 +258,32 @@ trait ClassHelpers { self: ControlHelpers =>
     _invokeMethod(clz, inst, camelCase(meth), params, Full(ptypes)) or
     _invokeMethod(clz, inst, camelCaseMethod(meth), params, Full(ptypes))
   }
-  
-  
+
+
   /**
    * Invoke the given method for the given class, with the given params.
    * The class is not instanciated if the method is static, otherwise the passed instance is used
-   * 
+   *
    * @param clz class whose method should be invoked
    * @param inst instance of the class who method should be invoked, if the method is not static
    * @param meth method to invoke
    * @param params parameters to pass to the method
    * @param ptypes list of types of the parameters
-   * 
+   *
    * @return a Can containing the value returned by the method
    */
   private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
      // try to find a method matching the given parameters
     def possibleMethods: List[Method] = {
-      /* 
+      /*
        * try to find a method with the same name and the same number of arguments. Doesn't check the types.
        * The reason is that it's hard to know for the programmer what is the class name of a given object/class, because scala
        * add some extra $ for ex.
        */
-      def alternateMethods: List[Method] = clz.getDeclaredMethods.toList.filter( m => m.getName.equals(meth) && 
+      def alternateMethods: List[Method] = clz.getDeclaredMethods.toList.filter( m => m.getName.equals(meth) &&
                                             isPublic(m.getModifiers) &&
                                             m.getParameterTypes.length == params.length)
-      
+
       try {
         val classes: Array[(Class[CL] forSome {type CL})] = ptypes openOr params.map(_.getClass)
         List(clz.getMethod(meth, classes : _*))
@@ -297,7 +297,7 @@ trait ClassHelpers { self: ControlHelpers =>
         case Nil => Empty
         case x :: xs => {
          val result = f(x)
-         if (predicate(result)) Full(result) else findFirst(xs, f, predicate) 
+         if (predicate(result)) Full(result) else findFirst(xs, f, predicate)
         }
       }
     }
@@ -311,12 +311,12 @@ trait ClassHelpers { self: ControlHelpers =>
                                    }) match {
                                             case Some(result@Full(_)) => result
                                             case None => Failure("invokeMethod " + meth, Empty, Nil)
-                                   } 
+                                   }
   }
 
   /**
    * Create a new instance of a class
-   * 
+   *
    * @return a Full can with the instance or a Failure if the instance can't be created
    */
   def instantiate[C](clz: Class[C]): Can[C] = tryo { clz.newInstance }
@@ -324,16 +324,16 @@ trait ClassHelpers { self: ControlHelpers =>
   /**
    * Create a function (the 'invoker') which will trigger any public, parameterless method
    * That function will throw the cause exception if the method can't be invoked
-   * 
+   *
    * @param clz class whose method should be invoked
    * @param on instance whose method must be invoked
-   * 
+   *
    * @return Empty if instance is null or Full(invoker)
    */
   def createInvoker[C <: AnyRef](name: String, on: C): Can[() => Can[Any]] = {
-    def controllerMethods(instance: C) = instance.getClass.getDeclaredMethods.filter { m => 
+    def controllerMethods(instance: C) = instance.getClass.getDeclaredMethods.filter { m =>
       m.getName == name && isPublic(m.getModifiers) && m.getParameterTypes.isEmpty
-    } 
+    }
     on match {
       case null => Empty
       case instance => {

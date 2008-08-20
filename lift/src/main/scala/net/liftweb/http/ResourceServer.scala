@@ -26,10 +26,12 @@ object ResourceServer {
     case "json.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jlift.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
+    case "jquery-autocomplete" :: "jquery.autocomplete.css" :: Nil => true
   }
 
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
-     case "jquery.js" :: Nil => List("jquery-1.2.3-min.js")
+     case "jquery.js" :: Nil => List("jquery-1.2.6-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
      case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
@@ -40,7 +42,7 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[ResponseIt] = {
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[LiftResponse] = {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
@@ -48,10 +50,13 @@ object ResourceServer {
       LiftRules.getResource(path).map{url =>
       val uc = url.openConnection
       val mod = req.request.getHeader("if-modified-since")
-      if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) Response(new Array[Byte](0), Nil, Nil, 304)
-      else Response(readWholeStream(url.openStream),
+      if (mod != null && ((uc.getLastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) InMemoryResponse(new Array[Byte](0), Nil, Nil, 304)
+      else {
+        val stream = url.openStream
+        StreamingResponse(stream, () => stream.close, uc.getContentLength,
           List(("Last-Modified", toInternetDate(uc.getLastModified)),
               ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
+      }
       }
     } else Empty
   }
