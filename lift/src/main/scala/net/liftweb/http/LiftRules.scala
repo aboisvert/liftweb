@@ -37,6 +37,7 @@ object LiftRules {
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
+  type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
 
   /**
   * A partial function that allows the application to define requests that should be
@@ -201,6 +202,16 @@ object LiftRules {
   * Meta information for the errors that are applied via Ajax response
   */
   var ajaxErrorMeta: Can[AjaxMessageMeta] = Empty
+
+  /**
+    * The dispatcher that takes a Snippet and converts it to a
+    * DispatchSnippet instance
+    */
+  var snippetDispatch: SnippetDispatchPf = Map.empty
+
+  def snippet(name: String): Can[DispatchSnippet] =
+  if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
+  else Empty
 
   /**
   * If the request times out (or returns a non-Response) you can

@@ -574,13 +574,18 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
     val ret = snippetName.map(snippet =>
       S.locateSnippet(snippet).map(_(kids)) openOr {
         val (cls, method) = splitColonPair(snippet, null, "render")
-        findSnippetInstance(cls) match {
+        (LiftRules.snippet(cls) or
+        findSnippetInstance(cls)) match {
 
           case Full(inst: StatefulSnippet) =>
             if (inst.dispatch.isDefinedAt(method))
             (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
             inst.dispatch(method)(kids)
             else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                 LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
+            case Full(inst: DispatchSnippet) =>
+              if (inst.dispatch.isDefinedAt(method)) inst.dispatch(method)(kids)
+              else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                  LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
           case Full(inst) => {
@@ -774,6 +779,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
     }
     bufs
   }
+
 
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {
     val attr = in.attributes
