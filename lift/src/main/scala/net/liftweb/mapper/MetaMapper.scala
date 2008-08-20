@@ -271,12 +271,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   
           case (in: InThing[A]) =>
             updatedWhat = updatedWhat + whereOrAnd +
-          in.field.dbColumnName+
-          " IN ("+in.otherMeta.addFields("SELECT "+
-                                         in.otherMeta.primaryKeyField.
-                                         dbColumnName+
+          in.outerField.dbColumnName+
+          " IN ("+in.innerMeta.addFields("SELECT "+
+                                         in.innerField.dbColumnName+
                                          " FROM "+
-                                         in.otherMeta.dbTableName+" ",false, 
+                                         in.innerMeta.dbTableName+" ",false,
                                          in.queryParams)+" ) "
 	  
 
@@ -310,7 +309,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
         }
 
       case (in: InThing[A]) :: xs =>
-        val newPos = in.otherMeta.setStatementFields(st, in.queryParams,
+        val newPos = in.innerMeta.setStatementFields(st, in.queryParams,
 						     curPos)
         setStatementFields(st, xs, newPos)
 
@@ -1002,31 +1001,59 @@ case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O
 case class MaxRows[O<:Mapper[O]](max: Long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: Long) extends QueryParam[O]
 
-abstract class InThing[O <: Mapper[O]] extends QueryParam[O] {
+abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterType] {
   type JoinType
-  type JoinTo <: KeyedMapper[JoinType, JoinTo]
+  type InnerType <: Mapper[InnerType]
 
-  def field: MappedField[JoinType, O]
-  def otherMeta: KeyedMetaMapper[JoinType, JoinTo]
-  def queryParams: List[QueryParam[JoinTo]]
+  def outerField: MappedField[JoinType, OuterType]
+  def innerField: MappedField[JoinType, InnerType]
+  def innerMeta: MetaMapper[InnerType]
+  def queryParams: List[QueryParam[InnerType]]
 }
 
 object In {
-  def apply[O<: Mapper[O], JoinTypeA, 
-	    JoinToA <:KeyedMapper[JoinTypeA, 
-				 JoinToA]]
-  (fielda: MappedForeignKey[JoinTypeA, O, JoinToA],
-   qp: QueryParam[JoinToA]*): InThing[O]
+  def fk[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
+            Zoom <% QueryParam[InnerMapper],
+	    OuterMapper <:KeyedMapper[JoinTypeA, OuterMapper]]
+  (fielda: MappedForeignKey[JoinTypeA, InnerMapper, OuterMapper],
+   qp: Zoom*): InThing[OuterMapper]
   = {
-    new InThing[O] {
+    new InThing[OuterMapper] {
       type JoinType = JoinTypeA
-      type JoinTo = JoinToA
+      type InnerType = InnerMapper
 
-      val field: MappedField[JoinType, O] = fielda
-      val otherMeta: KeyedMetaMapper[JoinType, JoinTo] = fielda.dbKeyToTable
-      val queryParams: List[QueryParam[JoinTo]] = qp.toList
+      val outerField: MappedField[JoinType, OuterMapper] = fielda.dbKeyToTable.primaryKeyField
+      val innerField: MappedField[JoinType, InnerMapper] = fielda
+      val innerMeta: MetaMapper[InnerMapper] = fielda.fieldOwner.getSingleton
+
+      val queryParams: List[QueryParam[InnerMapper]] = 
+              qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
     }
   }
+  
+  def apply[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
+            Zoom <% QueryParam[InnerMapper],
+	    OuterMapper <: Mapper[OuterMapper]]
+  (outerField: MappedField[JoinTypeA, OuterMapper],
+   innerField: MappedField[JoinTypeA, InnerMapper],
+   qp: Zoom*): InThing[OuterMapper]
+  = {
+    new InThing[OuterMapper] {
+      type JoinType = JoinTypeA
+      type InnerType = InnerMapper
+
+      val outerField: MappedField[JoinType, OuterMapper] = outerField
+      val innerField: MappedField[JoinType, InnerMapper] = innerField
+      val innerMeta: MetaMapper[InnerMapper] = innerField.fieldOwner.getSingleton
+
+      val queryParams: List[QueryParam[InnerMapper]] = {
+        
+        qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
+      }
+    }
+  }
+
+  
 }
 
 object By {
