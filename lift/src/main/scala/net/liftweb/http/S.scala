@@ -551,9 +551,9 @@ object S {
    */
   def hostAndPath: String = 
   servletRequest.map(r => (r.getScheme, r.getServerPort) match {
-      case ("http", 80) => "http://"+r.getServerName+r.getContextPath
-      case ("https", 443) => "https://"+r.getServerName+r.getContextPath
-      case (sch, port) => sch + "://"+r.getServerName+":"+port+r.getContextPath
+      case ("http", 80) => "http://"+r.getServerName+contextPath
+      case ("https", 443) => "https://"+r.getServerName+contextPath
+      case (sch, port) => sch + "://"+r.getServerName+":"+port+contextPath
     }).openOr("")
 
   /**

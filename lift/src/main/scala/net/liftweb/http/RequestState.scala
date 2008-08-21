@@ -40,11 +40,18 @@ case class FileParamHolder(name: String, mimeType: String, fileName: String, fil
 object RequestState {
   object NilPath extends ParsePath(Nil, "", true, false)
 
+  def calcContextPath(request: HttpServletRequest): String = {
+    request.getHeader("X-Lift-ContextPath") match {
+      case null => request.getContextPath
+      case s => s
+    }
+  }
+
   def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
-    val contextPath = request.getContextPath
+    val contextPath = calcContextPath(request)
     val tmpPath = parsePath(tmpUri)
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
@@ -74,41 +81,41 @@ object RequestState {
       (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
-        val mimeUpload = (new ServletFileUpload)
-        mimeUpload.setSizeMax(LiftRules.maxMimeSize)
-        mimeUpload.setFileSizeMax(LiftRules.maxMimeFileSize)
-        val what = mimeUpload.getItemIterator(request)
-        def hasNext = what.hasNext
-        def next = what.next match {
-          case f if (f.isFormField) => NormalParamHolder(f.getFieldName, new String(readWholeStream(f.openStream), "UTF-8"))
-          case f => FileParamHolder(f.getFieldName, f.getContentType, f.getName, readWholeStream(f.openStream))
-        }
-      }).toList
+          val mimeUpload = (new ServletFileUpload)
+          mimeUpload.setSizeMax(LiftRules.maxMimeSize)
+          mimeUpload.setFileSizeMax(LiftRules.maxMimeFileSize)
+          val what = mimeUpload.getItemIterator(request)
+          def hasNext = what.hasNext
+          def next = what.next match {
+            case f if (f.isFormField) => NormalParamHolder(f.getFieldName, new String(readWholeStream(f.openStream), "UTF-8"))
+            case f => FileParamHolder(f.getFieldName, f.getContentType, f.getName, readWholeStream(f.openStream))
+          }
+        }).toList
 
       val normal: List[NormalParamHolder] = allInfo.flatMap{case v: NormalParamHolder => List(v) case _ => Nil}
       val files: List[FileParamHolder] = allInfo.flatMap{case v: FileParamHolder => List(v) case _ => Nil}
 
       val params = normal.foldLeft(eMap)((a,b) => a.get(b.name) match {
-        case None => a + (b.name -> List(b.value))
-        case Some(v) => a + (b.name -> (v ::: List(b.value)))
-      })
+          case None => a + (b.name -> List(b.value))
+          case Some(v) => a + (b.name -> (v ::: List(b.value)))
+        })
 
       (normal.map(_.name).removeDuplicates, localParams ++ params, files, Empty)
     } else if (reqType.get_?) {
       request.getQueryString match {
         case null => (Nil, localParams, Nil, Empty)
         case s =>
-        val pairs = s.split("&").toList.map(_.trim).filter(_.length > 0).map(_.split("=").toList match {
-          case name :: value :: Nil => (true, urlDecode(name), urlDecode(value))
-          case name :: Nil => (true, urlDecode(name), "")
-          case _ => (false, "", "")
-          }).filter(_._1).map{case (_, name, value) => (name, value)}
+          val pairs = s.split("&").toList.map(_.trim).filter(_.length > 0).map(_.split("=").toList match {
+              case name :: value :: Nil => (true, urlDecode(name), urlDecode(value))
+              case name :: Nil => (true, urlDecode(name), "")
+              case _ => (false, "", "")
+            }).filter(_._1).map{case (_, name, value) => (name, value)}
           val names = pairs.map(_._1).removeDuplicates
           val params = pairs.foldLeft(eMap) (
-          (a,b) => a.get(b._1) match {
-            case None => a + (b._1 -> List(b._2))
-            case Some(xs) => a + (b._1 -> (xs ::: List(b._2)))
-          }
+            (a,b) => a.get(b._1) match {
+              case None => a + (b._1 -> List(b._2))
+              case Some(xs) => a + (b._1 -> (xs ::: List(b._2)))
+            }
           )
 
           val hereParams = localParams ++ params
@@ -122,7 +129,7 @@ object RequestState {
       (paramNames, params, Nil, Empty)
     }
 
-    new RequestState(rewritten.path,contextPath, reqType,
+    new RequestState(rewritten.path, contextPath, reqType,
                      request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
   }
 
@@ -158,9 +165,9 @@ object RequestState {
     val hv = v.text
     if (hv.startsWith("/")) {
       Text(fixURL match {
-        case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
-        case _ => contextPath+hv
-      })
+          case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
+          case _ => contextPath+hv
+        })
     }
     else Text(hv)
   }
@@ -192,21 +199,21 @@ object RequestState {
   }
 
   private[liftweb] def defaultCreateNotFound(in: RequestState) =
-    XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
-      ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
+  XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
+                ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
 
   def unapply(in: RequestState): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType))
 }
 
 @serializable
 class RequestState(val path: ParsePath,
-val contextPath: String,
-val requestType: RequestType,
-val contentType: String,
-val request: HttpServletRequest,
-val nanoStart: Long,
-val nanoEnd: Long,
-val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]]))
+                   val contextPath: String,
+                   val requestType: RequestType,
+                   val contentType: String,
+                   val request: HttpServletRequest,
+                   val nanoStart: Long,
+                   val nanoEnd: Long,
+                   val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]]))
 {
 
   override def toString = "RequestState("+paramNames+", "+params+", "+path+
@@ -224,9 +231,9 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   }
 
   lazy val (paramNames: List[String],
-  params: Map[String, List[String]],
-  uploadedFiles: List[FileParamHolder],
-  body: Can[Array[Byte]]) = paramCalculator()
+            params: Map[String, List[String]],
+            uploadedFiles: List[FileParamHolder],
+            body: Can[Array[Byte]]) = paramCalculator()
 
   lazy val cookies = request.getCookies() match {
     case null => Nil
@@ -279,13 +286,13 @@ val paramCalculator: () => (List[String], Map[String, List[String]],List[FilePar
   }
 
   /**
-    * The IP address of the request
-    */
+   * The IP address of the request
+   */
   def remoteAddr: String = request.getRemoteAddr()
 
   /**
-  * The user agent of the browser that sent the request
-    */
+   * The user agent of the browser that sent the request
+   */
   def userAgent: Can[String] = Can.legacyNullTest(request.getHeader("User-Agent"))
 
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
