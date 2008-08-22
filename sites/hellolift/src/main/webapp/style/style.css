@@ -105,6 +105,16 @@ body {
 	text-decoration:none;
 }
 
+#sidebar ul li span {
+	display:block;
+	padding:3px;
+	width:242px;
+	background:url(../images/li-off.jpg) top left no-repeat #f2f7e9;
+	color:#060;
+	text-indent:30px;
+	text-decoration:none;
+}
+
 #sidebar ul li a:hover {
 	background:url(../images/li-on.jpg) top left no-repeat #f2f7e9;
 }

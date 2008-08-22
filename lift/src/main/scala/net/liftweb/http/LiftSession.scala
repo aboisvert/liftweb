@@ -828,7 +828,8 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
     override def transform(n: Node) = n match {
       case Elem(null, "body", attr @ _, scope @ _, kids @ _*) if !done =>
         done = true
-        Elem(null, "body", attr,  scope, (kids ++ <span id="lift_bind"/><script>
+        Elem(null, "body", attr,  scope, (kids ++
+                                          <span id="lift_bind"/><script>
                                           // {
                                           Unparsed("""<![CDATA[
       """+cometVar+"""
