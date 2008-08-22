@@ -320,9 +320,11 @@ object JE {
     def toJsCmd = "id"
   }
 
+  /*
   case object Class extends JsMethod {
     def toJsCmd = "class"
   }
+  */
 
   case object Style extends JsMethod {
     def toJsCmd = "style"
@@ -552,7 +554,8 @@ object JsCmds {
   implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ & _)
 
   object Script {
-    def apply(script: JsCmd): NodeSeq = <script>{Unparsed("""
+    def apply(script: JsCmd): NodeSeq =
+    <script>{Unparsed("""
       // <![CDATA[
       """+script.toJsCmd+"""
       // ]]>""")
