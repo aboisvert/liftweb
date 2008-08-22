@@ -624,7 +624,7 @@ object S {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-                               "function "+key+"(obj) {jQuery.ajax( {url: '"+encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', cache: false, timeout: 10000, type: 'POST', data: '"+
+                               "function "+key+"(obj) {jQuery.ajax( {url: '"+encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', cache: false, timeout: 10000, type: 'POST', data: '"+
                                key+"='+encodeURIComponent(JSON.stringify(obj)) , dataType: 'script'});}"))
   }
 

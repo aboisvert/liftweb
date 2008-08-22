@@ -753,7 +753,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
+    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: '"+attr("key")+"=true', dataType: 'script'});"
     new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
@@ -763,7 +763,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
+    val ajax = "jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', timeout: 10000, cache: false, data: jQuery('#"+id+"').serialize(), dataType: 'script', type: 'POST'}); "+pre+" return false;"
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
@@ -834,7 +834,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {jQuery.ajax( {url: '"""+S.encodeURL(contextPath+"/"+LiftRules.cometPath)+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
+      function lift_cometEntry() {jQuery.ajax( {url: '"""+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.cometPath)+"""', cache: false, success: lift_handlerSuccessFunc, timeout: 140000, data: lift_toWatch, dataType: 'script', error: lift_handlerFailureFunc} );}
       jQuery(document).ready(function(){lift_handlerSuccessFunc();});
       // ]]>
       """)}</script>) :_*)

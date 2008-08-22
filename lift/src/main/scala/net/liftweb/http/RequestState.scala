@@ -29,29 +29,26 @@ import scala.xml._
 import org.apache.commons.fileupload.servlet._
 
 @serializable
-sealed abstract class ParamHolder {
+sealed trait ParamHolder {
   def name: String
 }
 @serializable
 case class NormalParamHolder(name: String, value: String) extends ParamHolder
 @serializable
-case class FileParamHolder(name: String, mimeType: String, fileName: String, file: Array[Byte]) extends ParamHolder
+case class FileParamHolder(name: String, mimeType: String, 
+                           fileName: String,
+                           file: Array[Byte]) extends ParamHolder
 
 object RequestState {
   object NilPath extends ParsePath(Nil, "", true, false)
-
-  def calcContextPath(request: HttpServletRequest): String = {
-    request.getHeader("X-Lift-ContextPath") match {
-      case null => request.getContextPath
-      case s => s
-    }
-  }
 
   def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): RequestState = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
-    val contextPath = calcContextPath(request)
+    val contextPath = LiftRules.calculateContextPath(request) openOr 
+    request.getContextPath
+    
     val tmpPath = parsePath(tmpUri)
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
@@ -187,10 +184,10 @@ object RequestState {
         v match {
           case Group(nodes) => Group(fixHtml(contextPath, nodes))
 
-          case (<form>{ _* }</form>) => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<script>{ _* }</script>) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<a>{ _* }</a>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-          case (<link/>) => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "form" => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
           case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
           case _ => v
         }

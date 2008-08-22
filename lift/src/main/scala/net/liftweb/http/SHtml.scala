@@ -34,7 +34,7 @@ object SHtml {
    */
   def ajaxButton(text: String, func: => JsCmd): Elem =
     <input type="button" value={text}/> %
-     ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
+     ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
        mapFunc(() => func)+"=true', dataType: 'script'});"))
 
   /**
@@ -83,14 +83,14 @@ object SHtml {
    */
   private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
     "jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+      S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
     val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+      S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
     nh ++ rnk
   }
 
@@ -118,7 +118,7 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+        ("onblur" -> ("jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
   }
 
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
@@ -126,7 +126,7 @@ object SHtml {
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
       (<input type="checkbox"/>) % checked(value) %
-        ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))
+        ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))
   }
 
   def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -138,10 +138,10 @@ object SHtml {
 
     (<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+    }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
   }
 
-  def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
+  def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+S.encodeURL(LiftRules.ajaxServer()+"/"+LiftRules.ajaxPath)+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
      mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
 
   /**
