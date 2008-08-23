@@ -1,6 +1,6 @@
 <lift:surround with="default" at="content">
-<lift:snippet type="misc:confirmDelete" form="POST">
-Do you really want to delete <xmp:username/>
-<a href="/simple/index.html">No</a> <xmp:delete/>
-</lift:snippet>
+  <lift:misc.confirmDelete form="POST">
+    Do you really want to delete <xmp:username/>
+    <a href="/simple/index.html">No</a> <xmp:delete/>
+  </lift:misc.confirmDelete>
 </lift:surround>

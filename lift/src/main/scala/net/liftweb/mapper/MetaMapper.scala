@@ -79,7 +79,9 @@ object MapperRules {
   </tr></xml:group>
 }
 
-trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
+trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
+  self: A =>
+
   type RealType = A
 
   def beforeValidation: List[A => Any] = Nil
@@ -224,6 +226,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
   }
 
   def create: A = createInstance
+								      
 
   private[mapper] def addFields(what: String, whereAdded: Boolean, by: List[QueryParam[A]]): String = {
 
@@ -257,15 +260,24 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
 	  case ByList(field, vals) =>
 	    vals match {
 	      case Nil => 
-		val start = if (wav) "AND " else {wav=true; "WHERE "}
-	      updatedWhat = updatedWhat + start + " 0 = 1 "
+	      updatedWhat = updatedWhat + whereOrAnd + " 0 = 1 "
 	      
 	      case _ => {
-		val start = if (wav) "AND " else {wav=true; "WHERE "}
 		updatedWhat = updatedWhat +
-		vals.map(v => field.dbColumnName+ " = ?").mkString(start+" (", " OR ", ")")
+		vals.map(v => field.dbColumnName+ " = ?").mkString(whereOrAnd+" (", " OR ", ")")
 	      }
 	    }
+
+  
+          case (in: InThing[A]) =>
+            updatedWhat = updatedWhat + whereOrAnd +
+          in.outerField.dbColumnName+
+          " IN ("+in.innerMeta.addFields("SELECT "+
+                                         in.innerField.dbColumnName+
+                                         " FROM "+
+                                         in.innerMeta.dbTableName+" ",false,
+                                         in.queryParams)+" ) "
+	  
 
 	  // Executes a subquery with {@code query}
           case BySql(query, _*) =>
@@ -277,48 +289,55 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {self: A =>
     }
   }
 
-  private[mapper] def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: int) {
+
+  private[mapper] def setStatementFields(st: PreparedStatement, by: List[QueryParam[A]], curPos: Int): Int = {
     by match {
-      case Nil => {}
+      case Nil => curPos
       case Cmp(field, _, Full(value), _) :: xs =>
         st.setObject(curPos, field.convertToJDBCFriendly(value), field.targetSQLType)
-      setStatementFields(st, xs, curPos + 1)
+        setStatementFields(st, xs, curPos + 1)
 
       case ByList(field, vals) :: xs => {
-	var newPos = curPos
-	vals.foreach(v => {
-	  st.setObject(newPos,
-		       field.convertToJDBCFriendly(v),
-		       field.targetSQLType)
-	  newPos = newPos + 1
-	})
-	setStatementFields(st, xs, newPos)
-      }
-      case BySql(query, params @ _*) :: xs => {
-        params.toList match {
-          case Nil => setStatementFields(st, xs, curPos)
-          case List(i: int) =>
-            st.setInt(curPos, i)
-          setStatementFields(st, xs, curPos + 1)
-          case List(lo: long) =>
-            st.setLong(curPos, lo)
-          setStatementFields(st, xs, curPos + 1)
-          case List(s: String) =>
-            st.setString(curPos, s)
-          setStatementFields(st, xs, curPos + 1)
-          case List(d: Date) =>
-            st.setDate(curPos, new java.sql.Date(d.getTime))
-          setStatementFields(st, xs, curPos + 1)
-          case List(field: BaseMappedField) => st.setObject(curPos, field.jdbcFriendly, field.targetSQLType)
-          setStatementFields(st, xs, curPos + 1)
-
-          case p :: ps =>
-            setStatementFields(st, BySql[A](query, p) :: BySql[A](query, ps: _*) :: xs, curPos)
+          var newPos = curPos
+          vals.foreach(v => {
+              st.setObject(newPos,
+                           field.convertToJDBCFriendly(v),
+                           field.targetSQLType)
+              newPos = newPos + 1
+            })
+          setStatementFields(st, xs, newPos)
         }
-      }
+
+      case (in: InThing[A]) :: xs =>
+        val newPos = in.innerMeta.setStatementFields(st, in.queryParams,
+						     curPos)
+        setStatementFields(st, xs, newPos)
+
+      case BySql(query, params @ _*) :: xs => {
+          params.toList match {
+            case Nil => setStatementFields(st, xs, curPos)
+            case List(i: int) =>
+              st.setInt(curPos, i)
+              setStatementFields(st, xs, curPos + 1)
+            case List(lo: long) =>
+              st.setLong(curPos, lo)
+              setStatementFields(st, xs, curPos + 1)
+            case List(s: String) =>
+              st.setString(curPos, s)
+              setStatementFields(st, xs, curPos + 1)
+            case List(d: Date) =>
+              st.setDate(curPos, new java.sql.Date(d.getTime))
+              setStatementFields(st, xs, curPos + 1)
+            case List(field: BaseMappedField) => st.setObject(curPos, field.jdbcFriendly, field.targetSQLType)
+              setStatementFields(st, xs, curPos + 1)
+
+            case p :: ps =>
+              setStatementFields(st, BySql[A](query, p) :: BySql[A](query, ps: _*) :: xs, curPos)
+          }
+        }
       case _ :: xs => {
-        setStatementFields(st, xs, curPos)
-      }
+          setStatementFields(st, xs, curPos)
+        }
     }
   }
 
@@ -979,8 +998,63 @@ case class OrderBySql[O <: Mapper[O]](sql: String) extends QueryParam[O]
 
 case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
-case class MaxRows[O<:Mapper[O]](max: long) extends QueryParam[O]
-case class StartAt[O<:Mapper[O]](start: long) extends QueryParam[O]
+case class MaxRows[O<:Mapper[O]](max: Long) extends QueryParam[O]
+case class StartAt[O<:Mapper[O]](start: Long) extends QueryParam[O]
+
+abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterType] {
+  type JoinType
+  type InnerType <: Mapper[InnerType]
+
+  def outerField: MappedField[JoinType, OuterType]
+  def innerField: MappedField[JoinType, InnerType]
+  def innerMeta: MetaMapper[InnerType]
+  def queryParams: List[QueryParam[InnerType]]
+}
+
+object In {
+  def fk[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
+            Zoom <% QueryParam[InnerMapper],
+	    OuterMapper <:KeyedMapper[JoinTypeA, OuterMapper]]
+  (fielda: MappedForeignKey[JoinTypeA, InnerMapper, OuterMapper],
+   qp: Zoom*): InThing[OuterMapper]
+  = {
+    new InThing[OuterMapper] {
+      type JoinType = JoinTypeA
+      type InnerType = InnerMapper
+
+      val outerField: MappedField[JoinType, OuterMapper] = fielda.dbKeyToTable.primaryKeyField
+      val innerField: MappedField[JoinType, InnerMapper] = fielda
+      val innerMeta: MetaMapper[InnerMapper] = fielda.fieldOwner.getSingleton
+
+      val queryParams: List[QueryParam[InnerMapper]] = 
+              qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
+    }
+  }
+  
+  def apply[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
+            Zoom <% QueryParam[InnerMapper],
+	    OuterMapper <: Mapper[OuterMapper]]
+  (outerField: MappedField[JoinTypeA, OuterMapper],
+   innerField: MappedField[JoinTypeA, InnerMapper],
+   qp: Zoom*): InThing[OuterMapper]
+  = {
+    new InThing[OuterMapper] {
+      type JoinType = JoinTypeA
+      type InnerType = InnerMapper
+
+      val outerField: MappedField[JoinType, OuterMapper] = outerField
+      val innerField: MappedField[JoinType, InnerMapper] = innerField
+      val innerMeta: MetaMapper[InnerMapper] = innerField.fieldOwner.getSingleton
+
+      val queryParams: List[QueryParam[InnerMapper]] = {
+        
+        qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
+      }
+    }
+  }
+
+  
+}
 
 object By {
   import OprEnum._

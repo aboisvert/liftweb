@@ -320,10 +320,6 @@ object JE {
     def toJsCmd = "id"
   }
 
-  case object Class extends JsMethod {
-    def toJsCmd = "class"
-  }
-
   case object Style extends JsMethod {
     def toJsCmd = "style"
   }
@@ -433,6 +429,17 @@ object JsCmds {
       elem ++ Script(LiftRules.jsArtifacts.onLoad(Run("document.getElementById("+id.encJs+").focus();")))
     }
   }
+
+object Function {
+  def apply(name: String, params: List[String], body: JsCmd): JsCmd =
+  new JsCmd {
+    def toJsCmd = "function "+name+"("+
+    params.mkString(", ")+""") {
+    """+body.toJsCmd+"""
+    }
+"""
+  }
+}
 
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+

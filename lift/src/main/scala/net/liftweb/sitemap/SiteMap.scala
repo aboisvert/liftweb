@@ -71,8 +71,10 @@ object SiteMap {
 
 trait HasKids {
   def kids: Seq[Menu]
-  def buildUpperLines: Seq[MenuLine] = Nil
+  def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
+  = populate
+  
   def isRoot_? = false
-  def buildAboveLine(path: Menu): Seq[MenuLine] = Nil
+
   private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = Left(true)
 }
