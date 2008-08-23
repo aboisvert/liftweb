@@ -116,15 +116,15 @@ def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[Verificat
 }
   
   def dispatchPf: LiftRules.DispatchPf = {
-    case RequestMatcher(RequestState(PathRoot :: LogOutPath :: Nil, "", _), _) =>
-    req => {
+    case RequestState(PathRoot :: LogOutPath :: Nil, "", _) =>
+    () => {
       logUserOut()
       Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
     }
     
-    case RequestMatcher(r @ RequestState(PathRoot :: LoginPath :: Nil, "", PostRequest), _)
+    case r @ RequestState(PathRoot :: LoginPath :: Nil, "", PostRequest)
     if r.param(PostParamName).isDefined =>
-    req => {
+      () => {
       try {
         RedirectBackTo(S.referer)
         Full(OpenIdObject.is.authRequest(r.param(PostParamName).get, "/"+PathRoot+"/"+ResponsePath))
@@ -135,20 +135,23 @@ def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[Verificat
       }
     }
     
-    case RequestMatcher(r @ RequestState(PathRoot :: ResponsePath :: Nil, "", _), _) =>
-    req => {
-      val (id, res) = OpenIdObject.is.verifyResponse(req.request)
+    case r @ RequestState(PathRoot :: ResponsePath :: Nil, "", _) =>
+      () => {
+	for (req <- S.request;
+	     ret <- {
+	       val (id, res) = OpenIdObject.is.verifyResponse(req.request)
+	       
+	       OpenIdObject.onComplete match {
+		 case Full(f) => Full(f(id, Full(res), Empty))
+		 
+		 case _ => postLogin(id, res)
+		 val rb = RedirectBackTo.is
+		 Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
+	       }
+	     }) yield ret
       
-      OpenIdObject.onComplete match {
-        case Full(f) => Full(f(id, Full(res), Empty))
-        
-        case _ => postLogin(id, res)
-        val rb = RedirectBackTo.is
-        Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
+      
       }
-      
-      
-    }
   }
 }
 

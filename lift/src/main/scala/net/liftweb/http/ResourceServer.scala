@@ -42,7 +42,9 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[LiftResponse] = {
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(): Can[LiftResponse] = {
+    for (req <- S.request;
+	 r <- {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
@@ -58,7 +60,7 @@ object ResourceServer {
               ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
       }
       }
-    } else Empty
+    } else Empty}) yield r
   }
 
   /**

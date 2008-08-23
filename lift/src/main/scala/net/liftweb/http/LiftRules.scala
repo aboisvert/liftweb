@@ -30,12 +30,12 @@ import java.io.ByteArrayOutputStream
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[LiftResponse]];
+  type DispatchPf = PartialFunction[RequestState, () => Can[LiftResponse]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
+  type TemplatePf = PartialFunction[RequestState,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), LiftResponse]
+  type URINotFoundPF = PartialFunction[(RequestState, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
 
@@ -590,7 +590,7 @@ object LiftRules {
    * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
    */
   var uriNotFound: URINotFoundPF = {
-    case (RequestMatcher(r, _), _) => RequestState.defaultCreateNotFound(r)
+   case (r, _) => RequestState.defaultCreateNotFound(r)
   }
 
 

@@ -263,11 +263,11 @@ class RequestState(val path: ParsePath,
 
 
   def createNotFound = {
-    LiftRules.uriNotFound((RequestMatcher(this, S.session), Empty))
+    LiftRules.uriNotFound((this, Empty))
   }
 
   def createNotFound(failure: Failure) = {
-    LiftRules.uriNotFound((RequestMatcher(this, S.session), Can(failure)))
+    LiftRules.uriNotFound((this, Can(failure)))
   }
 
 
@@ -295,8 +295,6 @@ class RequestState(val path: ParsePath,
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }
 
-
-case class RequestMatcher(request: RequestState, session: Can[LiftSession])
 case class RewriteRequest(path: ParsePath, requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String])
 

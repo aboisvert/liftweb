@@ -129,6 +129,10 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
   findAll(By(nickname, str))
 }
 
+object ValidNickName {
+  val is = """^[a-z][a-z0-9_]*$""".r
+  def apply(in: String): Boolean = is.findFirstIn(in).isDefined
+}
 /**
  * An OpenID friendly extension to ProtoUser
  */
@@ -143,8 +147,14 @@ trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
   
   object nickname extends MappedPoliteString(this, 64) {
     override def dbIndexed_? = true
-    
-    override def setFilter = notNull _ :: toLower _ :: trim _ :: super.setFilter
+
+  def deDupUnderscore(in: String): String = in.indexOf("__") match {
+    case -1 => in
+    case pos => deDupUnderscore(in.substring(0, pos)+in.substring(pos + 1))
+  }
+
+    override def setFilter = notNull _ :: toLower _ :: trim _ ::
+    deDupUnderscore _ :: super.setFilter
     
     private def validateNickname(str: String): List[FieldError] = {
       val others = getSingleton.findByNickname(str).
@@ -152,8 +162,15 @@ trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
       filter(_.id.is != fieldOwner.id.is)
       others.map(u => FieldError(this, <xml:group>Duplicate nickname: {str}</xml:group>))
     }
+
+  private def validText(str: String): List[FieldError] =
+  if (ValidNickName(str)) Nil
+  else List(FieldError(this,
+                       <xml:group>Invalid nickname.  Must start with
+                        a letter and contain only letters,
+                        numbers or "_"</xml:group>))
     
-    override def validations = validateNickname _ :: super.validations
+    override def validations = validText _ :: validateNickname _ :: super.validations
   }
   
   override def niceName: String = nickname
