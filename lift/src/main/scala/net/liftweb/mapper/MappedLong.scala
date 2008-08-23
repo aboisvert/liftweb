@@ -30,6 +30,8 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
    extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
 
+  def can: Can[Long] = if (defined_?) Full(is) else Empty
+
   type KeyType = Long
   type KeyedForeignType = O
   type OwnerType = T
