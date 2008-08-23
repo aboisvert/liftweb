@@ -74,7 +74,7 @@ object RequestState {
     //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Can[Array[Byte]]) =
     val paramCalculator = () =>
     if ((reqType.post_? ||
-	 reqType.put_?) && request.getContentType == "text/xml") {
+         reqType.put_?) && request.getContentType == "text/xml") {
       (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
@@ -151,7 +151,7 @@ object RequestState {
 
     val (lst, suffix) = if (idx == -1) (orgLst, "")
     else (orgLst.dropRight(1) ::: List(last.substring(0, idx)),
-	  last.substring(idx + 1))
+          last.substring(idx + 1))
 
     ParsePath(lst.map(urlDecode), suffix, front, back)
   }
@@ -277,9 +277,12 @@ class RequestState(val path: ParsePath,
 
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
 
-  lazy val uri = request.getRequestURI.substring(request.getContextPath.length) match {
-    case "" => "/"
-    case x => RequestState.fixURI(x)
+  lazy val uri = request match {
+    case null => "Outside HTTP Request (e.g., on Actor)"
+    case request => request.getRequestURI.substring(request.getContextPath.length) match {
+        case "" => "/"
+        case x => RequestState.fixURI(x)
+      }
   }
 
   /**

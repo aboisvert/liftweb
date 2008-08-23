@@ -270,9 +270,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
 
             case in: InRaw[A, _] =>
-               updatedWhat = updatedWhat + whereOrAnd +
-              in.field.dbColumnName+
-              " IN ( "+in.rawSql+" ) "
+              updatedWhat = updatedWhat + whereOrAnd + (in.rawSql match {
+                case null | "" => " 0 = 1 "
+                case sql => " "+in.field.dbColumnName+" IN ( "+sql+" ) "
+              })
 
             case (in: InThing[A]) =>
               updatedWhat = updatedWhat + whereOrAnd +
