@@ -1020,6 +1020,7 @@ case class InRaw[TheType <:
                  Mapper[TheType], T](field: MappedField[T, TheType],
                                      rawSql: String,
                                      checkedBy: IHaveValidatedThisSQL)
+extends QueryParam[TheType]
 
 object In {
   def fk[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
