@@ -38,6 +38,7 @@ object LiftRules {
   type URINotFoundPF = PartialFunction[(RequestState, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
+  type ViewDispatchPf = PartialFunction[List[String], LiftView]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -222,6 +223,11 @@ object LiftRules {
    * DispatchSnippet instance
    */
   var snippetDispatch: SnippetDispatchPf = Map.empty
+
+  /**
+  * Change this variable to set view dispatching
+  */
+  var viewDispatch: ViewDispatchPf = Map.empty
 
   def snippet(name: String): Can[DispatchSnippet] =
   if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
