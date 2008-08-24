@@ -370,6 +370,7 @@ object LiftRules {
   def defaultCalcContextPath(request: HttpServletRequest): Can[String] = {
     request.getHeader("X-Lift-ContextPath") match {
       case null => Empty
+        case "" => Empty
       case s if s.trim == "/" => Full("")
       case s => Full(s.trim)
     }

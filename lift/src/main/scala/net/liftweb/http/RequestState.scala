@@ -46,7 +46,7 @@ object RequestState {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
-    val contextPath = LiftRules.calculateContextPath(request) openOr 
+    val contextPath = /*LiftRules.calculateContextPath(request) openOr */
     request.getContextPath
     
     val tmpPath = parsePath(tmpUri)
