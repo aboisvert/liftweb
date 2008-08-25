@@ -46,7 +46,7 @@ object RequestState {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
-    val contextPath = LiftRules.calculateContextPath(request) openOr 
+    val contextPath = LiftRules.calculateContextPath(request) openOr
     request.getContextPath
     
     val tmpPath = parsePath(tmpUri)
@@ -74,7 +74,7 @@ object RequestState {
     //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Can[Array[Byte]]) =
     val paramCalculator = () =>
     if ((reqType.post_? ||
-	 reqType.put_?) && request.getContentType == "text/xml") {
+         reqType.put_?) && request.getContentType == "text/xml") {
       (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
@@ -151,7 +151,7 @@ object RequestState {
 
     val (lst, suffix) = if (idx == -1) (orgLst, "")
     else (orgLst.dropRight(1) ::: List(last.substring(0, idx)),
-	  last.substring(idx + 1))
+          last.substring(idx + 1))
 
     ParsePath(lst.map(urlDecode), suffix, front, back)
   }
@@ -169,7 +169,7 @@ object RequestState {
     else Text(hv)
   }
 
-  def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
+  def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
     if (contextPath.length == 0) in
     else {
       def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
@@ -188,7 +188,7 @@ object RequestState {
           case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
           case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
           case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
+          case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
           case _ => v
         }
       }
@@ -263,11 +263,11 @@ class RequestState(val path: ParsePath,
 
 
   def createNotFound = {
-    LiftRules.uriNotFound((RequestMatcher(this, S.session), Empty))
+    LiftRules.uriNotFound((this, Empty))
   }
 
   def createNotFound(failure: Failure) = {
-    LiftRules.uriNotFound((RequestMatcher(this, S.session), Can(failure)))
+    LiftRules.uriNotFound((this, Can(failure)))
   }
 
 
@@ -277,9 +277,12 @@ class RequestState(val path: ParsePath,
 
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
 
-  lazy val uri = request.getRequestURI.substring(request.getContextPath.length) match {
-    case "" => "/"
-    case x => RequestState.fixURI(x)
+  lazy val uri = request match {
+    case null => "Outside HTTP Request (e.g., on Actor)"
+    case request => request.getRequestURI.substring(request.getContextPath.length) match {
+        case "" => "/"
+        case x => RequestState.fixURI(x)
+      }
   }
 
   /**
@@ -295,8 +298,6 @@ class RequestState(val path: ParsePath,
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }
 
-
-case class RequestMatcher(request: RequestState, session: Can[LiftSession])
 case class RewriteRequest(path: ParsePath, requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String])
 

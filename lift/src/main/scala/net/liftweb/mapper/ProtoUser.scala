@@ -215,33 +215,33 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   MenuItem("", validateUserPath, false) :: Nil
   
   def templates: LiftRules.TemplatePf = {
-    case RequestMatcher(RequestState(path, "", _), _)
-      if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
+    case RequestState(path, "", _)
+    if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(loginPath) && testLoggedIn(loginSuffix) => () => login
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(lostPasswordPath) &&
       testLoggedIn(lostPasswordSuffix) => () => lostPassword
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(passwordResetPath) &&
       testLoggedIn(passwordResetSuffix) =>
       () => passwordReset(path.drop(passwordResetPath.length).head)
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(changePasswordPath) &&
       testLoggedIn(changePasswordSuffix) => () => changePassword
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(logoutPath) &&
       testLoggedIn(logoutSuffix) => () => logout
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(editPath) && testLoggedIn(editSuffix) => () => edit
     
-    case RequestMatcher(RequestState(path, "", _), _)
+    case RequestState(path, "", _)
       if path.startsWith(validateUserPath) &&
       testLoggedIn(validateUserSuffix) =>
       () => validateUser(path.drop(validateUserPath.length).head)
@@ -354,7 +354,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                            "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
     
     S.addSessionTemplater(theName, {
-        case RequestMatcher(RequestState(path, "", _), _)
+        case RequestState(path, "", _)
           if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) =>  () => innerSignup
       })
     innerSignup
@@ -567,7 +567,7 @@ def loginXhtml = {
                          "submit" -> SHtml.submit(S.??("edit"), testEdit()))
     
     S.addSessionTemplater(theName, {
-        case RequestMatcher(RequestState(path, "", _), _)
+        case RequestState(path, "", _)
           if path.startsWith(editPath) && testLoggedIn(editSuffix) =>
           () => innerEdit})
     innerEdit

@@ -32,14 +32,15 @@ import java.io.ByteArrayOutputStream
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPf = PartialFunction[RequestMatcher, RequestState => Can[LiftResponse]];
+  type DispatchPf = PartialFunction[RequestState, () => Can[LiftResponse]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePf = PartialFunction[RequestMatcher,() => Can[NodeSeq]]
+  type TemplatePf = PartialFunction[RequestState,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(RequestMatcher, Can[Failure]), LiftResponse]
+  type URINotFoundPF = PartialFunction[(RequestState, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
+  type ViewDispatchPf = PartialFunction[List[String], LiftView]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -229,6 +230,11 @@ object LiftRules {
    * DispatchSnippet instance
    */
   var snippetDispatch: SnippetDispatchPf = Map.empty
+
+  /**
+  * Change this variable to set view dispatching
+  */
+  var viewDispatch: ViewDispatchPf = Map.empty
 
   def snippet(name: String): Can[DispatchSnippet] =
   if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
@@ -597,7 +603,7 @@ object LiftRules {
    * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
    */
   var uriNotFound: URINotFoundPF = {
-    case (RequestMatcher(r, _), _) => RequestState.defaultCreateNotFound(r)
+   case (r, _) => RequestState.defaultCreateNotFound(r)
   }
 
 

@@ -322,11 +322,11 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
   val ret = try {
     val sessionDispatch = S.highLevelSessionDispatcher
     
-    val toMatch = RequestMatcher(request, Full(this))
+    val toMatch = request
     if (sessionDispatch.isDefinedAt(toMatch)) {
       runParams(request)
       try {
-        sessionDispatch(toMatch)(request) match {
+        sessionDispatch(toMatch)() match {
           case Full(r) => Full(checkRedirect(r))
           case _ => LiftRules.notFoundOrIgnore(request, Full(this))
         }
@@ -489,7 +489,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
   }
 
   private def findVisibleTemplate(path: ParsePath, session: RequestState) : Can[NodeSeq] = {
-    val toMatch = RequestMatcher(session, Full(this))
+    val toMatch = session
     val templ = LiftRules.templateTable(session.request)
     (if (templ.isDefinedAt(toMatch)) templ(toMatch)() else Empty) or {
       val tpath = path.partPath
@@ -879,11 +879,20 @@ object TemplateFinder {
    *
    * @return the template if it can be found
    */
-  def findAnyTemplate(places : List[String]): Can[NodeSeq] = {
+  def findAnyTemplate(places: List[String]): Can[NodeSeq] = {
+    if (LiftRules.viewDispatch.isDefinedAt(places)) {
+      val lv = LiftRules.viewDispatch(places)
+      val a = places.last
+
+      if (lv.dispatch_&.isDefinedAt(a))
+      lv.dispatch_&(a)()
+      else Empty
+    } else {
     val pls = places.mkString("/","/", "")
     val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
 
     first(toTry)(v => LiftRules.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
+  }
   }
 
   private def locales: List[String] = {

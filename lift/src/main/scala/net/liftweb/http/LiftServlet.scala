@@ -68,7 +68,8 @@ class LiftServlet extends HttpServlet {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-          case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath =>
+          case r @ RequestState(mainPath :: subPath, suffx, _)
+	if mainPath == LiftRules.ResourceServerPath =>
             ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
         })
     } finally {
@@ -127,7 +128,7 @@ class LiftServlet extends HttpServlet {
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
     LiftRules.onBeginServicing.foreach(_(requestState))
-    val statelessToMatch = RequestMatcher(requestState, Empty)
+    val statelessToMatch = requestState
 
 
     val resp: Can[LiftResponse] = 
@@ -140,7 +141,7 @@ class LiftServlet extends HttpServlet {
     // it
     if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
       val f = LiftRules.statelessDispatchTable(statelessToMatch)
-      f(requestState) match {
+      f() match {
         case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
         case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
         case f: Failure => Full(requestState.createNotFound(f))
@@ -175,13 +176,13 @@ class LiftServlet extends HttpServlet {
                                       requestState: RequestState):
   Can[LiftResponse] =
   {
-    val toMatch = RequestMatcher(requestState, Full(liftSession))
+    val toMatch = requestState
     val dispatch: (Boolean, Can[LiftResponse]) =
     if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
       LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
       val ret: (Boolean, Can[LiftResponse]) = try {
         val f = LiftRules.dispatchTable(request)(toMatch)
-        f(requestState) match {
+        f() match {
           case Full(v) =>
             (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
                                                     S.responseCookies, requestState) )))

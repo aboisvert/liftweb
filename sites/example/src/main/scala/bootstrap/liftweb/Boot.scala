@@ -44,20 +44,21 @@ class Boot {
 
     val dispatcher: LiftRules.DispatchPf = {
       // if the url is "showcities" then return the showCities function
-      case RequestMatcher(RequestState("showcities":: _, "", _),_) => XmlServer.showCities
+      case RequestState("showcities":: _, "", _) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestMatcher(RequestState("showstates":: xs, "", _),_) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+      case RequestState("showstates":: xs, "", _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
       // if it's a web service, pass it to the web services invoker
-      case RequestMatcher(r @RequestState("webservices" :: c :: _, "", _), _) => invokeWebService(r, c)
+      case RequestState("webservices" :: c :: _, "", _) => invokeWebService(c)
     }
     LiftRules.addDispatchBefore(dispatcher)
 
     LiftRules.addDispatchBefore {
-         case RequestMatcher(RequestState("login" :: page , "", _), _)  if !LoginStuff.is && page.head != "validate" =>
-         ignore => Full(RedirectResponse("/login/validate"))
-      }
+         case RequestState("login" :: page , "", _) 
+      if !LoginStuff.is && page.head != "validate" =>
+        () => Full(RedirectResponse("/login/validate"))
+    }
 
 
     LiftRules.addRewriteBefore{
@@ -95,12 +96,15 @@ class Boot {
 
   }
 
-  private def invokeWebService(request: RequestState, methodName: String)(req: RequestState): Can[LiftResponse] =
-  createInvoker(methodName, new WebServices(request)).flatMap(_() match {
-    case Full(ret: LiftResponse) => Full(ret)
-    case _ => Empty
-  })
-
+  private def invokeWebService(methodName: String)():
+  Can[LiftResponse] =
+    for (req <- S.request;
+	 invoker <- createInvoker(methodName, new WebServices(req));
+	 ret <- invoker() match {
+	   case Full(ret: LiftResponse) => Full(ret)
+	   case _ => Empty
+	 }) yield ret
+  
   private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
 }
 
@@ -158,35 +162,38 @@ object MenuInfo {
 }
 
 object XmlServer {
-  def showStates(which: String)(req: RequestState): Can[XmlResponse] = Full(XmlResponse(
-  <states renderedAt={timeNow.toString}>{
-    which match {
-      case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
-
-      case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
-
-      case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
-      } }</states>))
-
-      def showCities(ignore: RequestState): Can[XmlResponse] = Full(XmlResponse(<cities>
+  def showStates(which: String)(): Can[XmlResponse] = Full(XmlResponse(
+    <states renderedAt={timeNow.toString}>{
+      which match {
+	case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
+	
+	case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
+	
+	case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
+      } }
+    </states>))
+  
+  def showCities(): Can[XmlResponse] = 
+    Full(XmlResponse(
+      <cities>
       <city name="Boston"/>
       <city name="New York"/>
       <city name="San Francisco"/>
       <city name="Dallas"/>
       <city name="Chicago"/>
       </cities>))
+  
+}
 
+object DBVendor extends ConnectionManager {
+  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+    try {
+      Class.forName("org.h2.Driver")
+      val dm =  DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")
+      Full(dm)
+    } catch {
+      case e : Exception => e.printStackTrace; Empty
     }
-
-    object DBVendor extends ConnectionManager {
-      def newConnection(name: ConnectionIdentifier): Can[Connection] = {
-        try {
-          Class.forName("org.h2.Driver")
-          val dm =  DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")
-          Full(dm)
-        } catch {
-          case e : Exception => e.printStackTrace; Empty
-        }
-      }
-      def releaseConnection(conn: Connection) {conn.close}
-    }
+  }
+  def releaseConnection(conn: Connection) {conn.close}
+}

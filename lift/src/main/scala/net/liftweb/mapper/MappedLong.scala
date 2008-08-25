@@ -30,14 +30,31 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
    extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
 
+  def can: Can[Long] = if (defined_?) Full(is) else Empty
+
   type KeyType = Long
   type KeyedForeignType = O
   type OwnerType = T
 
   override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
-  // private val _obj = FatLazy(if(defined_?) foreign.find(i_is_!) else Empty)
-  lazy val obj: Can[O] = if(defined_?) foreign.find(i_is_!) else Empty
+  
+  def obj: Can[O] = synchronized {
+    if (!_calcedObj) {
+      _calcedObj = true
+      _obj = can.flatMap(foreign.find)
+    }
+    _obj
+    if(defined_?) foreign.find(i_is_!) else Empty
+  }
+  
+  def primeObj(obj: Can[O]) = synchronized {
+    _obj = obj
+    _calcedObj = true
+  }
+  
+  private var _obj: Can[O] = Empty
+  private var _calcedObj = false
 
   lazy val dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
