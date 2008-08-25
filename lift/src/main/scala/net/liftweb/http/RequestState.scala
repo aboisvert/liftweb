@@ -46,7 +46,7 @@ object RequestState {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
-    val contextPath = /*LiftRules.calculateContextPath(request) openOr */
+    val contextPath = LiftRules.calculateContextPath(request) openOr
     request.getContextPath
     
     val tmpPath = parsePath(tmpUri)
@@ -169,7 +169,7 @@ object RequestState {
     else Text(hv)
   }
 
-  def fixHtml(contextPath: String, in : NodeSeq) : NodeSeq = {
+  def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
     if (contextPath.length == 0) in
     else {
       def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
@@ -188,7 +188,7 @@ object RequestState {
           case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
           case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
           case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case Elem(_,_,_,_,_*) => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
+          case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
           case _ => v
         }
       }
