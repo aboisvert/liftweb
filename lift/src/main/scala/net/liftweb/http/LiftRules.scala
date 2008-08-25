@@ -232,8 +232,8 @@ object LiftRules {
   var snippetDispatch: SnippetDispatchPf = Map.empty
 
   /**
-  * Change this variable to set view dispatching
-  */
+   * Change this variable to set view dispatching
+   */
   var viewDispatch: ViewDispatchPf = Map.empty
 
   def snippet(name: String): Can[DispatchSnippet] =
