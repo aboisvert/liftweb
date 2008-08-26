@@ -33,7 +33,7 @@ import Helpers._
   * (e.g., MappedPassword) in the database
   */
 @serializable
-trait BaseMappedField {
+trait BaseMappedField extends SelectableField {
   /**
     * Get a JDBC friendly representation of the named field (this is used for MappedFields that correspond to more than
     * 1 column in the database.)
@@ -451,6 +451,9 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
     case name if DB.reservedWords.contains(name) => name+"_c"
     case name => name
   }
+
+  lazy val dbSelectString = fieldOwner.getSingleton.
+  dbTableName + "." + dbColumnName
 
 
   def dbIndexed_? : Boolean = false

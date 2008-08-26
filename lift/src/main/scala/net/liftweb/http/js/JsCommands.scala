@@ -407,7 +407,11 @@ object JsCmds {
 
   object Script {
     def apply(script: JsCmd): NodeSeq = <script>{
-      Unparsed(script.toJsCmd)
+      Unparsed("""
+// <![CDATA[
+"""+  script.toJsCmd+ """
+// ]]>
+""")
     }</script>
   }
   

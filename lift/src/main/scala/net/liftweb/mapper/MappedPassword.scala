@@ -31,11 +31,18 @@ object MappedPassword {
   val blankPw = "*******"
 }
 
-class MappedPassword[T<:Mapper[T]](val fieldOwner: T) extends MappedField[String, T] {
+class MappedPassword[T<:Mapper[T]](val fieldOwner: T) 
+extends MappedField[String, T] {
   override def dbColumnCount = 2
   def dbFieldClass = classOf[String]
 
   override def dbColumnNames(in : String) = in.toLowerCase+"_pw" :: in.toLowerCase+"_slt" :: Nil
+
+  override lazy val dbSelectString = 
+    dbColumnNames(name).
+  map(cn => fieldOwner.getSingleton.dbTableName + "." + cn).
+  mkString(", ")
+
 
   def salt = this.salt_i
 

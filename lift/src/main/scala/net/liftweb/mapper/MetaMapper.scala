@@ -112,11 +112,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
 
-  def findAll: List[A] = findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Full(v))
+  def findAll(): List[A] = 
+  findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Full(v))
 
-  def findAllDb(dbId:ConnectionIdentifier): List[A] =  findMapDb(dbId, Nil :_*)(v => Full(v))
+  def findAllDb(dbId:ConnectionIdentifier): List[A] = 
+  findMapDb(dbId, Nil :_*)(v => Full(v))
 
-  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): long = countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, checkedBy)
+  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): Long = 
+  countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, checkedBy)
 
   def countByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, checkedBy: IHaveValidatedThisSQL): Long =
   DB.use(dbId)(DB.prepareStatement(query, _)(DB.exec(_)(rs => if (rs.next) rs.getLong(1) else 0L)))
@@ -191,8 +194,21 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def findAll(by: QueryParam[A]*): List[A] = findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Full(v))
-  def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] = findMapDb(dbId, by :_*)(v => Full(v))
+  def findAllFields(fields: Seq[SelectableField], 
+		    by: QueryParam[A]*): List[A] =
+		      findMapFieldDb(dbDefaultConnectionIdentifier, 
+				     fields, by :_*)(v => Full(v))
+  
+  def findAllFieldsDb(dbId: ConnectionIdentifier, 
+		      fields: Seq[SelectableField],
+		      by: QueryParam[A]*):
+  List[A] = findMapFieldDb(dbId, fields, by :_*)(v => Full(v))
+
+  def findAll(by: QueryParam[A]*): List[A] =
+  findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Full(v))
+  
+  def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*):
+  List[A] = findMapDb(dbId, by :_*)(v => Full(v))
 
   def bulkDelete_!!(by: QueryParam[A]*): Boolean = bulkDelete_!!(dbDefaultConnectionIdentifier, by :_*)
   def bulkDelete_!!(dbId: ConnectionIdentifier, by: QueryParam[A]*): Boolean = {
@@ -210,13 +226,23 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) = findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
+  def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) = 
+    findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
-  def findMapDb[T](dbId: ConnectionIdentifier, by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
+  def findMapDb[T](dbId: ConnectionIdentifier, 
+                   by: QueryParam[A]*)(f: A => Can[T]): List[T] =
+  findMapFieldDb(dbId, mappedFields, by :_*)(f)
+  
+  def findMapFieldDb[T](dbId: ConnectionIdentifier, fields: Seq[SelectableField],
+                   by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
     DB.use(dbId) {
       conn =>
       val bl = by.toList
-      val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+"  ", false, bl), bl, conn)
+      val (query, start, max) = addEndStuffs(addFields("SELECT "+
+                                                       fields.map(_.dbSelectString).
+                                                       mkString(", ")+
+                                                       " FROM "+dbTableName+
+                                                       "  ", false, bl), bl, conn)
       DB.prepareStatement(query, conn) {
         st =>
         setStatementFields(st, bl, 1)
@@ -271,9 +297,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
             case in: InRaw[A, _] =>
               updatedWhat = updatedWhat + whereOrAnd + (in.rawSql match {
-                case null | "" => " 0 = 1 "
-                case sql => " "+in.field.dbColumnName+" IN ( "+sql+" ) "
-              })
+                  case null | "" => " 0 = 1 "
+                  case sql => " "+in.field.dbColumnName+" IN ( "+sql+" ) "
+                })
 
             case (in: InThing[A]) =>
               updatedWhat = updatedWhat + whereOrAnd +
@@ -1211,11 +1237,18 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   def dbSelectDBConnectionForFind: PartialFunction[Type, ConnectionIdentifier] = Map.empty
 
-  def findDbByKey(dbId: ConnectionIdentifier,key: Type) : Can[A] =
+  def findDbByKey(dbId: ConnectionIdentifier, key: Type) : Can[A] =
+  findDbByKey(dbId, mappedFields, key)
+  
+  def findDbByKey(dbId: ConnectionIdentifier, fields: Seq[SelectableField],
+                  key: Type) : Can[A] =
   DB.use(dbId) { conn =>
     val field = primaryKeyField
 
-    DB.prepareStatement("SELECT * FROM "+dbTableName+" WHERE "+field.dbColumnName+" = ?", conn) {
+    DB.prepareStatement("SELECT "+
+                        fields.map(_.dbSelectString).
+                        mkString(", ")+
+                        " FROM "+dbTableName+" WHERE "+field.dbColumnName+" = ?", conn) {
       st =>
       st.setObject(1, field.makeKeyJDBCFriendly(key), field.targetSQLType(field.dbColumnName))
       DB.exec(st) {
@@ -1229,11 +1262,18 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   def find(by: QueryParam[A]*): Can[A] = findDb(dbDefaultConnectionIdentifier, by :_*)
 
-  def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Can[A] = {
+  def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Can[A] =
+  findDb(dbId, mappedFields, by :_*)
+  
+  def findDb(dbId: ConnectionIdentifier, fields: Seq[SelectableField],
+             by: QueryParam[A]*): Can[A] = {
     DB.use(dbId) {
       conn =>
       val bl = by.toList
-      val (query, start, max) = addEndStuffs(addFields("SELECT * FROM "+dbTableName+" ",false,  bl), bl, conn)
+      val (query, start, max) = addEndStuffs(addFields("SELECT "+
+                                                       fields.map(_.dbSelectString).
+                                                       mkString(", ")+
+                                                       " FROM "+dbTableName+" ",false,  bl), bl, conn)
       DB.prepareStatement(query, conn) {
         st =>
         setStatementFields(st, bl, 1)
@@ -1431,3 +1471,7 @@ class KeyObfuscator {
 }
 
 case class IHaveValidatedThisSQL(who: String, date: String)
+
+trait SelectableField {
+  def dbSelectString: String
+}
