@@ -42,17 +42,17 @@ class Boot {
 
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry, Person)
 
-    val dispatcher: LiftRules.DispatchPf = {
+    LiftRules.addDispatchBefore {
       // if the url is "showcities" then return the showCities function
       case RequestState("showcities":: _, "", _) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestState("showstates":: xs, "", _) => XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+      case RequestState("showstates":: xs, "", _) => 
+	XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
       // if it's a web service, pass it to the web services invoker
       case RequestState("webservices" :: c :: _, "", _) => invokeWebService(c)
     }
-    LiftRules.addDispatchBefore(dispatcher)
 
     LiftRules.addDispatchBefore {
          case RequestState("login" :: page , "", _) 
