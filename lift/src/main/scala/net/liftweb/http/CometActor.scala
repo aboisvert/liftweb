@@ -62,6 +62,9 @@ object ActorWatcher extends Actor {
   this.trapExit = true
 }
 
+/**
+* Takes care of the plumbing for building Comet-based Web Apps
+*/
 @serializable
 abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
