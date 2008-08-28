@@ -28,12 +28,16 @@ import js._
 import java.io.InputStream
 import java.util.{Locale, TimeZone, ResourceBundle}
 
+trait HasParams {
+  def param(name: String): Can[String]
+}
+
 /**
  * An object representing the current state of the HTTP request and response
  * It uses the DynamicVariable construct such that each thread has its own
  * local session info without passing a huge state construct around
  */
-object S {
+object S extends HasParams {
   /**
    * Holds the partial function that re-write an incoming request
    */

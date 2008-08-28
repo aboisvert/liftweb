@@ -210,7 +210,7 @@ class RequestState(val path: ParsePath,
                    val request: HttpServletRequest,
                    val nanoStart: Long,
                    val nanoEnd: Long,
-                   val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]]))
+                   val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]])) extends HasParams
 {
 
   override def toString = "RequestState("+paramNames+", "+params+", "+path+
