@@ -141,6 +141,13 @@ object S extends HasParams {
   }
 
 
+  def templateFromTemplateAttr: Can[NodeSeq] =
+  for (templateName <- attr("template") ?~ "Template Attribute missing";
+       val tmplList = templateName.roboSplit("/");
+       template <- TemplateFinder.findAnyTemplate(tmplList) ?~
+       "couldn't find template") yield template
+
+
   /**
    * Returns the Locale for this request based on the HTTP request's
    * Accept-Language header. If that header corresponds to a Locale
@@ -423,7 +430,7 @@ object S extends HasParams {
           _liftCoreResBundle.doWith(null){
             inS.doWith(true) {
               _stateSnip.doWith(new HashMap) {
-		_nest2InnerInit(f)
+                _nest2InnerInit(f)
               }
             }
           }
@@ -445,9 +452,9 @@ object S extends HasParams {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
           _requestVar.doWith(new HashMap) {
-	    _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
+            _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
               _innerInit(f)
-	    }
+            }
           }
         }
       }
@@ -631,11 +638,11 @@ object S extends HasParams {
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-    "function "+key+"(obj) {" + 
-    LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+ encodeURIComponent(" +
-                                        LiftRules.jsArtifacts.
-                                        jsonStringify(JE.JsRaw("obj")).
-                                        toJsCmd +")" , true)) +"; }; " ))
+                               "function "+key+"(obj) {" +
+                               LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+ encodeURIComponent(" +
+                                                                   LiftRules.jsArtifacts.
+                                                                   jsonStringify(JE.JsRaw("obj")).
+                                                                   toJsCmd +")" , true)) +"; }; " ))
   }
 
   /**
@@ -668,11 +675,11 @@ object S extends HasParams {
     List((LiftRules.ajaxErrorMeta, g(S.errors)),
          (LiftRules.ajaxWarningMeta, g(S.warnings)),
          (LiftRules.ajaxNoticeMeta, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
-           case (meta, m) => m.foldLeft(car)((left, r) =>
-             left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
-              (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
-         }
-         )
+        case (meta, m) => m.foldLeft(car)((left, r) =>
+            left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
+                                                 (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
+      }
+    )
   }
 
   implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)

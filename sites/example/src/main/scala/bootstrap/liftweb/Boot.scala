@@ -15,19 +15,23 @@
  */
 package bootstrap.liftweb
 
-import net.liftweb.util.{Helpers, Can, Full, Empty, Failure, Log}
-import net.liftweb.http._
 import net.liftweb._
+import util.{Helpers, Can, Full, Empty, Failure, Log}
+import http._
 import sitemap._
 import Helpers._
-import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
-import java.sql.{Connection, DriverManager}
-import net.liftweb.example.comet.WebServices
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import net.liftweb.example._
+
+import example._
+import comet.WebServices
 import model._
 import lib._
-import net.liftweb.example.snippet.definedLocale
+import snippet.{definedLocale, Template}
+
+import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
+
+import java.sql.{Connection, DriverManager}
+import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+
 
 /**
 * A class that's instantiated early and run.  It allows the application
@@ -59,6 +63,10 @@ class Boot {
       if !LoginStuff.is && page.head != "validate" =>
         () => Full(RedirectResponse("/login/validate"))
     }
+
+    LiftRules.snippetDispatch =
+      LiftRules.snippetDispatch orElse
+    Map("Template" -> Template)
 
 
     LiftRules.addRewriteBefore{
@@ -134,6 +142,7 @@ object MenuInfo {
   Menu(Loc("ajax", List("ajax"), "AJAX Samples")) ::
   Menu(Loc("ajax form", List("ajax-form"), "AJAX Form")) ::
   Menu(Loc("json", List("json"), "JSON Messaging")) ::
+  Menu(Loc("template", List("template"), "Templates")) ::
   Menu(Loc("ws", List("ws"), "Web Services")) ::
   Menu(Loc("simple", Link(List("simple"), true, "/simple/index"),
 	   "Simple Forms")) ::
