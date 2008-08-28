@@ -78,11 +78,11 @@ object LiftRules {
   }
 
   /**
-   * Calculate the Ajax Server (by default, the server that
+   * Calculate the Comet Server (by default, the server that
    * the request was made on, but can do the multi-server thing
    * as well)
    */
-  var ajaxServer: () => String = () => S.contextPath
+  var cometServer: () => String = () => S.contextPath
 
   /**
    * The maximum concurrent requests.  If this number of
@@ -332,7 +332,7 @@ object LiftRules {
   def dispatchTable(req: HttpServletRequest): DispatchPf = {
     req match {
       case null => dispatchTable_i
-      case _ => SessionMaster.getSession(req) match {
+      case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
               rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
             }
@@ -344,7 +344,7 @@ object LiftRules {
   def rewriteTable(req: HttpServletRequest): RewritePf = {
     req match {
       case null => rewriteTable_i
-      case _ => SessionMaster.getSession(req) match {
+      case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
               rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
             }
@@ -358,7 +358,7 @@ object LiftRules {
   def templateTable(req: HttpServletRequest): TemplatePf = {
     req match {
       case null => templateTable_i
-      case _ => SessionMaster.getSession(req) match {
+      case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
               rpf(S.sessionTemplater.map(_.template), templateTable_i)
             }
@@ -371,9 +371,13 @@ object LiftRules {
 
   var cometPath = "comet_request"
 
-/**
- * The default way of calculating the context path
- */
+var calcCometPath: () => String = () => cometPath +
+(S.session.map(s => "/"+s.uniqueId) openOr "")
+
+
+  /**
+   * The default way of calculating the context path
+   */
   def defaultCalcContextPath(request: HttpServletRequest): Can[String] = {
     request.getHeader("X-Lift-ContextPath") match {
       case null => Empty
@@ -603,7 +607,7 @@ object LiftRules {
    * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
    */
   var uriNotFound: URINotFoundPF = {
-   case (r, _) => RequestState.defaultCreateNotFound(r)
+    case (r, _) => RequestState.defaultCreateNotFound(r)
   }
 
 

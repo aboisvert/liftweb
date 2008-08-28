@@ -58,12 +58,12 @@ case class SessionWatcherInfo(sessions: Map[String, LiftSession])
 @serializable
 case class SessionToServletBridge(uniqueId: String) extends HttpSessionBindingListener with HttpSessionActivationListener {
   def sessionDidActivate(se: HttpSessionEvent) = {
-    SessionMaster.getSession(uniqueId).foreach(ls =>
+    SessionMaster.getSession(uniqueId, Empty).foreach(ls =>
       LiftSession.onSessionActivate.foreach(_(ls)))
   }
 
   def sessionWillPassivate(se: HttpSessionEvent) = {
-    SessionMaster.getSession(uniqueId).foreach(ls =>
+    SessionMaster.getSession(uniqueId, Empty).foreach(ls =>
       LiftSession.onSessionPassivate.foreach(_(ls)))
   }
 
@@ -92,7 +92,10 @@ object SessionMaster extends Actor {
   private var sessions: Map[String, LiftSession] = Map.empty
   private object CheckAndPurge
 
-  def getSession(id: String): Can[LiftSession] = {
+  def getSession(id: String, otherId: Can[String]): 
+  Can[LiftSession] = synchronized {
+    otherId.flatMap(sessions.get) or Can(sessions.get(id))
+    /*
     val when = CometActor.next
     this ! LookupSession(id, when)
     def looper: Can[LiftSession] =
@@ -103,6 +106,7 @@ object SessionMaster extends Actor {
     }
 
     looper
+    */
   }
 
   /**
@@ -112,14 +116,19 @@ object SessionMaster extends Actor {
    */
   var sessionWatchers: List[Actor] = Nil
 
-  def getSession(httpSession: HttpSession): Can[LiftSession] =
-  getSession(httpSession.getId())
+  def getSession(httpSession: HttpSession, otherId: Can[String]): Can[LiftSession] =
+  getSession(httpSession.getId(), otherId)
 
-  def getSession(req: HttpServletRequest): Can[LiftSession] =
-  getSession(req.getSession)
+  def getSession(req: HttpServletRequest, otherId: Can[String]): Can[LiftSession] =
+  getSession(req.getSession, otherId)
 
   def addSession(liftSession: LiftSession) {
-    this ! AddSession(liftSession)
+    synchronized {
+    sessions = sessions + (liftSession.uniqueId -> liftSession)
+    }
+    liftSession.startSession()
+                  val b = SessionToServletBridge(liftSession.uniqueId)
+              liftSession.httpSession.setAttribute(LiftMagicID, b)
   }
 
   private val LiftMagicID = "$lift_magic_session_thingy$"
@@ -129,6 +138,7 @@ object SessionMaster extends Actor {
     link(ActorWatcher)
     loop {
       react {
+        /*
         case AddSession(session) =>
           try {
             if (!sessions.contains(session.uniqueId)) {
@@ -141,8 +151,16 @@ object SessionMaster extends Actor {
             case e => Log.error("Problem adding session", e)
           }
 
-        case RemoveSession(sessionId) =>
-          sessions.get(sessionId).foreach{s =>
+       
+
+        case LookupSession(id, when) =>
+          val ret = Can(sessions.get(id))
+          ret.foreach(_.lastServiceTime = millis)
+          reply( (when, ret) )
+*/
+ case RemoveSession(sessionId) =>
+   val ses = synchronized(sessions)
+          ses.get(sessionId).foreach{s =>
             try {
               s.doShutDown
               try {
@@ -154,24 +172,20 @@ object SessionMaster extends Actor {
               case e => Log.error("Failure in remove session", e)
 
             } finally {
-              sessions = sessions - sessionId
+             synchronized{ sessions = sessions - sessionId }
             }
           }
 
-        case LookupSession(id, when) =>
-          val ret = Can(sessions.get(id))
-          ret.foreach(_.lastServiceTime = millis)
-          reply( (when, ret) )
-
         case CheckAndPurge =>
           val now = millis
-          for ((id, session) <- sessions.elements) {
+          val ses = synchronized{sessions}
+          for ((id, session) <- ses.elements) {
             if (now - session.lastServiceTime > session.inactivityLength) {
               Log.info(" Session "+id+" expired")
               this ! RemoveSession(id)
             }
           }
-          sessionWatchers.foreach(_ ! SessionWatcherInfo(sessions))
+          sessionWatchers.foreach(_ ! SessionWatcherInfo(ses))
           doPing()
       }
     }
@@ -257,8 +271,11 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
     }
 
     def buildFunc(i: RunnerHolder): () => Any = i.func match {
-      case bfh: S.BinFuncHolder => () => state.uploadedFiles.filter(_.name == i.name).map(v => bfh(v))
-      case normal => () => normal(state.params.getOrElse(i.name, state.uploadedFiles.filter(_.name == i.name).map(_.fileName)))
+      case bfh: S.BinFuncHolder =>
+        () => state.uploadedFiles.filter(_.name == i.name).map(v => bfh(v))
+      case normal =>
+        () => normal(state.params.getOrElse(i.name,
+                                            state.uploadedFiles.filter(_.name == i.name).map(_.fileName)))
     }
 
     val ret = toRun.map(_.owner).removeDuplicates.flatMap{w =>
@@ -266,8 +283,13 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
       w match {
         // if it's going to a CometActor, batch up the commands
         case Full(id) =>
+          asyncById.get(id).toList.
+          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match
+                  {
+              case Some(li: List[_]) => li
+              case li: List[_] => li
+              case other => Nil})
 
-          asyncById.get(id).toList.flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {case Some(li: List[_]) => li case li: List[_] => li case other => Nil})
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
@@ -752,7 +774,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo("'"+attr("key")+"=true'"))
+    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo((attr("key")+"=true").encJs, false))
 
     new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
@@ -763,7 +785,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd)) + pre + " return false;"
+    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd, true)) + pre + " return false;"
 
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }

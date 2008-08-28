@@ -23,7 +23,7 @@ import net.liftweb.http.js.JE
 import net.liftweb.http.js.JsCmds
 import JE._
 import JqJE._
-
+import util.Helpers._
 
 object JQueryArtifacts extends JSArtifacts {
 
@@ -53,11 +53,11 @@ object JQueryArtifacts extends JSArtifacts {
   def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.OnLoad(cmd)
   
   def ajax(data: AjaxInfo): String = {
-    "jQuery.ajax(" + toJson(data, LiftRules.ajaxPath) + ");"
+    "jQuery.ajax(" + toJson(data, S.contextPath, LiftRules.ajaxPath) + ");"
   }
   
   def comet(data: AjaxInfo): String = {
-    "jQuery.ajax(" + toJson(data, LiftRules.cometPath) + ");"
+    "jQuery.ajax(" + toJson(data, LiftRules.cometServer(), LiftRules.calcCometPath()) + ");"
   }
   
   def jsonStringify(in: JsExp) : JsExp = new JsExp {
@@ -68,12 +68,13 @@ object JQueryArtifacts extends JSArtifacts {
     def toJsCmd = "lift$.formToJSON('" + formId + "')";
   }
 
-  private def toJson(info: AjaxInfo, path: String): String = ("url : '" + S.encodeURL(S.contextPath+"/"+path) + "'" ::
-    "data : " + info.data ::
-    "type : '" + info.action + "'" ::
-    "dataType : '" + info.dataType + "'"  ::
-    "timeout : " + info.timeout ::
-    "cache : " + info.cache :: Nil) ++ 
-    info.successFunc.map("success : " + _).toList ++ 
-    info.failFunc.map("error : " + _).toList mkString("{ ", ", ", " }")
+  private def toJson(info: AjaxInfo, server: String, path: String): String =
+  (("url : " + (S.encodeURL(server+"/"+path)).encJs) ::
+   "data : " + info.data ::
+   ("type : " + info.action.encJs) ::
+   ("dataType : " + info.dataType.encJs) ::
+   "timeout : " + info.timeout ::
+   "cache : " + info.cache :: Nil) ++
+  info.successFunc.map("success : " + _).toList ++ 
+  info.failFunc.map("error : " + _).toList mkString("{ ", ", ", " }")
 }

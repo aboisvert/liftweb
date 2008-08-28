@@ -34,7 +34,7 @@ object SHtml {
    * @return a button to put on your page
    */
   def ajaxButton(text: String, func: => JsCmd): Elem =
-    <input type="button" value={text}/> % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(() => func)+"=true'"))))
+    <input type="button" value={text}/> % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo((mapFunc(() => func)+"=true").encJs, false))))
 
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -63,7 +63,6 @@ object SHtml {
    */
   def span(body: NodeSeq, cmd: JsCmd): Elem = (<span onclick={cmd.toJsCmd}>{body}</span>)
 
-
   /**
    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
    * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
@@ -81,13 +80,14 @@ object SHtml {
    * @return the JavaScript that makes the call
    */
   private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(func)+"='+"+jsCalcValue))
+    LiftRules.jsArtifacts.ajax(AjaxInfo(("'" + mapFunc(func)+"='+"+jsCalcValue), true))
+                               
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
-    val nh = head % ("onclick" -> (LiftRules.jsArtifacts.toggle(id).toJsCmd + ";" + LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName + "=true'"))))
+    val nh = head % ("onclick" -> (LiftRules.jsArtifacts.toggle(id).toJsCmd + ";" + LiftRules.jsArtifacts.ajax(AjaxInfo((funcName + "=true").encJs, false))))
     nh ++ rnk
   }
 
@@ -115,14 +115,14 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.value"))))
+        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.value", false))))
   }
 
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
   
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.checked"))))
+      (<input type="checkbox"/>) % checked(value) % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.checked", false))))
   }
 
   def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -134,10 +134,10 @@ object SHtml {
 
     (<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.options[this.selectedIndex].value"))))
+    }</select>) % ("onchange" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.options[this.selectedIndex].value", false))))
   }
 
-  def ajaxInvoke(func: () => JsCmd): String = LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(NFuncHolder(func)) + "=true'"))
+  def ajaxInvoke(func: () => JsCmd): String = LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(NFuncHolder(func)) + "=true'", false))
 
   /**
    * Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when

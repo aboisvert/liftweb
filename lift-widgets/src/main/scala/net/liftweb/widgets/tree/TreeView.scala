@@ -100,7 +100,8 @@ class TreeView {
 
      val key = mapFunc(NFuncHolder(treeFunc))
      
-     val url = encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"?"+key+"=_"
+     val url = encodeURL(contextPath +
+			 "/"+LiftRules.ajaxPath)+"?"+key+"=_"
  
      val obj: JsObj = JsObj(("url" -> Str(url)) :: jsObj.props:_*)
      

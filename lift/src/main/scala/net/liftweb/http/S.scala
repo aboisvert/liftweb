@@ -615,16 +615,23 @@ object S {
     }
 
     def jsonCallback(in: List[String]): JsCmd = {
-      in.flatMap(
+      in.flatMap{
         s =>
-        JSONParser.parse(s.trim).toList.map(checkCmd).map(f)
-      ).foldLeft(JsCmds.Noop)(_ & _)
+        val parsed = JSONParser.parse(s.trim).toList
+        val cmds = parsed.map(checkCmd)
+        val ret = cmds.map(f)
+        ret
+      }.foldLeft(JsCmds.Noop)(_ & _)
     }
 
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-    "function "+key+"(obj) {" + LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+" + LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("obj")).toJsCmd)) + "}"))
+    "function "+key+"(obj) {" + 
+    LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+ encodeURIComponent(" +
+                                        LiftRules.jsArtifacts.
+                                        jsonStringify(JE.JsRaw("obj")).
+                                        toJsCmd +")" , true)) +"; }; " ))
   }
 
   /**

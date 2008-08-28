@@ -69,7 +69,7 @@ import scala.collection.mutable.HashMap
 
        case _ :: rest => fixRefs(rest, refs)
 
-       case huh => println(huh)
+       case huh => // println(huh)
      }
 
      val parser = new TextileParsers(urlRewrite, disableLinks)

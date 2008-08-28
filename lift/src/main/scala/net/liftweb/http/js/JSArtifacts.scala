@@ -91,23 +91,39 @@ trait JSArtifacts {
  * different construction schemes 
  */
 object AjaxInfo {
-  def apply(data:String) = new AjaxInfo(data, "POST", 1000, false, "script", Empty, Empty)
-  def apply(data:String, dataType: String) = new AjaxInfo(data, "POST", 1000, false, dataType, Empty, Empty)
-  
+  def apply(data:String, post: Boolean) =
+  new AjaxInfo(data, if (post) "POST" else "GET", 1000, false, "script", Empty, Empty)
+
   def apply(data:String, 
+            dataType: String,
+            post: Boolean) =
+  new AjaxInfo(data, if (post) "POST" else "GET", 1000, false, dataType, Empty, Empty)
+  
+  def apply(data:String) =
+  new AjaxInfo(data, "POST", 1000, false, "script", Empty, Empty)
+
+  def apply(data:String, 
+            dataType: String) =
+  new AjaxInfo(data, "POST", 1000, false, dataType, Empty, Empty)
+  
+  def apply(data:String,
+            post: Boolean,
             timeout: Long, 
             successFunc: String, 
-            failFunc: String) = new AjaxInfo(data, 
-                                             "POST", 
-                                             timeout, 
-                                             false, 
-                                             "script", 
-                                             Full(successFunc), 
-                                             Full(failFunc))
+            failFunc: String) =
+  new AjaxInfo(data,
+               if (post) "POST" else "GET",
+               timeout,
+               false,
+               "script",
+               Full(successFunc),
+               Full(failFunc))
 }
 
 /**
  * Represents the meta data of an AJax request.
  */
-case class AjaxInfo(data: String, action: String, timeout: Long, cache: boolean, dataType: String, successFunc: Can[String], failFunc: Can[String]) 
+case class AjaxInfo(data: String, action: String, timeout: Long,
+                    cache: Boolean, dataType: String,
+                    successFunc: Can[String], failFunc: Can[String]) 
 

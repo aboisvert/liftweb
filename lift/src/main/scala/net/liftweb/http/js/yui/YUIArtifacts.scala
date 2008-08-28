@@ -36,28 +36,28 @@ import JE._
 object YUIArtifacts extends JSArtifacts {
   
   def toggle(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.lift.toggle(this, '" + id + "');"; 
+    def toJsCmd = "YAHOO.lift.toggle(this, " + id.encJs + ");";
   }
   
   def hide(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.util.Dom.setStyle('" + id + "', 'display', 'none');" 
+    def toJsCmd = "YAHOO.util.Dom.setStyle(" + id.encJs + ", 'display', 'none');"
   }
   
   def show(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.util.Dom.setStyle('" + id + "', 'display', 'block');" 
+    def toJsCmd = "YAHOO.util.Dom.setStyle(" + id.encJs + ", 'display', 'block');"
   }
   
   def showAndFocus(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.util.Dom.setStyle('" + id + "', 'display', 'block');" + 
-                  "setTimeout(function() { document.getElementById('" + id + "').focus(); }, 200);" 
+    def toJsCmd = "YAHOO.util.Dom.setStyle(" + id.encJs + ", 'display', 'block');" +
+                  "setTimeout(function() { document.getElementById(" + id.encJs + ").focus(); }, 200);"
   }
   
   def serialize(id: String) = new JsExp {
-    def toJsCmd = "YAHOO.util.Connect.setForm('" + id+"', false)" 
+    def toJsCmd = "YAHOO.util.Connect.setForm(" + id.encJs +", false)"
   }
   
   def setHtml(uid: String, content: NodeSeq): JsCmd = new JsCmd {
-    def toJsCmd = "try{document.getElementById('" + uid + "').innerHTML = " + fixHtml(uid, content)+";} catch (e) {}"
+    def toJsCmd = "try{document.getElementById(" + uid.encJs + ").innerHTML = " + fixHtml(uid, content)+";} catch (e) {}"
   }
   
   def onLoad(cmd: JsCmd): JsCmd = new JsCmd {
@@ -66,14 +66,14 @@ object YUIArtifacts extends JSArtifacts {
   
   def ajax(data: AjaxInfo): String = {
     val url = S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath);
-    "url = YAHOO.lift.buildURI('" + url + "', " + data.data + ");" + 
-    "YAHOO.util.Connect.asyncRequest('" + data.action + "', url, " + toJson(data) + ");";
+    "url = YAHOO.lift.buildURI(" + url.encJs + ", " + data.data + ");" +
+    "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");";
   }
   
   def comet(data: AjaxInfo): String = {
-    val url = S.encodeURL(S.contextPath+"/"+LiftRules.cometPath);
-    "url = YAHOO.lift.buildURI('" + url + "', YAHOO.lift.simpleJsonToQS(" + data.data + "));" + 
-    "YAHOO.util.Connect.asyncRequest('" + data.action + "', url, " + toJson(data) + ");";
+    val url = S.encodeURL(LiftRules.cometServer()+"/"+LiftRules.calcCometPath());
+    "url = YAHOO.lift.buildURI(" + url.encJs + ", YAHOO.lift.simpleJsonToQS(" + data.data + "));" + 
+    "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");";
   }
   
   def jsonStringify(in: JsExp) : JsExp = new JsExp {
