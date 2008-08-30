@@ -68,7 +68,8 @@
 		for (i = 0; i < parts.length; i++) {
 			nvp = parts[i].split("=");
 			json += (i > 0) ? "," : "";
-			json += "\"" + decodeURIComponent(nvp[0]) + "\": \"" + decodeURIComponent(nvp[1]) + "\"";
+			json += "\"" + decodeURIComponent(nvp[0]) + "\": \""
+					+ decodeURIComponent(nvp[1]) + "\"";
 		}
 		return YAHOO.lang.JSON.parse("{" + json + "}");
 	}
@@ -86,7 +87,7 @@
 
 	YAHOO.lift.buildURI = function(uri, queryString) {
 		hasParam = uri.indexOf("?") > -1;
-		sep = (hasParam) ? "&":"?";
+		sep = (hasParam) ? "&" : "?";
 		return uri + sep + queryString
 	}
 })();
