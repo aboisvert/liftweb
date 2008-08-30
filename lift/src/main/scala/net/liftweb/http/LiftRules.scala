@@ -640,15 +640,12 @@ var calcCometPath: () => String = () => cometPath +
 
 case object BreakOut
 
-abstract class Bootable
-{
+abstract class Bootable {
   def boot() : Unit;
 }
 
-private[http] case object DefaultBootstrap extends Bootable
-{
-  def boot() : Unit =
-  {
+private[http] case object DefaultBootstrap extends Bootable {
+  def boot() : Unit = {
     val f = createInvoker("boot", Class.forName("bootstrap.liftweb.Boot").newInstance.asInstanceOf[AnyRef])
     f.map{f => f()}
   }
