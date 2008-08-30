@@ -160,18 +160,15 @@ object RequestState {
 
   private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean): Text = {
     val hv = v.text
-    if (hv.startsWith("/")) {
-      Text(fixURL match {
-          case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
-          case _ => contextPath+hv
-        })
-    }
-    else Text(hv)
+
+    Text(fixURL match {
+       case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
+       case _ => contextPath+hv
+    })
   }
 
   def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
-    if (contextPath.length == 0) in
-    else {
+    
       def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
         if (attrs == Null) Null
         else if (attrs.key == toFix) {
@@ -192,7 +189,6 @@ object RequestState {
           case _ => v
         }
       }
-    }
   }
 
   private[liftweb] def defaultCreateNotFound(in: RequestState) =
