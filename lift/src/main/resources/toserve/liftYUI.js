@@ -68,7 +68,7 @@
 		for (i = 0; i < parts.length; i++) {
 			nvp = parts[i].split("=");
 			json += (i > 0) ? "," : "";
-			json += "\"" + nvp[0] + "\": \"" + nvp[1] + "\"";
+			json += "\"" + decodeURIComponent(nvp[0]) + "\": \"" + decodeURIComponent(nvp[1]) + "\"";
 		}
 		return YAHOO.lang.JSON.parse("{" + json + "}");
 	}

@@ -221,7 +221,7 @@
 			},
 
 		    formToJSON : function(formId) {
-			  qs = jQuery("#" + formId).serialize();
+			  qs = this.param(jQuery("#" + formId).serializeArray());
 			  parts = qs.split("&");
 			  json = "";
 			  for (i = 0; i < parts.length; i++) {
@@ -230,7 +230,40 @@
 				json += "\"" + nvp[0] + "\": \"" + nvp[1] + "\"";
 			  }
 			  return JSON.parse("{" + json + "}");
-		    }
+		    },
+			
+			/**
+			 * Inspired from JQuery code but JQuery was deliberately 
+			 * replacing %20 sequences with + char making it 
+			 * inappropriate in this case.
+			 */
+			param: function( a ) {
+				var s = [];
+
+				// If an array was passed in, assume that it is an array
+				// of form elements
+				if ( a.constructor == Array || a.jquery )
+					// Serialize the form elements
+					jQuery.each( a, function(){
+						s.push( this.name + "=" + this.value );
+					});
+
+				// Otherwise, assume that it's an object of key/value pairs
+				else
+					// Serialize the key/values
+					for ( var j in a )
+						// If the value is an array then the key names need to be repeated
+						if ( a[j] && a[j].constructor == Array )
+							jQuery.each( a[j], function(){
+								s.push( j + "=" + this );
+							});
+						else
+							s.push( j + "=" + jQuery.isFunction(a[j]) ? a[j]() : a[j] );
+
+				return s.join("&");
+			}
+
+
 
 		};
 		
