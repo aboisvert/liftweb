@@ -26,8 +26,7 @@ import scala.collection.mutable.{ListBuffer}
 import java.util.{Locale, TimeZone}
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import javax.servlet.{ServletContext}
-import java.io.InputStream
-import java.io.ByteArrayOutputStream
+import java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
 
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
@@ -632,6 +631,44 @@ var calcCometPath: () => String = () => cometPath +
   private def showException(r: RequestState, e: Throwable): LiftResponse = {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
+  }
+  
+  /**
+   * Modifies the root relative paths from the css url-s
+   * 
+   * @param path - the path of the css resource 
+   * @prefix - the prefix to be added on the root relative paths. If this is Empty
+   * 	       the prefix will be the application context path.
+   */
+  def fixCSS(path: List[String], prefix: Can[String]) {
+
+    val liftReq: LiftRules.LiftRequestPf = new LiftRules.LiftRequestPf {
+      def isDefinedAt(r: RequestState): Boolean = {
+        r.path.partPath == path
+      }
+      def apply(r: RequestState): Boolean = {
+        r.path.partPath == path
+      }
+    }
+    
+    val cssFixer: LiftRules.DispatchPf = new LiftRules.DispatchPf {
+      def isDefinedAt(r: RequestState): Boolean = {
+        r.path.partPath == path
+      }
+      def apply(r: RequestState): () => Can[LiftResponse] = {
+        val css = LiftRules.loadResourceAsString(path.mkString("/", "/", ".css"));
+        
+        () => {
+          css.map(str => CSSHelpers.fixCSS(new BufferedReader(
+            new StringReader(str)), prefix openOr (S.contextPath)) match {
+              case Full(c) => CSSResponse(c)
+              case _ => CSSResponse("// Problem fixing the CSS resource !", 500)
+          })
+        }
+      }
+    }
+    LiftRules.addDispatchBefore(cssFixer);
+    LiftRules.addLiftRequest(liftReq);
   }
 
   var onBeginServicing: List[RequestState => Unit] = Nil

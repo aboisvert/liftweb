@@ -31,85 +31,86 @@ object CSSHelpers extends ControlHelpers {
    * @param in - the text reader
    * @param rootPrefix - the prefix to be added
    */
-  def fixCSS(in: BufferedReader, rootPrefix: String): Can[String] = {
-    tryo ((t: Throwable) => Log.error("ERROR ", t)) {
-      val tokens = new HashSet[String]();
+  def fixCSS(in: Reader, rootPrefix: String): Can[String] = {
+      val reader = new BufferedReader(in)
       val res = new StringBuilder;
       var line: String = null;
- 
-      while ({line = in.readLine(); line != null}) {
-        res append line + "\n"
+      try {
+        while ({line = reader.readLine(); line != null}) {
+          res append line + "\n"
+        }
+      } finally {
+        reader close
       }
       
-     val css = res toString;
-     tokens ++= "url\\([^\\)]*\\)".r.findAllIn(css).
-       map(URLParser.parse(_)).
-       filter( !_.isEmpty ).
-       map(_ open_!)
-    
-     (css /: tokens)((left, right) => left.replaceAll(right,  rootPrefix + right))
-     
-    } 
+      CSSParser(rootPrefix).fixCSS(res toString);
   }
   
-  
-  /**
-   * Fixes a CSS content provided by source parameter and writes int into dest
-   * @source - the CSS reader
-   * @dest - where to put the transformed CSS
-   * @rootPefix - the prefix to be added to root relative URL's
-   */
-  def fixCSSAndWrite(source: Reader, dest: Writer, rootPrefix: String) {
-    tryo ((t: Throwable) => Log.error("ERROR ", t)) {
-      fixCSS(new BufferedReader(source), rootPrefix) map (css => {
-          val pw = new PrintWriter(dest);
-          pw.print(css);
-          pw.flush
-        }
-      )
-    }
-    tryo {source close()}
-    tryo {dest close()}
-
-  }
   
 }
 
 /**
- * Combinator parser for extracting the url fragment as per CSS2 spec
- * <br/>
- * <i>
- * The format of a URI value is 'url(' followed by optional whitespace followed 
- * by an optional single quote (') or double quote (") character followed by the URI 
- * itself, followed by an optional single quote (') or double quote (") character followed 
- * by optional whitespace followed by ')'. The two quote characters must be the same.
- * </i>
+ * Combinator parser for prefixing root relative paths with a given prefix 
  */
-object URLParser extends Parsers with ImplicitConversions {
+case class CSSParser(prefix: String) extends Parsers  {
   implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
+  
+ 
+  lazy val contentParser = Parser[String] {
+    case in => 
+      var content: StringBuilder = new StringBuilder;
+      var seqDone = 0;
+      var r = in;
+      while (!r.atEnd && (seqDone < 3)) {
+        val c = r.first
+        content append c
+        c.toLowerCase match {
+          case 'u' if (seqDone == 0) => seqDone = 1; 
+          case 'r' if (seqDone == 1) => seqDone = 2; 
+          case 'l' if (seqDone == 2) => seqDone = 3; 
+          case _ => seqDone = 0
+        }
+        r = r.rest ;
+      }
 
+   Success(content toString, r)
+        
+  }
+  
+  
+  
   lazy val spaces = (elem(' ') | elem('\t') | elem('\n') | elem('\r')).*
   lazy val url = acceptSeq("url" toList)
   // consider only root relative paths that start with /
-  lazy val path = elem('/') ~> elem("path", c => c.isLetterOrDigit ||
+  lazy val path = elem("path", c => c.isLetterOrDigit ||
                          c == '?' || c == '/' ||
                          c == '&' || c == '@' ||
                          c == ';' || c == '.' || 
                          c == '+' || c == '-' || 
-                         c == '=' || c == ':' ).+ ^^ {case l => l.mkString("")}
+                         c == '=' || c == ':' || 
+                         c == ' ' || c == '_').+ ^^ {case l => l.mkString("")}
   
   // the URL might be wrapped in simple quotes
   lazy val seq1 = elem('\'') ~> path <~ elem('\'')
   // the URL might be wrapped in double quotes
   lazy val seq2 = elem('\"') ~> path <~ elem('\"')
   // do the parsing per CSS spec http://www.w3.org/TR/REC-CSS2/syndata.html#uri section 4.3.4
-  lazy val expr = (url ~ spaces ~ elem('(') ~ spaces) ~> ( seq1 | seq2 | path ) <~ (spaces <~ elem(')'))
+  lazy val expr = (spaces ~ elem('(') ~ spaces) ~> ( seq1 | seq2 | path ) <~ (spaces <~ elem(')')) ^^ {case s => {
+      "(" + (s.trim.startsWith("/") match {
+        case true => prefix + s.trim
+        case _ => s.trim
+      }) + ")"
+    }
+  }
 
+  lazy val phrase = (contentParser ~ expr).* ^^ {case l => l.flatMap(f => f._1 + f._2).mkString("") }
+  lazy val css = (phrase ~ contentParser) ^^ {case a ~ b => a + b}
   
-  def parse(in: String): Can[String] = expr(in) match {
-    case Success(v, _) => Full("/" + v)
+  def fixCSS(in: String): Can[String] = css(in) match {
+    case Success(v, _) => Full(v)
     case _ => Empty
   }
 
 }
+
