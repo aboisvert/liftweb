@@ -20,8 +20,6 @@ import scala.util.parsing.combinator.syntactical._
 import scala.util.parsing.combinator.lexical._
 
 import java.io._
-import scala.util.matching._
-import scala.collection.mutable.{HashSet}  
 
 object CSSHelpers extends ControlHelpers {
   
@@ -57,31 +55,37 @@ case class CSSParser(prefix: String) extends Parsers  {
   type Elem = Char
   
  
-  lazy val contentParser = Parser[String] {
+ lazy val contentParser = Parser[String] {
     case in => 
-      var content: StringBuilder = new StringBuilder;
+      val content = new StringBuilder;
       var seqDone = 0;
-      var r = in;
-      while (!r.atEnd && (seqDone < 3)) {
-        val c = r.first
-        content append c
-        c.toLowerCase match {
-          case 'u' if (seqDone == 0) => seqDone = 1; 
-          case 'r' if (seqDone == 1) => seqDone = 2; 
-          case 'l' if (seqDone == 2) => seqDone = 3; 
-          case _ => seqDone = 0
+      
+      def walk(in: Input)(f: Char => Boolean): Input = {
+        var seq = in
+        while (!seq.atEnd && !f(seq first)) {
+          seq = seq rest
         }
-        r = r.rest ;
+        seq rest
       }
-
-   Success(content toString, r)
-        
+      
+      val rest = walk(in) {
+        case c =>
+          content append c
+          c.toLowerCase match {
+            case 'u' if (seqDone == 0) => seqDone = 1; 
+            case 'r' if (seqDone == 1) => seqDone = 2; 
+            case 'l' if (seqDone == 2) => seqDone = 3; 
+            case _ => seqDone = 0
+          }
+          seqDone == 3;
+      }
+     
+      Success(content toString, rest);
   }
   
   
   
   lazy val spaces = (elem(' ') | elem('\t') | elem('\n') | elem('\r')).*
-  lazy val url = acceptSeq("url" toList)
   // consider only root relative paths that start with /
   lazy val path = elem("path", c => c.isLetterOrDigit ||
                          c == '?' || c == '/' ||
@@ -97,10 +101,10 @@ case class CSSParser(prefix: String) extends Parsers  {
   lazy val seq2 = elem('\"') ~> path <~ elem('\"')
   // do the parsing per CSS spec http://www.w3.org/TR/REC-CSS2/syndata.html#uri section 4.3.4
   lazy val expr = (spaces ~ elem('(') ~ spaces) ~> ( seq1 | seq2 | path ) <~ (spaces <~ elem(')')) ^^ {case s => {
-      "(" + (s.trim.startsWith("/") match {
+      "('" + (s.trim.startsWith("/") match {
         case true => prefix + s.trim
         case _ => s.trim
-      }) + ")"
+      }) + "')"
     }
   }
 
