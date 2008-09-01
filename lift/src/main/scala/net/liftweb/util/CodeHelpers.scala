@@ -23,11 +23,6 @@ object MonadicConversions {
     case _ => False(Nil)
   }
   
-  implicit def monadic2Can(cond: MonadicCondition): Can[List[String]] = cond match {
-    case False(msgs) => Failure("", Empty, msgs.map(m => Failure(m, Empty, Nil)).toList)
-    case _ => Full(Nil)
-  }
-
   implicit def monadic2Bool(cond: MonadicCondition): Boolean = cond match {
     case True() => true
     case _ => false
@@ -57,7 +52,7 @@ object MonadicConversions {
  *   })
  * </pre>
  */
-abstract case class MonadicCondition {
+trait MonadicCondition {
   def && (cond: MonadicCondition): MonadicCondition
   def ~ (msg: String): MonadicCondition
 }
