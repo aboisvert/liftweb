@@ -92,21 +92,8 @@ object SessionMaster extends Actor {
   private var sessions: Map[String, LiftSession] = Map.empty
   private object CheckAndPurge
 
-  def getSession(id: String, otherId: Can[String]): 
-  Can[LiftSession] = synchronized {
+  def getSession(id: String, otherId: Can[String]): Can[LiftSession] = synchronized {
     otherId.flatMap(sessions.get) or Can(sessions.get(id))
-    /*
-    val when = CometActor.next
-    this ! LookupSession(id, when)
-    def looper: Can[LiftSession] =
-    self.receiveWithin(100) {
-      case (respWhen, _) if respWhen != when => looper
-      case (respWhen, Full(ls: LiftSession)) => Full(ls)
-      case _ => Empty
-    }
-
-    looper
-    */
   }
 
   /**
@@ -117,18 +104,18 @@ object SessionMaster extends Actor {
   var sessionWatchers: List[Actor] = Nil
 
   def getSession(httpSession: HttpSession, otherId: Can[String]): Can[LiftSession] =
-  getSession(httpSession.getId(), otherId)
+    getSession(httpSession.getId(), otherId)
 
   def getSession(req: HttpServletRequest, otherId: Can[String]): Can[LiftSession] =
-  getSession(req.getSession, otherId)
+    getSession(req.getSession, otherId)
 
   def addSession(liftSession: LiftSession) {
     synchronized {
-    sessions = sessions + (liftSession.uniqueId -> liftSession)
+      sessions = sessions + (liftSession.uniqueId -> liftSession)
     }
     liftSession.startSession()
-                  val b = SessionToServletBridge(liftSession.uniqueId)
-              liftSession.httpSession.setAttribute(LiftMagicID, b)
+    val b = SessionToServletBridge(liftSession.uniqueId)
+    liftSession.httpSession.setAttribute(LiftMagicID, b)
   }
 
   private val LiftMagicID = "$lift_magic_session_thingy$"
@@ -138,28 +125,8 @@ object SessionMaster extends Actor {
     link(ActorWatcher)
     loop {
       react {
-        /*
-        case AddSession(session) =>
-          try {
-            if (!sessions.contains(session.uniqueId)) {
-              sessions = sessions + (session.uniqueId -> session)
-              session.startSession()
-              val b = SessionToServletBridge(session.uniqueId)
-              session.httpSession.setAttribute(LiftMagicID, b)
-            }
-          } catch {
-            case e => Log.error("Problem adding session", e)
-          }
-
-       
-
-        case LookupSession(id, when) =>
-          val ret = Can(sessions.get(id))
-          ret.foreach(_.lastServiceTime = millis)
-          reply( (when, ret) )
-*/
- case RemoveSession(sessionId) =>
-   val ses = synchronized(sessions)
+        case RemoveSession(sessionId) =>
+          val ses = synchronized(sessions)
           ses.get(sessionId).foreach{s =>
             try {
               s.doShutDown
