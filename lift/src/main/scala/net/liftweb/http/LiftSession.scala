@@ -276,7 +276,15 @@ class LiftSession(val contextPath: String, val uniqueId: String, val httpSession
    * Called just before the session exits.  If there's clean-up work, override this method
    */
   def cleanUpSession() {
-
+    messageCallback = HashMap.empty
+    notices = Nil
+    asyncComponents.clear
+    asyncById = HashMap.empty
+    myVariables = Map.empty
+    onSessionEnd = Nil
+    highLevelSessionDispatcher = HashMap.empty
+    sessionTemplater = HashMap.empty
+    sessionRewriter = HashMap.empty
   }
   
   def addSessionCleanup(f: LiftSession => Unit): Unit = synchronized {
