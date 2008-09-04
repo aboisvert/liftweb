@@ -83,7 +83,9 @@ class LiftServlet extends HttpServlet {
     Full(wp(1)) else Empty
 
     val ret = SessionMaster.getSession(httpSession, cometSessionId) match {
-      case Full(ret) => ret
+      case Full(ret) =>
+        ret.lastServiceTime = millis // DO NOT REMOVE THIS LINE!!!!!
+        ret
 
       case _ =>
         val ret = LiftSession(httpSession, request.contextPath)
