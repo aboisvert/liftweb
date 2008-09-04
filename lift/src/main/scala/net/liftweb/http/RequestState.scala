@@ -161,9 +161,11 @@ object RequestState {
   private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean): Text = {
     val hv = v.text
 
+  val updated = if (hv.startsWith("/")) contextPath + hv else hv
+
     Text(fixURL match {
-       case true => URLRewriter.rewriteFunc map (_(contextPath+hv)) openOr contextPath+hv
-       case _ => contextPath+hv
+       case true => URLRewriter.rewriteFunc map (_(updated)) openOr updated
+       case _ => updated
     })
   }
 
