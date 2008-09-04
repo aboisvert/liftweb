@@ -108,7 +108,11 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
    */
   def validation: List[A => List[FieldError]] = Nil
 
-  def afterCommit: List[A => Unit] = Nil
+  private def clearPostCommit(in: A) {
+    in.addedPostCommit = false
+  }
+  
+  def afterCommit: List[A => Unit] = clearPostCommit _ :: Nil
 
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
 
