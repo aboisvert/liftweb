@@ -147,8 +147,8 @@ object SHtml {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
     val ui = LiftRules.jsArtifacts
-    (<span>{rs % ("onclick" -> ((ui.hide(sid).toJsCmd + ";" +
-                                 ui.showAndFocus(hid)).toJsCmd + "; return false;"))} 
+    (<span>{rs % ("onclick" -> (ui.hide(sid).toJsCmd + ";" +
+                                 ui.showAndFocus(hid).toJsCmd + "; return false;"))} 
            {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";"))}
      </span>)
   }
