@@ -162,7 +162,7 @@ object RequestState {
 
     val hv = v.text
 
-  val updated = if (hv.startsWith("/")) contextPath + hv else hv
+    val updated = if (hv.startsWith("/")) contextPath + hv else hv
 
     Text((fixURL && !updated.startsWith("javascript:")) match {
        case true => URLRewriter.rewriteFunc map (_(updated)) openOr updated

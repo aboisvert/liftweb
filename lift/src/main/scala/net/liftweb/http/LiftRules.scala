@@ -55,6 +55,15 @@ object LiftRules {
   }
 
   /**
+   * A function that takes the HTTPSession and the contextPath as parameters
+   * and returns a LiftSession reference. This can be used in cases subclassing 
+   * LiftSession is necessary.
+   */
+  var sessionCreator: (HttpSession,  String) => LiftSession = {
+    case (httpSession, contextPath) => new LiftSession(contextPath, httpSession.getId, httpSession)
+  }
+  
+  /**
    * The path to handle served resources
    */
   var ResourceServerPath = "classpath"

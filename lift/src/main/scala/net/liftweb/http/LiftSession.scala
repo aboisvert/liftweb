@@ -33,13 +33,10 @@ import java.util.concurrent.TimeUnit
 
 object LiftSession {
 
-  def createSession(session: HttpSession,  contextPath: String) = (new LiftSession(contextPath, session.getId, session))
-
-  var creator = createSession _
-
-  def apply(session: HttpSession, contextPath: String) =
-  creator(session, contextPath)
-
+  /**
+   * Returns a reference to a LiftSession dictated by LiftRules#sessionCreator function.
+   */
+  def apply(session: HttpSession, contextPath: String) = LiftRules.sessionCreator(session, contextPath)
 
   var onSessionActivate: List[LiftSession => Unit] = Nil
   var onSessionPassivate: List[LiftSession => Unit] = Nil
