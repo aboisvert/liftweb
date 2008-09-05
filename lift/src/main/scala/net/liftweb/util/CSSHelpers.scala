@@ -29,7 +29,7 @@ object CSSHelpers extends ControlHelpers {
    * @param in - the text reader
    * @param rootPrefix - the prefix to be added
    */
-  def fixCSS(in: Reader, rootPrefix: String): Can[String] = {
+  def fixCSS(in: Reader, rootPrefix: String): (Can[String], String) = {
       val reader = new BufferedReader(in)
       val res = new StringBuilder;
       var line: String = null;
@@ -40,8 +40,8 @@ object CSSHelpers extends ControlHelpers {
       } finally {
         reader close
       }
-      
-      CSSParser(rootPrefix).fixCSS(res toString);
+      val str = res toString;
+      (CSSParser(rootPrefix).fixCSS(str), str);
   }
   
   
@@ -108,11 +108,13 @@ case class CSSParser(prefix: String) extends Parsers  {
     }
   }
 
-  lazy val phrase = (contentParser ~ expr).* ^^ {case l => l.flatMap(f => f._1 + f._2).mkString("") }
-  lazy val css = (phrase ~ contentParser) ^^ {case a ~ b => a + b}
+  lazy val phrase = ((contentParser ~ expr).* ^^ {case l => l.flatMap(f => f._1 + f._2).mkString("")}) ~ contentParser ^^ {case a ~ b => a + b}
   
-  def fixCSS(in: String): Can[String] = css(in) match {
-    case Success(v, _) => Full(v)
+  def fixCSS(in: String): Can[String] = phrase(in) match {
+    case Success(v, r) => (r atEnd) match {
+      case true => Full(v)
+      case _ => Empty // return Empty if the reader is not at end as it implies that parsing ended due to a parser error
+      }
     case _ => Empty
   }
 

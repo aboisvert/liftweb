@@ -665,13 +665,17 @@ var calcCometPath: () => String = () => cometPath +
         r.path.partPath == path
       }
       def apply(r: RequestState): () => Can[LiftResponse] = {
-        val css = LiftRules.loadResourceAsString(path.mkString("/", "/", ".css"));
+        val cssPath = path.mkString("/", "/", ".css")
+        val css = LiftRules.loadResourceAsString(cssPath);
         
         () => {
           css.map(str => CSSHelpers.fixCSS(new BufferedReader(
             new StringReader(str)), prefix openOr (S.contextPath)) match {
-              case Full(c) => CSSResponse(c)
-              case _ => CSSResponse("// Problem fixing the CSS resource !", 500)
+              case (Full(c), _) => CSSResponse(c)
+              case (_, input) => {
+                Log.warn("Fixing " + cssPath + " failed");
+                CSSResponse(input)
+              }
           })
         }
       }
