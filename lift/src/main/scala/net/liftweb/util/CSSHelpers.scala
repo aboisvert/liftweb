@@ -28,6 +28,7 @@ object CSSHelpers extends ControlHelpers {
    * 
    * @param in - the text reader
    * @param rootPrefix - the prefix to be added
+   * @return (Can[String], String) - returns the tuple containing the parsing output and the original input (as a String)
    */
   def fixCSS(in: Reader, rootPrefix: String): (Can[String], String) = {
       val reader = new BufferedReader(in)
