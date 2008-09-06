@@ -166,7 +166,7 @@ class LiftServlet extends HttpServlet {
 
     resp match {
       case Full(cresp) =>
-	    val resp = cresp.toResponse
+        val resp = cresp.toResponse
 
         logIfDump(requestState, resp)
       
