@@ -531,10 +531,11 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
 
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
-    findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst => tryo(invokeMethod(clz, inst, method) match {
+    findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst => 
+      (invokeMethod(clz, inst, method) match {
             case Full(md: MetaData) => Full(md.copy(rest))
             case _ => Empty
-          }).flatMap(s => s))).openOr(rest)
+          }))).openOr(rest)
   }
 
 
