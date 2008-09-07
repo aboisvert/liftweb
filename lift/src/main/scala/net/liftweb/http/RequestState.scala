@@ -165,33 +165,33 @@ object RequestState {
     val updated = if (hv.startsWith("/")) contextPath + hv else hv
 
     Text((fixURL && !updated.startsWith("javascript:")) match {
-       case true => URLRewriter.rewriteFunc map (_(updated)) openOr updated
-       case _ => updated
-    })
+        case true => URLRewriter.rewriteFunc map (_(updated)) openOr updated
+        case _ => updated
+      })
   }
 
   def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
     
-      def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
-        if (attrs == Null) Null
-        else if (attrs.key == toFix) {
-          new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value, fixURL),fixAttrs(toFix, attrs.next, fixURL))
-        } else attrs.copy(fixAttrs(toFix, attrs.next, fixURL))
-      }
+    def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
+      if (attrs == Null) Null
+      else if (attrs.key == toFix) {
+        new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value, fixURL),fixAttrs(toFix, attrs.next, fixURL))
+      } else attrs.copy(fixAttrs(toFix, attrs.next, fixURL))
+    }
 
-      in.map{
-        v =>
-        v match {
-          case Group(nodes) => Group(fixHtml(contextPath, nodes))
+    in.map{
+      v =>
+      v match {
+        case Group(nodes) => Group(fixHtml(contextPath, nodes))
 
-          case e: Elem if e.label == "form" => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-          case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-          case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-          case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
-          case _ => v
-        }
+        case e: Elem if e.label == "form" => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+        case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
+        case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
+        case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
+        case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
+        case _ => v
       }
+    }
   }
 
   private[liftweb] def defaultCreateNotFound(in: RequestState) =
@@ -225,6 +225,11 @@ class RequestState(val path: ParsePath,
     case Some(s :: _) => Some(s)
     case _ => None
   }
+
+  lazy val headers: List[(String, String)] = 
+    for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[java.util.Enumeration[String]]);
+	 item <- enumToList[String](request.getHeaders(header).asInstanceOf[java.util.Enumeration[String]]))
+      yield (header, item)
 
   lazy val (paramNames: List[String],
             params: Map[String, List[String]],
@@ -276,12 +281,17 @@ class RequestState(val path: ParsePath,
 
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
 
-  lazy val uri = request match {
+  lazy val uri: String = request match {
     case null => "Outside HTTP Request (e.g., on Actor)"
-    case request => request.getRequestURI.substring(request.getContextPath.length) match {
+    case request => 
+      val ret = for (uri <- Can.legacyNullTest(request.getRequestURI);
+                     val cp = Can.legacyNullTest(request.getContextPath) openOr "") yield
+      uri.substring(cp.length)
+      match {
         case "" => "/"
         case x => RequestState.fixURI(x)
       }
+      ret openOr "/"
   }
 
   /**
@@ -292,7 +302,10 @@ class RequestState(val path: ParsePath,
   /**
    * The user agent of the browser that sent the request
    */
-  def userAgent: Can[String] = Can.legacyNullTest(request.getHeader("User-Agent"))
+  def userAgent: Can[String] = 
+  for (r <- Can.legacyNullTest(request);
+       uah <- Can.legacyNullTest(request.getHeader("User-Agent")))
+  yield uah
 
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }

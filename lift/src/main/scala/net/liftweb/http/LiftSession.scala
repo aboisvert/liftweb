@@ -36,7 +36,9 @@ object LiftSession {
   /**
    * Returns a reference to a LiftSession dictated by LiftRules#sessionCreator function.
    */
-  def apply(session: HttpSession, contextPath: String) = LiftRules.sessionCreator(session, contextPath)
+  def apply(session: HttpSession, contextPath: String,
+	  headers: List[(String, String)]) = 
+	    LiftRules.sessionCreator(session, contextPath, headers)
 
   var onSessionActivate: List[LiftSession => Unit] = Nil
   var onSessionPassivate: List[LiftSession => Unit] = Nil
@@ -169,7 +171,8 @@ object SessionMaster extends Actor {
 }
 
 @serializable
-class LiftSession(val contextPath: String, val uniqueId: String, val httpSession: HttpSession) {
+class LiftSession(val contextPath: String, val uniqueId: String,
+                  val httpSession: HttpSession, val initialHeaders: List[(String, String)]) {
   import TemplateFinder._
 
   private var running_? = false

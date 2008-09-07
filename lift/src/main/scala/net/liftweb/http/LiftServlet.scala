@@ -88,7 +88,7 @@ class LiftServlet extends HttpServlet {
         ret
 
       case _ =>
-        val ret = LiftSession(httpSession, request.contextPath)
+        val ret = LiftSession(httpSession, request.contextPath, request.headers)
         ret.lastServiceTime = millis
         SessionMaster.addSession(ret)
         ret

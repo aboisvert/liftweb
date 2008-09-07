@@ -59,8 +59,8 @@ object LiftRules {
    * and returns a LiftSession reference. This can be used in cases subclassing 
    * LiftSession is necessary.
    */
-  var sessionCreator: (HttpSession,  String) => LiftSession = {
-    case (httpSession, contextPath) => new LiftSession(contextPath, httpSession.getId, httpSession)
+  var sessionCreator: (HttpSession,  String, List[(String, String)]) => LiftSession = {
+    case (httpSession, contextPath, headers) => new LiftSession(contextPath, httpSession.getId, httpSession, headers)
   }
   
   /**
