@@ -36,8 +36,7 @@ object LiftSession {
   /**
    * Returns a reference to a LiftSession dictated by LiftRules#sessionCreator function.
    */
-  def apply(session: HttpSession, contextPath: String,
-	  headers: List[(String, String)]) = 
+  def apply(session: HttpSession, contextPath: String, headers: List[(String, String)]) = 
 	    LiftRules.sessionCreator(session, contextPath, headers)
 
   var onSessionActivate: List[LiftSession => Unit] = Nil
