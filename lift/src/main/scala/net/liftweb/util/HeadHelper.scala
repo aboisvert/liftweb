@@ -53,7 +53,7 @@ object HeadHelper {
           (!node1.attribute("id").isEmpty && node1.attribute("id").equals(node2.attribute("id"))) ||
           (!node1.attribute("src").isEmpty && node1.attribute("src").equals(node2.attribute("src"))) ||
           (!node1.attribute("href").isEmpty && node1.attribute("href").equals(node2.attribute("href"))) ||
-          (node1.child != NodeSeq.Empty && node1.child.equals(node2.child))
+          (!node1.child.isEmpty && (node1.child.equals(node2.child)))
         }
         case _ => false
       }
