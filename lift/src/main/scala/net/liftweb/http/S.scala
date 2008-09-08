@@ -141,6 +141,9 @@ object S extends HasParams {
   }
 
 
+  /**
+   * Find a template based on the attribute "template"
+   */
   def templateFromTemplateAttr: Can[NodeSeq] =
   for (templateName <- attr("template") ?~ "Template Attribute missing";
        val tmplList = templateName.roboSplit("/");
