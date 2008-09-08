@@ -931,6 +931,9 @@ object AnyVar {
 case class JsonCmd(command: String, target: String, params: Any,
                    all: scala.collection.Map[String, Any])
 
+/**
+ * Holds information about a response
+ */
 class ResponseInfoHolder {
   var headers: Map[String, String] = Map.empty
   private var _docType: Can[String] = Empty
