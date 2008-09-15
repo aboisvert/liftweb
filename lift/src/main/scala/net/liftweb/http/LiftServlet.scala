@@ -413,7 +413,6 @@ class LiftServlet extends HttpServlet {
     // insure that certain header fields are set
     val header = insureField(fixHeaders(resp.headers), List(("Content-Type",
                                                              LiftRules.determineContentType( pairFromRequest(request) )),
-                                                            ("Content-Encoding", "UTF-8"),
                                                             ("Content-Length", len.toString)))
 
     LiftRules._beforeSend.foreach(f => tryo(f(resp, response, header, request)))
