@@ -35,9 +35,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[
   override def toString = {
     val v = is
     if (v == null || v.length < 100) super.toString
-    else {
-      displayName +"="+v.substring(0,40)+" ... "+v.substring(v.length - 40)
-    }
+    else v.substring(0,40)+" ... "+v.substring(v.length - 40)
   }
 
   def textareaRows  = 8
