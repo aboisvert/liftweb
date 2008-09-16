@@ -624,8 +624,6 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
          checkMultiPart(attrs)) %
         checkAttr("class", attrs)) % checkAttr("id",attrs) ) getOrElse ret
 
-
-    attrs.get("form").map(ft => <form action={S.uri} method={ft.text}>{ret}</form> % checkMultiPart(attrs)) getOrElse ret
   }
 
 

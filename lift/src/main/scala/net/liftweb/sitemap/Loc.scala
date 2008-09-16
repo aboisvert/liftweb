@@ -94,20 +94,13 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     
     CompleteMenu(_menu.buildUpperLines(_menu, _menu, theKids))
   }
-  /*
-  CompleteMenu(_menu.buildUpperLines.toList ::: 
-                                             List(_menu.buildThisLine(this)) :::
-                                             List(_menu.buildChildLine))
-                                             */
                                             
   private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Can[MenuItem] =
   (hidden, testAccess) match {
     case (false, Left(true)) =>
       link.createLink(Nil).map(t =>
         MenuItem(text.text(),t, kids, current, path,
-                 stuff.
-                 flatMap
-                 {
+                 stuff.flatMap {
             case v: Loc.LocInfo[(T forSome {type T})] => v()
             case _ =>  Empty
           }
@@ -115,8 +108,6 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
 
     case _ => Empty
   }
-  //if (hidden || !testAccess._1) Empty
-  //else 
 
   private def hidden = stuff.contains(Loc.Hidden)
 }
