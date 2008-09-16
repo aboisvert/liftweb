@@ -42,12 +42,6 @@ case class UnknownRequest(method: String) extends RequestType
 
 object RequestType {
   def apply(req: HttpServletRequest): RequestType = {
-    /*
-    val ajax = req.getHeader("x-requested-with") match {
-      case null => false
-      case s @ _ => s.toUpperCase == "XMLHttpRequest".toUpperCase
-    }*/
-
     req.getMethod.toUpperCase match {
       case "GET" => GetRequest
       case "POST" => PostRequest

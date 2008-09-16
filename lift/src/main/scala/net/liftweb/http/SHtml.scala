@@ -19,6 +19,7 @@ import S._
 import net.liftweb.util._
 import net.liftweb.util.Helpers._
 import net.liftweb.http.js._
+import net.liftweb.http.js.AjaxInfo
 import JE._
 import JsCmds._
 import scala.xml._
@@ -33,9 +34,7 @@ object SHtml {
    * @return a button to put on your page
    */
   def ajaxButton(text: String, func: => JsCmd): Elem =
-    <input type="button" value={text}/> %
-     ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+
-       mapFunc(() => func)+"=true', dataType: 'script'});"))
+    <input type="button" value={text}/> % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo((mapFunc(() => func)+"=true").encJs, false))))
 
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -64,7 +63,6 @@ object SHtml {
    */
   def span(body: NodeSeq, cmd: JsCmd): Elem = (<span onclick={cmd.toJsCmd}>{body}</span>)
 
-
   /**
    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
    * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
@@ -82,15 +80,14 @@ object SHtml {
    * @return the JavaScript that makes the call
    */
   private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    "jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', timeout: 10000, cache: false, data: '"+mapFunc(func)+"='+encodeURIComponent("+jsCalcValue+"), dataType: 'script'});"
+    LiftRules.jsArtifacts.ajax(AjaxInfo(("'" + mapFunc(func)+"='+"+jsCalcValue), true))
+                               
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
-    val nh = head % ("onclick" -> ("jQuery('#"+id+"').toggle(); jQuery.ajax( {url: '"+
-      S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', type: 'POST', cache: false, data: '"+funcName+"=true', dataType: 'script'});"))
+    val nh = head % ("onclick" -> (LiftRules.jsArtifacts.toggle(id).toJsCmd + ";" + LiftRules.jsArtifacts.ajax(AjaxInfo((funcName + "=true").encJs, false))))
     nh ++ rnk
   }
 
@@ -118,15 +115,14 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+encodeURIComponent(this.value), dataType: 'script'});"))
+        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.value", false))))
   }
 
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
-
+  
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) %
-        ("onclick" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.checked, dataType: 'script'});"))
+      (<input type="checkbox"/>) % checked(value) % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.checked", false))))
   }
 
   def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -138,28 +134,32 @@ object SHtml {
 
     (<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> ("jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"', timeout: 10000,  type: 'POST', cache: false, data: '"+funcName+"='+this.options[this.selectedIndex].value, dataType: 'script'});"))
+    }</select>) % ("onchange" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.options[this.selectedIndex].value", false))))
   }
 
-  def ajaxInvoke(func: () => JsCmd): String = "jQuery.ajax( {url: '"+S.encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"',  type: 'POST', cache: false, timeout: 10000, data: '"+
-     mapFunc(NFuncHolder(func))+"=true', dataType: 'script'});"
+  def ajaxInvoke(func: () => JsCmd): String = LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(NFuncHolder(func)) + "=true'", false))
 
   /**
-   *  Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
+   * Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
    * the hidden element blurs, it swaps into the shown element.
    */
   def swappable(shown: Elem, hidden: Elem): Elem = {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
-    (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);}); return false;"))}{
-      dealWithBlur(rh % ("style" -> "display: none"), ("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();"))}</span>)
+    val ui = LiftRules.jsArtifacts
+    (<span>{rs % ("onclick" -> (ui.hide(sid).toJsCmd + ";" +
+                                 ui.showAndFocus(hid).toJsCmd + "; return false;"))} 
+           {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";"))}
+     </span>)
   }
 
   def swappable(shown: Elem, hidden: String => Elem): Elem = {
     val (rs, sid) = findOrAddId(shown)
     val hid = "S"+randomString(10)
-    val rh = <span id={hid}>{hidden("jQuery('#"+sid+"').show(); jQuery('#"+hid+"').hide();")}</span>
-      (<span>{rs % ("onclick" -> ("jQuery('#"+sid+"').hide(); jQuery('#"+hid+"').show(); return false;"))}{
+    val ui = LiftRules.jsArtifacts
+
+    val rh = <span id={hid}>{hidden(ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";")}</span>
+      (<span>{rs % ("onclick" -> (ui.hide(sid).toJsCmd + ";" + ui.show(hid).toJsCmd + "; return false;"))}{
          (rh % ("style" -> "display: none"))}</span>)
   }
 
@@ -206,7 +206,7 @@ object SHtml {
     </form>
   }
 
-  private def secureOptions[T](options: Seq[(T, String)], default: Can[T],
+  private[http] def secureOptions[T](options: Seq[(T, String)], default: Can[T],
                     onSubmit: T => Unit) = {
      val secure = options.map{case (obj, txt) => (obj, randomString(20), txt)}
      val defaultNonce = default.flatMap(d => secure.find(_._1 == d).map(_._2))
@@ -214,48 +214,6 @@ object SHtml {
      def process(nonce: String): Unit =
        secure.find(_._2 == nonce).map(x => onSubmit(x._1))
     (nonces, defaultNonce, SFuncHolder(process))
-  }
-  
-  /**
-   * Create an autocomplete form based on a sequence.
-   */
-  def autocompleteObj[T](options: Seq[(T, String)], default: Can[T],
-                         onSubmit: T => Unit): Elem = {
-    val (nonces, defaultNonce, secureOnSubmit) =
-      secureOptions(options, default, onSubmit)
-    val defaultString = default.flatMap(d => options.find(_._1 == d).map(_._2))
-
-    autocomplete_*(nonces, defaultString, defaultNonce, secureOnSubmit)
-  }
-
-  def autocomplete_*(options: Seq[(String, String)], default: Can[String],
-                     defaultNonce: Can[String], onSubmit: AFuncHolder): Elem = {
-    val id = randomString(20)
-    val hidden = mapFunc(onSubmit)
-    val data = JsArray(options.map { case (nonce, name) =>
-          JsObj("name" -> name, "nonce" -> nonce)} :_*)
-    val autocompleteOptions = JsRaw("""{
-      minChars: 0,
-      matchContains: true,
-      formatItem: function(row, i, max) { return row.name; },
-    }""")
-    val onLoad = JsRaw("""
-      $(document).ready(function(){
-        var data = """+data.toJsCmd+""";
-        $("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
-          $("#"""+hidden+"""").val(dt.nonce);
-        });
-      });""")
-
-    (<span>
-    <head>
-      <link rel="stylesheet" href="/classpath/jquery-autocomplete/jquery.autocomplete.css" type="text/css" />
-      <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
-      <script>{Unparsed(onLoad.toJsCmd)}</script>
-    </head>
-    <input type="text" id={id} value={default.openOr("")} />
-    <input type="hidden" name={hidden} id={hidden} value={defaultNonce.openOr("")} />
-    </span>)
   }
 
   /**

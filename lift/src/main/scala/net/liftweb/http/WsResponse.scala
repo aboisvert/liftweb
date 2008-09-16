@@ -111,6 +111,18 @@ case class PlainTextResponse(text: String, headers: List[(String, String)], code
     }
 }
 
+object CSSResponse {
+  def apply(text: String): CSSResponse = CSSResponse(text, Nil, 200)
+  def apply(text: String, code: Int): CSSResponse = CSSResponse(text, Nil, code)
+}
+
+case class CSSResponse(text: String, headers: List[(String, String)], code: Int) extends LiftResponse {
+    def toResponse = {
+        val bytes = text.getBytes("UTF-8")
+        InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/css") :: headers, Nil, code)
+    }
+}
+
 /**
  * Basic 200 response but without body.
  */

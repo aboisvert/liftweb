@@ -1,10 +1,20 @@
 package net.liftweb.util
 
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import java.net.InetAddress
 import java.util.Properties
@@ -22,14 +32,14 @@ object Props {
    */
   def get(name: String): Can[String] = Can(props.get(name))
 
-  def apply(name: String): String = props(name)
+  // def apply(name: String): String = props(name)
 
-  def getInt(name: String): Int = toInt(props.get(name))
-  def getInt(name: String, defVal: Int): Int = props.get(name).map(toInt(_)) getOrElse defVal
-  def getLong(name: String): Long = toLong(props.get(name))
-  def getLong(name: String, defVal: Long): Long = props.get(name).map(toLong(_)) getOrElse defVal
-  def getBool(name: String): Boolean = toBoolean(props.get(name))
-  def getBool(name: String, defVal: Boolean): Boolean = props.get(name).map(toBoolean(_)) getOrElse defVal
+  def getInt(name: String): Can[Int] = get(name).map(toInt) // toInt(props.get(name))
+  def getInt(name: String, defVal: Int): Int = getInt(name) openOr defVal // props.get(name).map(toInt(_)) getOrElse defVal
+  def getLong(name: String): Can[Long] = props.get(name).map(toLong)
+  def getLong(name: String, defVal: Long): Long = getLong(name) openOr defVal // props.get(name).map(toLong(_)) getOrElse defVal
+  def getBool(name: String): Can[Boolean] = props.get(name).map(toBoolean) // (props.get(name))
+  def getBool(name: String, defVal: Boolean): Boolean = getBool(name) openOr defVal // props.get(name).map(toBoolean(_)) getOrElse defVal
   def get(name: String, defVal: String) = props.get(name) getOrElse defVal
 
   def require(what: String*) = what.filter(!props.contains(_))
@@ -55,14 +65,15 @@ object Props {
   val propFileName = "lift.props"
   val fileName = "lift.props"
 
-  lazy val mode = (System.getProperty("run.mode") match {case null => null case s => s.toLowerCase}) match {
-    case "test" => Test
-    case "production" => Production
-    case "staging" => Staging
-    case "pilot" => Pilot
-    case "profile" => Profile
+lazy val mode = Can.legacyNullTest((System.getProperty("run.mode"))).map(_.toLowerCase) match {
+    case Full("test") => Test
+    case Full("production") => Production
+    case Full("staging") => Staging
+    case Full("pilot") => Pilot
+    case Full("profile") => Profile
     case _ => Development
   }
+  
   lazy val modeName = mode match {
     case Test => "test."
     case Staging => "staging."

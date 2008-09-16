@@ -15,12 +15,18 @@
  */
 package net.liftweb.builtin.snippet
 
-import net.liftweb.http.S
+import net.liftweb.http.{S, DispatchSnippet}
 import net.liftweb.sitemap._
 import net.liftweb.util._
 import scala.xml._
 
-class Menu {
+class Menu extends DispatchSnippet {
+  def dispatch: DispatchIt = {
+    case "builder" => ignore => builder
+    case "title" => title
+    case "item" => item
+  }
+
   def builder: NodeSeq = {
     var r: Can[NodeSeq] =
     
@@ -30,16 +36,16 @@ class Menu {
           val liMap = S.prefixedAttrsToMap("li")
           val li = S.mapToAttrs(liMap)
 
-           def buildANavItem(i: MenuItem) = {
-             i match {
-    case MenuItem(text, uri, kids, true, _, _) =>
-      (<li><span>{text}</span>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_item", liMap)
-    case MenuItem(text, uri, kids,  _, true, _) =>
-      (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_path", liMap)
-    case MenuItem(text, uri, kids, _, _, _) =>
-      (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li> % li)
-             }
-  }
+          def buildANavItem(i: MenuItem) = {
+            i match {
+              case MenuItem(text, uri, kids, true, _, _) =>
+                (<li><span>{text}</span>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_item", liMap)
+              case MenuItem(text, uri, kids,  _, true, _) =>
+                (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li>) % S.prefixedAttrsToMetaData("li_path", liMap)
+              case MenuItem(text, uri, kids, _, _, _) =>
+                (<li><a href={uri}>{text}</a>{buildUlLine(kids)}</li> % li)
+            }
+          }
 
           def buildUlLine(in: Seq[MenuItem]): Node = if (in.isEmpty) Text("")
           else <ul>{in.flatMap(buildANavItem)}</ul> %
@@ -52,6 +58,12 @@ class Menu {
     r.openOr(List(Text("No Navigation Defined.")))
   }
 
+  def title(text: NodeSeq): NodeSeq = {
+    val r =
+    for (request <- S.request;
+         loc <- request.location) yield loc.title
+    r openOr Text("")
+  }
  
   
   def item(text: NodeSeq): NodeSeq = 

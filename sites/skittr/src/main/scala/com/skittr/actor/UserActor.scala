@@ -96,7 +96,8 @@ class UserActor extends Actor {
           localTimeline = latestMsgs  // set the local timeline to our messages (the folks we follow will update us)
           // get friends
           friends = User.findAllByInsecureSql("SELECT users.* FROM users, friends WHERE users.id = friends.friend AND friends.owner = "+userId,
-					    true).map(_.name.is).sort(_ < _)
+					      IHaveValidatedThisSQL("dpp",
+								"08/23/08")).map(_.name.is).sort(_ < _)
           reply("Done")
 
         // tell all our friends that we follow them

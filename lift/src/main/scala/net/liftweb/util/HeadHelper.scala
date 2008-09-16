@@ -22,9 +22,13 @@ object HeadHelper {
         val newHead = cleanHead(<head>{headChildren}</head>)
         Elem(namespace, "html", attrs, scp, (newHead ++ newChildren):_*)
       }
-      // case <html>{ ch @ _* }</html> => extractHead2(ch)
       case <head>{ ch @ _* }</head> => {
-        headChildren &+ ch
+        ch foreach(c => {
+          (headChildren find (sameAs(c, _))) match {
+            case None => headChildren &+ c
+            case _ =>
+          }
+        })
         Nil
       }
       case Elem(namespace, label, attrs, scp, ns @ _*) => Elem(namespace, label, attrs, scp, extractHead2(ns):_* )
@@ -38,7 +42,6 @@ object HeadHelper {
   def cleanHead(htmlHead: NodeSeq) : NodeSeq = {
     val newHead = new NodeBuffer()
     htmlHead.foreach(node => if (!newHead.exists(sameAs(node, _))) newHead &+ node)
-    //identity(head)
     newHead
   }
 
@@ -50,7 +53,7 @@ object HeadHelper {
           (!node1.attribute("id").isEmpty && node1.attribute("id").equals(node2.attribute("id"))) ||
           (!node1.attribute("src").isEmpty && node1.attribute("src").equals(node2.attribute("src"))) ||
           (!node1.attribute("href").isEmpty && node1.attribute("href").equals(node2.attribute("href"))) ||
-          node1.child.equals(node2.child)
+          (!node1.child.isEmpty && (node1.child.equals(node2.child)))
         }
         case _ => false
       }

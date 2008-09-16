@@ -69,7 +69,7 @@ import scala.collection.mutable.HashMap
 
        case _ :: rest => fixRefs(rest, refs)
 
-       case huh => println(huh)
+       case huh => // println(huh)
      }
 
      val parser = new TextileParsers(urlRewrite, disableLinks)
@@ -2236,7 +2236,13 @@ def main(arg: Array[String]) {
   }
 }
 
-case class DefaultRewriter(base: String) extends RewriteFunc {
+
+
+}*/
+
+case class DefaultRewriter(base: String) extends TextileParser.RewriteFunc {
+  import TextileParser._
+
   def apply(in: WikiURLInfo) = in match {
     case WikiURLInfo(word, Some(cat)) =>
     (base+"/"+urlEncode(cat)+"/"+urlEncode(word), Text(word), None)
@@ -2246,6 +2252,3 @@ case class DefaultRewriter(base: String) extends RewriteFunc {
 
    def urlEncode(in : String) = java.net.URLEncoder.encode(in, "UTF-8")
 }
-
-
-}*/

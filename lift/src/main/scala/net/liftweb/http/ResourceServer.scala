@@ -23,9 +23,12 @@ import java.net.{URLConnection}
 object ResourceServer {
   private var allowedPaths: PartialFunction[List[String], Boolean] = {
     case "jquery.js" :: Nil => true
-    case "json.js" :: Nil => true
-    case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
+    case "yui" :: _ => true
+    case "liftYUI.js" :: Nil => true
+    case "json2.js" :: Nil => true
+    case "json.js" :: Nil => true      
     case "jlift.js" :: Nil => true
+    case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
     case "jquery-autocomplete" :: "jquery.autocomplete.css" :: Nil => true
   }
@@ -33,6 +36,7 @@ object ResourceServer {
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
      case "jquery.js" :: Nil => List("jquery-1.2.6-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
+     case "json2.js" :: Nil => List( "json2-min.js")
      case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
   }
@@ -42,7 +46,9 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(req: RequestState): Can[LiftResponse] = {
+  def findResourceInClasspath(request: RequestState, _uri: List[String])(): Can[LiftResponse] = {
+    for (req <- S.request;
+	 r <- {
     val uri = _uri.filter(!_.startsWith("."))
     if (isAllowed(uri)) {
       val rw = baseResourceLocation :: pathRewriter(uri)
@@ -58,7 +64,7 @@ object ResourceServer {
               ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
       }
       }
-    } else Empty
+    } else Empty}) yield r
   }
 
   /**

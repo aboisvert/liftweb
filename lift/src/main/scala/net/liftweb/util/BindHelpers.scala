@@ -13,7 +13,7 @@ package net.liftweb.util
  * limitations under the License.
  */
 
- import scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribute, PrefixedAttribute}
+import scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribute, PrefixedAttribute}
 
 /**
  * The helpers assocated with bindings
@@ -33,6 +33,32 @@ trait BindHelpers {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child
   }
+
+  /**
+   * Choose one of many templates from the children
+   */
+  def template(xhtml: NodeSeq, prefix: String, tag: String): Can[NodeSeq] = 
+  (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+    case Nil => Empty
+    case x :: xs => Full(x.child)
+  }
+
+  /**
+   * Choose two of many templates from the children
+   */
+  def template(xhtml: NodeSeq, prefix: String, tag1: String,
+               tag2: String): Can[(NodeSeq, NodeSeq)] =
+  for (x1 <- template(xhtml, prefix, tag1);
+       x2 <- template(xhtml, prefix, tag2)) yield (x1, x2)
+
+  /**
+   * Choose three of many templates from the children
+   */
+  def template(xhtml: NodeSeq, prefix: String, tag1: String,
+               tag2: String, tag3: String): Can[(NodeSeq, NodeSeq, NodeSeq)] =
+  for (x1 <- template(xhtml, prefix, tag1);
+       x2 <- template(xhtml, prefix, tag2);
+       x3 <- template(xhtml, prefix, tag3)) yield (x1, x2, x3)
 
   /**
    * Base class for Bind parameters. A bind parameter has a name and is able to extract its value from a NodeSeq.
@@ -74,9 +100,9 @@ trait BindHelpers {
    */
   object BindParamAssoc {
     implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
-      case null => Text("null")
-      case v => Text(v.toString)
-    })
+        case null => Text("null")
+        case v => Text(v.toString)
+      })
   }
 
   /**
@@ -121,14 +147,14 @@ trait BindHelpers {
    */
   object Function1NodeSeqToNodeSeq {
     def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
-      if (f.getClass.getMethods.exists{ method =>
+    if (f.getClass.getMethods.exists{ method =>
         lazy val params: Seq[Class[_]] = method.getParameterTypes
         method.getName == "apply" &&
-          params.length == 1 &&
-          params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
-          classOf[NodeSeq].isAssignableFrom(method.getReturnType)
+        params.length == 1 &&
+        params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
+        classOf[NodeSeq].isAssignableFrom(method.getReturnType)
       }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
-      else None
+    else None
   }
   
   /**
@@ -159,7 +185,7 @@ trait BindHelpers {
    * Transforms a Tuple2[Symbol, _] to a BindParam
    */
   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
-    pairToBindParam((p._1.name, p._2))
+  pairToBindParam((p._1.name, p._2))
     
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
@@ -167,16 +193,16 @@ trait BindHelpers {
    *
    * @deprecated use bind instead
    */
-   @deprecated
+  @deprecated
   def xbind(namespace: String, xml: NodeSeq)(transform: PartialFunction[String, NodeSeq => NodeSeq]): NodeSeq = {
     def rec_xbind(xml: NodeSeq): NodeSeq = {
       xml.flatMap {
         node => node match {
           case s: Elem if (node.prefix == namespace) =>
-          if (transform.isDefinedAt(node.label))
-          transform(node.label)(node)
-          else
-          Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+            if (transform.isDefinedAt(node.label))
+            transform(node.label)(node)
+            else
+            Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
           case Group(nodes) => Group(rec_xbind(nodes))
           case s: Elem => Elem(node.prefix, node.label, node.attributes, node.scope, rec_xbind(node.child) : _*)
           case n => node
@@ -200,12 +226,12 @@ trait BindHelpers {
       case Null => Null
       case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
       case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
-        case None => new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
-        case Some(abp @ AttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-        case Some(abp @ FuncAttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-        case Some(bp: TheBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
-        case Some(bp: FuncBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
-      }
+          case None => new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
+          case Some(abp @ AttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+          case Some(abp @ FuncAttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+          case Some(bp: TheBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+          case Some(bp: FuncBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+        }
       case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
     }
 
@@ -214,11 +240,11 @@ trait BindHelpers {
         node =>
         node match {
           case s : Elem if (node.prefix == namespace) => {
-            map.get(node.label) match {
-              case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
-              case Some(ns) => ns.calcValue(s.child)
+              map.get(node.label) match {
+                case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+                case Some(ns) => ns.calcValue(s.child)
+              }
             }
-          }
           case Group(nodes) => Group(in_bind(nodes))
           case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
           case n => node
@@ -244,16 +270,16 @@ trait BindHelpers {
     xml.flatMap {
       node => node match {
         case s : Elem if (node.prefix == "lift" && node.label == "bind") => {
-          node.attributes.get("name") match {
-            case None => bind(vals, node.child)
-            case Some(ns) => {
-              vals.get(ns.text) match {
-                case None => bind(vals, node.child)
-                case Some(nodes) => nodes
-              }
+            node.attributes.get("name") match {
+              case None => bind(vals, node.child)
+              case Some(ns) => {
+                  vals.get(ns.text) match {
+                    case None => bind(vals, node.child)
+                    case Some(nodes) => nodes
+                  }
+                }
             }
           }
-        }
         case Group(nodes) => Group(bind(vals, nodes))
         case s : Elem => Elem(node.prefix, node.label, node.attributes,node.scope, bind(vals, node.child) : _*)
         case n => node
@@ -290,10 +316,10 @@ trait BindHelpers {
       v match {
         case Group(nodes) => Group(processBind(nodes, atWhat))
         case Elem("lift", "bind", attr @ _, _, kids @ _*) =>
-        findMap(atWhat) {
-          case (at, what) if attr("name").text == at => Some(what)
-          case _ => None
-        }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
+          findMap(atWhat) {
+            case (at, what) if attr("name").text == at => Some(what)
+            case _ => None
+          }.getOrElse(processBind(v.asInstanceOf[Elem].child, atWhat))
 
         case e: Elem => {Elem(e.prefix, e.label, e.attributes, e.scope, processBind(e.child, atWhat): _*)}
         case _ => {v}

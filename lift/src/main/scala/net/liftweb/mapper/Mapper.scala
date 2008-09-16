@@ -16,7 +16,8 @@ import net.liftweb.http.js._
 import net.liftweb.util.{Can, Empty, Full, Failure}
 
 @serializable
-trait Mapper[A<:Mapper[A]] { self: A =>
+trait Mapper[A<:Mapper[A]] {
+  self: A =>
   private val secure_# = Safe.next
   private var was_deleted_? = false
   private var dbConnectionIdentifier:Can[ConnectionIdentifier] = Empty
@@ -49,8 +50,9 @@ trait Mapper[A<:Mapper[A]] { self: A =>
   * Append a function to perform after the commit happens
   * @param func - the function to perform after the commit happens
   */
-  def doPostCommit(func: () => Unit) {
+  def doPostCommit(func: () => Unit): A = {
     DB.appendPostFunc(connectionIdentifier, func)
+    this
   }
 
   /**

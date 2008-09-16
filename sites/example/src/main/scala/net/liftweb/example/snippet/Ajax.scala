@@ -19,6 +19,8 @@ import net.liftweb.http._
 import S._
 import SHtml._
 import js._
+import js.jquery._
+import JqJsCmds._
 import JsCmds._
 import net.liftweb.util._
 import Helpers._

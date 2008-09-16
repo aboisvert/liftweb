@@ -88,34 +88,45 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    */
   def screenWrap: Can[Node] = Empty
   
-  val BasePath = "user_mgt"
-  val SignUp = "sign_up"
-  val Login = "login"
-  val LostPassword = "lost_password"
-  val PasswordReset = "reset_password"
-  val ChangePassword = "change_password"
-  val Logout = "logout"
-  val Edit = "edit"
-  val ValidateUser = "validate_user"
+  val basePath: List[String] = "user_mgt" :: Nil
+  def signUpSuffix = "sign_up"
+  lazy val signUpPath = thePath(signUpSuffix)
+  def loginSuffix = "login"
+  lazy val loginPath = thePath(loginSuffix)
+  def lostPasswordSuffix = "lost_password"
+  lazy val lostPasswordPath = thePath(lostPasswordSuffix)
+  def passwordResetSuffix = "reset_password"
+  lazy val passwordResetPath = thePath(passwordResetSuffix)
+  def changePasswordSuffix = "change_password"
+  lazy val changePasswordPath = thePath(changePasswordSuffix)
+  def logoutSuffix = "logout"
+  lazy val logoutPath = thePath(logoutSuffix)
+  def editSuffix = "edit"
+  lazy val editPath = thePath(editSuffix)
+  def validateUserSuffix = "validate_user"
+  lazy val validateUserPath = thePath(validateUserSuffix)
   
-  val HomePage = "/"
+  def homePage = "/"
+
+
   
-  case class MenuItem(name: String, endOfPath: String, loggedIn: Boolean) {
-    def path = "/"+BasePath+"/"+endOfPath
-    def display = name match {
+  case class MenuItem(name: String, path: List[String], loggedIn: Boolean) {
+    lazy val endOfPath = path.last
+    lazy val pathStr: String = path.mkString("/", "/", "")
+    lazy val display = name match {
       case null | "" => false
       case _ => true
     }
   }
   
-  def thePath(end: String): List[String] = BasePath :: end :: Nil
+  def thePath(end: String): List[String] = basePath ::: List(end)
   
   /**
    * Return the URL of the "login" page
    */
-  def loginPageURL = "/"+BasePath+"/"+Login
+  def loginPageURL = loginPath.mkString("/","/", "")
   
-  def notLoggedIn_? = !loggedIn_? ;
+  def notLoggedIn_? = !loggedIn_? 
   
   lazy val testLogginIn = If(loggedIn_? _, S.??("must.be.logged.in")) ;
   
@@ -123,7 +134,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    * The menu item for login (make this "Empty" to disable)
    */
   def loginMenuLoc: Can[Menu] = {
-    Full(Menu(Loc("Login", thePath(Login), S.??("login"),
+    Full(Menu(Loc("Login", loginPath, S.??("login"),
                   If(notLoggedIn_? _, S.??("already.logged.in")))))
   }
   
@@ -131,20 +142,20 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    * The menu item for logout (make this "Empty" to disable)
    */
   def logoutMenuLoc: Can[Menu] =
-  Full(Menu(Loc("Logout", thePath(Logout), S.??("logout"), testLogginIn)))
+  Full(Menu(Loc("Logout", logoutPath, S.??("logout"), testLogginIn)))
   
   /**
    * The menu item for creating the user/sign up (make this "Empty" to disable)
    */
   def createUserMenuLoc: Can[Menu] =
-  Full(Menu(Loc("CreateUser", thePath(SignUp),
+  Full(Menu(Loc("CreateUser", signUpPath,
                 S.??("sign.up"), If(notLoggedIn_? _, S.??("logout.first")))))
   
   /**
    * The menu item for lost password (make this "Empty" to disable)
    */
   def lostPasswordMenuLoc: Can[Menu] =
-  Full(Menu(Loc("LostPassword", thePath(LostPassword),
+  Full(Menu(Loc("LostPassword", lostPasswordPath,
                 S.??("lost.password"),
                 If(notLoggedIn_? _, S.??("logout.first"))))) // not logged in
   
@@ -152,7 +163,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    * The menu item for resetting the password (make this "Empty" to disable)
    */
   def resetPasswordMenuLoc: Can[Menu] =
-  Full(Menu(Loc("ResetPassword", (thePath(PasswordReset), true),
+  Full(Menu(Loc("ResetPassword", (passwordResetPath, true),
                 S.??("reset.password"), Hidden,
                 If(notLoggedIn_? _,
                    S.??("logout.first"))))) //not Logged in
@@ -161,24 +172,24 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    * The menu item for editing the user (make this "Empty" to disable)
    */
   def editUserMenuLoc: Can[Menu] =
-  Full(Menu(Loc("EditUser", thePath(Edit), S.??("edit.user"), testLogginIn)))
+  Full(Menu(Loc("EditUser", editPath, S.??("edit.user"), testLogginIn)))
   
   /**
    * The menu item for changing password (make this "Empty" to disable)
    */
   def changePasswordMenuLoc: Can[Menu] =
-  Full(Menu(Loc("ChangePassword", thePath(ChangePassword),
+  Full(Menu(Loc("ChangePassword", changePasswordPath,
                 S.??("change.password"), testLogginIn)))
   
   /**
    * The menu item for validating a user (make this "Empty" to disable)
    */
   def validateUserMenuLoc: Can[Menu] =
-  Full(Menu(Loc("ValidateUser", (thePath(ValidateUser), true),
+  Full(Menu(Loc("ValidateUser", (validateUserPath, true),
                 S.??("validate.user"), Hidden,
                 If(notLoggedIn_? _, S.??("logout.first")))))
   
-  lazy val sitemap : List[Menu] =
+  lazy val sitemap: List[Menu] =
   List(loginMenuLoc, logoutMenuLoc, createUserMenuLoc,
        lostPasswordMenuLoc, resetPasswordMenuLoc,
        editUserMenuLoc, changePasswordMenuLoc,
@@ -191,42 +202,49 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     val li = loggedIn_?
     ItemList.
     filter(i => i.display && i.loggedIn == li).
-    map(i => (<a href={i.path}>{i.name}</a>))
+    map(i => (<a href={i.pathStr}>{i.name}</a>))
   }
   
-  val ItemList: List[MenuItem] = MenuItem(S.??("sign.up"), SignUp, false) ::
-  MenuItem(S.??("log.in"), Login, false) ::
-  MenuItem(S.??("lost.password"), LostPassword, false) ::
-  MenuItem("", PasswordReset, false) ::
-  MenuItem(S.??("change.password"), ChangePassword, true) ::
-  MenuItem(S.??("log.out"), Logout, true) ::
-  MenuItem(S.??("edit.profile"), Edit, true) ::
-  MenuItem("", ValidateUser, false) :: Nil
+  lazy val ItemList: List[MenuItem] = MenuItem(S.??("sign.up"), signUpPath, false) ::
+  MenuItem(S.??("log.in"), loginPath, false) ::
+  MenuItem(S.??("lost.password"), lostPasswordPath, false) ::
+  MenuItem("", passwordResetPath, false) ::
+  MenuItem(S.??("change.password"), changePasswordPath, true) ::
+  MenuItem(S.??("log.out"), logoutPath, true) ::
+  MenuItem(S.??("edit.profile"), editPath, true) ::
+  MenuItem("", validateUserPath, false) :: Nil
   
   def templates: LiftRules.TemplatePf = {
-    case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "", _), _)
-      if testLoggedIn(w) => () => signup
+    case RequestState(path, "", _)
+    if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
     
-    case RequestMatcher(RequestState(BasePath :: (w @ Login) :: _, "", _), _)
-      if testLoggedIn(w) => () => login
+    case RequestState(path, "", _)
+      if path.startsWith(loginPath) && testLoggedIn(loginSuffix) => () => login
     
-    case RequestMatcher(RequestState(BasePath :: (w @ LostPassword) :: _, "", _), _)
-      if testLoggedIn(w) => () => lostPassword
+    case RequestState(path, "", _)
+      if path.startsWith(lostPasswordPath) &&
+      testLoggedIn(lostPasswordSuffix) => () => lostPassword
     
-    case RequestMatcher(RequestState(BasePath :: (w @ PasswordReset) :: id :: _, "", _), _)
-      if testLoggedIn(w) => () => passwordReset(id)
+    case RequestState(path, "", _)
+      if path.startsWith(passwordResetPath) &&
+      testLoggedIn(passwordResetSuffix) =>
+      () => passwordReset(path.drop(passwordResetPath.length).head)
     
-    case RequestMatcher(RequestState(BasePath :: (w @ ChangePassword) :: _, "", _), _)
-      if testLoggedIn(w) => () => changePassword
+    case RequestState(path, "", _)
+      if path.startsWith(changePasswordPath) &&
+      testLoggedIn(changePasswordSuffix) => () => changePassword
     
-    case RequestMatcher(RequestState(BasePath :: (w @ Logout) :: _, "", _), _)
-      if testLoggedIn(w) => () => logout
+    case RequestState(path, "", _)
+      if path.startsWith(logoutPath) &&
+      testLoggedIn(logoutSuffix) => () => logout
     
-    case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
-      if testLoggedIn(w) => () => edit
+    case RequestState(path, "", _)
+      if path.startsWith(editPath) && testLoggedIn(editSuffix) => () => edit
     
-    case RequestMatcher(RequestState(BasePath :: (w @ ValidateUser) :: id :: _, "", _), _)
-      if testLoggedIn(w) => () => validateUser(id)
+    case RequestState(path, "", _)
+      if path.startsWith(validateUserPath) &&
+      testLoggedIn(validateUserSuffix) =>
+      () => validateUser(path.drop(validateUserPath.length).head)
   }
   
   def requestLoans: List[LoanWrapper] = Nil // List(curUser)
@@ -296,8 +314,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def signupMailSubject = S.??("sign.up.confirmation")
   
   def sendValidationEmail(user: ModelType) {
-    val resetLink = S.hostAndPath+"/"+BasePath+
-    "/"+ValidateUser+"/"+user.uniqueId
+    val resetLink = S.hostAndPath+"/"+validateUserPath.mkString("/")+
+    "/"+user.uniqueId
     
     val email: String = user.email
     
@@ -310,7 +328,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   def signup = {
     val theUser: ModelType = create
-    val theName = BasePath + SignUp
+    val theName = signUpPath.mkString("")
     
     def testSignup() {
       theUser.validate match {
@@ -325,7 +343,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
             logUserIn(theUser)
           }
         
-          S.redirectTo(HomePage)
+          S.redirectTo(homePage)
         
         case xs => S.error(xs)
       }
@@ -336,9 +354,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                            "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
     
     S.addSessionTemplater(theName, {
-        case RequestMatcher(RequestState(BasePath :: (w @ SignUp) :: _, "",
-                                         _), _)
-          if testLoggedIn(w) =>  () => innerSignup
+        case RequestState(path, "", _)
+          if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) =>  () => innerSignup
       })
     innerSignup
   }
@@ -359,19 +376,20 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
       user.validated(true).uniqueId.reset().save
       S.notice(S.??("account.validated"))
       logUserIn(user)
-      S.redirectTo(HomePage)
+      S.redirectTo(homePage)
     
-    case _ => S.error(S.??("invalid.validation.link")); S.redirectTo(HomePage)
+    case _ => S.error(S.??("invalid.validation.link")); S.redirectTo(homePage)
   }
   
-  def loginXhtml = {
-    (<form method="POST" action={S.uri}><table><tr><td
-              colspan="2">{S.??("log.in")}</td></tr>
-          <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
-          <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
-          <tr><td><a href={"/"+BasePath+"/"+LostPassword}>{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
-     </form>)
-  }
+def loginXhtml = {
+  (<form method="POST" action={S.uri}><table><tr><td
+            colspan="2">{S.??("log.in")}</td></tr>
+        <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
+        <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
+        <tr><td><a href={lostPasswordPath.mkString("/", "/", "")}
+              >{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
+   </form>)
+}
   
   def login = {
     if (S.post_?) {
@@ -379,7 +397,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
       flatMap(username => getSingleton.find(By(email, username))) match {
         case Full(user) if user.validated &&
           user.password.match_?(S.param("password").openOr("*")) =>
-          logUserIn(user); S.notice(S.??("logged.in")); S.redirectTo(HomePage)
+          logUserIn(user); S.notice(S.??("logged.in")); S.redirectTo(homePage)
         
         case Full(user) if !user.validated =>
           S.error(S.??("account.validation.error"))
@@ -389,9 +407,9 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     }
     
     bind("user", loginXhtml,
-         "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
-         "password" -> (<input type="password" name="password"/>),
-         "submit" -> (<input type="submit" value={S.??("log.in")}/>))
+    "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
+    "password" -> (<input type="password" name="password"/>),
+    "submit" -> (<input type="submit" value={S.??("log.in")}/>))
   }
   
   def lostPasswordXhtml = {
@@ -429,8 +447,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     getSingleton.find(By(this.email, email)) match {
       case Full(user) if user.validated =>
         user.uniqueId.reset().save
-        val resetLink = S.hostAndPath+"/"+
-        BasePath+"/"+PasswordReset+"/"+user.uniqueId
+        val resetLink = S.hostAndPath+
+        passwordResetPath.mkString("/", "/", "/")+user.uniqueId
       
         val email: String = user.email
       
@@ -440,12 +458,12 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                          (bccEmail.toList.map(BCC(_)))) :_*)
       
         S.notice(S.??("password.reset.email.sent"))
-        S.redirectTo(HomePage)
+        S.redirectTo(homePage)
       
       case Full(user) =>
         sendValidationEmail(user)
         S.notice(S.??("account.validation.resent"))
-        S.redirectTo(HomePage)
+        S.redirectTo(homePage)
       
       case _ => S.error(S.??("email.address.not.found"))
     }
@@ -474,7 +492,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
         user.validate match {
           case Nil => S.notice(S.??("password.changed"))
             user.save
-            logUserIn(user); S.redirectTo(HomePage)
+            logUserIn(user); S.redirectTo(homePage)
         
           case xs => S.error(xs)
         }
@@ -485,7 +503,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
            "pwd" -> SHtml.password_*("",(p: List[String]) =>
                                      user.password.setList(p)),
            "submit" -> SHtml.submit(S.??("set.password"), finishSet()))
-    case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(HomePage)
+    case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(homePage)
   }
   
   def changePasswordXhtml = {
@@ -509,7 +527,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
       else {
         user.password.setFromAny(newPassword)
         user.validate match {
-          case Nil => user.save; S.notice(S.??("pasword.changed")); S.redirectTo(HomePage)
+          case Nil => user.save; S.notice(S.??("pasword.changed")); S.redirectTo(homePage)
           case xs => S.error(xs)
         }
       }
@@ -532,14 +550,14 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   def edit = {
     val theUser: ModelType = currentUser.open_! // we know we're logged in
-    val theName = BasePath + Edit
+    val theName = editPath.mkString("")
     
     def testEdit() {
       theUser.validate match {
         case Nil => S.removeSessionTemplater(theName)
           theUser.save
           S.notice(S.??("profle.updated"))
-          S.redirectTo(HomePage)
+          S.redirectTo(homePage)
         
         case xs => S.error(xs)
       }
@@ -549,15 +567,15 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                          "submit" -> SHtml.submit(S.??("edit"), testEdit()))
     
     S.addSessionTemplater(theName, {
-        case RequestMatcher(RequestState(BasePath :: (w @ Edit) :: _, "", _), _)
-          if testLoggedIn(w) =>
+        case RequestState(path, "", _)
+          if path.startsWith(editPath) && testLoggedIn(editSuffix) =>
           () => innerEdit})
     innerEdit
   }
   
   def logout = {
     logoutCurrentUser
-    S.redirectTo(HomePage)
+    S.redirectTo(homePage)
   }
   
   private def localForm(user: ModelType, ignorePassword: Boolean): NodeSeq = {

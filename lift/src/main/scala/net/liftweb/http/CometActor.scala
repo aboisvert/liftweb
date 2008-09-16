@@ -39,7 +39,7 @@ object ActorWatcher extends Actor {
   def act = loop {
     react {
       case Exit(actor, why: Throwable) =>
-      failureFuncs.foreach(f => tryo(f(actor, why)))
+        failureFuncs.foreach(f => tryo(f(actor, why)))
 
       case _ =>
     }
@@ -48,13 +48,13 @@ object ActorWatcher extends Actor {
   private def startAgain(a: Actor, ignore: Throwable) {a.start}
 
   private def logActorFailure(actor: Actor, why: Throwable) {
-      Log.error("The ActorWatcher restarted "+actor+" because "+why, why)
+    Log.error("The ActorWatcher restarted "+actor+" because "+why, why)
   }
 
   /**
-  * If there's something to do in addition to starting the actor up, pre-pend the
-  * actor to this List
-  */
+   * If there's something to do in addition to starting the actor up, pre-pend the
+   * actor to this List
+   */
   var failureFuncs: List[(Actor, Throwable) => Unit] = logActorFailure _ ::
   startAgain _ :: Nil
 
@@ -62,12 +62,15 @@ object ActorWatcher extends Actor {
   this.trapExit = true
 }
 
+/**
+* Takes care of the plumbing for building Comet-based Web Apps
+*/
 @serializable
 abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
   private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
-  Empty, Empty, Empty, false)
+                                                   Empty, Empty, Empty, false)
   private var wasLastFullRender = false
   @transient
   private var listeners: List[(ListenerId, AnswerRender => Unit)] = Nil
@@ -84,8 +87,8 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   def defaultPrefix: String
 
   /**
-  * Set to 'true' if we should run "render" on every page load
-  */
+   * Set to 'true' if we should run "render" on every page load
+   */
   protected def devMode = false
 
   def hasOuter = true
@@ -99,11 +102,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
 
   /**
-  * Prepends the handler to the Json Handlers.  Should only be used
-  * during instantiation
-  *
-  * @param h -- the PartialFunction that can handle a JSON request
-  */
+   * Prepends the handler to the Json Handlers.  Should only be used
+   * during instantiation
+   *
+   * @param h -- the PartialFunction that can handle a JSON request
+   */
   def appendJsonHandler(h: PartialFunction[Any, JsCmd]) {
     jsonHandlerChain = h orElse jsonHandlerChain
   }
@@ -113,8 +116,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(defaultPrefix), _handleJson)
 
-  def buildSpan(time: Long, xml: NodeSeq): NodeSeq = Elem(parentTag.prefix, parentTag.label, parentTag.attributes,
-  parentTag.scope, Group(xml)) % (new UnprefixedAttribute("id", Text(uniqueId), Null)) % (new PrefixedAttribute("lift", "when", Text(time.toString), Null))
+  def buildSpan(time: Long, xml: NodeSeq): NodeSeq =
+  Elem(parentTag.prefix, parentTag.label, parentTag.attributes,
+       parentTag.scope, Group(xml)) %
+  (new UnprefixedAttribute("id", Text(uniqueId), Null)) %
+  (new PrefixedAttribute("lift", "when", Text(time.toString), Null))
 
 
   def act = {
@@ -126,14 +132,14 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   override def react(pf: PartialFunction[Any, Unit]) = {
     val myPf: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
       def apply(in: Any): Unit = {
-	    S.initIfUninitted(theSession) {
-	      pf.apply(in)
-	    }
+        S.initIfUninitted(theSession) {
+          pf.apply(in)
+        }
       }
 
       def isDefinedAt(in: Any): Boolean = {
-	    S.initIfUninitted(theSession) {
-	      pf.isDefinedAt(in)
+        S.initIfUninitted(theSession) {
+          pf.isDefinedAt(in)
         }
       }
     }
@@ -163,22 +169,22 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
 
     case l @ Listen(when, seqId, toDo) =>
-    askingWho match {
-      case Full(who) => who forward l
-      case _ =>
-      if (when < lastRenderTime) {
-        toDo(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, wasLastFullRender))
-      } else {
-        deltas.filter(_.when > when) match {
-          case Nil => listeners = (seqId, toDo) :: listeners
+      askingWho match {
+        case Full(who) => who forward l
+        case _ =>
+          if (when < lastRenderTime) {
+            toDo(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, wasLastFullRender))
+          } else {
+            deltas.filter(_.when > when) match {
+              case Nil => listeners = (seqId, toDo) :: listeners
 
-          case all @ (hd :: xs) =>
-          toDo( AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
-          Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false, notices toList),
-          whosAsking openOr this, hd.when, false))
-        }
+              case all @ (hd :: xs) =>
+                toDo( AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
+                                                  Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false, notices toList),
+                                   whosAsking openOr this, hd.when, false))
+            }
+          }
       }
-    }
 
     case PerformSetupComet =>
       link(ActorWatcher)
@@ -186,36 +192,37 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
       performReRender(true)
 
     case AskRender =>
-    askingWho match {
-      case Full(who) => who forward AskRender
-      case _ => if (!deltas.isEmpty || devMode) performReRender(false); reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, true))
-    }
+      askingWho match {
+        case Full(who) => who forward AskRender
+        case _ => if (!deltas.isEmpty || devMode) performReRender(false);
+          reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, true))
+      }
 
     case ActionMessageSet(msgs, request) =>
-    S.init(request, theSession) {
-      val ret = msgs.map(_())
-      theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
-      reply(ret)
-    }
+      S.init(request, theSession) {
+        val ret = msgs.map(_())
+        theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
+        reply(ret)
+      }
 
     case AskQuestion(what, who) =>
-    startQuestion(what)
-    whosAsking = Full(who)
+      startQuestion(what)
+      whosAsking = Full(who)
 
     case AnswerQuestion(what, request) =>
-    S.init(request, theSession) {
-      askingWho.foreach {
-        askingWho =>
-        reply("A null message to release the actor from its send and await reply... do not delete this message")
-        // askingWho.unlink(self)
-        askingWho ! ShutDown
-        this.askingWho = Empty
-        val aw = answerWith
-        answerWith = Empty
-        aw.foreach(_(what))
-        performReRender(true)
+      S.init(request, theSession) {
+        askingWho.foreach {
+          askingWho =>
+          reply("A null message to release the actor from its send and await reply... do not delete this message")
+          // askingWho.unlink(self)
+          askingWho ! ShutDown
+          this.askingWho = Empty
+          val aw = answerWith
+          answerWith = Empty
+          aw.foreach(_(what))
+          performReRender(true)
+        }
       }
-    }
 
     case ReRender(all) => performReRender(all)
 
@@ -228,34 +235,34 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
     case ClearNotices => clearNotices
 
     case ShutDown =>
-    Log.info("The CometActor "+this+" Received Shutdown")
-    theSession.removeCometActor(this)
-    localShutdown()
-    self.exit("Politely Asked to Exit")
+      Log.info("The CometActor "+this+" Received Shutdown")
+      theSession.removeCometActor(this)
+      localShutdown()
+      self.exit("Politely Asked to Exit")
 
     case PartialUpdateMsg(cmd) =>
-    val time = CometActor.next
-    val delta = JsDelta(time, cmd)
-    //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
-    //deltas = delta :: deltas.filter(_.when < garbageTime)
-    deltas = delta :: deltas
-    if (!listeners.isEmpty) {
-      val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
-      Full(cmd), Empty, buildSpan, false, notices toList), whosAsking openOr this, time, false)
-      listeners.foreach(_._2(rendered))
-      listeners = Nil
-    }
+      val time = CometActor.next
+      val delta = JsDelta(time, cmd)
+      //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
+      //deltas = delta :: deltas.filter(_.when < garbageTime)
+      deltas = delta :: deltas
+      if (!listeners.isEmpty) {
+        val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
+                                                   Full(cmd), Empty, buildSpan, false, notices toList), whosAsking openOr this, time, false)
+        listeners.foreach(_._2(rendered))
+        listeners = Nil
+      }
   }
 
 
   /**
-  * It's the main method to override, to define what is rendered by the CometActor
-  *
-  * There are implicit conversions for a bunch of stuff to
-  * RenderOut (including NodeSeq).  Thus, if you don't declare the return
-  * turn to be something other than RenderOut and return something that's
-  * coersable into RenderOut, the compiler "does the right thing"(tm) for you.
-  */
+   * It's the main method to override, to define what is rendered by the CometActor
+   *
+   * There are implicit conversions for a bunch of stuff to
+   * RenderOut (including NodeSeq).  Thus, if you don't declare the return
+   * turn to be something other than RenderOut and return something that's
+   * coersable into RenderOut, the compiler "does the right thing"(tm) for you.
+   */
   def render: RenderOut
 
   def reRender(sendAll: Boolean) {
@@ -272,11 +279,10 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
     val rendered: AnswerRender =
     AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList),
-    this, lastRenderTime, sendAll)
+                 this, lastRenderTime, sendAll)
 
     listeners.foreach(_._2(rendered))
     listeners = Nil
-    rendered
   }
 
   protected def partialUpdate(cmd: JsCmd) {
@@ -286,13 +292,13 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   protected def startQuestion(what: Any) {}
 
   /**
-  * This method will be called after the Actor has started.  Do any setup here
-  */
+   * This method will be called after the Actor has started.  Do any setup here
+   */
   protected def localSetup(): Unit = {}
 
   /**
-  * This method will be called as part of the shut-down of the actor.  Release any resources here.
-  */
+   * This method will be called as part of the shut-down of the actor.  Release any resources here.
+   */
   protected def localShutdown(): Unit = {
     clearNotices
   }
@@ -357,21 +363,21 @@ case class CometActorInitInfo(theSession: LiftSession,name: Can[String],defaultX
 
 
 class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
-spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(NoticeType.Value, NodeSeq, Can[String])]) {
+                 spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(NoticeType.Value, NodeSeq, Can[String])]) {
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Can[String])]) =
-    this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
+  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     var ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
     ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match {
-      case (Full(xml), Full(js), false) => JsCmds.SetHtml(id, xml) & JsCmds.JsTry(js, false)
-      case (Full(xml), _, false) => JsCmds.SetHtml(id, xml)
-      case (Full(xml), Full(js), true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
-        fixedXhtml.openOr(Text("")))) & JsCmds.JsTry(js, false)
-      case (Full(xml), _, true) => JsCmds.SetHtml(id+"_outer", (spanFunc(0, xml) ++
-        fixedXhtml.openOr(Text(""))))
-      case (_, Full(js), _) => js
-      case _ => JsCmds.Noop
-    }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
+        case (Full(xml), Full(js), false) => LiftRules.jsArtifacts.setHtml(id, xml) & JsCmds.JsTry(js, false)
+        case (Full(xml), _, false) => LiftRules.jsArtifacts.setHtml(id, xml)
+        case (Full(xml), Full(js), true) => LiftRules.jsArtifacts.setHtml(id+"_outer", (spanFunc(0, xml) ++
+                                                                                        fixedXhtml.openOr(Text("")))) & JsCmds.JsTry(js, false)
+        case (Full(xml), _, true) => LiftRules.jsArtifacts.setHtml(id+"_outer", (spanFunc(0, xml) ++
+                                                                                 fixedXhtml.openOr(Text(""))))
+        case (_, Full(js), _) => js
+        case _ => JsCmds.Noop
+      }) & JsCmds.JsTry(JsCmds.Run("destroy_"+id+" = function() {"+(destroy.openOr(JsCmds.Noop).toJsCmd)+"};"), false)
 
     S.messagesFromList(notices toList)
     ret = ret & S.noticesToJsCmd
@@ -420,12 +426,12 @@ object Notice {
 }
 
 /**
-* @param xhtml is the "normal" render body
-* @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
-* @param script is the script to be executed on render.  This is where you want to put your script
-* @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
-* @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE
-*/
+ * @param xhtml is the "normal" render body
+ * @param fixedXhtml is the "fixed" part of the body.  This is ignored unless reRender(true)
+ * @param script is the script to be executed on render.  This is where you want to put your script
+ * @param destroyScript is executed when the comet widget is redrawn ( e.g., if you register drag or mouse-over or some events, you unregister them here so the page doesn't leak resources.)
+ * @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE
+ */
 @serializable
 case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
@@ -433,7 +439,7 @@ case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[
   def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false)
   def ++(cmd: JsCmd) =
   RenderOut(xhtml, fixedXhtml, script.map(_ & cmd) or Full(cmd),
-  destroyScript, ignoreHtmlOnJs)
+            destroyScript, ignoreHtmlOnJs)
 }
 
 @serializable

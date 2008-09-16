@@ -1,5 +1,5 @@
 <lift:surround with="default" at="content">
-<p>Normally, <i>lift</i> will look for a "view" that
+<p>Normally, <i>Lift</i> will look for a "view" that
 satifying an HTTP request.  A view is an XHTML page
 or segment of a page with special &lt;lift:xxx&gt; processing
 instructions in it (e.g., an instruction to embed a controller,
@@ -7,7 +7,7 @@ an instruction to surround the XHTML with another template, etc.)
 However, in certain cases, for example, when you want to
 satisfy a Web Services (REST) request, you can use
 Scala's pattern matching to intercept a request and service
-it with a "short lived" controller (rather than <i>lift</i>'s
+it with a "short lived" controller (rather than <i>Lift</i>'s
 normal long-lived, Actor-based controllers.)</p>
 
 <p>It's easy to "dispatch" incoming HTTP requests.
@@ -49,7 +49,7 @@ then create a short-lived controller to service the request.</p>
     <pre>
 <span class="comment">/**
   * A class that's instantiated early and run.  It allows the application
-  * to modify lift's environment
+  * to modify Lift's environment
   */</span>
 <span class="keyword">class</span> <span class="type">Boot</span> {
   <span class="keyword">def</span> <span class="function-name">boot</span> {
@@ -74,7 +74,7 @@ then create a short-lived controller to service the request.</p>
 <p>This code matches all the requests to "/webservices/????" and
 assigns the stuff in '????' to the variable <code>c</code>.  Then
 the code attempts to find a public method with that name on
-the controller.  If the method exists, it's invoked and <i>lift</i>
+the controller.  If the method exists, it's invoked and <i>Lift</i>
 processes the result.</p>
 
 <p>You can see a couple of examples:<br />

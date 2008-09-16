@@ -12,6 +12,8 @@ object User extends User with MetaMegaProtoUser[User] {
 			       <lift:bind /></lift:surround>) // LiftNote: 6
   override def signupFields = firstName :: lastName :: email :: locale :: timezone :: password :: blogtitle :: Nil
   override val skipEmailValidation = true // LiftNote: 4
+  
+  override val basePath: List[String] = "user_mgt" :: "usr" :: Nil
 }
 
 

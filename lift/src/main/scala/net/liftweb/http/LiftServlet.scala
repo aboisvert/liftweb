@@ -68,7 +68,8 @@ class LiftServlet extends HttpServlet {
     try {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
-          case RequestMatcher(r @ RequestState(mainPath :: subPath, suffx, _) ,_) if mainPath == LiftRules.ResourceServerPath =>
+          case r @ RequestState(mainPath :: subPath, suffx, _)
+	if mainPath == LiftRules.ResourceServerPath =>
             ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
         })
     } finally {
@@ -77,11 +78,17 @@ class LiftServlet extends HttpServlet {
   }
 
   def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
-    val ret = SessionMaster.getSession(httpSession) match {
-      case Full(ret) => ret
+    val wp = request.path.wholePath
+    val cometSessionId = if (wp.length == 2 && wp.head == LiftRules.cometPath)
+    Full(wp(1)) else Empty
+
+    val ret = SessionMaster.getSession(httpSession, cometSessionId) match {
+      case Full(ret) =>
+        ret.lastServiceTime = millis // DO NOT REMOVE THIS LINE!!!!!
+        ret
 
       case _ =>
-        val ret = LiftSession(httpSession, request.contextPath)
+        val ret = LiftSession(httpSession, request.contextPath, request.headers)
         ret.lastServiceTime = millis
         SessionMaster.addSession(ret)
         ret
@@ -127,7 +134,7 @@ class LiftServlet extends HttpServlet {
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: RequestState): Boolean = {
     LiftRules.onBeginServicing.foreach(_(requestState))
-    val statelessToMatch = RequestMatcher(requestState, Empty)
+    val statelessToMatch = requestState
 
 
     val resp: Can[LiftResponse] = 
@@ -140,7 +147,7 @@ class LiftServlet extends HttpServlet {
     // it
     if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
       val f = LiftRules.statelessDispatchTable(statelessToMatch)
-      f(requestState) match {
+      f() match {
         case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
         case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
         case f: Failure => Full(requestState.createNotFound(f))
@@ -159,7 +166,7 @@ class LiftServlet extends HttpServlet {
 
     resp match {
       case Full(cresp) =>
-	val resp = cresp.toResponse
+        val resp = cresp.toResponse
 
         logIfDump(requestState, resp)
       
@@ -175,13 +182,13 @@ class LiftServlet extends HttpServlet {
                                       requestState: RequestState):
   Can[LiftResponse] =
   {
-    val toMatch = RequestMatcher(requestState, Full(liftSession))
+    val toMatch = requestState
     val dispatch: (Boolean, Can[LiftResponse]) =
     if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
       LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
       val ret: (Boolean, Can[LiftResponse]) = try {
         val f = LiftRules.dispatchTable(request)(toMatch)
-        f(requestState) match {
+        f() match {
           case Full(v) =>
             (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
                                                     S.responseCookies, requestState) )))
@@ -205,7 +212,7 @@ class LiftServlet extends HttpServlet {
     
     val toTransform: Can[LiftResponse] =
     if (dispatch._1) dispatch._2
-    else if (wp.length == 1 && wp.head == LiftRules.cometPath) 
+    else if ((wp.length == 1 || wp.length == 2) && wp.head == LiftRules.cometPath) 
     handleComet(requestState, liftSession)
     else if (wp.length == 1 && wp.head == LiftRules.ajaxPath) 
     handleAjax(liftSession, requestState)
@@ -365,7 +372,7 @@ class LiftServlet extends HttpServlet {
     }
   }
 
-  val dumpRequestResponse = Props.getBool("dump.request.response")
+  val dumpRequestResponse = Props.getBool("dump.request.response", false)
 
   private def logIfDump(request: RequestState, response: BasicResponse) {
     if (dumpRequestResponse) {

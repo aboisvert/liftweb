@@ -10,7 +10,6 @@ class HelloFormAjax {
   def whoNode(str: String) = <span id="who">{str}</span>
 
   def updateWho(str: String): JsCmd = {
-    println("updateWho on " + str)
     JsCmds.SetHtml("who", whoNode(str))
   }
 

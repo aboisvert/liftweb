@@ -7,8 +7,11 @@ import net.liftweb.http.S._
 import net.liftweb.http.LiftRules
 import net.liftweb.http.{LiftResponse, JsonResponse}
 import net.liftweb.http.js._
+import net.liftweb.http.js.jquery._
 import JsCmds._
 import JE._
+import JqJsCmds._
+import JqJE._
 
 object TreeView {
   
@@ -97,7 +100,8 @@ class TreeView {
 
      val key = mapFunc(NFuncHolder(treeFunc))
      
-     val url = encodeURL(contextPath+"/"+LiftRules.ajaxPath)+"?"+key+"=_"
+     val url = encodeURL(contextPath +
+			 "/"+LiftRules.ajaxPath)+"?"+key+"=_"
  
      val obj: JsObj = JsObj(("url" -> Str(url)) :: jsObj.props:_*)
      

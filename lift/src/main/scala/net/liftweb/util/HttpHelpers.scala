@@ -5,7 +5,7 @@ import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, U
 import scala.collection.{Map}
 import scala.collection.mutable.HashMap
 
-trait HttpHelpers { self: ListHelpers with StringHelpers =>
+trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
   /**
    * URL decode the string.
@@ -138,6 +138,16 @@ trait HttpHelpers { self: ListHelpers with StringHelpers =>
     }
     case x :: xs => (in, x.text)
   }
-
+  
+  private case class BailOut(seq: Long)
+  import scala.actors._
+  import Actor._
+  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Can[T] = {
+    ActorPing.schedule(Actor.self, BailOut(seq), timeout)
+    receive(func orElse {case BailOut(seq) => null}) match {
+      case null => Empty
+        case r: T => Full(r)
+    }
+  }
 
 }
