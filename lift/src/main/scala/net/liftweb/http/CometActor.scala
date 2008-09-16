@@ -38,7 +38,7 @@ object CometActor {
 object ActorWatcher extends Actor {
   def act = loop {
     react {
-      case Exit(actor, why: Throwable) =>
+      case Exit(actor: Actor, why: Throwable) =>
         failureFuncs.foreach(f => tryo(f(actor, why)))
 
       case _ =>
