@@ -24,8 +24,6 @@ trait BindHelpers {
    * them into 'out'. Curried form can be used to produce a
    * NodeSeq => NodeSeq for bind.
    *
-   * @todo write Specs tests for mixinAttributes
-   *
    * @param in where to take the attributes from
    * @param out where to put the attributes
    *
