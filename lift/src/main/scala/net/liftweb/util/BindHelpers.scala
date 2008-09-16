@@ -20,6 +20,23 @@ import scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribut
  */
 trait BindHelpers {
   /**
+   * Takes attributes from the first node of 'in' (if any) and mixes
+   * them into 'out'. Curried form can be used to produce a
+   * NodeSeq => NodeSeq for bind.
+   *
+   * @todo write Specs tests for mixinAttributes
+   *
+   * @param in where to take the attributes from
+   * @param out where to put the attributes
+   *
+   * @return 'out' element with attributes from 'in'
+   */
+  def mixinAttributes(out: Elem)(in: NodeSeq): NodeSeq = {
+    val attributes = in.firstOption.map(_.attributes).getOrElse(Null)
+    out % attributes
+  }
+  
+  /**
    * Choose one of many templates from the children.  Looking for the
    * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
    *
