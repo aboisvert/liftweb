@@ -1,13 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="4.1.1" transformSequenceNumber="2">
+<install4j version="4.1.3" transformSequenceNumber="2">
   <directoryPresets config="./src/java-rebel-1.1.1/Notice.txt" />
-  <application name="Lift Framework" distributionSourceDir="" applicationId="0831-5896-0859-1468" mediaDir="./target" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="true" excludeSignedFromPacking="true" keepModificationTimes="false" shortName="liftweb" publisher="The Lift Open Source Comunity" publisherWeb="http://www.liftweb.net/" version="0.1" allPathsRelative="true" backupOnSave="false" autoSave="true" convertDotsToUnderscores="true" macSignature="????" javaMinVersion="1.5" javaMaxVersion="" allowBetaVM="true" jdkMode="runtimeJre" jdkName="JRE 1.5">
+  <application name="Lift Framework" distributionSourceDir="" applicationId="5718-3659-1334-6595" mediaDir="./target" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="true" excludeSignedFromPacking="true" keepModificationTimes="false" shortName="liftweb" publisher="The Lift Open Source Comunity" publisherWeb="http://www.liftweb.net/" version="0.8" allPathsRelative="true" backupOnSave="false" autoSave="true" convertDotsToUnderscores="true" macSignature="????" javaMinVersion="1.5" javaMaxVersion="" allowBetaVM="true" jdkMode="jdk" jdkName="JRE 1.5">
     <languages skipLanguageSelection="false">
       <principalLanguage id="en" customLocalizationFile="" />
       <additionalLanguages />
     </languages>
     <searchSequence>
-      <registry />
       <envVar name="JAVA_HOME" />
       <envVar name="JDK_HOME" />
     </searchSequence>
@@ -47,25 +46,20 @@
         </include>
         <dependencies />
       </component>
-      <component name="Lift Helpers" id="125" displayDescription="false" selected="true" mandatory="true" downloadable="false">
-        <description>Lift helpers give you some easy to use command line components to make generating projects and stub code a whole lot easier!
-
-You need this in your life...</description>
-        <include all="false">
-          <entry location="bin" fileType="regular" />
-        </include>
-        <dependencies />
-      </component>
     </components>
   </files>
   <launchers />
-  <installerGui installerType="1" suggestPreviousProgramGroup="false" addOnAppId="" suggestPreviousLocations="true">
+  <installerGui installerType="1" suggestPreviousProgramGroup="false" addOnAppId="" suggestPreviousLocations="false">
     <customCode useInstalledFiles="false" />
     <applications>
       <application name="" id="installer" beanClass="com.install4j.runtime.beans.applications.InstallerApplication" enabled="true" commentSet="false" comment="" customIcnsFile="" customIcoFile="">
         <serializedBean>
           <java class="java.beans.XMLDecoder">
-            <object class="com.install4j.runtime.beans.applications.InstallerApplication" />
+            <object class="com.install4j.runtime.beans.applications.InstallerApplication">
+              <void property="watermark">
+                <boolean>false</boolean>
+              </void>
+            </object>
           </java>
         </serializedBean>
         <startup>
@@ -145,7 +139,11 @@ You need this in your life...</description>
           <screen name="" id="166" beanClass="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" enabled="true" commentSet="false" comment="" rollbackBarrier="false" backButton="2" finishScreen="false">
             <serializedBean>
               <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.InstallationDirectoryScreen" />
+                <object class="com.install4j.runtime.beans.screens.InstallationDirectoryScreen">
+                  <void property="suggestAppDir">
+                    <boolean>false</boolean>
+                  </void>
+                </object>
               </java>
             </serializedBean>
             <condition />
@@ -171,7 +169,11 @@ You need this in your life...</description>
           <screen name="" id="6" beanClass="com.install4j.runtime.beans.screens.InstallationScreen" enabled="true" commentSet="false" comment="" rollbackBarrier="true" backButton="2" finishScreen="false">
             <serializedBean>
               <java class="java.beans.XMLDecoder">
-                <object class="com.install4j.runtime.beans.screens.InstallationScreen" />
+                <object class="com.install4j.runtime.beans.screens.InstallationScreen">
+                  <void property="cancelEnabled">
+                    <boolean>false</boolean>
+                  </void>
+                </object>
               </java>
             </serializedBean>
             <condition />
@@ -196,7 +198,7 @@ You need this in your life...</description>
                   <java class="java.beans.XMLDecoder">
                     <object class="com.install4j.runtime.beans.actions.desktop.CreateProgramGroupAction">
                       <void property="programGroupName">
-                        <string>${compiler:sys.fullName}</string>
+                        <string>${compiler:sys.fullName}-${compiler:sys.version}</string>
                       </void>
                     </object>
                   </java>
@@ -313,7 +315,7 @@ screen.next();</preActivation>
                         <boolean>false</boolean>
                       </void>
                       <void property="value">
-                        <string>${installer:sys.installationDir}/bin;${installer:sys.installationDir}/apache-maven/bin;</string>
+                        <string>${installer:sys.installationDir}\bin;${installer:sys.installationDir}/apache-maven/bin;</string>
                       </void>
                       <void property="variableName">
                         <string>PATH</string>
@@ -331,7 +333,7 @@ screen.next();</preActivation>
                         <boolean>false</boolean>
                       </void>
                       <void property="value">
-                        <string>${installer:sys.installationDir}/apache-maven</string>
+                        <string>${installer:sys.installationDir}\apache-maven</string>
                       </void>
                       <void property="variableName">
                         <string>M2_HOME</string>
@@ -339,7 +341,15 @@ screen.next();</preActivation>
                     </object>
                   </java>
                 </serializedBean>
-                <condition />
+                <condition>import com.install4j.api.windows.WinEnvVars;
+import com.install4j.api.Util;
+
+if(WinEnvVars.getenv("M2_HOME") == null){
+  return true;
+} else {
+  Util.showWarningMessage("You already have M2_HOME set, dont forget to manually change this variable.");
+  return false;
+}</condition>
               </action>
               <action name="" id="271" beanClass="com.install4j.runtime.beans.actions.misc.ModifyEnvironmentVariableAction" enabled="true" commentSet="false" comment="" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
                 <serializedBean>
@@ -349,7 +359,7 @@ screen.next();</preActivation>
                         <boolean>false</boolean>
                       </void>
                       <void property="value">
-                        <string>${installer:sys.installationDir}/apache-maven/bin</string>
+                        <string>${installer:sys.installationDir}\apache-maven\bin</string>
                       </void>
                       <void property="variableName">
                         <string>M2</string>
@@ -357,7 +367,15 @@ screen.next();</preActivation>
                     </object>
                   </java>
                 </serializedBean>
-                <condition />
+                <condition>import com.install4j.api.windows.WinEnvVars;
+import com.install4j.api.Util;
+
+if(WinEnvVars.getenv("M2") == null){
+  return true;
+} else {
+  Util.showWarningMessage("You already have M2 set, dont forget to manually change this variable.");
+  return false;
+}</condition>
               </action>
               <action name="" id="272" beanClass="com.install4j.runtime.beans.actions.misc.ModifyEnvironmentVariableAction" enabled="true" commentSet="false" comment="" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
                 <serializedBean>
@@ -367,7 +385,7 @@ screen.next();</preActivation>
                         <boolean>false</boolean>
                       </void>
                       <void property="value">
-                        <string>-noverify -javaagent:${installer:sys.installationDir}/java-rebel/javarebel.jar</string>
+                        <string>-Xmx1024m</string>
                       </void>
                       <void property="variableName">
                         <string>MAVEN_OPTS</string>
@@ -375,7 +393,39 @@ screen.next();</preActivation>
                     </object>
                   </java>
                 </serializedBean>
-                <condition />
+                <condition>import com.install4j.api.windows.WinEnvVars;
+import com.install4j.api.Util;
+
+if(WinEnvVars.getenv("MAVEN_OPTS") == null){
+  return true;
+} else {
+  Util.showWarningMessage("You already have MAVEN_OPTS set, dont forget to manually change this variable.");
+  return false;
+}</condition>
+              </action>
+              <action name="" id="301" beanClass="com.install4j.runtime.beans.actions.misc.ModifyEnvironmentVariableAction" enabled="true" commentSet="false" comment="" rollbackBarrier="false" multiExec="false" failureStrategy="1" errorMessage="">
+                <serializedBean>
+                  <java class="java.beans.XMLDecoder">
+                    <object class="com.install4j.runtime.beans.actions.misc.ModifyEnvironmentVariableAction">
+                      <void property="value">
+                        <string>${installer:sys.installationDir}\jre\</string>
+                      </void>
+                      <void property="variableName">
+                        <string>JAVA_HOME</string>
+                      </void>
+                    </object>
+                  </java>
+                </serializedBean>
+                <condition>import com.install4j.api.windows.WinEnvVars;
+import com.install4j.api.Util;
+
+if(WinEnvVars.getenv("JAVA_HOME") == null){
+  return true;
+} else {
+  Util.showWarningMessage("You already have JAVA_HOME set, dont forget to manually change this variable.");
+  return false;
+  
+}</condition>
               </action>
             </actions>
             <formComponents />
@@ -491,7 +541,7 @@ screen.next();</preActivation>
       <exclude />
       <variables />
     </macosFolder>
-    <win32 name="Windows" id="57" mediaFileName="" installDir="${compiler:sys.shortName}-${compiler:sys.version}" overridePrincipalLanguage="false" requires64bit="false" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" includedJRE="windows-x86-1.6.0_06" manualJREEntry="false" bundleType="2" jreURL="http://scala-tools.org/windows-x86-1.6.0_06.tar.gz" jreFtpURL="" jreShared="true" customInstallBaseDir="" createUninstallIcon="true" contentFilesType="1" downloadURL="" runAsAdmin="true">
+    <win32 name="Windows" id="57" mediaFileName="" installDir="${compiler:sys.shortName}-${compiler:sys.version}" overridePrincipalLanguage="false" requires64bit="false" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" includedJRE="windows-x86-1.6.0_06" manualJREEntry="false" bundleType="1" jreURL="http://scala-tools.org/windows-x86-1.6.0_06.tar.gz" jreFtpURL="" jreShared="false" customInstallBaseDir="" createUninstallIcon="true" contentFilesType="1" downloadURL="" runAsAdmin="true">
       <excludedLaunchers />
       <excludedComponents />
       <excludedBeans />
@@ -512,9 +562,7 @@ screen.next();</preActivation>
     </unixInstaller>
   </mediaSets>
   <buildIds buildAll="false">
-    <mediaSet refId="54" />
     <mediaSet refId="57" />
-    <mediaSet refId="128" />
   </buildIds>
 </install4j>
 
