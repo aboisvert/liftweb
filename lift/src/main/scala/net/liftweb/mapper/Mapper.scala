@@ -175,7 +175,7 @@ trait Mapper[A<:Mapper[A]] {
     ret.toString
   }
 
-  def toXml: NodeSeq = {
+  def toXml: Elem = {
     getSingleton.toXml(this)
   }
 

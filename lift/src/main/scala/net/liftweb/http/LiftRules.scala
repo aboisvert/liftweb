@@ -27,6 +27,8 @@ import java.util.{Locale, TimeZone}
 import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import javax.servlet.{ServletContext}
 import java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
+import js._
+import JE._
 
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
@@ -379,8 +381,10 @@ object LiftRules {
 
   var cometPath = "comet_request"
 
-var calcCometPath: () => String = () => cometPath +
-(S.session.map(s => "/"+s.uniqueId) openOr "")
+  var calcCometPath: String => JsExp =
+  prefix => Str(prefix + "/" + cometPath + "/") +
+  JsRaw("Math.floor(Math.random() * 100000000000)") +
+  Str(S.session.map(s => "/"+s.uniqueId) openOr "")
 
 
   /**
@@ -670,13 +674,13 @@ var calcCometPath: () => String = () => cometPath +
         
         () => {
           css.map(str => CSSHelpers.fixCSS(new BufferedReader(
-            new StringReader(str)), prefix openOr (S.contextPath)) match {
+                new StringReader(str)), prefix openOr (S.contextPath)) match {
               case (Full(c), _) => CSSResponse(c)
               case (_, input) => {
-                Log.warn("Fixing " + cssPath + " failed");
-                CSSResponse(input)
-              }
-          })
+                  Log.warn("Fixing " + cssPath + " failed");
+                  CSSResponse(input)
+                }
+            })
         }
       }
     }

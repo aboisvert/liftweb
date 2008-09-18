@@ -79,8 +79,11 @@ class LiftServlet extends HttpServlet {
 
   def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
     val wp = request.path.wholePath
-    val cometSessionId = if (wp.length == 2 && wp.head == LiftRules.cometPath)
-    Full(wp(1)) else Empty
+    val cometSessionId = 
+    if (wp.length >= 3 && wp.head == LiftRules.cometPath)
+    Full(wp(2))
+    else
+    Empty
 
     val ret = SessionMaster.getSession(httpSession, cometSessionId) match {
       case Full(ret) =>
@@ -212,7 +215,7 @@ class LiftServlet extends HttpServlet {
     
     val toTransform: Can[LiftResponse] =
     if (dispatch._1) dispatch._2
-    else if ((wp.length == 1 || wp.length == 2) && wp.head == LiftRules.cometPath) 
+    else if ((wp.length >= 1) && wp.head == LiftRules.cometPath) 
     handleComet(requestState, liftSession)
     else if (wp.length == 1 && wp.head == LiftRules.ajaxPath) 
     handleAjax(liftSession, requestState)

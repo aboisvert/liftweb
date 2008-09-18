@@ -458,9 +458,9 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   val elemName = getClass.getSuperclass.getName.split("\\.").toList.last
 
-  def toXml(what: A): NodeSeq =
+  def toXml(what: A): Elem =
   Elem(null,elemName,
-       mappedFieldList.foldRight(Null.asInstanceOf[MetaData]) {(p, md) => val fld = ??(p.method, what)
+       mappedFieldList.foldRight[MetaData](Null) {(p, md) => val fld = ??(p.method, what)
                                                                new UnprefixedAttribute(p.name, Text(fld.toString), md)}
        ,TopScope)
 
