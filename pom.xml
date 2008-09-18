@@ -118,9 +118,10 @@ Lift is a scala web framework.
       <id>timperrett</id>
       <name>Tim Perrett</name>
       <email>hello [at] timperrett.com</email>
-      <timezone>+0</timezone>
+      <timezone>0</timezone>
       <roles>
         <role>Installation and Deployment</role>
+        <role>Advanced Localization</role>
       </roles>
     </developer>
   </developers>
