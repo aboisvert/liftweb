@@ -53,11 +53,13 @@ object JQueryArtifacts extends JSArtifacts {
   def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.OnLoad(cmd)
   
   def ajax(data: AjaxInfo): String = {
-    "jQuery.ajax(" + toJson(data, S.contextPath, LiftRules.ajaxPath) + ");"
+    "jQuery.ajax(" + toJson(data, S.contextPath,
+                            prefix =>
+                            Str(S.encodeURL(prefix + "/" +LiftRules.ajaxPath))) + ");"
   }
   
   def comet(data: AjaxInfo): String = {
-    "jQuery.ajax(" + toJson(data, LiftRules.cometServer(), LiftRules.calcCometPath()) + ");"
+    "jQuery.ajax(" + toJson(data, LiftRules.cometServer(), LiftRules.calcCometPath) + ");"
   }
   
   def jsonStringify(in: JsExp) : JsExp = new JsExp {
@@ -68,8 +70,8 @@ object JQueryArtifacts extends JSArtifacts {
     def toJsCmd = "lift$.formToJSON('" + formId + "')";
   }
 
-  private def toJson(info: AjaxInfo, server: String, path: String): String =
-  (("url : " + (S.encodeURL(server+"/"+path)).encJs) ::
+  private def toJson(info: AjaxInfo, server: String, path: String => JsExp): String =
+  (("url : " + path(server).toJsCmd ) ::
    "data : " + info.data ::
    ("type : " + info.action.encJs) ::
    ("dataType : " + info.dataType.encJs) ::
