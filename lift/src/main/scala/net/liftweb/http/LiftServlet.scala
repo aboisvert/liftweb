@@ -69,7 +69,7 @@ class LiftServlet extends HttpServlet {
       LiftRules.ending = false
       LiftRules.addDispatchAfter({
           case r @ RequestState(mainPath :: subPath, suffx, _)
-	if mainPath == LiftRules.ResourceServerPath =>
+            if mainPath == LiftRules.ResourceServerPath =>
             ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
         })
     } finally {
@@ -277,7 +277,7 @@ class LiftServlet extends HttpServlet {
             (LiftRules.performTransform(
                 convertAnswersToCometResponse(sessionActor,
                                               answers.toArray, actors))),
-             request.request)
+                                                request.request)
 
           sessionActor.exitComet(this)
           this.exit()
@@ -312,10 +312,10 @@ class LiftServlet extends HttpServlet {
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
     else LiftRules.checkContinuations(requestState.request) match {
       case Some(null) =>
-	setupContinuation(requestState, sessionActor, actors)
+        setupContinuation(requestState, sessionActor, actors)
 
       case _ =>
-	handleNonContinuationComet(requestState, sessionActor, actors)
+        handleNonContinuationComet(requestState, sessionActor, actors)
     }
   }
 
@@ -326,7 +326,7 @@ class LiftServlet extends HttpServlet {
 
     actors foreach(_._1 ! ClearNotices)
 
-  (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
+    (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
   }
 
   private def handleNonContinuationComet(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[LiftResponse] = {
@@ -340,15 +340,15 @@ class LiftServlet extends HttpServlet {
       def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
         receiveWithin(len) {
           case TIMEOUT =>
-	    in
+            in
 
           case (theId: Long, ar: AnswerRender) if theId == seqId =>
-	    drainTheSwamp(0, ar :: in)
+            drainTheSwamp(0, ar :: in)
 
           case BreakOut => in
 
           case s =>
-	    Log.trace("Drained "+s)
+            Log.trace("Drained "+s)
             drainTheSwamp(len, in)
         }
       }
@@ -456,11 +456,8 @@ class LiftServlet extends HttpServlet {
 
 }
 
-class LiftFilter extends Filter
-{
-  //The variable holds the current ServletContext (we need it for request URI - handling
-  private var context: ServletContext = null
-  private var actualServlet: LiftServlet = _
+trait LiftFilterTrait {
+  def actualServlet: LiftServlet
 
   def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
   {
@@ -481,6 +478,17 @@ class LiftFilter extends Filter
       case _ => chain.doFilter(req, res)
     }
   }
+  
+  def isLiftRequest_?(session: RequestState): Boolean
+}
+
+class LiftFilter extends Filter with LiftFilterTrait
+{
+  //The variable holds the current ServletContext (we need it for request URI - handling
+  private var context: ServletContext = null
+  var actualServlet: LiftServlet = _
+
+
 
   //We need to capture the ServletContext on init
   def init(config:FilterConfig) {
@@ -529,7 +537,7 @@ class LiftFilter extends Filter
   in.endsWith(".htm") ||
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
-  private def isLiftRequest_?(session: RequestState): Boolean = {
+  def isLiftRequest_?(session: RequestState): Boolean = {
     if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
     else session.path.endSlash || (session.path.wholePath.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
     context.getResource(session.uri) == null
