@@ -24,6 +24,8 @@ import net.liftweb.widgets.calendars._
 
 import net.liftweb.widgets.tree.TreeView
 
+import net.liftweb.widgets.sparklines.Sparklines
+
 /**
   * A class that's instantiated early and run.  It allows the application
   * to modify lift's environment
@@ -42,6 +44,7 @@ class Boot {
       Menu(Loc("rssfeed", List("rssfeed"), "RSSFeed")) ::
       Menu(Loc("gravatear", List("gravatar"), "Gravatar")) ::
       Menu(Loc("tree", List("tree"), "Tree")) ::
+      Menu(Loc("sparklines", List("sparklines"), "SparkLines")) ::
       Nil
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
@@ -49,7 +52,8 @@ class Boot {
     CalendarMonthView init;
     CalendarWeekView init;
     CalendarDayView init;
-    TreeView init
+    TreeView init;
+    Sparklines init;
 
   }
 }
