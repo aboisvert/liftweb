@@ -135,13 +135,20 @@ object JE {
     def toJsCmd = "JSON.stringify("+in.toJsCmd+")"
   }
 
-  object JsArray {
+  /*object JsArray {
     def apply(in: JsExp*): JsExp = new JsExp {
       def toJsCmd = in.map(_.toJsCmd).mkString("[",", ", "]\n")
     }
 
     def apply(in: List[JsExp]): JsExp = this.apply(in :_*)
 
+  }*/
+  case class JsArray(in: JsExp*) extends JsExp {
+    def toJsCmd = new JsExp {
+      def toJsCmd = in.map(_.toJsCmd).mkString("[",", ", "]\n")
+    }.toJsCmd
+
+    def this(in: List[JsExp]) = this(in :_*)
   }
 
   case class ValById(id: String) extends JsExp {
