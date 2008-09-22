@@ -46,6 +46,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     case xs => url + "&" + paramsToUrlParams(xs)
   }
 
+  /*
   /**
    * Set of all valid files extensions
    * @return a mutable HashSet[String]
@@ -69,7 +70,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
       }
     }
   }
-
+*/
   /**
    * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"
@@ -118,10 +119,21 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
       case x :: xs => insureField(insureField_inner(toInsure, x), xs)
     }
   }
+
   /**
    * Transform a pair (name: String, value: Any) to an unprefixed XML attribute name="value"
    */
-  implicit def pairToUnprefixed(in: (String, Any)): UnprefixedAttribute = new UnprefixedAttribute(in._1, Text(in._2.toString), Null)
+  implicit def pairToUnprefixed(in: (String, Any)): MetaData = {
+    val value: Option[NodeSeq] = in._2 match {
+      case null => None
+      case js: ToJsCmd => Some(Text(js.toJsCmd))
+      case n: Node => Some(n)
+      case n: NodeSeq => Some(n)
+      case s => Some(Text(s.toString))
+    }
+    
+    value.map(v => new UnprefixedAttribute(in._1, v, Null)) getOrElse Null
+  }
 
   /**
    * If the incoming Elem has an 'id', return it, otherwise
@@ -150,4 +162,11 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     }
   }
 
+}
+
+/**
+* Is this something that can be converted to a JavaScript Command
+*/
+trait ToJsCmd {
+  def toJsCmd: String
 }

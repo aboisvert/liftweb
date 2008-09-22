@@ -47,7 +47,8 @@ class AjaxForm {
   def show(xhtml: Group): NodeSeq =
     bind("select", xhtml,
         "state" -> select(AjaxForm.states.map(s => (s,s)), Full(state), state = _) %
-          ("onchange" -> ajaxCall("this.value", s => After(200, replace(s)))),
+          ("onchange" -> ajaxCall(JE.JsRaw("this.value"), 
+				  s => After(200, replace(s))).toJsCmd),
         "city" -> cityChoice(state) % ("id" -> "city_select"),
         "submit" -> submit(?("Save"), {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
 }

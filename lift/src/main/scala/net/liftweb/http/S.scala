@@ -737,10 +737,10 @@ object S extends HasParams {
 
     (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
                                "function "+key+"(obj) {" +
-                               LiftRules.jsArtifacts.ajax(AjaxInfo("'" + key + "='+ encodeURIComponent(" +
+                               LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("'" + key + "='+ encodeURIComponent(" +
                                                                    LiftRules.jsArtifacts.
                                                                    jsonStringify(JE.JsRaw("obj")).
-                                                                   toJsCmd +")" , true)) +"; }; " ))
+                                                                   toJsCmd +")") , true)) +"; }; " ))
   }
 
   /**

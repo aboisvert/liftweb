@@ -68,6 +68,17 @@ class Boot {
       LiftRules.snippetDispatch orElse
     Map("Template" -> Template)
 
+    /*
+     * Show the spinny image when an Ajax call starts
+     */
+    LiftRules.ajaxStart = 
+      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
+
+    /*
+     * Make the spinny image go away when it ends
+     */
+    LiftRules.ajaxEnd = 
+      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
     LiftRules.addRewriteBefore{
       case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_),

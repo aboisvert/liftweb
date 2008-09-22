@@ -70,10 +70,10 @@ class Ajax {
     <br />
 
     <a href="javascript://" onclick={
-      ajaxCall("document.getElementById('the_area').value",
+      ajaxCall(JE.JsRaw("document.getElementById('the_area').value"),
          text => DisplayMessage("messages",
               <pre>{text}</pre>,
-              4 seconds, 200))
+              4 seconds, 200)).toJsCmd
     }>Enter text above and click me</a><br/>
     <br/>
 

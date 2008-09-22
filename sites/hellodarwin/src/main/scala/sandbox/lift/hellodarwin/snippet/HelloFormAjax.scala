@@ -4,7 +4,7 @@ import scala.xml.NodeSeq
 import net.liftweb.http.S._
 import net.liftweb.http.SHtml._
 import net.liftweb.util.Helpers._
-import net.liftweb.http.js.{JsCmd, JsCmds}
+import net.liftweb.http.js.{JsCmd, JsCmds, JE}
 
 class HelloFormAjax {
   def whoNode(str: String) = <span id="who">{str}</span>
@@ -19,7 +19,10 @@ class HelloFormAjax {
       <br/>
       <label for="whoField">Who :</label>
       { text("world", null) % ("size" -> "10") % ("id" -> "whoField") }
-      { <button type="button">{?("Send")}</button> % ("onclick" -> ajaxCall("$('#whoField').attr('value')", s => updateWho(s))) }
+      { <button type="button">{?("Send")}</button> % 
+       ("onclick" -> 
+	ajaxCall(JE.JsRaw("$('#whoField').attr('value')"),
+		 s => updateWho(s))) }
     </xml:group>
   }
 }
