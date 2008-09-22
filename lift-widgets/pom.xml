@@ -42,6 +42,11 @@
             </configuration>
           </execution>
         </executions>
+        <configuration>
+           <excludes>
+              <exclude>**/sparklines*.js</exclude>
+           </excludes>
+         </configuration>
       </plugin>
       <plugin>
         <groupId>org.mortbay.jetty</groupId>
