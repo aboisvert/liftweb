@@ -153,7 +153,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
    * A validation helper.  Make sure the string is at least a particular
    * length and generate a validation issue if not
    */
-  def valMinLen(len: int, msg: String)(value: String): List[FieldError] =
+  def valMinLen(len: int, msg: => String)(value: String): List[FieldError] =
     if ((value eq null) || value.length < len) List(FieldError(this, Text(msg)))
     else Nil
 
@@ -161,14 +161,14 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
    * A validation helper.  Make sure the string is no more than a particular
    * length and generate a validation issue if not
    */
-  def valMaxLen(len: int, msg: String)(value: String): List[FieldError] =
+  def valMaxLen(len: int, msg: => String)(value: String): List[FieldError] =
     if ((value ne null) && value.length > len) List(FieldError(this, Text(msg)))
     else Nil
 
   /**
    * Make sure that the field is unique in the database
    */
-  def valUnique(msg: String)(value: String): List[FieldError] =
+  def valUnique(msg: => String)(value: String): List[FieldError] =
     fieldOwner.getSingleton.findAll(By(this,value)).
       filter(!_.comparePrimaryKeys(this.fieldOwner)).
       map(x =>FieldError(this, Text(msg)))
@@ -176,7 +176,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   /**
    * Make sure the field matches a regular expression
    */
-  def valRegex(pat: Pattern, msg: String)(value: String): List[FieldError] = pat.matcher(value).matches match {
+  def valRegex(pat: Pattern, msg: => String)(value: String): List[FieldError] = pat.matcher(value).matches match {
     case true => Nil
     case false => List(FieldError(this, Text(msg)))
   }
