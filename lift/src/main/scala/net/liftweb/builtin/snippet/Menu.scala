@@ -15,9 +15,10 @@
  */
 package net.liftweb.builtin.snippet
 
-import net.liftweb.http.{S, DispatchSnippet}
+import net.liftweb.http.{S, DispatchSnippet, LiftRules}
 import net.liftweb.sitemap._
 import net.liftweb.util._
+import Helpers._
 import scala.xml._
 
 class Menu extends DispatchSnippet {
@@ -25,6 +26,7 @@ class Menu extends DispatchSnippet {
     case "builder" => ignore => builder
     case "title" => title
     case "item" => item
+    case "group" => group
   }
 
   def builder: NodeSeq = {
@@ -65,6 +67,22 @@ class Menu extends DispatchSnippet {
     r openOr Text("")
   }
  
+  def group(template: NodeSeq): NodeSeq = {
+    val toBind = if ((template \ "bind").filter(_.prefix == "menu").isEmpty)
+    <xml:group><menu:bind/> </xml:group>
+    else template
+    
+    val attrs = S.prefixedAttrsToMetaData("a")
+    
+    for (group <- S.attr("group").toList;
+         siteMap <- LiftRules.siteMap.toList;
+         loc <- siteMap.locForGroup(group);
+         link <- loc.link.createLink(Nil)) yield {
+      val a = <a href={link}>{loc.text.text()}</a> % attrs
+      
+      Group(bind("menu", toBind, "bind" -> a))
+    }
+  }
   
   def item(text: NodeSeq): NodeSeq = 
   for (name <- S.attr("name").toList;

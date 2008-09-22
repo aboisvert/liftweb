@@ -161,7 +161,7 @@ object StringHelpersSpec extends Specification with StringHelpers {
       "hello".encJs must_== "'hello'"
     }
     "encode a string replacing non-ASCII characters by their unicode value" in {
-      "niña".encJs must_== "'ni\\u00f1a'"
+      "ni\u00f1a".encJs must_== "'ni\\u00f1a'"
     }
     "return the string \"null\" if the input string is null" in {
       (null: String).encJs must_== "null"

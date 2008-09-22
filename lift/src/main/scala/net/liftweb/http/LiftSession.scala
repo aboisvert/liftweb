@@ -836,18 +836,25 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
 // <![CDATA[
 var lift_ajaxQueue = [];
 var lift_ajaxInProcess = null;
+var lift_ajaxShowing = false;
 var lift_ajaxRetryCount = """+
 (LiftRules.ajaxRetryCount openOr 3)+
 """
                        
 function lift_ajaxHandler(theData, theSuccess, theFailure) {
   var toSend = {retryCnt: 0};
+  toSend.when = (new Date()).getTime();
   toSend.theData = theData;
   toSend.onSuccess = theSuccess;
   toSend.onFailure = theFailure;
   
   lift_ajaxQueue.push(toSend);
+  lift_ajaxQueueSort();
   lift_doAjaxCycle();
+}
+
+function lift_ajaxQueueSort() {
+  lift_ajaxQueue.sort(function (a,b) {return a.when - b.when;});
 }
 
 function lift_defaultFailure() {
@@ -857,26 +864,39 @@ function lift_defaultFailure() {
 }
 
 function lift_startAjax() {
+  lift_ajaxShowing = true;
 """+
 (LiftRules.ajaxStart.map(_().toJsCmd) openOr "")+
 """
 }
 
 function lift_endAjax() {
+  lift_ajaxShowing = false;
 """+
 (LiftRules.ajaxEnd.map(_().toJsCmd) openOr "")+
 """
 }
 
+function lift_testAndShowAjax() {
+  if (lift_ajaxShowing && lift_ajaxQueue.length == 0 &&
+      lift_ajaxInProcess == null) {
+   lift_endAjax();
+      } else if (!lift_ajaxShowing && (lift_ajaxQueue.length > 0 ||
+     lift_ajaxInProcess != null)) {
+   lift_startAjax();
+     }
+}
+
 function lift_doAjaxCycle() {
-  if (lift_ajaxQueue.length > 0) {
-    if (lift_ajaxInProcess == null) {
-      var aboutToSend = lift_ajaxQueue.shift();
+  var queue = lift_ajaxQueue;
+  if (queue.length > 0) {
+    var now = (new Date()).getTime();
+    if (lift_ajaxInProcess == null && queue[0].when <= now) {
+      var aboutToSend = queue.shift();
 
       lift_ajaxInProcess = aboutToSend;
       var  successFunc = function() {
          lift_ajaxInProcess = null;
-         lift_endAjax();
          if (aboutToSend.onSuccess) {
            aboutToSend.onSuccess();
          }
@@ -885,11 +905,13 @@ function lift_doAjaxCycle() {
 
       var failureFunc = function() {
          lift_ajaxInProcess = null;
-         lift_endAjax();
          var cnt = aboutToSend.retryCnt;
-         if (cnt < lift_ajaxReturnCount) {
+         if (cnt < lift_ajaxRetryCount) {
 	   aboutToSend.retryCnt = cnt + 1;
-           lift_ajaxQueue.push(aboutToSend);
+           var now = (new Date()).getTime();
+           aboutToSend.when = now + (1000 * Math.pow(2, cnt));
+           queue.push(aboutToSend);
+           lift_ajaxQueueSort();
          } else {
            if (aboutToSend.onFailure) {
              aboutToSend.onFailure();
@@ -899,12 +921,12 @@ function lift_doAjaxCycle() {
          }
          lift_doAjaxCycle();
       };
-      lift_startAjax();
       lift_actualAjaxCall(aboutToSend.theData, successFunc, failureFunc);
     }
   }
 
-  setTimeout("lift_doAjaxCycle();", 1000);
+  lift_testAndShowAjax();
+  setTimeout("lift_doAjaxCycle();", 200);
 }
 
 function lift_actualAjaxCall(data, onSuccess, onFailure) {

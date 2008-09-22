@@ -110,6 +110,11 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   }
 
   private def hidden = stuff.contains(Loc.Hidden)
+  
+  private lazy val groupSet: Set[String] = 
+   Set(stuff.flatMap{case s: Loc.LocGroup => s.group case _ => Nil} :_*)
+  
+  def inGroup_?(group: String): Boolean = groupSet.contains(group)
 }
 
 /**
@@ -154,6 +159,12 @@ object Loc {
    * will still be accessable.
    */
   case object Hidden extends LocStuff
+  
+/**
+* If the Loc is in a group (or groups) like "legal" "community" etc.
+* the groups can be specified and recalled at the top level
+*/
+case class LocGroup(group: String*) 
 
   /**
    * If the test returns True, the page can be accessed, otherwise,

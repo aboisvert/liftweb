@@ -699,7 +699,10 @@ object S extends HasParams {
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
-  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, f)
+  def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, Empty, f)
+  
+def buildJsonFunc(onError: JsCmd, f: Any => JsCmd): (JsonCall, JsCmd) =
+buildJsonFunc(Empty, Full(onError), f)
 
   /**
    * Build a handler for incoming JSON commands
@@ -709,7 +712,7 @@ object S extends HasParams {
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
-  def buildJsonFunc(name: Can[String], f: Any => JsCmd): (JsonCall, JsCmd) = {
+  def buildJsonFunc(name: Can[String], onError: Can[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
 
     def checkCmd(in: Any) = in match {
@@ -733,14 +736,23 @@ object S extends HasParams {
       }.foldLeft(JsCmds.Noop)(_ & _)
     }
 
+  val onErrorFunc: String = 
+  onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
+}
+
+ """).toJsCmd) openOr ""
+  
+  val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
+  
     addFunctionMap(key, jsonCallback _)
 
-    (JsonCall(key), JsCmds.Run(name.map(n => "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-                               "function "+key+"(obj) {" +
-                               LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("'" + key + "='+ encodeURIComponent(" +
+    (JsonCall(key), JsCmds.Run(name.map(n => onErrorFunc +
+                                        "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
+                               "function "+key+"(obj) {lift_ajaxHandler(" +
+                               "'" + key + "='+ encodeURIComponent(" +
                                                                    LiftRules.jsArtifacts.
                                                                    jsonStringify(JE.JsRaw("obj")).
-                                                                   toJsCmd +")") , true)) +"; }; " ))
+                                                                   toJsCmd +"), null,"+onErrorParam+");}"))
   }
 
   /**

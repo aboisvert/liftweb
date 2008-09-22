@@ -42,6 +42,9 @@ case class SiteMap(kids: Menu*) extends HasKids  {
 
   def findLoc(req: RequestState): Can[Loc] =
     first(kids)(_.findLoc(req))
+
+  def locForGroup(group: String): Seq[Loc] = 
+  kids.flatMap(_.locForGroup(group))
 }
 
 object SiteMap {
