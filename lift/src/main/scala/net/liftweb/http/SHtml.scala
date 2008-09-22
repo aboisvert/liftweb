@@ -119,9 +119,9 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + this.value")))
+        ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
   }
-// HERE 
+  
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
   
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {

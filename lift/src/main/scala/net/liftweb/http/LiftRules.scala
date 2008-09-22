@@ -218,7 +218,7 @@ object LiftRules {
   /**
    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
    */
-  var ajaxRequestTimeout: Can[Int] = Empty
+  var cometRequestTimeout: Can[Int] = Empty
 
   /**
    * Meta information for the notices that are applied via Ajax response

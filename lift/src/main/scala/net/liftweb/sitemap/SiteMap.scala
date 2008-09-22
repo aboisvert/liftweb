@@ -44,7 +44,8 @@ case class SiteMap(kids: Menu*) extends HasKids  {
     first(kids)(_.findLoc(req))
 
   def locForGroup(group: String): Seq[Loc] = 
-  kids.flatMap(_.locForGroup(group))
+  kids.flatMap(_.locForGroup(group)).filter(_.testAccess match {
+    case Left(true) => true case _ => false})
 }
 
 object SiteMap {
