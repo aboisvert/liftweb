@@ -309,7 +309,7 @@ object LiftRules {
       val cci = Class.forName("org.mortbay.util.ajax.Continuation")
       val getObj = cci.getMethod("getObject")
       val setObj = cci.getMethod("setObject", classOf[AnyRef])
-      val suspend = cci.getMethod("suspend", java.lang.Long.TYPE)
+      val suspend = cci.getMethod("suspend", _root_.java.lang.Long.TYPE)
       val resume = cci.getMethod("resume")
       (true, (cc), (meth), (getObj), (setObj), (suspend), resume)
     } catch {

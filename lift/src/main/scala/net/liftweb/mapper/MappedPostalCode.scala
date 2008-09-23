@@ -117,10 +117,10 @@ class MappedPostalCode[T <: Mapper[T]](owner: T, country: MappedCountry[T]) exte
   }
 
   override def validations = country.is match {
-    case Countries.USA =>  valRegex(java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), S.??("invalid.zip.code")) _ :: super.validations
-    case Countries.Sweden => valRegex(java.util.regex.Pattern.compile("[0-9]{3}[ ]?[0-9]{2}"), S.??("invalid.postal.code")) _ :: super.validations
-    case Countries.Australia => valRegex(java.util.regex.Pattern.compile("(0?|[1-9])[0-9]{3}"), S.??("invalid.postal.code")) _ :: super.validations
-    case Countries.Canada => valRegex(java.util.regex.Pattern.compile("[A-Z][0-9][A-Z][ ][0-9][A-Z][0-9]"), S.??("invalid.postal.code")) _ :: super.validations
+    case Countries.USA =>  valRegex(_root_.java.util.regex.Pattern.compile("[0-9]{5}(\\-[0-9]{4})?"), S.??("invalid.zip.code")) _ :: super.validations
+    case Countries.Sweden => valRegex(_root_.java.util.regex.Pattern.compile("[0-9]{3}[ ]?[0-9]{2}"), S.??("invalid.postal.code")) _ :: super.validations
+    case Countries.Australia => valRegex(_root_.java.util.regex.Pattern.compile("(0?|[1-9])[0-9]{3}"), S.??("invalid.postal.code")) _ :: super.validations
+    case Countries.Canada => valRegex(_root_.java.util.regex.Pattern.compile("[A-Z][0-9][A-Z][ ][0-9][A-Z][0-9]"), S.??("invalid.postal.code")) _ :: super.validations
     case _ => genericCheck _ :: super.validations
   }
 }

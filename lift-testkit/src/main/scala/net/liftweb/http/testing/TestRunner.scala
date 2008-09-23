@@ -152,7 +152,7 @@ case class TestResults(res: List[Tracker]) {
   }
 }
 
-class TestFailureError(msg: String) extends java.lang.Error(msg)
+class TestFailureError(msg: String) extends _root_.java.lang.Error(msg)
 
 class Item(val name: String, val resetDB: Boolean, val func: Can[() => Any], val forkCnt: Int, forkFunc: Can[Int => Any]) {
   def getFunc(cnt: Int) = {
