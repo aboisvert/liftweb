@@ -16,8 +16,8 @@ package net.liftweb.util
  * and limitations under the License.
  */
 
-import java.net.InetAddress
-import java.util.Properties
+import _root_.java.net.InetAddress
+import _root_.java.util.Properties
 import Helpers._
 
 /**

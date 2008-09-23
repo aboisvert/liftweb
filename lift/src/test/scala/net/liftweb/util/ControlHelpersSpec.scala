@@ -1,6 +1,6 @@
 package net.liftweb.util
-import org.specs.runner._
-import org.specs._
+import _root_.org.specs.runner._
+import _root_.org.specs._
 
 class ControlHelpersSpecTest extends Runner(ControlHelpersSpec) with JUnit
 object ControlHelpersSpec extends Specification with ControlHelpers with ClassHelpers {

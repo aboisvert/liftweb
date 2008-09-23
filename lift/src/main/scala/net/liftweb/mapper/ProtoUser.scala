@@ -16,17 +16,17 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import net.liftweb.mapper._
-import net.liftweb.http._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.http._
 import js._
 import JsCmds._
-import scala.xml.{NodeSeq, Node, Group}
-import scala.xml.transform._
-import net.liftweb.sitemap._
-import net.liftweb.sitemap.Loc._
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import net.liftweb.util.Mailer._
+import _root_.scala.xml.{NodeSeq, Node, Group}
+import _root_.scala.xml.transform._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.sitemap.Loc._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Mailer._
 import S._
 
 trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsString {

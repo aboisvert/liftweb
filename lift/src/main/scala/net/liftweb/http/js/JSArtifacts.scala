@@ -91,22 +91,22 @@ trait JSArtifacts {
  * different construction schemes 
  */
 object AjaxInfo {
-  def apply(data:String, post: Boolean) =
+  def apply(data: JsExp, post: Boolean) =
   new AjaxInfo(data, if (post) "POST" else "GET", 1000, false, "script", Empty, Empty)
 
-  def apply(data:String, 
+  def apply(data: JsExp,
             dataType: String,
             post: Boolean) =
   new AjaxInfo(data, if (post) "POST" else "GET", 1000, false, dataType, Empty, Empty)
   
-  def apply(data:String) =
+  def apply(data: JsExp) =
   new AjaxInfo(data, "POST", 1000, false, "script", Empty, Empty)
 
-  def apply(data:String, 
+  def apply(data: JsExp,
             dataType: String) =
   new AjaxInfo(data, "POST", 1000, false, dataType, Empty, Empty)
   
-  def apply(data:String,
+  def apply(data: JsExp,
             post: Boolean,
             timeout: Long, 
             successFunc: String, 
@@ -123,7 +123,7 @@ object AjaxInfo {
 /**
  * Represents the meta data of an AJax request.
  */
-case class AjaxInfo(data: String, action: String, timeout: Long,
+case class AjaxInfo(data: JsExp, action: String, timeout: Long,
                     cache: Boolean, dataType: String,
                     successFunc: Can[String], failFunc: Can[String]) 
 

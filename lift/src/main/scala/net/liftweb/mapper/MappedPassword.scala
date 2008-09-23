@@ -16,16 +16,16 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import net.liftweb.mapper._
-import net.liftweb.util.Helpers._
-import net.liftweb.util.FatLazy
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import scala.xml.{Node, Text, NodeSeq}
-import java.util.Date
-import net.liftweb.http.{S, FieldError}
-import net.liftweb.http.S._
-import net.liftweb.util._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.FatLazy
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.scala.xml.{Node, Text, NodeSeq}
+import _root_.java.util.Date
+import _root_.net.liftweb.http.{S, FieldError}
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.util._
 
 object MappedPassword {
   val blankPw = "*******"

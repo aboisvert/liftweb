@@ -16,11 +16,11 @@ package net.liftweb.sitemap
  * and limitations under the License.
  */
 
-import net.liftweb.http._
-import net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util._
 import Helpers._
 
-import scala.xml.{NodeSeq}
+import _root_.scala.xml.{NodeSeq}
 
 class SiteMapException(msg: String) extends Exception(msg)
 
@@ -42,6 +42,10 @@ case class SiteMap(kids: Menu*) extends HasKids  {
 
   def findLoc(req: RequestState): Can[Loc] =
     first(kids)(_.findLoc(req))
+
+  def locForGroup(group: String): Seq[Loc] = 
+  kids.flatMap(_.locForGroup(group)).filter(_.testAccess match {
+    case Left(true) => true case _ => false})
 }
 
 object SiteMap {

@@ -218,7 +218,7 @@ object LiftRules {
   /**
    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
    */
-  var ajaxRequestTimeout: Can[Int] = Empty
+  var cometRequestTimeout: Can[Int] = Empty
 
   /**
    * Meta information for the notices that are applied via Ajax response
@@ -271,6 +271,29 @@ object LiftRules {
   TimeZone.getDefault
 
 
+  /**
+  * How many times do we retry an Ajax command before calling it a failure?
+  */
+  var ajaxRetryCount: Can[Int] = Empty
+  
+  /**
+  * The JavaScript to execute at the begining of an
+  * Ajax request (for example, showing the spinning working thingy)
+  */
+  var ajaxStart: Can[() => JsCmd] = Empty
+  
+  /**
+  * The JavaScript to execute at the end of an
+  * Ajax request (for example, removing the spinning working thingy)
+  */
+  var ajaxEnd: Can[() => JsCmd] = Empty
+
+  /**
+  * The default action to take when the JavaScript action fails
+  */
+  var ajaxDefaultFailure: Can[() => JsCmd] =
+  Full(() => JsCmds.Alert(S.??("The server cannot be contacted at this time")))
+  
   /**
    * A function that takes the current HTTP request and returns the current
    */
@@ -690,6 +713,8 @@ object LiftRules {
 
   var onBeginServicing: List[RequestState => Unit] = Nil
   var onEndServicing: List[(RequestState, Can[LiftResponse]) => Unit] = Nil
+  
+
 }
 
 case object BreakOut

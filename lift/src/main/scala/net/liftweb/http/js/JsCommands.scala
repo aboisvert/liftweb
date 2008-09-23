@@ -75,7 +75,7 @@ trait JsObj extends JsExp {
   def props: List[(String,JsExp)]
 }
 
-trait JsExp extends SpecialNode with HtmlFixer with JxBase {
+trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
   def toJsCmd: String
 
   // def label: String = "#JS"
@@ -107,6 +107,10 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase {
 
   def +(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + " + "+ right.toJsCmd
+  }
+  
+  def ===(right: JsExp): JsExp = new JsExp {
+    def toJsCmd = JsExp.this.toJsCmd + " = "+ right.toJsCmd
   }
 
 }
@@ -396,7 +400,7 @@ trait HtmlFixer {
 
 }
 
-trait JsCmd extends HtmlFixer {
+trait JsCmd extends HtmlFixer with ToJsCmd {
   def &(other: JsCmd): JsCmd = JsCmds.CmdPair(this, other)
   def toJsCmd: String
 }

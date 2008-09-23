@@ -6,9 +6,9 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                */
 
-import java.util.regex._
-import scala.xml.Text
-import net.liftweb.http.{S, FieldError}
+import _root_.java.util.regex._
+import _root_.scala.xml.Text
+import _root_.net.liftweb.http.{S, FieldError}
 
 object MappedEmail {
   val emailPattern = Pattern.compile("^[a-z0-9._%-]+@(?:[a-z0-9-]+\\.)+[a-z]{2,4}$")

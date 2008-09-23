@@ -34,7 +34,7 @@ object SHtml {
    * @return a button to put on your page
    */
   def ajaxButton(text: String, func: => JsCmd): Elem =
-    <input type="button" value={text}/> % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo((mapFunc(() => func)+"=true").encJs, false))))
+    <input type="button" value={text}/> % ("onclick" -> makeAjaxCall(Str(mapFunc(() => func)+"=true")))
 
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
@@ -46,6 +46,10 @@ object SHtml {
     val key = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(key, (a: List[String]) => func())
       (<lift:a key={key}>{body}</lift:a>)
+  }
+
+  def makeAjaxCall(in: JsExp): JsExp = new JsExp {
+    def toJsCmd = "lift_ajaxHandler("+ in.toJsCmd+", null, null)"
   }
 
   /**
@@ -70,7 +74,7 @@ object SHtml {
    *
    * @return the JavaScript that makes the call
    */
-  def ajaxCall(jsCalcValue: String, func: String => JsCmd): String = ajaxCall_*(jsCalcValue, SFuncHolder(func))
+  def ajaxCall(jsCalcValue: JsExp, func: String => JsCmd): JsExp = ajaxCall_*(jsCalcValue, SFuncHolder(func))
 
   /**
    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
@@ -79,15 +83,15 @@ object SHtml {
    *
    * @return the JavaScript that makes the call
    */
-  private def ajaxCall_*(jsCalcValue: String, func: AFuncHolder): String =
-    LiftRules.jsArtifacts.ajax(AjaxInfo(("'" + mapFunc(func)+"='+"+jsCalcValue), true))
+  private def ajaxCall_*(jsCalcValue: JsExp, func: AFuncHolder): JsExp =
+  makeAjaxCall(JsRaw("'"+mapFunc(func)+"=' + "+jsCalcValue.toJsCmd))
                                
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
-    val nh = head % ("onclick" -> (LiftRules.jsArtifacts.toggle(id).toJsCmd + ";" + LiftRules.jsArtifacts.ajax(AjaxInfo((funcName + "=true").encJs, false))))
+    val nh = head % ("onclick" -> (LiftRules.jsArtifacts.toggle(id).cmd & makeAjaxCall(JsRaw("'"+funcName+"=true'")).cmd))
     nh ++ rnk
   }
 
@@ -106,7 +110,7 @@ object SHtml {
   def jsonText(value: String, json: JsExp => JsCmd): Elem = {
     (<input type="text" value={value}/>) %
     ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-    ("onblur" -> (json(JE.JsRaw("this.value")).toJsCmd))
+    ("onblur" -> (json(JE.JsRaw("this.value"))))
   }
 
   def ajaxText(value: String, func: String => JsCmd): Elem = ajaxText_*(value, SFuncHolder(func))
@@ -115,14 +119,14 @@ object SHtml {
     val funcName = mapFunc(func)
       (<input type="text" value={value}/>) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
-        ("onblur" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.value", false))))
+        ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
   }
-
+  
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
   
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) % ("onclick" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.checked", false))))
+      (<input type="checkbox"/>) % checked(value) % ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
   }
 
   def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
@@ -134,10 +138,10 @@ object SHtml {
 
     (<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> (LiftRules.jsArtifacts.ajax(AjaxInfo("'" + funcName+"='+this.options[this.selectedIndex].value", false))))
+    }</select>) % ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
   }
 
-  def ajaxInvoke(func: () => JsCmd): String = LiftRules.jsArtifacts.ajax(AjaxInfo("'" + mapFunc(NFuncHolder(func)) + "=true'", false))
+  def ajaxInvoke(func: () => JsCmd): JsExp = makeAjaxCall(Str(mapFunc(NFuncHolder(func)) + "=true"))
 
   /**
    * Build a swappable visual element.  If the shown element is clicked on, it turns into the hidden element and when
@@ -147,9 +151,9 @@ object SHtml {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
     val ui = LiftRules.jsArtifacts
-    (<span>{rs % ("onclick" -> (ui.hide(sid).toJsCmd + ";" +
-                                 ui.showAndFocus(hid).toJsCmd + "; return false;"))} 
-           {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";"))}
+    (<span>{rs % ("onclick" -> (ui.hide(sid).cmd & 
+                                 ui.showAndFocus(hid).cmd & JsRaw("return false;")))} 
+           {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).cmd & ui.hide(hid).cmd))}
      </span>)
   }
 

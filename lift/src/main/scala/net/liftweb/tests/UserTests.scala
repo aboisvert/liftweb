@@ -6,12 +6,12 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.testing.SUnit
+import _root_.scala.testing.SUnit
 import SUnit._
 
-import net.liftweb.util.RE
-import net.liftweb.util.RE._
-import net.liftweb.mapper._
+import _root_.net.liftweb.util.RE
+import _root_.net.liftweb.util.RE._
+import _root_.net.liftweb.mapper._
 
 class UserTests extends TestCase("User Tests") {
   val maxUsers = 100

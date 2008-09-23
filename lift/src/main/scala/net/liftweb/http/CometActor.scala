@@ -114,7 +114,13 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
   def handleJson(in: Any): JsCmd = Noop
 
-  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(defaultPrefix), _handleJson)
+  /**
+  * If there's actor-specific JSON behavior on failure to make the JSON
+  * call, include the JavaScript here.
+  */
+  def onJsonError: Can[JsCmd] = Empty
+
+  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(defaultPrefix), onJsonError, _handleJson)
 
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq =
   Elem(parentTag.prefix, parentTag.label, parentTag.attributes,

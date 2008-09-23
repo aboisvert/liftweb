@@ -16,12 +16,12 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import net.liftweb.mapper._
-import net.liftweb.util._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util._
 import Helpers._
-import net.liftweb.http.{S, SHtml}
-import scala.xml.{Elem, NodeSeq}
-import net.liftweb.http.js._
+import _root_.net.liftweb.http.{S, SHtml}
+import _root_.scala.xml.{Elem, NodeSeq}
+import _root_.net.liftweb.http.js._
 
 class MappedUniqueId[T<:Mapper[T]](override val fieldOwner: T, override val maxLen: Int) extends MappedString[T](fieldOwner, maxLen) {
   override def writePermission_? = false

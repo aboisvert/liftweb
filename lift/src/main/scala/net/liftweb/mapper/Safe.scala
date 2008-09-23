@@ -6,9 +6,9 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import java.security.{SecureRandom, MessageDigest}
-import org.apache.commons.codec.binary.Base64
-import net.liftweb.util.{StringHelpers, Helpers, ThreadGlobal}
+import _root_.java.security.{SecureRandom, MessageDigest}
+import _root_.org.apache.commons.codec.binary.Base64
+import _root_.net.liftweb.util.{StringHelpers, Helpers, ThreadGlobal}
 
 /**
  * Manage the current "safety" state of the stack

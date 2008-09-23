@@ -16,16 +16,16 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import scala.collection.mutable._
-import java.lang.reflect.Method
-import java.sql.{ResultSet, Types}
-import scala.xml.{Text, Node, NodeSeq, Group,
+import _root_.scala.collection.mutable._
+import _root_.java.lang.reflect.Method
+import _root_.java.sql.{ResultSet, Types}
+import _root_.scala.xml.{Text, Node, NodeSeq, Group,
 		  Elem, Null, PrefixedAttribute, MetaData}
-import java.util.Date
-import net.liftweb.http.{S, SHtml, FieldError, FieldIdentifier}
-import net.liftweb.http.S._
-import net.liftweb.http.js._
-import net.liftweb.util._
+import _root_.java.util.Date
+import _root_.net.liftweb.http.{S, SHtml, FieldError, FieldIdentifier}
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.util._
 import Helpers._
 
 /**

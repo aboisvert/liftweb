@@ -30,6 +30,7 @@ import java.io.InputStream
 import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
 import scala.xml.transform._
 import java.util.concurrent.TimeUnit
+import js._
 
 object LiftSession {
 
@@ -343,13 +344,15 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
         case Left(true) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
               case Full(rawXml: NodeSeq) => {
                   val xml = HeadHelper.mergeToHtmlHead(rawXml)
-                  val realXml = allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
-                    case Nil => xml
+                  val cometXform: List[RewriteRule] = 
+                  allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
+                    case Nil => Nil
                     case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
                       val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                      val xform = new RuleTransformer(new AddScriptToBody(cometVar) :: Nil :_*)
-                      xform.transform(xml)
+                      new AddScriptToBody(cometVar) :: Nil
                   }
+                  
+                  val realXml = (new RuleTransformer(new AddAjaxToBody() :: cometXform :_*)).transform(xml)
 
                   this.synchronized {
                     S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
@@ -753,9 +756,9 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
 
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
-    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo((attr("key")+"=true").encJs, false))
+    val ajax: JsExp = SHtml.makeAjaxCall(JE.Str(attr("key")+"=true"))
 
-    new UnprefixedAttribute("onclick", Text(ajax), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
+    new UnprefixedAttribute("onclick", Text(ajax.toJsCmd), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -764,7 +767,12 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
       case Nil => ""
       case x :: xs => x.value.text +";"
     }
-    val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd, true)) + pre + " return false;"
+
+    val ajax: String = 
+      SHtml.makeAjaxCall(LiftRules.jsArtifacts.serialize(id)).toJsCmd + ";" +
+    pre + "return false;"
+
+    // val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd, true)) + pre + " return false;"
 
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
@@ -817,26 +825,159 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
    * Instance of the class can't be reused, because it does the transformation once,
    * to avoid several transformation when there is several body tag into html.
    */
+  class AddAjaxToBody() extends RewriteRule {
+    var done = false
+    val ajaxUrl: String = S.encodeURL(S.contextPath + "/" + LiftRules.ajaxPath)
+    override def transform(n: Node) = n match {
+      case e: Elem if !done && e.label == "body" =>
+      done = true
+      Elem(null, "body", e.attributes,  e.scope, (e.child ++ <script>{
+      Unparsed("""
+// <![CDATA[
+var lift_ajaxQueue = [];
+var lift_ajaxInProcess = null;
+var lift_ajaxShowing = false;
+var lift_ajaxRetryCount = """+
+(LiftRules.ajaxRetryCount openOr 3)+
+"""
+                       
+function lift_ajaxHandler(theData, theSuccess, theFailure) {
+  var toSend = {retryCnt: 0};
+  toSend.when = (new Date()).getTime();
+  toSend.theData = theData;
+  toSend.onSuccess = theSuccess;
+  toSend.onFailure = theFailure;
+  
+  lift_ajaxQueue.push(toSend);
+  lift_ajaxQueueSort();
+  lift_doAjaxCycle();
+}
+
+function lift_ajaxQueueSort() {
+  lift_ajaxQueue.sort(function (a,b) {return a.when - b.when;});
+}
+
+function lift_defaultFailure() {
+"""+
+(LiftRules.ajaxDefaultFailure.map(_().toJsCmd) openOr "")+
+"""
+}
+
+function lift_startAjax() {
+  lift_ajaxShowing = true;
+"""+
+(LiftRules.ajaxStart.map(_().toJsCmd) openOr "")+
+"""
+}
+
+function lift_endAjax() {
+  lift_ajaxShowing = false;
+"""+
+(LiftRules.ajaxEnd.map(_().toJsCmd) openOr "")+
+"""
+}
+
+function lift_testAndShowAjax() {
+  if (lift_ajaxShowing && lift_ajaxQueue.length == 0 &&
+      lift_ajaxInProcess == null) {
+   lift_endAjax();
+      } else if (!lift_ajaxShowing && (lift_ajaxQueue.length > 0 ||
+     lift_ajaxInProcess != null)) {
+   lift_startAjax();
+     }
+}
+
+function lift_doAjaxCycle() {
+  var queue = lift_ajaxQueue;
+  if (queue.length > 0) {
+    var now = (new Date()).getTime();
+    if (lift_ajaxInProcess == null && queue[0].when <= now) {
+      var aboutToSend = queue.shift();
+
+      lift_ajaxInProcess = aboutToSend;
+      var  successFunc = function() {
+         lift_ajaxInProcess = null;
+         if (aboutToSend.onSuccess) {
+           aboutToSend.onSuccess();
+         }
+         lift_doAjaxCycle();
+      };
+
+      var failureFunc = function() {
+         lift_ajaxInProcess = null;
+         var cnt = aboutToSend.retryCnt;
+         if (cnt < lift_ajaxRetryCount) {
+	   aboutToSend.retryCnt = cnt + 1;
+           var now = (new Date()).getTime();
+           aboutToSend.when = now + (1000 * Math.pow(2, cnt));
+           queue.push(aboutToSend);
+           lift_ajaxQueueSort();
+         } else {
+           if (aboutToSend.onFailure) {
+             aboutToSend.onFailure();
+           } else {
+             lift_defaultFailure();
+           }
+         }
+         lift_doAjaxCycle();
+      };
+      lift_actualAjaxCall(aboutToSend.theData, successFunc, failureFunc);
+    }
+  }
+
+  lift_testAndShowAjax();
+  setTimeout("lift_doAjaxCycle();", 200);
+}
+
+function lift_actualAjaxCall(data, onSuccess, onFailure) {
+"""+
+  LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"), 
+				      "POST", 5000, false, "script",
+				      Full("onSuccess"), Full("onFailure")))+
+"""
+}
+
+"""+
+LiftRules.jsArtifacts.onLoad(new JsCmd() {def toJsCmd = "lift_doAjaxCycle()"}).toJsCmd+
+"""
+// ]]>
+"""
+       )}</script>) :_*)
+
+      case _ => n
+    }
+  }
+  
+  /**
+   * Add comet script juste before the &lt;/body> tag.
+   * Instance of the class can't be reused, because it does the transformation once,
+   * to avoid several transformation when there is several body tag into html.
+   */
   class AddScriptToBody(val cometVar: String) extends RewriteRule {
     var done = false
     override def transform(n: Node) = n match {
-      case Elem(null, "body", attr @ _, scope @ _, kids @ _*) if !done =>
+      case e: Elem if !done && e.label == "body" =>
       done = true
-      Elem(null, "body", attr,  scope, (kids ++ <span id="lift_bind"/><script>{
+      Elem(null, "body", e.attributes,  e.scope, (e.child ++ <span id="lift_bind"/><script>{
       Unparsed("""
+      // <![CDATA[         
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {""" + LiftRules.jsArtifacts.comet(AjaxInfo("lift_toWatch", 
-                                                                             "GET", 
-                                                                             140000, 
-                                                                             false, 
-                                                                             "script",
-                                                                             Full("lift_handlerSuccessFunc"),
-                                                                             Full("lift_handlerFailureFunc"))) + " } \n" +
+      function lift_cometEntry() {""" + 
+	       LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"), 
+                                                    "GET", 
+                                                    140000, 
+                                                    false, 
+                                                    "script",
+                                                    Full("lift_handlerSuccessFunc"),
+                                                    Full("lift_handlerFailureFunc"))) + " } \n" +
                   LiftRules.jsArtifacts.onLoad(new JsCmd() {
                                                  def toJsCmd = "lift_handlerSuccessFunc()"
-                                               }).toJsCmd
+                                               }).toJsCmd+
+                                                    """
+// ]]>                                                    
+                                                    """
        )}</script>) :_*)
 
       case _ => n

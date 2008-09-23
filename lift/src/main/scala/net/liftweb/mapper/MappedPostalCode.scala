@@ -16,10 +16,10 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import scala.xml.{NodeSeq, Text}
-import net.liftweb.http.{S, SHtml, FieldError}
-import net.liftweb.util._
-import java.util.{Locale, TimeZone}
+import _root_.scala.xml.{NodeSeq, Text}
+import _root_.net.liftweb.http.{S, SHtml, FieldError}
+import _root_.net.liftweb.util._
+import _root_.java.util.{Locale, TimeZone}
 
 object Countries extends Enumeration(1) {
 

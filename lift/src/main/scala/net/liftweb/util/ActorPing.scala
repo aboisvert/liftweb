@@ -13,9 +13,9 @@ package net.liftweb.util
 * limitations under the License.
 */
 
-import scala.actors.{Actor, Exit}
-import scala.actors.Actor._
-import java.util.concurrent._
+import _root_.scala.actors.{Actor, Exit}
+import _root_.scala.actors.Actor._
+import _root_.java.util.concurrent._
 import Helpers.TimeSpan
 /**
 * The ActorPing object schedules an actor to be ping-ed with a given message at specific intervals.

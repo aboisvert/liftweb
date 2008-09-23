@@ -13,7 +13,7 @@ package net.liftweb.util
  * limitations under the License.
  */
 
-import scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribute, PrefixedAttribute}
+import _root_.scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribute, PrefixedAttribute}
 
 /**
  * The helpers assocated with bindings

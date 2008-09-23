@@ -15,12 +15,12 @@
  */
 package net.liftweb.mapper
 
-import org.specs._
-import org.specs.runner.JUnit3
-import org.specs.runner.ConsoleRunner
-import net.liftweb.util._
+import _root_.org.specs._
+import _root_.org.specs.runner.JUnit3
+import _root_.org.specs.runner.ConsoleRunner
+import _root_.net.liftweb.util._
 import Helpers._
-import java.sql.{Connection, DriverManager}
+import _root_.java.sql.{Connection, DriverManager}
 
 //import net.liftweb.mapper.DBVendors.{MySqlRunner, DerbyRunner}
 

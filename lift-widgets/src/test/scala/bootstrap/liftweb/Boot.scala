@@ -15,14 +15,16 @@
  */
 package bootstrap.liftweb
 
-import net.liftweb.util._
-import net.liftweb.http._
-import net.liftweb.sitemap._
-import net.liftweb.sitemap.Loc._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
-import net.liftweb.widgets.calendars._
+import _root_.net.liftweb.widgets.calendars._
 
-import net.liftweb.widgets.tree.TreeView
+import _root_.net.liftweb.widgets.tree.TreeView
+
+import _root_.net.liftweb.widgets.sparklines.Sparklines
 
 import net.liftweb.widgets.sparklines.Sparklines
 

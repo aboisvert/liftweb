@@ -294,7 +294,7 @@ class LiftServlet extends HttpServlet {
 
   private object BeginContinuation
 
-  private lazy val cometTimeout: Long = (LiftRules.ajaxRequestTimeout openOr 120) * 1000L
+  private lazy val cometTimeout: Long = (LiftRules.cometRequestTimeout openOr 120) * 1000L
 
   private def setupContinuation(requestState: RequestState, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Nothing = {
     val cont = new ContinuationActor(requestState, sessionActor, actors)

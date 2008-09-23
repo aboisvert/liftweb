@@ -6,11 +6,11 @@ package net.liftweb.util
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.xml.parsing.{MarkupParser, MarkupHandler, FatalError, ConstructingHandler, ExternalSources}
-import scala.xml.dtd._
-import scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, NamespaceBinding, Node, SpecialNode, Text, TopScope, EntityRef}
-import scala.io.{Source}
-import java.io.{InputStream}
+import _root_.scala.xml.parsing.{MarkupParser, MarkupHandler, FatalError, ConstructingHandler, ExternalSources}
+import _root_.scala.xml.dtd._
+import _root_.scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, NamespaceBinding, Node, SpecialNode, Text, TopScope, EntityRef}
+import _root_.scala.io.{Source}
+import _root_.java.io.{InputStream}
 
 object HtmlEntities {
   val entList = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),

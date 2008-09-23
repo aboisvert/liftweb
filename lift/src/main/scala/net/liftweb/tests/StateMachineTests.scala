@@ -6,13 +6,13 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.testing.SUnit
+import _root_.scala.testing.SUnit
 import SUnit._
 
-import net.liftweb.util.{Helpers, Log}
-import net.liftweb.util.Helpers._
-import net.liftweb.mapper._
-import net.liftweb.machine._
+import _root_.net.liftweb.util.{Helpers, Log}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.machine._
 
 class StateMachineTests extends TestCase("State Machine Tests") {
   override def runTest() {

@@ -16,14 +16,14 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import java.util.Date
-import scala.xml.{NodeSeq, Text, Unparsed}
-import net.liftweb.http.{S, SHtml}
-import net.liftweb.http.js._
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.java.util.Date
+import _root_.scala.xml.{NodeSeq, Text, Unparsed}
+import _root_.net.liftweb.http.{S, SHtml}
+import _root_.net.liftweb.http.js._
 import S._
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, foreign: => KeyedMetaMapper[Long, O])

@@ -15,10 +15,10 @@
  */
 package net.liftweb.builtin.snippet;
 
-import net.liftweb.http._
+import _root_.net.liftweb.http._
 import S._
-import scala.xml._
-import net.liftweb.util.Helpers._
+import _root_.scala.xml._
+import _root_.net.liftweb.util.Helpers._
 
 /**
  * This class is a built in snippet that renders the messages (Errors, Warnings, Notices). Typically it is used in templates

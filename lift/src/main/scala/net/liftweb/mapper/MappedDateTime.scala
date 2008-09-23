@@ -6,12 +6,12 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                */
 
-import java.sql.{ResultSet, Types}
-import java.util.Date
-import java.lang.reflect.Method
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import net.liftweb.http.js._
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.util.Date
+import _root_.java.lang.reflect.Method
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js._
 
 class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, T] {
   private val data = FatLazy(defaultValue)

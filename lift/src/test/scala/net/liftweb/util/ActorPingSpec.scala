@@ -15,11 +15,11 @@
  */
 package net.liftweb.util
 
-import org.specs._
-import org.specs.util.WaitFor
-import org.specs.runner._
-import scala.actors.Actor
-import java.util.concurrent._
+import _root_.org.specs._
+import _root_.org.specs.util.WaitFor
+import _root_.org.specs.runner._
+import _root_.scala.actors.Actor
+import _root_.java.util.concurrent._
 import Helpers._
 
 class ActorPingSpecTest extends JUnit4(ActorPingSpec)

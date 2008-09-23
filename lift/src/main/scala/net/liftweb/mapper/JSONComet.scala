@@ -7,14 +7,14 @@ http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
 
 
-import java.util.Date
-import net.liftweb.util._
+import _root_.java.util.Date
+import _root_.net.liftweb.util._
 import Helpers._
-import net.liftweb.http.js._
+import _root_.net.liftweb.http.js._
 import JsCmds._
 import JE._
-import net.liftweb.http._
-import scala.xml.NodeSeq
+import _root_.net.liftweb.http._
+import _root_.scala.xml.NodeSeq
 
 /**
 * Allows for the creation of JSON-based JavaScript widgets with very little

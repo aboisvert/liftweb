@@ -1,9 +1,9 @@
 package net.liftweb.util
-import org.apache.commons.codec.binary.Base64
-import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
-import java.security.{SecureRandom, MessageDigest}
-import javax.crypto._
-import javax.crypto.spec._
+import _root_.org.apache.commons.codec.binary.Base64
+import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
+import _root_.java.security.{SecureRandom, MessageDigest}
+import _root_.javax.crypto._
+import _root_.javax.crypto.spec._
 
 /**
  * The SecurityHelpers trait provides functions to:<ul>

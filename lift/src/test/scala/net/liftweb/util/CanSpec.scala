@@ -15,10 +15,10 @@
  */
 package net.liftweb.util
 
-import org.specs._
-import net.liftweb.util.Can._
-import org.specs.runner._
-import org.specs.Sugar._
+import _root_.org.specs._
+import _root_.net.liftweb.util.Can._
+import _root_.org.specs.runner._
+import _root_.org.specs.Sugar._
 
 class CanSpecTest extends Runner(CanSpec) with JUnit with Console
 object CanSpec extends Specification {

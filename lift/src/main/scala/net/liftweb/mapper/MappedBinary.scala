@@ -6,11 +6,11 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                */
 
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import java.util.Date
-import net.liftweb.util._
-import net.liftweb.http.js._
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.java.util.Date
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js._
 
 class MappedBinary[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Array[Byte], T] {
   private val data : FatLazy[Array[Byte]] =  FatLazy(defaultValue)

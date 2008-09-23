@@ -1,7 +1,7 @@
 package net.liftweb.util
-import java.util.regex._
-import java.lang.Character._
-import scala.xml.NodeSeq
+import _root_.java.util.regex._
+import _root_.java.lang.Character._
+import _root_.scala.xml.NodeSeq
 
 object StringHelpers extends StringHelpers
 trait StringHelpers {

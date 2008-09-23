@@ -15,15 +15,15 @@
  */
 package net.liftweb.util
 
-import org.specs._
-import net.liftweb.util.Can._
-import org.specs.runner._
-import org.specs.Sugar._
-import org.specs.Scalacheck
-import org.scalacheck.Gen._
-import org.scalacheck._
-import org.scalacheck.Arbitrary._
-import org.scalacheck.Prop.property
+import _root_.org.specs._
+import _root_.net.liftweb.util.Can._
+import _root_.org.specs.runner._
+import _root_.org.specs.Sugar._
+import _root_.org.specs.Scalacheck
+import _root_.org.scalacheck.Gen._
+import _root_.org.scalacheck._
+import _root_.org.scalacheck.Arbitrary._
+import _root_.org.scalacheck.Prop.property
 
 class CanUnitTest extends Runner(CanUnit) with JUnit
 object CanUnit extends Specification with CanGen with Scalacheck {

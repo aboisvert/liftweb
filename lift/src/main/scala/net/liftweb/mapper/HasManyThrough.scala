@@ -6,8 +6,8 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.{FatLazy, Can, Empty, Full, Failure}
-import scala.collection.mutable.HashSet
+import _root_.net.liftweb.util.{FatLazy, Can, Empty, Full, Failure}
+import _root_.scala.collection.mutable.HashSet
 
 class HasManyThrough[From <: KeyedMapper[ThroughType, From],
                      To <: Mapper[To],

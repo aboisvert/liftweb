@@ -1,6 +1,6 @@
 package net.liftweb.mapper
 
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 
 abstract class DriverType(val name : String) {
   def binaryColumnType: String

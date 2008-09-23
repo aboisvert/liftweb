@@ -1,6 +1,6 @@
 package net.liftweb.mapper
 
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 import Helpers._
 
 trait MetaProtoTag[ModelType <: ProtoTag[ModelType]] extends KeyedMetaMapper[Long, ModelType] {

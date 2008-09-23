@@ -16,8 +16,8 @@ package net.liftweb.sitemap
  * and limitations under the License.
  */
 
-import net.liftweb.http._
-import net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util._
 import Helpers._
 
 case class Menu(loc: Loc, kids: Menu*) extends HasKids {
@@ -46,18 +46,11 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
   def findLoc(req: RequestState): Can[Loc] = 
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
- 
-  /*
-  def buildThisLine(loc: Loc) = {
-    val menuList = _parent.map(_.kids) openOr List(this)
-    MenuLine(menuList.flatMap{
-      mi =>
-      val p = mi.loc
-      val same = loc eq p
-      p.buildItem(same, same)
-    })
-  }
-  */
+
+  def locForGroup(group: String): Seq[Loc] = 
+  (if (loc.inGroup_?(group)) List(loc) else Nil) ++
+  kids.flatMap(_.locForGroup(group))
+
 
   override def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
   = {
@@ -66,18 +59,5 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
   }
   // def buildChildLine: List[MenuItem] = kids.toList.flatMap(m => m.loc.buildItem(Nil, false, false))
 
-  /*
-  override def buildUpperLines: Seq[MenuLine] = _parent match {
-    case Full(p) => p.buildUpperLines.toList ::: p.buildAboveLine(this).toList
-    case _ => Nil
-  }
-  */
-
-  /*
-  override def buildAboveLine(path: Menu): Seq[MenuLine] = _parent match {
-    case Full(p) => List(MenuLine(p.kids.flatMap(m => m.loc.buildItem(false, m eq path))))
-    case _ => Nil
-  }
-  */
 }
 
