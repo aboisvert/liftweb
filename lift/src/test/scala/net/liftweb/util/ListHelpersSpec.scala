@@ -42,12 +42,12 @@ object ListHelpersSpec extends Specification with ListHelpers {
   }
   "The ListHelpers enumToList and enumToStringList functions" should {
     "convert a java enumeration to a List" in {
-      val v: java.util.Vector[Int] = new java.util.Vector[Int]
+      val v: _root_.java.util.Vector[Int] = new _root_.java.util.Vector[Int]
       v.add(1); v.add(2)
       enumToList(v.elements) must_== List(1, 2)
     }
     "convert a java enumeration containing any kind of object to a List of Strings" in {
-      val v: java.util.Vector[Any] = new java.util.Vector[Any]
+      val v: _root_.java.util.Vector[Any] = new _root_.java.util.Vector[Any]
       v.add(1); v.add("hello")
       enumToStringList(v.elements) must_== List("1", "hello")
     }

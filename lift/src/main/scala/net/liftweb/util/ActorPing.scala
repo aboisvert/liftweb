@@ -41,7 +41,7 @@ object ActorPing {
   * every <code>delay</code> using <code>tu<code> as a TimeUnit
   */
   def schedule(to: Actor, msg: Any, delay: TimeSpan): ScheduledFuture[AnyRef] = {
-    val r = new java.util.concurrent.Callable[AnyRef] { def call: AnyRef = { to ! msg; null } }
+    val r = new _root_.java.util.concurrent.Callable[AnyRef] { def call: AnyRef = { to ! msg; null } }
     try {
       service.schedule(r, delay.millis, TimeUnit.MILLISECONDS)
     }
@@ -54,7 +54,7 @@ object ActorPing {
   */
   def scheduleAtFixedRate(to: Actor, msg: Any, initialDelay: TimeSpan, delay: TimeSpan) {
     try {
-      val future = service.scheduleAtFixedRate(new java.lang.Runnable {
+      val future = service.scheduleAtFixedRate(new _root_.java.lang.Runnable {
         def run = {
           to ! msg;
         }

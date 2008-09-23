@@ -362,7 +362,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
               st.setString(curPos, s)
               setStatementFields(st, xs, curPos + 1)
             case List(d: Date) =>
-              st.setDate(curPos, new java.sql.Date(d.getTime))
+              st.setDate(curPos, new _root_.java.sql.Date(d.getTime))
               setStatementFields(st, xs, curPos + 1)
             case List(field: BaseMappedField) => st.setObject(curPos, field.jdbcFriendly, field.targetSQLType)
               setStatementFields(st, xs, curPos + 1)

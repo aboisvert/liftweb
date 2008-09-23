@@ -102,7 +102,7 @@ lazy val mode = Can.legacyNullTest((System.getProperty("run.mode"))).map(_.toLow
       case Full(prop) =>
         Map(prop.entrySet.toArray.map{
           s2 =>
-            val s = s2.asInstanceOf[java.util.Map.Entry[String, String]]
+            val s = s2.asInstanceOf[_root_.java.util.Map.Entry[String, String]]
           (s.getKey,s.getValue)
         } :_*)
 

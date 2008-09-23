@@ -373,10 +373,10 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
       response.map(checkRedirect)
     }
   } catch {
-    case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) =>
+    case ite: _root_.java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) =>
       Full(handleRedirect(ite.getCause.asInstanceOf[ResponseShortcutException], request))
 
-    case rd: net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
+    case rd: _root_.net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
 
     case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
 
@@ -734,7 +734,7 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
     findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), classOf[CometActor]).flatMap{
       cls =>
-      tryo((e: Throwable) => e match {case e: java.lang.NoSuchMethodException => ()
+      tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
           case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
         val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
         val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
@@ -1078,7 +1078,7 @@ object TemplateFinder {
           }
         }
       } catch {
-        case ite: java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) => throw ite.getCause
+        case ite: _root_.java.lang.reflect.InvocationTargetException if (ite.getCause.isInstanceOf[ResponseShortcutException]) => throw ite.getCause
         case re: ResponseShortcutException => throw re
         case _ => Empty
       }

@@ -716,7 +716,7 @@ buildJsonFunc(Empty, Full(onError), f)
     val key = "F"+System.nanoTime+"_"+randomString(3)
 
     def checkCmd(in: Any) = in match {
-      case v: scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
+      case v: _root_.scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
         JsonCmd(v("command").toString, v.get("target").
                 map {
             case null => null
@@ -1133,7 +1133,7 @@ object AnyVar {
  * Impersonates a JSON command
  */
 case class JsonCmd(command: String, target: String, params: Any,
-                   all: scala.collection.Map[String, Any])
+                   all: _root_.scala.collection.Map[String, Any])
 
 /**
  * Holds information about a response

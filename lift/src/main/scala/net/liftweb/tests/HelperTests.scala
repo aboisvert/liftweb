@@ -21,7 +21,7 @@ class HelperTests extends TestCase("Helper Tests") {
     assert(toInt("1") == 1)
     assert(toInt(Some(1)) == 1)
     assert(toInt(None) == 0)
-    assert(toInt(new java.lang.Double(1.0)) == 1)
+    assert(toInt(new _root_.java.lang.Double(1.0)) == 1)
     assert(toInt(33 :: Nil) == 33)
     assert(toInt(33L :: Nil) == 33)
     assert(toBoolean(false) == false)
@@ -75,9 +75,9 @@ class HelperTests extends TestCase("Helper Tests") {
     val key = makeBlowfishKey
     val theMsg = (1 to 100000).mkString("(", ",", ")")
     val msgBytes = theMsg.getBytes
-    val enc = readWholeStream(encryptStream(new java.io.ByteArrayInputStream(msgBytes), key))
+    val enc = readWholeStream(encryptStream(new _root_.java.io.ByteArrayInputStream(msgBytes), key))
     assert(notEq(enc, msgBytes), "The encypted stream is different, but the len is the same "+enc.length+" "+msgBytes.length+" str "+(new String(enc)))
-    val dec = new String(readWholeStream(decryptStream(new java.io.ByteArrayInputStream(enc), key)))
+    val dec = new String(readWholeStream(decryptStream(new _root_.java.io.ByteArrayInputStream(enc), key)))
     assert (dec == theMsg, "We encrypted and decrypted it")
 
   }

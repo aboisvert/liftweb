@@ -176,10 +176,10 @@ object DB {
         case (l: Long, idx) => ps.setLong(idx + 1, l)
         case (d: Double, idx) => ps.setDouble(idx + 1, d)
         case (f: Float, idx) => ps.setFloat(idx + 1, f)
-        case (d: java.util.Date, idx) => ps.setDate(idx + 1, new java.sql.Date(d.getTime))
+        case (d: _root_.java.util.Date, idx) => ps.setDate(idx + 1, new _root_.java.sql.Date(d.getTime))
         case (b: Boolean, idx) => ps.setBoolean(idx + 1, b)
         case (s: String, idx) => ps.setString(idx + 1, s)
-        case (bn: java.math.BigDecimal, idx) => ps.setBigDecimal(idx + 1, bn)
+        case (bn: _root_.java.math.BigDecimal, idx) => ps.setBigDecimal(idx + 1, bn)
         case (obj, idx) => ps.setObject(idx + 1, obj)
       }
 

@@ -16,7 +16,7 @@ import _root_.javax.crypto.spec._
 trait SecurityHelpers { self: StringHelpers with IoHelpers =>
 
   /** short alias for java.security.SecureRandom */
-  private val random = new java.security.SecureRandom
+  private val random = new _root_.java.security.SecureRandom
 
   /** return a random Long modulo a number */
   def randomLong(mod: Long): Long = Math.abs(random.nextLong) % mod

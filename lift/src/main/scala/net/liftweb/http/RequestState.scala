@@ -227,8 +227,8 @@ class RequestState(val path: ParsePath,
   }
 
   lazy val headers: List[(String, String)] = 
-    for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[java.util.Enumeration[String]]);
-	 item <- enumToList[String](request.getHeaders(header).asInstanceOf[java.util.Enumeration[String]]))
+    for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[_root_.java.util.Enumeration[String]]);
+	 item <- enumToList[String](request.getHeaders(header).asInstanceOf[_root_.java.util.Enumeration[String]]))
       yield (header, item)
 
   lazy val (paramNames: List[String],
@@ -244,7 +244,7 @@ class RequestState(val path: ParsePath,
   lazy val xml: Can[Elem] = if (!xml_?) Empty
   else {
     try {
-      body.map(b => XML.load(new java.io.ByteArrayInputStream(b)))
+      body.map(b => XML.load(new _root_.java.io.ByteArrayInputStream(b)))
     } catch {
       case e => Failure(e.getMessage, Full(e), Nil)
     }

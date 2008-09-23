@@ -106,11 +106,11 @@ object Mailer {
                   rel_bpi.setFileName(i.name)
                   rel_bpi.setContentID(i.name)
                   rel_bpi.setDisposition("inline")
-                  rel_bpi.setDataHandler(new javax.activation.DataHandler(new javax.activation.DataSource{
+                  rel_bpi.setDataHandler(new _root_.javax.activation.DataHandler(new _root_.javax.activation.DataSource{
                     def getContentType = i.mimeType
-                    def getInputStream = new java.io.ByteArrayInputStream(i.bytes)
+                    def getInputStream = new _root_.java.io.ByteArrayInputStream(i.bytes)
                     def getName = i.name
-                    def getOutputStream = throw new java.io.IOException("Unable to write to item")
+                    def getOutputStream = throw new _root_.java.io.IOException("Unable to write to item")
                   }))
                   html_mp.addBodyPart(rel_bpi)
                 }
