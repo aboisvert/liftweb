@@ -16,7 +16,7 @@
 package net.liftweb.webapptest
 
 import _root_.org.mortbay.jetty.Server
-//import org.mortbay.jetty.servlet.Context
+//import _root_.org.mortbay.jetty.servlet.Context
 import _root_.org.mortbay.jetty.servlet.ServletHolder
 import _root_.org.mortbay.jetty.webapp.WebAppContext
 

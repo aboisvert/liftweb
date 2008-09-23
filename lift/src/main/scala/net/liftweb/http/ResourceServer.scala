@@ -15,10 +15,10 @@
  */
 package net.liftweb.http
 
-import net.liftweb.util.{Can, Full, Empty, Helpers}
+import _root_.net.liftweb.util.{Can, Full, Empty, Helpers}
 import Helpers._
-import javax.servlet.http.{HttpServletRequest , HttpServletResponse}
-import java.net.{URLConnection}
+import _root_.javax.servlet.http.{HttpServletRequest , HttpServletResponse}
+import _root_.java.net.{URLConnection}
 
 object ResourceServer {
   private var allowedPaths: PartialFunction[List[String], Boolean] = {

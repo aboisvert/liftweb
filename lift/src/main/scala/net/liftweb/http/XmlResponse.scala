@@ -6,8 +6,8 @@ package net.liftweb.http
   http://www.apache.org/licenses/LICENSE-2.0
   \*                                                 */
 
-import scala.xml.Node
-import net.liftweb.util._
+import _root_.scala.xml.Node
+import _root_.net.liftweb.util._
 
 case class XmlResponse(xml: Node) extends ToResponse {
   def docType = Empty

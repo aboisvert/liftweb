@@ -1,6 +1,6 @@
 package net.liftweb.util
-import java.text.SimpleDateFormat
-import java.util.{TimeZone, Calendar, Date, Locale}
+import _root_.java.text.SimpleDateFormat
+import _root_.java.util.{TimeZone, Calendar, Date, Locale}
 
 /**
  * The TimeHelpers object extends the TimeHelpers. It can be imported to access all of the trait functions.

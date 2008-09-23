@@ -1,11 +1,11 @@
 package net.liftweb.amqp
 
-import com.rabbitmq.client._
-import scala.actors.Actor
-import java.io.ObjectInputStream
-import java.io.ByteArrayInputStream
-import java.util.Timer
-import java.util.TimerTask
+import _root_.com.rabbitmq.client._
+import _root_.scala.actors.Actor
+import _root_.java.io.ObjectInputStream
+import _root_.java.io.ByteArrayInputStream
+import _root_.java.util.Timer
+import _root_.java.util.TimerTask
 
 /**
  * @param a The actor to add as a Listener to this Dispatcher.

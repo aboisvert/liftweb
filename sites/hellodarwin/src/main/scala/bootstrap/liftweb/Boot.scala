@@ -1,9 +1,9 @@
 package bootstrap.liftweb
 
-import net.liftweb.util._
-import net.liftweb.http._
-import net.liftweb.sitemap._
-import net.liftweb.sitemap.Loc._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
 
 /**

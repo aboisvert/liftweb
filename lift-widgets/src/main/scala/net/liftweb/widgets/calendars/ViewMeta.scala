@@ -16,9 +16,9 @@
 
 package net.liftweb.widgets.calendars;
 
-import java.util.{Calendar, Locale}
-import java.util.Calendar._
-import java.text.SimpleDateFormat
+import _root_.java.util.{Calendar, Locale}
+import _root_.java.util.Calendar._
+import _root_.java.text.SimpleDateFormat
 
 
 abstract class ViewMeta(locale : Locale) {

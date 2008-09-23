@@ -15,7 +15,7 @@
  */
 package net.liftweb.util
 
-import org.slf4j.{Logger, LoggerFactory}
+import _root_.org.slf4j.{Logger, LoggerFactory}
 
 /**
  * Object use to configure lift to use slf4j for as internal logging.
@@ -24,7 +24,7 @@ import org.slf4j.{Logger, LoggerFactory}
  * <pre name="code" class="scala">
  * package bootstrap.liftweb
  *
- * import net.liftweb.util._
+ * import _root_.net.liftweb.util._
  * ...
  * class Boot {
  *   def boot {

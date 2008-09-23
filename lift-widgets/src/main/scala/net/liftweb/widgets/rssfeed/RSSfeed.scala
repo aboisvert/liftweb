@@ -1,8 +1,8 @@
 package net.liftweb.widgets.rssfeed
 
-import scala.xml._
-import java.net.{URLConnection, URL}
-import scala.collection.mutable._
+import _root_.scala.xml._
+import _root_.java.net.{URLConnection, URL}
+import _root_.scala.collection.mutable._
 
 class RSSFeed {
   def render(feedUrl: String): NodeSeq = {

@@ -15,14 +15,14 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb.example.model._
-import scala.xml.{NodeSeq, Text, Group}
-import net.liftweb.http.{S, SHtml}
-import net.liftweb.mapper._
-import net.liftweb.http.S._
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import net.liftweb.textile._
+import _root_.net.liftweb.example.model._
+import _root_.scala.xml.{NodeSeq, Text, Group}
+import _root_.net.liftweb.http.{S, SHtml}
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.textile._
 
 // show determines which one is used. bind hooks the content into the lift view
 case class BindChoice(show: boolean, bind: () => NodeSeq)

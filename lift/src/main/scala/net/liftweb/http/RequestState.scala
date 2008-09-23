@@ -17,16 +17,16 @@ package net.liftweb.http
  */
 
 
-import javax.servlet.http._
-import javax.servlet.ServletContext
-// import scala.collection.Map
-// import scala.collection.mutable.HashMap
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal}
-import net.liftweb.sitemap._
-import java.io.InputStream
-import scala.xml._
-import org.apache.commons.fileupload.servlet._
+import _root_.javax.servlet.http._
+import _root_.javax.servlet.ServletContext
+// import _root_.scala.collection.Map
+// import _root_.scala.collection.mutable.HashMap
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal}
+import _root_.net.liftweb.sitemap._
+import _root_.java.io.InputStream
+import _root_.scala.xml._
+import _root_.org.apache.commons.fileupload.servlet._
 
 @serializable
 sealed trait ParamHolder {

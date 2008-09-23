@@ -12,9 +12,9 @@ package net.liftweb.textile
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import scala.util.parsing.combinator.{Parsers, ImplicitConversions}
-import scala.xml.{Elem => XmlElem, MetaData, NodeSeq, Null, Text, TopScope, Unparsed, UnprefixedAttribute, Group, Node}
-import scala.collection.mutable.HashMap
+import _root_.scala.util.parsing.combinator.{Parsers, ImplicitConversions}
+import _root_.scala.xml.{Elem => XmlElem, MetaData, NodeSeq, Null, Text, TopScope, Unparsed, UnprefixedAttribute, Group, Node}
+import _root_.scala.collection.mutable.HashMap
 
 /**
  * The textile parser

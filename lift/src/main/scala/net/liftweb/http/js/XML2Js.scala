@@ -6,8 +6,8 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.xml._
-import net.liftweb.util._
+import _root_.scala.xml._
+import _root_.net.liftweb.util._
 import Helpers._
 
 import JE._

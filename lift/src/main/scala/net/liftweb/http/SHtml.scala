@@ -16,13 +16,13 @@
 package net.liftweb.http;
 
 import S._
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import net.liftweb.http.js._
-import net.liftweb.http.js.AjaxInfo
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.http.js.AjaxInfo
 import JE._
 import JsCmds._
-import scala.xml._
+import _root_.scala.xml._
 
 object SHtml {
   /**

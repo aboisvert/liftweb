@@ -6,15 +6,15 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log}
-import net.liftweb.http._
-import net.liftweb.mapper._
+import _root_.net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log}
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.mapper._
 import Helpers._
-import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
-import java.sql.{Connection, DriverManager}
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import com.skittr.model._
-import com.skittr.actor._
+import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
+import _root_.java.sql.{Connection, DriverManager}
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import _root_.com.skittr.model._
+import _root_.com.skittr.actor._
 
 /**
   * A class that's instantiated early and run.  It allows the application

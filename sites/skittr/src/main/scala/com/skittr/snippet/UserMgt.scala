@@ -1,14 +1,14 @@
 package com.skittr.snippet
 
-import scala.xml._
-import net.liftweb.http._
-import net.liftweb.http.S._
-import net.liftweb.http.SHtml._
-import com.skittr.model._
-import net.liftweb.mapper._
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import com.skittr.actor._
+import _root_.scala.xml._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.SHtml._
+import _root_.com.skittr.model._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.com.skittr.actor._
 
 class UserMgt {
   def login_panel(xhtml: Group): NodeSeq = {

@@ -1,13 +1,13 @@
 package net.liftweb.widgets.tree
 
-import scala.xml._
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Can, Full, Empty}
-import net.liftweb.http.S._
-import net.liftweb.http.LiftRules
-import net.liftweb.http.{LiftResponse, JsonResponse}
-import net.liftweb.http.js._
-import net.liftweb.http.js.jquery._
+import _root_.scala.xml._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.LiftRules
+import _root_.net.liftweb.http.{LiftResponse, JsonResponse}
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.http.js.jquery._
 import JsCmds._
 import JE._
 import JqJsCmds._
@@ -23,7 +23,7 @@ object TreeView {
    * Call this function typically in boot
    */
   def init() {
-    import net.liftweb.http.ResourceServer
+    import _root_.net.liftweb.http.ResourceServer
     ResourceServer.allow({
       case "tree" :: _ => true
     })

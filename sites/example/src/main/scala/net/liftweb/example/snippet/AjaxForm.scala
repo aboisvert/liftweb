@@ -15,13 +15,13 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb.example.model._
-import scala.xml.{NodeSeq, Text, Group, Elem}
-import net.liftweb.http._
-import net.liftweb.mapper._
+import _root_.net.liftweb.example.model._
+import _root_.scala.xml.{NodeSeq, Text, Group, Elem}
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.mapper._
 import S._
 import SHtml._
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 import Helpers._
 import js._
 import JsCmds._

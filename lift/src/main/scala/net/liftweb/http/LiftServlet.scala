@@ -15,22 +15,22 @@
  */
 package net.liftweb.http;
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
-import javax.servlet.{ServletContext}
-import java.net.URLDecoder
-import scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, XML, Comment, Text}
-import scala.xml.transform._
-import scala.actors._
-import scala.actors.Actor._
-import net.liftweb.util.Helpers._
-import net.liftweb.mapper.DB
-import net.liftweb.util._
-import net.liftweb.util.Helpers
-import net.liftweb.util.ActorPing
-import java.util.{Locale, ResourceBundle}
-import java.net.URL
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
+import _root_.javax.servlet.{ServletContext}
+import _root_.java.net.URLDecoder
+import _root_.scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, XML, Comment, Text}
+import _root_.scala.xml.transform._
+import _root_.scala.actors._
+import _root_.scala.actors.Actor._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.mapper.DB
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers
+import _root_.net.liftweb.util.ActorPing
+import _root_.java.util.{Locale, ResourceBundle}
+import _root_.java.net.URL
 import js._
-import javax.servlet._
+import _root_.javax.servlet._
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into

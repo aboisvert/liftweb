@@ -1,15 +1,15 @@
 package net.liftweb.http.testing
 
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import scala.xml.{NodeSeq, Text, XML, Elem}
-import java.util.{Map => JavaMap, Set => JavaSet, Iterator => JavaIterator, List => JavaList}
-import java.util.regex.Pattern
-import java.io.IOException
-import org.apache.commons.httpclient._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.scala.xml.{NodeSeq, Text, XML, Elem}
+import _root_.java.util.{Map => JavaMap, Set => JavaSet, Iterator => JavaIterator, List => JavaList}
+import _root_.java.util.regex.Pattern
+import _root_.java.io.IOException
+import _root_.org.apache.commons.httpclient._
 import methods._
-import java.io.OutputStream
-import org.apache.commons.httpclient.auth.AuthScope
+import _root_.java.io.OutputStream
+import _root_.org.apache.commons.httpclient.auth.AuthScope
 
 trait GetPoster {
   def baseUrl: String

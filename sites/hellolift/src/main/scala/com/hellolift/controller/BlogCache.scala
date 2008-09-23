@@ -1,10 +1,10 @@
 package com.hellolift.controller
 
-import net.liftweb.mapper._
-import scala.collection.mutable.Map
-import scala.actors.Actor
-import scala.actors.Actor.{react}
-import com.hellolift.model.Entry
+import _root_.net.liftweb.mapper._
+import _root_.scala.collection.mutable.Map
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor.{react}
+import _root_.com.hellolift.model.Entry
 
 /**
  * An asynchronous cache for Blog Entries built on top of Scala Actors.

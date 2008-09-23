@@ -1,6 +1,6 @@
 package sandbox.lift.hellodarwin;
 
-import junit.framework._;
+import _root_.junit.framework._;
 import Assert._;
 
 object AppTest {

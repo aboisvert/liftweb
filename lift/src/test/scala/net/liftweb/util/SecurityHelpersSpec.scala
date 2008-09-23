@@ -46,5 +46,5 @@ object SecurityHelpersSpec extends Specification with SecurityHelpers with IoHel
     }
   }
 }
-import org.specs.runner._
+import _root_.org.specs.runner._
 class SecurityHelpersSpecTest extends JUnit4(SecurityHelpersSpec)

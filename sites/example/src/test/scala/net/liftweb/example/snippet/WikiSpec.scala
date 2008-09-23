@@ -1,10 +1,10 @@
 package net.liftweb.example.snippet
-import org.specs._
-import org.specs.Sugar._
-import org.specs.runner._
-import net.liftweb.example.model._
-import net.liftweb.http.{S, RequestState, LiftSession}
-import net.liftweb.util.{Full, Empty}
+import _root_.org.specs._
+import _root_.org.specs.Sugar._
+import _root_.org.specs.runner._
+import _root_.net.liftweb.example.model._
+import _root_.net.liftweb.http.{S, RequestState, LiftSession}
+import _root_.net.liftweb.util.{Full, Empty}
 
 class WikiTest extends JUnit4(WikiSpec)
 object WikiSpec extends Specification with MockEntries {
@@ -53,9 +53,9 @@ object WikiSpec extends Specification with MockEntries {
   }
 }
 
-import net.liftweb.mapper._
-import net.liftweb.example.model._
-import net.liftweb.example.snippet._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.example.model._
+import _root_.net.liftweb.example.snippet._
 trait MockEntries extends MockRequest {
   var wikiEntries: MetaWikiEntry = _
   var requested = "all"
@@ -98,8 +98,8 @@ trait MockEntries extends MockRequest {
     }
   }
 }
-import org.specs.mock._
-import  javax.servlet.http._
+import _root_.org.specs.mock._
+import _root_.javax.servlet.http._
 trait MockRequest extends JMocker with ClassMocker {
   var request = mock(classOf[RequestState])
   var httpRequest = mock(classOf[HttpServletRequest])

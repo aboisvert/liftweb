@@ -1,7 +1,7 @@
 package ${packageName}.model
 
-import net.liftweb.mapper._
-import net.liftweb.util._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util._
 
 /**
  * The singleton that has methods for accessing the database
