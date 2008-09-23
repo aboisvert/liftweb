@@ -15,16 +15,16 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb.example.model._
-import scala.xml.{NodeSeq, Text, Group}
-import net.liftweb.http._
-import net.liftweb.http.S
-import net.liftweb.mapper._
-import net.liftweb.http.S._
-import net.liftweb.http.SHtml._
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import java.util.Locale
+import _root_.net.liftweb.example.model._
+import _root_.scala.xml.{NodeSeq, Text, Group}
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.http.S
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.SHtml._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.java.util.Locale
 
 class Misc {
   private object selectedUser extends RequestVar[Can[User]](Empty)

@@ -15,11 +15,11 @@
  */
 package net.liftweb.textile
 
-import org.specs._
-import org.specs.runner._
-import org.specs.Sugar._
+import _root_.org.specs._
+import _root_.org.specs.runner._
+import _root_.org.specs.Sugar._
 
-import scala.xml._
+import _root_.scala.xml._
 
 class TextileSpecTest extends Runner(TextileSpec) with JUnit with Console
 object TextileSpec extends Specification {

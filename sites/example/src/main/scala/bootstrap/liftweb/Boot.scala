@@ -15,7 +15,7 @@
  */
 package bootstrap.liftweb
 
-import net.liftweb._
+import _root_.net.liftweb._
 import util.{Helpers, Can, Full, Empty, Failure, Log}
 import http._
 import sitemap._
@@ -27,10 +27,10 @@ import model._
 import lib._
 import snippet.{definedLocale, Template}
 
-import net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
+import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 
-import java.sql.{Connection, DriverManager}
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import _root_.java.sql.{Connection, DriverManager}
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 
 
 /**

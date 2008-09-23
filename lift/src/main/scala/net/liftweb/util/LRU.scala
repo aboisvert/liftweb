@@ -6,8 +6,8 @@ package net.liftweb.util
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import org.apache.commons.collections.map.{LRUMap, AbstractLinkedMap}
-import org.apache.commons.collections.map.AbstractLinkedMap.LinkEntry
+import _root_.org.apache.commons.collections.map.{LRUMap, AbstractLinkedMap}
+import _root_.org.apache.commons.collections.map.AbstractLinkedMap.LinkEntry
 
 /**
  * LRU Cache wrapping {@link org.apache.commons.collections.map.LRUMap}

@@ -6,17 +6,17 @@ package com.skittr.comet
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.actors._
-import scala.actors.Actor._
-import net.liftweb.http._
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
-import scala.xml._
-import com.skittr.actor._
+import _root_.scala.actors._
+import _root_.scala.actors.Actor._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
+import _root_.scala.xml._
+import _root_.com.skittr.actor._
 import S._
 import SHtml._
-import com.skittr.model.{Friend, User}
-import net.liftweb.mapper._
+import _root_.com.skittr.model.{Friend, User}
+import _root_.net.liftweb.mapper._
 
 class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends
       CometActor(theSession, name, defaultXml, attributes) {

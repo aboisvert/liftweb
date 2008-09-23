@@ -15,11 +15,11 @@
  */
 package net.liftweb.example.comet
 
-import net.liftweb.http._
+import _root_.net.liftweb.http._
 import S._
 import SHtml._
-import net.liftweb.util._
-import scala.xml._
+import _root_.net.liftweb.util._
+import _root_.scala.xml._
 
 class AskName(initInfo: CometActorInitInfo) extends
       CometActor(initInfo) {

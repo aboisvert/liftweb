@@ -1,10 +1,10 @@
 package net.liftweb.widgets.tablesorter
 
-import scala.xml.NodeSeq
+import _root_.scala.xml.NodeSeq
 
 class TableSorter {
   def init() {
-    import net.liftweb.http.ResourceServer
+    import _root_.net.liftweb.http.ResourceServer
 
     ResourceServer.allow({
       case "tablesorter" :: tail => true

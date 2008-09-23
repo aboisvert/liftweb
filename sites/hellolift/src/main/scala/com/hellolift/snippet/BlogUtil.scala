@@ -1,13 +1,13 @@
 package com.hellolift.snippet
 
-import net.liftweb.util._
-import net.liftweb.http._
-import net.liftweb.mapper._
-import net.liftweb.util.Helpers._
-import net.liftweb.sitemap._
-import scala.xml._
-import com.hellolift.model.Entry
-import com.hellolift.model.User
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.sitemap._
+import _root_.scala.xml._
+import _root_.com.hellolift.model.Entry
+import _root_.com.hellolift.model.User
 
 class BlogUtil {
   def entry = (new Entry).author(User.currentUser).toForm(Full("Post"),

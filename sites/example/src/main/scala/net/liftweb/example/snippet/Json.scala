@@ -15,15 +15,15 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb.http._
+import _root_.net.liftweb.http._
 import S._
 import js._
 import JsCmds._
 import JE._
 import textile._
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 import Helpers._
-import scala.xml._
+import _root_.scala.xml._
 
 class Json {
   object json extends JsonHandler {

@@ -15,10 +15,10 @@
  */
 package net.liftweb.example.model
 
-import net.liftweb.mapper._
-import net.liftweb.util._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util._
 import DB._
-import java.sql.Connection
+import _root_.java.sql.Connection
 
 object Person extends Person with KeyedMetaMapper[Long,Person] {
 

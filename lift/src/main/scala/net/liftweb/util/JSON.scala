@@ -13,7 +13,7 @@ package net.liftweb.util;
  * limitations under the License.
  */
 
-import scala.util.parsing.combinator.{Parsers, ImplicitConversions}
+import _root_.scala.util.parsing.combinator.{Parsers, ImplicitConversions}
 import Helpers._
 
 object JSONParser extends SafeSeqParser with ImplicitConversions {

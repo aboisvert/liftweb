@@ -15,10 +15,10 @@
  */
 package net.liftweb.example.comet
 
-import net.liftweb.http._
+import _root_.net.liftweb.http._
 import S._
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import net.liftweb.example.model._
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import _root_.net.liftweb.example.model._
 
 class WebServices (val request: RequestState) {
   def all_users: XmlResponse = {

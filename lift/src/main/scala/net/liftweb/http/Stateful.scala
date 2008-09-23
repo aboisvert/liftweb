@@ -15,10 +15,10 @@
  */
 package net.liftweb.http
 
-import net.liftweb._
+import _root_.net.liftweb._
 import util._
 import Helpers._
-import scala.xml.{NodeSeq, Elem}
+import _root_.scala.xml.{NodeSeq, Elem}
 
 /**
  * The same StatefulSnippet instance is used across a given page rendering.

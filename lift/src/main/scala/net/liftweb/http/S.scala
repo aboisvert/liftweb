@@ -16,17 +16,17 @@ package net.liftweb.http
  * and limitations under the License.
  */
 
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
-import scala.collection.mutable.{HashMap, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, 
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
+import _root_.scala.collection.mutable.{HashMap, ListBuffer}
+import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, 
                   PrefixedAttribute,
                   Group, Node, HasKeyValue}
-import scala.collection.immutable.{ListMap, TreeMap}
-import net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
+import _root_.scala.collection.immutable.{ListMap, TreeMap}
+import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
 import Helpers._
 import js._
-import java.io.InputStream
-import java.util.{Locale, TimeZone, ResourceBundle}
+import _root_.java.io.InputStream
+import _root_.java.util.{Locale, TimeZone, ResourceBundle}
 
 trait HasParams {
   def param(name: String): Can[String]

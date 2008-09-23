@@ -16,7 +16,7 @@
 
 package net.liftweb.openid
 
-import net.liftweb._
+import _root_.net.liftweb._
 import mapper._
 import http._
 import js._
@@ -25,8 +25,8 @@ import sitemap.{Loc, Menu}
 import util.{Can, Empty, Full, Helpers}
 import Helpers._
 
-import org.openid4java.consumer._
-import org.openid4java.discovery.Identifier;
+import _root_.org.openid4java.consumer._
+import _root_.org.openid4java.discovery.Identifier;
 
 
 trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaMegaProtoUser[ModelType] {

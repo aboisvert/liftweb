@@ -22,7 +22,7 @@ import _root_.net.liftweb.util._
 import Helpers._
 import _root_.java.sql.{Connection, DriverManager}
 
-//import net.liftweb.mapper.DBVendors.{MySqlRunner, DerbyRunner}
+//import _root_.net.liftweb.mapper.DBVendors.{MySqlRunner, DerbyRunner}
 
 class MapperSpecsAsTest extends JUnit3(MapperSpecs)
 object MapperSpecsRunner extends ConsoleRunner(MapperSpecs)

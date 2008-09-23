@@ -6,7 +6,7 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import javax.servlet.http.{HttpServletRequest}
+import _root_.javax.servlet.http.{HttpServletRequest}
 
 @serializable
 abstract class RequestType {

@@ -7,8 +7,8 @@ package com.skittr.snippet
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import net.liftweb.http._
-import scala.xml._
+import _root_.net.liftweb.http._
+import _root_.scala.xml._
 
 class ErrorReport {
   def render(styles: Group): NodeSeq =

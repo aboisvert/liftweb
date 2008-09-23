@@ -15,13 +15,13 @@
  */
 package webapptest
 
-import org.mortbay.jetty.Server
-//import org.mortbay.jetty.servlet.Context
-import org.mortbay.jetty.servlet.ServletHolder
-import org.mortbay.jetty.webapp.WebAppContext
+import _root_.org.mortbay.jetty.Server
+//import _root_.org.mortbay.jetty.servlet.Context
+import _root_.org.mortbay.jetty.servlet.ServletHolder
+import _root_.org.mortbay.jetty.webapp.WebAppContext
 
-import net.sourceforge.jwebunit.junit.WebTester
-import junit.framework.AssertionFailedError
+import _root_.net.sourceforge.jwebunit.junit.WebTester
+import _root_.junit.framework.AssertionFailedError
 
 object JettyTestServer {
   private val serverPort_ = System.getProperty("SERVLET_PORT", "8989").toInt

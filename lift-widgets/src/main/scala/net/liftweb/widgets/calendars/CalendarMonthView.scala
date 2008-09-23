@@ -16,15 +16,15 @@
 
 package net.liftweb.widgets.calendars;
 
-import scala.xml._
-import java.util.{Calendar, Locale}
-import java.util.Calendar._
-import java.text.SimpleDateFormat
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Can, Full, Empty}
-import net.liftweb.http.js._
-import net.liftweb.http.js.jquery._
-import net.liftweb.http.SHtml._
+import _root_.scala.xml._
+import _root_.java.util.{Calendar, Locale}
+import _root_.java.util.Calendar._
+import _root_.java.text.SimpleDateFormat
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.http.js.jquery._
+import _root_.net.liftweb.http.SHtml._
 import JsCmds._
 import JE._
 import JqJsCmds._
@@ -36,7 +36,7 @@ object CalendarMonthView {
    * Call this function typically in boot
    */
   def init() {
-    import net.liftweb.http.ResourceServer
+    import _root_.net.liftweb.http.ResourceServer
     ResourceServer.allow({
       case "calendars" :: tail => true
       case "common" :: _ => true

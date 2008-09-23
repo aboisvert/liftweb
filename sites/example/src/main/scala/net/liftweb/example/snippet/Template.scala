@@ -15,7 +15,7 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb._
+import _root_.net.liftweb._
 import http._
 import S._
 import util._
@@ -23,7 +23,7 @@ import Helpers._
 
 import model._
 
-import scala.xml.{NodeSeq, Text, Group}
+import _root_.scala.xml.{NodeSeq, Text, Group}
 
 object Template extends DispatchSnippet {
   def dispatch: DispatchIt = 

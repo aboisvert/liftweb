@@ -15,9 +15,9 @@
  */
 package net.liftweb.example.model
 
-import net.liftweb.mapper._
+import _root_.net.liftweb.mapper._
 import DB._
-import java.sql.Connection
+import _root_.java.sql.Connection
 
 /**
  * The singleton that has methods for accessing the database

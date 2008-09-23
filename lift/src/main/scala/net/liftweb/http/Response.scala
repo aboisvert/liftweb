@@ -6,12 +6,12 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.xml.{Node, Unparsed, Group, NodeSeq}
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import javax.servlet.http.Cookie
+import _root_.scala.xml.{Node, Unparsed, Group, NodeSeq}
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
+import _root_.javax.servlet.http.Cookie
 import js._
-import java.io.InputStream
+import _root_.java.io.InputStream
 
 trait ToResponse extends LiftResponse {
   def out: Node

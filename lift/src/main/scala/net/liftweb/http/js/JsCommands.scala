@@ -16,12 +16,12 @@ package net.liftweb.http.js
  * and limitations under the License.
  */
 
-import scala.xml.{NodeSeq, Group, Unparsed, Elem}
-import net.liftweb.util.Helpers._
-import net.liftweb.util.Helpers
-import net.liftweb.util.TimeHelpers
-import net.liftweb.util._
-import scala.xml.{Node, SpecialNode}
+import _root_.scala.xml.{NodeSeq, Group, Unparsed, Elem}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.Helpers
+import _root_.net.liftweb.util.TimeHelpers
+import _root_.net.liftweb.util._
+import _root_.scala.xml.{Node, SpecialNode}
 
 object JsCommands {
   def create = new JsCommands(Nil)

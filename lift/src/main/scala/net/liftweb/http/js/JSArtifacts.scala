@@ -16,10 +16,10 @@
 
 package net.liftweb.http.js
 
-import net.liftweb.http.js._
-import net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.util.{Can, Full, Empty}
 
-import scala.xml.{Elem, NodeSeq}
+import _root_.scala.xml.{Elem, NodeSeq}
 
 /**
  * Abstracted JavaScript artifacts used by lift core.

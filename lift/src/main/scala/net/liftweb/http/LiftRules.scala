@@ -16,17 +16,17 @@
 
 package net.liftweb.http;
 
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import net.liftweb.sitemap._
-import net.liftweb.http.js.JSArtifacts
-import net.liftweb.http.js.jquery._
-import scala.xml._
-import scala.collection.mutable.{ListBuffer}
-import java.util.{Locale, TimeZone}
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
-import javax.servlet.{ServletContext}
-import java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.http.js.JSArtifacts
+import _root_.net.liftweb.http.js.jquery._
+import _root_.scala.xml._
+import _root_.scala.collection.mutable.{ListBuffer}
+import _root_.java.util.{Locale, TimeZone}
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
+import _root_.javax.servlet.{ServletContext}
+import _root_.java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
 import js._
 import JE._
 

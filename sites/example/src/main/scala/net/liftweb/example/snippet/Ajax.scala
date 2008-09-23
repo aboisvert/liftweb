@@ -15,16 +15,16 @@
  */
 package net.liftweb.example.snippet
 
-import net.liftweb.http._
+import _root_.net.liftweb.http._
 import S._
 import SHtml._
 import js._
 import js.jquery._
 import JqJsCmds._
 import JsCmds._
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 import Helpers._
-import scala.xml. _
+import _root_.scala.xml. _
 
 class Ajax {
 

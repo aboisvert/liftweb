@@ -15,10 +15,10 @@
  */
 package net.liftweb.example.view
 
-import scala.xml.{Text, Node, NodeSeq}
-import net.liftweb.http._
+import _root_.scala.xml.{Text, Node, NodeSeq}
+import _root_.net.liftweb.http._
 import S._
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 
 class XmlFun extends LiftView {
 

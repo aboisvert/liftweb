@@ -1,10 +1,10 @@
 package sandbox.lift.hellodarwin.snippet
 
-import scala.xml.NodeSeq
-import net.liftweb.http.S._
-import net.liftweb.http.SHtml._
-import net.liftweb.util.Helpers._
-import net.liftweb.http.js.{JsCmd, JsCmds, JE}
+import _root_.scala.xml.NodeSeq
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.SHtml._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.http.js.{JsCmd, JsCmds, JE}
 
 class HelloFormAjax {
   def whoNode(str: String) = <span id="who">{str}</span>

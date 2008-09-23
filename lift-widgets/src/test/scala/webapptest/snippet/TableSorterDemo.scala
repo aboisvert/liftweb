@@ -1,7 +1,7 @@
 package webapptest.snippet
 
-import scala.xml.NodeSeq
-import net.liftweb.widgets.tablesorter.TableSorter
+import _root_.scala.xml.NodeSeq
+import _root_.net.liftweb.widgets.tablesorter.TableSorter
 
 class TableSorterDemo {
   def render(xhtml: NodeSeq) :NodeSeq = {

@@ -16,13 +16,13 @@
 
 package net.liftweb.widgets.calendars;
 
-import net.liftweb.http.js._
-import net.liftweb.util._
-import net.liftweb.http.js.JE._
-import net.liftweb.http.js.JsCmds._
-import java.text.SimpleDateFormat
-import java.util.Calendar
-import java.util.Calendar._
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js.JE._
+import _root_.net.liftweb.http.js.JsCmds._
+import _root_.java.text.SimpleDateFormat
+import _root_.java.util.Calendar
+import _root_.java.util.Calendar._
 
 
 object CalendarUtils {
