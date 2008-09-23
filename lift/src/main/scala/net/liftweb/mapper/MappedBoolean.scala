@@ -16,14 +16,14 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import net.liftweb.util.Helpers._
-import net.liftweb.http.{S, SHtml}
-import java.util.Date
-import net.liftweb.util._
-import net.liftweb.http.js._
-import scala.xml.NodeSeq
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.http.{S, SHtml}
+import _root_.java.util.Date
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js._
+import _root_.scala.xml.NodeSeq
 
 class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
   private var data : Can[Boolean] = Full(defaultValue)

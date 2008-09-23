@@ -1,12 +1,12 @@
 package net.liftweb.util
-import org.specs.runner._
-import org.specs._
-import java.lang.reflect.{Method}
-import org.scalacheck.Arbitrary
-import org.scalacheck.{Prop, Gen}
-import org.scalacheck.Gen._
-import org.scalacheck.Prop.{property}
-import org.specs.Scalacheck
+import _root_.org.specs.runner._
+import _root_.org.specs._
+import _root_.java.lang.reflect.{Method}
+import _root_.org.scalacheck.Arbitrary
+import _root_.org.scalacheck.{Prop, Gen}
+import _root_.org.scalacheck.Gen._
+import _root_.org.scalacheck.Prop.{property}
+import _root_.org.specs.Scalacheck
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
 object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators with Scalacheck {

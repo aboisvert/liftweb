@@ -16,15 +16,15 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import scala.collection.mutable.{ListBuffer, HashMap}
-import java.lang.reflect.Method
-import java.sql.{ResultSet, Types, PreparedStatement, Statement}
-import scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Can, Empty, Full, Failure}
-import net.liftweb.http.{LiftRules, S, SHtml, FieldError}
-import java.util.Date
-import net.liftweb.http.js._
+import _root_.scala.collection.mutable.{ListBuffer, HashMap}
+import _root_.java.lang.reflect.Method
+import _root_.java.sql.{ResultSet, Types, PreparedStatement, Statement}
+import _root_.scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Can, Empty, Full, Failure}
+import _root_.net.liftweb.http.{LiftRules, S, SHtml, FieldError}
+import _root_.java.util.Date
+import _root_.net.liftweb.http.js._
 
 trait BaseMetaMapper {
   type RealType <: Mapper[RealType]

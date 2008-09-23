@@ -13,8 +13,8 @@ package net.liftweb.util;
  * limitations under the License.
  */
 import Helpers._
-import scala.util.parsing.combinator.{Parsers, ImplicitConversions}
-import scala.util.parsing.input.Reader
+import _root_.scala.util.parsing.combinator.{Parsers, ImplicitConversions}
+import _root_.scala.util.parsing.input.Reader
 
 /**
  * The CombParserHelpers trait provides parser combinators helpers

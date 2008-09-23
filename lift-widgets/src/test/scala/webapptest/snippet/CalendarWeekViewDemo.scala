@@ -1,18 +1,18 @@
 package webapptest.snippet;
 
-import scala.xml._
-import net.liftweb.http._
-import net.liftweb.http.S._
-import net.liftweb.http.SHtml._
-import net.liftweb.http.{RequestVar}
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import net.liftweb.util.Can._
-import net.liftweb.http.js._
-import java.util.{Calendar, Locale}
-import java.util.Calendar._
+import _root_.scala.xml._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.SHtml._
+import _root_.net.liftweb.http.{RequestVar}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Can._
+import _root_.net.liftweb.http.js._
+import _root_.java.util.{Calendar, Locale}
+import _root_.java.util.Calendar._
 
-import net.liftweb.widgets.calendars._
+import _root_.net.liftweb.widgets.calendars._
 
 class CalendarWeekViewDemo {
 

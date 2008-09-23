@@ -1,14 +1,14 @@
 package net.liftweb.util
-import org.specs.Specification
-import org.specs.runner._
-import java.util._
-import java.text._
-import org.scalacheck.Gen._
-import org.scalacheck.Prop._
-import org.scalacheck.Arbitrary
-import org.specs.Products._
-import org.specs.mock.Mocker
-import org.specs.Scalacheck
+import _root_.org.specs.Specification
+import _root_.org.specs.runner._
+import _root_.java.util._
+import _root_.java.text._
+import _root_.org.scalacheck.Gen._
+import _root_.org.scalacheck.Prop._
+import _root_.org.scalacheck.Arbitrary
+import _root_.org.specs.Products._
+import _root_.org.specs.mock.Mocker
+import _root_.org.specs.Scalacheck
 
 class TimeHelpersTest extends Runner(TimeHelpersSpec) with JUnit with Console with ScalaTest
 object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation with ControlHelpers with ClassHelpers {

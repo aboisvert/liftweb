@@ -6,11 +6,11 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import java.sql.{Connection, ResultSet, Statement, PreparedStatement, Types, ResultSetMetaData}
-import javax.sql.{ DataSource}
-import javax.naming.{Context, InitialContext}
-import scala.collection.mutable._
-import net.liftweb.util._
+import _root_.java.sql.{Connection, ResultSet, Statement, PreparedStatement, Types, ResultSetMetaData}
+import _root_.javax.sql.{ DataSource}
+import _root_.javax.naming.{Context, InitialContext}
+import _root_.scala.collection.mutable._
+import _root_.net.liftweb.util._
 // import net.liftweb.util.Lazy._
 
 object DB {
@@ -135,7 +135,7 @@ object DB {
 
 
   private def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = {
-     import java.sql.Types._
+     import _root_.java.sql.Types._
      md.getColumnType(pos) match {
       case ARRAY | BINARY | BLOB | DATALINK | DISTINCT | JAVA_OBJECT | LONGVARBINARY | NULL | OTHER | REF | STRUCT | VARBINARY  => rs.getObject(pos) match {
         case null => null

@@ -15,14 +15,14 @@
  */
 package net.liftweb.util
 
-import org.specs._
-import scala.util.parsing.input._
-import org.specs.runner._
-import scala.util.parsing.combinator.Parsers
-import org.scalacheck._
-import org.scalacheck.Gen._
-import org.scalacheck.Prop._
-import org.specs.Scalacheck
+import _root_.org.specs._
+import _root_.scala.util.parsing.input._
+import _root_.org.specs.runner._
+import _root_.scala.util.parsing.combinator.Parsers
+import _root_.org.scalacheck._
+import _root_.org.scalacheck.Gen._
+import _root_.org.scalacheck.Prop._
+import _root_.org.specs.Scalacheck
 object ParserHelpers extends net.liftweb.util.CombParserHelpers with Parsers
 
 class CombParserHelpersSpecTest extends Runner(CombParserHelpersSpec) with JUnit with Console

@@ -16,14 +16,14 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
-import java.util.Date
-import java.util.regex._
-import scala.xml.{NodeSeq, Text}
-import net.liftweb.http.{S, FieldError}
-import net.liftweb.http.js._
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
+import _root_.java.util.Date
+import _root_.java.util.regex._
+import _root_.scala.xml.{NodeSeq, Text}
+import _root_.net.liftweb.http.{S, FieldError}
+import _root_.net.liftweb.http.js._
 import S._
 
 /**

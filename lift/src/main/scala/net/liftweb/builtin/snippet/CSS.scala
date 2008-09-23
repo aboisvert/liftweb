@@ -15,8 +15,8 @@
  */
 package net.liftweb.builtin.snippet
 
-import net.liftweb.http._
-import scala.xml._
+import _root_.net.liftweb.http._
+import _root_.scala.xml._
 
 class CSS {
   def blueprint: NodeSeq = {

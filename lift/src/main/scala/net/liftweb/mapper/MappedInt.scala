@@ -16,14 +16,14 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import java.sql.{ResultSet, Types}
-import java.lang.reflect.Method
-import net.liftweb.util._
+import _root_.java.sql.{ResultSet, Types}
+import _root_.java.lang.reflect.Method
+import _root_.net.liftweb.util._
 import Helpers._
-import java.util.Date
-import net.liftweb.http._
-import net.liftweb.http.jquery.{JqSHtml}
-import scala.xml.NodeSeq
+import _root_.java.util.Date
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.http.jquery.{JqSHtml}
+import _root_.scala.xml.NodeSeq
 import js._
 
 class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum: ENUM) extends MappedField[ENUM#Value, T] {

@@ -6,7 +6,7 @@ package net.liftweb.util
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.collection.mutable.ListBuffer
+import _root_.scala.collection.mutable.ListBuffer
 
 /**
   * Calculate the edit distance between words

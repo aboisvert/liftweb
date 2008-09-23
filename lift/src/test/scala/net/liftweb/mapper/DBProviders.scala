@@ -15,12 +15,12 @@
  */
 package net.liftweb.mapper
 
-import net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
 import Helpers._
-import scala.testing.SUnit
-import net.liftweb.mapper._
-import java.sql.{Connection, DriverManager}
-import java.io.File
+import _root_.scala.testing.SUnit
+import _root_.net.liftweb.mapper._
+import _root_.java.sql.{Connection, DriverManager}
+import _root_.java.io.File
 
 object DBProviders {
     def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: Nil

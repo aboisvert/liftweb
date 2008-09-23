@@ -6,15 +6,15 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import scala.testing.SUnit
+import _root_.scala.testing.SUnit
 import SUnit._
 
-import net.liftweb.util.Log
-import net.liftweb.util.Mailer
-import net.liftweb.util.Mailer._
-import net.liftweb.util.Helpers
-import net.liftweb.util.Helpers._
-import net.liftweb.mapper._
+import _root_.net.liftweb.util.Log
+import _root_.net.liftweb.util.Mailer
+import _root_.net.liftweb.util.Mailer._
+import _root_.net.liftweb.util.Helpers
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.mapper._
 
 class HelperTests extends TestCase("Helper Tests") {
   override def runTest() {

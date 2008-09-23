@@ -16,8 +16,8 @@ package net.liftweb.sitemap
  * and limitations under the License.
  */
 
-import net.liftweb.http._
-import net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util._
 import Helpers._
 
 case class Menu(loc: Loc, kids: Menu*) extends HasKids {

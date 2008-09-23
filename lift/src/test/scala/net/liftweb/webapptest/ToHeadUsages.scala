@@ -15,10 +15,10 @@
  */
 package net.liftweb.webapptest
 
-import org.specs._
-import org.specs.runner.JUnit3
-import org.specs.runner.ConsoleRunner
-import net.sourceforge.jwebunit.junit.WebTester
+import _root_.org.specs._
+import _root_.org.specs.runner.JUnit3
+import _root_.org.specs.runner.ConsoleRunner
+import _root_.net.sourceforge.jwebunit.junit.WebTester
 
 class ToHeadUsagesTest extends JUnit3(ToHeadUsages)
 object ToHeadUsagesRunner extends ConsoleRunner(ToHeadUsages)

@@ -1,6 +1,6 @@
 package net.liftweb.util
-import org.specs._
-import org.specs.specification._
+import _root_.org.specs._
+import _root_.org.specs.specification._
 
 object HttpHelpersSpec extends Specification with HttpHelpers with ListHelpers with StringHelpers {
 

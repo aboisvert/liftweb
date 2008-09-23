@@ -1,9 +1,10 @@
 package net.liftweb.util
-import org.specs._
-import org.specs.util.DataTables
-import org.specs.runner._
+
+import _root_.org.specs._
+import _root_.org.specs.util.DataTables
+import _root_.org.specs.runner._
 import BasicTypesHelpers._
-import java.io.{InputStream, ByteArrayInputStream}
+import _root_.java.io.{InputStream, ByteArrayInputStream}
 
 class BasicTypesHelpersTest extends JUnit4(BasicTypesHelpersSpec)
 object BasicTypesHelpersSpec extends Specification with DataTables {

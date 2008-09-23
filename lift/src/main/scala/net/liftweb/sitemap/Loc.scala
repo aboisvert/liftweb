@@ -16,11 +16,11 @@ package net.liftweb.sitemap
  * and limitations under the License.
  */
 
-import net.liftweb.http._
-import net.liftweb.util._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util._
 import Helpers._
 
-import scala.xml.{NodeSeq, Text}
+import _root_.scala.xml.{NodeSeq, Text}
 
 /**
  * A menu location

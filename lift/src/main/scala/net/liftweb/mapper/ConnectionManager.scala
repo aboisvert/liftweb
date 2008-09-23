@@ -7,8 +7,8 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import java.sql.Connection
-import net.liftweb.util._
+import _root_.java.sql.Connection
+import _root_.net.liftweb.util._
 
 /**
  * Vend JDBC connections

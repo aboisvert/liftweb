@@ -1,6 +1,6 @@
 package net.liftweb.util
-import java.lang.reflect.{Method, Modifier, InvocationTargetException}
-import java.lang.reflect.Modifier._
+import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
+import _root_.java.lang.reflect.Modifier._
 
 /**
  * ClassHelpers provide several functions to instantiate a Class object given the class name and one or more package names

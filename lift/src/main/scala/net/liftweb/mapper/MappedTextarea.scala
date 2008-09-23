@@ -16,10 +16,10 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import scala.xml.{NodeSeq}
-import net.liftweb.http.S
-import net.liftweb.http.S._
-import net.liftweb.util._
+import _root_.scala.xml.{NodeSeq}
+import _root_.net.liftweb.http.S
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.util._
 
 class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[T](owner, maxLen) {
   /**

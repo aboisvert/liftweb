@@ -6,11 +6,11 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import java.net.InetAddress
-import java.util.Properties
+import _root_.java.net.InetAddress
+import _root_.java.util.Properties
 import Helpers._
-import org.apache.log4j._
-import org.apache.log4j.xml._
+import _root_.org.apache.log4j._
+import _root_.org.apache.log4j.xml._
 
 /**
 * A thin wrapper around log4j

@@ -6,9 +6,9 @@ package net.liftweb.mapper
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import java.sql.{Connection, ResultSet, DatabaseMetaData}
-import scala.collection.mutable.{HashMap, ListBuffer}
-import net.liftweb.util.{Helpers, Full, Can}
+import _root_.java.sql.{Connection, ResultSet, DatabaseMetaData}
+import _root_.scala.collection.mutable.{HashMap, ListBuffer}
+import _root_.net.liftweb.util.{Helpers, Full, Can}
 import Helpers._
 
 /**

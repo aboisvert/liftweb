@@ -7,8 +7,8 @@ package net.liftweb.util
  \*                                                 */
 
 
-import java.util.regex.{Pattern, Matcher}
-import scala.collection.mutable.ListBuffer
+import _root_.java.util.regex.{Pattern, Matcher}
+import _root_.scala.collection.mutable.ListBuffer
 
 /**
  * A regular expressions helper library

@@ -6,14 +6,14 @@ package net.liftweb.tests
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
 import Helpers._
-import scala.testing.SUnit
+import _root_.scala.testing.SUnit
 import SUnit._
-import net.liftweb.mapper._
-import java.sql.{Connection, DriverManager}
-import java.io.File
-import scala.actors._
+import _root_.net.liftweb.mapper._
+import _root_.java.sql.{Connection, DriverManager}
+import _root_.java.io.File
+import _root_.scala.actors._
 
 trait Runner {
   def name: String

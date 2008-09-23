@@ -1,7 +1,7 @@
 package webapptest.snippet
 
-import scala.xml.NodeSeq
-import net.liftweb.widgets.gravatar.Gravatar
+import _root_.scala.xml.NodeSeq
+import _root_.net.liftweb.widgets.gravatar.Gravatar
 
 class GravatarDemo {
   def render(xhtml: NodeSeq) :NodeSeq = {

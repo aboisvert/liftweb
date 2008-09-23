@@ -1,9 +1,9 @@
 package net.liftweb.util
-import java.net.{URLDecoder, URLEncoder}
-import scala.collection.mutable.{HashSet, ListBuffer}
-import scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
-import scala.collection.{Map}
-import scala.collection.mutable.HashMap
+import _root_.java.net.{URLDecoder, URLEncoder}
+import _root_.scala.collection.mutable.{HashSet, ListBuffer}
+import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
+import _root_.scala.collection.{Map}
+import _root_.scala.collection.mutable.HashMap
 
 trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
@@ -152,7 +152,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
   
   private case class BailOut(seq: Long)
-  import scala.actors._
+  import _root_.scala.actors._
   import Actor._
   def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Can[T] = {
     ActorPing.schedule(Actor.self, BailOut(seq), timeout)

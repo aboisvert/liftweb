@@ -15,11 +15,11 @@
  */
 package net.liftweb.builtin.snippet
 
-import net.liftweb.http.{S, DispatchSnippet, LiftRules}
-import net.liftweb.sitemap._
-import net.liftweb.util._
+import _root_.net.liftweb.http.{S, DispatchSnippet, LiftRules}
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.util._
 import Helpers._
-import scala.xml._
+import _root_.scala.xml._
 
 class Menu extends DispatchSnippet {
   def dispatch: DispatchIt = {

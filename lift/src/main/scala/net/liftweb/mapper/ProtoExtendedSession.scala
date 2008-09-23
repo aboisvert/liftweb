@@ -16,11 +16,11 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import net.liftweb._
+import _root_.net.liftweb._
 import util._
 import http._
 import Helpers._
-import javax.servlet.http.{Cookie}
+import _root_.javax.servlet.http.{Cookie}
 
 trait ProtoExtendedSession[T <: ProtoExtendedSession[T]] extends
 KeyedMapper[Long, T] {

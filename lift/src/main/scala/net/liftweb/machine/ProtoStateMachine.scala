@@ -6,12 +6,12 @@ package net.liftweb.machine;
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.mapper._
-import net.liftweb.util.Helpers._
-import scala.collection.mutable.{Queue, HashMap}
-import scala.actors.Actor
-import scala.actors.Actor._
-import net.liftweb.util._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util.Helpers._
+import _root_.scala.collection.mutable.{Queue, HashMap}
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor._
+import _root_.net.liftweb.util._
 
 /**
  *  This trait manages state/workflow transition

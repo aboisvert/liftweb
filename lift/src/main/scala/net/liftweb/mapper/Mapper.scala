@@ -1,19 +1,19 @@
 package net.liftweb.mapper
 
 /*                                                *\
-(c) 2006 WorldWide Conferencing, LLC
+(c) 2006-2008 WorldWide Conferencing, LLC
 Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.collection.mutable._
-import java.lang.reflect.Method
-import java.sql.{ResultSet, Types}
-import scala.xml.{Elem, Node, NodeSeq}
-import net.liftweb.http.{S, FieldError}
+import _root_.scala.collection.mutable._
+import _root_.java.lang.reflect.Method
+import _root_.java.sql.{ResultSet, Types}
+import _root_.scala.xml.{Elem, Node, NodeSeq}
+import _root_.net.liftweb.http.{S, FieldError}
 import S._
-import net.liftweb.http.js._
-import net.liftweb.util.{Can, Empty, Full, Failure}
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.util.{Can, Empty, Full, Failure}
 
 @serializable
 trait Mapper[A<:Mapper[A]] {
