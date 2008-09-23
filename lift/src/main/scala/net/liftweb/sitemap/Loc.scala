@@ -164,7 +164,7 @@ object Loc {
 * If the Loc is in a group (or groups) like "legal" "community" etc.
 * the groups can be specified and recalled at the top level
 */
-case class LocGroup(group: String*) 
+case class LocGroup(group: String*) extends LocStuff
 
   /**
    * If the test returns True, the page can be accessed, otherwise,
