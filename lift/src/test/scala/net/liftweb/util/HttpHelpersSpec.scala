@@ -72,4 +72,4 @@ object HttpHelpersSpec extends Specification with HttpHelpers with ListHelpers w
   }
   def provide(e: =>Example) = { currentSut.verb += " provide"; e }
 }
-class HttpHelpersSpecTest extends org.specs.runner.JUnit4(HttpHelpersSpec)
+class HttpHelpersSpecTest extends _root_.org.specs.runner.JUnit4(HttpHelpersSpec)

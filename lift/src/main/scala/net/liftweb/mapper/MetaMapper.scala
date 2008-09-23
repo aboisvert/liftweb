@@ -618,7 +618,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     var ret = new ListBuffer[T]
     val bm = buildMapper(rs)
     var pos = (start openOr 0L) * -1L
-    val max = omax openOr java.lang.Long.MAX_VALUE
+    val max = omax openOr _root_.java.lang.Long.MAX_VALUE
 
     while (pos < max && rs.next()) {
       if (pos >= 0L) {

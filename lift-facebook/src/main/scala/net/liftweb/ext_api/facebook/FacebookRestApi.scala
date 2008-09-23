@@ -36,7 +36,7 @@ object FacebookClient {
   def byteToHex(b: Byte): String = Integer.toHexString((b & 0xf0) >>> 4) + Integer.toHexString(b & 0x0f)
 
   def genSignature(allParams: List[(String, Any)], secret: String): String = {
-    val md = java.security.MessageDigest.getInstance("MD5")
+    val md = _root_.java.security.MessageDigest.getInstance("MD5")
     val theStr = convert(allParams).sort(_ < _).mkString("") + secret
 
     md.digest((theStr).getBytes).map(byteToHex(_)).mkString("")

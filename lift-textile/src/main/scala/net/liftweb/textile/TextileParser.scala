@@ -1186,7 +1186,7 @@ We use CSS(Cascading Style Sheets).
     (base+"/"+urlEncode(word), Text(word), None)
   }
 
-   def urlEncode(in : String) = java.net.URLEncoder.encode(in, "UTF-8")
+   def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
 }
 }
 /*
@@ -2248,5 +2248,5 @@ case class DefaultRewriter(base: String) extends TextileParser.RewriteFunc {
     (base+"/"+urlEncode(word), Text(word), None)
   }
 
-   def urlEncode(in : String) = java.net.URLEncoder.encode(in, "UTF-8")
+   def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
 }

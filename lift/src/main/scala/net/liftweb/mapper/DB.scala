@@ -247,7 +247,7 @@ object DB {
   }
 
 
-  val reservedWords = scala.collection.immutable.HashSet.empty ++ List("abort" ,
+  val reservedWords = _root_.scala.collection.immutable.HashSet.empty ++ List("abort" ,
   "accept" ,
   "access" ,
   "add" ,

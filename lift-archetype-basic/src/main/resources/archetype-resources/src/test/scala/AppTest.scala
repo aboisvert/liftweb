@@ -10,7 +10,7 @@ object AppTest {
     }
 
     def main(args : Array[String]) {
-        junit.textui.TestRunner.run(suite);
+        _root_.junit.textui.TestRunner.run(suite);
     }
 }
 
