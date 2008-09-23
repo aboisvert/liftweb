@@ -16,11 +16,11 @@
 
 package net.liftweb.http.js.jquery
 
-import scala.xml.{Elem, NodeSeq}
+import _root_.scala.xml.{Elem, NodeSeq}
 
-import net.liftweb.http.S
-import net.liftweb.http.js.JE
-import net.liftweb.http.js.JsCmds
+import _root_.net.liftweb.http.S
+import _root_.net.liftweb.http.js.JE
+import _root_.net.liftweb.http.js.JsCmds
 import JE._
 import JqJE._
 import util.Helpers._

@@ -16,13 +16,13 @@
 
 package net.liftweb.http.js.jquery
 
-import scala.xml.{NodeSeq, Group, Unparsed, Elem, Node, SpecialNode}
-import net.liftweb.util.Helpers._
-import net.liftweb.util.Helpers
-import net.liftweb.util.TimeHelpers
-import net.liftweb.util._
+import _root_.scala.xml.{NodeSeq, Group, Unparsed, Elem, Node, SpecialNode}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.Helpers
+import _root_.net.liftweb.util.TimeHelpers
+import _root_.net.liftweb.util._
 
-import net.liftweb.http.js.{JsExp, JE}
+import _root_.net.liftweb.http.js.{JsExp, JE}
 import JE._
 import JsCmds._
 

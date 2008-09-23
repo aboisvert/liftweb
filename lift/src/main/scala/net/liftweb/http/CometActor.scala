@@ -16,18 +16,18 @@ package net.liftweb.http
  * and limitations under the License.
  */
 
-import scala.actors.{Actor, Exit}
-import scala.actors.Actor._
-import scala.collection.mutable.{ListBuffer}
-import net.liftweb.util.Helpers._
-import net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure, BindHelpers}
-import scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
-import scala.collection.immutable.TreeMap
-import scala.collection.mutable.{HashSet, ListBuffer}
-import net.liftweb.http.js._
+import _root_.scala.actors.{Actor, Exit}
+import _root_.scala.actors.Actor._
+import _root_.scala.collection.mutable.{ListBuffer}
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure, BindHelpers}
+import _root_.scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
+import _root_.scala.collection.immutable.TreeMap
+import _root_.scala.collection.mutable.{HashSet, ListBuffer}
+import _root_.net.liftweb.http.js._
 import JsCmds._
 import JE._
-import java.util.concurrent.atomic.AtomicLong
+import _root_.java.util.concurrent.atomic.AtomicLong
 
 object CometActor {
   private val serial = new AtomicLong

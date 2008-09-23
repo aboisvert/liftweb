@@ -1,6 +1,6 @@
 package net.liftweb.util
-import java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
-import scala.xml._
+import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
+import _root_.scala.xml._
 
 /**
  * This object adds functionalities to Scala standard types

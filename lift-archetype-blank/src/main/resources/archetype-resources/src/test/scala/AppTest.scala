@@ -1,6 +1,6 @@
 package ${packageName};
 
-import junit.framework._;
+import _root_.junit.framework._;
 import Assert._;
 
 object AppTest {

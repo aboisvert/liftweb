@@ -16,12 +16,12 @@
 
 package net.liftweb.http.js.yui
 
-import scala.xml.{Elem, NodeSeq}
+import _root_.scala.xml.{Elem, NodeSeq}
 
-import net.liftweb.http.S
-import net.liftweb.http.js.JE
-import net.liftweb.http.js.JsCmds
-import net.liftweb.util.Helpers
+import _root_.net.liftweb.http.S
+import _root_.net.liftweb.http.js.JE
+import _root_.net.liftweb.http.js.JsCmds
+import _root_.net.liftweb.util.Helpers
 import Helpers._
 import JsCmds._
 import JE._

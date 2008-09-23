@@ -16,26 +16,26 @@
 
 package net.liftweb.openid
 
-import org.openid4java.discovery.Identifier;
-import org.openid4java.discovery.DiscoveryInformation;
-import org.openid4java.message.ax.FetchRequest;
-import org.openid4java.message.ax.FetchResponse;
-import org.openid4java.message.ax.AxMessage;
-import org.openid4java.message._
-import org.openid4java.OpenIDException;
-import org.openid4java.consumer._
+import _root_.org.openid4java.discovery.Identifier;
+import _root_.org.openid4java.discovery.DiscoveryInformation;
+import _root_.org.openid4java.message.ax.FetchRequest;
+import _root_.org.openid4java.message.ax.FetchResponse;
+import _root_.org.openid4java.message.ax.AxMessage;
+import _root_.org.openid4java.message._
+import _root_.org.openid4java.OpenIDException;
+import _root_.org.openid4java.consumer._
 
-import javax.servlet.http.HttpSession;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.util.List;
-import java.io.IOException;
+import _root_.javax.servlet.http.HttpSession;
+import _root_.javax.servlet.http.HttpServletRequest;
+import _root_.javax.servlet.http.HttpServletResponse;
+import _root_.java.util.List;
+import _root_.java.io.IOException;
 
-import net.liftweb._
+import _root_.net.liftweb._
 import http._
 import util._
 
-import scala.xml.{NodeSeq, Text}
+import _root_.scala.xml.{NodeSeq, Text}
 
 trait OpenIdVendor {
   type UserType

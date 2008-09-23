@@ -15,21 +15,21 @@
  */
 package net.liftweb.http
 
-import scala.actors.Actor
-import scala.actors.Actor._
-import javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
-import scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
-import scala.xml.{NodeSeq, Unparsed, Text}
-import net.liftweb.mapper.DB
-import net.liftweb.util._
-import net.liftweb.http.js.{JsCmd, AjaxInfo}
-import net.liftweb.util.Helpers._
-import java.lang.reflect.{Method, Modifier, InvocationTargetException}
-import scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
-import java.io.InputStream
-import javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
-import scala.xml.transform._
-import java.util.concurrent.TimeUnit
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor._
+import _root_.javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
+import _root_.scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
+import _root_.scala.xml.{NodeSeq, Unparsed, Text}
+import _root_.net.liftweb.mapper.DB
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js.{JsCmd, AjaxInfo}
+import _root_.net.liftweb.util.Helpers._
+import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
+import _root_.scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
+import _root_.java.io.InputStream
+import _root_.javax.servlet.http.{HttpSessionActivationListener, HttpSessionEvent, HttpServletRequest}
+import _root_.scala.xml.transform._
+import _root_.java.util.concurrent.TimeUnit
 import js._
 
 object LiftSession {

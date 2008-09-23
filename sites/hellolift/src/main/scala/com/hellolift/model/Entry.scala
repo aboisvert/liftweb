@@ -1,13 +1,13 @@
 package com.hellolift.model
 
-import net.liftweb.mapper._
-import net.liftweb.util._
-import net.liftweb.sitemap._
-import net.liftweb.sitemap.Loc._
+import _root_.net.liftweb.mapper._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.sitemap.Loc._
 
-import com.hellolift.controller.BlogCache
-import com.hellolift.controller.BlogCache._
-import com.hellolift.controller.AddEntry
+import _root_.com.hellolift.controller.BlogCache
+import _root_.com.hellolift.controller.BlogCache._
+import _root_.com.hellolift.controller.AddEntry
 
 object Entry extends Entry with KeyedMetaMapper[Long, Entry] {
   override def dbTableName = "entries"

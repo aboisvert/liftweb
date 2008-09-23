@@ -11,7 +11,7 @@ import _root_.javax.sql.{ DataSource}
 import _root_.javax.naming.{Context, InitialContext}
 import _root_.scala.collection.mutable._
 import _root_.net.liftweb.util._
-// import net.liftweb.util.Lazy._
+// import _root_.net.liftweb.util.Lazy._
 
 object DB {
   private val threadStore = new ThreadLocal[HashMap[ConnectionIdentifier, ConnectionHolder]]

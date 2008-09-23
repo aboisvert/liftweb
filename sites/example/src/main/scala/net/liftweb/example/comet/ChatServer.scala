@@ -15,15 +15,15 @@
  */
 package net.liftweb.example.comet
 
-import scala.actors.Actor
-import scala.actors.Actor._
-import net.liftweb.util.Helpers._
-import net.liftweb.util._
-import scala.xml.{NodeSeq}
-import scala.collection.immutable.TreeMap
-import net.liftweb.textile.TextileParser
-import scala.xml.Text
-import java.util.Date
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.util._
+import _root_.scala.xml.{NodeSeq}
+import _root_.scala.collection.immutable.TreeMap
+import _root_.net.liftweb.textile.TextileParser
+import _root_.scala.xml.Text
+import _root_.java.util.Date
 
 /**
 * A chat server.  It gets messages and returns them

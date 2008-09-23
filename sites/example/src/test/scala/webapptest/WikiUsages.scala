@@ -15,9 +15,9 @@
  */
 package webapptest
 
-import org.specs._
-import org.specs.runner._
-import net.sourceforge.jwebunit.junit.WebTester
+import _root_.org.specs._
+import _root_.org.specs.runner._
+import _root_.net.sourceforge.jwebunit.junit.WebTester
 
 class WikiUsagesTest extends Runner(WikiUsages) with JUnit with Console
 object WikiUsages extends Specification {

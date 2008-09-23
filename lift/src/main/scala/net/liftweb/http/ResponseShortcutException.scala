@@ -16,7 +16,7 @@ package net.liftweb.http
 * and limitations under the License.
 */
 
-import net.liftweb.util._
+import _root_.net.liftweb.util._
 
 class ResponseShortcutException(_response: => LiftResponse, val doNotices: Boolean) extends Exception("Shortcut") {
   lazy val response = _response

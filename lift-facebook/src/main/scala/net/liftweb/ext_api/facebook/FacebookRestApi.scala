@@ -1,10 +1,10 @@
 package net.liftweb.ext_api.facebook;
 
-import java.net.{HttpURLConnection, URL, URLEncoder}
-import java.io.DataOutputStream
-import java.util.Date
+import _root_.java.net.{HttpURLConnection, URL, URLEncoder}
+import _root_.java.io.DataOutputStream
+import _root_.java.util.Date
 
-import scala.xml.{Node, XML, NodeSeq}
+import _root_.scala.xml.{Node, XML, NodeSeq}
 
 object FacebookRestApi {
   def apiKey = System.getProperty("com.facebook.api_key")

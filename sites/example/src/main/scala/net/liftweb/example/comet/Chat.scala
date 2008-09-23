@@ -15,17 +15,17 @@
  */
 package net.liftweb.example.comet
 
-import scala.actors._
-import scala.actors.Actor._
-import net.liftweb.http._
-import net.liftweb.util.Helpers._
-import scala.collection.immutable.TreeMap
-import scala.xml._
+import _root_.scala.actors._
+import _root_.scala.actors.Actor._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util.Helpers._
+import _root_.scala.collection.immutable.TreeMap
+import _root_.scala.xml._
 import S._
 import SHtml._
-import net.liftweb.util._
-import net.liftweb.http.js._
-import net.liftweb.http.js.jquery._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.http.js._
+import _root_.net.liftweb.http.js.jquery._
 import JsCmds._
 import JqJsCmds._
 

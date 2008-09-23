@@ -6,14 +6,14 @@ package com.skittr.actor
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.actors._
-import scala.actors.Actor._
-import com.skittr.model._
-import scala.collection.mutable.{HashMap}
-import net.liftweb.mapper._
-import java.util.concurrent.locks.ReentrantReadWriteLock
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
+import _root_.scala.actors._
+import _root_.scala.actors.Actor._
+import _root_.com.skittr.model._
+import _root_.scala.collection.mutable.{HashMap}
+import _root_.net.liftweb.mapper._
+import _root_.java.util.concurrent.locks.ReentrantReadWriteLock
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
 /**
   * A singleton the holds the map between user names and Actors that service
   * the users.  Right now, this assumes that the Actors are all local, but

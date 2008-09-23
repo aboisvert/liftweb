@@ -15,7 +15,7 @@
  */
 package net.liftweb.example.lib
 
-import net.liftweb._
+import _root_.net.liftweb._
 import http._
 
 object LoginStuff extends SessionVar(false)

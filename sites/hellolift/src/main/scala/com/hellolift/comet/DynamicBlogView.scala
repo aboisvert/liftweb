@@ -1,15 +1,15 @@
 package com.hellolift.comet
 
-import net.liftweb.http._
-import net.liftweb.util._
-import net.liftweb.sitemap._
-import net.liftweb.sitemap.Loc._
-import scala.xml._
+import _root_.net.liftweb.http._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.sitemap._
+import _root_.net.liftweb.sitemap.Loc._
+import _root_.scala.xml._
 
-import com.hellolift.model.Entry
-import com.hellolift.controller.BlogCache
-import com.hellolift.controller.BlogUpdate
-import com.hellolift.controller.AddBlogWatcher
+import _root_.com.hellolift.model.Entry
+import _root_.com.hellolift.controller.BlogCache
+import _root_.com.hellolift.controller.BlogUpdate
+import _root_.com.hellolift.controller.AddBlogWatcher
 
 class DynamicBlogView(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends
 CometActor(theSession, name, defaultXml, attributes) {

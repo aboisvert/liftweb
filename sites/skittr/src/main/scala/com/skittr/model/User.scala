@@ -6,10 +6,10 @@ package com.skittr.model
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import net.liftweb.mapper._
-import com.skittr.actor._
-import net.liftweb.util.Helpers._
-import java.util.regex._
+import _root_.net.liftweb.mapper._
+import _root_.com.skittr.actor._
+import _root_.net.liftweb.util.Helpers._
+import _root_.java.util.regex._
 
 /**
  * The singleton that has methods for accessing the database

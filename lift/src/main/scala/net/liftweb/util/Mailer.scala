@@ -6,11 +6,11 @@ Distributed under an Apache License
 http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import scala.xml.{NodeSeq}
-import scala.actors._
+import _root_.scala.xml.{NodeSeq}
+import _root_.scala.actors._
 import Actor._
-import javax.mail._
-import javax.mail.internet._
+import _root_.javax.mail._
+import _root_.javax.mail.internet._
 
 /**
 * Send email

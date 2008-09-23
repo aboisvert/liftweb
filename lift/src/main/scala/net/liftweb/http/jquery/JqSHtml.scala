@@ -16,13 +16,13 @@
 
 package net.liftweb.http.jquery
 
-import net.liftweb.http.S._
-import net.liftweb.http.SHtml._
-import net.liftweb.util._
-import net.liftweb.util.Helpers._
-import net.liftweb.http.js._
+import _root_.net.liftweb.http.S._
+import _root_.net.liftweb.http.SHtml._
+import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.http.js._
 import JE._
-import scala.xml._
+import _root_.scala.xml._
 
 /**
  * This contains Html artifacts that are heavily relying on JQuery

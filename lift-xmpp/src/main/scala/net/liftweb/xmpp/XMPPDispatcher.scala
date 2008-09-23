@@ -1,24 +1,24 @@
 package net.liftweb.xmpp
 
-import java.util.Collection
-import java.io.IOException
-import org.jivesoftware.smack.Chat
-import org.jivesoftware.smack.ChatManager
-import org.jivesoftware.smack.ConnectionConfiguration
-import org.jivesoftware.smack.MessageListener
-import org.jivesoftware.smack.ChatManagerListener
-import org.jivesoftware.smack.Roster
-import org.jivesoftware.smack.RosterEntry
-import org.jivesoftware.smack.RosterListener
-import org.jivesoftware.smack.XMPPConnection
-import org.jivesoftware.smack.XMPPException
-import org.jivesoftware.smack.packet.Message
-import org.jivesoftware.smack.packet.Presence
-import org.jivesoftware.smack.util.StringUtils
-import scala.actors.Actor
-import scala.actors.Actor._
-import scala.collection.mutable.HashMap
-import scala.collection.mutable.Map
+import _root_.java.util.Collection
+import _root_.java.io.IOException
+import _root_.org.jivesoftware.smack.Chat
+import _root_.org.jivesoftware.smack.ChatManager
+import _root_.org.jivesoftware.smack.ConnectionConfiguration
+import _root_.org.jivesoftware.smack.MessageListener
+import _root_.org.jivesoftware.smack.ChatManagerListener
+import _root_.org.jivesoftware.smack.Roster
+import _root_.org.jivesoftware.smack.RosterEntry
+import _root_.org.jivesoftware.smack.RosterListener
+import _root_.org.jivesoftware.smack.XMPPConnection
+import _root_.org.jivesoftware.smack.XMPPException
+import _root_.org.jivesoftware.smack.packet.Message
+import _root_.org.jivesoftware.smack.packet.Presence
+import _root_.org.jivesoftware.smack.util.StringUtils
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor._
+import _root_.scala.collection.mutable.HashMap
+import _root_.scala.collection.mutable.Map
 
 /** These messages are sent to the XMPPDispatcher Actor. */
 // Send the Presence to the XMPP server

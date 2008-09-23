@@ -1,10 +1,10 @@
 package net.liftweb.amqp
 
-import scala.actors.Actor
-import scala.actors.Actor._
-import com.rabbitmq.client._
-import java.io.ByteArrayOutputStream
-import java.io.ObjectOutputStream
+import _root_.scala.actors.Actor
+import _root_.scala.actors.Actor._
+import _root_.com.rabbitmq.client._
+import _root_.java.io.ByteArrayOutputStream
+import _root_.java.io.ObjectOutputStream
 
 /**
  * An actor with a long-lived connection to an AMQP exchange/queue.

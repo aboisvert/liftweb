@@ -16,9 +16,9 @@ package net.liftweb.http
 * and limitations under the License.
 */
 
-import scala.collection.immutable.TreeMap
-import javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-import net.liftweb.util._
+import _root_.scala.collection.immutable.TreeMap
+import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
+import _root_.net.liftweb.util._
 
 /**
  * The base trait of Controllers that handle pre-view requests

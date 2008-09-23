@@ -16,11 +16,11 @@
 
 package net.liftweb.http.rest
 
-import net.liftweb._
+import _root_.net.liftweb._
 import util._
 import Helpers._
 
-import scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null, Node}
+import _root_.scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null, Node}
 
 /**
 * Mix this trait into your REST service provider to convert between different
