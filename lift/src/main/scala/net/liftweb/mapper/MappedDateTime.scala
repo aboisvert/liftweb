@@ -58,10 +58,10 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
 
   def jdbcFriendly(field : String) : Object = is match {
     case null => null
-    case d => new java.sql.Date(d.getTime)
+    case d => new _root_.java.sql.Date(d.getTime)
   }
 
-  def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new java.sql.Date(value.getTime)
+  def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new _root_.java.sql.Date(value.getTime)
 
   private def st(in: Can[Date]): Unit =
     in match {

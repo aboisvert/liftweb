@@ -48,7 +48,7 @@ object HttpHelpersSpec extends Specification with HttpHelpers with ListHelpers w
       }
     }
     "a toHashMap function transforming a Map to a mutable HashMap" in {
-      toHashMap(Map(1 -> 2, 3 -> 4)) must haveClass(classOf[scala.collection.mutable.HashMap[Int, Int]])
+      toHashMap(Map(1 -> 2, 3 -> 4)) must haveClass(classOf[_root_.scala.collection.mutable.HashMap[Int, Int]])
     }
     "an insureField function" >> {
       "checking that the appropriate fields are in the header" >> {

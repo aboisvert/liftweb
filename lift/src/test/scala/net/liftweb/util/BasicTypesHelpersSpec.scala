@@ -42,7 +42,7 @@ object BasicTypesHelpersSpec extends Specification with DataTables {
        }
     }
     "have a toInt method converting any object to a reasonable Int value" in {
-      def date(t: Int) = new java.util.Date(t)
+      def date(t: Int) = new _root_.java.util.Date(t)
       "object value"| "int value"	|>
        (null:Any)   ! 0				|
        1	    	! 1				|
@@ -61,7 +61,7 @@ object BasicTypesHelpersSpec extends Specification with DataTables {
        }
     }
     "have a toLong method converting any object to a reasonable Long value" in {
-      def date(t: Int) = new java.util.Date(t)
+      def date(t: Int) = new _root_.java.util.Date(t)
       "object value"| "long value"	|>
        (null:Any)   ! 0L			|
        1	    	! 1L			|

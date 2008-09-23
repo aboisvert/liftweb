@@ -327,10 +327,10 @@ object LiftRules {
     try {
       val cont = getContinuation.invoke(contSupport, req, LiftRules)
       Log.trace("About to suspend continuation")
-      suspend.invoke(cont, new java.lang.Long(timeout))
+      suspend.invoke(cont, new _root_.java.lang.Long(timeout))
       throw new Exception("Bail")
     } catch {
-      case e: java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") =>
+      case e: _root_.java.lang.reflect.InvocationTargetException if e.getCause.getClass.getName.endsWith("RetryRequest") =>
         throw e.getCause
     }
   }
@@ -447,10 +447,10 @@ object LiftRules {
   def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}
 
   private val defaultFinder = getClass.getResource _
-  private def resourceFinder(name: String): java.net.URL = _context.getResource(name)
+  private def resourceFinder(name: String): _root_.java.net.URL = _context.getResource(name)
 
-  def getResource(name: String): Can[java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
-  def getResourceAsStream(name: String): Can[java.io.InputStream] = getResource(name).map(_.openStream)
+  def getResource(name: String): Can[_root_.java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
+  def getResourceAsStream(name: String): Can[_root_.java.io.InputStream] = getResource(name).map(_.openStream)
   def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
     val buffer = new Array[Byte](2048)

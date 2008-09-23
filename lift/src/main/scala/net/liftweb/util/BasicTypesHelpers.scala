@@ -94,7 +94,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case Full(n) => toInt(n)
       case None | Empty | Failure(_, _, _) => 0
       case s: String => parseNumber(s).toInt
-      case d: java.util.Date => (d.getTime / 1000L).toInt
+      case d: _root_.java.util.Date => (d.getTime / 1000L).toInt
       case x :: xs => toInt(x)
       case o => toInt(o.toString)
     }
@@ -108,7 +108,7 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case null => 0L
       case i: Int => i
       case n: Long => n
-      case d: java.util.Date => d.getTime
+      case d: _root_.java.util.Date => d.getTime
       case n : Number => n.longValue
       case (n: Number) :: _ => n.longValue
       case Some(n) => toLong(n)

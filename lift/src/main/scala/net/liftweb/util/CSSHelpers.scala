@@ -52,7 +52,7 @@ object CSSHelpers extends ControlHelpers {
  * Combinator parser for prefixing root relative paths with a given prefix 
  */
 case class CSSParser(prefix: String) extends Parsers  {
-  implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
+  implicit def strToInput(in: String): Input = new _root_.scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
   
  

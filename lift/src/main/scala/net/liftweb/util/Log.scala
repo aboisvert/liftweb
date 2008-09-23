@@ -103,7 +103,7 @@ object LogBoot {
     if (!log4jUrl.isDefined && !log4jIsConfigured) {
       val domConf = new DOMConfigurator
       val defPropBytes = defaultProps.toString.getBytes("UTF-8")
-      val is = new java.io.ByteArrayInputStream(defPropBytes)
+      val is = new _root_.java.io.ByteArrayInputStream(defPropBytes)
       domConf.doConfigure(is, LogManager.getLoggerRepository())
     }
     true

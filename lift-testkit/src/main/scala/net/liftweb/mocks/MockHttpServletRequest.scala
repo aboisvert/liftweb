@@ -30,10 +30,10 @@ class MockHttpServletRequest extends HttpServletRequest {
   var contextPath = ""
   var path = ""
   var method = "GET"
-  val headers: scala.collection.jcl.HashMap[String, String] =
-    new scala.collection.jcl.HashMap[String, String](new java.util.HashMap)
-  val attr: scala.collection.jcl.HashMap[String, Any] =
-    new scala.collection.jcl.HashMap[String, Any](new java.util.HashMap)
+  val headers: _root_.scala.collection.jcl.HashMap[String, String] =
+    new _root_.scala.collection.jcl.HashMap[String, String](new _root_.java.util.HashMap)
+  val attr: _root_.scala.collection.jcl.HashMap[String, Any] =
+    new _root_.scala.collection.jcl.HashMap[String, Any](new _root_.java.util.HashMap)
   var cookies: List[Cookie] = Nil
   var authType = null
   var localPort = 0
@@ -48,8 +48,8 @@ class MockHttpServletRequest extends HttpServletRequest {
   var serverName = null
   var scheme = "http"
   var protocol = "http 1.0"
-  var parameterMap: scala.collection.jcl.HashMap[String, String] =
-    new scala.collection.jcl.HashMap[String, String](new java.util.HashMap)
+  var parameterMap: _root_.scala.collection.jcl.HashMap[String, String] =
+    new _root_.scala.collection.jcl.HashMap[String, String](new _root_.java.util.HashMap)
   val sbis = new StringBufferInputStream("")
   var inputStream: ServletInputStream = new MockServletInputStream(sbis)
   var contentType = null
@@ -122,13 +122,13 @@ class MockHttpServletRequest extends HttpServletRequest {
   def getParameterMap = parameterMap.underlying
   def getParameterValues(key: String) =
     parameterMap.underlying.values.toArray.asInstanceOf[Array[String]]
-  def getParameterNames = new Vector[ZZ](parameterMap.underlying.keySet.asInstanceOf[java.util.Set[ZZ]]).elements
+  def getParameterNames = new Vector[ZZ](parameterMap.underlying.keySet.asInstanceOf[_root_.java.util.Set[ZZ]]).elements
   def getParameter(key: String) = parameterMap(key)
   def getInputStream = inputStream
   def getContentType = contentType
   def getContentLength = contentLength
   def getCharacterEncoding = charEncoding
   def setCharacterEncoding(enc: String) = charEncoding = enc
-  def getAttributeNames = new Vector[ZZ](attr.underlying.keySet.asInstanceOf[java.util.Set[ZZ]]).elements
+  def getAttributeNames = new Vector[ZZ](attr.underlying.keySet.asInstanceOf[_root_.java.util.Set[ZZ]]).elements
   def getAttribute(key: String) = attr(key).asInstanceOf[Object]
 }

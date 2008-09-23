@@ -73,7 +73,7 @@ import _root_.scala.collection.mutable.HashMap
      }
 
      val parser = new TextileParsers(urlRewrite, disableLinks)
-     val lst = parser.document(new scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
+     val lst = parser.document(new _root_.scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
 
      lst map { it =>
        val tr = findRefs(List(it))

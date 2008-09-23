@@ -135,8 +135,8 @@ class MockServletOutputStream(os: ByteArrayOutputStream) extends ServletOutputSt
  * @author Steve Jenson (stevej@pobox.com)
  */
 class MockHttpSession extends HttpSession {
-  val values = new scala.collection.jcl.HashMap[String, Any](new java.util.HashMap)
-  val attr = new scala.collection.jcl.HashMap[String, Any](new java.util.HashMap)
+  val values = new _root_.scala.collection.jcl.HashMap[String, Any](new _root_.java.util.HashMap)
+  val attr = new _root_.scala.collection.jcl.HashMap[String, Any](new _root_.java.util.HashMap)
   val sessionContext = null
   var maxii = 0
   var servletContext = null
