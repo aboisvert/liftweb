@@ -442,13 +442,26 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     mappedColumns.filter{c => ??(c._2, toSave).dirty_?}.map{c => c._1 + " = ?"}.toList.mkString("", ",", "")
   }
 
-  def validate(toValidate: A): List[FieldError] = {
+  /**
+  * Run the list of field validations, etc.  This is the raw validation,
+  * without the notifications.  This method can be over-ridden.
+  */
+  protected def runValidationList(toValidate: A): List[FieldError] = 
+  mappedFieldList.flatMap(f => ??(f.method, toValidate).validate) :::
+    validation.flatMap{
+      case pf: PartialFunction[A, List[FieldError]] =>
+        if (pf.isDefinedAt(toValidate)) pf(toValidate)
+        else Nil
+        
+      case f => f(toValidate)
+    }
+
+  final def validate(toValidate: A): List[FieldError] = {
     val saved_? = this.saved_?(toValidate)
     _beforeValidation(toValidate)
     if (saved_?) _beforeValidationOnUpdate(toValidate) else _beforeValidationOnCreate(toValidate)
 
-    val ret: List[FieldError] = mappedFieldList.flatMap(f => ??(f.method, toValidate).validate) :::
-    validation.flatMap(_(toValidate))
+    val ret: List[FieldError] = runValidationList(toValidate)
 
     _afterValidation(toValidate)
     if (saved_?) _afterValidationOnUpdate(toValidate) else _afterValidationOnCreate(toValidate)
