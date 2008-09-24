@@ -126,10 +126,10 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       invokeControllerMethod(classOf[String], "length") must_== 0
     }
     "throw an exception when the method is not callable" in {
-      invokeControllerMethod(classOf[String], "isNotEmpty") must throwA(new NoSuchMethodException(""))
+      invokeControllerMethod(classOf[String], "isNotEmpty") must throwA[NoSuchMethodException]
     }
     "throw an exception if the class is null" in {
-      invokeControllerMethod(null, "length") must throwA(new NullPointerException)
+      invokeControllerMethod(null, "length") must throwA[NullPointerException]
     }
   }
   "The invokeMethod function" should {
@@ -155,7 +155,7 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       class SpecificException extends Exception
       class TestSnippet { def throwException = throw new SpecificException  }
       val testSnippet = new TestSnippet
-      invokeMethod(testSnippet.getClass, testSnippet, "throwException") must throwA(new SpecificException)
+      invokeMethod(testSnippet.getClass, testSnippet, "throwException") must throwA[SpecificException]
     }
   }
   "The invokeMethod function" can {
@@ -182,7 +182,7 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       createInvoker("length", "").open_!.apply().get must_== 0
     }
     "The invoker function will throw the cause exception if the method can't be called" in {
-      createInvoker("get", "").open_!.apply must throwA(new Exception)
+      createInvoker("get", "").open_!.apply must throwA[Exception]
     }
   }
 }

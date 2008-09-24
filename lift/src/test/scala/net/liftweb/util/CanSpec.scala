@@ -148,7 +148,7 @@ object CanSpec extends Specification {
       Empty.isDefined must beFalse
     }
     "throw an exception if opened" in {
-      {Empty.open_!; ()} must throwA(new NullPointerException("Trying to open an empty can"))
+      {Empty.open_!; ()} must throwA[NullPointerException]
     }
     "return a default value if opened with openOr" in {
       Empty.openOr(1) mustBe 1

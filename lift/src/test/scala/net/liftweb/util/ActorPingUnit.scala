@@ -44,7 +44,7 @@ object ActorPingUnit extends Specification with PingedService with WaitFor {
     "be shutdown twice" in {
       ActorPing.shutdown
       ActorPing.shutdown
-      pingService must throwAn(ActorPingException("", null))
+      pingService must throwAn[ActorPingException]
     }
   }
 }

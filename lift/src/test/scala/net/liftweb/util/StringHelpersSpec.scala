@@ -15,7 +15,7 @@ object StringHelpersSpec extends Specification with StringHelpers {
       processString("<%=%hello%>", Map("hello" -> "bonjour")) must_== "<%=%hello%>"
     }
     "throw an exception if no correspondance is found" in {
-      processString("<%=hello%>", Map("hallo" -> "bonjour")) must throwA(new Exception)
+      processString("<%=hello%>", Map("hallo" -> "bonjour")) must throwA[Exception]
     }
   }
   "The StringHelpers capify function" should {
