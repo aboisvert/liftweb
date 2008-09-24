@@ -212,19 +212,19 @@ case class LocGroup(group: String*) extends LocStuff
    * (for example, help pages)
    * @param create -- create a URL based on incoming parameters (NO IMPLEMENTED **TODO**)
    */
-  class Link(val buildUri: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
+  class Link(uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
     def this(b: List[String]) = this(b, false)
 
     def isDefinedAt(req: RequestState): Boolean =
-    if (matchHead_?) req.path.partPath.take(buildUri.length) == buildUri
-    else buildUri == req.path.partPath
+    if (matchHead_?) req.path.partPath.take(uriList.length) == uriList
+    else uriList == req.path.partPath
 
     def apply(in: RequestState): Can[Boolean] = if (isDefinedAt(in)) Full(true)
-    else throw new MatchError("Failed for Link "+buildUri)
+    else throw new MatchError("Failed for Link "+uriList)
 
 
     def createLink(params: Seq[(String, String)]): Can[String] =
-    Full(buildUri.mkString("/", "/", ""))
+    Full(uriList.mkString("/", "/", ""))
 
   }
 
@@ -241,7 +241,7 @@ case class LocGroup(group: String*) extends LocStuff
   }
 
 object ExtLink {
-  def apply(url: String) = new Link(List(randomString(20)), false) {
+  def apply(url: String) = new Link(Nil, false) {
     override def createLink(params: Seq[(String, String)]): Can[String] =
     Full(url)
   }
