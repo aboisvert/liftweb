@@ -149,6 +149,13 @@ trait BaseMappedField extends SelectableField {
 }
 
 /**
+* Mix this trait into a BaseMappedField and it will be indexed
+*/
+trait DBIndexed extends BaseMappedField {
+  override def dbIndexed_? = true
+}
+
+/**
   * The Trait that defines a field that is mapped to a foreign key
   */
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
