@@ -235,7 +235,7 @@ trait BindHelpers {
    * </pre>
    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
-    val map: scala.collection.immutable.Map[String, BindParam] = scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
+    val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
     def attrBind(attr: MetaData): MetaData = attr match {
       case Null => Null

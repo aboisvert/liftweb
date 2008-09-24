@@ -56,13 +56,13 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   override def readPermission_? = true
   override def writePermission_? = true
 
-  def real_convertToJDBCFriendly(value: ENUM#Value): Object = new java.lang.Integer(value.id)
+  def real_convertToJDBCFriendly(value: ENUM#Value): Object = new _root_.java.lang.Integer(value.id)
 
   def toInt = is.id
   def fromInt(in: Int): ENUM#Value = enum(in)
 
-  def jdbcFriendly(field: String) = new java.lang.Integer(toInt)
-  override def jdbcFriendly = new java.lang.Integer(toInt)
+  def jdbcFriendly(field: String) = new _root_.java.lang.Integer(toInt)
+  override def jdbcFriendly = new _root_.java.lang.Integer(toInt)
 
   def asJsExp = JE.Num(is.id)
 
@@ -145,7 +145,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 
   override def dbIndexFieldIndicatesSaved_? = {i_is_! != defaultValue}
 
-  def makeKeyJDBCFriendly(in : Int) = new java.lang.Integer(in)
+  def makeKeyJDBCFriendly(in : Int) = new _root_.java.lang.Integer(in)
 
   def convertKey(in : String) : Can[Int] = {
     if (in eq null) Empty
@@ -218,10 +218,10 @@ class MappedInt[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Int, T] {
 
   def +(in: Int): Int = is + in
 
-  def real_convertToJDBCFriendly(value: int): Object = new java.lang.Integer(value)
+  def real_convertToJDBCFriendly(value: int): Object = new _root_.java.lang.Integer(value)
 
 
-  def jdbcFriendly(field : String) = new java.lang.Integer(is)
+  def jdbcFriendly(field : String) = new _root_.java.lang.Integer(is)
 
   override def setFromAny(in: Any): Int = {
     in match {

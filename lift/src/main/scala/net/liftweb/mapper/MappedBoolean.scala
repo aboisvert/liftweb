@@ -50,9 +50,9 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   override def readPermission_? = true
   override def writePermission_? = true
 
-  def real_convertToJDBCFriendly(value: Boolean): Object = new java.lang.Integer(if (value) 1 else 0)
+  def real_convertToJDBCFriendly(value: Boolean): Object = new _root_.java.lang.Integer(if (value) 1 else 0)
 
-  def jdbcFriendly(field : String) = data.map(v => new java.lang.Integer(if(v) 1 else 0)) openOr null
+  def jdbcFriendly(field : String) = data.map(v => new _root_.java.lang.Integer(if(v) 1 else 0)) openOr null
 
   def asJsExp = if (is) JE.JsTrue else JE.JsFalse
 

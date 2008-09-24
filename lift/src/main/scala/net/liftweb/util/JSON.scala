@@ -17,7 +17,7 @@ import _root_.scala.util.parsing.combinator.{Parsers, ImplicitConversions}
 import Helpers._
 
 object JSONParser extends SafeSeqParser with ImplicitConversions {
-  implicit def strToInput(in: String): Input = new scala.util.parsing.input.CharArrayReader(in.toCharArray)
+  implicit def strToInput(in: String): Input = new _root_.scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
 
   def parse(in: String): Can[Any] = theValue(in) match {

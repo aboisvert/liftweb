@@ -20,7 +20,7 @@ class HeadTestSnippet {
     <head>
       <script src="snippet.js"></script>
     </head>
-    <span>Welcome to webtest1 at {new java.util.Date}</span>
+    <span>Welcome to webtest1 at {new _root_.java.util.Date}</span>
   </div>
 
 }

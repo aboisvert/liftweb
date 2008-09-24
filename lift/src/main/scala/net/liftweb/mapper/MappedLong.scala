@@ -36,8 +36,8 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
   type KeyedForeignType = O
   type OwnerType = T
 
-  override def jdbcFriendly(field : String) = if (defined_?) new java.lang.Long(i_is_!) else null
-  override def jdbcFriendly = if (defined_?) new java.lang.Long(i_is_!) else null
+  override def jdbcFriendly(field : String) = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
+  override def jdbcFriendly = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
   
   def obj: Can[O] = synchronized {
     if (!_calcedObj) {
@@ -109,7 +109,7 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
 
   override def dbIndexFieldIndicatesSaved_? = {i_is_! != defaultValue}
 
-  def makeKeyJDBCFriendly(in: Long) = new java.lang.Long(in)
+  def makeKeyJDBCFriendly(in: Long) = new _root_.java.lang.Long(in)
 
   def convertKey(in: String): Can[Long] = {
     if (in eq null) Empty
@@ -170,14 +170,14 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
 
    def asJsExp: JsExp = JE.JsArray(is.map(v => JE.Num(v.id)) :_*)
 
-  def real_convertToJDBCFriendly(value: Seq[ENUM#Value]): Object = new java.lang.Long(Helpers.toLong(value))
+  def real_convertToJDBCFriendly(value: Seq[ENUM#Value]): Object = new _root_.java.lang.Long(Helpers.toLong(value))
 
   private def toLong: Long = is.foldLeft(enum.Set64)((a,b) => a + b.asInstanceOf[enum.Value]).underlyingAsLong
 
   def fromLong(in: Long): Seq[ENUM#Value] = enum.Set64(in).toList
 
-  def jdbcFriendly(field: String) = new java.lang.Long(toLong)
-  override def jdbcFriendly = new java.lang.Long(toLong)
+  def jdbcFriendly(field: String) = new _root_.java.lang.Long(toLong)
+  override def jdbcFriendly = new _root_.java.lang.Long(toLong)
 
 
 
@@ -265,12 +265,12 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   override def readPermission_? = true
   override def writePermission_? = true
 
-  def real_convertToJDBCFriendly(value: Long): Object = new java.lang.Long(value)
+  def real_convertToJDBCFriendly(value: Long): Object = new _root_.java.lang.Long(value)
 
   // def asJsExp = JE.Num(is)
 
-  def jdbcFriendly(field : String) = new java.lang.Long(i_is_!)
-  override def jdbcFriendly = new java.lang.Long(i_is_!)
+  def jdbcFriendly(field : String) = new _root_.java.lang.Long(i_is_!)
+  override def jdbcFriendly = new _root_.java.lang.Long(i_is_!)
 
   override def setFromAny(in: Any): Long = {
     in match {

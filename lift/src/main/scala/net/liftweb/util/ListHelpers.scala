@@ -64,7 +64,7 @@ trait ListHelpers {
   /**
    * Convert a java.util.Enumeration to a List[T]
    */
-  def enumToList[T](enum: java.util.Enumeration[T]): List[T] = {
+  def enumToList[T](enum: _root_.java.util.Enumeration[T]): List[T] = {
     if (enum.hasMoreElements) {
       val next = enum.nextElement
       next :: enumToList(enum)
@@ -74,7 +74,7 @@ trait ListHelpers {
   /**
    * Convert a java.util.Enumeration to a List[String] using the toString method on each element
    */
-  def enumToStringList[C](enum: java.util.Enumeration[C]): List[String] =
+  def enumToStringList[C](enum: _root_.java.util.Enumeration[C]): List[String] =
   if (enum.hasMoreElements) enum.nextElement.toString :: enumToStringList(enum) else Nil
 
   /**

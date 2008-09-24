@@ -7,7 +7,7 @@ object StringHelpers extends StringHelpers
 trait StringHelpers {
 
   /** random numbers generator */
-  private val random = new java.security.SecureRandom
+  private val random = new _root_.java.security.SecureRandom
 
   /**
    * Replaces the value found in a string surrounded by <%= ... %> by a replacement according to the value found in the subst Map.<p/>

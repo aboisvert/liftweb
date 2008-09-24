@@ -362,7 +362,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
               st.setString(curPos, s)
               setStatementFields(st, xs, curPos + 1)
             case List(d: Date) =>
-              st.setDate(curPos, new java.sql.Date(d.getTime))
+              st.setDate(curPos, new _root_.java.sql.Date(d.getTime))
               setStatementFields(st, xs, curPos + 1)
             case List(field: BaseMappedField) => st.setObject(curPos, field.jdbcFriendly, field.targetSQLType)
               setStatementFields(st, xs, curPos + 1)
@@ -631,7 +631,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     var ret = new ListBuffer[T]
     val bm = buildMapper(rs)
     var pos = (start openOr 0L) * -1L
-    val max = omax openOr java.lang.Long.MAX_VALUE
+    val max = omax openOr _root_.java.lang.Long.MAX_VALUE
 
     while (pos < max && rs.next()) {
       if (pos >= 0L) {

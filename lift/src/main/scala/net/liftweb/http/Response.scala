@@ -38,7 +38,7 @@ trait ToResponse extends LiftResponse {
     val sb = new StringBuilder(64000)
     sb.append(encoding)
     sb.append(doc)
-    AltXML.toXML(out, scala.xml.TopScope, sb, false, false)
+    AltXML.toXML(out, _root_.scala.xml.TopScope, sb, false, false)
     sb.append("  \n  ")
 
     val ret = sb.toString // (encoding + doc + AltXML.toXML(out, false, false))
