@@ -129,7 +129,11 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def notLoggedIn_? = !loggedIn_? 
   
   lazy val testLogginIn = If(loggedIn_? _, S.??("must.be.logged.in")) ;
-  
+
+lazy val testSuperUser = If(superUser_? _, S.??("must.be.super.user"))
+
+def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
+
   /**
    * The menu item for login (make this "Empty" to disable)
    */

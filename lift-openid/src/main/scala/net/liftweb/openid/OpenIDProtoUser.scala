@@ -32,8 +32,6 @@ import _root_.org.openid4java.discovery.Identifier;
 trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaMegaProtoUser[ModelType] {
   self: ModelType =>
   
-  def superUser_? : Boolean = currentUser.map(_.superUser.is).openOr(false)
-  
   override def signupFields: List[BaseOwnedMappedField[ModelType]] = nickname ::
   firstName :: lastName :: locale :: timezone :: Nil
   

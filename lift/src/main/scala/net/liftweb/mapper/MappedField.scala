@@ -149,6 +149,13 @@ trait BaseMappedField extends SelectableField {
 }
 
 /**
+* Mix this trait into a BaseMappedField and it will be indexed
+*/
+trait DBIndexed extends BaseMappedField {
+  override def dbIndexed_? = true
+}
+
+/**
   * The Trait that defines a field that is mapped to a foreign key
   */
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
@@ -489,7 +496,12 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
 
   def validate : List[FieldError] = {
     val cv = is
-    validations.flatMap(_(cv))
+    validations.flatMap{
+      case pf: PartialFunction[FieldType, List[FieldError]] => 
+        if (pf.isDefinedAt(cv)) pf(cv)
+        else Nil
+      case f => f(cv)
+    }
   }
 
   final def convertToJDBCFriendly(value: FieldType): Object = real_convertToJDBCFriendly(runFilters(value, setFilter))
