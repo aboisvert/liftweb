@@ -12,9 +12,9 @@ syntax: glob
 derby.log
 
 # eclipse conf file
-#.settings
-#.classpath
-#.project
+.settings
+.classpath
+.project
 .manager
 
 # building
