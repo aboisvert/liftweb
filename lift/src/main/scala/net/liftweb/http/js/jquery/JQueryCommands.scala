@@ -176,7 +176,7 @@ object JqJsCmds {
   
   implicit def jsExpToJsCmd(in: JsExp) = in.cmd
 
-  case class OnLoad(cmd: JsCmd) extends JsCmd {
+  case class JqOnLoad(cmd: JsCmd) extends JsCmd {
     def toJsCmd = "jQuery(document).ready(function() {"+cmd.toJsCmd+"});"
   }
   

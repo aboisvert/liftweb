@@ -215,10 +215,16 @@ class LiftServlet extends HttpServlet {
     
     val toTransform: Can[LiftResponse] =
     if (dispatch._1) dispatch._2
+    else if (wp.length == 3 && wp.head == LiftRules.cometPath &&
+             wp(2) == LiftRules.cometScriptName())
+    LiftRules.serveCometScript(liftSession, requestState)
     else if ((wp.length >= 1) && wp.head == LiftRules.cometPath) 
     handleComet(requestState, liftSession)
     else if (wp.length == 1 && wp.head == LiftRules.ajaxPath) 
     handleAjax(liftSession, requestState)
+    else if (wp.length == 2 && wp.head == LiftRules.ajaxPath && 
+             wp(1) == LiftRules.ajaxScriptName()) 
+    LiftRules.serveAjaxScript(liftSession, requestState)
     else liftSession.processRequest(requestState)
     
     

@@ -103,10 +103,14 @@ object SessionMaster extends Actor {
   var sessionWatchers: List[Actor] = Nil
 
   def getSession(httpSession: HttpSession, otherId: Can[String]): Can[LiftSession] =
-    getSession(httpSession.getId(), otherId)
+  synchronized {
+    otherId.flatMap(sessions.get) or Can(sessions.get(httpSession.getId()))
+  }
 
   def getSession(req: HttpServletRequest, otherId: Can[String]): Can[LiftSession] =
-    getSession(req.getSession, otherId)
+  synchronized {
+    otherId.flatMap(sessions.get) or Can(sessions.get(req.getSession.getId()))
+  }
 
   def addSession(liftSession: LiftSession) {
     synchronized {
@@ -333,9 +337,9 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
     } else {
       runParams(request)
 
-      def idAndWhen(in: Node): Can[(String, String)] =
+      def idAndWhen(in: Node): Can[CometVersionPair] =
       ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
-        case (x :: _, y :: _) => Full((x.text,y.value.text))
+        case (x :: _, y :: _) => Full(CVP(x.text,toLong(y.value.text)))
         case _ => Empty
       }
 
@@ -345,14 +349,22 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
               case Full(rawXml: NodeSeq) => {
                   val xml = HeadHelper.mergeToHtmlHead(rawXml)
                   val cometXform: List[RewriteRule] = 
+                  if (LiftRules.autoIncludeComet(this))
                   allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
                     case Nil => Nil
-                    case xs => val comets: List[(String, String)] = xs.flatMap(x => idAndWhen(x))
-                      val cometVar = "var lift_toWatch = "+comets.map{case (a,b) => ""+a+": '"+b+"'"}.mkString("{", " , ", "}")+";"
-                      new AddScriptToBody(cometVar) :: Nil
+                    case xs => 
+                      val comets: List[CometVersionPair] = xs.flatMap(x => idAndWhen(x))
+                      new AddScriptToBody(comets) :: Nil
                   }
+                  else Nil
+
+                  val ajaxXform: List[RewriteRule] = 
+                  if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
+                  else cometXform
                   
-                  val realXml = (new RuleTransformer(new AddAjaxToBody() :: cometXform :_*)).transform(xml)
+                  
+                  val realXml = if (ajaxXform.isEmpty) xml
+                  else (new RuleTransformer(ajaxXform :_*)).transform(xml)
 
                   this.synchronized {
                     S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
@@ -820,6 +832,43 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
     openOr(atWhat.values.flatMap(_.elements).toList)
   }
 
+class AddAjaxToBody() extends RewriteRule {
+ private var done = false
+  override def transform(n: Node) = n match {
+    case e: Elem if e.label == "head" && !done =>
+      done = true
+      Elem(null, "head", e.attributes,  e.scope, (e.child ++
+                                                  <script src={"/"+
+                                                               LiftRules.ajaxPath +
+                                                               "/" + LiftRules.ajaxScriptName()}
+            type="text/javascript"/>) :_*)
+    case n => n
+  }
+}
+
+class AddScriptToBody(val cometVar: List[CometVersionPair]) extends RewriteRule {
+  private var doneHead = false
+  private var doneBody = false
+  
+  override def transform(n: Node) = n match {
+    case e: Elem if e.label == "head" && !doneHead =>
+      doneHead = true
+      Elem(null, "head", e.attributes,  e.scope, (e.child ++
+                                                  <script src={"/"+
+                                                               LiftRules.cometPath +
+                                                               "/" + uniqueId +
+                                                               "/" + LiftRules.cometScriptName()}
+            type="text/javascript"/>) :_*)
+      
+       case e: Elem if e.label == "body" && !doneBody =>
+      doneBody = true
+      Elem(null, "body", e.attributes,  e.scope, (e.child ++
+                                                  JsCmds.Script(LiftRules.renderCometPageContents(LiftSession.this, cometVar))) :_*)
+    case n => n
+  }
+}
+
+/*
   /**
    * Add comet script juste before the &lt;/body> tag.
    * Instance of the class can't be reused, because it does the transformation once,
@@ -983,9 +1032,12 @@ LiftRules.jsArtifacts.onLoad(new JsCmd() {def toJsCmd = "lift_doAjaxCycle()"}).t
       case _ => n
     }
   }
+  */
 }
 
-abstract class SessionMessage
+
+
+// abstract class SessionMessage
 
 
 /**
@@ -993,7 +1045,7 @@ abstract class SessionMessage
  */
 case object ShutDown
 
-case class AnswerHolder(what: LiftResponse)
+// case class AnswerHolder(what: LiftResponse)
 
 /**
  * If a class is to be used as a lift view (rendering from code rather than a static template)
@@ -1001,6 +1053,7 @@ case class AnswerHolder(what: LiftResponse)
  * because there exists the ability to execute arbitrary methods based on wire content
  */
 trait InsecureLiftView
+
 
 /**
  *  The preferred way to do lift views... implement a partial function that dispatches

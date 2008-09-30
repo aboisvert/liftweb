@@ -448,6 +448,11 @@ object Function {
   }
 }
 
+object OnLoad{
+  def apply(what: JsCmd): JsCmd = LiftRules.jsArtifacts.onLoad(what)
+
+}
+
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+
     right.toJsCmd+";"
