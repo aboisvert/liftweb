@@ -160,6 +160,7 @@ Lift is a scala web framework.
     <module>lift-widgets</module>
     <module>lift-openid</module>
     <module>lift-oauth</module>
+    <module>lift-paypal</module>
     <module>lift-testkit</module>
     <module>lift-core</module>
     <module>sites</module>
