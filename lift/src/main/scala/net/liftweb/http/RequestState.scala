@@ -250,7 +250,7 @@ class RequestState(val path: ParsePath,
     }
   }
 
-  lazy val location: Can[Loc] = LiftRules.siteMap.flatMap(_.findLoc(this))
+  lazy val location: Can[Loc[_]] = LiftRules.siteMap.flatMap(_.findLoc(this))
 
   def testLocation: Either[Boolean, Can[LiftResponse]] = {
     if (LiftRules.siteMap.isEmpty) Left(true)

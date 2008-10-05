@@ -25,43 +25,61 @@ import _root_.scala.xml.{NodeSeq}
 class SiteMapException(msg: String) extends Exception(msg)
 
 case class SiteMap(kids: Menu*) extends HasKids  {
-  private var locs: Map[String, Loc] = Map.empty
+  import SiteMap._
+  private var locs: Map[LocLookup[LocParams], Loc[LocParams]] = Map.empty
 
   kids.foreach(_._parent = Full(this))
   kids.foreach(_.init(this))
   kids.foreach(_.validate)
-  private[sitemap] def addLoc(in: Loc) {
-    if (locs.isDefinedAt(in.name)) 
-    throw new SiteMapException("Location "+in.name+" defined twice "+
-    locs(in.name)+" and "+in)
-    else locs = locs + (in.name -> in)
+  private[sitemap] def addLoc[T <: LocParams](in: Loc[T]) {
+    val lookup: LocLookup[LocParams] = in.lookup.asInstanceOf[LocLookup[LocParams]]
+    if (locs.isDefinedAt(lookup))
+    throw new SiteMapException("Location "+lookup+" defined twice "+
+                               locs(lookup)+" and "+in)
+    else locs = locs + (lookup -> in.asInstanceOf[Loc[LocParams]])
   }
 
-  def findLoc(name: String): Can[Loc] =
-  Can(locs.get(name))
+  def findLoc(name: String): Can[Loc[NullLocParams]] =
+  Can(locs.get(NamedLocLookup(name).asInstanceOf[LocLookup[LocParams]]).
+      asInstanceOf[Option[Loc[NullLocParams]]])
 
-  def findLoc(req: RequestState): Can[Loc] =
-    first(kids)(_.findLoc(req))
+  def findLoc[T <: LocParams](key: LocLookup[T]): Can[Loc[T]] =
+  Can(locs.get(key.asInstanceOf[LocLookup[LocParams]]).
+      asInstanceOf[Option[Loc[T]]])
 
-  def locForGroup(group: String): Seq[Loc] = 
+  def findLoc(req: RequestState): Can[Loc[_]] =
+  first(kids)(_.findLoc(req))
+
+  def locForGroup(group: String): Seq[Loc[_]] =
   kids.flatMap(_.locForGroup(group)).filter(_.testAccess match {
-    case Left(true) => true case _ => false})
+      case Left(true) => true case _ => false})
 }
 
 object SiteMap {
-  def findLoc(name: String): Can[Loc] =
+  def findLoc(name: String): Can[Loc[NullLocParams]] =
   for (sm <- LiftRules.siteMap;
        loc <- sm.findLoc(name)) yield loc
 
-  def findAndTestLoc(name: String): Can[Loc] =
+  def findAndTestLoc(name: String): Can[Loc[NullLocParams]] =
   findLoc(name).flatMap(l => l.testAccess match {
+      case Left(true) => Full(l)
+      case _ => Empty
+    })
+  
+  def findLoc[T <: LocParams](key: LocLookup[T]): Can[Loc[T]] =
+  for (sm <- LiftRules.siteMap;
+       loc <- sm.findLoc(key)) yield loc
+
+  def findAndTestLoc[T <: LocParams](key: LocLookup[T]): Can[Loc[T]] =
+  findLoc(key).flatMap(l => l.testAccess match {
       case Left(true) => Full(l)
       case _ => Empty
     })
 
   def buildLink(name: String, text: NodeSeq): NodeSeq =
   for (loc <- findAndTestLoc(name).toList;
-       link <- loc.link.createLink(Nil))
+       param <- loc.defaultParams;
+       link <- loc.link.createLink(param))
   yield <a href={link}>{
       text match {
         case x if x.text.length > 0 => x
