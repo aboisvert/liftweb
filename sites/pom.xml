@@ -15,7 +15,7 @@
     <module>skittr</module>
     <module>hellolift</module>
     <module>hellodarwin</module>
-    <module>JPADemo</module>
+    <!-- <module>JPADemo</module> -->
   </modules>
   <dependencies>
     <dependency>
