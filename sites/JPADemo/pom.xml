@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project>
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>net.liftweb</groupId>
+    <artifactId>lift-examples-parent</artifactId>
+    <version>0.10-SNAPSHOT</version>
+    <relativePath>../pom.xml</relativePath>
+  </parent>
+
+  <artifactId>JPADemo-Master</artifactId>
+  <description>JPA tutorial master project</description>
+  <name>JPA Demo Master</name>
+  <inceptionYear>2007</inceptionYear>
+  <packaging>pom</packaging>
+  
+  <modules>
+    <module>JPADemo-web</module>
+    <module>JPADemo-spa</module>
+  </modules>
+
+  <!-- Master properties (inherited by modules) -->
+  <dependencies>
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>4.4</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+</project>
