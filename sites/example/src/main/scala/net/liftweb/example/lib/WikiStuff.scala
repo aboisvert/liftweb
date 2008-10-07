@@ -38,10 +38,10 @@ case class WikiLoc(page: String, edit: Boolean) extends LocParams {
 object WikiStuff extends Loc[WikiLoc] {
   object AllLoc extends WikiLoc("all", false)
 
-    def name = "wiki"
+  def name = "wiki"
   def defaultParams: Can[WikiLoc] = Full(WikiLoc("HomePage", false))
 
-    def stuff: List[LocStuff] = Nil
+  def stuff: List[LocStuff] = Nil
 
   def currentEdit = foundParam.is.map(_.edit) openOr false
 
@@ -55,43 +55,43 @@ object WikiStuff extends Loc[WikiLoc] {
   }
 
 
-    def showAll(in: NodeSeq): NodeSeq = 
-      WikiEntry.findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
+  def showAll(in: NodeSeq): NodeSeq = 
+    WikiEntry.findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={url(entry.name)}>{entry.name}</a></div>)
-    
+  
   def url(page: String) = createLink(WikiLoc(page, false))
 
 
   def editRecord(r: WikiEntry)(in: NodeSeq): NodeSeq = 
     <span>
-    <a href={createLink(AllLoc)}>Show All Pages</a><br />
-    {
-      val isNew = !r.saved_?
-      val pageName = r.name.is
+  <a href={createLink(AllLoc)}>Show All Pages</a><br />
+  {
+    val isNew = !r.saved_?
+    val pageName = r.name.is
     val action = url(pageName)
-      val message = 
-	if (isNew) 
-	  Text("Create Entry named "+pageName) 
-	else 
-	  Text("Edit entry named "+pageName)
-      
-      val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
+    val message = 
+      if (isNew) 
+	Text("Create Entry named "+pageName) 
+      else 
+	Text("Edit entry named "+pageName)
+    
+    val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
 
-      val cancelLink = <a href={action}>Cancel</a>
-      val textarea = r.entry.toForm
-      
-      val submitButton = SHtml.submit(isNew ? "Add" | "Edit", r.save)
-      
+    val cancelLink = <a href={action}>Cancel</a>
+    val textarea = r.entry.toForm
+    
+    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", r.save)
+    
     <form method="POST" action={action}>{ // the form tag
-          message ++
-          hobixLink ++
-          textarea ++ // display the form
-          <br /> ++
-          cancelLink ++
-          Text(" ") ++
-          submitButton
+      message ++
+      hobixLink ++
+      textarea ++ // display the form
+      <br /> ++
+      cancelLink ++
+      Text(" ") ++
+      submitButton
     }</form>
-    }
+  }
 
   </span>
 
@@ -103,28 +103,28 @@ object WikiStuff extends Loc[WikiLoc] {
   <br/><a href={createLink(WikiLoc(entry.name, true))}>Edit</a>
   </span>
 
-val textileWriter = Some((info: TextileParser.WikiURLInfo) =>
-  {
-  import TextileParser._
-  info match {
-    case WikiURLInfo(page, _) => 
-      (stringUrl(page), Text(page), None)
-  }
-  }
-  )
+  val textileWriter = Some((info: TextileParser.WikiURLInfo) =>
+    {
+      import TextileParser._
+      info match {
+	case WikiURLInfo(page, _) => 
+	  (stringUrl(page), Text(page), None)
+      }
+    }
+			 )
 
   def stringUrl(page: String): String = 
     url(page).map(_.text) getOrElse ""
 
-    val link = 
-      new Loc.Link[WikiLoc](List("wiki"), false) {
-	override def createLink(in: WikiLoc): Can[NodeSeq] = {
-	  if (in.edit)
-	    Full(Text("/wiki/edit/"+urlEncode(in.page)))
-	  else
-	    Full(Text("/wiki/"+urlEncode(in.page)))
-	}
+  val link = 
+    new Loc.Link[WikiLoc](List("wiki"), false) {
+      override def createLink(in: WikiLoc): Can[NodeSeq] = {
+	if (in.edit)
+	  Full(Text("/wiki/edit/"+urlEncode(in.page)))
+	else
+	  Full(Text("/wiki/"+urlEncode(in.page)))
       }
+    }
 
   val text = 
     new Loc.LinkText[WikiLoc](calcLinkText _)
@@ -141,12 +141,12 @@ val textileWriter = Some((info: TextileParser.WikiURLInfo) =>
       case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
 			  _, _) =>
 			    println("Got wiki edit")
-			    (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))
+      (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))
 
       case RewriteRequest(ParsePath("wiki" :: page :: Nil, _, _,_),
 			  _, _) =>
 			    println("Got wiki with page "+page)
-			    (RewriteResponse("wiki" :: Nil), WikiLoc(page, false))
+      (RewriteResponse("wiki" :: Nil), WikiLoc(page, false))
 
     })
 }
