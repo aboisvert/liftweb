@@ -483,11 +483,12 @@ object S extends HasParams {
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
+          RequestVarHandler(
           _requestVar.doWith(new HashMap) {
             _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
               _innerInit(f)
             }
-          }
+          })
         }
       }
     }

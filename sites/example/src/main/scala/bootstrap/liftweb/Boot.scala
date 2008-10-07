@@ -80,6 +80,7 @@ class Boot {
     LiftRules.ajaxEnd = 
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
+    /*
     LiftRules.addRewriteBefore{
       case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_),
 			  _, _)
@@ -90,6 +91,7 @@ class Boot {
 			    zipWithIndex.map(p =>
 			      ("param"+(p._2 + 1)) -> p._1) :_*))
     }
+    */
 
     val wikibind_rewriter: LiftRules.RewritePf = {
       case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_),
@@ -170,7 +172,8 @@ object MenuInfo {
        Menu(Loc("menu_four", List("menu", "four"), "Forth Submenu"))
      ) ::
   Menu(Loc("file_upload", List("file_upload"), "File Upload")) ::
-  Menu(Loc("wiki", Link(List("wiki"), true, "/wiki/HomePage"), "Wiki")) ::
+  // Menu(Loc("wiki", Link(List("wiki"), true, "/wiki/HomePage"), "Wiki")) ::
+  Menu(WikiStuff) ::
   Menu(Loc("guess", List("guess"), "Number Guessing")) ::
   Menu(Loc("count", List("count"), "Counting")) ::
   Menu(Loc("login", Link(List("login"), true, "/login/index"), 

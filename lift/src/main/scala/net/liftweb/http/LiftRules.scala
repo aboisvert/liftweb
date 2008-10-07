@@ -347,7 +347,15 @@ object LiftRules {
 
   private var _sitemap: Can[SiteMap] = Empty
 
-  def setSiteMap(sm: SiteMap) {_sitemap = Full(sm)}
+  def setSiteMap(sm: SiteMap) {
+    _sitemap = Full(sm)
+    val rewriters = sm.menus.map(_.loc).
+    flatMap(_.rewritePf).
+    foldLeft[RewritePf](Map.empty)(_ orElse _)
+
+    addRewriteAfter(rewriters)
+  }
+
   def siteMap: Can[SiteMap] = _sitemap
 
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)

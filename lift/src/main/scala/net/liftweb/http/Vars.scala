@@ -17,6 +17,7 @@ package net.liftweb.http
  */
 
 import _root_.net.liftweb.util._
+import _root_.scala.collection.mutable.{HashMap, ListBuffer}
 
 /**
  * Abstract a request or a session scoped variable.
@@ -98,14 +99,55 @@ abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) 
  * @param dflt - the default value of the session variable
  */
 abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
+  /*
   override protected def findFunc(name: String): Can[T] = S.requestState(name)
   override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value
   override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
 
   def registerCleanupFunc(in: () => Unit): Unit =
   S.addCleanupFunc(in)
+  */
+ 
+  override protected def findFunc(name: String): Can[T] = RequestVarHandler.get(name)
+  override protected def setFunc(name: String, value: T): Unit = RequestVarHandler.set(name, value)
+  override protected def clearFunc(name: String): Unit = RequestVarHandler.clear(name)
+
+  def registerCleanupFunc(in: () => Unit): Unit =
+  RequestVarHandler.addCleanupFunc(in)
 }
 
+object RequestVarHandler extends LoanWrapper {
+  private val vals: ThreadGlobal[HashMap[String, Any]] = new ThreadGlobal
+  private val cleanup: ThreadGlobal[ListBuffer[() => Unit]] = new ThreadGlobal
+  private val isIn: ThreadGlobal[String] = new ThreadGlobal
+
+  private[http] def get[T](name: String): Can[T] =
+  Can(vals.value.get(name).asInstanceOf[Option[T]])
+  
+  private[http] def set[T](name: String, value: T): Unit =
+  vals.value(name) = value
+
+  private[http] def clear(name: String): Unit = vals.value -= name
+  
+  private[http] def addCleanupFunc(f: () => Unit): Unit =
+  cleanup.value += f
+  
+  def apply[T](f: => T): T = {
+    if ("in" == isIn.value)
+    f
+    else
+    isIn.doWith("in") (
+      vals.doWith(new HashMap) (
+        cleanup.doWith(new ListBuffer) {
+          val ret: T = f
+
+          cleanup.value.foreach(f => Helpers.tryo(f()))
+
+          ret
+        }
+      ))
+  }
+}
 
 
 object AnyVar {
