@@ -588,7 +588,13 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
 
   val kids = if (eagerEval) processSurroundAndInclude(page, passedKids) else passedKids
   
+  def locSnippet(snippet: String): Can[NodeSeq] =
+  for (req <- S.request;
+       loc <- req.location;
+       func <- loc.snippet(snippet)) yield func(kids)
+  
   val ret = snippetName.map(snippet =>
+    locSnippet(snippet).openOr(
     S.locateSnippet(snippet).map(_(kids)) openOr {
       val (cls, method) = splitColonPair(snippet, null, "render")
       (LiftRules.snippet(cls) or
@@ -616,7 +622,7 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
         case _ => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                  LiftRules.SnippetFailures.ClassNotFound))); kids
       }
-    }).openOr{
+    })).openOr{
     LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                    LiftRules.SnippetFailures.NoNameSpecified)))
     Comment("FIX"+"ME -- no type defined for snippet")

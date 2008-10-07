@@ -470,22 +470,22 @@ trait LiftFilterTrait {
 
   def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
   {
+    RequestVarHandler(
+      (req, res) match {
+        case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
+          LiftRules.early.foreach(_(httpReq))
 
-    (req, res) match {
-      case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-        LiftRules.early.foreach(_(httpReq))
+          val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-        val session = RequestState(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
-
-        URLRewriter.doWith(url => LiftRules.urlDecorate(httpRes.encodeURL(url))) {
-          if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
-          } else {
-            chain.doFilter(req, res)
+          URLRewriter.doWith(url => LiftRules.urlDecorate(httpRes.encodeURL(url))) {
+            if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
+            } else {
+              chain.doFilter(req, res)
+            }
           }
-        }
 
-      case _ => chain.doFilter(req, res)
-    }
+        case _ => chain.doFilter(req, res)
+      })
   }
   
   def isLiftRequest_?(session: RequestState): Boolean
