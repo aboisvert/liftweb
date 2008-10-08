@@ -122,15 +122,21 @@ object RequestVarHandler extends LoanWrapper {
   private val isIn: ThreadGlobal[String] = new ThreadGlobal
 
   private[http] def get[T](name: String): Can[T] =
-  Can(vals.value.get(name).asInstanceOf[Option[T]])
+    for (ht <- Can.legacyNullTest(vals.value);
+	 v <- ht.get(name).asInstanceOf[Option[T]]) yield v;
+
   
   private[http] def set[T](name: String, value: T): Unit =
-  vals.value(name) = value
+    for (ht <- Can.legacyNullTest(vals.value))
+      ht(name) = value
 
-  private[http] def clear(name: String): Unit = vals.value -= name
+  private[http] def clear(name: String): Unit = 
+    for (ht <- Can.legacyNullTest(vals.value)) 
+      ht -= name
   
   private[http] def addCleanupFunc(f: () => Unit): Unit =
-  cleanup.value += f
+    for (cu <- Can.legacyNullTest(cleanup.value))
+      cu += f
   
   def apply[T](f: => T): T = {
     if ("in" == isIn.value)
