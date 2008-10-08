@@ -1,10 +1,17 @@
 package net.liftweb.paypal
 
+import net.liftweb.util.Helpers
+import Helpers._
 import net.liftweb.util._
 import org.apache.commons.httpclient._
 import org.apache.commons.httpclient.methods._
+import java.io.{InputStream,BufferedReader,InputStreamReader}
 
-
+/**
+ * sealed abstract type PaypalMode so we can cast to the super
+ * class in our method declerations. Cannot be subclasses outside
+ * of this source file.
+ */
 sealed abstract class PaypalMode
 case object PaypalSandbox extends PaypalMode {
   override def toString = "www.sandbox.paypal.com"
@@ -13,106 +20,108 @@ case object PaypalLive extends PaypalMode {
   override def toString = "www.paypal.com"
 }
 
-/* common functionlaity over both IPN and PDT */
-trait Paypal {
-  
+/**
+ * Represents the type of connection that can be made
+ * to paypal, irrespecitve of the mode of connection
+ */
+sealed abstract class PaypalConnection {
+  def port = 80
+}
+case object PaypalHTTP extends PaypalConnection {
+  override def toString = "http"
+  override def port: Int = 80
+}
+case object PaypalSSL extends PaypalConnection {
+  override def toString = "https"
+  override def port: Int = 443
 }
 
 
+object HttpClientFactory {
+  def apply(url: String, port: Int, connection: String): HttpClient = {
+    var c: HttpClient = new HttpClient()
+    c.getHostConfiguration().setHost(url, port, connection)
+    return c
+  }
+}
+object PostMethodFactory {
+  def apply(url: String, paramaters: Array[NameValuePair]): PostMethod = {
+    var p: PostMethod = new PostMethod(url)
+    p.setRequestBody(paramaters)
+    return p
+  }
+}
 
-/********************
-* PAYPAL PDT
-
-var p = PayPalDataTransfer("sandbox").useSSL(false).transactionToken(S.param("tx")).authenticationToken("YOUR_TOKEN")
-p.execute
-println(p.isSuccessful.toString) // returns true or false depending on whats returned from paypal
-********************/
-class PayPalDataTransfer extends Paypal {
-  /* the target mode, can only be sandbox or live */
-  var mode: PaypalMode = PaypalSandbox
-  /* if your using SSL, then this will change to https, default is http */
-  private var method: String = "http"
-  /* the transaction token passed back from paypal */
-  var transactionToken: String = ""
-  /* your authentication token: avalible from the paypal merchent pannel */
-  var authenticationToken: String = ""
-  /* port number to make the call on - internal method */
-  private var port: Int = 80
-  /* HTTP response from paypal */
-  private var response: Array[String] = Array()
-  /* HTTP client object */
-  private val client: HttpClient = new HttpClient()
-  
-  /* get the party started - do that check */
-  def execute: PayPalDataTransfer = { sendAndRecive(pdtPost); this } 
-  
-  /* convenience method to determine if the transaction was a sucsess */
-  def isSuccessful: Boolean = response(0) match {
-    case "SUCCESS" => true
+sealed abstract class PaypalHttpOperation {
+  def wasSuccessful(code: Int): Boolean = code match {
+    case 200 => true
     case _ => false
   }
-  
-  /* make the request over SSL? */
-  def useSSL(s: Boolean): PayPalDataTransfer = { 
-    s match { 
-      case true => { method = "https"; port = 443 }
-      case false => { method = "http"; port = 80 }
-    }
-    this
-  }
-  /* set the authentication token */
-  def authenticationToken(t: String): PayPalDataTransfer = { authenticationToken = t; this }
-  
-  /* set weather were using live or the sandbox */
-  def mode(m: PaypalMode): PayPalDataTransfer = { mode = m; configureClient; this }
-  
-  def transactionToken(t: Can[String]): PayPalDataTransfer = {
-    transactionToken = t.openOr(""); this
-  }
-  /* the resut string will be mappy back, so this is just a longer way of access
-     the various items in that array. */
-  private def getResponseItem(idx: Int): String = {
-    return response.apply(idx)
-  }
-  /* update the client object with live/sandbox setting options */
-  private def configureClient = client.getHostConfiguration().setHost(mode.toString, port, method)
-
-  /* configure the post object */
-  private def pdtPost: PostMethod = {
-    val pdtpost: PostMethod = new PostMethod("/cgi-bin/webscr")
-    val cmd: NameValuePair = new NameValuePair("cmd", "_notify-synch")
-    val tx: NameValuePair = new NameValuePair("tx", transactionToken)
-    val auth_token: NameValuePair = new NameValuePair("at", authenticationToken)
-    val paramater_array: Array[NameValuePair] = Array(cmd,tx,auth_token)
-    pdtpost.setRequestBody(paramater_array)
-    return pdtpost
-  }
-  /* actually instansiate the post! */
-  private def sendAndRecive(aPost: PostMethod): Array[String] = {
-    client.executeMethod(aPost)
-    //println("##### POST: " + aPost.getResponseBodyAsString())
-    response = aPost.getResponseBodyAsString().split("\n")
-    aPost.releaseConnection()
-    return response
+}
+case class PaypalRequest(client: HttpClient, post: PostMethod) extends PaypalHttpOperation {
+  def withClient(in: HttpClient) = PaypalRequest(in, post)
+  def withPost(in: PostMethod) = PaypalRequest(client, in)
+  def execute: PostMethod = {
+    /*BufferedReader in = new BufferedReader(
+    new InputStreamReader(uc.getInputStream()));
+    String res = in.readLine();
+    in.close();*/
+    val result: Int = tryo(client.executeMethod(post)).openOr(500)
+    post
   }
 }
-
-object PayPalDataTransfer {
-  def apply(aMode: PaypalMode): PayPalDataTransfer = {
-    var p: PayPalDataTransfer = new PayPalDataTransfer()
-    p.mode(aMode)
-    p
-  }
+sealed abstract class PaypalResponse extends PaypalHttpOperation {
+  //protected def openResponseStream(post: PostMethod): Can[String] = {
+    /*in = new BufferedReader(
+        new InputStreamReader(uc.getInputStream()));
+        String res = in.readLine();
+        in.close();
+        
+        
+        tryo(post.getResponseBodyAsStream())*/
+  //}
+}
+case class PaypalDataTransferReponse() extends PaypalResponse {
+  // handle the response here, in a pdt specific way.
+  // were looking for "SUCSESS"
 }
 
-/********************
-* PAYPAL IPN
-*********************/
+/**
+ * Common functionality for paypal PDT and IPN
+ */
+abstract class Paypal(val mode: PaypalMode, val connection: PaypalConnection){
+  val client: HttpClient = HttpClientFactory(mode.toString, connection.port, connection.toString)
+}
 
-class PayPalInstantPaymentNotification {
+
+/**
+ * If you need to get data from paypal PDT, simply instansiate this class 
+ * (through one of the factory objects)
+ */
+case class PaypalDataTransfer(authToken: String, transactionToken: String, override val mode: PaypalMode, override val connection: PaypalConnection) extends Paypal(mode: PaypalMode, connection: PaypalConnection) {
+  /**
+   * payloadArray is the array of the post body we'll be sending.
+   * As the payload body is different in PDT vs IPN
+   */
+  val payloadArray: Array[NameValuePair] = Array(
+    new NameValuePair("cmd", "_notify-synch"),
+    new NameValuePair("tx", transactionToken),
+    new NameValuePair("at", authToken)
+  )
+  /**
+  * @param in set the endpoint for the connection. Must be a subclass of PaypalMode.
+  */
+  def withMode(in: PaypalMode): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, in, connection)
+  /**
+   * @param in set weather or not the connection should be made over SSL/443/https or not.
+   */
+  def withConnection(in: PaypalConnection): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, mode, in)
   
+  def execute: PaypalRequest = PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray))
+}
+object PaypalDataTransfer {
+  def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
 }
 
-object PayPalInstantPaymentNotification {
-  
-}
+
+
