@@ -39,9 +39,9 @@ object WikiStuff extends Loc[WikiLoc] {
   object AllLoc extends WikiLoc("all", false)
 
   def name = "wiki"
-  def defaultParams: Can[WikiLoc] = Full(WikiLoc("HomePage", false))
+  def defaultParams = Full(WikiLoc("HomePage", false))
 
-  def stuff: List[LocStuff] = Nil
+  def stuff = Nil
 
   def currentEdit = foundParam.is.map(_.edit) openOr false
 
@@ -103,22 +103,20 @@ object WikiStuff extends Loc[WikiLoc] {
   <br/><a href={createLink(WikiLoc(entry.name, true))}>Edit</a>
   </span>
 
-  val textileWriter = Some((info: TextileParser.WikiURLInfo) =>
-    {
-      import TextileParser._
+  import TextileParser._
+
+  val textileWriter = Some((info: WikiURLInfo) =>
       info match {
 	case WikiURLInfo(page, _) => 
 	  (stringUrl(page), Text(page), None)
-      }
-    }
-			 )
+      })
 
   def stringUrl(page: String): String = 
     url(page).map(_.text) getOrElse ""
 
   val link = 
     new Loc.Link[WikiLoc](List("wiki"), false) {
-      override def createLink(in: WikiLoc): Can[NodeSeq] = {
+      override def createLink(in: WikiLoc) = {
 	if (in.edit)
 	  Full(Text("/wiki/edit/"+urlEncode(in.page)))
 	else
@@ -126,8 +124,7 @@ object WikiStuff extends Loc[WikiLoc] {
       }
     }
 
-  val text = 
-    new Loc.LinkText[WikiLoc](calcLinkText _)
+  val text = new Loc.LinkText(calcLinkText _)
   
   
   def calcLinkText(in: WikiLoc): NodeSeq =
@@ -136,16 +133,14 @@ object WikiStuff extends Loc[WikiLoc] {
     else
       Text("Wiki "+in.page)
 
-  override val rewrite: Can[PartialFunction[RewriteRequest, (RewriteResponse, WikiLoc)]] = 
+  override val rewrite: LocRewrite = 
     Full({
       case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
 			  _, _) =>
-			    println("Got wiki edit")
       (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))
 
       case RewriteRequest(ParsePath("wiki" :: page :: Nil, _, _,_),
 			  _, _) =>
-			    println("Got wiki with page "+page)
       (RewriteResponse("wiki" :: Nil), WikiLoc(page, false))
 
     })

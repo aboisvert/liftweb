@@ -32,6 +32,8 @@ object NullLocParams extends NullLocParams
  * A menu location
  */
 trait Loc[ParamType <: LocParams] {
+  type LocRewrite =  Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
+  
   def name: String
 
   def link: Loc.Link[ParamType]
@@ -42,7 +44,7 @@ trait Loc[ParamType <: LocParams] {
 
   def defaultParams: Can[ParamType]
   
-  def rewrite: Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]] = Empty
+  def rewrite: LocRewrite = Empty
 
   def createDefaultLink: Option[NodeSeq] = (foundParam.is or defaultParams).flatMap(p => link.createLink(p)).toOption
 

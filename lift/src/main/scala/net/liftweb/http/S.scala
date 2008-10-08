@@ -71,7 +71,9 @@ object S extends HasParams {
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[List[(Either[String, (String, String)], String)]]
-  private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
+
+  // RequestVars are handled by a different mechanism
+  // private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
   private val _liftCoreResBundle = new ThreadGlobal[Can[ResourceBundle]]
@@ -484,11 +486,12 @@ object S extends HasParams {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
           RequestVarHandler(
-          _requestVar.doWith(new HashMap) {
+            //_requestVar.doWith(new HashMap) {
             _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
               _innerInit(f)
             }
-          })
+          //}
+	  )
         }
       }
     }
@@ -499,6 +502,7 @@ object S extends HasParams {
    */
   def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
 
+  /*
   private[http] object requestState {
     private def rv: Can[HashMap[String, Any]] = Can.legacyNullTest(_requestVar.value)
 
@@ -507,7 +511,7 @@ object S extends HasParams {
     def update[T](name: String, value: T): Unit = rv.foreach(_(name) = value)
 
     def clear(name: String): Unit = rv.foreach(_ -= name)
-  }
+  }*/
 
   /**
    * Get a list of current attributes
