@@ -71,6 +71,8 @@ object S extends HasParams {
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
   private val _attrs = new ThreadGlobal[List[(Either[String, (String, String)], String)]]
+
+  // RequestVars are handled by a different mechanism
   // private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
   private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
