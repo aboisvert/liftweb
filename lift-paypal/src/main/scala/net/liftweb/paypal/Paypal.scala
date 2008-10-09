@@ -36,7 +36,14 @@ case object PaypalSSL extends PaypalConnection {
   override def port: Int = 443
 }
 
-
+/**
+ * As the HTTP Commons HttpClient class is by definition very mutable, we
+ * provide this factory method to produce an instance we can assign to a val
+ *
+ * @param url The domain url your sending to
+ * @param port The TCP port the message will be sent over
+ * @param connection The protocal to use: http, or https
+ */
 object HttpClientFactory {
   def apply(url: String, port: Int, connection: String): HttpClient = {
     var c: HttpClient = new HttpClient()
@@ -51,7 +58,10 @@ object PostMethodFactory {
     return p
   }
 }
-
+/**
+* A simple abstraction for all HTTP operations. By definition they will return a HTTP error
+* code. We are invaribly only concerned with if it was a good one or not.
+*/
 sealed abstract class PaypalHttpOperation {
   def wasSuccessful(code: Int): Boolean = code match {
     case 200 => true
@@ -81,6 +91,12 @@ case class PaypalResponse(post: PostMethod) extends PaypalHttpOperation {
   }
 }
 
+/**
+ * Wrapper for a failure being returned from paypal. 
+ *
+ * @param post The instance of PostMethod from HTTP Commons lib
+ * @param message Specifiy if you want to detail the error that actually occoured
+ */
 case class PaypalFailure(override val post: PostMethod, message: String) extends PaypalResponse(post: PostMethod) {
   def withMessage(in: String) = PaypalFailure(post, in)
 }
@@ -90,15 +106,23 @@ object PaypalFailure {
 
 /**
  * Common functionality for paypal PDT and IPN
+ *
+ * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
+ * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
  */
 abstract class Paypal(val mode: PaypalMode, val connection: PaypalConnection){
   val client: HttpClient = HttpClientFactory(mode.toString, connection.port, connection.toString)
 }
 
-
 /**
  * If you need to get data from paypal PDT, simply instansiate this class 
  * (through one of the factory objects)
+ *
+ * @param authToken The token you obtain from the paypal merchant console
+ * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
+ * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
+ * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
+ * @return PaypalDataTransfer
  */
 case class PaypalDataTransfer(authToken: String, transactionToken: String, override val mode: PaypalMode, override val connection: PaypalConnection) extends Paypal(mode: PaypalMode, connection: PaypalConnection) {
   /**
@@ -118,18 +142,29 @@ case class PaypalDataTransfer(authToken: String, transactionToken: String, overr
    * @param in set weather or not the connection should be made over SSL/443/https or not.
    */
   def withConnection(in: PaypalConnection): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, mode, in)
-  
+  /**
+  * @return PaypalDataTransferReponse
+  */
   def execute: PaypalDataTransferReponse = PaypalDataTransferReponse(
     PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke.post
   )
 }
 object PaypalDataTransfer {
+  /**
+  * Builder method to create a new PDT instance
+  * 
+  * @param authToken The token you obtain from the paypal merchant console
+  * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
+  */
   def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
 }
 
 case class PaypalDataTransferReponse(override val post: PostMethod) extends PaypalResponse(post: PostMethod) {
-  // handle the response here, in a pdt specific way.
-  // were looking for "SUCSESS"
+  /**
+  * Quick utility method for letting you know if the payment data is returning a sucsessfull message
+  *
+  * @return Boolean
+  */
   def paymentSuccessful: Boolean = getProcessedResponse.openOr("") match {
     case "SUCSESS" => true
     case _ => false
