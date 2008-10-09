@@ -7,7 +7,7 @@ import org.junit.Assert._
 
 import net.liftweb.paypal._
 
-
+/*
 class TestPaypal {
   
   val pdt: PaypalDataTransfer = PaypalDataTransfer("dfgdf","dfgdf")
@@ -21,3 +21,4 @@ class TestPaypal {
 /*  }*/
   
 }
+*/
