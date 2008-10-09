@@ -61,29 +61,31 @@ sealed abstract class PaypalHttpOperation {
 case class PaypalRequest(client: HttpClient, post: PostMethod) extends PaypalHttpOperation {
   def withClient(in: HttpClient) = PaypalRequest(in, post)
   def withPost(in: PostMethod) = PaypalRequest(client, in)
-  def execute: PostMethod = {
-    /*BufferedReader in = new BufferedReader(
-    new InputStreamReader(uc.getInputStream()));
-    String res = in.readLine();
-    in.close();*/
-    val result: Int = tryo(client.executeMethod(post)).openOr(500)
-    post
+  def invoke: PaypalResponse = {
+    wasSuccessful(tryo(client.executeMethod(post)).openOr(500)) match {
+      case true => PaypalResponse(post)
+      case _ => PaypalFailure(post).withMessage("Recived HTTP code other than 200 OK")
+    }
   }
 }
-sealed abstract class PaypalResponse extends PaypalHttpOperation {
-  //protected def openResponseStream(post: PostMethod): Can[String] = {
-    /*in = new BufferedReader(
-        new InputStreamReader(uc.getInputStream()));
-        String res = in.readLine();
-        in.close();
-        
-        
-        tryo(post.getResponseBodyAsStream())*/
-  //}
+case class PaypalResponse(post: PostMethod) extends PaypalHttpOperation {
+  val responseStream: InputStream = post.getResponseBodyAsStream()
+  def getProcessedResponse: Can[String] = {
+    var _readStream: BufferedReader = new BufferedReader(
+      new InputStreamReader(responseStream)
+    )
+    val _result: Can[String] = tryo(_readStream.readLine())
+    _readStream.close()
+    println("######### L81:" + _result.openOr(""))
+    return _result
+  }
 }
-case class PaypalDataTransferReponse() extends PaypalResponse {
-  // handle the response here, in a pdt specific way.
-  // were looking for "SUCSESS"
+
+case class PaypalFailure(override val post: PostMethod, message: String) extends PaypalResponse(post: PostMethod) {
+  def withMessage(in: String) = PaypalFailure(post, in)
+}
+object PaypalFailure {
+  def apply(p: PostMethod): PaypalFailure = PaypalFailure(p, "Generic Failure")
 }
 
 /**
@@ -117,11 +119,20 @@ case class PaypalDataTransfer(authToken: String, transactionToken: String, overr
    */
   def withConnection(in: PaypalConnection): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, mode, in)
   
-  def execute: PaypalRequest = PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray))
+  def execute: PaypalDataTransferReponse = PaypalDataTransferReponse(
+    PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke.post
+  )
 }
 object PaypalDataTransfer {
   def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
 }
 
-
+case class PaypalDataTransferReponse(override val post: PostMethod) extends PaypalResponse(post: PostMethod) {
+  // handle the response here, in a pdt specific way.
+  // were looking for "SUCSESS"
+  def paymentSuccessful: Boolean = getProcessedResponse.openOr("") match {
+    case "SUCSESS" => true
+    case _ => false
+  }
+}
 

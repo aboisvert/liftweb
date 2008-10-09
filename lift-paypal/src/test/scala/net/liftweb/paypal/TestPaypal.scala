@@ -10,16 +10,14 @@ import net.liftweb.paypal._
 
 class TestPaypal {
   
-  @Before
-  def init = {
-    println("### Starting Paypal Test...")
-  }
+  val pdt: PaypalDataTransfer = PaypalDataTransfer("dfgdf","dfgdf")
   
-  @Test
-  def attemptToSetMode = {
-    var p: PaypalDataTransfer = PaypalDataTransfer("dfgdf","dfgdf")
-    println("######## MODE:")
-    println(p.mode)
-  }
+/*  @Test*/
+/*  def attemptToSetMode = {*/
+/*    val p: PaypalDataTransfer = pdt.withMode(PaypalSandbox)*/
+/*    assertEquals(p.mode, PaypalSandbox)*/
+/*    println(pdt.execute)*/
+    
+/*  }*/
   
 }
