@@ -29,22 +29,45 @@ import model._
 
 import scala.xml.{Text, NodeSeq}
 
+/**
+ * A wiki location
+ *
+ * @param page - the name of the page
+ * @param edit - are we viewing or editing the page?
+ */
 case class WikiLoc(page: String, edit: Boolean) extends LocParams {
+
+  /**
+   * Get the underly database record for this page
+   */
   lazy val record: WikiEntry =
     WikiEntry.find(By(WikiEntry.name, page)) openOr
   WikiEntry.create.name(page)
 }
 
+/**
+ * The WikiStuff object that provides menu, URL rewriting,
+ * and snippet support for the page that displays wiki contents
+ */
 object WikiStuff extends Loc[WikiLoc] {
   object AllLoc extends WikiLoc("all", false)
 
+  // the name of the page
   def name = "wiki"
+
+  // the default parameters (used for generating the menu listing)
   def defaultParams = Full(WikiLoc("HomePage", false))
 
+  // no extra parameters
   def stuff = Nil
 
+  // is the current page an "edit" or "view"
   def currentEdit = foundParam.is.map(_.edit) openOr false
 
+  /**
+   * Check for page-specific snippets and
+   * do appropriate dispatching
+   */
   override val snippets: SnippetTest = {
     case ("wiki", Full(AllLoc)) => showAll _
     case ("wiki", Full(wp @ WikiLoc(_ , true))) => editRecord(wp.record) _
@@ -54,6 +77,46 @@ object WikiStuff extends Loc[WikiLoc] {
     case ("wiki", Full(wp: WikiLoc)) => displayRecord(wp.record) _
   }
 
+
+  /**
+   * Generate a link based on the current page
+   */
+  val link = 
+    new Loc.Link[WikiLoc](List("wiki"), false) {
+      override def createLink(in: WikiLoc) = {
+	if (in.edit)
+	  Full(Text("/wiki/edit/"+urlEncode(in.page)))
+	else
+	  Full(Text("/wiki/"+urlEncode(in.page)))
+      }
+    }
+
+  /**
+   * What's the text of the link?
+   */
+  val text = new Loc.LinkText(calcLinkText _)
+  
+  
+  def calcLinkText(in: WikiLoc): NodeSeq =
+    if (in.edit)
+      Text("Wiki edit "+in.page)
+    else
+      Text("Wiki "+in.page)
+
+  /**
+   * Rewrite the request and emit the type-safe parameter
+   */
+  override val rewrite: LocRewrite = 
+    Full({
+      case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
+			  _, _) =>
+      (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))
+
+      case RewriteRequest(ParsePath("wiki" :: page :: Nil, _, _,_),
+			  _, _) =>
+      (RewriteResponse("wiki" :: Nil), WikiLoc(page, false))
+
+    })
 
   def showAll(in: NodeSeq): NodeSeq = 
     WikiEntry.findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
@@ -114,35 +177,6 @@ object WikiStuff extends Loc[WikiLoc] {
   def stringUrl(page: String): String = 
     url(page).map(_.text) getOrElse ""
 
-  val link = 
-    new Loc.Link[WikiLoc](List("wiki"), false) {
-      override def createLink(in: WikiLoc) = {
-	if (in.edit)
-	  Full(Text("/wiki/edit/"+urlEncode(in.page)))
-	else
-	  Full(Text("/wiki/"+urlEncode(in.page)))
-      }
-    }
 
-  val text = new Loc.LinkText(calcLinkText _)
-  
-  
-  def calcLinkText(in: WikiLoc): NodeSeq =
-    if (in.edit)
-      Text("Wiki edit "+in.page)
-    else
-      Text("Wiki "+in.page)
-
-  override val rewrite: LocRewrite = 
-    Full({
-      case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
-			  _, _) =>
-      (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))
-
-      case RewriteRequest(ParsePath("wiki" :: page :: Nil, _, _,_),
-			  _, _) =>
-      (RewriteResponse("wiki" :: Nil), WikiLoc(page, false))
-
-    })
 }
 
