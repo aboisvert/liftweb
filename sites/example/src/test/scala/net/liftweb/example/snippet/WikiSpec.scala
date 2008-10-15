@@ -71,7 +71,7 @@ trait MockEntries extends MockRequest {
   }
   override def createMocks = {
     super.createMocks
-    wikiEntries = mock(classOf[MetaWikiEntry])
+    wikiEntries = mock[MetaWikiEntry]
   }
   def userRequests(page: String) {
     if (page == "nothing")
@@ -101,13 +101,13 @@ trait MockEntries extends MockRequest {
 import _root_.org.specs.mock._
 import _root_.javax.servlet.http._
 trait MockRequest extends JMocker with ClassMocker {
-  var request = mock(classOf[RequestState])
-  var httpRequest = mock(classOf[HttpServletRequest])
-  var session = mock(classOf[LiftSession])
+  var request = mock[RequestState]
+  var httpRequest = mock[HttpServletRequest]
+  var session = mock[LiftSession]
   def createMocks = {
-    request = mock(classOf[RequestState])
-    httpRequest = mock(classOf[HttpServletRequest])
-    session = mock(classOf[LiftSession])
+    request = mock[RequestState]
+    httpRequest = mock[HttpServletRequest]
+    session = mock[LiftSession]
     expect {
       0.atLeastOf(request).request.willReturn(httpRequest)
       0.atLeastOf(httpRequest).getCookies
