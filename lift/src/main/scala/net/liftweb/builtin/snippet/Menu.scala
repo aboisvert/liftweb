@@ -77,8 +77,9 @@ class Menu extends DispatchSnippet {
     for (group <- S.attr("group").toList;
          siteMap <- LiftRules.siteMap.toList;
          loc <- siteMap.locForGroup(group);
-         link <- loc.link.createLink(Nil)) yield {
-      val a = <a href={link}>{loc.text.text()}</a> % attrs
+         link <- loc.createDefaultLink;
+         linkText <- loc.linkText) yield {
+      val a = <a href={link}>{linkText}</a> % attrs
       
       Group(bind("menu", toBind, "bind" -> a))
     }

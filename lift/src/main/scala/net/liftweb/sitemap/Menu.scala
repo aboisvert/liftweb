@@ -20,7 +20,7 @@ import _root_.net.liftweb.http._
 import _root_.net.liftweb.util._
 import Helpers._
 
-case class Menu(loc: Loc, kids: Menu*) extends HasKids {
+case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
   private[sitemap] var _parent: Can[HasKids] = Empty
   private[sitemap] var siteMap: SiteMap = _
 
@@ -43,12 +43,12 @@ case class Menu(loc: Loc, kids: Menu*) extends HasKids {
 
   override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess 
 
-  def findLoc(req: RequestState): Can[Loc] = 
+  def findLoc(req: RequestState): Can[Loc[_]] = 
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
 
-  def locForGroup(group: String): Seq[Loc] = 
-  (if (loc.inGroup_?(group)) List(loc) else Nil) ++
+  def locForGroup(group: String): Seq[Loc[_]] =
+  (if (loc.inGroup_?(group)) List[Loc[_]](loc) else Nil) ++
   kids.flatMap(_.locForGroup(group))
 
 

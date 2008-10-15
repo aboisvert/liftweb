@@ -22,11 +22,58 @@ import Helpers._
 
 import _root_.scala.xml.{NodeSeq, Text}
 
+
+trait LocParams
+
+sealed trait NullLocParams extends LocParams
+object NullLocParams extends NullLocParams
+
 /**
  * A menu location
  */
-class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuff: List[Loc.LocStuff]) {
+trait Loc[ParamType <: LocParams] {
+  type LocRewrite =  Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
+  
+  def name: String
+
+  def link: Loc.Link[ParamType]
+
+  def text: Loc.LinkText[ParamType]
+
+  def stuff: List[Loc.LocStuff]
+
+  def defaultParams: Can[ParamType]
+  
+  def rewrite: LocRewrite = Empty
+
+  def createDefaultLink: Option[NodeSeq] = (foundParam.is or defaultParams).flatMap(p => link.createLink(p)).toOption
+
+  def createLink(in: ParamType): Option[NodeSeq] = link.createLink(in).toOption
+
   override def toString = "Loc("+name+", "+link+", "+text+", "+stuff+")"
+
+  def rewritePf: Can[LiftRules.RewritePf] = rewrite.map(rw =>
+    new AnyRef with PartialFunction[RewriteRequest, RewriteResponse] {
+      def isDefinedAt(in: RewriteRequest) = rw.isDefinedAt(in)
+
+      def apply(in: RewriteRequest): RewriteResponse = {      
+        val (ret, param) = rw.apply(in)
+        foundParam.set(Full(param))
+        ret
+      }
+    }
+  )
+  
+  type SnippetTest = PartialFunction[(String, Can[ParamType]), NodeSeq => NodeSeq]
+
+  def snippets: SnippetTest = Map.empty
+
+  def snippet(name: String): Can[NodeSeq => NodeSeq] = {
+    val test = (name, foundParam.is)
+
+  if (snippets.isDefinedAt(test)) Full(snippets(test))
+  else Empty
+  }
 
   def testAccess: Either[Boolean, Can[LiftResponse]] = {
     def testStuff(what: List[Loc.LocStuff]): Either[Boolean, Can[LiftResponse]] = what match {
@@ -49,22 +96,31 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
     }
   }
 
-  private def findTitle(lst: List[Loc.LocStuff]): Can[Loc.Title] = lst match {
+  private def findTitle(lst: List[Loc.LocStuff]): Can[Loc.Title[ParamType]] = lst match {
     case Nil => Empty
-    case (t : Loc.Title) :: xs => Full(t)
+    case (t : Loc.Title[ParamType]) :: xs => Full(t)
     case _ => findTitle(lst.tail)
   }
 
   /**
    * The title of the location
    */
-  def title: NodeSeq = findTitle(stuff).map(_.title()) openOr text.text()
+  def title: NodeSeq = (foundParam.is or defaultParams).map(p => title(p)) openOr Text(name)
+  // (findTitle(stuff).map(_.title()) openOr text.text())
+  
+  def title(in: ParamType): NodeSeq = findTitle(stuff).map(_.title(in)) openOr text.text(in)
+
+  def linkText: Can[NodeSeq] = (foundParam.is or defaultParams).map(p => linkText(p))
+
+  def linkText(in: ParamType): NodeSeq = text.text(in)
 
   private[sitemap] def setMenu(p: Menu)
   {
     _menu = p
     p.siteMap.addLoc(this)
   }
+  
+  protected object foundParam extends RequestVar[Can[ParamType]](Empty)
 
   private var _menu: Menu = _
   def menu = _menu
@@ -98,13 +154,14 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Can[MenuItem] =
   (hidden, testAccess) match {
     case (false, Left(true)) =>
-      link.createLink(Nil).map(t =>
-        MenuItem(text.text(),t, kids, current, path,
-                 stuff.flatMap {
-            case v: Loc.LocInfo[(T forSome {type T})] => v()
-            case _ =>  Empty
-          }
-        ))
+      defaultParams.flatMap(p =>
+        link.createLink(p).map(t =>
+          MenuItem(text.text(p),t, kids, current, path,
+                   stuff.flatMap {
+              case v: Loc.LocInfo[(T forSome {type T})] => v()
+              case _ =>  Empty
+            }
+          )))
 
     case _ => Empty
   }
@@ -112,7 +169,7 @@ class Loc(val name: String, val link: Loc.Link, val text: Loc.LinkText, val stuf
   private def hidden = stuff.contains(Loc.Hidden)
   
   private lazy val groupSet: Set[String] = 
-   Set(stuff.flatMap{case s: Loc.LocGroup => s.group case _ => Nil} :_*)
+  Set(stuff.flatMap{case s: Loc.LocGroup => s.group case _ => Nil} :_*)
   
   def inGroup_?(group: String): Boolean = groupSet.contains(group)
 }
@@ -133,11 +190,33 @@ object Loc {
    * @param params -- access test, title calculation, etc.
    *
    */
-  def apply(name: String,
-            link: Link,
-            text: LinkText,
-            params: LocStuff*): Loc = new Loc(name, link, text, params.toList)
+  def apply(theName: String,
+            theLink: Link[NullLocParams],
+            theText: LinkText[NullLocParams],
+            params: LocStuff*): Loc[NullLocParams] =
+  new Loc[NullLocParams] {
+    val name = theName
+    val link: Loc.Link[NullLocParams] = theLink
 
+    val text: Loc.LinkText[NullLocParams] = theText
+    val defaultParams: Can[NullLocParams] = Full(NullLocParams)
+
+    val stuff: List[LocStuff]  = params.toList  
+  }
+
+  def apply(theName: String, theLink: Loc.Link[NullLocParams], 
+            theText: LinkText[NullLocParams],
+            theStuff: List[LocStuff]): Loc[NullLocParams] =
+  new Loc[NullLocParams] {
+    val name = theName
+    val link: Loc.Link[NullLocParams] = theLink
+    val defaultParams: Can[NullLocParams] = Full(NullLocParams)
+
+    val text: Loc.LinkText[NullLocParams] = theText
+
+    val stuff: List[LocStuff]  = theStuff.toList  
+  }
+  
   /**
    * Unapply to do pattern matching against a Loc.
    * (name, link_uri, link_text)
@@ -152,7 +231,7 @@ object Loc {
    * A title for the page.  A function that calculates the title... useful
    * if the title of the page is dependent on current state
    */
-  case class Title(title: () => NodeSeq) extends LocStuff
+  case class Title[T <: LocParams](title: T => NodeSeq) extends LocStuff
 
   /**
    * If this parameter is included, the item will not be visible in the menu, but
@@ -160,11 +239,11 @@ object Loc {
    */
   case object Hidden extends LocStuff
   
-/**
-* If the Loc is in a group (or groups) like "legal" "community" etc.
-* the groups can be specified and recalled at the top level
-*/
-case class LocGroup(group: String*) extends LocStuff
+  /**
+   * If the Loc is in a group (or groups) like "legal" "community" etc.
+   * the groups can be specified and recalled at the top level
+   */
+  case class LocGroup(group: String*) extends LocStuff
 
   /**
    * If the test returns True, the page can be accessed, otherwise,
@@ -198,7 +277,7 @@ case class LocGroup(group: String*) extends LocStuff
   /**
    * What's the link text.
    */
-  case class LinkText(text: () => NodeSeq)
+  case class LinkText[T <: LocParams](text: T => NodeSeq)
 
   /**
    * This defines the Link to the Loc.
@@ -212,7 +291,7 @@ case class LocGroup(group: String*) extends LocStuff
    * (for example, help pages)
    * @param create -- create a URL based on incoming parameters (NO IMPLEMENTED **TODO**)
    */
-  class Link(uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
+  class Link[T <: LocParams](uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
     def this(b: List[String]) = this(b, false)
 
     def isDefinedAt(req: RequestState): Boolean =
@@ -223,8 +302,8 @@ case class LocGroup(group: String*) extends LocStuff
     else throw new MatchError("Failed for Link "+uriList)
 
 
-    def createLink(params: Seq[(String, String)]): Can[String] =
-    Full(uriList.mkString("/", "/", ""))
+    def createLink(params: T): Can[NodeSeq] =
+    Full(Text(uriList.mkString("/", "/", "")))
 
   }
 
@@ -233,19 +312,19 @@ case class LocGroup(group: String*) extends LocStuff
    */
   object Link {
     def apply(urlLst: List[String], matchHead_? : Boolean, url: String) =
-    new Link(urlLst, matchHead_?) {
-    override def createLink(params: Seq[(String, String)]): Can[String] =
-    Full(url)
-  }
+    new Link[NullLocParams](urlLst, matchHead_?) {
+      override def createLink(params: NullLocParams): Can[NodeSeq] =
+      Full(Text(url))
+    }
     
   }
 
-object ExtLink {
-  def apply(url: String) = new Link(Nil, false) {
-    override def createLink(params: Seq[(String, String)]): Can[String] =
-    Full(url)
+  object ExtLink {
+    def apply(url: String) = new Link[NullLocParams](Nil, false) {
+      override def createLink(params: NullLocParams): Can[NodeSeq] =
+      Full(Text(url))
+    }
   }
-}
 
   trait LocInfoVal[T] {
     def value: T
@@ -258,10 +337,10 @@ object ExtLink {
   def alwaysTrue(a: RequestState) = true
   def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
 
-implicit def nodeSeqToLinkText(in: => NodeSeq): LinkText = LinkText(() => in)
-  implicit def strToLinkText(in: => String): LinkText = LinkText(() => Text(in))
-  implicit def strLstToLink(in: Seq[String]): Link = new Link(in.toList)
-  implicit def strPairToLink(in: (Seq[String], Boolean)): Link = new Link(in._1.toList, in._2)
+  implicit def nodeSeqToLinkText[T <: LocParams](in: => NodeSeq): LinkText[T] = LinkText[T](T => in)
+  implicit def strToLinkText[T <: LocParams](in: => String): LinkText[T] = LinkText(T => Text(in))
+  implicit def strLstToLink(in: Seq[String]): Link[NullLocParams] = new Link[NullLocParams](in.toList)
+  implicit def strPairToLink(in: (Seq[String], Boolean)): Link[NullLocParams] = new Link[NullLocParams](in._1.toList, in._2)
   implicit def strToFailMsg(in: String): FailMsg = 
   f(RedirectWithState(LiftRules.siteMapFailRedirectLocation.
                       mkString("/", "/", ""),
@@ -278,7 +357,7 @@ case class CompleteMenu(lines: Seq[MenuItem]) {
   lazy val breadCrumbs: Seq[MenuItem] = lines.flatMap(_.breadCrumbs)
 }
 
-case class MenuItem(text: NodeSeq, uri: String,  kids: Seq[MenuItem],
+case class MenuItem(text: NodeSeq, uri: NodeSeq,  kids: Seq[MenuItem],
                     current: Boolean,
                     path: Boolean, 
                     info: List[Loc.LocInfoVal[(T forSome {type T})]])

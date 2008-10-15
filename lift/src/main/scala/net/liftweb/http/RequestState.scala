@@ -250,7 +250,7 @@ class RequestState(val path: ParsePath,
     }
   }
 
-  lazy val location: Can[Loc] = LiftRules.siteMap.flatMap(_.findLoc(this))
+  lazy val location: Can[Loc[_]] = LiftRules.siteMap.flatMap(_.findLoc(this))
 
   def testLocation: Either[Boolean, Can[LiftResponse]] = {
     if (LiftRules.siteMap.isEmpty) Left(true)
@@ -302,10 +302,32 @@ class RequestState(val path: ParsePath,
   /**
    * The user agent of the browser that sent the request
    */
-  def userAgent: Can[String] = 
+  lazy val userAgent: Can[String] = 
   for (r <- Can.legacyNullTest(request);
        uah <- Can.legacyNullTest(request.getHeader("User-Agent")))
   yield uah
+  
+  lazy val isIE6: Boolean = (userAgent.map(_.indexOf("MSIE 6") >= 0)) openOr false
+  lazy val isIE7: Boolean = (userAgent.map(_.indexOf("MSIE 7") >= 0)) openOr false
+  lazy val isIE8: Boolean = (userAgent.map(_.indexOf("MSIE 8") >= 0)) openOr false
+  lazy val isIE = isIE6 || isIE7 || isIE8
+  
+  lazy val isSafari2: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 && 
+                                               s.indexOf("Version/2.") >= 0)) openOr false
+  
+  lazy val isSafari3: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 && 
+                                               s.indexOf("Version/3.") >= 0)) openOr false
+  lazy val isSafari = isSafari2 || isSafari3
+  
+  lazy val isIPhone = isSafari && (userAgent.map(s => s.indexOf("(iPhone;") >= 0) openOr false)
+  
+  lazy val isFirefox2: Boolean = (userAgent.map(_.indexOf("Firefox/2") >= 0)) openOr false
+  lazy val isFirefox3: Boolean = (userAgent.map(_.indexOf("Firefox/3") >= 0)) openOr false
+  lazy val isFirefox = isFirefox2 || isFirefox3
+  
+  lazy val isOpera9: Boolean = (userAgent.map(s => s.indexOf("Opera/9.") >= 0) openOr false)
+  def isOpera = isOpera9
+  
 
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }

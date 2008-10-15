@@ -20,40 +20,44 @@ import _root_.net.liftweb.http._
 import _root_.net.liftweb.util._
 import Helpers._
 
-import _root_.scala.xml.{NodeSeq}
+import _root_.scala.xml.{NodeSeq, Text}
 
 class SiteMapException(msg: String) extends Exception(msg)
 
 case class SiteMap(kids: Menu*) extends HasKids  {
-  private var locs: Map[String, Loc] = Map.empty
+  import SiteMap._
+  private var locs: Map[String, Loc[_]] = Map.empty
 
   kids.foreach(_._parent = Full(this))
   kids.foreach(_.init(this))
   kids.foreach(_.validate)
-  private[sitemap] def addLoc(in: Loc) {
-    if (locs.isDefinedAt(in.name)) 
-    throw new SiteMapException("Location "+in.name+" defined twice "+
-    locs(in.name)+" and "+in)
-    else locs = locs + (in.name -> in)
+  private[sitemap] def addLoc(in: Loc[_]) {
+    val name = in.name
+    if (locs.isDefinedAt(name))
+    throw new SiteMapException("Location "+name+" defined twice "+
+                               locs(name)+" and "+in)
+    else locs = locs + (name -> in.asInstanceOf[Loc[LocParams]])
   }
 
-  def findLoc(name: String): Can[Loc] =
-  Can(locs.get(name))
+  def findLoc(name: String): Can[Loc[_]] =
+  Can(locs.get(name)) 
 
-  def findLoc(req: RequestState): Can[Loc] =
-    first(kids)(_.findLoc(req))
+  def findLoc(req: RequestState): Can[Loc[_]] =
+  first(kids)(_.findLoc(req))
 
-  def locForGroup(group: String): Seq[Loc] = 
+  def locForGroup(group: String): Seq[Loc[_]] =
   kids.flatMap(_.locForGroup(group)).filter(_.testAccess match {
-    case Left(true) => true case _ => false})
+      case Left(true) => true case _ => false})
+
+  lazy val menus: List[Menu] = locs.values.map(_.menu).toList
 }
 
 object SiteMap {
-  def findLoc(name: String): Can[Loc] =
+  def findLoc(name: String): Can[Loc[_]] =
   for (sm <- LiftRules.siteMap;
        loc <- sm.findLoc(name)) yield loc
 
-  def findAndTestLoc(name: String): Can[Loc] =
+  def findAndTestLoc(name: String): Can[Loc[_]] =
   findLoc(name).flatMap(l => l.testAccess match {
       case Left(true) => Full(l)
       case _ => Empty
@@ -61,11 +65,11 @@ object SiteMap {
 
   def buildLink(name: String, text: NodeSeq): NodeSeq =
   for (loc <- findAndTestLoc(name).toList;
-       link <- loc.link.createLink(Nil))
+       link <- loc.createDefaultLink)
   yield <a href={link}>{
       text match {
         case x if x.text.length > 0 => x
-        case _ => loc.text.text()
+        case _ => loc.linkText openOr Text(loc.name)
       }
     }</a>
 

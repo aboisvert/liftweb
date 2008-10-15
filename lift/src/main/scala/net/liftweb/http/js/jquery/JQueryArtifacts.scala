@@ -50,7 +50,7 @@ object JQueryArtifacts extends JSArtifacts {
   
   def setHtml(id: String, xml: NodeSeq): JsCmd = JqJsCmds.JqSetHtml(id, xml)
   
-  def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.OnLoad(cmd)
+  def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.JqOnLoad(cmd)
   
   def ajax(data: AjaxInfo): String = {
     "jQuery.ajax(" + toJson(data, S.contextPath,

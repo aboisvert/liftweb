@@ -21,7 +21,7 @@ import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.Helpers
 import _root_.net.liftweb.util.TimeHelpers
 import _root_.net.liftweb.util._
-import _root_.scala.xml.{Node, SpecialNode}
+import _root_.scala.xml.{Node, SpecialNode, Text}
 
 object JsCommands {
   def create = new JsCommands(Nil)
@@ -81,10 +81,13 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
   // def label: String = "#JS"
 
   override def toString(sb: StringBuilder) = {
+    (new Text(toJsCmd)).toString(sb)
+    /*
     sb.append("<!-- ")
     sb.append(toJsCmd)
     sb.append("\n-->")
     sb
+    */
   }
 
   def appendToParent(parentName: String): JsCmd = {
@@ -446,6 +449,11 @@ object Function {
     }
 """
   }
+}
+
+object OnLoad{
+  def apply(what: JsCmd): JsCmd = LiftRules.jsArtifacts.onLoad(what)
+
 }
 
   case class SetValById(id: String, right: JsExp) extends JsCmd {

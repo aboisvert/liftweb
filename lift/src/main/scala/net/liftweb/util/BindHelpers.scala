@@ -234,14 +234,25 @@ trait BindHelpers {
    *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
    * </pre>
    */
-  def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq = {
+  def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq =
+  bind(namespace, Empty, Empty , xml, params :_*)
+
+  /**
+   * Bind a set of values to parameters and attributes in a block of XML.<p/>
+   * Usage:<pre>
+   *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
+   * </pre>
+   */
+  def bind(namespace: String, nodeFailureXform: Can[NodeSeq => NodeSeq],
+           paramFailureXform: Can[PrefixedAttribute => MetaData],
+           xml: NodeSeq, params: BindParam*): NodeSeq = {
     val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
     def attrBind(attr: MetaData): MetaData = attr match {
       case Null => Null
       case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
       case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
-          case None => new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
+          case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
           case Some(abp @ AttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
           case Some(abp @ FuncAttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
           case Some(bp: TheBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
@@ -256,7 +267,9 @@ trait BindHelpers {
         node match {
           case s : Elem if (node.prefix == namespace) => {
               map.get(node.label) match {
-                case None => Text("FIX"+"ME failed to bind <"+namespace+":"+node.label+" />")
+                case None =>
+                  nodeFailureXform.map(_(s)) openOr s
+
                 case Some(ns) => ns.calcValue(s.child)
               }
             }
