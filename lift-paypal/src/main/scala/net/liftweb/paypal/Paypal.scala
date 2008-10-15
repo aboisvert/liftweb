@@ -2,10 +2,10 @@ package net.liftweb.paypal
 
 import net.liftweb.util.Helpers
 import Helpers._
-import net.liftweb.util._
-import org.apache.commons.httpclient._
-import org.apache.commons.httpclient.methods._
-import java.io.{InputStream,BufferedReader,InputStreamReader}
+import _root_.net.liftweb.util._
+import _root_.org.apache.commons.httpclient._
+import _root_.org.apache.commons.httpclient.methods._
+import _root_.java.io._
 
 /**
  * sealed abstract type PaypalMode so we can cast to the super
@@ -13,9 +13,11 @@ import java.io.{InputStream,BufferedReader,InputStreamReader}
  * of this source file.
  */
 sealed abstract class PaypalMode
+
 case object PaypalSandbox extends PaypalMode {
   override def toString = "www.sandbox.paypal.com"
 }
+
 case object PaypalLive extends PaypalMode {
   override def toString = "www.paypal.com"
 }
@@ -27,10 +29,12 @@ case object PaypalLive extends PaypalMode {
 sealed abstract class PaypalConnection {
   def port = 80
 }
+
 case object PaypalHTTP extends PaypalConnection {
   override def toString = "http"
   override def port: Int = 80
 }
+
 case object PaypalSSL extends PaypalConnection {
   override def toString = "https"
   override def port: Int = 443
@@ -51,6 +55,7 @@ object HttpClientFactory {
     return c
   }
 }
+
 object PostMethodFactory {
   def apply(url: String, paramaters: Array[NameValuePair]): PostMethod = {
     var p: PostMethod = new PostMethod(url)
@@ -58,6 +63,7 @@ object PostMethodFactory {
     return p
   }
 }
+
 /**
 * A simple abstraction for all HTTP operations. By definition they will return a HTTP error
 * code. We are invaribly only concerned with if it was a good one or not.
@@ -68,27 +74,61 @@ sealed abstract class PaypalHttpOperation {
     case _ => false
   }
 }
+
 case class PaypalRequest(client: HttpClient, post: PostMethod) extends PaypalHttpOperation {
   def withClient(in: HttpClient) = PaypalRequest(in, post)
   def withPost(in: PostMethod) = PaypalRequest(client, in)
   def invoke: PaypalResponse = {
     wasSuccessful(tryo(client.executeMethod(post)).openOr(500)) match {
-      case true => PaypalResponse(post)
-      case _ => PaypalFailure(post).withMessage("Recived HTTP code other than 200 OK")
+      case true => { 
+        RawPostInputStreamSingleton(post)
+        PaypalResponse()
+      }
+      case _ => PaypalFailure("Recived HTTP code other than 200 OK")
     }
   }
 }
-case class PaypalResponse(post: PostMethod) extends PaypalHttpOperation {
-  val responseStream: InputStream = post.getResponseBodyAsStream()
-  def getProcessedResponse: Can[String] = {
-    var _readStream: BufferedReader = new BufferedReader(
-      new InputStreamReader(responseStream)
-    )
-    val _result: Can[String] = tryo(_readStream.readLine())
-    _readStream.close()
-    println("######### L81:" + _result.openOr(""))
-    return _result
+
+/**
+ * As InputStream is a mutable I/O, we need to use a singleton to access
+ * it / process it and return us a immutable result we can work with. If
+ * we didnt do this then we get into a whole world of hurt and null pointers.
+ */
+object RawPostInputStreamSingleton {
+  
+  private var _outputList: List[String] = List()
+  
+  def apply(p: PostMethod): List[String] = {
+    var stream: InputStream = p.getResponseBodyAsStream()
+    val reader: BufferedReader = new BufferedReader(new InputStreamReader(stream))
+    if(_outputList.length == 0){
+      var line: String = null
+      try {
+        while ({line = reader.readLine(); line != null}){
+          //println("########## " + line)
+          _outputList = _outputList ::: List(line)
+        }
+      } finally {
+        if(reader != null){
+          reader.close
+        }
+      }
+    }
+    _outputList
   }
+  
+  def apply(): List[String] = _outputList
+}
+
+case class PaypalResponse extends PaypalHttpOperation {
+
+  def getValueForKey(k: String): String = splitParamaterToKeyValuePair(
+        RawPostInputStreamSingleton().filter(splitParamaterToKeyValuePair(_)(0) == k).toString)(1)
+  
+  def getRawValueAtIndex(idx: Int): String = RawPostInputStreamSingleton()(idx)
+  
+  protected def splitParamaterToKeyValuePair(in: String) = in.split("=").toList
+  
 }
 
 /**
@@ -97,11 +137,9 @@ case class PaypalResponse(post: PostMethod) extends PaypalHttpOperation {
  * @param post The instance of PostMethod from HTTP Commons lib
  * @param message Specifiy if you want to detail the error that actually occoured
  */
-case class PaypalFailure(override val post: PostMethod, message: String) extends PaypalResponse(post: PostMethod) {
-  def withMessage(in: String) = PaypalFailure(post, in)
-}
+case class PaypalFailure(message: String) extends PaypalResponse
 object PaypalFailure {
-  def apply(p: PostMethod): PaypalFailure = PaypalFailure(p, "Generic Failure")
+  def apply(): PaypalFailure = PaypalFailure("Generic Failure")
 }
 
 /**
@@ -146,9 +184,10 @@ case class PaypalDataTransfer(authToken: String, transactionToken: String, overr
   * @return PaypalDataTransferReponse
   */
   def execute: PaypalDataTransferReponse = PaypalDataTransferReponse(
-    PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke.post
+    PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke
   )
 }
+
 object PaypalDataTransfer {
   /**
   * Builder method to create a new PDT instance
@@ -159,15 +198,31 @@ object PaypalDataTransfer {
   def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
 }
 
-case class PaypalDataTransferReponse(override val post: PostMethod) extends PaypalResponse(post: PostMethod) {
+/**
+ * Wrapper instance for handling the response from a paypal data transfer.
+ * 
+ * @param post The actually PostMethod were concerned with here
+ */
+case class PaypalDataTransferReponse(response: PaypalResponse) extends PaypalResponse {
   /**
   * Quick utility method for letting you know if the payment data is returning a sucsessfull message
   *
   * @return Boolean
   */
-  def paymentSuccessful: Boolean = getProcessedResponse.openOr("") match {
-    case "SUCSESS" => true
-    case _ => false
+  def paymentSuccessful: Boolean = getRawValueAtIndex(0) match {
+   case "SUCCESS" => true
+   case _ => false
   }
+}
+
+/**
+ * In response to the IPN postback from paypal, its nessicary to then call paypal and pass back
+ * the exact set of paramaters that you were given by paypal - this stops spoofing. Use the 
+ * PaypalInstantPaymentTransferPostback exactly as you would PaypalDataTransferReponse.
+ */
+case class PaypalInstantPaymentTransferPostback(override val mode: PaypalMode, override val connection: PaypalConnection) extends Paypal(mode: PaypalMode, connection: PaypalConnection) {
+  val payloadArray: Array[NameValuePair] = Array(
+    new NameValuePair("cmd", "_notify-validate")
+  )
 }
 
