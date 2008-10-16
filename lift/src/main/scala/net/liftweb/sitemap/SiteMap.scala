@@ -36,7 +36,7 @@ case class SiteMap(kids: Menu*) extends HasKids  {
     if (locs.isDefinedAt(name))
     throw new SiteMapException("Location "+name+" defined twice "+
                                locs(name)+" and "+in)
-    else locs = locs + (name -> in.asInstanceOf[Loc[LocParams]])
+    else locs = locs + (name -> in.asInstanceOf[Loc[_]])
   }
 
   def findLoc(name: String): Can[Loc[_]] =

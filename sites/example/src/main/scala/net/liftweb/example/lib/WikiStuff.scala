@@ -35,7 +35,7 @@ import scala.xml.{Text, NodeSeq}
  * @param page - the name of the page
  * @param edit - are we viewing or editing the page?
  */
-case class WikiLoc(page: String, edit: Boolean) extends LocParams {
+case class WikiLoc(page: String, edit: Boolean) {
 
   /**
    * Get the underly database record for this page

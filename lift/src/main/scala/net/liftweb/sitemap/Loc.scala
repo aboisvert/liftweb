@@ -22,16 +22,13 @@ import Helpers._
 
 import _root_.scala.xml.{NodeSeq, Text}
 
-
-trait LocParams
-
-sealed trait NullLocParams extends LocParams
+sealed trait NullLocParams
 object NullLocParams extends NullLocParams
 
 /**
  * A menu location
  */
-trait Loc[ParamType <: LocParams] {
+trait Loc[ParamType] {
   type LocRewrite =  Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
   
   def name: String
@@ -231,7 +228,7 @@ object Loc {
    * A title for the page.  A function that calculates the title... useful
    * if the title of the page is dependent on current state
    */
-  case class Title[T <: LocParams](title: T => NodeSeq) extends LocStuff
+  case class Title[T](title: T => NodeSeq) extends LocStuff
 
   /**
    * If this parameter is included, the item will not be visible in the menu, but
@@ -277,7 +274,7 @@ object Loc {
   /**
    * What's the link text.
    */
-  case class LinkText[T <: LocParams](text: T => NodeSeq)
+  case class LinkText[T](text: T => NodeSeq)
 
   /**
    * This defines the Link to the Loc.
@@ -291,7 +288,7 @@ object Loc {
    * (for example, help pages)
    * @param create -- create a URL based on incoming parameters (NO IMPLEMENTED **TODO**)
    */
-  class Link[T <: LocParams](uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
+  class Link[T](uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
     def this(b: List[String]) = this(b, false)
 
     def isDefinedAt(req: RequestState): Boolean =
@@ -337,8 +334,8 @@ object Loc {
   def alwaysTrue(a: RequestState) = true
   def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
 
-  implicit def nodeSeqToLinkText[T <: LocParams](in: => NodeSeq): LinkText[T] = LinkText[T](T => in)
-  implicit def strToLinkText[T <: LocParams](in: => String): LinkText[T] = LinkText(T => Text(in))
+  implicit def nodeSeqToLinkText[T](in: => NodeSeq): LinkText[T] = LinkText[T](T => in)
+  implicit def strToLinkText[T](in: => String): LinkText[T] = LinkText(T => Text(in))
   implicit def strLstToLink(in: Seq[String]): Link[NullLocParams] = new Link[NullLocParams](in.toList)
   implicit def strPairToLink(in: (Seq[String], Boolean)): Link[NullLocParams] = new Link[NullLocParams](in._1.toList, in._2)
   implicit def strToFailMsg(in: String): FailMsg = 

@@ -33,9 +33,21 @@ object SHtml {
    *
    * @return a button to put on your page
    */
-  def ajaxButton(text: String, func: => JsCmd): Elem =
-    <input type="button" value={text}/> % ("onclick" -> makeAjaxCall(Str(mapFunc(() => func)+"=true")))
+  def ajaxButton(text: NodeSeq, func: () => JsCmd): Elem =
+    <button onclick={makeAjaxCall(Str(mapFunc(func)+"=true"))}>{text}</button> // <input type="button" value={text}/> % ("onclick" -> makeAjaxCall(Str(mapFunc(func)+"=true")))
 
+  /**
+   * Create an Ajax button. When it's pressed, the function is executed
+   *
+   * @param text -- the name/text of the button
+   * @param func -- the function to execute when the button is pushed.  Return Noop if nothing changes on the browser.
+   *
+   * @return a button to put on your page
+   */
+  def ajaxButton(text: String, func: () => JsCmd): Elem =
+  ajaxButton(Text(text), func)
+//    <button onclick={makeAjaxCall(Str(mapFunc(func)+"=true"))}>{text}</button>
+  
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
    *
