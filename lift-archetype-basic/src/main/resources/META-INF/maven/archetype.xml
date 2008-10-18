@@ -1,6 +1,7 @@
 <archetype>
   <id>liftweb-archetype-basic</id>
   <sources>
+    <source>src/main/scala/lib/.keep</source>
     <source>src/main/scala/comet/.keep</source>
     <source>src/main/scala/model/.keep</source>
     <source>src/main/scala/model/User.scala</source>
