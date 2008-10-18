@@ -280,13 +280,7 @@ case class PaypalDataTransferReponse(override val response: List[String]) extend
 // PAYPAL IPN
 //
 
-/** 
- * When end users want to create custom event handlers then
- * they will need to mixin this trait to get a bunch of usefull functions
- */
-abstract class PaypalActionHandler extends PaypalUtilities
-
-case class PaypalEventAction(status: PaypalTransactionStatus, functions: List[(PaypalResponse) => PaypalActionHandler])
+case class PaypalEventAction(status: PaypalTransactionStatus, functions: List[() => Any])
 
 /**
  * Users would generally invoke this case class in a DispatchPf call in 
@@ -294,12 +288,19 @@ case class PaypalEventAction(status: PaypalTransactionStatus, functions: List[(P
  * callback, and handles the subsequent response.
  */
 case class PaypalIPN(request: RequestState, actions: List[PaypalEventAction]){ 
+  //actions.map(_.functions.map(_()))
   
-  def onEvent(in: List[PaypalEventAction]) = PaypalIPN(request, actions ++ in)
+  println(request)
   
-  def execute = {
+  def onEvent(in: PaypalEventAction) = PaypalIPN(request, actions ++ List(in))
+  
+  def execute: Boolean = {
     //create request, get response and pass response object to the specified event handlers
+    true
   }
+}
+object PaypalIPN {
+  def apply(r: RequestState): PaypalIPN = PaypalIPN(r, List())
 }
 
 
