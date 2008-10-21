@@ -593,60 +593,62 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
        loc <- req.location;
        func <- loc.snippet(snippet)) yield func(kids)
   
-  val ret = snippetName.map(snippet =>
-    locSnippet(snippet).openOr(
-    S.locateSnippet(snippet).map(_(kids)) openOr {
-      val (cls, method) = splitColonPair(snippet, null, "render")
-      (LiftRules.snippet(cls) or
-       findSnippetInstance(cls)) match {
+  val ret: NodeSeq = snippetName.map(snippet =>
+    S.doSnippet(snippet)(
+      (S.locateMappedSnippet(snippet).map(_(kids)) or
+       locSnippet(snippet)).openOr(
+        S.locateSnippet(snippet).map(_(kids)) openOr {
+          val (cls, method) = splitColonPair(snippet, null, "render")
+          (LiftRules.snippet(cls) or
+           findSnippetInstance(cls)) match {
 
-        case Full(inst: StatefulSnippet) =>
-          if (inst.dispatch.isDefinedAt(method))
-          (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
-          inst.dispatch(method)(kids)
-          else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                               LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
-        case Full(inst: DispatchSnippet) =>
-          if (inst.dispatch.isDefinedAt(method)) inst.dispatch(method)(kids)
-          else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                               LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
+            case Full(inst: StatefulSnippet) =>
+              if (inst.dispatch.isDefinedAt(method))
+              (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
+              inst.dispatch(method)(kids)
+              else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                   LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
+            case Full(inst: DispatchSnippet) =>
+              if (inst.dispatch.isDefinedAt(method)) inst.dispatch(method)(kids)
+              else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                   LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
-        case Full(inst) => {
-            val ar: Array[Object] = List(Group(kids)).toArray
-            ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
-              case Full(md: NodeSeq) => md
-              case it => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                        LiftRules.SnippetFailures.MethodNotFound))); kids
-            }
+            case Full(inst) => {
+                val ar: Array[Object] = List(Group(kids)).toArray
+                ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
+                  case Full(md: NodeSeq) => md
+                  case it => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                            LiftRules.SnippetFailures.MethodNotFound))); kids
+                }
+              }
+            case _ => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                     LiftRules.SnippetFailures.ClassNotFound))); kids
           }
-        case _ => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                 LiftRules.SnippetFailures.ClassNotFound))); kids
-      }
-    })).openOr{
+        }))).openOr{
     LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                    LiftRules.SnippetFailures.NoNameSpecified)))
     Comment("FIX"+"ME -- no type defined for snippet")
     kids
   }
 
-    def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
-      case Nil => Null
-      case x => new UnprefixedAttribute("enctype", Text("multipart/form-data"), Null)
-    }
-
-    def checkAttr(attr_name: String, in: MetaData): MetaData =
-    in.filter(_.key == attr_name).toList match {
-      case Nil => Null
-      case x => new UnprefixedAttribute(attr_name, Text(x.first.value.text),
-                                        Null)
-    }
-
-    attrs.get("form").map(ft => (
-        (<form action={S.uri} method={ft.text}>{ret}</form> %
-         checkMultiPart(attrs)) %
-        checkAttr("class", attrs)) % checkAttr("id",attrs) ) getOrElse ret
-
+  def checkMultiPart(in: MetaData): MetaData = in.filter(_.key == "multipart").toList match {
+    case Nil => Null
+    case x => new UnprefixedAttribute("enctype", Text("multipart/form-data"), Null)
   }
+
+  def checkAttr(attr_name: String, in: MetaData): MetaData =
+  in.filter(_.key == attr_name).toList match {
+    case Nil => Null
+    case x => new UnprefixedAttribute(attr_name, Text(x.first.value.text),
+                                      Null)
+  }
+
+  attrs.get("form").map(ft => (
+      (<form action={S.uri} method={ft.text}>{ret}</form> %
+       checkMultiPart(attrs)) %
+      checkAttr("class", attrs)) % checkAttr("id",attrs) ) getOrElse ret
+
+}
 
 
   def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
