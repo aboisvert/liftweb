@@ -17,6 +17,7 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.10" date="" description="">
+      <action dev="David Pollak" type="add">A Currency class</action>
       <action dev="David Pollak" type="add">Added a nifty mechanism for stateful form management (Hoot)</action>
       <action dev="Marius Danciu" type="add">Added fix CSS support</action>
       <action dev="Marius Danciu" type="add">Added support for other JS libraries</action>
