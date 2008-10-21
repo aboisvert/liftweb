@@ -287,20 +287,42 @@ case class PaypalEventAction(status: PaypalTransactionStatus, functions: List[()
  * Boot.scala as it handles the incomming request and dispatches the IPN
  * callback, and handles the subsequent response.
  */
-case class PaypalIPN(request: RequestState, actions: List[PaypalEventAction]){ 
+case class PaypalIPN(request: RequestState, actions: List[PaypalEventAction], mode: PaypalMode, connection: PaypalConnection) extends PaypalUtilities { 
   //actions.map(_.functions.map(_()))
+  //println("##############" + request.params)
+  // private val ipnStatus: PaypalTransactionStatus
   
-  println(request)
+  /**
+   * @todo Really need to make sure that multiple custom paramaters can be mapped through.
+   * The current solution is not good!
+   */
+  private val paramsAsPayloadList: List[NameValuePair] = {
+    for(val p <- request.params) yield new NameValuePair(p._1, p._2(0).toString)
+  }.toList
   
-  def onEvent(in: PaypalEventAction) = PaypalIPN(request, actions ++ List(in))
   
-  def execute: Boolean = {
+  def onEvent(in: PaypalEventAction) = PaypalIPN(request, actions ++ List(in), mode, connection)
+  
+  
+  /**
+  * @param in set the endpoint for the connection. Must be a subclass of PaypalMode.
+  */
+  def withMode(in: PaypalMode): PaypalIPN = PaypalIPN(request, actions, in, connection)
+  /**
+   * @param in set weather or not the connection should be made over SSL/443/https or not.
+   */
+  def withConnection(in: PaypalConnection): PaypalIPN = PaypalIPN(request, actions, mode, in)
+  
+  
+  def execute = {
     //create request, get response and pass response object to the specified event handlers
-    true
-  }
+    val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList.toArray).execute
+    println(ipnResponse)
+    ipnResponse
+  }  
 }
 object PaypalIPN {
-  def apply(r: RequestState): PaypalIPN = PaypalIPN(r, List())
+  def apply(r: RequestState): PaypalIPN = PaypalIPN(r, List(), PaypalSandbox, PaypalHTTP)
 }
 
 
@@ -319,14 +341,6 @@ case class PaypalIPNPostback(override val mode: PaypalMode, override val connect
   * your application from paypal IPN service.
   */
   def withPostbackParamaters(in: Array[NameValuePair]): PaypalIPNPostback = PaypalIPNPostback(mode, connection, in)
-  /**
-  * @param in set the endpoint for the connection. Must be a subclass of PaypalMode.
-  */
-  def withMode(in: PaypalMode): PaypalIPNPostback = PaypalIPNPostback(in, connection, paramaters)
-  /**
-   * @param in set weather or not the connection should be made over SSL/443/https or not.
-   */
-  def withConnection(in: PaypalConnection): PaypalIPNPostback = PaypalIPNPostback(mode, in, paramaters)
   
   /**
   * @return PaypalDataTransferReponse
