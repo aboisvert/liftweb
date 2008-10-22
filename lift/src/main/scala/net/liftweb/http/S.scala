@@ -672,10 +672,26 @@ object S extends HasParams {
    */
   def contextPath = session.map(_.contextPath).openOr("")
 
-  def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name)) or {
+  def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = {
     val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
     if (LiftRules.snippetTable.isDefinedAt(snippet)) Full(LiftRules.snippetTable(snippet)) else Empty
   }
+
+private object _currentSnippet extends RequestVar[Can[String]](Empty)
+
+private[http] def doSnippet[T](name: String)(f: => T): T = {
+  val old = _currentSnippet.is
+  try {
+    _currentSnippet.set(Full(name))
+    f
+  } finally {
+    _currentSnippet.set(old)
+  }
+}
+
+def currentSnippet: Can[String] = _currentSnippet.is
+  
+def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name))
 
   /**
    * Associates a name with a snippet function 'func'

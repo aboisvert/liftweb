@@ -5,12 +5,12 @@ import _root_.scala.xml._
 /**
  * This object adds functionalities to Scala standard types
  */
-object BasicTypesHelpers extends BasicTypesHelpers with StringHelpers
+object BasicTypesHelpers extends BasicTypesHelpers with StringHelpers with ControlHelpers
 
 /**
  * This trait adds functionalities to Scala standard types
  */
-trait BasicTypesHelpers { self: StringHelpers =>
+trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
 
   /**
    * transforms a Boolean to a Boolean2, allowing expressions such as:
@@ -79,6 +79,10 @@ trait BasicTypesHelpers { self: StringHelpers =>
       case o => toBoolean(o.toString)
     }
   }
+
+  def asInt(in: String): Can[Int] = tryo{in.toInt}
+
+def asLong(in: String): Can[Long] = tryo(in.toLong)
 
   /**
    * Convert any object to an "equivalent" Int depending on its value
