@@ -8,75 +8,62 @@ import _root_.org.apache.commons.httpclient._
 import _root_.org.apache.commons.httpclient.methods._
 import _root_.java.io._
 
+import _root_.scala.collection.mutable.ListBuffer
+
+import _root_.scala.actors.Actor
+import Actor._
+
 /**
  * sealed abstract type PaypalMode so we can cast to the super
  * class in our method declerations. Cannot be subclasses outside
  * of this source file.
  */
-sealed abstract class PaypalMode
-
-case object PaypalSandbox extends PaypalMode {
-  override def toString = "www.sandbox.paypal.com"
+sealed trait PaypalMode {
+  def domain: String
+  override def toString = "PaypalMode: "+domain
 }
 
-case object PaypalLive extends PaypalMode {
-  override def toString = "www.paypal.com"
+object PaypalSandbox extends PaypalMode {
+  def domain = "www.sandbox.paypal.com"
+}
+
+object PaypalLive extends PaypalMode {
+  def domain = "www.paypal.com"
 }
 
 /**
  * Represents the type of connection that can be made
  * to paypal, irrespecitve of the mode of connection
  */
-sealed abstract class PaypalConnection {
-  def port = 80
+sealed trait PaypalConnection {
+  def protocol: String
+  def port: Int = 80
+  
+  override def toString = "PaypalConnection: "+protocol+":"+port
 }
 
-case object PaypalHTTP extends PaypalConnection {
-  override def toString = "http"
-  override def port: Int = 80
+object PaypalHTTP extends PaypalConnection {
+  def protocol = "http"
 }
 
-case object PaypalSSL extends PaypalConnection {
-  override def toString = "https"
+object PaypalSSL extends PaypalConnection {
+  def protocol = "https"
   override def port: Int = 443
 }
 
-sealed abstract class PaypalTransactionStatus
-case object CanceledPayment extends PaypalTransactionStatus {
-  override def toString = "Canceled"
-}
-case object ClearedPayment extends PaypalTransactionStatus {
-  override def toString = "Cleared"
-}
-case object CompletedPayment extends PaypalTransactionStatus {
-  override def toString = "Completed"
-}
-case object DeniedPayment extends PaypalTransactionStatus {
-  override def toString = "Denied"
-}
-case object ExpiredPayment extends PaypalTransactionStatus {
-  override def toString = "Expired"
-}
-case object FailedPayment extends PaypalTransactionStatus {
-  override def toString = "Failed"
-}
-case object PendingPayment extends PaypalTransactionStatus {
-  override def toString = "Pending"
-}
-case object RefundedPayment extends PaypalTransactionStatus {
-  override def toString = "Refunded"
-}
-case object ReturnedPayment extends PaypalTransactionStatus {
-  override def toString = "Returned"
-}
-case object ReversedPayment extends PaypalTransactionStatus {
-  override def toString = "Reversed"
-}
-case object UnclaimedPayment extends PaypalTransactionStatus {
-  override def toString = "Unclaimed"
-}
-case object UnclearedPayment extends PaypalTransactionStatus {
-  override def toString = "Uncleared"
+object PaypalTransactionStatus extends Enumeration {
+  val CanceledPayment = Value(1, "Canceled")
+  val ClearedPayment = Value(2, "Cleared")
+  val CompletedPayment = Value(3, "Completed")
+  val DeniedPayment = Value(4, "Denied")
+  val ExpiredPayment = Value(5, "Expired")
+  val FailedPayment = Value(6, "Failed")
+  val PendingPayment = Value(7, "Pending")
+  val RefundedPayment = Value(8, "Refunded")
+  val ReturnedPayment = Value(9, "Returned")
+  val ReversedPayment = Value(10, "Reversed")
+  val UnclaimedPayment = Value(11, "Unclaimed")
+  val UnclearedPayment = Value(12, "Uncleared")
 }
 
 
@@ -88,20 +75,23 @@ case object UnclearedPayment extends PaypalTransactionStatus {
  * @param port The TCP port the message will be sent over
  * @param connection The protocal to use: http, or https
  */
-object HttpClientFactory {
+private object HttpClientFactory {
   def apply(url: String, port: Int, connection: String): HttpClient = {
-    var c: HttpClient = new HttpClient()
+    val c: HttpClient = new HttpClient()
     c.getHostConfiguration().setHost(url, port, connection)
-    return c
+    c
   }
 }
 
-object PostMethodFactory {
-  def apply(url: String, paramaters: Array[NameValuePair]): PostMethod = {
-    var p: PostMethod = new PostMethod(url)
+private object PostMethodFactory {
+  def apply(url: String, paramaters: Seq[(String, String)]): PostMethod = {
+    val p: PostMethod = new PostMethod(url)
     p.setRequestBody(paramaters)
-    return p
+    p
   }
+  
+  implicit def tonvp(in: Seq[(String, String)]): Array[NameValuePair] = 
+  in.map(p => new NameValuePair(p._1, p._2)).toArray
 }
 
 /**
@@ -110,32 +100,20 @@ object PostMethodFactory {
  * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
  * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
  */
-abstract class Paypal(val mode: PaypalMode, val connection: PaypalConnection){
-  val client: HttpClient = HttpClientFactory(mode.toString, connection.port, connection.toString)
+
+trait PaypalBase {
+  protected def client(mode: PaypalMode, connection: PaypalConnection): HttpClient = HttpClientFactory(mode.domain, connection.port, connection.protocol)
+  // def mode: PaypalMode
+  //def connection: PaypalConnection
+  // def payloadArray: Seq[(String, String)]
 }
+
 
 /**
 * A simple abstraction for all HTTP operations. By definition they will return a HTTP error
 * code. We are invaribly only concerned with if it was a good one or not.
 */
 trait PaypalUtilities {
-  
-  val paypalPaymentStatuses: List[PaypalTransactionStatus] = List(
-    CanceledPayment, 
-    ClearedPayment, 
-    CompletedPayment, 
-    DeniedPayment, 
-    ExpiredPayment, 
-    FailedPayment, 
-    FailedPayment,
-    PendingPayment,
-    RefundedPayment,
-    ReturnedPayment,
-    ReversedPayment,
-    UnclaimedPayment,
-    UnclearedPayment
-  )
-  
   def wasSuccessful(code: Int): Boolean = code match {
     case 200 => true
     case _ => false
@@ -148,10 +126,10 @@ trait PaypalUtilities {
  * @param client Must be a HTTP client; the simplest way to create this is by using HttpClientFactory
  * @param post Specify the payload of the HTTP request. Must be an instance of PostMethod from HTTP commons
  */
-case class PaypalRequest(client: HttpClient, post: PostMethod) extends PaypalUtilities {
-  def withClient(in: HttpClient) = PaypalRequest(in, post)
-  def withPost(in: PostMethod) = PaypalRequest(client, in)
-  def invoke: List[String] = wasSuccessful(tryo(client.executeMethod(post)).openOr(500)) match {
+object PaypalRequest extends PaypalUtilities {
+  //def withClient(in: HttpClient) = PaypalRequest(in, post)
+  //def withPost(in: PostMethod) = PaypalRequest(client, in)
+  def apply(client: HttpClient, post: PostMethod): List[String] = wasSuccessful(tryo(client.executeMethod(post)).openOr(500)) match {
     case true => StreamResponseProcessor(post)
     case _ => List("Failure")
   }
@@ -162,24 +140,25 @@ case class PaypalRequest(client: HttpClient, post: PostMethod) extends PaypalUti
  * it / process it and return us a immutable result we can work with. If
  * we didnt do this then we get into a whole world of hurt and null pointers.
  */
-object StreamResponseProcessor {
+private object StreamResponseProcessor {
   def apply(p: PostMethod): List[String] = {
-    var stream: InputStream = p.getResponseBodyAsStream()
+    val stream: InputStream = p.getResponseBodyAsStream()
     val reader: BufferedReader = new BufferedReader(new InputStreamReader(stream))
-    var line: String = null
-    var list: List[String] = List()
+    val ret: ListBuffer[String] = new ListBuffer
+    
     try {
-      while ({line = reader.readLine(); line != null}){
-        list = list ::: List(line)
+      def doRead {
+         reader.readLine() match {
+           case null => ()
+           case line => ret += line
+         }
       }
+      
+      doRead
+      ret.toList
     } catch {
-      case e => List()
-    } finally {
-      if(reader != null){
-        reader.close
-      }
-    }
-    list
+      case _ => Nil
+    }    
   }
 }
 
@@ -187,13 +166,14 @@ object StreamResponseProcessor {
 /**
  * All paypal service classes need to subclass PaypalResponse explicitally. 
  */
-case class PaypalResponse(response: List[String]) extends PaypalUtilities {
+trait PaypalResponse extends PaypalUtilities {
+  def response: List[String]
   
   def getValueForKey(k: String): String = splitParamaterToKeyValuePair(
         response.filter(
           splitParamaterToKeyValuePair(_)(0) == k).toString)(1)
   
-  def getRawValueAtIndex(idx: Int): String = response(idx)
+  def rawHead: Can[String] = Can(response.firstOption)
   
   protected def splitParamaterToKeyValuePair(in: String) = in.split("=").toList
   
@@ -222,16 +202,15 @@ case class PaypalResponse(response: List[String]) extends PaypalUtilities {
  * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
  * @return PaypalDataTransfer
  */
-case class PaypalDataTransfer(authToken: String, transactionToken: String, override val mode: PaypalMode, override val connection: PaypalConnection) extends Paypal(mode: PaypalMode, connection: PaypalConnection) {
+case class PaypalDataTransfer(authToken: String, transactionToken: String, mode: PaypalMode, connection: PaypalConnection) extends PaypalBase {
   /**
    * payloadArray is the array of the post body we'll be sending.
    * As the payload body is different in PDT vs IPN
    */
-  val payloadArray: Array[NameValuePair] = Array(
-    new NameValuePair("cmd", "_notify-synch"),
-    new NameValuePair("tx", transactionToken),
-    new NameValuePair("at", authToken)
-  )
+  def payloadArray = List("cmd" -> "_notify-synch",
+    "tx" -> transactionToken,
+    "at" -> authToken)
+  
   /**
   * @param in set the endpoint for the connection. Must be a subclass of PaypalMode.
   */
@@ -244,10 +223,11 @@ case class PaypalDataTransfer(authToken: String, transactionToken: String, overr
   * @return PaypalDataTransferReponse
   */
   def execute: PaypalDataTransferReponse = PaypalDataTransferReponse(
-    PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke
+    PaypalRequest(client(mode, connection),PostMethodFactory("/cgi-bin/webscr",payloadArray))
   )
 }
 
+/*
 object PaypalDataTransfer {
   /**
   * Builder method to create a new PDT instance
@@ -257,6 +237,7 @@ object PaypalDataTransfer {
   */
   def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
 }
+*/
 
 /**
  * Wrapper instance for handling the response from a paypal data transfer.
@@ -264,14 +245,14 @@ object PaypalDataTransfer {
  * @param response The processed response List[String]. The response 
  * input should be created with StreamResponseProcessor
  */
-case class PaypalDataTransferReponse(override val response: List[String]) extends PaypalResponse(response: List[String]) {
+case class PaypalDataTransferReponse(response: List[String]) extends PaypalResponse {
   /**
   * Quick utility method for letting you know if the payment data is returning a sucsessfull message
   *
   * @return Boolean
   */
-  def paymentSuccessful: Boolean = getRawValueAtIndex(0) match {
-   case "SUCCESS" => true
+  def paymentSuccessful: Boolean = rawHead match {
+   case Full("SUCCESS") => true
    case _ => false
   }
 }
@@ -280,14 +261,14 @@ case class PaypalDataTransferReponse(override val response: List[String]) extend
 // PAYPAL IPN
 //
 
-case class PaypalEventAction(status: PaypalTransactionStatus, functions: List[() => Any])
+//case class PaypalEventAction(status: PaypalTransactionStatus.Value, functions: List[() => Any])
 
 /**
  * Users would generally invoke this case class in a DispatchPf call in 
  * Boot.scala as it handles the incomming request and dispatches the IPN
  * callback, and handles the subsequent response.
  */
-case class PaypalIPN(request: RequestState, actions: List[PaypalEventAction], mode: PaypalMode, connection: PaypalConnection) extends PaypalUtilities { 
+object PaypalIPN extends PaypalUtilities { 
   //actions.map(_.functions.map(_()))
   //println("##############" + request.params)
   // private val ipnStatus: PaypalTransactionStatus
@@ -296,34 +277,35 @@ case class PaypalIPN(request: RequestState, actions: List[PaypalEventAction], mo
    * @todo Really need to make sure that multiple custom paramaters can be mapped through.
    * The current solution is not good!
    */
-  private val paramsAsPayloadList: List[NameValuePair] = {
-    for(val p <- request.params) yield new NameValuePair(p._1, p._2(0).toString)
-  }.toList
+  private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] =
+    (for(val p <- request.params) yield (p._1, p._2.head)).toList
   
   
-  def onEvent(in: PaypalEventAction) = PaypalIPN(request, actions ++ List(in), mode, connection)
+  //def onEvent(in: PaypalEventAction) = PaypalIPN(request, actions ++ List(in), mode, connection)
   
   
   /**
   * @param in set the endpoint for the connection. Must be a subclass of PaypalMode.
   */
-  def withMode(in: PaypalMode): PaypalIPN = PaypalIPN(request, actions, in, connection)
+  //def withMode(in: PaypalMode): PaypalIPN = PaypalIPN(request, actions, in, connection)
   /**
    * @param in set weather or not the connection should be made over SSL/443/https or not.
    */
-  def withConnection(in: PaypalConnection): PaypalIPN = PaypalIPN(request, actions, mode, in)
+  //def withConnection(in: PaypalConnection): PaypalIPN = PaypalIPN(request, actions, mode, in)
   
   
-  def execute = {
+  def apply(request: RequestState, mode: PaypalMode, connection: PaypalConnection) = {
     //create request, get response and pass response object to the specified event handlers
-    val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList.toArray).execute
+    val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList(request))
     println(ipnResponse)
     ipnResponse
   }  
 }
+
+/*
 object PaypalIPN {
   def apply(r: RequestState): PaypalIPN = PaypalIPN(r, List(), PaypalSandbox, PaypalHTTP)
-}
+}*/
 
 
 /**
@@ -331,28 +313,65 @@ object PaypalIPN {
  * the exact set of paramaters that you were given by paypal - this stops spoofing. Use the 
  * PaypalInstantPaymentTransferPostback exactly as you would PaypalDataTransferReponse.
  */
-case class PaypalIPNPostback(override val mode: PaypalMode, override val connection: PaypalConnection, paramaters: Array[NameValuePair]) 
-                            extends Paypal(mode: PaypalMode, connection: PaypalConnection) {
+object PaypalIPNPostback extends PaypalBase {
   
-  val payloadArray: Array[NameValuePair] = Array(new NameValuePair("cmd", "_notify-validate")) ++ paramaters 
+  def payloadArray(paramaters: Seq[(String, String)]) = List("cmd" -> "_notify-validate") ++ paramaters
   
   /**
   * @param in Set the payload paramaters to be posted back. This will *always* be the list posted to 
   * your application from paypal IPN service.
   */
-  def withPostbackParamaters(in: Array[NameValuePair]): PaypalIPNPostback = PaypalIPNPostback(mode, connection, in)
+  // def withPostbackParamaters(in: Array[NameValuePair]): PaypalIPNPostback = PaypalIPNPostback(mode, connection, in)
   
   /**
   * @return PaypalDataTransferReponse
   */
-  def execute: PaypalIPNPostbackReponse = PaypalIPNPostbackReponse(
-    PaypalRequest(client,PostMethodFactory("/cgi-bin/webscr",payloadArray)).invoke
+  def apply(mode: PaypalMode, connection: PaypalConnection, paramaters: Seq[(String, String)]): PaypalIPNPostbackReponse = PaypalIPNPostbackReponse(
+    PaypalRequest(client(mode, connection),PostMethodFactory("/cgi-bin/webscr",payloadArray(paramaters)))
   )
 }
 
-case class PaypalIPNPostbackReponse(override val response: List[String]) extends PaypalResponse(response: List[String]) {
-  def isVerified: Boolean = getRawValueAtIndex(0) match {
-   case "VERIFIED" => true
+case class PaypalIPNPostbackReponse(response: List[String]) extends PaypalResponse {
+  def isVerified: Boolean = rawHead match {
+   case Full("VERIFIED") => true
    case _ => false
   }
+}
+
+trait PayPal {
+  val RootPath = "paypal"
+  val IPNPath = "ipn"
+  val PDTPath = "pdt"
+
+  val mode: PaypalMode = PaypalSandbox
+
+  val connection: PaypalConnection = PaypalSSL
+
+  def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
+  
+  def dispatch: LiftRules.DispatchPf = {
+    case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
+      requestQueue ! IPNRequest(r)
+      defaultResponse _
+      
+      
+  }
+
+  private case class IPNRequest(r: RequestState)
+  
+  private object requestQueue extends Actor {
+    def act = {
+      loop {
+        react {
+          case IPNRequest(r) =>
+            val resp = PaypalIPN(r, mode, connection)
+            if (resp.isVerified) {
+              // FIXME process the response
+            }
+          case _ =>
+        }
+      }
+    }
+  }
+  requestQueue.start
 }
