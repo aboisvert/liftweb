@@ -1,5 +1,18 @@
 package net.liftweb.paypal
 
+/*
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import _root_.net.liftweb.util.Helpers
 import Helpers._
 import _root_.net.liftweb.util._
@@ -7,9 +20,7 @@ import _root_.net.liftweb.http._
 import _root_.org.apache.commons.httpclient._
 import _root_.org.apache.commons.httpclient.methods._
 import _root_.java.io._
-
 import _root_.scala.collection.mutable.ListBuffer
-
 import _root_.scala.actors.Actor
 import Actor._
 
@@ -51,6 +62,9 @@ object PaypalSSL extends PaypalConnection {
   override def port: Int = 443
 }
 
+/**
+ * Contatins all the papyal status abstractions as enumberable vals
+ */
 object PaypalTransactionStatus extends Enumeration {
   val CanceledPayment = Value(1, "Canceled")
   val ClearedPayment = Value(2, "Cleared")
@@ -67,7 +81,6 @@ object PaypalTransactionStatus extends Enumeration {
 
   def find(name: String): Can[Value] = {
     val n = name.trim.toLowerCase
-
     this.elements.filter(v => v.toString.toLowerCase == n).toList.firstOption
   }
 }
@@ -89,6 +102,12 @@ private object HttpClientFactory {
   }
 }
 
+/**
+ * Creates a new PostMethod and applys the passed paramaters
+ * 
+ * @param url The string representation of the endpoing (e.g. www.paypal.com)
+ * @paypal paramaters A Seq[(String,String)] of paramaters that will become the paypload of the request
+ */
 private object PostMethodFactory {
   def apply(url: String, paramaters: Seq[(String, String)]): PostMethod = {
     val p: PostMethod = new PostMethod(url)
@@ -102,12 +121,14 @@ private object PostMethodFactory {
 
 /**
  * Common functionality for paypal PDT and IPN
- *
- * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
- * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
  */
-
 trait PaypalBase {
+  /**
+   * Create a new HTTP client
+   * 
+   * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
+   * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
+   */
   protected def client(mode: PaypalMode, connection: PaypalConnection): HttpClient = HttpClientFactory(mode.domain, connection.port, connection.protocol)
 }
 
@@ -129,7 +150,6 @@ trait PaypalUtilities {
  * @param client Must be a HTTP client; the simplest way to create this is by using HttpClientFactory
  * @param post Specify the payload of the HTTP request. Must be an instance of PostMethod from HTTP commons
  */
-
 private object PaypalRequest extends PaypalUtilities {
   def apply(client: HttpClient, post: PostMethod): List[String] = wasSuccessful(tryo(client.executeMethod(post)).openOr(500)) match {
     case true => StreamResponseProcessor(post)
@@ -143,6 +163,9 @@ private object PaypalRequest extends PaypalUtilities {
  * we didnt do this then we get into a whole world of hurt and null pointers.
  */
 private object StreamResponseProcessor {
+  /**
+   * @param p PostMethod Takes the raw HTTP commons PostMethod and processes its stream response
+   */
   def apply(p: PostMethod): List[String] = {
     val stream: InputStream = p.getResponseBodyAsStream()
     val reader: BufferedReader = new BufferedReader(new InputStreamReader(stream))
@@ -192,28 +215,26 @@ trait PaypalResponse extends PaypalUtilities with HasParams {
   }
 }
 
-//PAYPAL PDT
 
-/**
- * If you need to get data from paypal PDT, simply instansiate this class 
- * (through one of the factory objects)
- *
- * @param authToken The token you obtain from the paypal merchant console
- * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
- * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
- * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
- * @return PaypalDataTransfer
- */
 object PaypalDataTransfer extends PaypalBase {
   /**
    * payloadArray is the array of the post body we'll be sending.
    * As the payload body is different in PDT vs IPN
+   * 
+   * @retrn List[(String,String)]
    */
   private def payloadArray(authToken: String, transactionToken: String) =
   List("cmd" -> "_notify-synch",
        "tx" -> transactionToken,
        "at" -> authToken)
+   
   /**
+   * Execute the PDT call
+   * 
+   * @param authToken The token you obtain from the paypal merchant console
+   * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
+   * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
+   * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
    * @return PaypalDataTransferReponse
    */
   def apply(authToken: String, transactionToken: String, mode: PaypalMode, connection: PaypalConnection): PaypalResponse =
@@ -225,15 +246,9 @@ object PaypalDataTransfer extends PaypalBase {
 
 /*
  object PaypalDataTransfer {
- /**
-  * Builder method to create a new PDT instance
-  * 
-  * @param authToken The token you obtain from the paypal merchant console
-  * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
-  */
  def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
  }
- */
+*/
 
 /**
  * Wrapper instance for handling the response from a paypal data transfer.
@@ -257,8 +272,6 @@ case class PaypalDataTransferReponse(response: List[String]) extends PaypalRespo
 //
 // PAYPAL IPN
 //
-
-//case class PaypalEventAction(status: PaypalTransactionStatus.Value, functions: List[() => Any])
 
 /**
  * Users would generally invoke this case class in a DispatchPf call in 
@@ -291,7 +304,7 @@ private[paypal] object PaypalIPNPostback extends PaypalBase {
   def payloadArray(paramaters: Seq[(String, String)]) = List("cmd" -> "_notify-validate") ++ paramaters
 
   /**
-   * @return PaypalDataTransferReponse
+   * @return PaypalIPNPostbackReponse
    */
   def apply(mode: PaypalMode, connection: PaypalConnection, paramaters: Seq[(String, String)]): PaypalIPNPostbackReponse =
   new PaypalIPNPostbackReponse(
@@ -299,6 +312,11 @@ private[paypal] object PaypalIPNPostback extends PaypalBase {
   )
 }
 
+/**
+ * An abstration for the response from Paypal during the to and frow of IPN validation
+ *
+ * @param response The processed List[String] from the paypal IPN request response cycle
+ */
 private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) extends PaypalResponse {
   def isVerified: Boolean = rawHead match {
     case Full("VERIFIED") => true
@@ -306,6 +324,12 @@ private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) exten
   }
 }
 
+/**
+ * A paramater set that takes request paramaters (from RequestState) and assigns them
+ * to properties of this class
+ * 
+ * @param params The paramaters from the incooming request
+ */
 class PayPalInfo(val params: HasParams) {
   private val r = params
   val itemName = r.param("item_name")
@@ -386,6 +410,28 @@ object SimplePayPal extends PayPal {
   }
 }
 
+/**
+ * To handle IPN transactions you need to do the following:
+ *
+ * <code>
+ *  // in Whatever.scala
+ *  object MyPayPalHandler extends PayPal { 
+ *    import PaypalTransactionStatus._ 
+ *    def actions = { 
+ *       case (ClearedPayment, info, _) => // write the payment to the database 
+ *       case (RefundedPayment, info, _) => // process refund 
+ *    } 
+ *  }
+ * 
+ * // in Boot.scala
+ * 
+ * LiftRules.statelessDispatchTable = MyPayPalHandler orElse 
+ *    LiftRules.statelessDispatchTable
+ * </code>
+ * 
+ * In this way you then get all the DispatchPf processing stuff for free. 
+ * 
+ */
 trait PayPal extends LiftRules.DispatchPf {
   val RootPath = "paypal"
   val IPNPath = "ipn"
