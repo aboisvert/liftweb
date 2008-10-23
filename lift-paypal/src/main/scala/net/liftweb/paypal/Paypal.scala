@@ -361,7 +361,7 @@ trait PayPal extends LiftRules.DispatchPf {
   val IPNPath = "ipn"
   val PDTPath = "pdt"
   
-  val paypalAuthToken: String
+  def paypalAuthToken: String
   
   lazy val mode: PaypalMode = Props.mode match {
     case Props.RunModes.Production => PaypalLive
