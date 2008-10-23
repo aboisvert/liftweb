@@ -24,6 +24,8 @@ import _root_.scala.collection.mutable.ListBuffer
 import _root_.scala.actors.Actor
 import Actor._
 
+import _root_.scala.xml.{NodeSeq}
+
 /**
  * sealed abstract type PaypalMode so we can cast to the super
  * class in our method declerations. Cannot be subclasses outside
@@ -201,8 +203,8 @@ trait PaypalResponse extends PaypalUtilities with HasParams {
 
   def param(name: String) = Can(info.get(name))
 
-  lazy val payPalInfo: Can[PaypalInfo] =
-  if (this.isVerified) Full(new PaypalInfo(this))
+  lazy val paypalInfo: Can[PayPalInfo] =
+  if (this.isVerified) Full(new PayPalInfo(this))
   else Empty
   
   def rawHead: Can[String] = Can(response.firstOption)
@@ -243,12 +245,6 @@ object PaypalDataTransfer extends PaypalBase {
                   PostMethodFactory("/cgi-bin/webscr",payloadArray(authToken, transactionToken))))
   
 }
-
-/*
- object PaypalDataTransfer {
- def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
- }
- */
 
 /**
  * Wrapper instance for handling the response from a paypal data transfer.
@@ -324,10 +320,17 @@ private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) exten
   }
 }
 
-object SimplePaypal extends Paypal {
+object SimplePayPal extends PayPal {
+  val paypalAuthToken = "123"
   def actions = {
     case (status, info, resp) =>
       Log.info("Got a verified PayPal IPN: "+status)
+  }
+  
+  def pdtResponse = {
+    case (status, info, resp) =>
+      Log.info("Got a verified PayPal PDT: "+status)
+      S.redirectTo("/")
   }
 }
 
@@ -336,7 +339,7 @@ object SimplePaypal extends Paypal {
  *
  * <code>
  *  // in Whatever.scala
- *  object MyPaypalHandler extends Paypal { 
+ *  object MyPayPalHandler extends PayPal { 
  *    import PaypalTransactionStatus._ 
  *    def actions = { 
  *       case (ClearedPayment, info, _) => // write the payment to the database 
@@ -346,16 +349,19 @@ object SimplePaypal extends Paypal {
  * 
  * // in Boot.scala
  * 
- * LiftRules.statelessDispatchTable = MyPaypalHandler orElse 
+ * LiftRules.statelessDispatchTable = MyPayPalHandler orElse 
  *    LiftRules.statelessDispatchTable
  * </code>
  * 
  * In this way you then get all the DispatchPf processing stuff for free. 
  * 
  */
-trait Paypal extends LiftRules.DispatchPf {
+trait PayPal extends LiftRules.DispatchPf {
   val RootPath = "paypal"
   val IPNPath = "ipn"
+  val PDTPath = "pdt"
+  
+  val paypalAuthToken: String
   
   lazy val mode: PaypalMode = Props.mode match {
     case Props.RunModes.Production => PaypalLive
@@ -373,15 +379,29 @@ trait Paypal extends LiftRules.DispatchPf {
     case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
+      
+    case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
+      processPDT(r) _
+  }
+  
+  def processPDT(r: RequestState)(): Can[LiftResponse] = {
+    for (tx <- r.param("tx");
+         val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
+         info <- resp.paypalInfo;
+         status <- info.paymentStatus;
+         redir <- tryo(pdtResponse(status, info, r))) yield {
+      redir
+    }
   }
 
   protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
   protected case object PingMe
 
-  def actions: PartialFunction[(PaypalTransactionStatus.Value, PaypalInfo, RequestState), Unit]
+  def pdtResponse:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), LiftResponse]
+  def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
 
-  protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PaypalInfo] = {
-    if (resp.isVerified) Full(new PaypalInfo(req))
+  protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PayPalInfo] = {
+    if (resp.isVerified) Full(new PayPalInfo(req))
     else Empty
   }
 
@@ -427,7 +447,7 @@ trait Paypal extends LiftRules.DispatchPf {
  * 
  * @param params The paramaters from the incooming request
  */
-class PaypalInfo(val params: HasParams) {
+class PayPalInfo(val params: HasParams) {
   private val r = params
   val itemName = r.param("item_name")
   val business = r.param("business")
