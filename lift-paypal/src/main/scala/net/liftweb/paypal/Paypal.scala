@@ -201,8 +201,8 @@ trait PaypalResponse extends PaypalUtilities with HasParams {
 
   def param(name: String) = Can(info.get(name))
 
-  lazy val payPalInfo: Can[PayPalInfo] =
-  if (this.isVerified) Full(new PayPalInfo(this))
+  lazy val payPalInfo: Can[PaypalInfo] =
+  if (this.isVerified) Full(new PaypalInfo(this))
   else Empty
   
   def rawHead: Can[String] = Can(response.firstOption)
@@ -248,7 +248,7 @@ object PaypalDataTransfer extends PaypalBase {
  object PaypalDataTransfer {
  def apply(authToken: String, transactionToken: String): PaypalDataTransfer = PaypalDataTransfer(authToken, transactionToken, PaypalSandbox, PaypalHTTP)
  }
-*/
+ */
 
 /**
  * Wrapper instance for handling the response from a paypal data transfer.
@@ -324,13 +324,110 @@ private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) exten
   }
 }
 
+object SimplePaypal extends Paypal {
+  def actions = {
+    case (status, info, resp) =>
+      Log.info("Got a verified PayPal IPN: "+status)
+  }
+}
+
+/**
+ * To handle IPN transactions you need to do the following:
+ *
+ * <code>
+ *  // in Whatever.scala
+ *  object MyPaypalHandler extends Paypal { 
+ *    import PaypalTransactionStatus._ 
+ *    def actions = { 
+ *       case (ClearedPayment, info, _) => // write the payment to the database 
+ *       case (RefundedPayment, info, _) => // process refund 
+ *    } 
+ *  }
+ * 
+ * // in Boot.scala
+ * 
+ * LiftRules.statelessDispatchTable = MyPaypalHandler orElse 
+ *    LiftRules.statelessDispatchTable
+ * </code>
+ * 
+ * In this way you then get all the DispatchPf processing stuff for free. 
+ * 
+ */
+trait Paypal extends LiftRules.DispatchPf {
+  val RootPath = "paypal"
+  val IPNPath = "ipn"
+  
+  lazy val mode: PaypalMode = Props.mode match {
+    case Props.RunModes.Production => PaypalLive
+    case _ => PaypalSandbox
+  }
+
+  def connection: PaypalConnection = PaypalSSL
+
+  def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
+
+  def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
+  def apply(r: RequestState) = dispatch(r)
+
+  def dispatch: LiftRules.DispatchPf = {
+    case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
+      requestQueue ! IPNRequest(r, 0, millis)
+      defaultResponse _
+  }
+
+  protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
+  protected case object PingMe
+
+  def actions: PartialFunction[(PaypalTransactionStatus.Value, PaypalInfo, RequestState), Unit]
+
+  protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PaypalInfo] = {
+    if (resp.isVerified) Full(new PaypalInfo(req))
+    else Empty
+  }
+
+  /**
+   * How many times do we try to verify the request
+   */
+  val MaxRetry = 6
+  
+  protected object requestQueue extends Actor {
+    def act = {
+      loop {
+        react {
+          case PingMe => ActorPing.schedule(this, PingMe, 10 seconds)
+
+          case IPNRequest(r, cnt, _) if cnt > MaxRetry => // discard the transaction
+
+          case IPNRequest(r, cnt, when) if when <= millis =>
+            tryo {
+              val resp = PaypalIPN(r, mode, connection)
+              for (info <-  buildInfo(resp, r);
+                   stat <- info.paymentStatus) yield {
+                actions((stat, info, r))
+                true
+              }
+            } match {
+              case Full(Full(true)) => // it succeeded
+              case _ => // retry
+                this ! IPNRequest(r, cnt + 1, millis + (1000 * 8 << (cnt + 2)))
+            }
+            
+          case _ =>
+        }
+      }
+    }
+  }
+  requestQueue.start
+  requestQueue ! PingMe
+}
+
 /**
  * A paramater set that takes request paramaters (from RequestState) and assigns them
  * to properties of this class
  * 
  * @param params The paramaters from the incooming request
  */
-class PayPalInfo(val params: HasParams) {
+class PaypalInfo(val params: HasParams) {
   private val r = params
   val itemName = r.param("item_name")
   val business = r.param("business")
@@ -401,76 +498,4 @@ class PayPalInfo(val params: HasParams) {
   val auctionClosingDate  = r.param("auction_closing_date")
   val auctionMultiItem  = r.param("auction_multi_item")
   val auctionBuyerId  = r.param("auction_buyer_id")
-}
-
-object SimplePayPal extends PayPal {
-  def actions = {
-    case (status, info, resp) =>
-      Log.info("Got a verified PayPal ITN: "+status)
-  }
-}
-
-/**
- * To handle IPN transactions you need to do the following:
- *
- * <code>
- *  // in Whatever.scala
- *  object MyPayPalHandler extends PayPal { 
- *    import PaypalTransactionStatus._ 
- *    def actions = { 
- *       case (ClearedPayment, info, _) => // write the payment to the database 
- *       case (RefundedPayment, info, _) => // process refund 
- *    } 
- *  }
- * 
- * // in Boot.scala
- * 
- * LiftRules.statelessDispatchTable = MyPayPalHandler orElse 
- *    LiftRules.statelessDispatchTable
- * </code>
- * 
- * In this way you then get all the DispatchPf processing stuff for free. 
- * 
- */
-trait PayPal extends LiftRules.DispatchPf {
-  val RootPath = "paypal"
-  val IPNPath = "ipn"
-  
-  val mode: PaypalMode = PaypalSandbox
-
-  val connection: PaypalConnection = PaypalSSL
-
-  def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
-
-  def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
-  def apply(r: RequestState) = dispatch(r)
-
-  def dispatch: LiftRules.DispatchPf = {
-    case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
-      requestQueue ! IPNRequest(r)
-      defaultResponse _
-  }
-
-  private case class IPNRequest(r: RequestState)
-  
-  def actions: PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, PaypalResponse), Unit]
-  
-  private object requestQueue extends Actor {
-    def act = {
-      loop {
-        react {
-          case IPNRequest(r) =>
-            tryo {
-              val resp = PaypalIPN(r, mode, connection)
-              for (info <- resp.payPalInfo;
-                   stat <- info.paymentStatus) 
-              actions((stat, info, resp))     
-            }
-            
-          case _ =>
-        }
-      }
-    }
-  }
-  requestQueue.start
 }
