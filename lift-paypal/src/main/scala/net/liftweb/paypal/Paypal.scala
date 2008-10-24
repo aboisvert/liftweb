@@ -357,9 +357,13 @@ object SimplePayPal extends PayPal {
  * 
  */
 trait PayPal extends LiftRules.DispatchPf {
-  lazy val RootPath = "paypal"
-  lazy val IPNPath = "ipn"
-  lazy val PDTPath = "pdt"
+  lazy val RootPath = rootPath
+  lazy val IPNPath = ipnPath
+  lazy val PDTPath = pdtPath
+  
+  def rootPath = "paypal"
+  def ipnPath = "ipn"
+  def pdtPath = "pdt"
   
   def paypalAuthToken: String
   
