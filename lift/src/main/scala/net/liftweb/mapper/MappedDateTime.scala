@@ -1,17 +1,33 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import _root_.java.sql.{ResultSet, Types}
 import _root_.java.util.Date
 import _root_.java.lang.reflect.Method
-import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util._
-import _root_.net.liftweb.http.js._
+
+import _root_.net.liftweb._
+import util._
+import Helpers._
+import http._
+import S._
+import js._
+
+import _root_.scala.xml.{NodeSeq}
 
 class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, T] {
   private val data = FatLazy(defaultValue)
@@ -53,6 +69,14 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   protected def i_obscure_!(in : Date) : Date = {
     new Date(0L)
   }
+  
+  /**
+   * Create an input field for the item
+   */
+  override def _toForm: Can[NodeSeq] =
+  Full(<input type='text'
+      name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
+      value={is match {case null => "" case s => toInternetDate(s)}}/>)
 
   override def setFromAny(f : Any): Date = toDate(f).map(d => this.set(d)).openOr(this.is)
 
@@ -64,25 +88,25 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new _root_.java.sql.Date(value.getTime)
 
   private def st(in: Can[Date]): Unit =
-    in match {
-      case Full(d) => data.set(d); orgData.set(d)
-      case _ => data.set(null); orgData.set(null)
-    }
+  in match {
+    case Full(d) => data.set(d); orgData.set(d)
+    case _ => data.set(null); orgData.set(null)
+  }
 
   def buildSetActualValue(accessor: Method, v: AnyRef, columnName: String): (T, AnyRef) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})
+  (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})
 
   def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
-    (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(if (isNull) Empty else Full(new Date(v)))})
+  (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(if (isNull) Empty else Full(new Date(v)))})
 
   def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})
+  (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(toDate(v))})
 
   def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Full(v))})
+  (inst, v) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Full(v))})
 
   def buildSetBooleanValue(accessor: Method, columnName: String): (T, Boolean, Boolean) => Unit =
-    (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Empty)})
+  (inst, v, isNull) => doField(inst, accessor, {case f: MappedDateTime[T] => f.st(Empty)})
 
   /**
    * Given the driver type, return the string required to create the column in the database

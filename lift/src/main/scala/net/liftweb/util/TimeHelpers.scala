@@ -290,7 +290,7 @@ trait TimeHelpers { self: ControlHelpers =>
         case Full(v) => toDate(v)
         case Some(v) => toDate(v)
         case v :: vs => toDate(v)
-        case s : String => Full(internetDateFormatter.parse(s))
+        case s : String => tryo(internetDateFormatter.parse(s)) or tryo(dateFormatter.parse(s))
         case o => toDate(o.toString)
       }
     } catch {
