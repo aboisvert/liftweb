@@ -117,7 +117,9 @@ trait Loc[ParamType] {
     p.siteMap.addLoc(this)
   }
   
-  protected object foundParam extends RequestVar[Can[ParamType]](Empty)
+  protected object foundParam extends RequestVar[Can[ParamType]](Empty) {
+    override val __nameSalt = randomString(10)
+  }
 
   private var _menu: Menu = _
   def menu = _menu
