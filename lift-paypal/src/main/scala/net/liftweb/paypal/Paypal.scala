@@ -328,8 +328,8 @@ object SimplePayPal extends PayPal {
   }
   
   def pdtResponse = {
-    case (status, info, resp) =>
-      Log.info("Got a verified PayPal PDT: "+status)
+    case (info, resp) =>
+      Log.info("Got a verified PayPal PDT: "+resp)
       S.redirectTo("/")
   }
 }
@@ -357,9 +357,9 @@ object SimplePayPal extends PayPal {
  * 
  */
 trait PayPal extends LiftRules.DispatchPf {
-  val RootPath = "paypal"
-  val IPNPath = "ipn"
-  val PDTPath = "pdt"
+  lazy val RootPath = "paypal"
+  lazy val IPNPath = "ipn"
+  lazy val PDTPath = "pdt"
   
   def paypalAuthToken: String
   
@@ -388,8 +388,7 @@ trait PayPal extends LiftRules.DispatchPf {
     for (tx <- r.param("tx");
          val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
          info <- resp.paypalInfo;
-         status <- info.paymentStatus;
-         redir <- tryo(pdtResponse(status, info, r))) yield {
+         redir <- tryo(pdtResponse(info, r))) yield {
       redir
     }
   }
@@ -397,7 +396,7 @@ trait PayPal extends LiftRules.DispatchPf {
   protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
   protected case object PingMe
 
-  def pdtResponse:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), LiftResponse]
+  def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
   def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
 
   protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PayPalInfo] = {
