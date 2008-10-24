@@ -330,7 +330,7 @@ object SimplePayPal extends PayPal {
   def pdtResponse = {
     case (info, resp) =>
       Log.info("Got a verified PayPal PDT: "+resp)
-      S.redirectTo("/")
+      DoRedirectResponse.apply("/")
   }
 }
 

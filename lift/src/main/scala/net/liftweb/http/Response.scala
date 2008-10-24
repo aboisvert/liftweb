@@ -90,6 +90,10 @@ case class RedirectResponse(uri: String, cookies: Cookie*) extends LiftResponse 
   def toResponse = InMemoryResponse(Array(0), List("Location" -> uri), cookies toList, 302)
 }
 
+object DoRedirectResponse {
+  def apply(url: String): LiftResponse = RedirectResponse(url, Nil :_*)
+}
+
 case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
 
 object RedirectState {
