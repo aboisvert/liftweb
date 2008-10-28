@@ -1069,7 +1069,7 @@ trait InsecureLiftView
  */
 trait LiftView {
   implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can.legacyNullTest(in)
-  def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
+  def dispatch : PartialFunction[String, () => Can[NodeSeq]]
 }
 
 object TemplateFinder {
@@ -1087,8 +1087,8 @@ object TemplateFinder {
       val lv = LiftRules.viewDispatch(places)
       val a = places.last
 
-      if (lv.dispatch_&.isDefinedAt(a))
-      lv.dispatch_&(a)()
+      if (lv.dispatch.isDefinedAt(a))
+      lv.dispatch(a)()
       else Empty
     } else {
     val pls = places.mkString("/","/", "")
@@ -1120,7 +1120,7 @@ object TemplateFinder {
           c =>
           (c.newInstance match {
               case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
-              case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
+              case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
               case _ => Empty
             }) match {
             case null | Empty | None => Empty
