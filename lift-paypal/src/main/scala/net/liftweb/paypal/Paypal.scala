@@ -68,7 +68,7 @@ object PaypalSSL extends PaypalConnection {
  * Contatins all the papyal status abstractions as enumberable vals
  */
 object PaypalTransactionStatus extends Enumeration {
-  val CanceledPayment = Value(1, "Canceled")
+  val CancelledReversalPayment = Value(1, "Cancelled_Reversal")
   val ClearedPayment = Value(2, "Cleared")
   val CompletedPayment = Value(3, "Completed")
   val DeniedPayment = Value(4, "Denied")
@@ -80,6 +80,10 @@ object PaypalTransactionStatus extends Enumeration {
   val ReversedPayment = Value(10, "Reversed")
   val UnclaimedPayment = Value(11, "Unclaimed")
   val UnclearedPayment = Value(12, "Uncleared")
+  val VoidedPayment = Value(13, "Voided")
+  val InProgressPayment = Value(14, "In-Progress")
+  val PartiallyRefundedPayment = Value(15, "Partially-Refunded")
+  val ProcessedPayment = Value(16, "Processed")
 
   def find(name: String): Can[Value] = {
     val n = name.trim.toLowerCase
@@ -200,9 +204,9 @@ trait PaypalResponse extends PaypalUtilities with HasParams {
   
   private lazy val info: Map[String, String] = 
   Map((for (v <- response; s <- split(v)) yield s) :_*)
-
+  
   def param(name: String) = Can(info.get(name))
-
+  
   lazy val paypalInfo: Can[PayPalInfo] =
   if (this.isVerified) Full(new PayPalInfo(this))
   else Empty
@@ -424,6 +428,7 @@ trait PayPal extends LiftRules.DispatchPf {
           case IPNRequest(r, cnt, when) if when <= millis =>
             tryo {
               val resp = PaypalIPN(r, mode, connection)
+              
               for (info <-  buildInfo(resp, r);
                    stat <- info.paymentStatus) yield {
                 actions((stat, info, r))
