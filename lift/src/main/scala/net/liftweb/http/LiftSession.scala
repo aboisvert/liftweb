@@ -1083,8 +1083,8 @@ object TemplateFinder {
    * @return the template if it can be found
    */
   def findAnyTemplate(places: List[String]): Can[NodeSeq] = {
-    if (LiftRules.viewDispatch.isDefinedAt(places)) {
-      val lv = LiftRules.viewDispatch(places)
+    if (LiftRules.viewDispatch.isDefinedAt(places.dropRight(1))) {
+      val lv = LiftRules.viewDispatch(places.dropRight(1))
       val a = places.last
 
       if (lv.dispatch.isDefinedAt(a))
