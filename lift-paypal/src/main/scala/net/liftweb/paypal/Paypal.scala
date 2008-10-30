@@ -286,7 +286,7 @@ private object PaypalIPN extends PaypalUtilities {
    * The current solution is not good!
    */
   private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] =
-    (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
+  (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
   
   def apply(request: RequestState, mode: PaypalMode, connection: PaypalConnection) = {
     //create request, get response and pass response object to the specified event handlers
@@ -325,7 +325,7 @@ private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) exten
   }
 }
 
-object SimplePayPal extends PayPal {
+object SimplePayPal extends PayPalIPN with PayPalPDT {
   val paypalAuthToken = "123"
   def actions = {
     case (status, info, resp) =>
@@ -336,6 +336,48 @@ object SimplePayPal extends PayPal {
     case (info, resp) =>
       Log.info("Got a verified PayPal PDT: "+resp)
       DoRedirectResponse.apply("/")
+  }
+}
+
+trait BasePaypalTrait {
+  lazy val RootPath = rootPath
+    
+  def rootPath = "paypal"
+  
+  def dispatch:  LiftRules.DispatchPf = Map.empty
+  
+  lazy val mode: PaypalMode = Props.mode match {
+    case Props.RunModes.Production => PaypalLive
+    case _ => PaypalSandbox
+  }
+
+  def connection: PaypalConnection = PaypalSSL
+
+}
+
+trait PayPalPDT extends BasePaypalTrait {
+  def paypalAuthToken: String
+  
+  lazy val PDTPath = pdtPath
+  def pdtPath = "pdt"
+   
+  override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
+    case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
+      r.params // force the lazy value to be evaluated
+      processPDT(r) _
+  }
+
+  def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
+  
+
+  
+  def processPDT(r: RequestState)(): Can[LiftResponse] = {
+    for (tx <- r.param("tx");
+         val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
+         info <- resp.paypalInfo;
+         redir <- tryo(pdtResponse(info, r))) yield {
+      redir
+    }
   }
 }
 
@@ -361,54 +403,27 @@ object SimplePayPal extends PayPal {
  * In this way you then get all the DispatchPf processing stuff for free. 
  * 
  */
-trait PayPal extends LiftRules.DispatchPf {
-  lazy val RootPath = rootPath
+trait PayPalIPN extends LiftRules.DispatchPf with BasePaypalTrait {
   lazy val IPNPath = ipnPath
-  lazy val PDTPath = pdtPath
-  
-  def rootPath = "paypal"
   def ipnPath = "ipn"
-  def pdtPath = "pdt"
-  
-  def paypalAuthToken: String
-  
-  lazy val mode: PaypalMode = Props.mode match {
-    case Props.RunModes.Production => PaypalLive
-    case _ => PaypalSandbox
-  }
-
-  def connection: PaypalConnection = PaypalSSL
-
+ 
   def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
 
   def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
   def apply(r: RequestState) = dispatch(r)
 
-  def dispatch: LiftRules.DispatchPf = {
+  override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
     case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
       r.params // force the lazy value to be evaluated
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
-      
-    case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
-      r.params // force the lazy value to be evaluated
-      processPDT(r) _
   }
   
-  def processPDT(r: RequestState)(): Can[LiftResponse] = {
-    for (tx <- r.param("tx");
-         val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
-         info <- resp.paypalInfo;
-         redir <- tryo(pdtResponse(info, r))) yield {
-      redir
-    }
-  }
+  def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
 
   protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
   protected case object PingMe
 
-  def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
-  def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
 
   protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PayPalInfo] = {
     if (resp.isVerified) Full(new PayPalInfo(req))
