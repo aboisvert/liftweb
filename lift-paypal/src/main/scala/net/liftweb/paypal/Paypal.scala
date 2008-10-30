@@ -384,10 +384,12 @@ trait PayPal extends LiftRules.DispatchPf {
 
   def dispatch: LiftRules.DispatchPf = {
     case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
+      r.params // force the lazy value to be evaluated
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
       
     case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
+      r.params // force the lazy value to be evaluated
       processPDT(r) _
   }
   
