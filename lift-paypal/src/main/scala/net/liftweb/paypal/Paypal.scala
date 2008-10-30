@@ -241,10 +241,10 @@ object PaypalDataTransfer extends PaypalBase {
    * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
    * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
    * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
-   * @return PaypalDataTransferReponse
+   * @return PaypalDataTransferResponse
    */
   def apply(authToken: String, transactionToken: String, mode: PaypalMode, connection: PaypalConnection): PaypalResponse =
-  PaypalDataTransferReponse(
+  PaypalDataTransferResponse(
     PaypalRequest(client(mode, connection),
                   PostMethodFactory("/cgi-bin/webscr",payloadArray(authToken, transactionToken))))
   
@@ -256,7 +256,7 @@ object PaypalDataTransfer extends PaypalBase {
  * @param response The processed response List[String]. The response 
  * input should be created with StreamResponseProcessor
  */
-case class PaypalDataTransferReponse(response: List[String]) extends PaypalResponse {
+case class PaypalDataTransferResponse(response: List[String]) extends PaypalResponse {
   def isVerified = paymentSuccessful
   /**
    * Quick utility method for letting you know if the payment data is returning a sucsessfull message
@@ -283,21 +283,20 @@ private object PaypalIPN extends PaypalUtilities {
    * @todo Really need to make sure that multiple custom paramaters can be mapped through.
    * The current solution is not good!
    */
-  private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] = 
-  (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
+  private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] =
+    (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
   
   def apply(request: RequestState, mode: PaypalMode, connection: PaypalConnection) = {
     //create request, get response and pass response object to the specified event handlers
     val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList(request))
-
     ipnResponse
-  }  
+  }
 }
 
 /**
  * In response to the IPN postback from paypal, its nessicary to then call paypal and pass back
  * the exact set of paramaters that you were given by paypal - this stops spoofing. Use the 
- * PaypalInstantPaymentTransferPostback exactly as you would PaypalDataTransferReponse.
+ * PaypalInstantPaymentTransferPostback exactly as you would PaypalDataTransferResponse.
  */
 private[paypal] object PaypalIPNPostback extends PaypalBase {
   
@@ -510,6 +509,7 @@ class PayPalInfo(val params: HasParams) {
   val period1 = r.param("period1")
   val period2 = r.param("period2")
   val period3 = r.param("period3")
+  val amount = r.param("amt")
   val amount1 = r.param("amount1")
   val amount2 = r.param("amount2")
   val amount3 = r.param("amount3")
