@@ -181,7 +181,9 @@ private object StreamResponseProcessor {
       def doRead {
         reader.readLine() match {
           case null => ()
-          case line => ret += line
+          case line =>
+            ret += line
+            doRead
         }
       }
       
