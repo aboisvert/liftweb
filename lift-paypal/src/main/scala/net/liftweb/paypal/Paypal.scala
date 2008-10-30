@@ -339,7 +339,7 @@ object SimplePayPal extends PayPalIPN with PayPalPDT {
   }
 }
 
-trait BasePaypalTrait {
+trait BasePaypalTrait extends LiftRules.DispatchPf {
   lazy val RootPath = rootPath
     
   def rootPath = "paypal"
@@ -353,6 +353,8 @@ trait BasePaypalTrait {
 
   def connection: PaypalConnection = PaypalSSL
 
+    def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
+  def apply(r: RequestState) = dispatch(r)
 }
 
 trait PayPalPDT extends BasePaypalTrait {
@@ -368,8 +370,6 @@ trait PayPalPDT extends BasePaypalTrait {
   }
 
   def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
-  
-
   
   def processPDT(r: RequestState)(): Can[LiftResponse] = {
     for (tx <- r.param("tx");
@@ -403,14 +403,11 @@ trait PayPalPDT extends BasePaypalTrait {
  * In this way you then get all the DispatchPf processing stuff for free. 
  * 
  */
-trait PayPalIPN extends LiftRules.DispatchPf with BasePaypalTrait {
+trait PayPalIPN extends BasePaypalTrait {
   lazy val IPNPath = ipnPath
   def ipnPath = "ipn"
  
   def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
-
-  def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
-  def apply(r: RequestState) = dispatch(r)
 
   override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
     case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
