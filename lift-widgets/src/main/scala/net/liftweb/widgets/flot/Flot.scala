@@ -549,7 +549,7 @@ object Flot
   def renderOptions (options : FlotOptions) : String = {
     var first = true
 
-    def finLinea () = {
+    def endOfLine () = {
       val ret = if (! first) ",\n      " else "      "
       first = false
       ret
@@ -562,37 +562,37 @@ object Flot
 
     val set_points = options.points match {
       case None => ""
-      case Some (_points) => {finLinea + "points: {" + renderPoints (_points) + "}"}
+      case Some (_points) => {endOfLine + "points: {" + renderPoints (_points) + "}"}
     }
 
     val set_xaxis = options.xaxis match {
       case None => ""
-      case Some (options) => {finLinea + renderAxis ("x", options)}
+      case Some (options) => {endOfLine + renderAxis ("x", options)}
     }
 
     val set_yaxis = options.yaxis match {
       case None => ""
-      case Some (options) => {finLinea + renderAxis ("y", options)}
+      case Some (options) => {endOfLine + renderAxis ("y", options)}
     }
 
     val set_selection = options.modeSelection match {
       case None => ""
-      case Some (mode) => {finLinea + "selection: { mode: '" + mode + "'}"}
+      case Some (mode) => {endOfLine + "selection: { mode: '" + mode + "'}"}
     }
 
     val set_legend = options.legend match {
       case None => ""
-      case Some (_legend) => {finLinea + "legend: {" + renderLegend (_legend) +  "}"}
+      case Some (_legend) => {endOfLine + "legend: {" + renderLegend (_legend) +  "}"}
     }
 
     val set_shadowSize = options.shadowSize match {
       case None => ""
-      case Some (_shadowSize) => {finLinea + "shadowSize: " + _shadowSize}
+      case Some (_shadowSize) => {endOfLine + "shadowSize: " + _shadowSize}
     }
 
     val set_grid = options.grid match {
       case None => ""
-      case Some (_grid) => {finLinea + "grid: {" + renderGrid (_grid) + "}"}
+      case Some (_grid) => {endOfLine + "grid: {" + renderGrid (_grid) + "}"}
     }
 
     if (! first)
