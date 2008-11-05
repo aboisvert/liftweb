@@ -43,7 +43,7 @@ class MappedBirthYear[T <: Mapper[T]](owner: T, minAge: Int) extends MappedInt[T
 		  toList.
 		  reverse.
 		  map(y => (y, y.toString)),
-		  Full(is), this.set))
+		  Full(is), this.set) % ("id" -> fieldId))
   }
 }
 

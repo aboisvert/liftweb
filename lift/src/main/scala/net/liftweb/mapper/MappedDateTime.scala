@@ -74,7 +74,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-  Full(<input type='text'
+  Full(<input type='text' id={fieldId}
       name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
       value={is match {case null => "" case s => toInternetDate(s)}}/>)
 

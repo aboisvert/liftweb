@@ -20,7 +20,7 @@ import _root_.net.liftweb.mapper._
 import _root_.net.liftweb.http._
 import js._
 import JsCmds._
-import _root_.scala.xml.{NodeSeq, Node, Group}
+import _root_.scala.xml.{NodeSeq, Node, Group, Text}
 import _root_.scala.xml.transform._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
@@ -42,6 +42,7 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsStr
   // First Name
   object firstName extends MappedString(this, 32) {
     override def displayName = fieldOwner.firstNameDisplayName
+    override val fieldId = Some(Text("txtFirstName"))
   }
   
   def firstNameDisplayName = ??("First Name")
@@ -49,6 +50,7 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsStr
   // Last Name
   object lastName extends MappedString(this, 32) {
     override def displayName = fieldOwner.lastNameDisplayName
+    override val fieldId = Some(Text("txtLastName"))
   }
   
   def lastNameDisplayName = ??("Last Name")
@@ -58,6 +60,7 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsStr
     override def dbIndexed_? = true
     override def validations = valUnique(S.??("unique.email.address")) _ :: super.validations
     override def displayName = fieldOwner.emailDisplayName
+    override val fieldId = Some(Text("txtEmail"))
   }
 
   def emailDisplayName = ??("Email")
@@ -629,14 +632,17 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   
   object validated extends MappedBoolean[T](this) {
     override def defaultValue = false
+    override val fieldId = Some(Text("txtValidated"))
   }
   
   object locale extends MappedLocale[T](this) {
     override def displayName = fieldOwner.localeDisplayName
+    override val fieldId = Some(Text("txtLocale"))
   }
   
   object timezone extends MappedTimeZone[T](this) {
     override def displayName = fieldOwner.timezoneDisplayName
+    override val fieldId = Some(Text("txtTimeZone"))
   }
 
   def timezoneDisplayName = ??("Time Zone")

@@ -123,6 +123,13 @@ trait BaseMappedField extends SelectableField {
   def toForm: Can[NodeSeq]
 
   /**
+  * A unique 'id' for the field for form generation
+  */
+  def fieldId: Option[NodeSeq] = None
+
+  def displayNameHtml: Can[NodeSeq] = Empty
+
+  /**
    * This is where the instance creates its "toForm" stuff.
    * The actual toForm method wraps the information based on
    * mode.
@@ -359,7 +366,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-    Full(<input type='text'
+    Full(<input type='text' id={fieldId}
 	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
 	 value={is match {case null => "" case s => s.toString}}/>)
 

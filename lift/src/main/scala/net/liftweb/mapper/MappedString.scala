@@ -94,7 +94,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   }
 
   override def _toForm: Can[NodeSeq] =
-    Full(<input type='text' maxlength={maxLen.toString}
+    Full(<input type='text' id={fieldId} maxlength={maxLen.toString}
 	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
 	 value={is match {case null => "" case s => s.toString}}/>)
 

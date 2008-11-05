@@ -227,7 +227,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
+     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm) 
 }
 
 

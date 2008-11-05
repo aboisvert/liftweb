@@ -29,7 +29,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: int) extends MappedString[
     val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
     Full(<textarea name={funcName}
 	 rows={textareaRows.toString}
-	 cols={textareaCols.toString}>{is.toString}</textarea>)
+	 cols={textareaCols.toString} id={fieldId}>{is.toString}</textarea>)
   }
 
   override def toString = {
