@@ -1122,17 +1122,10 @@ object TemplateFinder {
         tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName).asInstanceOf[Class[AnyRef]]).flatMap{
           c =>
           (c.newInstance match {
-<<<<<<< HEAD:lift/src/main/scala/net/liftweb/http/LiftSession.scala
             case inst: InsecureLiftView => c.getMethod(action).invoke(inst)
-            case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
+            case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
             case _ => Empty
           }) match {
-=======
-              case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
-              case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
-              case _ => Empty
-            }) match {
->>>>>>> master:lift/src/main/scala/net/liftweb/http/LiftSession.scala
             case null | Empty | None => Empty
             case n: Group => Full(n)
             case n: Elem => Full(n)
