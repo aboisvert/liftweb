@@ -41,8 +41,8 @@ class AuthorOps {
     val currentId = author.id
 
     bind("author", xhtml,
-	 "id" -> SHtml.hidden({author.id = currentId}),
+	 "id" -> SHtml.hidden(() => author.id = currentId),
 	 "name" -> SHtml.text(author.name, author.name = _),
-	 "submit" -> SHtml.submit(?("Save"), doAdd))
+	 "submit" -> SHtml.submit(?("Save"), doAdd _))
   }
 }

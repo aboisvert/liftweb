@@ -604,7 +604,7 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
 
             case Full(inst: StatefulSnippet) =>
               if (inst.dispatch.isDefinedAt(method))
-              (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
+              (if (isForm) SHtml.hidden(() => inst.registerThisSnippet) else Text("")) ++
               inst.dispatch(method)(kids)
               else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                    LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
@@ -756,9 +756,12 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
           case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
-        val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
-        val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
-        ret.start
+//        val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
+//        val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
+        val constr = cls.getConstructor(Array())
+        val ret = constr.newInstance(Array()).asInstanceOf[CometActor]
+        ret.initCometActor(this, name, defaultXml, attributes)
+        
         // ret.link(this)
         ret ! PerformSetupComet
         ret.asInstanceOf[CometActor]

@@ -18,8 +18,7 @@ import SHtml._
 import _root_.com.skittr.model.{Friend, User}
 import _root_.net.liftweb.mapper._
 
-class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends
-      CometActor(theSession, name, defaultXml, attributes) {
+class WatchUser extends CometActor {
   private var userActor: Can[UserActor] = Empty
   private var messages: List[Message] = Nil
   def defaultPrefix = "sk"
@@ -32,7 +31,7 @@ class WatchUser(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq,
 	    bind("username" -> Text(user.name+" -> "+user.fullName),
 		 "content" -> <span>{friendList(user) ++
 		              ajaxForm(textarea("", msg => ua ! SendMessage(msg, "web")) % ("cols" -> "40") ++
-                                       submit("msg", true))
+                                       submit("msg", () => true))
                               }</span>) ++
 	    messages.flatMap(msg => bind("username" -> Text(msg.who+" @ "+toInternetDate(msg.when)), "content" -> Text(msg.text)))
 	  }) openOr bind("username" -> Text("N/A"), "content" -> Text("N/A"))

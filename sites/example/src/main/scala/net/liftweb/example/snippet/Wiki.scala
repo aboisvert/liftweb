@@ -98,7 +98,7 @@ class Wiki extends MetaWikiEntry {
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
     val cancelLink = <a href={uriFor(pageName)}>Cancel</a>
     val textarea = entry.entry.toForm
-    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", entry.save)
+    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", () => entry.save)
     <form method="GET" action={action}>{ // the form tag
           message ++
           hobixLink ++

@@ -22,10 +22,9 @@ import _root_.scala.xml._
 import js._
 import JsCmds._
 
-class Clock (info: CometActorInitInfo) extends CometActor(info) {
-
+class Clock extends CometActor {
   def defaultPrefix = "clk"
-  ActorPing.schedule(this, Tick, 10000L) // schedule a ping every 10 seconds so we redraw
+  ActorPing.schedule(this, Tick, 10 seconds) // schedule a ping every 10 seconds so we redraw
 
   private lazy val spanId = uniqueId+"_timespan"
 
@@ -33,10 +32,10 @@ class Clock (info: CometActorInitInfo) extends CometActor(info) {
 
   def timeSpan = (<span id={spanId}>{timeNow}</span>)
 
-  override def lowPriority : PartialFunction[Any, Unit] = {
+  override def lowPriority = {
     case Tick =>
       partialUpdate(SetHtml(spanId, Text(timeNow.toString)))
-    ActorPing.schedule(this, Tick, 10000L) // schedule an update in 10 seconds
+    ActorPing.schedule(this, Tick, 10 seconds) // schedule an update in 10 seconds
   }
 }
 

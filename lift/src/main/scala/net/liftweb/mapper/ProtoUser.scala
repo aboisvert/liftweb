@@ -371,7 +371,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     
     def innerSignup = bind("user", 
                            signupXhtml(theUser),
-                           "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
+                           "submit" -> SHtml.submit(S.??("sign.up"), testSignup _))
     
     S.addSessionTemplater(theName, {
         case RequestState(path, "", _)
@@ -522,7 +522,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
       bind("user", passwordResetXhtml,
            "pwd" -> SHtml.password_*("",(p: List[String]) =>
           user.password.setList(p)),
-           "submit" -> SHtml.submit(S.??("set.password"), finishSet()))
+           "submit" -> SHtml.submit(S.??("set.password"), finishSet _))
     case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(homePage)
   }
   
@@ -556,7 +556,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     bind("user", changePasswordXhtml,
          "old_pwd" -> SHtml.password("", oldPassword = _),
          "new_pwd" -> SHtml.password_*("", LFuncHolder(newPassword = _)),
-         "submit" -> SHtml.submit(S.??("change"), testAndSet()))
+         "submit" -> SHtml.submit(S.??("change"), testAndSet _))
   }
   
   def editXhtml(user: ModelType) = {
@@ -584,7 +584,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     }
     
     def innerEdit = bind("user", editXhtml(theUser), 
-                         "submit" -> SHtml.submit(S.??("edit"), testEdit()))
+                         "submit" -> SHtml.submit(S.??("edit"), testEdit _))
     
     S.addSessionTemplater(theName, {
         case RequestState(path, "", _)

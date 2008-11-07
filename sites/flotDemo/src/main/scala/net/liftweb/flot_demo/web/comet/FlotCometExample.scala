@@ -15,14 +15,7 @@ import net.liftweb.flot_demo.web.model._
  *
  */
 
-class FlotCometExample
-(
-  theSession : LiftSession,
-  name: Can[String],
-  defaultXml: NodeSeq,
-  attributes: Map[String, String]
-)
-  extends CometActor(theSession, name, defaultXml, attributes)
+class FlotCometExample extends CometActor
 {
   var options : FlotOptions = new FlotOptions
   var series : List [FlotSerie] = Nil

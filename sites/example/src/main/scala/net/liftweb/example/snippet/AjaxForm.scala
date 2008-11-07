@@ -50,7 +50,7 @@ class AjaxForm {
           ("onchange" -> ajaxCall(JE.JsRaw("this.value"), 
 				  s => After(200, replace(s))).toJsCmd),
         "city" -> cityChoice(state) % ("id" -> "city_select"),
-        "submit" -> submit(?("Save"), {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
+        "submit" -> submit(?("Save"), () => {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
 }
 
 object AjaxForm {
