@@ -30,7 +30,7 @@ import JsCmds._
 import JqJsCmds._
 
 
-class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {
+class Chat extends CometActor {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
   def defaultPrefix = "chat"
@@ -68,16 +68,12 @@ class Chat(initInfo: CometActorInitInfo) extends CometActor(initInfo) {
 
   override def localSetup {
     if (userName.length == 0) {
-      ask(new AskName(CometActorInitInfo(theSession, name, defaultXml, attributes)), "what's your username") {
+      ask(new AskName, "what's your username") {
         case s: String if (s.trim.length > 2) => userName = s.trim; reRender(true)
         case s => localSetup; reRender(false)
       }
     }
   }
 
-  // def waitForUpdate : Option[List[ChatLine]] = receiveWithin(100) {case ChatServerUpdate(l) => Some(l) case TIMEOUT => None}
-
   def sendMessage(msg: String) = server ! ChatServerMsg(userName, msg.trim)
-
-
 }

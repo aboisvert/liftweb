@@ -107,8 +107,8 @@ object LiftRules {
    */
   var determineContentType:
   PartialFunction[(Can[RequestState], Can[String]), String] = {
-    case (_, Full(accept)) if accept.toLowerCase.contains("application/xhtml+xml") =>
-      "application/xhtml+xml"
+    case (_, Full(accept)) if this.useXhtmlMimeType && accept.toLowerCase.contains("application/xhtml+xml") =>
+       "application/xhtml+xml"
 
     case _ => "text/html"
   }
@@ -175,7 +175,7 @@ object LiftRules {
    * If you don't want lift to send the application/xhtml+xml mime type to those browsers
    * that understand it, then set this to {@code false}
    */
-  var useXhtmlMimeType: Boolean = true
+ var useXhtmlMimeType: Boolean = true
 
 
   private def _stringToXml(s: String): NodeSeq = Text(s)
@@ -747,6 +747,7 @@ function lift_ajaxHandler(theData, theSuccess, theFailure) {
   lift_ajaxQueue.push(toSend);
   lift_ajaxQueueSort();
   lift_doAjaxCycle();
+  return false; // buttons in forms don't trigger the form
 }
 
 function lift_ajaxQueueSort() {

@@ -24,10 +24,12 @@ import _root_.scala.collection.mutable.{HashMap, ListBuffer}
  */
 abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { 
   self: MyType =>
-  private val name = "_lift_sv_"+getClass.getName
+  private lazy val name = "_lift_sv_"+getClass.getName+"_"+__nameSalt
   protected def findFunc(name: String): Can[T]
   protected def setFunc(name: String, value: T): Unit
   protected def clearFunc(name: String): Unit
+
+  protected def __nameSalt = ""
 
   /**
    * The current value of the variable

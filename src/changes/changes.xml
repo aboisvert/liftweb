@@ -17,6 +17,11 @@
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
     <release version="0.10" date="" description="">
+      <action dev="David Pollak" type="update">Updated LiftView to be more syntactically pleasing</action>
+      <action dev="David Pollak" type="update">Fixed a bug with how RequestVars and traits work</action>
+      <action dev="David Pollak" type="update">Enhanced the DateTime inputs</action>
+      <action dev="David Pollak" type="update">First pass at complete PayPal ITN and PDT stuff</action>
+      <action dev="David Pollak" type="update">Refactoring of the PayPal stuff</action>
       <action dev="David Pollak" type="add">A Currency class</action>
       <action dev="David Pollak" type="add">Added a nifty mechanism for stateful form management (Hoot)</action>
       <action dev="Marius Danciu" type="add">Added fix CSS support</action>
@@ -24,6 +29,7 @@
       <action dev="Marius Danciu" type="add">Added JSON forms support</action>
       <action dev="Jorge Ortiz" type="update">Updated to jQuery 1.2.6</action>
       <action dev="Timothy Perrett" type="add">Added PayPal Integration module</action>
+      <action dev="Timothy Perrett" type="update">Redesigned Gavatar widget</action>
     </release>
     <release version="0.9" date="2008-06-15" description="">
       <action dev="Marius Danciu" type="add">Added URL rewriting support</action>

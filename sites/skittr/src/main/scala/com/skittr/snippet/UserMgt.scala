@@ -18,7 +18,7 @@ class UserMgt {
     } else {
         var username = ""
         var pwd = ""
-        def testPwd(ignore: String) {
+        def testPwd {
            User.find(By(User.name, username)).filter(_.password.match_?(pwd)).map{
              u => S.set("user_name", u.name)
              S.redirectTo("/")

@@ -207,15 +207,15 @@ object SHtml {
   def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
   def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
   def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-  def hidden(func: => Any): Elem = makeFormElement("hidden", NFuncHolder(() => func)) % ("value" -> "true")
-  def submit(value: String, func: => Any): Elem = makeFormElement("submit", NFuncHolder(() => func)) % new UnprefixedAttribute("value", Text(value), Null)
+  def hidden(func: () => Any): Elem = makeFormElement("hidden", NFuncHolder(func)) % ("value" -> "true")
+  def submit(value: String, func: () => Any): Elem = makeFormElement("submit", NFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
 
   def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
   def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
   def ajaxForm(body: NodeSeq, onSubmit: JsCmd) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
 
-  def jsonForm(jsonHandler: JsonHandler, body : => NodeSeq): NodeSeq = jsonForm(jsonHandler, Noop, body)
-  def jsonForm(jsonHandler: JsonHandler, onSubmit: JsCmd, body : => NodeSeq): NodeSeq = {
+  def jsonForm(jsonHandler: JsonHandler, body: NodeSeq): NodeSeq = jsonForm(jsonHandler, Noop, body)
+  def jsonForm(jsonHandler: JsonHandler, onSubmit: JsCmd, body: NodeSeq): NodeSeq = {
     val id = "F"+randomString(15)
     <form onsubmit={(onSubmit & jsonHandler.call("processForm", FormToJSON(id)) & JsReturn(false)).toJsCmd} id={id}>
       {body}

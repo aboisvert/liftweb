@@ -1349,7 +1349,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     }
 
     xbind(name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm.openOr(Text(""))) orElse {
-        case "submit" => label => SHtml.submit(label.text, callback())
+        case "submit" => label => SHtml.submit(label.text, callback _)
       })
   }
 

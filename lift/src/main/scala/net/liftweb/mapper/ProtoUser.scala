@@ -20,7 +20,7 @@ import _root_.net.liftweb.mapper._
 import _root_.net.liftweb.http._
 import js._
 import JsCmds._
-import _root_.scala.xml.{NodeSeq, Node, Group}
+import _root_.scala.xml.{NodeSeq, Node, Group, Text}
 import _root_.scala.xml.transform._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
@@ -40,20 +40,36 @@ trait ProtoUser[T <: ProtoUser[T]] extends KeyedMapper[Long, T] with UserIdAsStr
   def userIdAsString: String = id.is.toString
 
   // First Name
-  object firstName extends MappedString(this, 32)
+  object firstName extends MappedString(this, 32) {
+    override def displayName = fieldOwner.firstNameDisplayName
+    override val fieldId = Some(Text("txtFirstName"))
+  }
+  
+  def firstNameDisplayName = ??("First Name")
   
   // Last Name
-  object lastName extends MappedString(this, 32)
+  object lastName extends MappedString(this, 32) {
+    override def displayName = fieldOwner.lastNameDisplayName
+    override val fieldId = Some(Text("txtLastName"))
+  }
+  
+  def lastNameDisplayName = ??("Last Name")
   
   // Email
   object email extends MappedEmail(this, 48) {
     override def dbIndexed_? = true
     override def validations = valUnique(S.??("unique.email.address")) _ :: super.validations
+    override def displayName = fieldOwner.emailDisplayName
+    override val fieldId = Some(Text("txtEmail"))
   }
-  
+
+  def emailDisplayName = ??("Email")
   // Password
-  object password extends MappedPassword[T](this)
-  
+  object password extends MappedPassword[T](this) {
+    override def displayName = fieldOwner.passwordDisplayName
+  }
+
+  def passwordDisplayName = ??("Password")
   
   object superUser extends MappedBoolean(this) {
     override def defaultValue = false
@@ -130,9 +146,9 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   
   lazy val testLogginIn = If(loggedIn_? _, S.??("must.be.logged.in")) ;
 
-lazy val testSuperUser = If(superUser_? _, S.??("must.be.super.user"))
+  lazy val testSuperUser = If(superUser_? _, S.??("must.be.super.user"))
 
-def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
+  def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
 
   /**
    * The menu item for login (make this "Empty" to disable)
@@ -220,7 +236,7 @@ def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
   
   def templates: LiftRules.TemplatePf = {
     case RequestState(path, "", _)
-    if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
+      if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
     
     case RequestState(path, "", _)
       if path.startsWith(loginPath) && testLoggedIn(loginSuffix) => () => login
@@ -355,7 +371,7 @@ def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
     
     def innerSignup = bind("user", 
                            signupXhtml(theUser),
-                           "submit" -> SHtml.submit(S.??("sign.up"), testSignup()))
+                           "submit" -> SHtml.submit(S.??("sign.up"), testSignup _))
     
     S.addSessionTemplater(theName, {
         case RequestState(path, "", _)
@@ -385,15 +401,15 @@ def superUser_? : Boolean = currentUser.map(_.superUser.is) openOr false
     case _ => S.error(S.??("invalid.validation.link")); S.redirectTo(homePage)
   }
   
-def loginXhtml = {
-  (<form method="POST" action={S.uri}><table><tr><td
-            colspan="2">{S.??("log.in")}</td></tr>
-        <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
-        <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
-        <tr><td><a href={lostPasswordPath.mkString("/", "/", "")}
-              >{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
-   </form>)
-}
+  def loginXhtml = {
+    (<form method="POST" action={S.uri}><table><tr><td
+              colspan="2">{S.??("log.in")}</td></tr>
+          <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
+          <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
+          <tr><td><a href={lostPasswordPath.mkString("/", "/", "")}
+                >{S.??("recover.password")}</a></td><td><user:submit /></td></tr></table>
+     </form>)
+  }
   
   def login = {
     if (S.post_?) {
@@ -411,9 +427,9 @@ def loginXhtml = {
     }
     
     bind("user", loginXhtml,
-    "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
-    "password" -> (<input type="password" name="password"/>),
-    "submit" -> (<input type="submit" value={S.??("log.in")}/>))
+         "email" -> (FocusOnLoad(<input type="text" name="username"/>)),
+         "password" -> (<input type="password" name="password"/>),
+         "submit" -> (<input type="submit" value={S.??("log.in")}/>))
   }
   
   def lostPasswordXhtml = {
@@ -505,8 +521,8 @@ def loginXhtml = {
     
       bind("user", passwordResetXhtml,
            "pwd" -> SHtml.password_*("",(p: List[String]) =>
-                                     user.password.setList(p)),
-           "submit" -> SHtml.submit(S.??("set.password"), finishSet()))
+          user.password.setList(p)),
+           "submit" -> SHtml.submit(S.??("set.password"), finishSet _))
     case _ => S.error(S.??("pasword.link.invalid")); S.redirectTo(homePage)
   }
   
@@ -540,7 +556,7 @@ def loginXhtml = {
     bind("user", changePasswordXhtml,
          "old_pwd" -> SHtml.password("", oldPassword = _),
          "new_pwd" -> SHtml.password_*("", LFuncHolder(newPassword = _)),
-         "submit" -> SHtml.submit(S.??("change"), testAndSet()))
+         "submit" -> SHtml.submit(S.??("change"), testAndSet _))
   }
   
   def editXhtml(user: ModelType) = {
@@ -568,7 +584,7 @@ def loginXhtml = {
     }
     
     def innerEdit = bind("user", editXhtml(theUser), 
-                         "submit" -> SHtml.submit(S.??("edit"), testEdit()))
+                         "submit" -> SHtml.submit(S.??("edit"), testEdit _))
     
     S.addSessionTemplater(theName, {
         case RequestState(path, "", _)
@@ -590,8 +606,8 @@ def loginXhtml = {
           case _ => true
         })).
     flatMap(f =>
-            f.toForm.toList.map(form =>
-                                (<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
+      f.toForm.toList.map(form =>
+        (<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
   }
   
   implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] =
@@ -616,10 +632,21 @@ trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {
   
   object validated extends MappedBoolean[T](this) {
     override def defaultValue = false
+    override val fieldId = Some(Text("txtValidated"))
   }
   
-  object locale extends MappedLocale[T](this)
+  object locale extends MappedLocale[T](this) {
+    override def displayName = fieldOwner.localeDisplayName
+    override val fieldId = Some(Text("txtLocale"))
+  }
   
-  object timezone extends MappedTimeZone[T](this)
+  object timezone extends MappedTimeZone[T](this) {
+    override def displayName = fieldOwner.timezoneDisplayName
+    override val fieldId = Some(Text("txtTimeZone"))
+  }
+
+  def timezoneDisplayName = ??("Time Zone")
+
+  def localeDisplayName = ??("Locale")
   
 }

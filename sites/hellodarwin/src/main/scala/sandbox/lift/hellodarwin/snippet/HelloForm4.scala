@@ -21,7 +21,7 @@ class HelloForm4 extends StatefulSnippet{
       <br/>
       <label for="whoField">Who :</label>
       { text(who, v => who = v) % ("size" -> "10") % ("id" -> "whoField") }
-      { submit(?("Send"), println("value:" + who)) }
+      { submit(?("Send"), () => println("value:" + who)) }
     </xml:group>
   }
 }

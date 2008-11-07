@@ -143,7 +143,7 @@ object WikiStuff extends Loc[WikiLoc] {
     val cancelLink = <a href={action}>Cancel</a>
     val textarea = r.entry.toForm
     
-    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", r.save)
+    val submitButton = SHtml.submit(isNew ? "Add" | "Edit", () => r.save)
     
     <form method="POST" action={action}>{ // the form tag
       message ++

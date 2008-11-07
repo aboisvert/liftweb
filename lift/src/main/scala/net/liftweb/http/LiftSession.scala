@@ -604,7 +604,7 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
 
             case Full(inst: StatefulSnippet) =>
               if (inst.dispatch.isDefinedAt(method))
-              (if (isForm) SHtml.hidden(inst.registerThisSnippet) else Text("")) ++
+              (if (isForm) SHtml.hidden(() => inst.registerThisSnippet) else Text("")) ++
               inst.dispatch(method)(kids)
               else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                    LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
@@ -756,9 +756,12 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
       case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
-        val constr = cls.getConstructor(classOf[CometActorInitInfo])
-        val ret = constr.newInstance(CometActorInitInfo(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
-        ret.start
+//        val constr = cls.getConstructor(classOf[CometActorInitInfo])
+//        val ret = constr.newInstance(CometActorInitInfo(this, name, defaultXml, attributes)).asInstanceOf[CometActor];
+        val constr = cls.getConstructor()
+        val ret = constr.newInstance().asInstanceOf[CometActor]
+        ret.initCometActor(this, name, defaultXml, attributes)
+        
         // ret.link(this)
         ret ! PerformSetupComet
         ret.asInstanceOf[CometActor]
@@ -1069,7 +1072,7 @@ trait InsecureLiftView
  */
 trait LiftView {
   implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can.legacyNullTest(in)
-  def dispatch_& : PartialFunction[String, () => Can[NodeSeq]]
+  def dispatch : PartialFunction[String, () => Can[NodeSeq]]
 }
 
 object TemplateFinder {
@@ -1083,12 +1086,12 @@ object TemplateFinder {
    * @return the template if it can be found
    */
   def findAnyTemplate(places: List[String]): Can[NodeSeq] = {
-    if (LiftRules.viewDispatch.isDefinedAt(places)) {
-      val lv = LiftRules.viewDispatch(places)
+    if (LiftRules.viewDispatch.isDefinedAt(places.dropRight(1))) {
+      val lv = LiftRules.viewDispatch(places.dropRight(1))
       val a = places.last
 
-      if (lv.dispatch_&.isDefinedAt(a))
-      lv.dispatch_&(a)()
+      if (lv.dispatch.isDefinedAt(a))
+      lv.dispatch(a)()
       else Empty
     } else {
     val pls = places.mkString("/","/", "")
@@ -1119,10 +1122,17 @@ object TemplateFinder {
         tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName).asInstanceOf[Class[AnyRef]]).flatMap{
           c =>
           (c.newInstance match {
+<<<<<<< HEAD:lift/src/main/scala/net/liftweb/http/LiftSession.scala
             case inst: InsecureLiftView => c.getMethod(action).invoke(inst)
             case inst: LiftView if inst.dispatch_&.isDefinedAt(action) => inst.dispatch_&(action)()
             case _ => Empty
           }) match {
+=======
+              case inst: InsecureLiftView => c.getMethod(action, null).invoke(inst, null)
+              case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
+              case _ => Empty
+            }) match {
+>>>>>>> master:lift/src/main/scala/net/liftweb/http/LiftSession.scala
             case null | Empty | None => Empty
             case n: Group => Full(n)
             case n: Elem => Full(n)

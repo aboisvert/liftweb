@@ -11,8 +11,7 @@ import _root_.com.hellolift.controller.BlogCache
 import _root_.com.hellolift.controller.BlogUpdate
 import _root_.com.hellolift.controller.AddBlogWatcher
 
-class DynamicBlogView(theSession: LiftSession, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]) extends
-CometActor(theSession, name, defaultXml, attributes) {
+class DynamicBlogView extends CometActor {
   def defaultPrefix = "blog"
   var blogtitle = ""
   var blog : List[Entry] = Nil

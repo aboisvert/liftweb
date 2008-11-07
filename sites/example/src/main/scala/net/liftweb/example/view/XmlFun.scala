@@ -22,9 +22,7 @@ import _root_.net.liftweb.util._
 
 class XmlFun extends LiftView {
 
-  def dispatch_& = {
-    case "index" => render _
-  }
+  def dispatch = Map("index" -> render _)
 
   def render = {
     val addresses = addressNode("123 any street", null, "SF", "CA", "94122", "US") ::

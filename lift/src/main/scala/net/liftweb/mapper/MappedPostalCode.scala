@@ -19,6 +19,7 @@ package net.liftweb.mapper
 import _root_.scala.xml.{NodeSeq, Text}
 import _root_.net.liftweb.http.{S, SHtml, FieldError}
 import _root_.net.liftweb.util._
+import Helpers._
 import _root_.java.util.{Locale, TimeZone}
 
 object Countries extends Enumeration(1) {
@@ -78,7 +79,7 @@ class MappedLocale[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 16) 
     Full(SHtml.select(Locale.getAvailableLocales.
 		  toList.sort(_.getDisplayName < _.getDisplayName).
 		  map(lo => (lo.toString, lo.getDisplayName)),
-		  Full(this.is), set))
+		  Full(this.is), set) % ("id" -> fieldId))
 }
 
 class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32) {
@@ -90,7 +91,8 @@ class MappedTimeZone[T <: Mapper[T]](owner: T) extends MappedString[T](owner, 32
   }
 
   override def _toForm: Can[NodeSeq] =
-    Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), set))
+    Full(SHtml.select(MappedTimeZone.timeZoneList, Full(this.is), set) %
+       ("id" -> fieldId))
 }
 
 object MappedTimeZone {

@@ -66,11 +66,11 @@ object ActorWatcher extends Actor {
 * Takes care of the plumbing for building Comet-based Web Apps
 */
 @serializable
-abstract class CometActor(val theSession: LiftSession, val name: Can[String], val defaultXml: NodeSeq, val attributes: Map[String, String]) extends Actor with BindHelpers {
+abstract class CometActor extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
-  private var lastRendering: RenderOut = RenderOut(Full(defaultXml),
-                                                   Empty, Empty, Empty, false)
+  
+  private var lastRendering: RenderOut = _
   private var wasLastFullRender = false
   @transient
   private var listeners: List[(ListenerId, AnswerRender => Unit)] = Nil
@@ -81,8 +81,39 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
   private var jsonHandlerChain: PartialFunction[Any, JsCmd] = Map.empty
   private val notices = new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])]
 
-  def this(info: CometActorInitInfo) =
-  this(info.theSession,info.name,info.defaultXml,info.attributes)
+  private var _theSession: LiftSession = _
+  def theSession = _theSession
+
+  private var _defaultXml: NodeSeq = _
+  def defaultXml = _defaultXml
+
+  private var _name: Can[String] = Empty
+  def name = _name
+
+  private var _attributes: Map[String, String] = Map.empty
+  def attributes = _attributes
+  
+  
+  private[http] def initCometActor(theSession: LiftSession, name: Can[String], 
+                     defaultXml: NodeSeq,
+                     attributes: Map[String, String]) {
+    lastRendering = RenderOut(Full(defaultXml),
+                              Empty, Empty, Empty, false)
+    this._theSession = theSession
+    this._defaultXml = defaultXml
+    this._name = name
+    this._attributes = attributes
+    this.start()
+  }
+
+  // Compatibility constructors... no longer used
+  /*
+  def this(theSession: LiftSession, name: Can[String], 
+                                   defaultXml: NodeSeq, 
+                                   attributes: Map[String, String]) = this()
+  
+  def this(info: CometActorInitInfo) = this()
+  */
 
   def defaultPrefix: String
 
@@ -313,11 +344,11 @@ abstract class CometActor(val theSession: LiftSession, val name: Can[String], va
 
   def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
 
-  def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, defaultXml, vals :_*)
+  def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, _defaultXml, vals :_*)
   def bind(vals: BindParam *): NodeSeq = bind(defaultPrefix, vals :_*)
 
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
-    who.start
+    who.initCometActor(theSession, name, defaultXml, attributes)
     theSession.addCometActor(who)
     // who.link(this)
     who ! PerformSetupComet

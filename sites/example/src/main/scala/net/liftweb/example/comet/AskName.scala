@@ -21,8 +21,7 @@ import SHtml._
 import _root_.net.liftweb.util._
 import _root_.scala.xml._
 
-class AskName(initInfo: CometActorInitInfo) extends
-      CometActor(initInfo) {
+class AskName extends CometActor {
   def defaultPrefix = "ask_name"
 
   def render = ajaxForm(<div>What is your username?</div> ++ text("",name => answer(name.trim)) ++

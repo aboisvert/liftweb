@@ -13,7 +13,7 @@ class HelloForm2 {
   def show(xhtml: NodeSeq): NodeSeq = {
     bind("hello", xhtml,
         "whoField" -> text(who.openOr(""), v => who(Full(v))) % ("size" -> "10") % ("id" -> "whoField"),
-        "submit" -> submit(?("Send"), println("value:" + who.openOr("") + " :: " + param("whoField"))),
+        "submit" -> submit(?("Send"), () => println("value:" + who.openOr("") + " :: " + param("whoField"))),
         "who" -> who.openOr("")
     )
   }

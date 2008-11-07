@@ -49,12 +49,12 @@ class BookOps {
     val default = if (book.author != null) { Full(book.author.id.toString) } else { Empty }
 
     bind("book", xhtml,
-	 "id" -> SHtml.hidden({book.id = currentId}),
+	 "id" -> SHtml.hidden(() => book.id = currentId),
 	 "title" -> SHtml.text(book.title, book.title = _),
 	 "published" -> SHtml.text(formatter.format(book.published), {id : String => book.published = formatter.parse(id)}) % ("id" -> "published"),
 	 "genre" -> SHtml.select(Genre.getNameDescriptionList, (Can.legacyNullTest(book.genre).map(_.toString) or Full("")), choice => book.genre = Genre.valueOf(choice)),
 	 "author" -> SHtml.select(choices, default, {authId : String => book.author = Model.getReference(classOf[Author], authId.toLong)}),
-	 "save" -> SHtml.submit(?("Save"), doAdd))
+	 "save" -> SHtml.submit(?("Save"), doAdd _))
   }
 
   def searchResults (xhtml : NodeSeq) : NodeSeq = BookOps.resultVar.is.flatMap(result =>
@@ -69,6 +69,6 @@ class BookOps {
 
     bind("search", xhtml,
 	 "title" -> SHtml.text(title, title = _),
-	 "run" -> SHtml.submit(?("Search"), doSearch))
+	 "run" -> SHtml.submit(?("Search"), doSearch _))
   }
 }

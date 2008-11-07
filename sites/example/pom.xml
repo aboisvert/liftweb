@@ -64,7 +64,9 @@
 
   <build>
     <plugins>
+      <!--
       <plugin>
+	
         <groupId>net.sf.alchim</groupId>
         <artifactId>winstone-maven-plugin</artifactId>
         <executions>
@@ -91,6 +93,7 @@
           </cmdLineOptions>
         </configuration>
       </plugin>
+      -->
     </plugins>
   </build>
 </project>
