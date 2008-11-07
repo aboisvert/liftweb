@@ -325,7 +325,7 @@ private[paypal] class PaypalIPNPostbackReponse(val response: List[String]) exten
   }
 }
 
-object SimplePayPal extends PayPalIPN with PayPalPDT {
+object SimplePaypal extends PaypalIPN with PaypalPDT {
   val paypalAuthToken = "123"
   def actions = {
     case (status, info, resp) =>
@@ -357,7 +357,7 @@ trait BasePaypalTrait extends LiftRules.DispatchPf {
   def apply(r: RequestState) = dispatch(r)
 }
 
-trait PayPalPDT extends BasePaypalTrait {
+trait PaypalPDT extends BasePaypalTrait {
   def paypalAuthToken: String
   
   lazy val PDTPath = pdtPath
@@ -403,7 +403,7 @@ trait PayPalPDT extends BasePaypalTrait {
  * In this way you then get all the DispatchPf processing stuff for free. 
  * 
  */
-trait PayPalIPN extends BasePaypalTrait {
+trait PaypalIPN extends BasePaypalTrait {
   lazy val IPNPath = ipnPath
   def ipnPath = "ipn"
  
