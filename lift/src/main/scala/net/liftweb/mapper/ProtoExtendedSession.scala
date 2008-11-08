@@ -30,7 +30,7 @@ KeyedMapper[Long, T] {
 
   // the primary key for the database
   object id extends MappedLongIndex(this)
-  
+
   // uniqueId
   object cookieId extends MappedUniqueId(this, 32) {
     override def dbIndexed_? = true
@@ -75,7 +75,7 @@ KeyedMetaMapper[Long, T] {
   def logUserIdIn(uid: String): Unit
 
   def recoverUserId: Can[String]
-  
+
   def userDidLogin(uid: UserType) {
     userDidLogout(Full(uid))
     val inst = create.userId(uid.userIdAsString).saveMe

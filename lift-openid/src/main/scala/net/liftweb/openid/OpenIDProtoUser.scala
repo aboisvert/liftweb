@@ -31,13 +31,13 @@ import _root_.org.openid4java.discovery.Identifier;
 
 trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaMegaProtoUser[ModelType] {
   self: ModelType =>
-  
+
   override def signupFields: List[BaseOwnedMappedField[ModelType]] = nickname ::
   firstName :: lastName :: locale :: timezone :: Nil
-  
+
   override def fieldOrder: List[BaseOwnedMappedField[ModelType]] = nickname ::
   firstName :: lastName :: locale :: timezone :: Nil
-  
+
   def findOrCreate(openId: String): ModelType =
   find(By(this.openId, openId)) match {
     case Full(u) => u
@@ -48,28 +48,28 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
       email(Helpers.randomInt(100000000)+"unknown@unknown.com").
       saveMe
   }
-  
+
   // no need for these menu items with OpenID
   /**
    * The menu item for creating the user/sign up (make this "Empty" to disable)
    */
   override def createUserMenuLoc: Can[Menu] = Empty
-  
+
   /**
    * The menu item for lost password (make this "Empty" to disable)
    */
   override def lostPasswordMenuLoc: Can[Menu] = Empty
-  
+
   /**
    * The menu item for resetting the password (make this "Empty" to disable)
    */
   override def resetPasswordMenuLoc: Can[Menu] = Empty
-  
+
   /**
    * The menu item for changing password (make this "Empty" to disable)
    */
   override def changePasswordMenuLoc: Can[Menu] = Empty
-  
+
   /**
    * The menu item for validating a user (make this "Empty" to disable)
    */
@@ -89,17 +89,17 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
       </tr>
     </table>
   </form>
-  
+
   def openIDVendor: OpenIdVendor
-  
+
   override def login = {
     if (S.post_?) {
       S.param("username").
-      foreach(username => 
+      foreach(username =>
               openIDVendor.loginAndRedirect(username, performLogUserIn)
       )
     }
-    
+
     def performLogUserIn(openid: Can[Identifier], fo: Can[VerificationResult], exp: Can[Exception]): LiftResponse = {
       (openid, exp) match {
         case (Full(id), _) =>
@@ -109,7 +109,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
 
         case (_, Full(exp)) =>
           S.error("Got an exception: "+exp.getMessage)
-            
+
 
         case _ =>
           S.error("Unable to log you in: "+fo)
@@ -117,7 +117,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
 
       RedirectResponse("/")
     }
-    
+
     Helpers.bind("user", loginXhtml,
                  "openid" -> (FocusOnLoad(<input type="text" name="username"/>)),
                  "submit" -> (<input type="submit" value={S.??("log.in")}/>))
@@ -136,13 +136,13 @@ object ValidNickName {
  */
 trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
   self: T =>
-  
+
  override def getSingleton: MetaOpenIDProtoUser[T]
-  
+
   object openId extends MappedString(this, 512) {
     override def dbIndexed_? = true
   }
-  
+
   object nickname extends MappedPoliteString(this, 64) {
     override def dbIndexed_? = true
 
@@ -153,7 +153,7 @@ trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
 
     override def setFilter = notNull _ :: toLower _ :: trim _ ::
     deDupUnderscore _ :: super.setFilter
-    
+
     private def validateNickname(str: String): List[FieldError] = {
       val others = getSingleton.findByNickname(str).
       // getSingleton.findAll(By(getSingleton.nickname, str)).
@@ -167,9 +167,9 @@ trait OpenIDProtoUser[T <: OpenIDProtoUser[T]] extends MegaProtoUser[T] {
                        <xml:group>Invalid nickname.  Must start with
                         a letter and contain only letters,
                         numbers or "_"</xml:group>))
-    
+
     override def validations = validText _ :: validateNickname _ :: super.validations
   }
-  
+
   override def niceName: String = nickname
 }

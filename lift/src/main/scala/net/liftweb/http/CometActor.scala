@@ -69,7 +69,7 @@ object ActorWatcher extends Actor {
 abstract class CometActor extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
-  
+
   private var lastRendering: RenderOut = _
   private var wasLastFullRender = false
   @transient
@@ -92,9 +92,8 @@ abstract class CometActor extends Actor with BindHelpers {
 
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
-  
-  
-  private[http] def initCometActor(theSession: LiftSession, name: Can[String], 
+
+  private[http] def initCometActor(theSession: LiftSession, name: Can[String],
                      defaultXml: NodeSeq,
                      attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
@@ -106,14 +105,6 @@ abstract class CometActor extends Actor with BindHelpers {
     this.start()
   }
 
-  // Compatibility constructors... no longer used
-  /*
-  def this(theSession: LiftSession, name: Can[String], 
-                                   defaultXml: NodeSeq, 
-                                   attributes: Map[String, String]) = this()
-  
-  def this(info: CometActorInitInfo) = this()
-  */
 
   def defaultPrefix: String
 

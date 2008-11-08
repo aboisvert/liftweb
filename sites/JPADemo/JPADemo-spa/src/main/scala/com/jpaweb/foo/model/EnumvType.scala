@@ -14,7 +14,7 @@ import org.hibernate.usertype.UserType
  * Helper class to translate enum for hibernate
  */
 abstract class EnumvType(val et: Enumeration with Enumv) extends UserType {
-  
+
   val SQL_TYPES = Array({Types.VARCHAR})
 
   override def sqlTypes() = SQL_TYPES
@@ -34,7 +34,7 @@ abstract class EnumvType(val et: Enumeration with Enumv) extends UserType {
       return et.valueOf(value)
     }
   }
-  
+
   override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int): Unit = {
     if (value == null) {
       statement.setNull(index, Types.VARCHAR)
@@ -47,7 +47,7 @@ abstract class EnumvType(val et: Enumeration with Enumv) extends UserType {
   override def deepCopy(value: Object): Object = value
 
   override def isMutable() = false
-    
+
   override def disassemble(value: Object) = value.asInstanceOf[Serializable]
 
   override def assemble(cached: Serializable, owner: Object): Serializable = cached

@@ -16,7 +16,7 @@ import org.hibernate.usertype.UserType
 abstract class CurrencyUserType[CZ <: CurrencyZone](cz: CZ) extends UserType {
 
   type MyCurrency = CZ#Currency
-  
+
   val SQL_TYPES = Array(Types.NUMERIC.asInstanceOf[Int])
 
   override def sqlTypes() = SQL_TYPES
@@ -48,7 +48,7 @@ abstract class CurrencyUserType[CZ <: CurrencyZone](cz: CZ) extends UserType {
   override def deepCopy(value: Object): Object = value
 
   override def isMutable() = false
-    
+
   override def disassemble(value: Object) = value.asInstanceOf[Serializable]
 
   override def assemble(cached: Serializable, owner: Object): Serializable = cached

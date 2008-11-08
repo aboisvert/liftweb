@@ -79,7 +79,7 @@ class LiftServlet extends HttpServlet {
 
   def getLiftSession(request: RequestState, httpSession: HttpSession): LiftSession = {
     val wp = request.path.wholePath
-    val cometSessionId = 
+    val cometSessionId =
     if (wp.length >= 3 && wp.head == LiftRules.cometPath)
     Full(wp(2))
     else
@@ -140,7 +140,7 @@ class LiftServlet extends HttpServlet {
     val statelessToMatch = requestState
 
 
-    val resp: Can[LiftResponse] = 
+    val resp: Can[LiftResponse] =
     // if the servlet is shutting down, return a 404
     if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
@@ -172,14 +172,14 @@ class LiftServlet extends HttpServlet {
         val resp = cresp.toResponse
 
         logIfDump(requestState, resp)
-      
+
         sendResponse(resp, response, Full(requestState))
         true
 
       case _ => false
     }
   }
-  
+
   private def dispatchStatefulRequest(request: HttpServletRequest,
                                       liftSession: LiftSession,
                                       requestState: RequestState):
@@ -195,10 +195,10 @@ class LiftServlet extends HttpServlet {
           case Full(v) =>
             (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
                                                     S.responseCookies, requestState) )))
-		  
+
           case Empty =>
             (true, LiftRules.notFoundOrIgnore(requestState, Full(liftSession)))
-		    
+
           case f: Failure =>
             (true, Full(liftSession.checkRedirect(requestState.createNotFound(f))))
         }
@@ -208,29 +208,28 @@ class LiftServlet extends HttpServlet {
       LiftSession.onEndServicing.foreach(_(liftSession, requestState,
                                            ret._2))
       ret
-	    
+
     } else (false, Empty)
-      
+
     val wp = requestState.path.wholePath
-    
+
     val toTransform: Can[LiftResponse] =
     if (dispatch._1) dispatch._2
     else if (wp.length == 3 && wp.head == LiftRules.cometPath &&
              wp(2) == LiftRules.cometScriptName())
     LiftRules.serveCometScript(liftSession, requestState)
-    else if ((wp.length >= 1) && wp.head == LiftRules.cometPath) 
+    else if ((wp.length >= 1) && wp.head == LiftRules.cometPath)
     handleComet(requestState, liftSession)
-    else if (wp.length == 1 && wp.head == LiftRules.ajaxPath) 
+    else if (wp.length == 1 && wp.head == LiftRules.ajaxPath)
     handleAjax(liftSession, requestState)
-    else if (wp.length == 2 && wp.head == LiftRules.ajaxPath && 
-             wp(1) == LiftRules.ajaxScriptName()) 
+    else if (wp.length == 2 && wp.head == LiftRules.ajaxPath &&
+             wp(1) == LiftRules.ajaxScriptName())
     LiftRules.serveAjaxScript(liftSession, requestState)
     else liftSession.processRequest(requestState)
-    
-    
+
     toTransform.map(LiftRules.performTransform)
   }
- 
+
   private def handleAjax(liftSession: LiftSession,
                          requestState: RequestState): Can[LiftResponse] =
   {
@@ -238,14 +237,14 @@ class LiftServlet extends HttpServlet {
     LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
     val ret = try {
       val what = flatten(liftSession.runParams(requestState))
-	    
+
       val what2 = what.flatMap{case js: JsCmd => List(js)
         case n: NodeSeq => List(n)
         case js: JsCommands => List(js)
         case r: LiftResponse => List(r)
         case s => Nil
       }
-	    
+
       val ret: LiftResponse = what2 match {
         case (n: Node) :: _ => XmlResponse(n)
         case (ns: NodeSeq) :: _ => XmlResponse(Group(ns))
@@ -417,7 +416,7 @@ class LiftServlet extends HttpServlet {
       (in, acceptHeader)
     }
 
-   
+
     val len = resp.size
     // insure that certain header fields are set
     val header = insureField(fixHeaders(resp.headers), List(("Content-Type",
@@ -433,9 +432,9 @@ class LiftServlet extends HttpServlet {
     response setStatus resp.code
 
     resp match {
-      case InMemoryResponse(bytes, _, _, _) => 
+      case InMemoryResponse(bytes, _, _, _) =>
         response.getOutputStream.write(bytes)
-        
+
       case StreamingResponse(stream, endFunc, _, _, _, _) =>
         try {
           var len = 0
@@ -451,7 +450,7 @@ class LiftServlet extends HttpServlet {
           endFunc()
         }
     }
-    
+
     LiftRules._afterSend.foreach(f => tryo(f(resp, response, header, request)))
   }
 
@@ -487,7 +486,7 @@ trait LiftFilterTrait {
         case _ => chain.doFilter(req, res)
       })
   }
-  
+
   def isLiftRequest_?(session: RequestState): Boolean
 }
 

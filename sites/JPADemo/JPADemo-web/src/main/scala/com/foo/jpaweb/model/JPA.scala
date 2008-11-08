@@ -10,21 +10,21 @@ object JPA {
   implicit def setToWrapper[A](set : java.util.Set[A]) = new SetWrapper[A]{override def underlying = set}
   implicit def listToWrapper[A](list : java.util.List[A]) = new BufferWrapper[A]{override def underlying = list}
 
-  def findToCan[A](f: => A): Can[A] = 
-    try {  
+  def findToCan[A](f: => A): Can[A] =
+    try {
       f match {
         case found: A => Full(found)
         case null => Empty
       }
-    } catch {  
+    } catch {
       case e: NoResultException => Empty
     }
 
 }
 
 abstract class ScalaEntityManager(val persistanceName: String) {
-  // The concrete impl should provide these methods 
-  protected def openEM () : EntityManager 
+  // The concrete impl should provide these methods
+  protected def openEM () : EntityManager
   protected def closeEM (em : EntityManager)
 
   private object emVar extends RequestVar(openEM()) {

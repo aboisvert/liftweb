@@ -58,20 +58,20 @@ object LiftRules {
 
   /**
    * A function that takes the HTTPSession and the contextPath as parameters
-   * and returns a LiftSession reference. This can be used in cases subclassing 
+   * and returns a LiftSession reference. This can be used in cases subclassing
    * LiftSession is necessary.
    */
   var sessionCreator: (HttpSession,  String, List[(String, String)]) => LiftSession = {
     case (httpSession, contextPath, headers) => new LiftSession(contextPath, httpSession.getId, httpSession, headers)
   }
-  
+
   /**
    * The path to handle served resources
    */
   var ResourceServerPath = "classpath"
-  
+
   /**
-   * Holds the JS library specific UI artifacts. By efault it uses JQuery's artifacts 
+   * Holds the JS library specific UI artifacts. By efault it uses JQuery's artifacts
    */
   var jsArtifacts: JSArtifacts = JQueryArtifacts
 
@@ -275,13 +275,13 @@ object LiftRules {
    * How many times do we retry an Ajax command before calling it a failure?
    */
   var ajaxRetryCount: Can[Int] = Empty
-  
+
   /**
    * The JavaScript to execute at the begining of an
    * Ajax request (for example, showing the spinning working thingy)
    */
   var ajaxStart: Can[() => JsCmd] = Empty
-  
+
   /**
    * The JavaScript to execute at the end of an
    * Ajax request (for example, removing the spinning working thingy)
@@ -293,7 +293,7 @@ object LiftRules {
    */
   var ajaxDefaultFailure: Can[() => JsCmd] =
   Full(() => JsCmds.Alert(S.??("The server cannot be contacted at this time")))
-  
+
   /**
    * A function that takes the current HTTP request and returns the current
    */
@@ -428,7 +428,7 @@ object LiftRules {
       case s => Full(s.trim)
     }
   }
-  
+
   /**
    * If there is an alternative way of calculating the context path
    * (by default inspecting the X-Lift-ContextPath header)
@@ -676,11 +676,11 @@ object LiftRules {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
-  
+
   /**
    * Modifies the root relative paths from the css url-s
-   * 
-   * @param path - the path of the css resource 
+   *
+   * @param path - the path of the css resource
    * @prefix - the prefix to be added on the root relative paths. If this is Empty
    * 	       the prefix will be the application context path.
    */
@@ -694,7 +694,7 @@ object LiftRules {
         r.path.partPath == path
       }
     }
-    
+
     val cssFixer: LiftRules.DispatchPf = new LiftRules.DispatchPf {
       def isDefinedAt(r: RequestState): Boolean = {
         r.path.partPath == path
@@ -702,7 +702,7 @@ object LiftRules {
       def apply(r: RequestState): () => Can[LiftResponse] = {
         val cssPath = path.mkString("/", "/", ".css")
         val css = LiftRules.loadResourceAsString(cssPath);
-        
+
         () => {
           css.map(str => CSSHelpers.fixCSS(new BufferedReader(
                 new StringReader(str)), prefix openOr (S.contextPath)) match {
@@ -736,14 +736,14 @@ var lift_ajaxShowing = false;
 var lift_ajaxRetryCount = """+
                         (LiftRules.ajaxRetryCount openOr 3)+
                         """
-                       
+
 function lift_ajaxHandler(theData, theSuccess, theFailure) {
   var toSend = {retryCnt: 0};
   toSend.when = (new Date()).getTime();
   toSend.theData = theData;
   toSend.onSuccess = theSuccess;
   toSend.onFailure = theFailure;
-  
+
   lift_ajaxQueue.push(toSend);
   lift_ajaxQueueSort();
   lift_doAjaxCycle();
@@ -841,7 +841,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
   session => JsCmds.Run("""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {""" + 
+      function lift_cometEntry() {""" +
                         LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"),
                                                              "GET",
                                                              140000,
@@ -880,26 +880,26 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
   var serveCometScript: (LiftSession, RequestState) => Can[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = cometScriptUpdateTime(liftSession)
-  
+
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderCometScript(liftSession),
                             List("Last-Modified" -> toInternetDate(modTime)),
                             Nil, 200))
   }
-  
+
   var serveAjaxScript: (LiftSession, RequestState) => Can[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = ajaxScriptUpdateTime(liftSession)
-  
+
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderAjaxScript(liftSession),
                             List("Last-Modified" -> toInternetDate(modTime)),
                             Nil, 200))
   }
-  
+
   def testFor304(req: RequestState, lastModified: Long): Can[LiftResponse] = {
     val mod = req.request.getHeader("if-modified-since")
-    if (mod != null && ((lastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime) 
+    if (mod != null && ((lastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime)
     Full(InMemoryResponse(new Array[Byte](0), Nil, Nil, 304))
     else
     Empty

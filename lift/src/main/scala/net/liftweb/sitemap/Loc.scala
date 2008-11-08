@@ -30,7 +30,7 @@ object NullLocParams extends NullLocParams
  */
 trait Loc[ParamType] {
   type LocRewrite =  Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
-  
+
   def name: String
 
   def link: Loc.Link[ParamType]
@@ -40,7 +40,7 @@ trait Loc[ParamType] {
   def stuff: List[Loc.LocStuff]
 
   def defaultParams: Can[ParamType]
-  
+
   def rewrite: LocRewrite = Empty
 
   def createDefaultLink: Option[NodeSeq] = (foundParam.is or defaultParams).flatMap(p => link.createLink(p)).toOption
@@ -53,14 +53,14 @@ trait Loc[ParamType] {
     new AnyRef with PartialFunction[RewriteRequest, RewriteResponse] {
       def isDefinedAt(in: RewriteRequest) = rw.isDefinedAt(in)
 
-      def apply(in: RewriteRequest): RewriteResponse = {      
+      def apply(in: RewriteRequest): RewriteResponse = {
         val (ret, param) = rw.apply(in)
         foundParam.set(Full(param))
         ret
       }
     }
   )
-  
+
   type SnippetTest = PartialFunction[(String, Can[ParamType]), NodeSeq => NodeSeq]
 
   def snippets: SnippetTest = Map.empty
@@ -104,7 +104,7 @@ trait Loc[ParamType] {
    */
   def title: NodeSeq = (foundParam.is or defaultParams).map(p => title(p)) openOr Text(name)
   // (findTitle(stuff).map(_.title()) openOr text.text())
-  
+
   def title(in: ParamType): NodeSeq = findTitle(stuff).map(_.title(in)) openOr text.text(in)
 
   def linkText: Can[NodeSeq] = (foundParam.is or defaultParams).map(p => linkText(p))
@@ -116,7 +116,7 @@ trait Loc[ParamType] {
     _menu = p
     p.siteMap.addLoc(this)
   }
-  
+
   protected object foundParam extends RequestVar[Can[ParamType]](Empty) {
     override val __nameSalt = randomString(10)
   }
@@ -146,10 +146,10 @@ trait Loc[ParamType] {
 
   def buildMenu: CompleteMenu = {
     val theKids = _menu.kids.toList.flatMap(_.loc.buildItem(Nil, false, false))
-    
+
     CompleteMenu(_menu.buildUpperLines(_menu, _menu, theKids))
   }
-                                            
+
   private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Can[MenuItem] =
   (hidden, testAccess) match {
     case (false, Left(true)) =>
@@ -166,10 +166,10 @@ trait Loc[ParamType] {
   }
 
   private def hidden = stuff.contains(Loc.Hidden)
-  
-  private lazy val groupSet: Set[String] = 
+
+  private lazy val groupSet: Set[String] =
   Set(stuff.flatMap{case s: Loc.LocGroup => s.group case _ => Nil} :_*)
-  
+
   def inGroup_?(group: String): Boolean = groupSet.contains(group)
 }
 
@@ -200,10 +200,10 @@ object Loc {
     val text: Loc.LinkText[NullLocParams] = theText
     val defaultParams: Can[NullLocParams] = Full(NullLocParams)
 
-    val stuff: List[LocStuff]  = params.toList  
+    val stuff: List[LocStuff]  = params.toList
   }
 
-  def apply(theName: String, theLink: Loc.Link[NullLocParams], 
+  def apply(theName: String, theLink: Loc.Link[NullLocParams],
             theText: LinkText[NullLocParams],
             theStuff: List[LocStuff]): Loc[NullLocParams] =
   new Loc[NullLocParams] {
@@ -213,9 +213,9 @@ object Loc {
 
     val text: Loc.LinkText[NullLocParams] = theText
 
-    val stuff: List[LocStuff]  = theStuff.toList  
+    val stuff: List[LocStuff]  = theStuff.toList
   }
-  
+
   /**
    * Unapply to do pattern matching against a Loc.
    * (name, link_uri, link_text)
@@ -237,7 +237,7 @@ object Loc {
    * will still be accessable.
    */
   case object Hidden extends LocStuff
-  
+
   /**
    * If the Loc is in a group (or groups) like "legal" "community" etc.
    * the groups can be specified and recalled at the top level
@@ -315,7 +315,7 @@ object Loc {
       override def createLink(params: NullLocParams): Can[NodeSeq] =
       Full(Text(url))
     }
-    
+
   }
 
   object ExtLink {
@@ -340,7 +340,7 @@ object Loc {
   implicit def strToLinkText[T](in: => String): LinkText[T] = LinkText(T => Text(in))
   implicit def strLstToLink(in: Seq[String]): Link[NullLocParams] = new Link[NullLocParams](in.toList)
   implicit def strPairToLink(in: (Seq[String], Boolean)): Link[NullLocParams] = new Link[NullLocParams](in._1.toList, in._2)
-  implicit def strToFailMsg(in: String): FailMsg = 
+  implicit def strToFailMsg(in: String): FailMsg =
   f(RedirectWithState(LiftRules.siteMapFailRedirectLocation.
                       mkString("/", "/", ""),
                       RedirectState(Empty, in -> NoticeType.Error)))
@@ -358,7 +358,7 @@ case class CompleteMenu(lines: Seq[MenuItem]) {
 
 case class MenuItem(text: NodeSeq, uri: NodeSeq,  kids: Seq[MenuItem],
                     current: Boolean,
-                    path: Boolean, 
+                    path: Boolean,
                     info: List[Loc.LocInfoVal[(T forSome {type T})]])
 {
   def breadCrumbs: Seq[MenuItem] = if (!path) Nil

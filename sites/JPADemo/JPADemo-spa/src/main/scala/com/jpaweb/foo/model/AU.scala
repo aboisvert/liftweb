@@ -27,4 +27,4 @@ object AU extends CurrencyZone {
   val Cent = make(.01)
   val Dollar = make(1)
   val CurrencyUnit = Dollar
-}  
+}

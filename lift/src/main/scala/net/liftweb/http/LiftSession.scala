@@ -37,7 +37,7 @@ object LiftSession {
   /**
    * Returns a reference to a LiftSession dictated by LiftRules#sessionCreator function.
    */
-  def apply(session: HttpSession, contextPath: String, headers: List[(String, String)]) = 
+  def apply(session: HttpSession, contextPath: String, headers: List[(String, String)]) =
 	    LiftRules.sessionCreator(session, contextPath, headers)
 
   var onSessionActivate: List[LiftSession => Unit] = Nil
@@ -190,7 +190,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private var asyncById = new HashMap[String, CometActor]()
 
   private var myVariables: Map[String, Any] = Map.empty
-  
+
   private var onSessionEnd: List[LiftSession => Unit] = Nil
 
   @volatile
@@ -290,7 +290,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     sessionTemplater = HashMap.empty
     sessionRewriter = HashMap.empty
   }
-  
+
   def addSessionCleanup(f: LiftSession => Unit): Unit = synchronized {
     onSessionEnd = f :: onSessionEnd
   }
@@ -306,7 +306,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   private def shutDown() = synchronized {
     onSessionEnd.foreach(_(this))
-    
+
     LiftSession.onAboutToShutdownSession.foreach(_(this))
     SessionMaster ! RemoveSession(this.uniqueId)
 
@@ -322,7 +322,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
   LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
   val ret = try {
     val sessionDispatch = S.highLevelSessionDispatcher
-    
+
     val toMatch = request
     if (sessionDispatch.isDefinedAt(toMatch)) {
       runParams(request)
@@ -348,21 +348,21 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
         case Left(true) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
               case Full(rawXml: NodeSeq) => {
                   val xml = HeadHelper.mergeToHtmlHead(rawXml)
-                  val cometXform: List[RewriteRule] = 
+                  val cometXform: List[RewriteRule] =
                   if (LiftRules.autoIncludeComet(this))
                   allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
                     case Nil => Nil
-                    case xs => 
+                    case xs =>
                       val comets: List[CometVersionPair] = xs.flatMap(x => idAndWhen(x))
                       new AddScriptToBody(comets) :: Nil
                   }
                   else Nil
 
-                  val ajaxXform: List[RewriteRule] = 
+                  val ajaxXform: List[RewriteRule] =
                   if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
                   else cometXform
-                  
-                  
+
+
                   val realXml = if (ajaxXform.isEmpty) xml
                   else (new RuleTransformer(ajaxXform :_*)).transform(xml)
 
@@ -549,7 +549,7 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
 
-  findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst => 
+  findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst =>
       (invokeMethod(clz, inst, method) match {
             case Full(md: MetaData) => Full(md.copy(rest))
             case _ => Empty
@@ -583,16 +583,16 @@ private[http] def processRequest(request: RequestState): Can[LiftResponse] = {
 
 private def processSnippet(page: String, snippetName: Can[String], attrs: MetaData, passedKids: NodeSeq): NodeSeq = {
   val isForm = !attrs.get("form").toList.isEmpty
-  
+
   val eagerEval: Boolean = attrs.get("eager_eval").map(toBoolean) getOrElse false
 
   val kids = if (eagerEval) processSurroundAndInclude(page, passedKids) else passedKids
-  
+
   def locSnippet(snippet: String): Can[NodeSeq] =
   for (req <- S.request;
        loc <- req.location;
        func <- loc.snippet(snippet)) yield func(kids)
-  
+
   val ret: NodeSeq = snippetName.map(snippet =>
     S.doSnippet(snippet)(
       (S.locateMappedSnippet(snippet).map(_(kids)) or
@@ -756,12 +756,10 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
           case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
-//        val constr = cls.getConstructor(Array(classOf[CometActorInitInfo]))
-//        val ret = constr.newInstance(Array(CometActorInitInfo(this, name, defaultXml, attributes))).asInstanceOf[CometActor];
         val constr = cls.getConstructor(Array())
         val ret = constr.newInstance(Array()).asInstanceOf[CometActor]
         ret.initCometActor(this, name, defaultXml, attributes)
-        
+
         // ret.link(this)
         ret ! PerformSetupComet
         ret.asInstanceOf[CometActor]
@@ -791,7 +789,7 @@ private def processSnippet(page: String, snippetName: Can[String], attrs: MetaDa
       case x :: xs => x.value.text +";"
     }
 
-    val ajax: String = 
+    val ajax: String =
       SHtml.makeAjaxCall(LiftRules.jsArtifacts.serialize(id)).toJsCmd + ";" +
     pre + "return false;"
 
@@ -860,7 +858,7 @@ class AddAjaxToBody() extends RewriteRule {
 class AddScriptToBody(val cometVar: List[CometVersionPair]) extends RewriteRule {
   private var doneHead = false
   private var doneBody = false
-  
+
   override def transform(n: Node) = n match {
     case e: Elem if e.label == "head" && !doneHead =>
       doneHead = true
@@ -870,7 +868,7 @@ class AddScriptToBody(val cometVar: List[CometVersionPair]) extends RewriteRule 
                                                                "/" + uniqueId +
                                                                "/" + LiftRules.cometScriptName()}
             type="text/javascript"/>) :_*)
-      
+
        case e: Elem if e.label == "body" && !doneBody =>
       doneBody = true
       Elem(null, "body", e.attributes,  e.scope, (e.child ++
@@ -900,14 +898,14 @@ var lift_ajaxShowing = false;
 var lift_ajaxRetryCount = """+
 (LiftRules.ajaxRetryCount openOr 3)+
 """
-                       
+
 function lift_ajaxHandler(theData, theSuccess, theFailure) {
   var toSend = {retryCnt: 0};
   toSend.when = (new Date()).getTime();
   toSend.theData = theData;
   toSend.onSuccess = theSuccess;
   toSend.onFailure = theFailure;
-  
+
   lift_ajaxQueue.push(toSend);
   lift_ajaxQueueSort();
   lift_doAjaxCycle();
@@ -991,7 +989,7 @@ function lift_doAjaxCycle() {
 
 function lift_actualAjaxCall(data, onSuccess, onFailure) {
 """+
-  LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"), 
+  LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
 				      "POST", 5000, false, "script",
 				      Full("onSuccess"), Full("onFailure")))+
 """
@@ -1007,7 +1005,7 @@ LiftRules.jsArtifacts.onLoad(new JsCmd() {def toJsCmd = "lift_doAjaxCycle()"}).t
       case _ => n
     }
   }
-  
+
   /**
    * Add comet script juste before the &lt;/body> tag.
    * Instance of the class can't be reused, because it does the transformation once,
@@ -1020,15 +1018,15 @@ LiftRules.jsArtifacts.onLoad(new JsCmd() {def toJsCmd = "lift_doAjaxCycle()"}).t
       done = true
       Elem(null, "body", e.attributes,  e.scope, (e.child ++ <span id="lift_bind"/><script>{
       Unparsed("""
-      // <![CDATA[         
+      // <![CDATA[
       """+cometVar+"""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
       function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
-      function lift_cometEntry() {""" + 
-	       LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"), 
-                                                    "GET", 
-                                                    140000, 
-                                                    false, 
+      function lift_cometEntry() {""" +
+	       LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"),
+                                                    "GET",
+                                                    140000,
+                                                    false,
                                                     "script",
                                                     Full("lift_handlerSuccessFunc"),
                                                     Full("lift_handlerFailureFunc"))) + " } \n" +
@@ -1036,7 +1034,7 @@ LiftRules.jsArtifacts.onLoad(new JsCmd() {def toJsCmd = "lift_doAjaxCycle()"}).t
                                                  def toJsCmd = "lift_handlerSuccessFunc()"
                                                }).toJsCmd+
                                                     """
-// ]]>                                                    
+// ]]>
                                                     """
        )}</script>) :_*)
 

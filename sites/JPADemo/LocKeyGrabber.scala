@@ -28,10 +28,10 @@ object LocKeyGrabber {
       case e : Exception => { format("Error parsing %s : %s", input, e.getMessage); exit(1) }
     }
 
-  // Helper function to pull keys out of a Lift scala file. Pretty naieve, but until I figure out 
+  // Helper function to pull keys out of a Lift scala file. Pretty naieve, but until I figure out
   // how to hook into the compiler/AST this isn't going to be pretty or clever
   val scalaRegex = """\?\s*\(\s*\"([^\"]*)\"\s*\)""".r
-  def parseScala (input : File) : Seq[String] = 
+  def parseScala (input : File) : Seq[String] =
     Source.fromFile(input).getLines.flatMap({line => scalaRegex.findAllIn(line).matchData.map(grp => grp.group(0).replace(" ","\\ ") + "=")}).toList
 
   // Define filters for scanning directories
@@ -63,7 +63,7 @@ object LocKeyGrabber {
     case _ => println("Usage: LocKeyGrabber <input file>")
   }
 }
-      
-  
-  
-  
+
+
+
+

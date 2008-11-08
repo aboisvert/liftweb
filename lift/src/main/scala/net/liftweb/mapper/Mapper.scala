@@ -151,7 +151,7 @@ trait Mapper[A<:Mapper[A]] {
   def toForm(button: Can[String], f: A => Any): NodeSeq =
   getSingleton.toForm(this) ++ (<input type='hidden' name={S.mapFunc((ignore: List[String]) => f(this))} value="n/a" />) ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
-  
+
   def toForm(button: Can[String], redoSnippet: NodeSeq => NodeSeq, onSuccess: A => Unit): NodeSeq = {
     val snipName = S.currentSnippet
     def doSubmit() {

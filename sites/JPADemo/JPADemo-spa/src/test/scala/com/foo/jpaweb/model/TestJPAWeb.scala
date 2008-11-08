@@ -44,13 +44,13 @@ class TestJPAWeb {
     author.name = "Chuck"
 
     em.persist(author)
-    
+
     val book = new Book
     book.title = "Huh?"
     book.published = new java.util.Date
     book.author = author
     book.genre = Genre.Mystery
-    
+
     em.persist(book)
 
     tx.commit()

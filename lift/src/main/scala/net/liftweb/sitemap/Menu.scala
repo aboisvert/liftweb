@@ -41,9 +41,9 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
     case _ => Left(true)
   }
 
-  override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess 
+  override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess
 
-  def findLoc(req: RequestState): Can[Loc[_]] = 
+  def findLoc(req: RequestState): Can[Loc[_]] =
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
 
@@ -52,7 +52,7 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
   kids.flatMap(_.locForGroup(group))
 
 
-  override def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
+  override def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem]
   = {
     val kids: List[MenuItem] = _parent.toList.flatMap(_.kids.toList.flatMap(m => m.loc.buildItem(if (m == this) populate else Nil, m == actual, m == pathAt)))
     _parent.toList.flatMap(p => p.buildUpperLines(p, actual, kids))

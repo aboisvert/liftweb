@@ -26,7 +26,7 @@ object ResourceServer {
     case "yui" :: _ => true
     case "liftYUI.js" :: Nil => true
     case "json2.js" :: Nil => true
-    case "json.js" :: Nil => true      
+    case "json.js" :: Nil => true
     case "jlift.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true

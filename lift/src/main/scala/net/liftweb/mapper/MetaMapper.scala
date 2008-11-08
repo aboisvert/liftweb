@@ -48,24 +48,24 @@ object MapperRules {
    * XHTML format for displaying across the headers of a
    * formatted block.  The default is &lt;th&gt; for use
    * in XHTML tables.  If you change this function, the change
-   * will be used for all MetaMappers, unless they've been 
+   * will be used for all MetaMappers, unless they've been
    * explicitly changed.
    */
   var displayNameToHeaderElement: String => NodeSeq = in => <th>{in}</th>
 
   /**
    * This function converts an element into the appropriate
-   * XHTML format for displaying across a line 
+   * XHTML format for displaying across a line
    * formatted block.  The default is &lt;td&gt; for use
    * in XHTML tables.  If you change this function, the change
-   * will be used for all MetaMappers, unless they've been 
+   * will be used for all MetaMappers, unless they've been
    * explicitly changed.
    */
   var displayFieldAsLineElement: NodeSeq => NodeSeq = in => <td>{in}</td>
 
   /**
    * This function is the global (for all MetaMappers that have
-   * not changed their formatFormElement function) that 
+   * not changed their formatFormElement function) that
    * converts a name and form for a given field in the
    * model to XHTML for presentation in the browser.  By
    * default, a table row ( &lt;tr&gt; ) is presented, but
@@ -111,18 +111,18 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def clearPostCommit(in: A) {
     in.addedPostCommit = false
   }
-  
+
   def afterCommit: List[A => Unit] = clearPostCommit _ :: Nil
 
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
 
-  def findAll(): List[A] = 
+  def findAll(): List[A] =
   findMapDb(dbDefaultConnectionIdentifier, Nil :_*)(v => Full(v))
 
-  def findAllDb(dbId:ConnectionIdentifier): List[A] = 
+  def findAllDb(dbId:ConnectionIdentifier): List[A] =
   findMapDb(dbId, Nil :_*)(v => Full(v))
 
-  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): Long = 
+  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): Long =
   countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, checkedBy)
 
   def countByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, checkedBy: IHaveValidatedThisSQL): Long =
@@ -198,19 +198,19 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def findAllFields(fields: Seq[SelectableField], 
+  def findAllFields(fields: Seq[SelectableField],
 		    by: QueryParam[A]*): List[A] =
-		      findMapFieldDb(dbDefaultConnectionIdentifier, 
+		      findMapFieldDb(dbDefaultConnectionIdentifier,
 				     fields, by :_*)(v => Full(v))
-  
-  def findAllFieldsDb(dbId: ConnectionIdentifier, 
+
+  def findAllFieldsDb(dbId: ConnectionIdentifier,
 		      fields: Seq[SelectableField],
 		      by: QueryParam[A]*):
   List[A] = findMapFieldDb(dbId, fields, by :_*)(v => Full(v))
 
   def findAll(by: QueryParam[A]*): List[A] =
   findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Full(v))
-  
+
   def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*):
   List[A] = findMapDb(dbId, by :_*)(v => Full(v))
 
@@ -230,13 +230,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) = 
+  def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) =
     findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
-  def findMapDb[T](dbId: ConnectionIdentifier, 
+  def findMapDb[T](dbId: ConnectionIdentifier,
                    by: QueryParam[A]*)(f: A => Can[T]): List[T] =
   findMapFieldDb(dbId, mappedFields, by :_*)(f)
-  
+
   def findMapFieldDb[T](dbId: ConnectionIdentifier, fields: Seq[SelectableField],
                    by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
     DB.use(dbId) {
@@ -256,7 +256,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   def create: A = createInstance
-								      
+
 
   private[mapper] def addFields(what: String, whereAdded: Boolean, by: List[QueryParam[A]]): String = {
 
@@ -291,7 +291,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
               vals match {
                 case Nil =>
                   updatedWhat = updatedWhat + whereOrAnd + " 0 = 1 "
-	      
+
                 case _ => {
                     updatedWhat = updatedWhat +
                     vals.map(v => field.dbColumnName+ " = ?").mkString(whereOrAnd+" (", " OR ", ")")
@@ -313,7 +313,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
                                              " FROM "+
                                              in.innerMeta.dbTableName+" ",false,
                                              in.queryParams)+" ) "
-	  
+
 
               // Executes a subquery with {@code query}
             case BySql(query, _*) =>
@@ -382,7 +382,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
     params.flatMap{
       case OrderBy(field, order) => List(field.dbColumnName+" "+order.sql)
-      case OrderBySql(sql) => List(sql) 
+      case OrderBySql(sql) => List(sql)
       case _ => Nil
     } match {
       case Nil => in
@@ -446,13 +446,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   * Run the list of field validations, etc.  This is the raw validation,
   * without the notifications.  This method can be over-ridden.
   */
-  protected def runValidationList(toValidate: A): List[FieldError] = 
+  protected def runValidationList(toValidate: A): List[FieldError] =
   mappedFieldList.flatMap(f => ??(f.method, toValidate).validate) :::
     validation.flatMap{
       case pf: PartialFunction[A, List[FieldError]] =>
         if (pf.isDefinedAt(toValidate)) pf(toValidate)
         else Nil
-        
+
       case f => f(toValidate)
     }
 
@@ -833,7 +833,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     case name => name
   }
 
-  private def internalTableName_$_$ = 
+  private def internalTableName_$_$ =
   getClass.getSuperclass.getName.split("\\.").toList.last;
 
   /**
@@ -855,17 +855,17 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
   /**
    * This function converts an element into the appropriate
-   * XHTML format for displaying across a line 
+   * XHTML format for displaying across a line
    * formatted block.  The default is &lt;td&gt; for use
    * in XHTML tables.  If you change this function, the change
    * will be used for this MetaMapper unless you override the
    * doHtmlLine method.
    */
-  var displayFieldAsLineElement: NodeSeq => NodeSeq = 
+  var displayFieldAsLineElement: NodeSeq => NodeSeq =
   MapperRules.displayFieldAsLineElement
-  
 
-  def doHtmlLine(toLine: A): NodeSeq = 
+
+  def doHtmlLine(toLine: A): NodeSeq =
   mappedFieldList.filter(_.field.dbDisplay_?).
   flatMap(mft => displayFieldAsLineElement(??(mft.method, toLine).asHtml))
 
@@ -907,8 +907,8 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
    */
   var formatFormElement: (NodeSeq, NodeSeq) => NodeSeq =
   MapperRules.formatFormElement
-								      
-  def formatFormLine(displayName: NodeSeq, form: NodeSeq): NodeSeq = 
+
+  def formatFormLine(displayName: NodeSeq, form: NodeSeq): NodeSeq =
   formatFormElement(displayName, form)
 
   def toForm(toMap: A): NodeSeq =
@@ -1028,7 +1028,7 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
 
 abstract class QueryParam[O<:Mapper[O]]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
-case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O], 
+case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],
                                     order: AscOrDesc) extends QueryParam[O]
 
 trait AscOrDesc {
@@ -1060,7 +1060,7 @@ abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterT
   def queryParams: List[QueryParam[InnerType]]
 }
 
-case class InRaw[TheType <: 
+case class InRaw[TheType <:
                  Mapper[TheType], T](field: MappedField[T, TheType],
                                      rawSql: String,
                                      checkedBy: IHaveValidatedThisSQL)
@@ -1081,11 +1081,11 @@ object In {
       val innerField: MappedField[JoinType, InnerMapper] = fielda
       val innerMeta: MetaMapper[InnerMapper] = fielda.fieldOwner.getSingleton
 
-      val queryParams: List[QueryParam[InnerMapper]] = 
+      val queryParams: List[QueryParam[InnerMapper]] =
       qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
     }
   }
-  
+
   def apply[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
             Zoom <% QueryParam[InnerMapper],
             OuterMapper <: Mapper[OuterMapper]]
@@ -1102,13 +1102,13 @@ object In {
       val innerMeta: MetaMapper[InnerMapper] = innerField.fieldOwner.getSingleton
 
       val queryParams: List[QueryParam[InnerMapper]] = {
-        
+
         qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
       }
     }
   }
 
-  
+
 }
 
 object By {
@@ -1256,7 +1256,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   def findDbByKey(dbId: ConnectionIdentifier, key: Type) : Can[A] =
   findDbByKey(dbId, mappedFields, key)
-  
+
   def findDbByKey(dbId: ConnectionIdentifier, fields: Seq[SelectableField],
                   key: Type) : Can[A] =
   DB.use(dbId) { conn =>
@@ -1281,7 +1281,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Can[A] =
   findDb(dbId, mappedFields, by :_*)
-  
+
   def findDb(dbId: ConnectionIdentifier, fields: Seq[SelectableField],
              by: QueryParam[A]*): Can[A] = {
     DB.use(dbId) {

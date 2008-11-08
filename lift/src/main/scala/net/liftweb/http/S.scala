@@ -18,7 +18,7 @@ package net.liftweb.http
 
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.scala.collection.mutable.{HashMap, ListBuffer}
-import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData, 
+import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData,
                   PrefixedAttribute,
                   Group, Node, HasKeyValue}
 import _root_.scala.collection.immutable.{ListMap, TreeMap}
@@ -46,7 +46,7 @@ object S extends HasParams {
   case class TemplateHolder(name: String, template: LiftRules.TemplatePf)
 
   /**
-   * Holds information about cookies 
+   * Holds information about cookies
    */
   case class CookieHolder(inCookies: List[Cookie], outCookies: List[Cookie]) {
     def add(in: Cookie) = CookieHolder(inCookies, in :: outCookies.filter(_.getName != in.getName))
@@ -80,7 +80,7 @@ object S extends HasParams {
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
-  
+
   private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
   private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
   private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
@@ -288,15 +288,15 @@ object S extends HasParams {
    * @return the localized version of the string
    */
   def ??(str: String): String = ?!(str, liftCoreResourceBundle)
-  
+
   private def ?!(str: String, resBundle: Can[ResourceBundle]) = resBundle.flatMap(r => tryo(r.getObject(str) match {
-    case s: String => Full(s) 
+    case s: String => Full(s)
     case _ => Empty
   }).flatMap(s => s)).openOr {
-    LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); 
+    LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
     str
   }
-    
+
   /**
    * Localize the incoming string based on a resource bundle for the current locale
    * @param str the string or ID to localize
@@ -365,12 +365,12 @@ object S extends HasParams {
   /**
    * Add a query analyzer (passed queries for analysis or logging)
    */
-  def addAnalyzer(f: (Can[RequestState], Long, 
+  def addAnalyzer(f: (Can[RequestState], Long,
                       List[(String, Long)]) => Any): Unit =
   _queryAnalyzer = _queryAnalyzer ::: List(f)
 
   private var aroundRequest: List[LoanWrapper] = Nil
-  
+
   private def doAround[B](ar: List[LoanWrapper])(f: => B): B =
   ar match {
     case Nil => f
@@ -408,7 +408,7 @@ object S extends HasParams {
       rh.headers = rh.headers + (name -> value)
     )
   }
-  
+
   /**
    * Returns the HTTP headers as a List[(String, String)]
    */
@@ -522,12 +522,12 @@ object S extends HasParams {
   }
 
   /**
-   * Returns the S attributes that are prefixed by 'prefix' parameter as a Map[String, String] 
+   * Returns the S attributes that are prefixed by 'prefix' parameter as a Map[String, String]
    * that will be 'merged' with the 'start' Map
-   * 
+   *
    * @param prefix the prefix to be matched
    * @start the initial Map
-   * 
+   *
    * @return Map[String, String]
    */
   def prefixedAttrsToMap(prefix: String, start: Map[String, String]): Map[String, String] =
@@ -539,10 +539,10 @@ object S extends HasParams {
   }
 
   /**
-   * Returns the S attributes that are prefixed by 'prefix' parameter as a Map[String, String] 
-   * 
+   * Returns the S attributes that are prefixed by 'prefix' parameter as a Map[String, String]
+   *
    * @param prefix the prefix to be matched
-   * 
+   *
    * @return Map[String, String]
    */
   def prefixedAttrsToMap(prefix: String): Map[String, String] =
@@ -552,9 +552,9 @@ object S extends HasParams {
    * Returns the S attributes that are prefixed by 'prefix' parameter as a MetaData.
    * The start Map will be 'merged' with the Map resulted after prefix matching and
    * the result Map will be converted to a MetaData.
-   * 
+   *
    * @param prefix the prefix to be matched
-   * 
+   *
    * @return MetaData
    */
   def prefixedAttrsToMetaData(prefix: String, start: Map[String, String]): MetaData =
@@ -655,7 +655,7 @@ object S extends HasParams {
   /**
    * The host and path of the quest
    */
-  def hostAndPath: String = 
+  def hostAndPath: String =
   servletRequest.map(r => (r.getScheme, r.getServerPort) match {
       case ("http", 80) => "http://"+r.getServerName+contextPath
       case ("https", 443) => "https://"+r.getServerName+contextPath
@@ -690,7 +690,7 @@ private[http] def doSnippet[T](name: String)(f: => T): T = {
 }
 
 def currentSnippet: Can[String] = _currentSnippet.is
-  
+
 def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name))
 
   /**
@@ -721,7 +721,7 @@ def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.
    * @return (JsonCall, JsCmd)
    */
   def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, Empty, f)
-  
+
 def buildJsonFunc(onError: JsCmd, f: Any => JsCmd): (JsonCall, JsCmd) =
 buildJsonFunc(Empty, Full(onError), f)
 
@@ -757,14 +757,14 @@ buildJsonFunc(Empty, Full(onError), f)
       }.foldLeft(JsCmds.Noop)(_ & _)
     }
 
-  val onErrorFunc: String = 
+  val onErrorFunc: String =
   onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
 }
 
  """).toJsCmd) openOr ""
-  
+
   val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
-  
+
     addFunctionMap(key, jsonCallback _)
 
     (JsonCall(key), JsCmds.Run(name.map(n => onErrorFunc +

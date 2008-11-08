@@ -22,30 +22,30 @@ object MonadicConversions {
     case true => new True
     case _ => False(Nil)
   }
-  
+
   implicit def monadic2Bool(cond: MonadicCondition): Boolean = cond match {
     case True() => true
     case _ => false
   }
-  
+
 }
 
 /**
  * A MonadicCondition allows building boolean expressions of the form
- * (a(0) && a(1) && .. && a(n)), where a(k) is a boolean expression, and 
+ * (a(0) && a(1) && .. && a(n)), where a(k) is a boolean expression, and
  * collecting the computation failures to a list of messages.
- * 
+ *
  * <pre>
  * Example:
- * 
+ *
  *   val isTooYoung = true;
  *   val isTooBad = false;
  *   val isTooStupid = true;
- * 
- *   val exp = (!isTooYoung ~ "too young") && 
- *             (!isTooBad ~ "too bad") && 
+ *
+ *   val exp = (!isTooYoung ~ "too young") &&
+ *             (!isTooBad ~ "too bad") &&
  *             (!isTooStupid ~ "too stupid")
- * 
+ *
  *   println(exp match {
  *     case False(msgs) => msgs mkString("Test failed because it is '", "' and '", "'.")
  *     case _ => "success"

@@ -69,7 +69,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   protected def i_obscure_!(in : Date) : Date = {
     new Date(0L)
   }
-  
+
   /**
    * Create an input field for the item
    */

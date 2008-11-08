@@ -10,7 +10,7 @@ import Helpers._
 import com.foo.jpaweb.model._
 import Model._
 
-// Make an object so that other pages can access (ie Authors)	     
+// Make an object so that other pages can access (ie Authors)
 object BookOps {
   // Object to hold search results
   object resultVar extends RequestVar[List[Book]](Nil)

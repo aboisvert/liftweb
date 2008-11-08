@@ -73,7 +73,7 @@ object WikiStuff extends Loc[WikiLoc] {
     case ("wiki", Full(wp @ WikiLoc(_ , true))) => editRecord(wp.record) _
     case ("wiki", Full(wp @ WikiLoc(_ , false)))
     if !wp.record.saved_? => editRecord(wp.record) _
-    
+
     case ("wiki", Full(wp: WikiLoc)) => displayRecord(wp.record) _
   }
 
@@ -81,7 +81,7 @@ object WikiStuff extends Loc[WikiLoc] {
   /**
    * Generate a link based on the current page
    */
-  val link = 
+  val link =
     new Loc.Link[WikiLoc](List("wiki"), false) {
       override def createLink(in: WikiLoc) = {
 	if (in.edit)
@@ -95,8 +95,8 @@ object WikiStuff extends Loc[WikiLoc] {
    * What's the text of the link?
    */
   val text = new Loc.LinkText(calcLinkText _)
-  
-  
+
+
   def calcLinkText(in: WikiLoc): NodeSeq =
     if (in.edit)
       Text("Wiki edit "+in.page)
@@ -106,7 +106,7 @@ object WikiStuff extends Loc[WikiLoc] {
   /**
    * Rewrite the request and emit the type-safe parameter
    */
-  override val rewrite: LocRewrite = 
+  override val rewrite: LocRewrite =
     Full({
       case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
 			  _, _) =>
@@ -118,33 +118,33 @@ object WikiStuff extends Loc[WikiLoc] {
 
     })
 
-  def showAll(in: NodeSeq): NodeSeq = 
+  def showAll(in: NodeSeq): NodeSeq =
     WikiEntry.findAll(OrderBy(WikiEntry.name, Ascending)).flatMap(entry =>
       <div><a href={url(entry.name)}>{entry.name}</a></div>)
-  
+
   def url(page: String) = createLink(WikiLoc(page, false))
 
 
-  def editRecord(r: WikiEntry)(in: NodeSeq): NodeSeq = 
+  def editRecord(r: WikiEntry)(in: NodeSeq): NodeSeq =
     <span>
   <a href={createLink(AllLoc)}>Show All Pages</a><br />
   {
     val isNew = !r.saved_?
     val pageName = r.name.is
     val action = url(pageName)
-    val message = 
-      if (isNew) 
-	Text("Create Entry named "+pageName) 
-      else 
+    val message =
+      if (isNew)
+	Text("Create Entry named "+pageName)
+      else
 	Text("Edit entry named "+pageName)
-    
+
     val hobixLink = <span>&nbsp;<a href="http://hobix.com/textile/quick.html" target="_blank">Textile Markup Reference</a><br /></span>
 
     val cancelLink = <a href={action}>Cancel</a>
     val textarea = r.entry.toForm
-    
+
     val submitButton = SHtml.submit(isNew ? "Add" | "Edit", () => r.save)
-    
+
     <form method="POST" action={action}>{ // the form tag
       message ++
       hobixLink ++
@@ -158,7 +158,7 @@ object WikiStuff extends Loc[WikiLoc] {
 
   </span>
 
-  def displayRecord(entry: WikiEntry)(in: NodeSeq): NodeSeq = 
+  def displayRecord(entry: WikiEntry)(in: NodeSeq): NodeSeq =
     <span>
   <a href={createLink(AllLoc)}>Show All Pages</a><br />
   {TextileParser.toHtml(entry.entry, textileWriter)}
@@ -170,11 +170,11 @@ object WikiStuff extends Loc[WikiLoc] {
 
   val textileWriter = Some((info: WikiURLInfo) =>
       info match {
-	case WikiURLInfo(page, _) => 
+	case WikiURLInfo(page, _) =>
 	  (stringUrl(page), Text(page), None)
       })
 
-  def stringUrl(page: String): String = 
+  def stringUrl(page: String): String =
     url(page).map(_.text) getOrElse ""
 
 

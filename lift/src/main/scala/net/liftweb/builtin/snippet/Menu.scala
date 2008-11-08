@@ -31,7 +31,7 @@ class Menu extends DispatchSnippet {
 
   def builder: NodeSeq = {
     var r: Can[NodeSeq] =
-    
+
     S.request.map(_.buildMenu.lines.toList match {
         case Nil => List(Text("No Navigation Defined."))
         case xs =>
@@ -54,9 +54,9 @@ class Menu extends DispatchSnippet {
           S.prefixedAttrsToMetaData("ul")
 
           buildUlLine(xs)
-        
+
       })
-    
+
     r.openOr(List(Text("No Navigation Defined.")))
   }
 
@@ -66,26 +66,26 @@ class Menu extends DispatchSnippet {
          loc <- request.location) yield loc.title
     r openOr Text("")
   }
- 
+
   def group(template: NodeSeq): NodeSeq = {
     val toBind = if ((template \ "bind").filter(_.prefix == "menu").isEmpty)
     <xml:group><menu:bind/> </xml:group>
     else template
-    
+
     val attrs = S.prefixedAttrsToMetaData("a")
-    
+
     for (group <- S.attr("group").toList;
          siteMap <- LiftRules.siteMap.toList;
          loc <- siteMap.locForGroup(group);
          link <- loc.createDefaultLink;
          linkText <- loc.linkText) yield {
       val a = <a href={link}>{linkText}</a> % attrs
-      
+
       Group(bind("menu", toBind, "bind" -> a))
     }
   }
-  
-  def item(text: NodeSeq): NodeSeq = 
+
+  def item(text: NodeSeq): NodeSeq =
   for (name <- S.attr("name").toList;
        request <- S.request.toList;
        loc <- request.location.toList if loc.name != name;

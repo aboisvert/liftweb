@@ -40,7 +40,7 @@ case class SiteMap(kids: Menu*) extends HasKids  {
   }
 
   def findLoc(name: String): Can[Loc[_]] =
-  Can(locs.get(name)) 
+  Can(locs.get(name))
 
   def findLoc(req: RequestState): Can[Loc[_]] =
   first(kids)(_.findLoc(req))
@@ -79,9 +79,9 @@ object SiteMap {
 
 trait HasKids {
   def kids: Seq[Menu]
-  def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem] 
+  def buildUpperLines(pathAt: HasKids, actual: Menu, populate: List[MenuItem]): List[MenuItem]
   = populate
-  
+
   def isRoot_? = false
 
   private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = Left(true)

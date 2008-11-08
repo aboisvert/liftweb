@@ -16,13 +16,13 @@ import JqJE._
 /**
  * Facilitates Sparklines from http://www.willarson.com/code/sparklines/sparklines.html
  * integration into Lift applications.
- * 
+ *
  */
 object Sparklines {
-  
+
   /**
    * Renders a sparkline graph when the page loads
-   * 
+   *
    * @param id - the id of the canvas HTML element
    * @param graphStyle - the style of the chart (LINE, BAR)
    * @param data - the amplitudes to be rendered
@@ -37,11 +37,11 @@ object Sparklines {
        </script>
     </head>
   }
-  
+
   /**
-   * Returns a JsExp that draws a sparklines graph. Can be combimed with other JsExp's to render the 
+   * Returns a JsExp that draws a sparklines graph. Can be combimed with other JsExp's to render the
    * graph whenever needed.
-   * 
+   *
    * @param id - the id of the canvas HTML element
    * @param graphStyle - the style of the chart (LINE, BAR)
    * @param data - the amplitudes to be rendered
@@ -50,13 +50,13 @@ object Sparklines {
   def toJsExp(id: String, graphStyle: SparklineStyle.Value, data: JsArray, opts: JsObj): JsExp = new JsExp {
     def toJsCmd = "new " + graphStyle + "(" + id.encJs + ", " + data.toJsCmd + ", " + opts.toJsCmd + ").draw()"
   }
-  
+
   /**
    * Renders a canvas element but makes sure that sparklines JS script dependency will be rendered.
-   * 
+   *
    * @param id - the id of the canvas HTML element
    * @param cssClass - the stylesheet class
-   * 
+   *
    */
   def renderCanvas(id: String, cssClass: String) : NodeSeq = {
     <head>
@@ -70,11 +70,11 @@ object Sparklines {
    */
   def init() {
     import _root_.net.liftweb.http.ResourceServer
-  
+
     ResourceServer.allow({
       case "sparklines" :: _ => true
     })
-    
+
   }
 
 }

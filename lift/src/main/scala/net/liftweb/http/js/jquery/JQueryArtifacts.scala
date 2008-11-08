@@ -27,41 +27,41 @@ import util.Helpers._
 
 object JQueryArtifacts extends JSArtifacts {
 
- 
+
   def toggle(id: String) = JqId(id) ~> new JsMethod {
-    def toJsCmd = "toggle()" 
+    def toJsCmd = "toggle()"
   }
-  
+
   def hide(id: String) = JqId(id) ~> new JsMethod {
-    def toJsCmd = "hide()" 
+    def toJsCmd = "hide()"
   }
-  
+
   def show(id: String) = JqId(id) ~> new JsMethod {
-    def toJsCmd = "show()" 
+    def toJsCmd = "show()"
   }
-  
+
   def showAndFocus(id: String) = JqId(id) ~> new JsMethod {
-    def toJsCmd = "show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);})" 
-  } 
+    def toJsCmd = "show().each(function(i) {var t = this; setTimeout(function() { t.focus(); }, 200);})"
+  }
 
   def serialize(id: String) = JqId(id) ~> new JsMethod {
-    def toJsCmd = "serialize()" 
+    def toJsCmd = "serialize()"
   }
-  
+
   def setHtml(id: String, xml: NodeSeq): JsCmd = JqJsCmds.JqSetHtml(id, xml)
-  
+
   def onLoad(cmd: JsCmd): JsCmd = JqJsCmds.JqOnLoad(cmd)
-  
+
   def ajax(data: AjaxInfo): String = {
     "jQuery.ajax(" + toJson(data, S.contextPath,
                             prefix =>
                             Str(S.encodeURL(prefix + "/" +LiftRules.ajaxPath))) + ");"
   }
-  
+
   def comet(data: AjaxInfo): String = {
     "jQuery.ajax(" + toJson(data, LiftRules.cometServer(), LiftRules.calcCometPath) + ");"
   }
-  
+
   def jsonStringify(in: JsExp) : JsExp = new JsExp {
     def toJsCmd = "JSON.stringify(" + in.toJsCmd + ")"
   }
@@ -77,6 +77,6 @@ object JQueryArtifacts extends JSArtifacts {
    ("dataType : " + info.dataType.encJs) ::
    "timeout : " + info.timeout ::
    "cache : " + info.cache :: Nil) ++
-  info.successFunc.map("success : " + _).toList ++ 
+  info.successFunc.map("success : " + _).toList ++
   info.failFunc.map("error : " + _).toList mkString("{ ", ", ", " }")
 }

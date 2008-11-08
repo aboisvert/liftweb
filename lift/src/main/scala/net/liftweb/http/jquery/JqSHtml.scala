@@ -28,7 +28,7 @@ import _root_.scala.xml._
  * This contains Html artifacts that are heavily relying on JQuery
  */
 object JqSHtml {
-  
+
   /**
    * Create an autocomplete form based on a sequence.
    */

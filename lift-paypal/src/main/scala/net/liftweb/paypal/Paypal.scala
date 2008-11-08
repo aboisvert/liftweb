@@ -51,7 +51,7 @@ object PaypalLive extends PaypalMode {
 sealed trait PaypalConnection {
   def protocol: String
   def port: Int = 80
-  
+
   override def toString = "PaypalConnection: "+protocol+":"+port
 }
 
@@ -110,7 +110,7 @@ private object HttpClientFactory {
 
 /**
  * Creates a new PostMethod and applys the passed paramaters
- * 
+ *
  * @param url The string representation of the endpoing (e.g. www.paypal.com)
  * @paypal paramaters A Seq[(String,String)] of paramaters that will become the paypload of the request
  */
@@ -120,8 +120,8 @@ private object PostMethodFactory {
     p.setRequestBody(paramaters)
     p
   }
-  
-  implicit def tonvp(in: Seq[(String, String)]): Array[NameValuePair] = 
+
+  implicit def tonvp(in: Seq[(String, String)]): Array[NameValuePair] =
   in.map(p => new NameValuePair(p._1, p._2)).toArray
 }
 
@@ -131,7 +131,7 @@ private object PostMethodFactory {
 trait PaypalBase {
   /**
    * Create a new HTTP client
-   * 
+   *
    * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
    * @param connection The protocol the invocation is made over. Options are PaypalHTTP or PaypalSSL
    */
@@ -152,7 +152,7 @@ trait PaypalUtilities {
 
 /**
  * All HTTP requests to the paypal servers must subclass PaypalRequest.
- * 
+ *
  * @param client Must be a HTTP client; the simplest way to create this is by using HttpClientFactory
  * @param post Specify the payload of the HTTP request. Must be an instance of PostMethod from HTTP commons
  */
@@ -176,7 +176,7 @@ private object StreamResponseProcessor {
     val stream: InputStream = p.getResponseBodyAsStream()
     val reader: BufferedReader = new BufferedReader(new InputStreamReader(stream))
     val ret: ListBuffer[String] = new ListBuffer
-    
+
     try {
       def doRead {
         reader.readLine() match {
@@ -186,35 +186,35 @@ private object StreamResponseProcessor {
             doRead
         }
       }
-      
+
       doRead
       ret.toList
     } catch {
       case _ => Nil
-    }    
+    }
   }
 }
 
 
 /**
- * All paypal service classes need to subclass PaypalResponse explicitally. 
+ * All paypal service classes need to subclass PaypalResponse explicitally.
  */
 
 trait PaypalResponse extends PaypalUtilities with HasParams {
   def response: List[String]
   def isVerified: Boolean
-  
-  private lazy val info: Map[String, String] = 
+
+  private lazy val info: Map[String, String] =
   Map((for (v <- response; s <- split(v)) yield s) :_*)
-  
+
   def param(name: String) = Can(info.get(name))
-  
+
   lazy val paypalInfo: Can[PayPalInfo] =
   if (this.isVerified) Full(new PayPalInfo(this))
   else Empty
-  
+
   def rawHead: Can[String] = Can(response.firstOption)
-  
+
   private def split(in: String): Can[(String, String)] = {
     val pos = in.indexOf("=")
     if (pos < 0) Empty
@@ -228,17 +228,17 @@ object PaypalDataTransfer extends PaypalBase {
   /**
    * payloadArray is the array of the post body we'll be sending.
    * As the payload body is different in PDT vs IPN
-   * 
+   *
    * @retrn List[(String,String)]
    */
   private def payloadArray(authToken: String, transactionToken: String) =
   List("cmd" -> "_notify-synch",
        "tx" -> transactionToken,
        "at" -> authToken)
-   
+
   /**
    * Execute the PDT call
-   * 
+   *
    * @param authToken The token you obtain from the paypal merchant console
    * @param transactionToken The token that is passed back to your application as the "tx" part of the query string
    * @param mode The PaypalMode type that your targeting. Options are PaypalLive or PaypalSandbox
@@ -249,13 +249,13 @@ object PaypalDataTransfer extends PaypalBase {
   PaypalDataTransferResponse(
     PaypalRequest(client(mode, connection),
                   PostMethodFactory("/cgi-bin/webscr",payloadArray(authToken, transactionToken))))
-  
+
 }
 
 /**
  * Wrapper instance for handling the response from a paypal data transfer.
- * 
- * @param response The processed response List[String]. The response 
+ *
+ * @param response The processed response List[String]. The response
  * input should be created with StreamResponseProcessor
  */
 case class PaypalDataTransferResponse(response: List[String]) extends PaypalResponse {
@@ -276,18 +276,18 @@ case class PaypalDataTransferResponse(response: List[String]) extends PaypalResp
 //
 
 /**
- * Users would generally invoke this case class in a DispatchPf call in 
+ * Users would generally invoke this case class in a DispatchPf call in
  * Boot.scala as it handles the incomming request and dispatches the IPN
  * callback, and handles the subsequent response.
  */
-private object PaypalIPN extends PaypalUtilities { 
+private object PaypalIPN extends PaypalUtilities {
   /**
    * @todo Really need to make sure that multiple custom paramaters can be mapped through.
    * The current solution is not good!
    */
   private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] =
   (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
-  
+
   def apply(request: RequestState, mode: PaypalMode, connection: PaypalConnection) = {
     //create request, get response and pass response object to the specified event handlers
     val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList(request))
@@ -297,11 +297,11 @@ private object PaypalIPN extends PaypalUtilities {
 
 /**
  * In response to the IPN postback from paypal, its nessicary to then call paypal and pass back
- * the exact set of paramaters that you were given by paypal - this stops spoofing. Use the 
+ * the exact set of paramaters that you were given by paypal - this stops spoofing. Use the
  * PaypalInstantPaymentTransferPostback exactly as you would PaypalDataTransferResponse.
  */
 private[paypal] object PaypalIPNPostback extends PaypalBase {
-  
+
   def payloadArray(paramaters: Seq[(String, String)]) = List("cmd" -> "_notify-validate") ++ paramaters
 
   /**
@@ -331,7 +331,7 @@ object SimplePaypal extends PaypalIPN with PaypalPDT {
     case (status, info, resp) =>
       Log.info("Got a verified PayPal IPN: "+status)
   }
-  
+
   def pdtResponse = {
     case (info, resp) =>
       Log.info("Got a verified PayPal PDT: "+resp)
@@ -341,11 +341,11 @@ object SimplePaypal extends PaypalIPN with PaypalPDT {
 
 trait BasePaypalTrait extends LiftRules.DispatchPf {
   lazy val RootPath = rootPath
-    
+
   def rootPath = "paypal"
-  
+
   def dispatch:  LiftRules.DispatchPf = Map.empty
-  
+
   lazy val mode: PaypalMode = Props.mode match {
     case Props.RunModes.Production => PaypalLive
     case _ => PaypalSandbox
@@ -359,10 +359,10 @@ trait BasePaypalTrait extends LiftRules.DispatchPf {
 
 trait PaypalPDT extends BasePaypalTrait {
   def paypalAuthToken: String
-  
+
   lazy val PDTPath = pdtPath
   def pdtPath = "pdt"
-   
+
   override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
     case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
       r.params // force the lazy value to be evaluated
@@ -370,7 +370,7 @@ trait PaypalPDT extends BasePaypalTrait {
   }
 
   def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
-  
+
   def processPDT(r: RequestState)(): Can[LiftResponse] = {
     for (tx <- r.param("tx");
          val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
@@ -386,27 +386,27 @@ trait PaypalPDT extends BasePaypalTrait {
  *
  * <code>
  *  // in Whatever.scala
- *  object MyPayPalHandler extends PayPal { 
- *    import PaypalTransactionStatus._ 
- *    def actions = { 
- *       case (ClearedPayment, info, _) => // write the payment to the database 
- *       case (RefundedPayment, info, _) => // process refund 
- *    } 
+ *  object MyPayPalHandler extends PayPal {
+ *    import PaypalTransactionStatus._
+ *    def actions = {
+ *       case (ClearedPayment, info, _) => // write the payment to the database
+ *       case (RefundedPayment, info, _) => // process refund
+ *    }
  *  }
- * 
+ *
  * // in Boot.scala
- * 
- * LiftRules.statelessDispatchTable = MyPayPalHandler orElse 
+ *
+ * LiftRules.statelessDispatchTable = MyPayPalHandler orElse
  *    LiftRules.statelessDispatchTable
  * </code>
- * 
- * In this way you then get all the DispatchPf processing stuff for free. 
- * 
+ *
+ * In this way you then get all the DispatchPf processing stuff for free.
+ *
  */
 trait PaypalIPN extends BasePaypalTrait {
   lazy val IPNPath = ipnPath
   def ipnPath = "ipn"
- 
+
   def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
 
   override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
@@ -415,7 +415,7 @@ trait PaypalIPN extends BasePaypalTrait {
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
   }
-  
+
   def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
 
   protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
@@ -431,7 +431,7 @@ trait PaypalIPN extends BasePaypalTrait {
    * How many times do we try to verify the request
    */
   val MaxRetry = 6
-  
+
   protected object requestQueue extends Actor {
     def act = {
       loop {
@@ -443,7 +443,7 @@ trait PaypalIPN extends BasePaypalTrait {
           case IPNRequest(r, cnt, when) if when <= millis =>
             tryo {
               val resp = PaypalIPN(r, mode, connection)
-              
+
               for (info <-  buildInfo(resp, r);
                    stat <- info.paymentStatus) yield {
                 actions((stat, info, r))
@@ -454,7 +454,7 @@ trait PaypalIPN extends BasePaypalTrait {
               case _ => // retry
                 this ! IPNRequest(r, cnt + 1, millis + (1000 * 8 << (cnt + 2)))
             }
-            
+
           case _ =>
         }
       }
@@ -467,7 +467,7 @@ trait PaypalIPN extends BasePaypalTrait {
 /**
  * A paramater set that takes request paramaters (from RequestState) and assigns them
  * to properties of this class
- * 
+ *
  * @param params The paramaters from the incooming request
  */
 class PayPalInfo(val params: HasParams) {

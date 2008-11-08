@@ -173,13 +173,13 @@ object JqJE {
 }
 
 object JqJsCmds {
-  
+
   implicit def jsExpToJsCmd(in: JsExp) = in.cmd
 
   case class JqOnLoad(cmd: JsCmd) extends JsCmd {
     def toJsCmd = "jQuery(document).ready(function() {"+cmd.toJsCmd+"});"
   }
-  
+
   /**
    * Append a NodeSeq to a node specified by uid using jQuery's append() method.
    */
@@ -227,7 +227,7 @@ object JqJsCmds {
       ret
     }
   }
-  
+
   object Show {
     def apply(uid: String) = new Show(uid, Empty)
     def apply(uid: String, time: TimeSpan) = new Show(uid, Full(time))

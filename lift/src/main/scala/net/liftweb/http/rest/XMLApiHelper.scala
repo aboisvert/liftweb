@@ -29,7 +29,7 @@ import _root_.scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null, Node}
 trait XMLApiHelper {
   implicit def boolToResponse(in: Boolean): LiftResponse =
   buildResponse(in, Empty, <xml:group/>)
-  
+
   implicit def canBoolToResponse(in: Can[Boolean]): LiftResponse =
   buildResponse(in openOr false, in match {
       case Failure(msg, _, _) => Full(Text(msg))
@@ -40,29 +40,28 @@ trait XMLApiHelper {
   buildResponse(in._1, Full(Text(in._2)), <xml:group/>)
 
   /*
-  implicit def unitToSuccess(in: Unit): LiftResponse = 
+  implicit def unitToSuccess(in: Unit): LiftResponse =
   buildResponse(true, Empty, <xml:group/>)
   */
- 
+
   protected def operation: Option[NodeSeq] =
   (for (req <- S.request) yield req.path.partPath match {
       case _ :: name :: _ => name
       case _ => ""
     }).map(Text)
-  
+
   implicit def nodeSeqToResponse(in: NodeSeq): LiftResponse =
   buildResponse(true, Empty, in)
 
   implicit def listElemToResponse(in: Seq[Node]): LiftResponse =
   buildResponse(true, Empty, in)
-  
 
   implicit def canNodeToResponse(in: Can[NodeSeq]): LiftResponse = in match {
     case Full(n) => buildResponse(true, Empty, n)
     case Failure(msg, _, _) => buildResponse(false, Full(Text(msg)), Text(""))
     case _ => buildResponse(false, Empty, Text(""))
   }
-  
+
   implicit def putResponseInCan(in: LiftResponse): Can[LiftResponse] = Full(in)
 
   /**

@@ -42,7 +42,7 @@ trait MetaProtoTag[ModelType <: ProtoTag[ModelType]] extends KeyedMetaMapper[Lon
   * Split the String into tags and find all the tags
   */
   def splitAndFind(in: String): List[ModelType] = split(in).map(findOrCreate)
-                                                                                                                      
+
   def capify: String => String = Helpers.capify _
 }
 

@@ -35,7 +35,7 @@ sealed trait ParamHolder {
 @serializable
 case class NormalParamHolder(name: String, value: String) extends ParamHolder
 @serializable
-case class FileParamHolder(name: String, mimeType: String, 
+case class FileParamHolder(name: String, mimeType: String,
                            fileName: String,
                            file: Array[Byte]) extends ParamHolder
 
@@ -48,7 +48,7 @@ object RequestState {
     val tmpUri = if (turi.length > 0) turi else "/"
     val contextPath = LiftRules.calculateContextPath(request) openOr
     request.getContextPath
-    
+
     val tmpPath = parsePath(tmpUri)
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
@@ -173,7 +173,7 @@ private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean): Text 
 }
 
   def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
-    
+
     def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
       if (attrs == Null) Null
       else if (attrs.key == toFix) {
@@ -228,7 +228,7 @@ class RequestState(val path: ParsePath,
     case _ => None
   }
 
-  lazy val headers: List[(String, String)] = 
+  lazy val headers: List[(String, String)] =
     for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[_root_.java.util.Enumeration[String]]);
 	 item <- enumToList[String](request.getHeaders(header).asInstanceOf[_root_.java.util.Enumeration[String]]))
       yield (header, item)
@@ -264,7 +264,7 @@ class RequestState(val path: ParsePath,
   }
 
 
-  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr 
+  lazy val buildMenu: CompleteMenu = location.map(_.buildMenu) openOr
   CompleteMenu(Nil)
 
 
@@ -285,7 +285,7 @@ class RequestState(val path: ParsePath,
 
   lazy val uri: String = request match {
     case null => "Outside HTTP Request (e.g., on Actor)"
-    case request => 
+    case request =>
       val ret = for (uri <- Can.legacyNullTest(request.getRequestURI);
                      val cp = Can.legacyNullTest(request.getContextPath) openOr "") yield
       uri.substring(cp.length)
@@ -304,32 +304,32 @@ class RequestState(val path: ParsePath,
   /**
    * The user agent of the browser that sent the request
    */
-  lazy val userAgent: Can[String] = 
+  lazy val userAgent: Can[String] =
   for (r <- Can.legacyNullTest(request);
        uah <- Can.legacyNullTest(request.getHeader("User-Agent")))
   yield uah
-  
+
   lazy val isIE6: Boolean = (userAgent.map(_.indexOf("MSIE 6") >= 0)) openOr false
   lazy val isIE7: Boolean = (userAgent.map(_.indexOf("MSIE 7") >= 0)) openOr false
   lazy val isIE8: Boolean = (userAgent.map(_.indexOf("MSIE 8") >= 0)) openOr false
   lazy val isIE = isIE6 || isIE7 || isIE8
-  
-  lazy val isSafari2: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 && 
+
+  lazy val isSafari2: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 &&
                                                s.indexOf("Version/2.") >= 0)) openOr false
-  
-  lazy val isSafari3: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 && 
+
+  lazy val isSafari3: Boolean = (userAgent.map(s => s.indexOf("Safari/") >= 0 &&
                                                s.indexOf("Version/3.") >= 0)) openOr false
   lazy val isSafari = isSafari2 || isSafari3
-  
+
   lazy val isIPhone = isSafari && (userAgent.map(s => s.indexOf("(iPhone;") >= 0) openOr false)
-  
+
   lazy val isFirefox2: Boolean = (userAgent.map(_.indexOf("Firefox/2") >= 0)) openOr false
   lazy val isFirefox3: Boolean = (userAgent.map(_.indexOf("Firefox/3") >= 0)) openOr false
   lazy val isFirefox = isFirefox2 || isFirefox3
-  
+
   lazy val isOpera9: Boolean = (userAgent.map(s => s.indexOf("Opera/9.") >= 0) openOr false)
   def isOpera = isOpera9
-  
+
 
   def updateWithContextPath(uri: String): String = if (uri.startsWith("/")) contextPath + uri else uri
 }

@@ -4,7 +4,7 @@ package com.foo.jpaweb.model
 /* adds a valueOf function, assumes name is defined
 add optional description */
 trait Enumv  {
-  
+
   this: Enumeration =>
 
   private var nameDescriptionMap = scala.collection.mutable.Map[String, String]()
@@ -14,7 +14,7 @@ trait Enumv  {
     nameDescriptionMap += (name -> desc)
     new Val(name)
   }
-  
+
     /* get description if it exists else name */
   def getDescriptionOrName(ev: this.Value) = {
     try {

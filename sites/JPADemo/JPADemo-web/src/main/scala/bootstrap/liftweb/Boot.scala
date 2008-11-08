@@ -17,18 +17,18 @@ import S.?
   */
 class Boot {
   def boot {
-    LogBoot.defaultProps = 
+    LogBoot.defaultProps =
       """<?xml version="1.0" encoding="UTF-8" ?>
-      <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">  
-      <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">  
-      <appender name="appender" class="org.apache.log4j.ConsoleAppender">  
-      <layout class="org.apache.log4j.SimpleLayout"/>  
-      </appender>  
-      <root>  
-      <priority value ="DEBUG"/>  
-      <appender-ref ref="appender"/>  
-      </root>  
-      </log4j:configuration>  
+      <!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+      <log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
+      <appender name="appender" class="org.apache.log4j.ConsoleAppender">
+      <layout class="org.apache.log4j.SimpleLayout"/>
+      </appender>
+      <root>
+      <priority value ="DEBUG"/>
+      <appender-ref ref="appender"/>
+      </root>
+      </log4j:configuration>
       """
 
     // where to search snippet
@@ -49,7 +49,7 @@ class Boot {
 
     object swedishOn extends SessionVar(false)
 
-    def localeCalculator (request : Can[HttpServletRequest]) : Locale = 
+    def localeCalculator (request : Can[HttpServletRequest]) : Locale =
       request.flatMap(_.getParameter("swedish") match {
 	case null if swedishOn.is == true => Full(swedishChef)
 	case null => Full(LiftRules.defaultLocaleCalculator(request))
