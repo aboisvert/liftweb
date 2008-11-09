@@ -247,6 +247,12 @@ trait LongKeyedMapper[OwnerType <: LongKeyedMapper[OwnerType]] extends KeyedMapp
 
 }
 
+trait IdPK[OwnerType <: LongKeyedMapper[OwnerType]] {
+   this: OwnerType =>
+    def primaryKeyField = id
+    object id extends MappedLongIndex[OwnerType](this)
+}
+
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>
   def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
   def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
