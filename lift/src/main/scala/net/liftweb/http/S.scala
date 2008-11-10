@@ -66,7 +66,7 @@ object S extends HasParams {
   /**
    * The current session
    */
-  private val _request = new ThreadGlobal[RequestState]
+  private val _request = new ThreadGlobal[Req]
   private val _functionMap = new ThreadGlobal[HashMap[String, AFuncHolder]]
   private val inS = (new ThreadGlobal[Boolean]).set(false)
   private val snippetMap = new ThreadGlobal[HashMap[String, NodeSeq => NodeSeq]]
@@ -86,11 +86,11 @@ object S extends HasParams {
   private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
 
   /**
-   * Get the current RequestState
+   * Get the current Req
    *
-   * @return the current RequestState
+   * @return the current Req
    */
-  def request: Can[RequestState] = _request.value match {case null => Empty case r => Full(r)}
+  def request: Can[Req] = _request.value match {case null => Empty case r => Full(r)}
 
   /**
    * @return a List of any Cookies that have been set for this Response.
@@ -334,7 +334,7 @@ object S extends HasParams {
   /**
    * Initialize the current request session
    */
-  def init[B](request: RequestState, session: LiftSession)(f: => B) : B = {
+  def init[B](request: Req, session: LiftSession)(f: => B) : B = {
     _init(request,session)(() => f)
   }
 
@@ -359,13 +359,13 @@ object S extends HasParams {
   Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
 
 
-  private var _queryAnalyzer: List[(Can[RequestState], Long,
+  private var _queryAnalyzer: List[(Can[Req], Long,
                                     List[(String, Long)]) => Any] = Nil
 
   /**
    * Add a query analyzer (passed queries for analysis or logging)
    */
-  def addAnalyzer(f: (Can[RequestState], Long,
+  def addAnalyzer(f: (Can[Req], Long,
                       List[(String, Long)]) => Any): Unit =
   _queryAnalyzer = _queryAnalyzer ::: List(f)
 
@@ -481,7 +481,7 @@ object S extends HasParams {
        ca <- Can.legacyNullTest(r.getCookies).toList;
        c <- ca) yield c
 
-  private def _init[B](request: RequestState, session: LiftSession)(f: () => B): B = {
+  private def _init[B](request: Req, session: LiftSession)(f: () => B): B = {
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
@@ -501,17 +501,6 @@ object S extends HasParams {
    * Returns the 'Referer' HTTP header attribute
    */
   def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
-
-  /*
-  private[http] object requestState {
-    private def rv: Can[HashMap[String, Any]] = Can.legacyNullTest(_requestVar.value)
-
-    def apply[T](name: String): Can[T] = rv.flatMap(r => Can(r.get(name).asInstanceOf[Option[T]]))
-
-    def update[T](name: String, value: T): Unit = rv.foreach(_(name) = value)
-
-    def clear(name: String): Unit = rv.foreach(_ -= name)
-  }*/
 
   /**
    * Get a list of current attributes
@@ -599,7 +588,7 @@ object S extends HasParams {
 
   def initIfUninitted[B](session: LiftSession)(f: => B) : B = {
     if (inS.value) f
-    else init(RequestState.nil,session)(f)
+    else init(Req.nil,session)(f)
   }
 
   /**

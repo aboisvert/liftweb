@@ -285,10 +285,10 @@ private object PaypalIPN extends PaypalUtilities {
    * @todo Really need to make sure that multiple custom paramaters can be mapped through.
    * The current solution is not good!
    */
-  private def paramsAsPayloadList(request: RequestState): Seq[(String, String)] =
+  private def paramsAsPayloadList(request: Req): Seq[(String, String)] =
   (for(p <- request.params; mp <- p._2.map(v => (p._1, v))) yield (mp._1, mp._2)).toList
 
-  def apply(request: RequestState, mode: PaypalMode, connection: PaypalConnection) = {
+  def apply(request: Req, mode: PaypalMode, connection: PaypalConnection) = {
     //create request, get response and pass response object to the specified event handlers
     val ipnResponse: PaypalIPNPostbackReponse = PaypalIPNPostback(mode, connection, paramsAsPayloadList(request))
     ipnResponse
@@ -353,8 +353,8 @@ trait BasePaypalTrait extends LiftRules.DispatchPf {
 
   def connection: PaypalConnection = PaypalSSL
 
-    def isDefinedAt(r: RequestState) = dispatch.isDefinedAt(r)
-  def apply(r: RequestState) = dispatch(r)
+    def isDefinedAt(r: Req) = dispatch.isDefinedAt(r)
+  def apply(r: Req) = dispatch(r)
 }
 
 trait PaypalPDT extends BasePaypalTrait {
@@ -364,14 +364,14 @@ trait PaypalPDT extends BasePaypalTrait {
   def pdtPath = "pdt"
 
   override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
-    case r @ RequestState(RootPath :: PDTPath :: Nil, "", _) =>
+    case r @ Req(RootPath :: PDTPath :: Nil, "", _) =>
       r.params // force the lazy value to be evaluated
       processPDT(r) _
   }
 
-  def pdtResponse:  PartialFunction[(PayPalInfo, RequestState), LiftResponse]
+  def pdtResponse:  PartialFunction[(PayPalInfo, Req), LiftResponse]
 
-  def processPDT(r: RequestState)(): Can[LiftResponse] = {
+  def processPDT(r: Req)(): Can[LiftResponse] = {
     for (tx <- r.param("tx");
          val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
          info <- resp.paypalInfo;
@@ -410,19 +410,19 @@ trait PaypalIPN extends BasePaypalTrait {
   def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
 
   override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
-    case r @ RequestState(RootPath :: IPNPath :: Nil, "", PostRequest) =>
+    case r @ Req(RootPath :: IPNPath :: Nil, "", PostRequest) =>
       r.params // force the lazy value to be evaluated
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
   }
 
-  def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, RequestState), Unit]
+  def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, Req), Unit]
 
-  protected case class IPNRequest(r: RequestState, cnt: Int, when: Long)
+  protected case class IPNRequest(r: Req, cnt: Int, when: Long)
   protected case object PingMe
 
 
-  protected def buildInfo(resp: PaypalResponse, req: RequestState): Can[PayPalInfo] = {
+  protected def buildInfo(resp: PaypalResponse, req: Req): Can[PayPalInfo] = {
     if (resp.isVerified) Full(new PayPalInfo(req))
     else Empty
   }
@@ -465,7 +465,7 @@ trait PaypalIPN extends BasePaypalTrait {
 }
 
 /**
- * A paramater set that takes request paramaters (from RequestState) and assigns them
+ * A paramater set that takes request paramaters (from Req) and assigns them
  * to properties of this class
  *
  * @param params The paramaters from the incooming request

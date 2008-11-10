@@ -39,10 +39,10 @@ case class FileParamHolder(name: String, mimeType: String,
                            fileName: String,
                            file: Array[Byte]) extends ParamHolder
 
-object RequestState {
+object Req {
   object NilPath extends ParsePath(Nil, "", true, false)
 
-  def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): RequestState = {
+  def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): Req = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
@@ -126,8 +126,9 @@ object RequestState {
       (paramNames, params, Nil, Empty)
     }
 
-    new RequestState(rewritten.path, contextPath, reqType,
-                     request.getContentType, request, nanoStart, System.nanoTime, paramCalculator)
+    new Req(rewritten.path, contextPath, reqType,
+            request.getContentType, request, nanoStart, 
+	    System.nanoTime, paramCalculator)
   }
 
   private def fixURI(uri : String) = uri indexOf ";jsessionid"  match {
@@ -135,8 +136,9 @@ object RequestState {
     case x @ _ => uri substring(0, x)
   }
 
-  def nil = new RequestState(NilPath, "", GetRequest, "", null, System.nanoTime, System.nanoTime,
-                             () => (Nil, Map.empty, Nil, Empty))
+  def nil = new Req(NilPath, "", GetRequest, "", null, 
+		    System.nanoTime, System.nanoTime,
+                    () => (Nil, Map.empty, Nil, Empty))
 
   def parsePath(in: String): ParsePath = {
     val p1 = fixURI((in match {case null => "/"; case s if s.length == 0 => "/"; case s => s}).replaceAll("/+", "/"))
@@ -158,63 +160,63 @@ object RequestState {
 
   var fixHref = _fixHref _
 
-private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean): Text = {
+  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean, rewrite: Can[String => String]): Text = {
+    val hv = v.text
+    val updated = if (hv.startsWith("/")) contextPath + hv else hv
 
-  val hv = v.text
-
-  val updated = if (hv.startsWith("/")) contextPath + hv else hv
-
-  Text((fixURL && !updated.startsWith("javascript:") &&
-        !updated.startsWith("http://") &&
-        !updated.startsWith("https://")) match {
-      case true => URLRewriter.rewriteFunc map (_(updated)) openOr updated
-      case _ => updated
-    })
-}
+    Text(if (fixURL && rewrite.isDefined &&
+             !updated.startsWith("javascript:") &&
+             !updated.startsWith("http://") &&
+             !updated.startsWith("https://"))
+         rewrite.open_!.apply(updated) else updated)
+  }
 
   def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
+    val rewrite = URLRewriter.rewriteFunc
 
     def fixAttrs(toFix : String, attrs : MetaData, fixURL: Boolean) : MetaData = {
       if (attrs == Null) Null
       else if (attrs.key == toFix) {
-        new UnprefixedAttribute(toFix, RequestState.fixHref(contextPath, attrs.value, fixURL),fixAttrs(toFix, attrs.next, fixURL))
+        new UnprefixedAttribute(toFix, Req.fixHref(contextPath, attrs.value, fixURL, rewrite),fixAttrs(toFix, attrs.next, fixURL))
       } else attrs.copy(fixAttrs(toFix, attrs.next, fixURL))
     }
 
-    in.map{
-      v =>
-      v match {
-        case Group(nodes) => Group(fixHtml(contextPath, nodes))
-
-        case e: Elem if e.label == "form" => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-        case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-        case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _* )
-        case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, fixHtml(contextPath, v.child) : _* )
-        case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, fixHtml(contextPath, v.child) : _*)
-        case _ => v
+    def _fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
+      in.map{
+        v =>
+        v match {
+          case Group(nodes) => Group(_fixHtml(contextPath, nodes))
+          case e: Elem if e.label == "form" => Elem(v.prefix, v.label, fixAttrs("action", v.attributes, true), v.scope, _fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "script" => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, false), v.scope, _fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "a" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, true), v.scope, _fixHtml(contextPath, v.child) : _* )
+          case e: Elem if e.label == "link" => Elem(v.prefix, v.label, fixAttrs("href", v.attributes, false), v.scope, _fixHtml(contextPath, v.child) : _* )
+          case e: Elem => Elem(v.prefix, v.label, fixAttrs("src", v.attributes, true), v.scope, _fixHtml(contextPath, v.child) : _*)
+          case _ => v
+        }
       }
     }
+    _fixHtml(contextPath, in)
   }
 
-  private[liftweb] def defaultCreateNotFound(in: RequestState) =
+  private[liftweb] def defaultCreateNotFound(in: Req) =
   XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
                 ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
 
-  def unapply(in: RequestState): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType))
+  def unapply(in: Req): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType))
 }
 
 @serializable
-class RequestState(val path: ParsePath,
-                   val contextPath: String,
-                   val requestType: RequestType,
-                   val contentType: String,
-                   val request: HttpServletRequest,
-                   val nanoStart: Long,
-                   val nanoEnd: Long,
-                   val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]])) extends HasParams
+class Req(val path: ParsePath,
+          val contextPath: String,
+          val requestType: RequestType,
+          val contentType: String,
+          val request: HttpServletRequest,
+          val nanoStart: Long,
+          val nanoEnd: Long,
+          val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]])) extends HasParams
 {
 
-  override def toString = "RequestState("+paramNames+", "+params+", "+path+
+  override def toString = "Req("+paramNames+", "+params+", "+path+
   ", "+contextPath+", "+requestType+", "+contentType+")"
 
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
@@ -229,9 +231,9 @@ class RequestState(val path: ParsePath,
   }
 
   lazy val headers: List[(String, String)] =
-    for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[_root_.java.util.Enumeration[String]]);
-	 item <- enumToList[String](request.getHeaders(header).asInstanceOf[_root_.java.util.Enumeration[String]]))
-      yield (header, item)
+  for (header <- enumToList[String](request.getHeaderNames.asInstanceOf[_root_.java.util.Enumeration[String]]);
+       item <- enumToList[String](request.getHeaders(header).asInstanceOf[_root_.java.util.Enumeration[String]]))
+  yield (header, item)
 
   lazy val (paramNames: List[String],
             params: Map[String, List[String]],
@@ -281,7 +283,7 @@ class RequestState(val path: ParsePath,
   def get_? = requestType.get_?
   def put_? = requestType.put_?
 
-  def fixHtml(in: NodeSeq): NodeSeq = RequestState.fixHtml(contextPath, in)
+  def fixHtml(in: NodeSeq): NodeSeq = Req.fixHtml(contextPath, in)
 
   lazy val uri: String = request match {
     case null => "Outside HTTP Request (e.g., on Actor)"
@@ -291,7 +293,7 @@ class RequestState(val path: ParsePath,
       uri.substring(cp.length)
       match {
         case "" => "/"
-        case x => RequestState.fixURI(x)
+        case x => Req.fixURI(x)
       }
       ret openOr "/"
   }

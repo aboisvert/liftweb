@@ -46,7 +46,7 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(): Can[LiftResponse] = {
+  def findResourceInClasspath(request: Req, _uri: List[String])(): Can[LiftResponse] = {
     for (req <- S.request;
 	 r <- {
     val uri = _uri.filter(!_.startsWith("."))

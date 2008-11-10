@@ -33,12 +33,12 @@ import JE._
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPf = PartialFunction[RequestState, () => Can[LiftResponse]];
+  type DispatchPf = PartialFunction[Req, () => Can[LiftResponse]];
   type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePf = PartialFunction[RequestState,() => Can[NodeSeq]]
+  type TemplatePf = PartialFunction[Req,() => Can[NodeSeq]]
   type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(RequestState, Can[Failure]), LiftResponse]
+  type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPf = PartialFunction[List[String], LiftView]
@@ -47,12 +47,12 @@ object LiftRules {
    * A partial function that allows the application to define requests that should be
    * handled by lift rather than the default servlet handler
    */
-  type LiftRequestPf = PartialFunction[RequestState, Boolean]
+  type LiftRequestPf = PartialFunction[Req, Boolean]
 
   private var _early: List[(HttpServletRequest) => Any] = Nil
-  private[http] var _beforeSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
+  private[http] var _beforeSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 
-  def appendBeforeSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
+  def appendBeforeSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any) {
     _beforeSend = _beforeSend ::: List(f)
   }
 
@@ -81,9 +81,9 @@ object LiftRules {
    */
   var urlDecorate: URLDecorator = {case arg => arg}
 
-  private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any] = Nil
+  private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 
-  def appendAfterSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[RequestState]) => Any) {
+  def appendAfterSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any) {
     _afterSend = _afterSend ::: List(f)
   }
 
@@ -103,10 +103,10 @@ object LiftRules {
 
   /**
    * A partial function that determines content type based on an incoming
-   * RequestState and Accept header
+   * Req and Accept header
    */
   var determineContentType:
-  PartialFunction[(Can[RequestState], Can[String]), String] = {
+  PartialFunction[(Can[Req], Can[String]), String] = {
     case (_, Full(accept)) if this.useXhtmlMimeType && accept.toLowerCase.contains("application/xhtml+xml") =>
        "application/xhtml+xml"
 
@@ -161,7 +161,7 @@ object LiftRules {
    */
   var siteMapFailRedirectLocation: List[String] = List()
 
-  private[http] def notFoundOrIgnore(requestState: RequestState, session: Can[LiftSession]): Can[LiftResponse] = {
+  private[http] def notFoundOrIgnore(requestState: Req, session: Can[LiftSession]): Can[LiftResponse] = {
     if (passNotFoundToChain) Empty
     else session match {
       case Full(session) => Full(session.checkRedirect(requestState.createNotFound))
@@ -207,7 +207,7 @@ object LiftRules {
    * Put a function that will calculate the request timeout based on the
    * incoming request.
    */
-  var calcRequestTimeout: Can[RequestState => Int] = Empty
+  var calcRequestTimeout: Can[Req => Int] = Empty
 
   /**
    * If you want the standard (non-AJAX) request timeout to be something other than
@@ -254,7 +254,7 @@ object LiftRules {
    * If the request times out (or returns a non-Response) you can
    * intercept the response here and create your own response
    */
-  var requestTimedOut: Can[(RequestState, Any) => Can[LiftResponse]] = Empty
+  var requestTimedOut: Can[(Req, Any) => Can[LiftResponse]] = Empty
 
   def early = {
     // test_boot
@@ -561,12 +561,12 @@ object LiftRules {
   /**
    * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
    */
-  private def cvt(ns: Node, headers: List[(String, String)], cookies: List[Cookie], session: RequestState) =
+  private def cvt(ns: Node, headers: List[(String, String)], cookies: List[Cookie], session: Req) =
   convertResponse((XhtmlResponse(Group(session.fixHtml(ns)),
                                  ResponseInfo.docType(session),
                                  headers, cookies, 200), headers, cookies, session))
 
-  var defaultHeaders: PartialFunction[(NodeSeq, RequestState), List[(String, String)]] = {
+  var defaultHeaders: PartialFunction[(NodeSeq, Req), List[(String, String)]] = {
     case _ => List(("Expires", "0"))
   }
 
@@ -584,7 +584,7 @@ object LiftRules {
    * convertResponse is a PartialFunction that reduces a given Tuple4 into a
    * LiftResponse that can then be sent to the browser.
    */
-  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], RequestState), LiftResponse] = {
+  var convertResponse: PartialFunction[(Any, List[(String, String)], List[Cookie], Req), LiftResponse] = {
     case (r: LiftResponse, _, _, _) => r
     case (ns: Group, headers, cookies, session) => cvt(ns, headers, cookies, session)
     case (ns: Node, headers, cookies, session) => cvt(ns, headers, cookies, session)
@@ -618,10 +618,10 @@ object LiftRules {
    * The function that deals with how exceptions are presented to the user during processing
    * of an HTTP request.  Put a new function here to change the behavior.
    *
-   * The function takes the RequestState and the Exception and returns a LiftResponse that's
+   * The function takes the Req and the Exception and returns a LiftResponse that's
    * sent to the browser.
    */
-  var logAndReturnExceptionToBrowser: (RequestState, Throwable) => LiftResponse = showException
+  var logAndReturnExceptionToBrowser: (Req, Throwable) => LiftResponse = showException
 
   /**
    * The partial function (pattern matching) for handling converting an exception to something to
@@ -630,7 +630,7 @@ object LiftRules {
    * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
    * so that your response over-rides the default, but the processing falls through to the default.
    */
-  var browserResponseToException: PartialFunction[(Props.RunModes.Value, RequestState, Throwable), LiftResponse] = {
+  var browserResponseToException: PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse] = {
     case (Props.RunModes.Development, r, e) =>
       XhtmlResponse((<html><body>Exception occured while processing {r.uri}
               <pre>{
@@ -650,7 +650,7 @@ object LiftRules {
    * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
    */
   var uriNotFound: URINotFoundPF = {
-    case (r, _) => RequestState.defaultCreateNotFound(r)
+    case (r, _) => Req.defaultCreateNotFound(r)
   }
 
 
@@ -672,7 +672,7 @@ object LiftRules {
     ret + also
   }
 
-  private def showException(r: RequestState, e: Throwable): LiftResponse = {
+  private def showException(r: Req, e: Throwable): LiftResponse = {
     Log.error("Exception being returned to browser when processing "+r, e)
     browserResponseToException(Props.mode, r, e)
   }
@@ -687,19 +687,19 @@ object LiftRules {
   def fixCSS(path: List[String], prefix: Can[String]) {
 
     val liftReq: LiftRules.LiftRequestPf = new LiftRules.LiftRequestPf {
-      def isDefinedAt(r: RequestState): Boolean = {
+      def isDefinedAt(r: Req): Boolean = {
         r.path.partPath == path
       }
-      def apply(r: RequestState): Boolean = {
+      def apply(r: Req): Boolean = {
         r.path.partPath == path
       }
     }
 
     val cssFixer: LiftRules.DispatchPf = new LiftRules.DispatchPf {
-      def isDefinedAt(r: RequestState): Boolean = {
+      def isDefinedAt(r: Req): Boolean = {
         r.path.partPath == path
       }
-      def apply(r: RequestState): () => Can[LiftResponse] = {
+      def apply(r: Req): () => Can[LiftResponse] = {
         val cssPath = path.mkString("/", "/", ".css")
         val css = LiftRules.loadResourceAsString(cssPath);
 
@@ -719,8 +719,8 @@ object LiftRules {
     LiftRules.addLiftRequest(liftReq);
   }
 
-  var onBeginServicing: List[RequestState => Unit] = Nil
-  var onEndServicing: List[(RequestState, Can[LiftResponse]) => Unit] = Nil
+  var onBeginServicing: List[Req => Unit] = Nil
+  var onEndServicing: List[(Req, Can[LiftResponse]) => Unit] = Nil
 
   var autoIncludeComet: LiftSession => Boolean =
   session => true
@@ -877,7 +877,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
 
   var cometScriptName: () => String = () => "cometAjax.js"
 
-  var serveCometScript: (LiftSession, RequestState) => Can[LiftResponse] =
+  var serveCometScript: (LiftSession, Req) => Can[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = cometScriptUpdateTime(liftSession)
 
@@ -887,7 +887,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
                             Nil, 200))
   }
 
-  var serveAjaxScript: (LiftSession, RequestState) => Can[LiftResponse] =
+  var serveAjaxScript: (LiftSession, Req) => Can[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = ajaxScriptUpdateTime(liftSession)
 
@@ -897,7 +897,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
                             Nil, 200))
   }
 
-  def testFor304(req: RequestState, lastModified: Long): Can[LiftResponse] = {
+  def testFor304(req: Req, lastModified: Long): Can[LiftResponse] = {
     val mod = req.request.getHeader("if-modified-since")
     if (mod != null && ((lastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime)
     Full(InMemoryResponse(new Array[Byte](0), Nil, Nil, 304))

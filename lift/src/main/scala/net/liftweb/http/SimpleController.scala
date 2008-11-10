@@ -25,7 +25,7 @@ import _root_.net.liftweb.util._
  */
 trait SimpleController
 {
-  def request: RequestState
+  def request: Req
   def httpRequest: HttpServletRequest
 
   def param(name: String): Can[String] = {

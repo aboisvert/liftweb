@@ -116,13 +116,13 @@ def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[Verificat
 }
 
   def dispatchPf: LiftRules.DispatchPf = {
-    case RequestState(PathRoot :: LogOutPath :: Nil, "", _) =>
+    case Req(PathRoot :: LogOutPath :: Nil, "", _) =>
     () => {
       logUserOut()
       Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
     }
 
-    case r @ RequestState(PathRoot :: LoginPath :: Nil, "", PostRequest)
+    case r @ Req(PathRoot :: LoginPath :: Nil, "", PostRequest)
     if r.param(PostParamName).isDefined =>
       () => {
       try {
@@ -135,7 +135,7 @@ def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[Verificat
       }
     }
 
-    case r @ RequestState(PathRoot :: ResponsePath :: Nil, "", _) =>
+    case r @ Req(PathRoot :: ResponsePath :: Nil, "", _) =>
       () => {
 	for (req <- S.request;
 	     ret <- {

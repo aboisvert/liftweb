@@ -48,18 +48,18 @@ class Boot {
 
     LiftRules.addDispatchBefore {
       // if the url is "showcities" then return the showCities function
-      case RequestState("showcities":: _, "", _) => XmlServer.showCities
+      case Req("showcities":: _, "", _) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestState("showstates":: xs, "", _) =>
+      case Req("showstates":: xs, "", _) =>
 	XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
       // if it's a web service, pass it to the web services invoker
-      case RequestState("webservices" :: c :: _, "", _) => invokeWebService(c)
+      case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
     }
 
     LiftRules.addDispatchBefore {
-         case RequestState("login" :: page , "", _)
+         case Req("login" :: page , "", _)
       if !LoginStuff.is && page.head != "validate" =>
         () => Full(RedirectResponse("/login/validate"))
     }
@@ -132,11 +132,11 @@ class Boot {
 object RequestLogger {
   object startTime extends RequestVar(0L)
 
-  def beginServicing(session: LiftSession, req: RequestState) {
+  def beginServicing(session: LiftSession, req: Req) {
     startTime(millis)
   }
 
-  def endServicing(session: LiftSession, req: RequestState,
+  def endServicing(session: LiftSession, req: Req,
                    response: Can[LiftResponse]) {
     val delta = millis - startTime.is
     Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(

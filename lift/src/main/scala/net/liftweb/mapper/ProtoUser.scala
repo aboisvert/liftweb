@@ -235,33 +235,33 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   MenuItem("", validateUserPath, false) :: Nil
 
   def templates: LiftRules.TemplatePf = {
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(loginPath) && testLoggedIn(loginSuffix) => () => login
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(lostPasswordPath) &&
       testLoggedIn(lostPasswordSuffix) => () => lostPassword
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(passwordResetPath) &&
       testLoggedIn(passwordResetSuffix) =>
       () => passwordReset(path.drop(passwordResetPath.length).head)
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(changePasswordPath) &&
       testLoggedIn(changePasswordSuffix) => () => changePassword
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(logoutPath) &&
       testLoggedIn(logoutSuffix) => () => logout
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(editPath) && testLoggedIn(editSuffix) => () => edit
 
-    case RequestState(path, "", _)
+    case Req(path, "", _)
       if path.startsWith(validateUserPath) &&
       testLoggedIn(validateUserSuffix) =>
       () => validateUser(path.drop(validateUserPath.length).head)
@@ -374,7 +374,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                            "submit" -> SHtml.submit(S.??("sign.up"), testSignup _))
 
     S.addSessionTemplater(theName, {
-        case RequestState(path, "", _)
+        case Req(path, "", _)
           if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) =>  () => innerSignup
       })
     innerSignup
@@ -587,7 +587,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                          "submit" -> SHtml.submit(S.??("edit"), testEdit _))
 
     S.addSessionTemplater(theName, {
-        case RequestState(path, "", _)
+        case Req(path, "", _)
           if path.startsWith(editPath) && testLoggedIn(editSuffix) =>
           () => innerEdit})
     innerEdit

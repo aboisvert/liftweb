@@ -3,7 +3,7 @@ import _root_.org.specs._
 import _root_.org.specs.Sugar._
 import _root_.org.specs.runner._
 import _root_.net.liftweb.example.model._
-import _root_.net.liftweb.http.{S, RequestState, LiftSession}
+import _root_.net.liftweb.http.{S, Req, LiftSession}
 import _root_.net.liftweb.util.{Full, Empty}
 
 class WikiTest extends JUnit4(WikiSpec)
@@ -101,11 +101,11 @@ trait MockEntries extends MockRequest {
 import _root_.org.specs.mock._
 import _root_.javax.servlet.http._
 trait MockRequest extends JMocker with ClassMocker {
-  var request = mock(classOf[RequestState])
+  var request = mock(classOf[Req])
   var httpRequest = mock(classOf[HttpServletRequest])
   var session = mock(classOf[LiftSession])
   def createMocks = {
-    request = mock(classOf[RequestState])
+    request = mock(classOf[Req])
     httpRequest = mock(classOf[HttpServletRequest])
     session = mock(classOf[LiftSession])
     expect {

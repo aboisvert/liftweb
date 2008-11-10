@@ -124,7 +124,7 @@ trait Loc[ParamType] {
   private var _menu: Menu = _
   def menu = _menu
 
-  private def testAllStuff(what: List[Loc.LocStuff], req: RequestState): Boolean = {
+  private def testAllStuff(what: List[Loc.LocStuff], req: Req): Boolean = {
     what match {
       case Nil => true
       case (x: Loc.Test) :: xs =>
@@ -135,7 +135,7 @@ trait Loc[ParamType] {
     }
   }
 
-  def doesMatch_?(req: RequestState): Boolean =
+  def doesMatch_?(req: Req): Boolean =
   if (link.isDefinedAt( req ) ) {
     link(req) match {
       case Full(x) if testAllStuff(stuff, req) => x
@@ -271,7 +271,7 @@ object Loc {
    * the page.  For example, if a parameter is missing from the request, this
    * is a good way to restrict access to the page.
    */
-  case class Test(test: RequestState => Boolean) extends LocStuff
+  case class Test(test: Req => Boolean) extends LocStuff
 
   /**
    * What's the link text.
@@ -290,14 +290,14 @@ object Loc {
    * (for example, help pages)
    * @param create -- create a URL based on incoming parameters (NO IMPLEMENTED **TODO**)
    */
-  class Link[T](uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[RequestState, Can[Boolean]] {
+  class Link[T](uriList: List[String], val matchHead_? : Boolean) extends PartialFunction[Req, Can[Boolean]] {
     def this(b: List[String]) = this(b, false)
 
-    def isDefinedAt(req: RequestState): Boolean =
+    def isDefinedAt(req: Req): Boolean =
     if (matchHead_?) req.path.partPath.take(uriList.length) == uriList
     else uriList == req.path.partPath
 
-    def apply(in: RequestState): Can[Boolean] = if (isDefinedAt(in)) Full(true)
+    def apply(in: Req): Can[Boolean] = if (isDefinedAt(in)) Full(true)
     else throw new MatchError("Failed for Link "+uriList)
 
 
@@ -333,7 +333,7 @@ object Loc {
     def apply(): Can[LocInfoVal[T]]
   }
 
-  def alwaysTrue(a: RequestState) = true
+  def alwaysTrue(a: Req) = true
   def retString(toRet: String)(other: Seq[(String, String)]) = Full(toRet)
 
   implicit def nodeSeqToLinkText[T](in: => NodeSeq): LinkText[T] = LinkText[T](T => in)

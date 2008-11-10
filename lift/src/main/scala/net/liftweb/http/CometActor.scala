@@ -423,10 +423,10 @@ case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displayAll: Boolean) extends CometMessage
 case object PerformSetupComet extends CometMessage
 case class AskQuestion(what: Any, who: CometActor) extends CometMessage
-case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
+case class AnswerQuestion(what: Any, request: Req) extends CometMessage
 case class Listen(when: Long, uniqueId: ListenerId, action: AnswerRender => Unit) extends CometMessage
 case class Unlisten(uniqueId: ListenerId) extends CometMessage
-case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
+case class ActionMessageSet(msg: List[() => Any], request: Req) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
 case class ListenerId(id: Long)
 case class Error(id: Can[String], msg: NodeSeq) extends CometMessage

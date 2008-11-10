@@ -43,7 +43,7 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
 
   override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess
 
-  def findLoc(req: RequestState): Can[Loc[_]] =
+  def findLoc(req: Req): Can[Loc[_]] =
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
 
