@@ -1,7 +1,8 @@
 package net.liftweb.util
 import _root_.scala.xml._
+
 /*
- * Copyright 2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,6 +13,7 @@ import _root_.scala.xml._
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 /**
  * The Helpers object provides a lot of utility functions:<ul>
  * <li>Time and date
@@ -23,6 +25,7 @@ import _root_.scala.xml._
  * <li>XML bindings
  * </ul>
  */
+
 object Helpers extends TimeHelpers with StringHelpers with ListHelpers
                                    with SecurityHelpers with BindHelpers with HttpHelpers
                                    with IoHelpers with BasicTypesHelpers
