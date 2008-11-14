@@ -268,9 +268,11 @@ abstract class CometActor extends Actor with BindHelpers {
       localShutdown()
       self.exit("Politely Asked to Exit")
 
-    case PartialUpdateMsg(cmd) =>
+    case PartialUpdateMsg(cmdF) =>
+      val cmd: JsCmd = cmdF.apply
       val time = CometActor.next
       val delta = JsDelta(time, cmd)
+       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
       //deltas = delta :: deltas.filter(_.when < garbageTime)
       deltas = delta :: deltas
@@ -313,8 +315,8 @@ abstract class CometActor extends Actor with BindHelpers {
     listeners = Nil
   }
 
-  protected def partialUpdate(cmd: JsCmd) {
-    this ! PartialUpdateMsg(cmd)
+  protected def partialUpdate(cmd: => JsCmd) {
+    this ! PartialUpdateMsg(() => cmd)
   }
 
   protected def startQuestion(what: Any) {}
@@ -418,7 +420,7 @@ class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSe
   fixedXhtml.openOr(Text(""))
 }
 
-case class PartialUpdateMsg(cmd: JsCmd) extends CometMessage
+case class PartialUpdateMsg(cmd: () => JsCmd) extends CometMessage
 case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displayAll: Boolean) extends CometMessage
 case object PerformSetupComet extends CometMessage
