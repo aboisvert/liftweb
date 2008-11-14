@@ -19,14 +19,14 @@ import _root_.org.specs._
 import _root_.net.liftweb.util.Can._
 import _root_.org.specs.runner._
 import _root_.org.specs.Sugar._
-import _root_.org.specs.Scalacheck
+import _root_.org.specs.ScalaCheck
 import _root_.org.scalacheck.Gen._
 import _root_.org.scalacheck._
 import _root_.org.scalacheck.Arbitrary._
 import _root_.org.scalacheck.Prop.property
 
 class CanUnitTest extends Runner(CanUnit) with JUnit
-object CanUnit extends Specification with CanGen with Scalacheck {
+object CanUnit extends Specification with CanGen with ScalaCheck {
   "A Can equals method" should {
     "return true with comparing two identical Can messages" in {
       val equality = (c1: Can[Int], c2: Can[Int]) => (c1, c2) match {

@@ -8,7 +8,7 @@ import _root_.org.scalacheck.Prop._
 import _root_.org.scalacheck.Arbitrary
 import _root_.org.specs.Products._
 import _root_.org.specs.mock.Mocker
-import _root_.org.specs.Scalacheck
+import _root_.org.specs.ScalaCheck
 
 class TimeHelpersTest extends Runner(TimeHelpersSpec) with JUnit with Console with ScalaTest
 object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGen with Mocker with LoggerDelegation with ControlHelpers with ClassHelpers {
@@ -189,7 +189,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     }
   }
 }
-trait TimeAmountsGen extends Scalacheck { self: TimeHelpers =>
+trait TimeAmountsGen extends ScalaCheck { self: TimeHelpers with Specification =>
   type TimeAmounts = Tuple2[String, Tuple6[(Int, String), (Int, String), (Int, String), (Int, String), (Int, String), (Int, String)]]
   val timeAmounts = for {
       w <- choose(0, 2)

@@ -71,7 +71,7 @@ trait MockEntries extends MockRequest {
   }
   override def createMocks = {
     super.createMocks
-    wikiEntries = mock[MetaWikiEntry]
+    wikiEntries = throw new Exception
   }
   def userRequests(page: String) {
     if (page == "nothing")
@@ -81,52 +81,29 @@ trait MockEntries extends MockRequest {
     requested = page
   }
   def withNoEntries = {
-    expect {
-      0.atLeastOf(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Empty)
-      0.atLeastOf(wikiEntries).create.willReturn(new WikiEntry)
-    }
+    throw new Exception
   }
   def withEntries(entries: WikiEntry*) = {
-    expect {
-      if (entries.isEmpty)
-        one(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Empty)
-      else if (requested == "all")
-        0.atLeastOf(wikiEntries).findAll willReturn entries.toList
-      else
-        one(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Full(entries(0)))
-      0.atLeastOf(wikiEntries).findAll(any(classOf[QueryParam[WikiEntry]])).willReturn(entries.toList)
-    }
+    throw new Exception
   }
 }
 import _root_.org.specs.mock._
 import _root_.javax.servlet.http._
 trait MockRequest extends JMocker with ClassMocker {
-  var request = mock[RequestState]
-  var httpRequest = mock[HttpServletRequest]
-  var session = mock[LiftSession]
+  var request: RequestState = throw new Exception
+  var httpRequest: HttpServletRequest = throw new Exception
+  var session: LiftSession = throw new Exception
   def createMocks = {
-    request = mock[RequestState]
-    httpRequest = mock[HttpServletRequest]
-    session = mock[LiftSession]
-    expect {
-      0.atLeastOf(request).request.willReturn(httpRequest)
-      0.atLeastOf(httpRequest).getCookies
-    }
+    throw new Exception
   }
   def inSession(f: => Any) {
-    S.init(request, session) {
-      f
-    }
+    throw new Exception
   }
   def unsetParameter(name: String) {
-    expect {
-      0.atLeastOf(request).param(equal(name)).willReturn(None)
-    }
+    throw new Exception
   }
   def setParameter(name: String, value: String) {
-    expect {
-      0.atLeastOf(request).param(equal(name)).willReturn(Some(value))
-    }
+    throw new Exception
   }
 }
 

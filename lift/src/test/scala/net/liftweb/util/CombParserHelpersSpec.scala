@@ -23,11 +23,11 @@ import _root_.org.scalacheck._
 import _root_.org.scalacheck.Gen._
 import _root_.org.scalacheck.Prop._
 import _root_.org.scalacheck.Shrink._
-import _root_.org.specs.Scalacheck
+import _root_.org.specs.ScalaCheck
 object ParserHelpers extends net.liftweb.util.CombParserHelpers with Parsers
 
 class CombParserHelpersSpecTest extends Runner(CombParserHelpersSpec) with JUnit with Console
-object CombParserHelpersSpec extends Specification with Scalacheck {
+object CombParserHelpersSpec extends Specification with ScalaCheck {
   import ParserHelpers._
   "The parser helpers" should {
     "provide an isEof function returning true iff a char is end of file" in {
