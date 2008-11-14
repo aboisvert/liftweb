@@ -73,7 +73,7 @@ lazy val mode = Can.legacyNullTest((System.getProperty("run.mode"))).map(_.toLow
     case Full("profile") => Profile
     case _ => Development
   }
-  
+
   lazy val modeName = mode match {
     case Test => "test."
     case Staging => "staging."

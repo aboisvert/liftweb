@@ -34,11 +34,11 @@ class SparklinesDemo {
 
   def renderOnLoad(html: NodeSeq): NodeSeq = {
     val data = JsArray(100,500,300,200,400,500,400,400,100,200, 345, 412, 111, 234, 490);
-    
+
     val opts = JsObj(("percentage_lines" -> JsArray(0.5, 0.75)),
                      ("fill_between_percentage_lines" -> true),
                      ("extend_markings" -> false));
-    
+
     Sparklines.onLoad("bar", SparklineStyle.BAR, data, opts);
   }
 }

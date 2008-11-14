@@ -2,6 +2,21 @@ package net.liftweb.util
 import _root_.java.text.SimpleDateFormat
 import _root_.java.util.{TimeZone, Calendar, Date, Locale}
 
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+
+
 /**
  * The TimeHelpers object extends the TimeHelpers. It can be imported to access all of the trait functions.
  */

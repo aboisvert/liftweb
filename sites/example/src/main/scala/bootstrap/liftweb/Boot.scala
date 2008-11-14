@@ -48,18 +48,18 @@ class Boot {
 
     LiftRules.addDispatchBefore {
       // if the url is "showcities" then return the showCities function
-      case RequestState("showcities":: _, "", _) => XmlServer.showCities
+      case Req("showcities":: _, "", _) => XmlServer.showCities
 
       // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case RequestState("showstates":: xs, "", _) => 
+      case Req("showstates":: xs, "", _) =>
 	XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
       // if it's a web service, pass it to the web services invoker
-      case RequestState("webservices" :: c :: _, "", _) => invokeWebService(c)
+      case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
     }
 
     LiftRules.addDispatchBefore {
-         case RequestState("login" :: page , "", _) 
+         case Req("login" :: page , "", _)
       if !LoginStuff.is && page.head != "validate" =>
         () => Full(RedirectResponse("/login/validate"))
     }
@@ -71,13 +71,13 @@ class Boot {
     /*
      * Show the spinny image when an Ajax call starts
      */
-    LiftRules.ajaxStart = 
+    LiftRules.ajaxStart =
       Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
 
     /*
      * Make the spinny image go away when it ends
      */
-    LiftRules.ajaxEnd = 
+    LiftRules.ajaxEnd =
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
     /*
@@ -125,18 +125,18 @@ class Boot {
 	   case Full(ret: LiftResponse) => Full(ret)
 	   case _ => Empty
 	 }) yield ret
-  
+
   private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
 }
 
 object RequestLogger {
   object startTime extends RequestVar(0L)
 
-  def beginServicing(session: LiftSession, req: RequestState) {
+  def beginServicing(session: LiftSession, req: Req) {
     startTime(millis)
   }
 
-  def endServicing(session: LiftSession, req: RequestState,
+  def endServicing(session: LiftSession, req: Req,
                    response: Can[LiftResponse]) {
     val delta = millis - startTime.is
     Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(
@@ -163,9 +163,9 @@ object MenuInfo {
   Menu(Loc("menu_top", List("menu", "index"), "Menus"),
        Menu(Loc("menu_one", List("menu", "one"), "First Submenu")),
        Menu(Loc("menu_two", List("menu", "two"), "Second Submenu (has more)"),
-	    Menu(Loc("menu_two_one", List("menu", "two_one"), 
+	    Menu(Loc("menu_two_one", List("menu", "two_one"),
 		     "First (2) Submenu")),
-	    Menu(Loc("menu_two_two", List("menu", "two_two"), 
+	    Menu(Loc("menu_two_two", List("menu", "two_two"),
 		     "Second (2) Submenu"))
 	  ),
        Menu(Loc("menu_three", List("menu", "three"), "Third Submenu")),
@@ -176,10 +176,10 @@ object MenuInfo {
   Menu(WikiStuff) ::
   Menu(Loc("guess", List("guess"), "Number Guessing")) ::
   Menu(Loc("count", List("count"), "Counting")) ::
-  Menu(Loc("login", Link(List("login"), true, "/login/index"), 
+  Menu(Loc("login", Link(List("login"), true, "/login/index"),
 	   <xml:group>Requiring Login <strike>SiteMap</strike></xml:group>)) ::
   Menu(Loc("arc", List("arc"), "Arc Challenge #1")) ::
-  Menu(Loc("lift", ExtLink("http://liftweb.net"), 
+  Menu(Loc("lift", ExtLink("http://liftweb.net"),
 	 <xml:group><i>Lift</i> project home</xml:group>)) ::
   Nil
 }
@@ -189,14 +189,14 @@ object XmlServer {
     <states renderedAt={timeNow.toString}>{
       which match {
 	case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
-	
+
 	case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
-	
+
 	case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
       } }
     </states>))
-  
-  def showCities(): Can[XmlResponse] = 
+
+  def showCities(): Can[XmlResponse] =
     Full(XmlResponse(
       <cities>
       <city name="Boston"/>
@@ -205,7 +205,7 @@ object XmlServer {
       <city name="Dallas"/>
       <city name="Chicago"/>
       </cities>))
-  
+
 }
 
 object DBVendor extends ConnectionManager {

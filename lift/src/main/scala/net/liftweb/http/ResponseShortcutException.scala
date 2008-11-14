@@ -25,7 +25,7 @@ class ResponseShortcutException(_response: => LiftResponse, val doNotices: Boole
 }
 
 object ResponseShortcutException {
-  def shortcutResponse(responseIt: => LiftResponse) = 
+  def shortcutResponse(responseIt: => LiftResponse) =
     new ResponseShortcutException(responseIt, true)
 
   def redirect(to: String): ResponseShortcutException =

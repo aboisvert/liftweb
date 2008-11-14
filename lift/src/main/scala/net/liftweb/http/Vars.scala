@@ -22,7 +22,7 @@ import _root_.scala.collection.mutable.{HashMap, ListBuffer}
 /**
  * Abstract a request or a session scoped variable.
  */
-abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) { 
+abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
   self: MyType =>
   private lazy val name = "_lift_sv_"+getClass.getName+"_"+__nameSalt
   protected def findFunc(name: String): Can[T]
@@ -75,9 +75,9 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
  * HttpSession attributes.  Put stuff in and they are available for the
  * life of the Session.
  *
- * SessionVar's can be used even from CometActor's as now S scope in a Cometctor is 
+ * SessionVar's can be used even from CometActor's as now S scope in a Cometctor is
  * provided automatically.
- * 
+ *
  * @param dflt - the default value of the session variable
  */
 abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
@@ -109,7 +109,7 @@ abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) 
   def registerCleanupFunc(in: () => Unit): Unit =
   S.addCleanupFunc(in)
   */
- 
+
   override protected def findFunc(name: String): Can[T] = RequestVarHandler.get(name)
   override protected def setFunc(name: String, value: T): Unit = RequestVarHandler.set(name, value)
   override protected def clearFunc(name: String): Unit = RequestVarHandler.clear(name)
@@ -127,19 +127,19 @@ object RequestVarHandler extends LoanWrapper {
     for (ht <- Can.legacyNullTest(vals.value);
 	 v <- ht.get(name).asInstanceOf[Option[T]]) yield v;
 
-  
+
   private[http] def set[T](name: String, value: T): Unit =
     for (ht <- Can.legacyNullTest(vals.value))
       ht(name) = value
 
-  private[http] def clear(name: String): Unit = 
-    for (ht <- Can.legacyNullTest(vals.value)) 
+  private[http] def clear(name: String): Unit =
+    for (ht <- Can.legacyNullTest(vals.value))
       ht -= name
-  
+
   private[http] def addCleanupFunc(f: () => Unit): Unit =
     for (cu <- Can.legacyNullTest(cleanup.value))
       cu += f
-  
+
   def apply[T](f: => T): T = {
     if ("in" == isIn.value)
     f

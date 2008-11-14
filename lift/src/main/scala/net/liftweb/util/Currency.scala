@@ -38,7 +38,7 @@ class Currency(val amount: Long,val symbol: String, val decimals: Int) {
   def +(other: Currency): Currency =
   if (symbol != other.symbol || decimals != other.decimals) throw new CurrencyMismatchException
   else new Currency(amount + other.amount, symbol, decimals)
-  
+
   def -(other: Currency): Currency =
   if (symbol != other.symbol || decimals != other.decimals) throw new CurrencyMismatchException
   else new Currency(amount - other.amount, symbol, decimals)

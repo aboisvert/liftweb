@@ -19,8 +19,8 @@ class HelloFormAjax {
       <br/>
       <label for="whoField">Who :</label>
       { text("world", null) % ("size" -> "10") % ("id" -> "whoField") }
-      { <button type="button">{?("Send")}</button> % 
-       ("onclick" -> 
+      { <button type="button">{?("Send")}</button> %
+       ("onclick" ->
 	ajaxCall(JE.JsRaw("$('#whoField').attr('value')"),
 		 s => updateWho(s))) }
     </xml:group>

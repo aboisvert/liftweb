@@ -47,7 +47,7 @@ object SHtml {
   def ajaxButton(text: String, func: () => JsCmd): Elem =
   ajaxButton(Text(text), func)
 //    <button onclick={makeAjaxCall(Str(mapFunc(func)+"=true"))}>{text}</button>
-  
+
   /**
    * create an anchor tag around a body which will do an AJAX call and invoke the function
    *
@@ -97,7 +97,7 @@ object SHtml {
    */
   private def ajaxCall_*(jsCalcValue: JsExp, func: AFuncHolder): JsExp =
   makeAjaxCall(JsRaw("'"+mapFunc(func)+"=' + "+jsCalcValue.toJsCmd))
-                               
+
 
   def toggleKids(head: Elem, visible: Boolean, func: () => Any, kids: Elem): NodeSeq = {
     val funcName = mapFunc(func)
@@ -133,9 +133,9 @@ object SHtml {
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
         ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
   }
-  
+
   def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
-  
+
   private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
     val funcName = mapFunc(func)
       (<input type="checkbox"/>) % checked(value) % ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
@@ -163,8 +163,8 @@ object SHtml {
     val (rs, sid) = findOrAddId(shown)
     val (rh, hid) = findOrAddId(hidden)
     val ui = LiftRules.jsArtifacts
-    (<span>{rs % ("onclick" -> (ui.hide(sid).cmd & 
-                                 ui.showAndFocus(hid).cmd & JsRaw("return false;")))} 
+    (<span>{rs % ("onclick" -> (ui.hide(sid).cmd &
+                                 ui.showAndFocus(hid).cmd & JsRaw("return false;")))}
            {dealWithBlur(rh % ("style" -> "display: none"), (ui.show(sid).cmd & ui.hide(hid).cmd))}
      </span>)
   }

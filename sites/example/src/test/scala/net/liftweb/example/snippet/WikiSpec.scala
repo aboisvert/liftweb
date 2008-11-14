@@ -3,7 +3,7 @@ import _root_.org.specs._
 import _root_.org.specs.Sugar._
 import _root_.org.specs.runner._
 import _root_.net.liftweb.example.model._
-import _root_.net.liftweb.http.{S, RequestState, LiftSession}
+import _root_.net.liftweb.http.{S, Req, LiftSession}
 import _root_.net.liftweb.util.{Full, Empty}
 
 class WikiTest extends JUnit4(WikiSpec)
@@ -71,7 +71,7 @@ trait MockEntries extends MockRequest {
   }
   override def createMocks = {
     super.createMocks
-    wikiEntries = throw new Exception
+    wikiEntries = mock[MetaWikiEntry]
   }
   def userRequests(page: String) {
     if (page == "nothing")
@@ -81,29 +81,51 @@ trait MockEntries extends MockRequest {
     requested = page
   }
   def withNoEntries = {
-    throw new Exception
+    expect {
+      0.atLeastOf(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Empty)
+      0.atLeastOf(wikiEntries).create.willReturn(new WikiEntry)
+    }
   }
   def withEntries(entries: WikiEntry*) = {
-    throw new Exception
+    expect {
+      if (entries.isEmpty)
+        one(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Empty)
+      else if (requested == "all")
+        0.atLeastOf(wikiEntries).findAll willReturn entries.toList
+      else
+        one(wikiEntries).find(any(classOf[QueryParam[WikiEntry]])).willReturn(Full(entries(0)))
+      0.atLeastOf(wikiEntries).findAll(any(classOf[QueryParam[WikiEntry]])).willReturn(entries.toList)
+    }
   }
 }
 import _root_.org.specs.mock._
 import _root_.javax.servlet.http._
 trait MockRequest extends JMocker with ClassMocker {
-  var request: RequestState = throw new Exception
-  var httpRequest: HttpServletRequest = throw new Exception
-  var session: LiftSession = throw new Exception
+  var request = mock[Req]
+  var httpRequest = mock[HttpServletRequest]
+  var session = mock[LiftSession]
   def createMocks = {
-    throw new Exception
+    request = mock[Req]
+    httpRequest = mock[HttpServletRequest]
+    session = mock[LiftSession]
+    expect {
+      0.atLeastOf(request).request.willReturn(httpRequest)
+      0.atLeastOf(httpRequest).getCookies
+    }
   }
   def inSession(f: => Any) {
-    throw new Exception
+    S.init(request, session) {
+      f
+    }
   }
   def unsetParameter(name: String) {
-    throw new Exception
+    expect {
+      0.atLeastOf(request).param(equal(name)).willReturn(None)
+    }
   }
   def setParameter(name: String, value: String) {
-    throw new Exception
+    expect {
+      0.atLeastOf(request).param(equal(name)).willReturn(Some(value))
+    }
   }
 }
-

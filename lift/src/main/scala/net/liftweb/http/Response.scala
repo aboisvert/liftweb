@@ -42,7 +42,7 @@ trait ToResponse extends LiftResponse {
     sb.append("  \n  ")
 
     val ret = sb.toString // (encoding + doc + AltXML.toXML(out, false, false))
-    
+
     InMemoryResponse(ret.getBytes("UTF-8"), headers, cookies, code)
     }
 }
@@ -75,13 +75,13 @@ sealed trait BasicResponse extends LiftResponse {
 final case class InMemoryResponse(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
   def toResponse = this
   def size = data.length
-  
+
   override def toString="InMemoryResponse("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
 }
 
 final case class StreamingResponse(data: {def read(buf: Array[Byte]): Int}, onEnd: () => Unit, size: Long, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
   def toResponse = this
-  
+
     override def toString="StreamingResponse( steaming_data , "+headers+", "+cookies+", "+code+")"
 }
 
@@ -124,7 +124,7 @@ object DocType {
 }
 
 object ResponseInfo {
-  var docType: PartialFunction[RequestState, Can[String]] = {
+  var docType: PartialFunction[Req, Can[String]] = {
     case _ if S.getDocType._1 => S.getDocType._2
     case _ => Full(DocType.xhtmlTransitional)
   }

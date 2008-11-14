@@ -8,15 +8,15 @@ object BindHelpersSpec extends Specification with BindHelpers {
     "mixin in all the attributes" in {
       mixinAttributes(<input />)(<input id="10" class="wee" />) must ==/(<input class="wee" id="10"></input>)
     }
-    
+
     "not mix in the element label" in {
       mixinAttributes(<input />)(<div id="10" class="wee" />) must ==/(<input class="wee" id="10"></input>)
     }
-    
+
     "handle the empty cases gracefully" in {
       mixinAttributes(<input />)(<div />) must ==/(<input></input>)
     }
-    
+
     "not lose existing attributes" in {
       mixinAttributes(<input id="10" />)(<div />) must ==/(<input id="10"></input>)
     }
@@ -25,7 +25,7 @@ object BindHelpersSpec extends Specification with BindHelpers {
       mixinAttributes(<input id="10" />)(<div id="12" />) must ==/(<input id="12"></input>)
     }
   }
-  
+
   "the chooseTemplate function" should {
     "select the node matching a given tag and prefix" in {
       chooseTemplate("choose", "tag", <h><choose:tag a="att1">that</choose:tag></h>) must ==/(Text("that"))

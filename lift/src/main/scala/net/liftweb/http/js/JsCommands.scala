@@ -111,7 +111,7 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
   def +(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + " + "+ right.toJsCmd
   }
-  
+
   def ===(right: JsExp): JsExp = new JsExp {
     def toJsCmd = JsExp.this.toJsCmd + " = "+ right.toJsCmd
   }
@@ -284,7 +284,7 @@ object JE {
 
   object FormToJSON {
     def apply(formId: String) =  new JsExp {
-      def toJsCmd = LiftRules.jsArtifacts.formToJSON(formId).toJsCmd; 
+      def toJsCmd = LiftRules.jsArtifacts.formToJSON(formId).toJsCmd;
     }
   }
 
@@ -420,7 +420,7 @@ object JsCmds {
 """)
     }</script>
   }
-  
+
   case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = LiftRules.jsArtifacts.setHtml(uid, content).toJsCmd
   }

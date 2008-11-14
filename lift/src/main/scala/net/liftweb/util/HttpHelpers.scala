@@ -1,4 +1,18 @@
 package net.liftweb.util
+
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 import _root_.java.net.{URLDecoder, URLEncoder}
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
@@ -124,7 +138,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   /**
    * Transform a pair (name: String, value: Any) to an unprefixed XML attribute name="value"
    */
-  
+
   implicit def pairToUnprefixed(in: (String, Any)): MetaData = {
     val value: Option[NodeSeq] = in._2 match {
       case null => None
@@ -139,10 +153,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
       case Full(n: NodeSeq) => Some(n)
       case s => Some(Text(s.toString))
     }
-    
+
     value.map(v => new UnprefixedAttribute(in._1, v, Null)) getOrElse Null
   }
-  
+
 
   /**
    * If the incoming Elem has an 'id', return it, otherwise
@@ -159,7 +173,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     }
     case x :: xs => (in, x.text)
   }
-  
+
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
   import Actor._

@@ -26,7 +26,7 @@ object ResourceServer {
     case "yui" :: _ => true
     case "liftYUI.js" :: Nil => true
     case "json2.js" :: Nil => true
-    case "json.js" :: Nil => true      
+    case "json.js" :: Nil => true
     case "jlift.js" :: Nil => true
     case bp @ ("blueprint" :: _) if bp.last.endsWith(".css") || bp.last.endsWith(".png") => true
     case "jquery-autocomplete" :: "jquery.autocomplete.js" :: Nil => true
@@ -46,7 +46,7 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: RequestState, _uri: List[String])(): Can[LiftResponse] = {
+  def findResourceInClasspath(request: Req, _uri: List[String])(): Can[LiftResponse] = {
     for (req <- S.request;
 	 r <- {
     val uri = _uri.filter(!_.startsWith("."))

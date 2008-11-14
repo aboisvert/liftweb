@@ -12,10 +12,10 @@ import _root_.com.hellolift.controller.AddEntry
 object Entry extends Entry with KeyedMetaMapper[Long, Entry] {
   override def dbTableName = "entries"
   // sitemap entry
-  val sitemap = List(Menu(Loc("CreateEntry", List("entry"), 
+  val sitemap = List(Menu(Loc("CreateEntry", List("entry"),
 			      "Create An Entry",
 			      If(User.loggedIn_? _, "Please login"))),
-		     Menu(Loc("ViewEntry", List("view"), 
+		     Menu(Loc("ViewEntry", List("view"),
 			      "View An Entry", Hidden)),
 		     Menu(Loc("ViewBlog", List("blog"), "View Blog")))
 

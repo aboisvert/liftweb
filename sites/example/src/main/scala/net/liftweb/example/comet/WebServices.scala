@@ -20,7 +20,7 @@ import S._
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
 import _root_.net.liftweb.example.model._
 
-class WebServices (val request: RequestState) {
+class WebServices (val request: Req) {
   def all_users: XmlResponse = {
     XmlResponse(<all_users>{
       User.findAll.map{u => u.toXml}

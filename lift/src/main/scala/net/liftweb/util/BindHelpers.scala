@@ -33,7 +33,7 @@ trait BindHelpers {
     val attributes = in.firstOption.map(_.attributes).getOrElse(Null)
     out % attributes
   }
-  
+
   /**
    * Choose one of many templates from the children.  Looking for the
    * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
@@ -52,7 +52,7 @@ trait BindHelpers {
   /**
    * Choose one of many templates from the children
    */
-  def template(xhtml: NodeSeq, prefix: String, tag: String): Can[NodeSeq] = 
+  def template(xhtml: NodeSeq, prefix: String, tag: String): Can[NodeSeq] =
   (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
     case Nil => Empty
     case x :: xs => Full(x.child)
@@ -141,7 +141,7 @@ trait BindHelpers {
    * Usage: <code>"David" --> "name"</code>
    *
    * @deprecated use -> instead
-   */ 
+   */
   @deprecated
   implicit def strToBPAssoc(in: String): BindParamAssoc = new BindParamAssoc(in)
 
@@ -151,10 +151,10 @@ trait BindHelpers {
    * Usage: <code>'David --> "name"</code>
    *
    * @deprecated use -> instead
-   */ 
+   */
   @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
-  
+
   /**
    * This extractor is used to determine at runtime if a Function1[_, _] is
    * actually a NodeSeq => NodeSeq. This is a hack to get around JVM type
@@ -171,7 +171,7 @@ trait BindHelpers {
       }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
     else None
   }
-  
+
   /**
    * Transforms a Tuple2[String, _] to a BindParam
    */
@@ -195,13 +195,13 @@ trait BindHelpers {
       case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
     }
   }
-  
+
   /**
    * Transforms a Tuple2[Symbol, _] to a BindParam
    */
   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
   pairToBindParam((p._1.name, p._2))
-    
+
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.

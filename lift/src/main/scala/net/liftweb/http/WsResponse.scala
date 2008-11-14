@@ -20,7 +20,7 @@ case class UnauthorizedResponse(realm: String) extends LiftResponse {
 /**
  * 301 Redirect.
  */
-case class PermRedirectResponse(uri: String, request: RequestState, cookies: Cookie*) extends LiftResponse {
+case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
 }
 

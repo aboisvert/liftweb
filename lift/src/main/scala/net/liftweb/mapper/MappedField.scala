@@ -504,7 +504,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseO
   def validate : List[FieldError] = {
     val cv = is
     validations.flatMap{
-      case pf: PartialFunction[FieldType, List[FieldError]] => 
+      case pf: PartialFunction[FieldType, List[FieldError]] =>
         if (pf.isDefinedAt(cv)) pf(cv)
         else Nil
       case f => f(cv)

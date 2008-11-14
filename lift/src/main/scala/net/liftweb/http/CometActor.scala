@@ -69,7 +69,7 @@ object ActorWatcher extends Actor {
 abstract class CometActor extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
-  
+
   private var lastRendering: RenderOut = _
   private var wasLastFullRender = false
   @transient
@@ -92,9 +92,8 @@ abstract class CometActor extends Actor with BindHelpers {
 
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
-  
-  
-  private[http] def initCometActor(theSession: LiftSession, name: Can[String], 
+
+  private[http] def initCometActor(theSession: LiftSession, name: Can[String],
                      defaultXml: NodeSeq,
                      attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
@@ -106,14 +105,6 @@ abstract class CometActor extends Actor with BindHelpers {
     this.start()
   }
 
-  // Compatibility constructors... no longer used
-  /*
-  def this(theSession: LiftSession, name: Can[String], 
-                                   defaultXml: NodeSeq, 
-                                   attributes: Map[String, String]) = this()
-  
-  def this(info: CometActorInitInfo) = this()
-  */
 
   def defaultPrefix: String
 
@@ -432,10 +423,10 @@ case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displayAll: Boolean) extends CometMessage
 case object PerformSetupComet extends CometMessage
 case class AskQuestion(what: Any, who: CometActor) extends CometMessage
-case class AnswerQuestion(what: Any, request: RequestState) extends CometMessage
+case class AnswerQuestion(what: Any, request: Req) extends CometMessage
 case class Listen(when: Long, uniqueId: ListenerId, action: AnswerRender => Unit) extends CometMessage
 case class Unlisten(uniqueId: ListenerId) extends CometMessage
-case class ActionMessageSet(msg: List[() => Any], request: RequestState) extends CometMessage
+case class ActionMessageSet(msg: List[() => Any], request: Req) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
 case class ListenerId(id: Long)
 case class Error(id: Can[String], msg: NodeSeq) extends CometMessage

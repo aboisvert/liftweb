@@ -38,7 +38,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
 
   override def jdbcFriendly(field : String) = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
-  
+
   def obj: Can[O] = synchronized {
     if (!_calcedObj) {
       _calcedObj = true
@@ -47,12 +47,12 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
     _obj
     if(defined_?) foreign.find(i_is_!) else Empty
   }
-  
+
   def primeObj(obj: Can[O]) = synchronized {
     _obj = obj
     _calcedObj = true
   }
-  
+
   private var _obj: Can[O] = Empty
   private var _calcedObj = false
 
@@ -227,7 +227,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm) 
+     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
 }
 
 

@@ -92,9 +92,9 @@ class UserMgt {
           userActor <- UserList.find(userName);
           user <- (userActor !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) ; case _ => Empty};
           messages <- (userActor !? (400L, GetMessages)) match {case Some(m : Messages) => Full(m.messages); case _ => Empty}) yield {
-      bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++ 
+      bind("sk", xhtml, "username" -> (user.name+" -> "+user.fullName), "content" -> friendList(user)) ++
         messages.flatMap{
-        msg => 
+        msg =>
         Helpers.bind("sk", xhtml, "username" -> (msg.who+" @ "+toInternetDate(msg.when)), "content" -> msg.text)
       }
     }) openOr {S.error("User "+(S.param("user") openOr "")+" not found"); S.redirectTo("/")}
@@ -108,7 +108,7 @@ class UserMgt {
     }
     </lift:comet>
     }) openOr {
-      Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>, 
+      Helpers.bind("sk", xhtml, "username" -> <a href="/new_acct">Create a New Account</a>,
           "content" -> <span>See what others are up to:<ul>{
             UserList.randomUsers(40).flatMap {
               u =>
@@ -145,7 +145,7 @@ class UserMgt {
   }
 
   def random(xhtml: Group): NodeSeq = {
-    Helpers.bind("sk", xhtml, "username" -> "A Random List of Users", 
+    Helpers.bind("sk", xhtml, "username" -> "A Random List of Users",
         "content" -> <span>See what others are up to:<ul>{
           UserList.randomUsers(40).flatMap {
             u =>
