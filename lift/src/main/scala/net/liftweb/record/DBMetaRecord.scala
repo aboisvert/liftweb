@@ -25,7 +25,14 @@ trait DBMetaRecord[BaseRecord <: DBRecord[BaseRecord]] extends MetaRecord[BaseRe
   /**
    * Save the instance in the appropriate backing store
    */
-  def save(inst: BaseRecord): Boolean = true
+  def save(inst: BaseRecord): Boolean = {
+    foreachCallback(inst, _.beforeSave)
+    try {
+      true // TODO: implement this
+    } finally {
+      foreachCallback(inst, _.afterSave)
+    }
+  }
 
   /**
    * Was this instance saved in backing store?
@@ -35,7 +42,14 @@ trait DBMetaRecord[BaseRecord <: DBRecord[BaseRecord]] extends MetaRecord[BaseRe
   /**
    * Delete the instance from backing store
    */
-  def delete_!(inst: BaseRecord): Boolean = true
+  def delete_!(inst: BaseRecord): Boolean = {
+    foreachCallback(inst, _.beforeDelete)
+    try {
+      true // TODO: implement this
+    } finally {
+      foreachCallback(inst, _.afterDelete)
+    }
+  }
 
   def dbDefaultConnectionIdentifier: ConnectionIdentifier = DefaultConnectionIdentifier
 
