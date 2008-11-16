@@ -47,7 +47,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
       wsc('a') must beFalse
     }
     "provide a whitespace parser: white. Alias: wsc" in {
-      import whiteStringGen._
+      import whiteStringGen.whiteString
       val whiteParse = (s: String) => white(s) must beLike { case Success(_, _) => true }
       property(whiteParse) must pass
     }

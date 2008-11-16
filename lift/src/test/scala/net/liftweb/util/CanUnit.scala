@@ -23,7 +23,7 @@ import _root_.org.specs.ScalaCheck
 import _root_.org.scalacheck.Gen._
 import _root_.org.scalacheck._
 import _root_.org.scalacheck.Arbitrary._
-import _root_.org.scalacheck.Prop.property
+import _root_.org.scalacheck.Prop.{property, forAll}
 
 class CanUnitTest extends Runner(CanUnit) with JUnit
 object CanUnit extends Specification with CanGen with ScalaCheck {
