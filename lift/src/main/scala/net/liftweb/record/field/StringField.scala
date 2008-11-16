@@ -50,7 +50,7 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
     }
   }
 
-  def setFromString(s: String) : Can[SMyType] = Full(set(s))
+  def setFromString(s: String) : Can[String] = Full(set(s))
 
   private def elem = <input type="text" maxlength={maxLength.toString}
       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}

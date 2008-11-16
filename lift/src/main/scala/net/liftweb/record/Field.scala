@@ -20,14 +20,21 @@ import scala.xml._
 /**
   * A simple field that can store and retreive a value of a given type
   */
-trait SimpleField extends FieldLocator with FieldIdentifier {
-  type SMyType
-  type SOwnerType <: Record[SOwnerType]
-  type ValidationFunction = SMyType => Can[Node]
+trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
-  private[record] var data: SMyType = _
+  type ValidationFunction = MyType => Can[Node]
+
+  def apply(in: MyType): OwnerType = if (owner.meta.mutable_?) {
+    this.set(in)
+    owner
+  } else {
+    owner.meta.createWithMutableField(owner, this, in)
+  }
+
+
+  private[record] var data: MyType = _
   private[record] var needsDefault = true
-  private[record] var obscured: SMyType = _
+  private[record] var obscured: MyType = _
   private[record] var fieldName: String = _
   private[record] var valueCouldNotBeSet = false
   private[record] var dirty = false
@@ -35,7 +42,7 @@ trait SimpleField extends FieldLocator with FieldIdentifier {
   /**
    * Return the owner of this field
    */
-  def owner: SOwnerType
+  def owner: OwnerType
 
   protected def dirty_?(b: Boolean) = dirty = b
 
@@ -51,7 +58,7 @@ trait SimpleField extends FieldLocator with FieldIdentifier {
   /**
    * The default value of the field
    */
-  def defaultValue: SMyType
+  def defaultValue: MyType
 
   /**
    * The text name of this field
@@ -88,9 +95,9 @@ trait SimpleField extends FieldLocator with FieldIdentifier {
 
   def checkCanWrite_? = true
 
-  def obscure(in: SMyType): SMyType = obscured
+  def obscure(in: MyType): MyType = obscured
 
-  def set(in: SMyType): SMyType = synchronized {
+  def set(in: MyType): MyType = synchronized {
     if (checkCanWrite_?) {
         data = set_!(in)
         valueCouldNotBeSet = false
@@ -102,25 +109,25 @@ trait SimpleField extends FieldLocator with FieldIdentifier {
     data
   }
 
-  protected def set_!(in: SMyType) = runFilters(in, setFilter)
+  protected def set_!(in: MyType) = runFilters(in, setFilter)
 
   /**
    * A list of functions that transform the value before it is set.  The transformations
    * are also applied before the value is used in a query.  Typical applications
    * of this are trimming and/or toLowerCase-ing strings
    */
-  protected def setFilter: List[SMyType => SMyType] = Nil
+  protected def setFilter: List[MyType => MyType] = Nil
 
-  def runFilters(in: SMyType, filter: List[SMyType => SMyType]): SMyType = filter match {
+  def runFilters(in: MyType, filter: List[MyType => MyType]): MyType = filter match {
     case Nil => in
     case x :: xs => runFilters(x(in), xs)
   }
 
-  def setFromAny(in: Any): Can[SMyType]
+  def setFromAny(in: Any): Can[MyType]
 
-  def setFromString(s: String) : Can[SMyType]
+  def setFromString(s: String) : Can[MyType]
 
-  def value: SMyType = synchronized {
+  def value: MyType = synchronized {
     if (needsDefault) {
       data = defaultValue;
       needsDefault = false
@@ -176,19 +183,6 @@ trait SimpleField extends FieldLocator with FieldIdentifier {
 
 }
 
-trait Field[MyType, OwnerType <: Record[OwnerType]] extends SimpleField  {
-  type SMyType = MyType
-  type SOwnerType = OwnerType
-
-  def apply(in: SMyType): OwnerType = if (owner.meta.mutable_?) {
-    this.set(in)
-    owner
-  } else {
-    owner.meta.createWithMutableField(owner, this, in)
-  }
-
-}
-
 import java.sql.{ResultSet, Types}
 import net.liftweb.mapper.{DriverType}
 
@@ -222,20 +216,24 @@ class XmlHandlerClass extends FieldHandler
 object JdbcRequest extends FieldHandlerRequest[JdbcFieldHandler]
 object XmlRequest extends FieldHandlerRequest[XmlHandlerClass]
 
-trait FieldLocator { self: SimpleField =>
+trait FieldLocator[MyType, OwnerType <: Record[OwnerType]] { self: Field[MyType, OwnerType] =>
   def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] = Empty
 }
 
-trait JdbcLocator extends FieldLocator { self: SimpleField =>
-override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
+trait JdbcLocator[MyType, OwnerType <: Record[OwnerType]] extends FieldLocator[MyType, OwnerType] {
+  self: Field[MyType, OwnerType] =>
+
+  override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
   request match {
     case JdbcRequest => Full(JdbcHandler)
     case _ => super.locateFieldHandler(request)
   }
 }
 
-trait XmlLocator extends FieldLocator { self: SimpleField =>
-override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
+trait XmlLocator[MyType, OwnerType <: Record[OwnerType]] extends FieldLocator[MyType, OwnerType] {
+  self: Field[MyType, OwnerType] =>
+
+  override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
   request match {
     case XmlRequest => Full(XmlHandler)
     case _ => super.locateFieldHandler(request)

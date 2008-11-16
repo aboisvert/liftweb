@@ -46,7 +46,7 @@ class PasswordField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
     }
   }
 
-  def setFromString(s: String) : Can[SMyType] = Full(set(s))
+  def setFromString(s: String) : Can[String] = Full(set(s))
 
   private def elem = <input type="pasword"
       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
