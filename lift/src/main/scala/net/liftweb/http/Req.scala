@@ -127,7 +127,7 @@ object Req {
     }
 
     new Req(rewritten.path, contextPath, reqType,
-            request.getContentType, request, nanoStart, 
+            request.getContentType, request, nanoStart,
 	    System.nanoTime, paramCalculator)
   }
 
@@ -136,7 +136,7 @@ object Req {
     case x @ _ => uri substring(0, x)
   }
 
-  def nil = new Req(NilPath, "", GetRequest, "", null, 
+  def nil = new Req(NilPath, "", GetRequest, "", null,
 		    System.nanoTime, System.nanoTime,
                     () => (Nil, Map.empty, Nil, Empty))
 

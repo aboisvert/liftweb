@@ -20,7 +20,7 @@ import scala.xml._
 /**
   * A simple field that can store and retreive a value of a given type
   */
-trait SimpleField extends FieldLocator {
+trait SimpleField extends FieldLocator with FieldIdentifier {
   type SMyType
   type SOwnerType <: Record[SOwnerType]
   type ValidationFunction = SMyType => Can[Node]
@@ -166,9 +166,17 @@ trait SimpleField extends FieldLocator {
   def validators : List[ValidationFunction] = Nil
 
   def tabIndex: Int = 1
+
+  override def uniqueFieldId: Can[String] = Full(name+"_id")
+
+  def label: NodeSeq = uniqueFieldId match {
+    case Full(id) =>  <label for={id+"_field"}>{displayName}</label>
+    case _ => NodeSeq.Empty
+  }
+
 }
 
-trait Field[MyType, OwnerType <: Record[OwnerType]] extends SimpleField with FieldIdentifier {
+trait Field[MyType, OwnerType <: Record[OwnerType]] extends SimpleField  {
   type SMyType = MyType
   type SOwnerType = OwnerType
 
@@ -177,13 +185,6 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends SimpleField with Fie
     owner
   } else {
     owner.meta.createWithMutableField(owner, this, in)
-  }
-
-  override def uniqueFieldId: Can[String] = Full(name+"_id")
-
-  def label: NodeSeq = uniqueFieldId match {
-    case Full(id) =>  <label for={id+"_field"}>{displayName}</label>
-    case _ => NodeSeq.Empty
   }
 
 }
