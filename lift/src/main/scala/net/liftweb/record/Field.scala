@@ -24,20 +24,19 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
   type ValidationFunction = MyType => Can[Node]
 
-  def apply(in: MyType): OwnerType = if (owner.meta.mutable_?) {
-    this.set(in)
-    owner
-  } else {
-    owner.meta.createWithMutableField(owner, this, in)
-  }
-
-
   private[record] var data: MyType = _
   private[record] var needsDefault = true
   private[record] var obscured: MyType = _
   private[record] var fieldName: String = _
   private[record] var valueCouldNotBeSet = false
   private[record] var dirty = false
+
+  def apply(in: MyType): OwnerType = if (owner.meta.mutable_?) {
+    this.set(in)
+    owner
+  } else {
+    owner.meta.createWithMutableField(owner, this, in)
+  }
 
   /**
    * Return the owner of this field
