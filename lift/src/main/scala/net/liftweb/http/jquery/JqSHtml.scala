@@ -63,7 +63,7 @@ object JqSHtml {
     <head>
       <link rel="stylesheet" href="/classpath/jquery-autocomplete/jquery.autocomplete.css" type="text/css" />
       <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
-      <script>{Unparsed(onLoad.toJsCmd)}</script>
+      <script type="text/javascript">{Unparsed(onLoad.toJsCmd)}</script>
     </head>
     <input type="text" id={id} value={default.openOr("")} />
     <input type="hidden" name={hidden} id={hidden} value={defaultNonce.openOr("")} />

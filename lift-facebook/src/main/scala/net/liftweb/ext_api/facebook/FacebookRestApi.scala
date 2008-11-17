@@ -47,7 +47,7 @@ object FacebookClient {
 
     SERVER_URL.openConnection match {
       case conn: HttpURLConnection => {
-        conn.setRequestMethod("POST")
+        conn.setRequestMethod("post")
         conn.setDoOutput(true)
         conn.connect
         conn.getOutputStream.write(theParams.getBytes())

@@ -1,5 +1,5 @@
 <lift:surround with="default" at="content">
-<lift:snippet type="CountGame:run" form="POST">
+<lift:snippet type="CountGame:run" form="post">
   <choose:guess>
     Guess a number between 1 and 100.<br/>
     Last guess: <count:last/><br />
@@ -39,7 +39,7 @@ The view code:
     </style>
     <pre>
 &lt;<span class="sgml-namespace">lift</span>:<span class="function-name">surround</span> <span class="variable-name">with</span>=<span class="string">"default"</span> <span class="variable-name">at</span>=<span class="string">"content"</span>&gt;
-&lt;<span class="sgml-namespace">lift</span>:<span class="function-name">snippet</span> <span class="variable-name">type</span>=<span class="string">"CountGame:run"</span> <span class="variable-name">form</span>=<span class="string">"POST"</span>&gt;
+&lt;<span class="sgml-namespace">lift</span>:<span class="function-name">snippet</span> <span class="variable-name">type</span>=<span class="string">"CountGame:run"</span> <span class="variable-name">form</span>=<span class="string">"post"</span>&gt;
   &lt;<span class="sgml-namespace">choose</span>:<span class="function-name">guess</span>&gt;
     Guess a number between 1 and 100.&lt;<span class="function-name">br</span>/&gt;
     Last guess: &lt;<span class="sgml-namespace">count</span>:<span class="function-name">last</span>/&gt;&lt;<span class="function-name">br</span> /&gt;

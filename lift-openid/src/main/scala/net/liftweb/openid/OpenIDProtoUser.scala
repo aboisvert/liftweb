@@ -76,7 +76,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
   override def validateUserMenuLoc: Can[Menu] = Empty
 
   override def loginXhtml =
-  <form method="POST" action={S.uri}>
+  <form method="post" action={S.uri}>
     <table>
       <tr>
         <td colspan="2">{S.??("log.in")}</td>

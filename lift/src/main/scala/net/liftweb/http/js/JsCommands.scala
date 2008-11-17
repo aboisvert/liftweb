@@ -412,7 +412,7 @@ object JsCmds {
   implicit def seqJsToJs(in: Seq[JsCmd]): JsCmd = in.foldLeft[JsCmd](Noop)(_ & _)
 
   object Script {
-    def apply(script: JsCmd): NodeSeq = <script>{
+    def apply(script: JsCmd): NodeSeq = <script type="text/javascript">{
       Unparsed("""
 // <![CDATA[
 """+  script.toJsCmd+ """

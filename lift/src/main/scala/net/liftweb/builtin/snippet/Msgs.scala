@@ -40,21 +40,21 @@ import _root_.net.liftweb.util.Helpers._
 class Msgs {
   def render(styles: NodeSeq): NodeSeq = {
     val f = noIdMessages _
-    val msgs = List((f(S.errors), 
-		     (styles \\ "error_msg"), S.??("msg.error"), 
-		     ((styles \\ "error_class") ++ 
+    val msgs = List((f(S.errors),
+		     (styles \\ "error_msg"), S.??("msg.error"),
+		     ((styles \\ "error_class") ++
 		      (styles \\ "error_msg" \\ "@class"))),
-		    (f(S.warnings), 
-		     (styles \\ "warning_msg"), S.??("msg.warning"), 
-		     ((styles \\ "warning_class")++ 
+		    (f(S.warnings),
+		     (styles \\ "warning_msg"), S.??("msg.warning"),
+		     ((styles \\ "warning_class")++
 		      (styles \\ "error_msg" \\ "@class"))),
-		    (f(S.notices), 
-		     (styles \\ "notice_msg"), S.??("msg.notice"), 
-		     ((styles \\ "notice_class")) ++ 
-		     (styles \\ "notice_msg" \\ "@class"))).flatMap 
+		    (f(S.notices),
+		     (styles \\ "notice_msg"), S.??("msg.notice"),
+		     ((styles \\ "notice_class")) ++
+		     (styles \\ "notice_msg" \\ "@class"))).flatMap
     {
       case (msg, titleList, defaultTitle, styleList) =>
-        val title: String = 
+        val title: String =
 	  titleList.toList.
       filter(_.prefix == "lift").
       map(_.text.trim).filter(_.length > 0) headOr defaultTitle

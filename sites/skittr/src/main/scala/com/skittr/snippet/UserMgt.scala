@@ -24,7 +24,7 @@ class UserMgt {
              S.redirectTo("/")
            }.openOr(S.error("Invalid Username/Password"))
         }
-      <form method="POST" action={S.uri}>
+      <form method="post" action={S.uri}>
       <table>
       <tr><td>name:</td><td>{text("", username=_)}</td></tr>
       <tr><td>pwd:</td><td>{password("", pwd=_)}</td></tr>
@@ -60,7 +60,7 @@ class UserMgt {
           // whoops... we have issues, display them to the user and continue loading this page
           error(issues)
         }
-        <form method="POST" action={S.uri}>
+        <form method="post" action={S.uri}>
         <table>{
           theUser.toForm(Empty, saveMe _)
         }
