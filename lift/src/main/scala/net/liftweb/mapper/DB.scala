@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-(c) 2006-2008 WorldWide Conferencing, LLC
-Distributed under an Apache License
-http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ (c) 2006-2008 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
 
 import _root_.java.sql.{Connection, ResultSet, Statement, PreparedStatement, Types, ResultSetMetaData}
 import _root_.javax.sql.{ DataSource}
@@ -28,8 +28,8 @@ object DB {
   }
 
   /**
-  * can we get a JDBC connection from JNDI?
-  */
+   * can we get a JDBC connection from JNDI?
+   */
   def jndiJdbcConnAvailable_? : Boolean = {
     val touchedEnv = envContext.calculated_?
 
@@ -55,9 +55,9 @@ object DB {
   private def info : HashMap[ConnectionIdentifier, ConnectionHolder] = {
     threadStore.get match {
       case null =>
-      val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder]
-      threadStore.set(tinfo)
-      tinfo
+        val tinfo = new HashMap[ConnectionIdentifier, ConnectionHolder]
+        threadStore.set(tinfo)
+        tinfo
 
       case v => v
     }
@@ -72,13 +72,33 @@ object DB {
         val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
         new SuperConnection(conn, () => conn.close)
       } openOr {throw new NullPointerException("Looking for Connection Identifier "+name+" but failed to find either a JNDI data source "+
-      "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
+                                               "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
     }
     ret.setAutoCommit(false)
     ret
   }
 
+  /**
+   * Build a LoanWrapper to pass into S.addAround() to make requests for
+   * the DefaultConnectionIdentifier transactional for the complete HTTP request
+   */
+  def buildLoanWrapper(): LoanWrapper =
+  buildLoanWrapper(List(DefaultConnectionIdentifier))
 
+  /**
+   * Build a LoanWrapper to pass into S.addAround() to make requests for
+   * the List of ConnectionIdentifiers transactional for the complete HTTP request
+   */
+  def buildLoanWrapper(in: List[ConnectionIdentifier]): LoanWrapper =
+  new LoanWrapper {
+    private def doWith[T](in: List[ConnectionIdentifier], f: => T): T =
+    in match {
+      case Nil => f
+      case x :: xs => use(x)(ignore => doWith(xs, f))
+    }
+
+    def apply[T](f: => T): T = doWith(in, f)
+  }
 
   private def releaseConnection(conn : SuperConnection) : Unit = conn.close
 
@@ -100,8 +120,8 @@ object DB {
   }
 
   /**
-  *  Append a function to be invoked after the commit has taken place for the given connection identifier
-  */
+   *  Append a function to be invoked after the commit has taken place for the given connection identifier
+   */
   def appendPostFunc(name: ConnectionIdentifier, func: () => Unit) {
     info.get(name) match {
       case Some(ConnectionHolder(c, n, post)) => info(name) = ConnectionHolder(c, n, func :: post)
@@ -127,20 +147,20 @@ object DB {
 
   def exec[T](db : SuperConnection, query : String)(f : (ResultSet) => T) : T = {
     Helpers.calcTime(
-    statement(db) {st =>
-      f(st.executeQuery(query))
+      statement(db) {st =>
+        f(st.executeQuery(query))
       }) match {case (time, res) => runLogger(query, time); res}
   }
 
 
 
   private def asString(pos: Int, rs: ResultSet, md: ResultSetMetaData): String = {
-     import _root_.java.sql.Types._
-     md.getColumnType(pos) match {
+    import _root_.java.sql.Types._
+    md.getColumnType(pos) match {
       case ARRAY | BINARY | BLOB | DATALINK | DISTINCT | JAVA_OBJECT | LONGVARBINARY | NULL | OTHER | REF | STRUCT | VARBINARY  => rs.getObject(pos) match {
-        case null => null
-        case s => s.toString
-      }
+          case null => null
+          case s => s.toString
+        }
       case BIGINT |  INTEGER | DECIMAL | NUMERIC | SMALLINT | TINYINT => rs.getLong(pos).toString
       case BIT | BOOLEAN => rs.getBoolean(pos).toString
 
@@ -154,37 +174,37 @@ object DB {
 
   def resultSetTo(rs: ResultSet): (List[String], List[List[String]]) = {
     val md = rs.getMetaData
-      val cnt = md.getColumnCount
-      val cntList = (1 to cnt).toList
-      val colNames = cntList.map(i => md.getColumnName(i))
+    val cnt = md.getColumnCount
+    val cntList = (1 to cnt).toList
+    val colNames = cntList.map(i => md.getColumnName(i))
 
-      val lb = new ListBuffer[List[String]]()
+    val lb = new ListBuffer[List[String]]()
 
-      while(rs.next) {
-        lb += cntList.map(i => asString(i, rs, md))
-      }
+    while(rs.next) {
+      lb += cntList.map(i => asString(i, rs, md))
+    }
 
-      (colNames, lb.toList)
+    (colNames, lb.toList)
   }
 
   def runQuery(query: String, params: List[Any]): (List[String], List[List[String]]) = {
     use(DefaultConnectionIdentifier)(conn => prepareStatement(query, conn) {
-      ps =>
-      params.zipWithIndex.foreach {
-        case (null, idx) => ps.setNull(idx + 1, Types.VARCHAR)
-        case (i: Int, idx) => ps.setInt(idx +1, i)
-        case (l: Long, idx) => ps.setLong(idx + 1, l)
-        case (d: Double, idx) => ps.setDouble(idx + 1, d)
-        case (f: Float, idx) => ps.setFloat(idx + 1, f)
-        case (d: _root_.java.util.Date, idx) => ps.setDate(idx + 1, new _root_.java.sql.Date(d.getTime))
-        case (b: Boolean, idx) => ps.setBoolean(idx + 1, b)
-        case (s: String, idx) => ps.setString(idx + 1, s)
-        case (bn: _root_.java.math.BigDecimal, idx) => ps.setBigDecimal(idx + 1, bn)
-        case (obj, idx) => ps.setObject(idx + 1, obj)
-      }
+        ps =>
+        params.zipWithIndex.foreach {
+          case (null, idx) => ps.setNull(idx + 1, Types.VARCHAR)
+          case (i: Int, idx) => ps.setInt(idx +1, i)
+          case (l: Long, idx) => ps.setLong(idx + 1, l)
+          case (d: Double, idx) => ps.setDouble(idx + 1, d)
+          case (f: Float, idx) => ps.setFloat(idx + 1, f)
+          case (d: _root_.java.util.Date, idx) => ps.setDate(idx + 1, new _root_.java.sql.Date(d.getTime))
+          case (b: Boolean, idx) => ps.setBoolean(idx + 1, b)
+          case (s: String, idx) => ps.setString(idx + 1, s)
+          case (bn: _root_.java.math.BigDecimal, idx) => ps.setBigDecimal(idx + 1, bn)
+          case (obj, idx) => ps.setObject(idx + 1, obj)
+        }
 
-      resultSetTo(ps.executeQuery)
-    })
+        resultSetTo(ps.executeQuery)
+      })
   }
 
   def runQuery(query: String): (List[String], List[List[String]]) = {
@@ -196,9 +216,9 @@ object DB {
   def rollback(name: ConnectionIdentifier) = use(name)(conn => conn.rollback)
 
   /**
-  * Executes {@code statement} and converts the {@code ResultSet} to model
-  * instance {@code T} using {@code f}
-  */
+   * Executes {@code statement} and converts the {@code ResultSet} to model
+   * instance {@code T} using {@code f}
+   */
   def exec[T](statement : PreparedStatement)(f : (ResultSet) => T) : T = {
     queryTimeout.foreach(to => statement.setQueryTimeout(to))
     Helpers.calcTime {
@@ -234,9 +254,9 @@ object DB {
   }
 
   /**
-  * Executes function {@code f} with the connection named {@code name}. Releases the connection
-  * before returning.
-  */
+   * Executes function {@code f} with the connection named {@code name}. Releases the connection
+   * before returning.
+   */
   def use[T](name : ConnectionIdentifier)(f : (SuperConnection) => T) : T = {
     val conn = getConnection(name)
     try {
@@ -247,360 +267,361 @@ object DB {
   }
 
 
-  val reservedWords = _root_.scala.collection.immutable.HashSet.empty ++ List("abort" ,
-  "accept" ,
-  "access" ,
-  "add" ,
-  "admin" ,
-  "after" ,
-  "all" ,
-  "allocate" ,
-  "alter" ,
-  "analyze" ,
-  "and" ,
-  "any" ,
-  "archive" ,
-  "archivelog" ,
-  "array" ,
-  "arraylen" ,
-  "as" ,
-  "asc" ,
-  "assert" ,
-  "assign" ,
-  "at" ,
-  "audit" ,
-  "authorization" ,
-  "avg" ,
-  "backup" ,
-  "base_table" ,
-  "become" ,
-  "before" ,
-  "begin" ,
-  "between" ,
-  "binary_integer" ,
-  "block" ,
-  "body" ,
-  "boolean" ,
-  "by" ,
-  "cache" ,
-  "cancel" ,
-  "cascade" ,
-  "case" ,
-  "change" ,
-  "char" ,
-  "character" ,
-  "char_base" ,
-  "check" ,
-  "checkpoint" ,
-  "close" ,
-  "cluster" ,
-  "clusters" ,
-  "cobol" ,
-  "colauth" ,
-  "column" ,
-  "columns" ,
-  "comment" ,
-  "commit" ,
-  "compile" ,
-  "compress" ,
-  "connect" ,
-  "constant" ,
-  "constraint" ,
-  "constraints" ,
-  "contents" ,
-  "continue" ,
-  "controlfile" ,
-  "count" ,
-  "crash" ,
-  "create" ,
-  "current" ,
-  "currval" ,
-  "cursor" ,
-  "cycle" ,
-  "database" ,
-  "data_base" ,
-  "datafile" ,
-  "date" ,
-  "dba" ,
-  "debugoff" ,
-  "debugon" ,
-  "dec" ,
-  "decimal" ,
-  "declare" ,
-  "default" ,
-  "definition" ,
-  "delay" ,
-  "delete" ,
-  "delta" ,
-  "desc" ,
-  "digits" ,
-  "disable" ,
-  "dismount" ,
-  "dispose" ,
-  "distinct" ,
-  "do" ,
-  "double" ,
-  "drop" ,
-  "dump" ,
-  "each" ,
-  "else" ,
-  "elsif" ,
-  "enable" ,
-  "end" ,
-  "entry" ,
-  "escape" ,
-  "events" ,
-  "except" ,
-  "exception" ,
-  "exception_init" ,
-  "exceptions" ,
-  "exclusive" ,
-  "exec" ,
-  "execute" ,
-  "exists" ,
-  "exit" ,
-  "explain" ,
-  "extent" ,
-  "externally" ,
-  "false" ,
-  "fetch" ,
-  "file" ,
-  "float" ,
-  "flush" ,
-  "for" ,
-  "force" ,
-  "foreign" ,
-  "form" ,
-  "fortran" ,
-  "found" ,
-  "freelist" ,
-  "freelists" ,
-  "from" ,
-  "function" ,
-  "generic" ,
-  "go" ,
-  "goto" ,
-  "grant" ,
-  "group" ,
-  "having" ,
-  "identified" ,
-  "if" ,
-  "immediate" ,
-  "in" ,
-  "including" ,
-  "increment" ,
-  "index" ,
-  "indexes" ,
-  "indicator" ,
-  "initial" ,
-  "initrans" ,
-  "insert" ,
-  "instance" ,
-  "int" ,
-  "integer" ,
-  "intersect" ,
-  "into" ,
-  "is" ,
-  "key" ,
-  "language" ,
-  "layer" ,
-  "level" ,
-  "like" ,
-  "limited" ,
-  "link" ,
-  "lists" ,
-  "lock" ,
-  "logfile" ,
-  "long" ,
-  "loop" ,
-  "manage" ,
-  "manual" ,
-  "max" ,
-  "maxdatafiles" ,
-  "maxextents" ,
-  "maxinstances" ,
-  "maxlogfiles" ,
-  "maxloghistory" ,
-  "maxlogmembers" ,
-  "maxtrans" ,
-  "maxvalue" ,
-  "min" ,
-  "minextents" ,
-  "minus" ,
-  "minvalue" ,
-  "mlslabel" ,
-  "mod" ,
-  "mode" ,
-  "modify" ,
-  "module" ,
-  "mount" ,
-  "natural" ,
-  "new" ,
-  "next" ,
-  "nextval" ,
-  "noarchivelog" ,
-  "noaudit" ,
-  "nocache" ,
-  "nocompress" ,
-  "nocycle" ,
-  "nomaxvalue" ,
-  "nominvalue" ,
-  "none" ,
-  "noorder" ,
-  "noresetlogs" ,
-  "normal" ,
-  "nosort" ,
-  "not" ,
-  "notfound" ,
-  "nowait" ,
-  "null" ,
-  "number" ,
-  "number_base" ,
-  "numeric" ,
-  "of" ,
-  "off" ,
-  "offline" ,
-  "old" ,
-  "on" ,
-  "online" ,
-  "only" ,
-  "open" ,
-  "optimal" ,
-  "option" ,
-  "or" ,
-  "order" ,
-  "others" ,
-  "out" ,
-  "own" ,
-  "package" ,
-  "parallel" ,
-  "partition" ,
-  "pctfree" ,
-  "pctincrease" ,
-  "pctused" ,
-  "plan" ,
-  "pli" ,
-  "positive" ,
-  "pragma" ,
-  "precision" ,
-  "primary" ,
-  "prior" ,
-  "private" ,
-  "privileges" ,
-  "procedure" ,
-  "profile" ,
-  "public" ,
-  "quota" ,
-  "raise" ,
-  "range" ,
-  "raw" ,
-  "read" ,
-  "real" ,
-  "record" ,
-  "recover" ,
-  "references" ,
-  "referencing" ,
-  "release" ,
-  "remr" ,
-  "rename" ,
-  "resetlogs" ,
-  "resource" ,
-  "restricted" ,
-  "return" ,
-  "reuse" ,
-  "reverse" ,
-  "revoke" ,
-  "role" ,
-  "roles" ,
-  "rollback" ,
-  "row" ,
-  "rowid" ,
-  "rowlabel" ,
-  "rownum" ,
-  "rows" ,
-  "rowtype" ,
-  "run" ,
-  "savepoint" ,
-  "schema" ,
-  "scn" ,
-  "section" ,
-  "segment" ,
-  "select" ,
-  "separate" ,
-  "sequence" ,
-  "session" ,
-  "set" ,
-  "share" ,
-  "shared" ,
-  "size" ,
-  "smallint" ,
-  "snapshot" ,
-  "some" ,
-  "sort" ,
-  "space" ,
-  "sql" ,
-  "sqlbuf" ,
-  "sqlcode" ,
-  "sqlerrm" ,
-  "sqlerror" ,
-  "sqlstate" ,
-  "start" ,
-  "statement" ,
-  "statement_id" ,
-  "statistics" ,
-  "stddev" ,
-  "stop" ,
-  "storage" ,
-  "subtype" ,
-  "successful" ,
-  "sum" ,
-  "switch" ,
-  "synonym" ,
-  "sysdate" ,
-  "system" ,
-  "tabauth" ,
-  "table" ,
-  "tables" ,
-  "tablespace" ,
-  "task" ,
-  "temporary" ,
-  "terminate" ,
-  "then" ,
-  "thread" ,
-  "time" ,
-  "to" ,
-  "tracing" ,
-  "transaction" ,
-  "trigger" ,
-  "triggers" ,
-  "true" ,
-  "truncate" ,
-  "type" ,
-  "uid" ,
-  "under" ,
-  "union" ,
-  "unique" ,
-  "unlimited" ,
-  "until" ,
-  "update" ,
-  "use" ,
-  "user" ,
-  "using" ,
-  "validate" ,
-  "values" ,
-  "varchar" ,
-  "varchar2" ,
-  "variance" ,
-  "view" ,
-  "views" ,
-  "when" ,
-  "whenever" ,
-  "where" ,
-  "while" ,
-  "with" ,
-  "work" ,
-  "write" ,
-  "xor")
+  val reservedWords = _root_.scala.collection.immutable.HashSet.empty ++
+  List("abort" ,
+       "accept" ,
+       "access" ,
+       "add" ,
+       "admin" ,
+       "after" ,
+       "all" ,
+       "allocate" ,
+       "alter" ,
+       "analyze" ,
+       "and" ,
+       "any" ,
+       "archive" ,
+       "archivelog" ,
+       "array" ,
+       "arraylen" ,
+       "as" ,
+       "asc" ,
+       "assert" ,
+       "assign" ,
+       "at" ,
+       "audit" ,
+       "authorization" ,
+       "avg" ,
+       "backup" ,
+       "base_table" ,
+       "become" ,
+       "before" ,
+       "begin" ,
+       "between" ,
+       "binary_integer" ,
+       "block" ,
+       "body" ,
+       "boolean" ,
+       "by" ,
+       "cache" ,
+       "cancel" ,
+       "cascade" ,
+       "case" ,
+       "change" ,
+       "char" ,
+       "character" ,
+       "char_base" ,
+       "check" ,
+       "checkpoint" ,
+       "close" ,
+       "cluster" ,
+       "clusters" ,
+       "cobol" ,
+       "colauth" ,
+       "column" ,
+       "columns" ,
+       "comment" ,
+       "commit" ,
+       "compile" ,
+       "compress" ,
+       "connect" ,
+       "constant" ,
+       "constraint" ,
+       "constraints" ,
+       "contents" ,
+       "continue" ,
+       "controlfile" ,
+       "count" ,
+       "crash" ,
+       "create" ,
+       "current" ,
+       "currval" ,
+       "cursor" ,
+       "cycle" ,
+       "database" ,
+       "data_base" ,
+       "datafile" ,
+       "date" ,
+       "dba" ,
+       "debugoff" ,
+       "debugon" ,
+       "dec" ,
+       "decimal" ,
+       "declare" ,
+       "default" ,
+       "definition" ,
+       "delay" ,
+       "delete" ,
+       "delta" ,
+       "desc" ,
+       "digits" ,
+       "disable" ,
+       "dismount" ,
+       "dispose" ,
+       "distinct" ,
+       "do" ,
+       "double" ,
+       "drop" ,
+       "dump" ,
+       "each" ,
+       "else" ,
+       "elsif" ,
+       "enable" ,
+       "end" ,
+       "entry" ,
+       "escape" ,
+       "events" ,
+       "except" ,
+       "exception" ,
+       "exception_init" ,
+       "exceptions" ,
+       "exclusive" ,
+       "exec" ,
+       "execute" ,
+       "exists" ,
+       "exit" ,
+       "explain" ,
+       "extent" ,
+       "externally" ,
+       "false" ,
+       "fetch" ,
+       "file" ,
+       "float" ,
+       "flush" ,
+       "for" ,
+       "force" ,
+       "foreign" ,
+       "form" ,
+       "fortran" ,
+       "found" ,
+       "freelist" ,
+       "freelists" ,
+       "from" ,
+       "function" ,
+       "generic" ,
+       "go" ,
+       "goto" ,
+       "grant" ,
+       "group" ,
+       "having" ,
+       "identified" ,
+       "if" ,
+       "immediate" ,
+       "in" ,
+       "including" ,
+       "increment" ,
+       "index" ,
+       "indexes" ,
+       "indicator" ,
+       "initial" ,
+       "initrans" ,
+       "insert" ,
+       "instance" ,
+       "int" ,
+       "integer" ,
+       "intersect" ,
+       "into" ,
+       "is" ,
+       "key" ,
+       "language" ,
+       "layer" ,
+       "level" ,
+       "like" ,
+       "limited" ,
+       "link" ,
+       "lists" ,
+       "lock" ,
+       "logfile" ,
+       "long" ,
+       "loop" ,
+       "manage" ,
+       "manual" ,
+       "max" ,
+       "maxdatafiles" ,
+       "maxextents" ,
+       "maxinstances" ,
+       "maxlogfiles" ,
+       "maxloghistory" ,
+       "maxlogmembers" ,
+       "maxtrans" ,
+       "maxvalue" ,
+       "min" ,
+       "minextents" ,
+       "minus" ,
+       "minvalue" ,
+       "mlslabel" ,
+       "mod" ,
+       "mode" ,
+       "modify" ,
+       "module" ,
+       "mount" ,
+       "natural" ,
+       "new" ,
+       "next" ,
+       "nextval" ,
+       "noarchivelog" ,
+       "noaudit" ,
+       "nocache" ,
+       "nocompress" ,
+       "nocycle" ,
+       "nomaxvalue" ,
+       "nominvalue" ,
+       "none" ,
+       "noorder" ,
+       "noresetlogs" ,
+       "normal" ,
+       "nosort" ,
+       "not" ,
+       "notfound" ,
+       "nowait" ,
+       "null" ,
+       "number" ,
+       "number_base" ,
+       "numeric" ,
+       "of" ,
+       "off" ,
+       "offline" ,
+       "old" ,
+       "on" ,
+       "online" ,
+       "only" ,
+       "open" ,
+       "optimal" ,
+       "option" ,
+       "or" ,
+       "order" ,
+       "others" ,
+       "out" ,
+       "own" ,
+       "package" ,
+       "parallel" ,
+       "partition" ,
+       "pctfree" ,
+       "pctincrease" ,
+       "pctused" ,
+       "plan" ,
+       "pli" ,
+       "positive" ,
+       "pragma" ,
+       "precision" ,
+       "primary" ,
+       "prior" ,
+       "private" ,
+       "privileges" ,
+       "procedure" ,
+       "profile" ,
+       "public" ,
+       "quota" ,
+       "raise" ,
+       "range" ,
+       "raw" ,
+       "read" ,
+       "real" ,
+       "record" ,
+       "recover" ,
+       "references" ,
+       "referencing" ,
+       "release" ,
+       "remr" ,
+       "rename" ,
+       "resetlogs" ,
+       "resource" ,
+       "restricted" ,
+       "return" ,
+       "reuse" ,
+       "reverse" ,
+       "revoke" ,
+       "role" ,
+       "roles" ,
+       "rollback" ,
+       "row" ,
+       "rowid" ,
+       "rowlabel" ,
+       "rownum" ,
+       "rows" ,
+       "rowtype" ,
+       "run" ,
+       "savepoint" ,
+       "schema" ,
+       "scn" ,
+       "section" ,
+       "segment" ,
+       "select" ,
+       "separate" ,
+       "sequence" ,
+       "session" ,
+       "set" ,
+       "share" ,
+       "shared" ,
+       "size" ,
+       "smallint" ,
+       "snapshot" ,
+       "some" ,
+       "sort" ,
+       "space" ,
+       "sql" ,
+       "sqlbuf" ,
+       "sqlcode" ,
+       "sqlerrm" ,
+       "sqlerror" ,
+       "sqlstate" ,
+       "start" ,
+       "statement" ,
+       "statement_id" ,
+       "statistics" ,
+       "stddev" ,
+       "stop" ,
+       "storage" ,
+       "subtype" ,
+       "successful" ,
+       "sum" ,
+       "switch" ,
+       "synonym" ,
+       "sysdate" ,
+       "system" ,
+       "tabauth" ,
+       "table" ,
+       "tables" ,
+       "tablespace" ,
+       "task" ,
+       "temporary" ,
+       "terminate" ,
+       "then" ,
+       "thread" ,
+       "time" ,
+       "to" ,
+       "tracing" ,
+       "transaction" ,
+       "trigger" ,
+       "triggers" ,
+       "true" ,
+       "truncate" ,
+       "type" ,
+       "uid" ,
+       "under" ,
+       "union" ,
+       "unique" ,
+       "unlimited" ,
+       "until" ,
+       "update" ,
+       "use" ,
+       "user" ,
+       "using" ,
+       "validate" ,
+       "values" ,
+       "varchar" ,
+       "varchar2" ,
+       "variance" ,
+       "view" ,
+       "views" ,
+       "when" ,
+       "whenever" ,
+       "where" ,
+       "while" ,
+       "with" ,
+       "work" ,
+       "write" ,
+       "xor")
 }
 
 class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {

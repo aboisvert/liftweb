@@ -19,8 +19,8 @@ package net.liftweb.http
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.scala.collection.mutable.{HashMap, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaData,
-                  PrefixedAttribute,
-                  Group, Node, HasKeyValue}
+                         PrefixedAttribute,
+                         Group, Node, HasKeyValue}
 import _root_.scala.collection.immutable.{ListMap, TreeMap}
 import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser}
 import Helpers._
@@ -276,9 +276,9 @@ object S extends HasParams {
    * @return the localized version of the string
    */
   def ?(str: String, params: Any *): String = if (params.length == 0)
-    ?(str)
+  ?(str)
   else
-    String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray :_*)
+  String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray :_*)
   
   /**
    * Get a core lift localized string or return the original string
@@ -290,9 +290,9 @@ object S extends HasParams {
   def ??(str: String): String = ?!(str, liftCoreResourceBundle)
 
   private def ?!(str: String, resBundle: Can[ResourceBundle]) = resBundle.flatMap(r => tryo(r.getObject(str) match {
-    case s: String => Full(s)
-    case _ => Empty
-  }).flatMap(s => s)).openOr {
+        case s: String => Full(s)
+        case _ => Empty
+      }).flatMap(s => s)).openOr {
     LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
     str
   }
@@ -383,6 +383,13 @@ object S extends HasParams {
    * This allows for query analysis, etc.
    */
   def addAround(lw: List[LoanWrapper]): Unit = aroundRequest = lw ::: aroundRequest
+
+  /**
+   * You can wrap the handling of an HTTP request with your own wrapper.  The wrapper can
+   * execute code before and after the request is processed (but still have S scope).
+   * This allows for query analysis, etc.
+   */
+  def addAround(lw: LoanWrapper): Unit = aroundRequest = lw :: aroundRequest
 
   /**
    * Get a list of the logged queries
@@ -490,8 +497,8 @@ object S extends HasParams {
             _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
               _innerInit(f)
             }
-          //}
-	  )
+            //}
+          )
         }
       }
     }
@@ -666,21 +673,21 @@ object S extends HasParams {
     if (LiftRules.snippetTable.isDefinedAt(snippet)) Full(LiftRules.snippetTable(snippet)) else Empty
   }
 
-private object _currentSnippet extends RequestVar[Can[String]](Empty)
+  private object _currentSnippet extends RequestVar[Can[String]](Empty)
 
-private[http] def doSnippet[T](name: String)(f: => T): T = {
-  val old = _currentSnippet.is
-  try {
-    _currentSnippet.set(Full(name))
-    f
-  } finally {
-    _currentSnippet.set(old)
+  private[http] def doSnippet[T](name: String)(f: => T): T = {
+    val old = _currentSnippet.is
+    try {
+      _currentSnippet.set(Full(name))
+      f
+    } finally {
+      _currentSnippet.set(old)
+    }
   }
-}
 
-def currentSnippet: Can[String] = _currentSnippet.is
+  def currentSnippet: Can[String] = _currentSnippet.is
 
-def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name))
+  def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name))
 
   /**
    * Associates a name with a snippet function 'func'
@@ -711,8 +718,8 @@ def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.
    */
   def buildJsonFunc(f: Any => JsCmd): (JsonCall, JsCmd) = buildJsonFunc(Empty, Empty, f)
 
-def buildJsonFunc(onError: JsCmd, f: Any => JsCmd): (JsonCall, JsCmd) =
-buildJsonFunc(Empty, Full(onError), f)
+  def buildJsonFunc(onError: JsCmd, f: Any => JsCmd): (JsonCall, JsCmd) =
+  buildJsonFunc(Empty, Full(onError), f)
 
   /**
    * Build a handler for incoming JSON commands
@@ -746,13 +753,13 @@ buildJsonFunc(Empty, Full(onError), f)
       }.foldLeft(JsCmds.Noop)(_ & _)
     }
 
-  val onErrorFunc: String =
-  onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
+    val onErrorFunc: String =
+    onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
 }
 
  """).toJsCmd) openOr ""
 
-  val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
+    val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
 
     addFunctionMap(key, jsonCallback _)
 
@@ -760,9 +767,9 @@ buildJsonFunc(Empty, Full(onError), f)
                                         "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
                                "function "+key+"(obj) {lift_ajaxHandler(" +
                                "'" + key + "='+ encodeURIComponent(" +
-                                                                   LiftRules.jsArtifacts.
-                                                                   jsonStringify(JE.JsRaw("obj")).
-                                                                   toJsCmd +"), null,"+onErrorParam+");}"))
+                               LiftRules.jsArtifacts.
+                               jsonStringify(JE.JsRaw("obj")).
+                               toJsCmd +"), null,"+onErrorParam+");}"))
   }
 
   /**
