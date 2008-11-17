@@ -15,9 +15,15 @@ import S._
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.util.{Can, Empty, Full, Failure}
 
+trait BaseMapper {
+  type MapperType <: Mapper[MapperType]
+}
+
 @serializable
-trait Mapper[A<:Mapper[A]] {
+trait Mapper[A<:Mapper[A]] extends BaseMapper {
   self: A =>
+  type MapperType = A
+
   private val secure_# = Safe.next
   private var was_deleted_? = false
   private var dbConnectionIdentifier:Can[ConnectionIdentifier] = Empty
@@ -243,17 +249,28 @@ trait Mapper[A<:Mapper[A]] {
   def countryField: Can[MappedCountry[A]] = Empty
 }
 
-trait LongKeyedMapper[OwnerType <: LongKeyedMapper[OwnerType]] extends KeyedMapper[Long, OwnerType] { self: OwnerType =>
-
+trait LongKeyedMapper[OwnerType <: LongKeyedMapper[OwnerType]] extends KeyedMapper[Long, OwnerType] with BaseLongKeyedMapper {
+  self: OwnerType =>
 }
 
-trait IdPK[OwnerType <: LongKeyedMapper[OwnerType]] {
-   this: OwnerType =>
+trait BaseKeyedMapper extends BaseMapper {
+  type TheKeyType
+}
+
+trait BaseLongKeyedMapper extends BaseKeyedMapper {
+  override type TheKeyType = Long
+}
+
+trait IdPK extends BaseLongKeyedMapper {
     def primaryKeyField = id
-    object id extends MappedLongIndex[OwnerType](this)
+    object id extends MappedLongIndex[MapperType](this.asInstanceOf[MapperType])
 }
 
-trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] { self: OwnerType =>
+trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] with BaseKeyedMapper {
+  self: OwnerType =>
+
+  type TheKeyType = KeyType
+
   def primaryKeyField: MappedField[KeyType, OwnerType] with IndexedField[KeyType];
   def getSingleton: KeyedMetaMapper[KeyType, OwnerType];
 
