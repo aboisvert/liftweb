@@ -66,7 +66,7 @@ object ActorWatcher extends Actor {
 * Takes care of the plumbing for building Comet-based Web Apps
 */
 @serializable
-abstract class CometActor extends Actor with BindHelpers {
+trait CometActor extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
   private var lastRenderTime = CometActor.next
 
