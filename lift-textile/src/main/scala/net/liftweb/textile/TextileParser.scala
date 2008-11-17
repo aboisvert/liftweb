@@ -729,13 +729,15 @@ import _root_.scala.collection.mutable.HashMap
   }
 
   case class Quoted(elems : List[Textile]) extends ATextile(elems, Nil) {
-    override def toHtml : NodeSeq = {
-      (Unparsed("&#8220;") ++ flattenAndDropLastEOL(elems)) ++ Unparsed("&#8221;")
+    override def toHtml: NodeSeq = {
+      (<xml:group>&#8220;</xml:group> ++ 
+       flattenAndDropLastEOL(elems)) ++ 
+      <xml:group>&#8221;</xml:group>
     }
   }
 
   case class EmDash extends Textile  {
-    def toHtml : NodeSeq = Unparsed(" &#8212; ")
+    def toHtml : NodeSeq = <xml:group> &#8212; </xml:group>
   }
 
 /*  case class BOL extends Textile  {
@@ -746,37 +748,39 @@ import _root_.scala.collection.mutable.HashMap
     // return the characters because Scala's XML library returns <br></br> in the
     // toString for the element and this causes 2 line breaks in some browsers
     // def toHtml :NodeSeq = XmlElem(null, "br", null, TopScope, Nil : _*) concat Text("\n")
-    def toHtml :NodeSeq = Unparsed("<br />\n")
+    def toHtml :NodeSeq = <br/>
   }
 
   case class EnDash extends Textile  {
-    def toHtml : NodeSeq = Unparsed(" &#8211; ")
+    def toHtml : NodeSeq = <xml:group> &#8211; </xml:group>
   }
 
   case class SingleQuote extends Textile  {
-    def toHtml : NodeSeq = Unparsed("&#8217;")
+    def toHtml : NodeSeq = <xml:group>&#8217;</xml:group>
   }
 
   case class Elipsis extends Textile  {
-    def toHtml : NodeSeq = Unparsed("&#8230;")
+    def toHtml : NodeSeq = <xml:group>&#8230;</xml:group>
   }
 
   case class Dimension extends Textile   {
-    def toHtml : NodeSeq = Unparsed("&#215;")
+    def toHtml : NodeSeq = <xml:group>&#215;</xml:group>
   }
 
   case class Trademark extends Textile  {
-    def toHtml : NodeSeq = Unparsed("&#8482;")
+    def toHtml : NodeSeq = <xml:group>&#8482;</xml:group>
   }
   case class Copyright extends Textile {
-    def toHtml : NodeSeq = Unparsed("&#169;")
+    def toHtml : NodeSeq = <xml:group>&#169;</xml:group>
   }
   case class Register extends Textile {
-    def toHtml : NodeSeq = Unparsed("&#174;")
+    def toHtml : NodeSeq = <xml:group>&#174;</xml:group>
   }
 
   case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*)  ++ Text("\n")
+    override def toHtml : NodeSeq = 
+      XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*) ++
+    Text("\n")
   }
 
   case class BlockQuote(elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
@@ -842,7 +846,11 @@ import _root_.scala.collection.mutable.HashMap
 
   case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      XmlElem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
+      XmlElem(null, 
+	      if (isHeader) "th" else "td", fromStyle(attrs), 
+	      TopScope, 
+	      (if (elems == Nil) <xml:group>&nbsp;</xml:group> else
+		flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
@@ -1787,12 +1795,14 @@ We use CSS(Cascading Style Sheets).
 
    case class Quoted(elems : List[Textile]) extends ATextile(elems, Nil) {
      override def toHtml : NodeSeq = {
-       (Unparsed("&#8220;") ++ flattenAndDropLastEOL(elems)) ++ Unparsed("&#8221;")
+       (<xml:group>&#8220;</xml:group> ++ 
+	flattenAndDropLastEOL(elems)) ++ 
+       <xml:group>&#8221;</xml:group>
      }
    }
 
    case object EmDash extends Textile  {
-     def toHtml : NodeSeq = Unparsed(" &#8212; ")
+     def toHtml : NodeSeq = <xml:group> &#8212; </xml:group>
    }
 
    /*  case class BOL extends Textile  {
@@ -1803,33 +1813,33 @@ We use CSS(Cascading Style Sheets).
      // return the characters because Scala's XML library returns <br></br> in the
      // toString for the element and this causes 2 line breaks in some browsers
      // def toHtml :NodeSeq = Elem(null, "br", null, TopScope, Nil : _*) concat Text("\n")
-     def toHtml :NodeSeq = Unparsed("<br />\n")
+     def toHtml :NodeSeq = <br/>
    }
 
    case object EnDash extends Textile  {
-     def toHtml : NodeSeq = Unparsed(" &#8211; ")
+     def toHtml : NodeSeq = <xml:group> &#8211; </xml:group>
    }
 
    case object SingleQuote extends Textile  {
-     def toHtml : NodeSeq = Unparsed("&#8217;")
+     def toHtml : NodeSeq = <xml:group>&#8217;</xml:group>
    }
 
    case object Elipsis extends Textile  {
-     def toHtml : NodeSeq = Unparsed("&#8230;")
+     def toHtml : NodeSeq = <xml:group>&#8230;</xml:group>
    }
 
    case object Dimension extends Textile   {
-     def toHtml : NodeSeq = Unparsed("&#215;")
+     def toHtml : NodeSeq = <xml:group>&#215;</xml:group>
    }
 
    case object Trademark extends Textile  {
-     def toHtml : NodeSeq = Unparsed("&#8482;")
+     def toHtml : NodeSeq = <xml:group>&#8482;</xml:group>
    }
    case object Copyright extends Textile {
-     def toHtml : NodeSeq = Unparsed("&#169;")
+     def toHtml : NodeSeq = <xml:group>&#169;</xml:group>
    }
    case object Register extends Textile {
-     def toHtml : NodeSeq = Unparsed("&#174;")
+     def toHtml : NodeSeq = <xml:group>&#174;</xml:group>
    }
 
    case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
@@ -1899,7 +1909,11 @@ We use CSS(Cascading Style Sheets).
 
    case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
      override def toHtml : NodeSeq = {
-       Elem(null, if (isHeader) "th" else "td", fromStyle(attrs), TopScope, (if (elems == Nil) Unparsed("&nbsp;") else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
+       Elem(null, 
+	    if (isHeader) "th" else "td", fromStyle(attrs),
+	    TopScope, 
+	    (if (elems == Nil) <xml:group>&nbsp;</xml:group>
+	     else flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
      }
    }
 
