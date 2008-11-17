@@ -47,8 +47,8 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
       wsc('a') must beFalse
     }
     "provide a whitespace parser: white. Alias: wsc" in {
-      import whiteStringGen.whiteString
-      val whiteParse = (s: String) => white(s) must beLike { case Success(_, _) => true }
+      import whiteStringGen._
+      val whiteParse = (s: String) => wsc(s) must beLike { case Success(_, _) => true }
       property(whiteParse) must pass
     }
     "provide a whiteSpace parser always succeeding and discarding its result" in {
@@ -110,8 +110,8 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
     }
     "provide a permute parser succeeding if any permutation of given parsers succeeds" in {
       def permuteParsers(s: String) = shouldSucceed(permute(parserA, parserB, parserC, parserD)(s))
-      import abcdStringGen._
-      property((s: String) => (stringWrapper(s).size == 4) ==> permuteParsers(s)) must pass
+      val permutationOk = (s: String) => permuteParsers(s)
+      abcdStringGen.abcdString must pass(permutationOk)
     }
     "provide a permuteAll parser succeeding if any permutation of the list given parsers, or a sublist of the given parsers succeeds" in {
       def permuteAllParsers(s: String) = shouldSucceed(permuteAll(parserA, parserB, parserC, parserD)(s))
@@ -126,26 +126,27 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
   }
 }
 object abcdStringGen {
-  implicit def abcdString = Arbitrary {
-    for (len <- choose(1, 4);
+  implicit def abcdString = for (len <- choose(4, 4);
          string <- pick(len, List("a", "b", "c", "d"))
          ) yield string.mkString("")
-  }
   def pickN(n: Int, elems: List[String]) = Arbitrary {
     for (string <- pick(n, elems)) yield string.mkString("")
   }
 }
 object whiteStringGen {
-  def genWhiteString: Gen[String] = for (len <- choose(1, 4);
-                                         string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
-                                    ) yield string.mkString("")
-  implicit def whiteString = Arbitrary(genWhiteString)
+  def genWhite = for (len <- choose(1, 4);
+         string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
+         ) yield string.mkString("")
+ 
+  implicit def genWhiteString: Arbitrary[String] = Arbitrary {
+    genWhite
+  }
 }
 object stringWithWhiteGen {
   import whiteStringGen._
   implicit def genString: Arbitrary[String] = Arbitrary {
     for (len <- choose(1, 4);
-         string <- vectorOf(len, frequency((1, value("a")), (2, value("b")), (1, genWhiteString)))
+         string <- vectorOf(len, frequency((1, value("a")), (2, value("b")), (1, genWhite)))
     ) yield string.mkString("")
   }
 }
