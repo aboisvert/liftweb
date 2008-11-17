@@ -54,6 +54,54 @@ object TextileSpec extends Specification {
       toHtml("a link http://yahoo.com inside") must ==/(<p>a link <a href="http://yahoo.com">http://yahoo.com</a> inside</p>)
     }
 
+    "3 bullets" in {
+      val it = toHtml(
+"""
+* Hello
+* Dude
+* Dog
+""")
+
+      it must ==/(
+<ul><li> Hello</li>
+<li> Dude</li>
+<li> Dog</li>
+</ul>
+)
+    }
+
+    "3 bullets strong" in {
+      val it = toHtml(
+"""
+* *Hello* moo
+* Dude
+* Dog
+""")
+
+      it must ==/(
+<ul><li> <strong>Hello</strong> moo</li>
+<li> Dude</li>
+<li> Dog</li>
+</ul>
+)
+    }
+
+    "3 bullets not strong" in {
+      val it = toHtml(
+"""
+* *Hello moo
+* Dude
+* Dog
+""")
+
+      it must ==/(
+<ul><li> *Hello moo</li>
+<li> Dude</li>
+<li> Dog</li>
+</ul>
+)
+    }
+
     "a link http://yahoo.com not inside" in {
       toHtml("a link http://yahoo.com not inside", true).toString.trim must_== "<p>a link http://yahoo.com not inside</p>"
     }

@@ -118,29 +118,17 @@ import _root_.scala.collection.mutable.HashMap
     type Elem = Char
 
     type UnitParser=Parser[Unit]
-/*
-    def paraFixer(in: NodeSeq): NodeSeq = in match {
-	    case g: Group => paraFixer(g.nodes)
-	    case e: XmlElem if e.label == "p" => e.child
-	    case e: XmlElem => e
-	    case ns: Seq[Node] if ns.length == 2 &&
-	    ns(1).text.trim.length == 0 => paraFixer(ns(0))
-	    case x => x
-	  }
-  */
-/*    def elem(e: Elem): Parser[Elem] = accept(e)
-    def elem(k: String, p: Elem => Boolean) = acceptIf(p) expected(k)
-*/
+
     implicit def discard[T](p: Parser[T]): Parser[Unit] = p ^^ {x => ()}
 
-    def document : Parser[Lst] = rep(paragraph) ^^ Lst
+    lazy val document : Parser[Lst] = rep(paragraph) ^^ Lst
     // final val EofCh = '\032'
     private def chrExcept(cs: Char*): Parser[Char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
     private def mkString(cs: List[Any]) = cs.mkString("")
 
     implicit def str2chars(s: String): List[Char] = stringWrapper(s).toList
 
-    def num = rep1(elem("digit", Character.isDigit)) ^^ mkString
+    lazy val num = rep1(elem("digit", Character.isDigit)) ^^ mkString
 
     def enclosed(delim: Char, what: String, pred: Char => Boolean) = delim ~> str(what, {c => c != delim && pred(c)}) <~ delim
     def str(what: String, pred: Char => Boolean) = rep(elem(what, pred)) ^^ mkString
@@ -148,35 +136,37 @@ import _root_.scala.collection.mutable.HashMap
     def chrsExcept(cs: Char*): Parser[String] = rep1(chrExcept(cs : _*)) ^^ mkString
 
 
-    val beginl = Parser[Unit]{ in =>
+    lazy val beginl = Parser[Unit]{ in =>
       if(in.pos.column==1) Success((), in) else Failure("at column "+in.pos.column+", not beginning of line", in)
     }
 
-    val beginlS = beginl ~ rep(' ')
+    lazy val beginlS = beginl ~ rep(' ')
 
     /**
      * is it a blank line?  Start of line, some spaces, and an end of line
      */
-    def blankLine: Parser[Textile] = beginlS ~ '\n' ^^^ BlankLine()
+    lazy val blankLine: Parser[Textile] = beginlS ~ '\n' ^^^ BlankLine()
 
 
     /**
      * Line elements make up paragraphs and block elements
      */
-    def lineElem : Parser[Textile] = {
-      not(discard(blankLine)) ~> (endOfLine | image | footnote_def |
-                        anchor | dimension | elipsis  |
-                        copyright | trademark | registered | emDash |
-                        enDash | italic | emph | bold  |
-                        cite |  span | code | delete | insert |
-                        sup | sub | strong | html | single_quote | quote | acronym | charBlock)
+    lazy val lineElem : Parser[Textile] = {
+	not(discard(blankLine)) ~> (endOfLine | image | footnote_def |
+				    anchor | dimension | elipsis  |
+				    copyright | trademark | registered | 
+				    emDash |
+				    enDash | italic | emph | bold  |
+				    cite |  span | code | delete | insert |
+				    sup | sub | strong | html | 
+				    single_quote | quote | acronym | charBlock)
     }
 
     /**
      * If we've got an italic (__text__), the parser doesn't do well with a single underscore, so
      * we exclude looking for _emph_
      */
-    def lineElem_notEmph : Parser[Textile] = {
+    lazy val lineElem_notEmph : Parser[Textile] = {
       not(discard(blankLine)) ~> (endOfLine | image | footnote_def | anchor |
                           dimension | elipsis |
                           copyright | trademark | registered | emDash | enDash | italic |
@@ -188,7 +178,7 @@ import _root_.scala.collection.mutable.HashMap
     /**
     * Don't look for *strong* if we're currently in a **bold** element
     */
-    def lineElem_notStrong : Parser[Textile] = {
+    lazy val lineElem_notStrong : Parser[Textile] = {
       not(discard(blankLine)) ~> (endOfLine | image | footnote_def | anchor |
                           dimension | elipsis |
                           copyright | trademark | registered | emDash | enDash | italic |
@@ -201,100 +191,117 @@ import _root_.scala.collection.mutable.HashMap
     /**
     * Look for an acronym, but don't mistake registered, copyright, and trademarks
     */
-    def acronym : Parser[Acronym] =  ((chrsExcept(' ', '(', '\n') <~ not(discard(copyright | trademark | registered))) ~ ('(' ~> chrsExcept(')', '\n') <~ ')') ) ^^ flatten2(Acronym)
+    lazy val acronym : Parser[Acronym] =  
+      ((chrsExcept(' ', '(', '\n') <~ 
+	not(discard(copyright | trademark | registered))) ~ 
+       ('(' ~> chrsExcept(')', '\n') <~ ')') ) ^^ flatten2(Acronym)
 
     /**
     * is it an !image!
     */
-    def image : Parser[Textile] = ('!' ~> opt('<')) ~ opt('>') ~ (rep1(not(accept('!')) ~> elem("", validUrlChar)) ^^ mkString) ~
-       (opt('(' ~> chrsExcept(')', '\n') <~ ')') <~ '!') ~
-       opt(':' ~> url ^? {case a: Anchor => a}) ^^ { case fl ~ fr ~ img_url ~ alt ~ link =>
-               Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null,
-                    if (!fl.isEmpty) List(AnyAttribute("style", "float:left"))
-                    else if (!fr.isEmpty) List(AnyAttribute("style", "float:right"))
-                    else Nil)}
+    lazy val image : Parser[Textile] = 
+      ('!' ~> opt('<')) ~ opt('>') ~ 
+    (rep1(not(accept('!')) ~> elem("", validUrlChar)) ^^ mkString) ~
+    (opt('(' ~> chrsExcept(')', '\n') <~ ')') <~ '!') ~
+    opt(':' ~> url ^? {case a: Anchor => a}) ^^ 
+    { case fl ~ fr ~ img_url ~ alt ~ link =>
+      Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null,
+            if (!fl.isEmpty) List(AnyAttribute("style", "float:left"))
+            else if (!fr.isEmpty) List(AnyAttribute("style", "float:right"))
+            else Nil)}
 
 
     /**
     * [footnote]
     */
-    def footnote_def : Parser[Textile] = '[' ~> num <~ ']' ^^ FootnoteDef
+    lazy val footnote_def: Parser[Textile] = '[' ~> num <~ ']' ^^ FootnoteDef
 
     /**
     * various things that make up an anchor (a tag)
     */
-    def anchor = url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
+    lazy val anchor = 
+      url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
 
 
-    def upper: Parser[Char] = elem("Uppercase character", Character.isUpperCase)
-    def lower: Parser[Char] = elem("Lowercase character", Character.isLowerCase)
-    def lowerOrNumber: Parser[Char] = elem("Lowercase character or digit", c => Character.isLowerCase(c) || Character.isDigit(c))
+    lazy val upper: Parser[Char] = 
+      elem("Uppercase character", Character.isUpperCase)
+    
+    lazy val lower: Parser[Char] = 
+      elem("Lowercase character", Character.isLowerCase)
+    
+    lazy val lowerOrNumber: Parser[Char] = 
+      elem("Lowercase character or digit", c => Character.isLowerCase(c) || 
+	   Character.isDigit(c))
 
     /**
     * Don't use the CamelCase thing for a wikiword if it's prefixed by
     * a backslash
     */
-    def escCamelUrl : Parser[CharBlock] = ('\\'  ~ upper ~ lower ~ rep(lowerOrNumber) ~
-        upper ~ lower ~ rep(lowerOrNumber) ~
-        rep(upper ~ lower ~ rep(lowerOrNumber) ^^ {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^
-          {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8 => CharBlock(mkString(List(c1, c2, c3)) + mkString(s4) + mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
-
-      // combine chars to string
-      /*
-      // the ~~ combinator together with these conversions would work nicely, were it not for the covariance of Parser's first type param :-(
-      implicit def c2s(c: Char): String = c + ""
-      implicit def cs2s(cs: List[Char]): String = cs.mkString("")
-      implicit def ss2s(ss: List[String]): String = ss.mkString("")
-      implicit def combine[C <% String, D <% String](c: C, d: D): String = c + d*/
-
-
+    lazy val escCamelUrl: Parser[CharBlock] = 
+      ('\\'  ~ upper ~ lower ~ rep(lowerOrNumber) ~
+       upper ~ lower ~ rep(lowerOrNumber) ~
+       rep(upper ~ lower ~ rep(lowerOrNumber) ^^ 
+	   {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^
+    {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8 
+     => CharBlock(mkString(List(c1, c2, c3)) + 
+		  mkString(s4) + 
+		  mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
 
     /**
     * is the work camelized?
     */
-    def camelizedWord : Parser[CharBlock] = upper ~ lower ~ rep(lowerOrNumber) ^^ { case u ~ l ~ cs => CharBlock(mkString(u :: (l :: cs))) }
+    lazy val camelizedWord: Parser[CharBlock] = 
+      upper ~ lower ~ rep(lowerOrNumber) ^^ 
+    { case u ~ l ~ cs => CharBlock(mkString(u :: (l :: cs))) }
 
+    lazy val lowerWord: Parser[String] = 
+      lower ~ rep1(lowerOrNumber) ^^ {case x ~ xs => (x :: xs).mkString("")}
+    
+    
     /**
-    * a WikiWord
-    */
-    // def camelUrl : Parser[Textile] = camelizedWord ~ rep1(camelizedWord) ^^ { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(Nil, ss, ss, Nil, wikiUrlFunc)}
-
-     def lowerWord: Parser[String] = lower ~ rep1(lowerOrNumber) ^^ {case x ~ xs => (x :: xs).mkString("")}
-
-
-     /**
      * a WikiWord
      */
-     def camelUrl: Parser[Textile] = noCatCamelUrl | catCamelUrl | tickUrl | catTickUrl
+    lazy val camelUrl: Parser[Textile] = 
+      noCatCamelUrl | catCamelUrl | tickUrl | catTickUrl
 
-     def catTickUrl: Parser[WikiAnchor] = lowerWord ~ ':' ~ tickUrl ^^
-     {case cat ~ colon ~ rest => WikiAnchor(rest.word, Some(cat), wikiUrlFunc)}
+    lazy val catTickUrl: Parser[WikiAnchor] = 
+      lowerWord ~ ':' ~ tickUrl ^^
+    {case cat ~ colon ~ rest => WikiAnchor(rest.word, Some(cat), wikiUrlFunc)}
 
-     def tickUrl: Parser[WikiAnchor] = '`' ~ rep1(tickUrlChar) ~ '`' ^^
-     {case tick ~ c ~ tick2 => WikiAnchor(c.mkString(""), None, wikiUrlFunc)}
+    lazy val tickUrl: Parser[WikiAnchor] = '`' ~ rep1(tickUrlChar) ~ '`' ^^
+    {case tick ~ c ~ tick2 => WikiAnchor(c.mkString(""), None, wikiUrlFunc)}
 
-     def isTickUrlChar(c: Char): Boolean = c.isLetter || c.isDigit ||
-     c == ' ' || c == '@'
+    def isTickUrlChar(c: Char): Boolean = c.isLetter || c.isDigit ||
+    c == ' ' || c == '@'
 
-     def tickUrlChar: Parser[Char] = elem("tick url char", isTickUrlChar)
+    lazy val tickUrlChar: Parser[Char] = elem("tick url char", isTickUrlChar)
 
-     def noCatCamelUrl: Parser[Textile] = camelizedWord ~ rep1(camelizedWord) ^^ { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(ss, None, wikiUrlFunc)}
+    lazy val noCatCamelUrl: Parser[Textile] = 
+      camelizedWord ~ rep1(camelizedWord) ^^ 
+    { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); 
+     WikiAnchor(ss, None, wikiUrlFunc)}
 
-     def catCamelUrl: Parser[Textile] = lowerWord ~ ':' ~ camelizedWord ~ rep1(camelizedWord) ^^ {
-     case cat ~ colon ~ c ~ cs => val ss = mkString((c :: cs).map(_.s)); WikiAnchor(ss, Some(cat), wikiUrlFunc)}
+    lazy val catCamelUrl: Parser[Textile] = 
+      lowerWord ~ ':' ~ camelizedWord ~ rep1(camelizedWord) ^^ {
+	case cat ~ colon ~ c ~ cs => 
+	  val ss = mkString((c :: cs).map(_.s)); 
+	WikiAnchor(ss, Some(cat), wikiUrlFunc)}
 
 
-    def urlStr = (rep1(elem("", validUrlChar))^^ mkString)
+    lazy val urlStr = (rep1(elem("", validUrlChar))^^ mkString)
 
     /**
     * "reference":reference
     */
-    def quote_ref : Parser[Textile] = ('"' ~> chrsExcept('"', '\n') <~ '"') ~ (':' ~> urlStr) ^^
-      {case fs ~ rc => RefAnchor(Nil, rc, fs, Nil)}
-
-
-    def httpStr = (accept("https://") ^^ mkString | accept("http://") ^^ mkString) ~ urlStr ^^ { case protocol ~ rc => protocol + rc }
-
+    lazy val quote_ref: Parser[Textile] = 
+      ('"' ~> chrsExcept('"', '\n') <~ '"') ~ (':' ~> urlStr) ^^
+    {case fs ~ rc => RefAnchor(Nil, rc, fs, Nil)}
+    
+    
+    lazy val httpStr = 
+      (accept("https://") ^^ mkString | accept("http://") ^^ 
+       mkString) ~ urlStr ^^ { case protocol ~ rc => protocol + rc }
+    
     /**
     * "google":http://google.com
     */
@@ -432,14 +439,15 @@ import _root_.scala.collection.mutable.HashMap
     }
 
     def formattedLineElem[Q <% Parser[Any]](m: Q): Parser[List[Textile] ~ List[Attribute]] = formattedLineElem(m, rep(attribute))
+
     def formattedLineElem[Q <% Parser[Any]](m: Q, p: Parser[List[Attribute]]): Parser[List[Textile] ~ List[Attribute]]
-      = (spaceOrStart ~> m ~> p) ~ (rep1(not(discard(m)) ~> lineElem) <~ m) <~ spaceOrEnd ^^ { case attrs ~ ln => new ~(reduceCharBlocks(ln), attrs) }
+      = (m ~> p) ~ (rep1(not(discard(m) | endOfLine) ~> lineElem) <~ m) ^^ { case attrs ~ ln => new ~(reduceCharBlocks(ln), attrs) }
 
     def spaceOrStart: UnitParser = beginl | accept(' ')
     def spaceOrEnd: UnitParser = accept(' ') | discard(endOfLine)
 
     // TODO: generalize formattedLineElem some more
-    def bold : Parser[Textile] = (accept("**") ~> rep(attribute)) ~ (rep1(not(discard(accept("**"))) ~> lineElem_notStrong) <~ accept("**")) ^^ {
+    def bold : Parser[Textile] = (accept("**") ~> rep(attribute)) ~ (rep1(not(discard(accept("**") | endOfLine)) ~> lineElem_notStrong) <~ accept("**")) ^^ {
       case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
 
     def strong : Parser[Textile] = formattedLineElem('*') ^^ flatten2(Strong)
@@ -1498,18 +1506,27 @@ We use CSS(Cascading Style Sheets).
         (rep1(bullet(depth + 1, numbered) | bullet_line(depth, numbered))) ^^ {case fbl ~ abl => Bullet(fbl :: abl, numbered)}
       }
 
-      def formattedLineElem[Q <% UnitParser](m: Q): Parser[List[Textile] ~ List[Attribute]] = formattedLineElem(m, rep(attribute))
-      def formattedLineElem[Q <% UnitParser](m: Q, p: Parser[List[Attribute]]): Parser[List[Textile] ~ List[Attribute]] =  m ~ p ~  rep1(not(m) ~ lineElem) ~ m ^^ {
-      case attrs ~ ln => mkTilde(reduceCharBlocks(ln), attrs) }
+      def formattedLineElem[Q <% UnitParser](m: Q): 
+     Parser[List[Textile] ~ List[Attribute]] = 
+       formattedLineElem(m, rep(attribute))
+     
+     def formattedLineElem[Q <% UnitParser](m: Q, p: Parser[List[Attribute]]): 
+     Parser[List[Textile] ~ List[Attribute]] =  
+       m ~ p ~  rep1(not(m) ~ lineElem) ~ m ^^ {
+	 case attrs ~ ln => mkTilde(reduceCharBlocks(ln), attrs) }
 
-      def spaceOrStart: UnitParser = beginl | ' '
-      def spaceOrEnd: UnitParser = accept(' ') | discard(endOfLine)
+     lazy val spaceOrStart: UnitParser = beginl | ' '
+     lazy val spaceOrEnd: UnitParser = accept(' ') | discard(endOfLine)
 
       // TODO: generalize formattedLineElem some more
-      def bold : Parser[Textile] = accept("**") ~ rep(attribute) ~ rep1(not(accept("**")) ~ lineElem_notStrong) ~ accept("**") ^^ {
-      case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
-
-      def strong : Parser[Textile] = formattedLineElem('*') ^^ flatten2(Strong)
+     lazy val bold: Parser[Textile] = 
+       accept("**") ~ 
+     rep(attribute) ~ 
+     rep1(not(accept("**")) ~ 
+	  lineElem_notStrong) ~ accept("**") ^^ {
+	    case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
+     
+     def strong: Parser[Textile] = formattedLineElem('*') ^^ flatten2(Strong)
 
       def cite : Parser[Textile] = formattedLineElem(accept("??")) ^^ flatten2(Cite)
 
