@@ -304,7 +304,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def currentUser: Can[ModelType] = curUser.is
 
   def signupXhtml(user: ModelType) = {
-    (<form method="POST" action={S.uri}><table><tr><td
+    (<form method="post" action={S.uri}><table><tr><td
               colspan="2">Sign Up</td></tr>
           {localForm(user, false)}
           <tr><td>&nbsp;</td><td><user:submit/></td></tr>
@@ -402,7 +402,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   }
 
   def loginXhtml = {
-    (<form method="POST" action={S.uri}><table><tr><td
+    (<form method="post" action={S.uri}><table><tr><td
               colspan="2">{S.??("log.in")}</td></tr>
           <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
           <tr><td>{S.??("password")}</td><td><user:password /></td></tr>
@@ -433,7 +433,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   }
 
   def lostPasswordXhtml = {
-    (<form method="POST" action={S.uri}>
+    (<form method="post" action={S.uri}>
         <table><tr><td
               colspan="2">{S.??("enter.email")}</td></tr>
           <tr><td>{S.??("email.address")}</td><td><user:email /></td></tr>
@@ -496,7 +496,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   }
 
   def passwordResetXhtml = {
-    (<form method="POST" action={S.uri}>
+    (<form method="post" action={S.uri}>
         <table><tr><td colspan="2">{S.??("reset.your.password")}</td></tr>
           <tr><td>{S.??("enter.your.new.password")}</td><td><user:pwd/></td></tr>
           <tr><td>{S.??("repeat.your.new.password")}</td><td><user:pwd/></td></tr>
@@ -527,7 +527,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   }
 
   def changePasswordXhtml = {
-    (<form method="POST" action={S.uri}>
+    (<form method="post" action={S.uri}>
         <table><tr><td colspan="2">{S.??("change.password")}</td></tr>
           <tr><td>{S.??("old.password")}</td><td><user:old_pwd /></td></tr>
           <tr><td>{S.??("new.password")}</td><td><user:new_pwd /></td></tr>
@@ -560,7 +560,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   }
 
   def editXhtml(user: ModelType) = {
-    (<form method="POST" action={S.uri}>
+    (<form method="post" action={S.uri}>
         <table><tr><td colspan="2">{S.??("edit")}</td></tr>
           {localForm(user, true)}
           <tr><td>&nbsp;</td><td><user:submit/></td></tr>

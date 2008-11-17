@@ -145,7 +145,7 @@ object WikiStuff extends Loc[WikiLoc] {
 
     val submitButton = SHtml.submit(isNew ? "Add" | "Edit", () => r.save)
 
-    <form method="POST" action={action}>{ // the form tag
+    <form method="post" action={action}>{ // the form tag
       message ++
       hobixLink ++
       textarea ++ // display the form

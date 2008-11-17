@@ -644,7 +644,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
 
     attrs.get("form").map(ft => (
-        (<form action={S.uri} method={ft.text}>{ret}</form> %
+        (<form action={S.uri} method={ft.text.trim.toLowerCase}>{ret}</form> %
          checkMultiPart(attrs)) %
         checkAttr("class", attrs)) % checkAttr("id",attrs) ) getOrElse ret
 
@@ -847,9 +847,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
       case e: Elem if e.label == "head" && !done =>
         done = true
         Elem(null, "head", e.attributes,  e.scope, (e.child ++
-                                                    <script src={"/"+
-                                                                 LiftRules.ajaxPath +
-                                                                 "/" + LiftRules.ajaxScriptName()}
+                                                    <script
+						    src={"/"+
+                                                         LiftRules.ajaxPath +
+                                                         "/" + LiftRules.ajaxScriptName()}
               type="text/javascript"/>) :_*)
       case n => n
     }

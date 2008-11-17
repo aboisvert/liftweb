@@ -18,7 +18,7 @@ package net.liftweb.webapptest.snippet
 class HeadTestSnippet {
   def withHead = <div>
     <head>
-      <script src="snippet.js"></script>
+      <script type="text/javascript" src="snippet.js"></script>
     </head>
     <span>Welcome to webtest1 at {new _root_.java.util.Date}</span>
   </div>

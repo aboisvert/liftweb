@@ -29,7 +29,7 @@ object ToHeadSpecs extends Specification {
          <body>
            blablabla
            <head>
-             <script src="myScript.js"></script>
+             <script type="text/javascript" src="myScript.js"></script>
            </head>
            <div>
              sub section
@@ -47,7 +47,7 @@ object ToHeadSpecs extends Specification {
        val expected = <html>
          <head>
            <title>hello</title>
-           <script src="myScript.js"></script>
+           <script type="text/javascript" src="myScript.js"></script>
            <style><![CDATA[
            .myClass {
              text-align:right;
@@ -76,7 +76,7 @@ object ToHeadSpecs extends Specification {
           </head>
           <body>
             <head>
-              <script src="foo.js" id="fromFrag"></script>
+              <script type="text/javascript" src="foo.js" id="fromFrag"></script>
             </head>
             <h2>Welcome to your project!</h2>
             <ul><li><a href="/">Home</a></li><li><a href="/htmlFragmentWithHead" id="current">htmlFragmentWithHead</a></li><li><a href="/htmlSnippetWithHead">htmlSnippetWithHead</a></li></ul>
@@ -90,7 +90,7 @@ object ToHeadSpecs extends Specification {
 
             <title>lift webapptest</title>
             <script type="text/javascript" src="/scripts/jquery-1.2.1.js"></script>
-            <script src="foo.js" id="fromFrag"></script>
+            <script type="text/javascript" src="foo.js" id="fromFrag"></script>
           </head>
           <body>
             <h2>Welcome to your project!</h2>
@@ -105,7 +105,7 @@ object ToHeadSpecs extends Specification {
          <body>
            blablabla
            <head>
-             <script src="myScript.js"></script>
+             <script type="text/javascript" src="myScript.js"></script>
            </head>
            <div>
              sub section
@@ -122,7 +122,7 @@ object ToHeadSpecs extends Specification {
 
        val expected = <html>
          <head>
-           <script src="myScript.js"></script>
+           <script type="text/javascript" src="myScript.js"></script>
            <style>
            .myClass {{
              text-align:right;
@@ -149,25 +149,25 @@ object ToHeadSpecs extends Specification {
        HeadHelper.cleanHead(actual) must equalIgnoreSpace(expected)
      }
      "remove script tag with same id as previous script tag" >> {
-       val invariant = (<script id="sc1" src="foo1.js"></script><script id="sc2" src="foo2.js"></script>)
+       val invariant = (<script type="text/javascript" id="sc1" src="foo1.js"></script><script type="text/javascript" id="sc2" src="foo2.js"></script>)
        HeadHelper.cleanHead(invariant) must equalIgnoreSpace(invariant)
 
-       val actual = (<script id="sc1" src="foo1.js"></script><script id="sc1" src="foo2.js"></script>)
-       val expected = (<script id="sc1" src="foo1.js"></script>)
+       val actual = (<script type="text/javascript" id="sc1" src="foo1.js"></script><script type="text/javascript" id="sc1" src="foo2.js"></script>)
+       val expected = (<script type="text/javascript" id="sc1" src="foo1.js"></script>)
        HeadHelper.cleanHead(actual) must equalIgnoreSpace(expected)
      }
      "remove script tag with src attributes if src attributes are equals to previous script" >> {
-       val actual = (<script id="sc1" src="foo1.js"></script><script src="foo1.js"></script>)
-       val expected = (<script id="sc1" src="foo1.js"></script>)
+       val actual = (<script type="text/javascript" id="sc1" src="foo1.js"></script><script type="text/javascript" src="foo1.js"></script>)
+       val expected = (<script type="text/javascript" id="sc1" src="foo1.js"></script>)
        HeadHelper.cleanHead(actual) must equalIgnoreSpace(expected)
 
-       val actual2 = (<script id="sc1" src="foo1.js"></script><script id="sc2" src="foo1.js"></script>)
-       val expected2 = (<script id="sc1" src="foo1.js"></script>)
+       val actual2 = (<script type="text/javascript" id="sc1" src="foo1.js"></script><script type="text/javascript" id="sc2" src="foo1.js"></script>)
+       val expected2 = (<script type="text/javascript" id="sc1" src="foo1.js"></script>)
        HeadHelper.cleanHead(actual2) must equalIgnoreSpace(expected2)
      }
      "remove script tag if content are equals to previous script (need to trim each line ?)" >> {
-       val actual = (<script>alert("hello");</script><script>alert("hello");</script>)
-       val expected = (<script>alert("hello");</script>)
+       val actual = (<script type="text/javascript">alert("hello");</script><script type="text/javascript">alert("hello");</script>)
+       val expected = (<script type="text/javascript" >alert("hello");</script>)
        HeadHelper.cleanHead(actual) must equalIgnoreSpace(expected)
      }
      "remove link to css with same id as previous link tag" >> {
