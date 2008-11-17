@@ -25,7 +25,7 @@ object WikiEntry extends WikiEntry with LongKeyedMetaMapper[WikiEntry]
 /**
  * An O-R mapped wiki entry
  */
-class WikiEntry extends LongKeyedMapper[WikiEntry] with IdPK[WikiEntry] {
+class WikiEntry extends LongKeyedMapper[WikiEntry] with IdPK {
   def getSingleton = WikiEntry // what's the "meta" object
 
   // the name of the entry
