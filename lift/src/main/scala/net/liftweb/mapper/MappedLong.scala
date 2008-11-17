@@ -230,6 +230,12 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
      Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
 }
 
+/**
+* Mix with MappedLong to give a default time of millis
+*/
+trait DefaultMillis extends TypedField[Long] {
+  override def defaultValue = millis
+}
 
 class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   private var data: Long = defaultValue

@@ -16,29 +16,17 @@
 package net.liftweb.example.model
 
 import _root_.net.liftweb.mapper._
-import DB._
-import _root_.java.sql.Connection
 
 /**
  * The singleton that has methods for accessing the database
  */
-trait MetaWikiEntry extends WikiEntry with KeyedMetaMapper[Long, WikiEntry]
-object WikiEntry extends MetaWikiEntry {
-  override def dbTableName = "wikientry" // define the DB table name
-
-  // define the order fields will appear in forms and output
-  override def fieldOrder =  id :: name :: entry :: Nil
-}
+object WikiEntry extends WikiEntry with LongKeyedMetaMapper[WikiEntry] 
 
 /**
  * An O-R mapped wiki entry
  */
-class WikiEntry extends KeyedMapper[Long, WikiEntry] {
+class WikiEntry extends LongKeyedMapper[WikiEntry] with IdPK[WikiEntry] {
   def getSingleton = WikiEntry // what's the "meta" object
-  def primaryKeyField = id
-
-  // the primary key
-  object id extends MappedLongIndex(this)
 
   // the name of the entry
   object name extends MappedString(this, 32) {

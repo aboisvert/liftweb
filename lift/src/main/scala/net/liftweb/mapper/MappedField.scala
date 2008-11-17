@@ -191,25 +191,31 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
 
 trait BaseOwnedMappedField[OwnerType <: Mapper[OwnerType]] extends BaseMappedField
 
-/**
-  * The strongly typed field that's mapped to a column (or many columns) in the database.
-  * FieldType is the type of the field and OwnerType is the Owner of the field
-  */
-trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends BaseOwnedMappedField[OwnerType] with FieldIdentifier {
-  /**
-    * Should the field be ignored by the OR Mapper?
-    */
-  def ignoreField_? = false
-
+trait TypedField[FieldType] {
   /**
     * The default value for the field
     */
   def defaultValue: FieldType
 
+
   /**
     * What is the real class that corresponds to FieldType
     */
   def dbFieldClass: Class[FieldType]
+}
+
+
+/**
+  * The strongly typed field that's mapped to a column (or many columns) in the database.
+  * FieldType is the type of the field and OwnerType is the Owner of the field
+  */
+trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends TypedField[FieldType] with BaseOwnedMappedField[OwnerType] with FieldIdentifier {
+  /**
+    * Should the field be ignored by the OR Mapper?
+    */
+  def ignoreField_? = false
+
+
 
   /**
     * Get the field that this prototypical field represents

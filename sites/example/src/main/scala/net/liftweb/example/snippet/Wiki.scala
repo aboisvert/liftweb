@@ -27,7 +27,9 @@ import _root_.net.liftweb.textile._
 // show determines which one is used. bind hooks the content into the lift view
 case class BindChoice(show: Boolean, bind: () => NodeSeq)
 
-class Wiki extends MetaWikiEntry {
+class Wiki {
+  import WikiEntry._
+
   def uriFor(path:String) = "/wiki/" + path
 
   /**
