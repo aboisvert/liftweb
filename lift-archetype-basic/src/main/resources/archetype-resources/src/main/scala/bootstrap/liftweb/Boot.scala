@@ -41,7 +41,7 @@ class Boot {
 
     LiftRules.appendEarly(makeUtf8)
 
-
+    S.addAround(DB.buildLoanWrapper)
   }
 
   /**
