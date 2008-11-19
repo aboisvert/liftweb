@@ -643,6 +643,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                         Null)
     }
 
+  if (ret.isEmpty) ret else
     attrs.get("form").map(ft => (
         (<form action={S.uri} method={ft.text.trim.toLowerCase}>{ret}</form> %
          checkMultiPart(attrs)) %
