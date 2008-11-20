@@ -199,13 +199,13 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   def findAllFields(fields: Seq[SelectableField],
-		    by: QueryParam[A]*): List[A] =
-		      findMapFieldDb(dbDefaultConnectionIdentifier,
-				     fields, by :_*)(v => Full(v))
+                    by: QueryParam[A]*): List[A] =
+  findMapFieldDb(dbDefaultConnectionIdentifier,
+                 fields, by :_*)(v => Full(v))
 
   def findAllFieldsDb(dbId: ConnectionIdentifier,
-		      fields: Seq[SelectableField],
-		      by: QueryParam[A]*):
+                      fields: Seq[SelectableField],
+                      by: QueryParam[A]*):
   List[A] = findMapFieldDb(dbId, fields, by :_*)(v => Full(v))
 
   def findAll(by: QueryParam[A]*): List[A] =
@@ -231,14 +231,14 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) =
-    findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
+  findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
   def findMapDb[T](dbId: ConnectionIdentifier,
                    by: QueryParam[A]*)(f: A => Can[T]): List[T] =
   findMapFieldDb(dbId, mappedFields, by :_*)(f)
 
   def findMapFieldDb[T](dbId: ConnectionIdentifier, fields: Seq[SelectableField],
-                   by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
+                        by: QueryParam[A]*)(f: A => Can[T]): List[T] = {
     DB.use(dbId) {
       conn =>
       val bl = by.toList
@@ -443,18 +443,18 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   /**
-  * Run the list of field validations, etc.  This is the raw validation,
-  * without the notifications.  This method can be over-ridden.
-  */
+   * Run the list of field validations, etc.  This is the raw validation,
+   * without the notifications.  This method can be over-ridden.
+   */
   protected def runValidationList(toValidate: A): List[FieldError] =
   mappedFieldList.flatMap(f => ??(f.method, toValidate).validate) :::
-    validation.flatMap{
-      case pf: PartialFunction[A, List[FieldError]] =>
-        if (pf.isDefinedAt(toValidate)) pf(toValidate)
-        else Nil
+  validation.flatMap{
+    case pf: PartialFunction[A, List[FieldError]] =>
+      if (pf.isDefinedAt(toValidate)) pf(toValidate)
+      else Nil
 
-      case f => f(toValidate)
-    }
+    case f => f(toValidate)
+  }
 
   final def validate(toValidate: A): List[FieldError] = {
     val saved_? = this.saved_?(toValidate)
@@ -474,7 +474,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def toXml(what: A): Elem =
   Elem(null,elemName,
        mappedFieldList.foldRight[MetaData](Null) {(p, md) => val fld = ??(p.method, what)
-                                                               new UnprefixedAttribute(p.name, Text(fld.toString), md)}
+                                                  new UnprefixedAttribute(p.name, Text(fld.toString), md)}
        ,TopScope)
 
   /**
@@ -918,6 +918,34 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     field.toForm.toList.
     flatMap(form => formatFormLine(Text(field.displayName), form))
   )
+
+  /**
+   * Get the fields (in order) for displaying a form
+   */
+  def formFields(toMap: A): List[MappedField[_, A]] =
+  mappedFieldList.map(e => ??(e.method, toMap)).filter(_.dbDisplay_?)
+
+
+  /**
+   * map the fields titles and forms to generate a list
+   * @param func called with displayHtml, fieldId, form
+   */
+  def mapFieldTitleForm[T](toMap: A,
+  func: (NodeSeq, Can[NodeSeq], NodeSeq) => T): List[T] =
+  formFields(toMap).flatMap(field => field.toForm.
+                            map(fo => func(field.displayHtml, field.fieldId, fo)))
+
+
+  /**
+   * flat map the fields titles and forms to generate a list
+   * @param func called with displayHtml, fieldId, form
+   */
+  def flatMapFieldTitleForm[T](toMap: A,
+  func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
+  formFields(toMap).flatMap(field => field.toForm.toList.
+                            flatMap(fo => func(field.displayHtml,
+                                               field.fieldId, fo)))
+
 
   /**
    * Given the prototype field (the field on the Singleton), get the field from the instance

@@ -1,10 +1,10 @@
 package net.liftweb.mapper
 
 /*                                                *\
-(c) 2006-2008 WorldWide Conferencing, LLC
-Distributed under an Apache License
-http://www.apache.org/licenses/LICENSE-2.0
-\*                                                 */
+ (c) 2006-2008 WorldWide Conferencing, LLC
+ Distributed under an Apache License
+ http://www.apache.org/licenses/LICENSE-2.0
+ \*                                                 */
 
 import _root_.scala.collection.mutable._
 import _root_.java.lang.reflect.Method
@@ -53,17 +53,17 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   else getSingleton.dbDefaultConnectionIdentifier
 
   /**
-  * Append a function to perform after the commit happens
-  * @param func - the function to perform after the commit happens
-  */
+   * Append a function to perform after the commit happens
+   * @param func - the function to perform after the commit happens
+   */
   def doPostCommit(func: () => Unit): A = {
     DB.appendPostFunc(connectionIdentifier, func)
     this
   }
 
   /**
-  * Save the instance and return the instance
-  */
+   * Save the instance and return the instance
+   */
   def saveMe(): A = {
     this.save
     this
@@ -84,10 +84,10 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   }
 
   /**
-  * If the instance calculates any additional
-  * fields for JSON object, put the calculated fields
-  * here
-  */
+   * If the instance calculates any additional
+   * fields for JSON object, put the calculated fields
+   * here
+   */
   def suplementalJs(ob: Can[KeyObfuscator]): List[(String, JsExp)] = Nil
 
   def validate : List[FieldError] = {
@@ -96,16 +96,14 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
     }
   }
 
-  def asJs: JsExp = {
-    getSingleton.asJs(this)
-  }
+  /**
+   * Convert the model to a JavaScript object
+   */
+  def asJs: JsExp = getSingleton.asJs(this)
 
-  /*
-  def toForm : NodeSeq = {
-  getSingleton.toForm(this)
-  }
-  */
-
+  /**
+   * Delete the model from the RDBMS
+   */
   def delete_! : Boolean = {
     if (!db_can_delete_?) false else
     runSafe {
@@ -114,46 +112,67 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
     }
   }
 
+  /**
+   * Get the fields (in order) for displaying a form
+   */
+  def formFields: List[MappedField[_, A]] =
+  getSingleton.formFields(this)
 
   /**
-  * Present the model as a form and execute the function on submission of the form
-  *
-  * @param button - If it's Full, put a submit button on the form with the value of the parameter
-  * @param onSuccess - redirect to the URL if the model validates, otherwise display the errors
-  *
-  * @return the form
-  */
+   * map the fields titles and forms to generate a list
+   * @param func called with displayHtml, fieldId, form
+   */
+  def mapFieldTitleForm[T](func: (NodeSeq, Can[NodeSeq], NodeSeq) => T): List[T] =
+  getSingleton.mapFieldTitleForm(this, func)
+
+
+  /**
+   * flat map the fields titles and forms to generate a list
+   * @param func called with displayHtml, fieldId, form
+   */
+  def flatMapFieldTitleForm[T]
+  (func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
+  getSingleton.flatMapFieldTitleForm(this, func)
+  
+  /**
+   * Present the model as a form and execute the function on submission of the form
+   *
+   * @param button - If it's Full, put a submit button on the form with the value of the parameter
+   * @param onSuccess - redirect to the URL if the model validates, otherwise display the errors
+   *
+   * @return the form
+   */
   def toForm(button: Can[String], onSuccess: String): NodeSeq =
   toForm(button, (what: A) => {what.validate match {
-    case Nil => what.save ; S.redirectTo(onSuccess)
-    case xs => S.error(xs)
-  }})
+        case Nil => what.save ; S.redirectTo(onSuccess)
+        case xs => S.error(xs)
+      }})
 
   /**
-  * Append the JSON representation of this model object to the string builder
-  * @param the string builder to append the JSON representation of this model to
-  *
-  * @return the StringBuilder
-  */
+   * Append the JSON representation of this model object to the string builder
+   * @param the string builder to append the JSON representation of this model to
+   *
+   * @return the StringBuilder
+   */
   def asJSON(sb: StringBuilder): StringBuilder = {
     getSingleton.asJSON(this, sb)
     sb
   }
 
   /**
-  * Create a JSON representation of this model object
-  */
+   * Create a JSON representation of this model object
+   */
   def asJSON: String = asJSON(new StringBuilder).toString
 
 
   /**
-  * Present the model as a form and execute the function on submission of the form
-  *
-  * @param button - If it's Full, put a submit button on the form with the value of the parameter
-  * @param f - the function to execute on form submission
-  *
-  * @return the form
-  */
+   * Present the model as a form and execute the function on submission of the form
+   *
+   * @param button - If it's Full, put a submit button on the form with the value of the parameter
+   * @param f - the function to execute on form submission
+   *
+   * @return the form
+   */
   def toForm(button: Can[String], f: A => Any): NodeSeq =
   getSingleton.toForm(this) ++ (<input type='hidden' name={S.mapFunc((ignore: List[String]) => f(this))} value="n/a" />) ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
@@ -176,8 +195,8 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   def saved_? : Boolean = getSingleton.saved_?(this)
 
   /**
-  * Can this model object be deleted?
-  */
+   * Can this model object be deleted?
+   */
   def db_can_delete_? : Boolean =  getSingleton.saved_?(this) && !was_deleted_?
 
   def dirty_? : Boolean = getSingleton.dirty_?(this)
@@ -212,11 +231,11 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   def comparePrimaryKeys(other: A) = false
 
   /**
-  * Find the field by name
-  * @param fieldName -- the name of the field to find
-  *
-  * @return Can[MappedField]
-  */
+   * Find the field by name
+   * @param fieldName -- the name of the field to find
+   *
+   * @return Can[MappedField]
+   */
   def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
 
   type FieldPf = PartialFunction[String, NodeSeq => NodeSeq]
@@ -240,8 +259,8 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   }
 
   /**
-  * If there's a field in this record that defines the locale, return it
-  */
+   * If there's a field in this record that defines the locale, return it
+   */
   def localeField: Can[MappedLocale[A]] = Empty
 
   def timeZoneField: Can[MappedTimeZone[A]] = Empty
@@ -262,8 +281,8 @@ trait BaseLongKeyedMapper extends BaseKeyedMapper {
 }
 
 trait IdPK extends BaseLongKeyedMapper {
-    def primaryKeyField = id
-    object id extends MappedLongIndex[MapperType](this.asInstanceOf[MapperType])
+  def primaryKeyField = id
+  object id extends MappedLongIndex[MapperType](this.asInstanceOf[MapperType])
 }
 
 trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends Mapper[OwnerType] with BaseKeyedMapper {
@@ -284,7 +303,7 @@ trait KeyedMapper[KeyType, OwnerType<:KeyedMapper[KeyType, OwnerType]] extends M
     other match {
       case null => false
       case km: KeyedMapper[Nothing, Nothing] if this.getClass.isAssignableFrom(km.getClass) ||
-      km.getClass.isAssignableFrom(this.getClass) => this.primaryKeyField == km.primaryKeyField
+        km.getClass.isAssignableFrom(this.getClass) => this.primaryKeyField == km.primaryKeyField
       case k => super.equals(k)
     }
   }

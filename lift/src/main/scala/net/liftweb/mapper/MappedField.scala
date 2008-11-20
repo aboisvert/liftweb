@@ -129,6 +129,8 @@ trait BaseMappedField extends SelectableField {
 
   def displayNameHtml: Can[NodeSeq] = Empty
 
+  def displayHtml: NodeSeq = displayNameHtml openOr Text(displayName)
+
   /**
    * This is where the instance creates its "toForm" stuff.
    * The actual toForm method wraps the information based on

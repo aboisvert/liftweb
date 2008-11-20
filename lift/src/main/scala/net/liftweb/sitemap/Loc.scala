@@ -68,15 +68,15 @@ trait Loc[ParamType] {
   lazy val calcSnippets: SnippetTest = {
     def buildPf(in: Loc.Snippet): PartialFunction[String, NodeSeq => NodeSeq] =
     new PartialFunction[String, NodeSeq => NodeSeq] {
-    def isDefinedAt(s: String) = s == in.name
-    def apply(s: String): NodeSeq => NodeSeq =
-    if (isDefinedAt(s)) in.func
-    else throw new MatchError()
+      def isDefinedAt(s: String) = s == in.name
+      def apply(s: String): NodeSeq => NodeSeq =
+      if (isDefinedAt(s)) in.func
+      else throw new MatchError()
     }
 
     val singles = params.flatMap{case v: Loc.Snippet => Some(v)
       case _ => None}.toList.map(buildPf) :::
-     params.flatMap{case v: Loc.LocSnippets => Some(v)
+    params.flatMap{case v: Loc.LocSnippets => Some(v)
       case _ => None}.toList
 
     if (singles.isEmpty) Map.empty
@@ -85,7 +85,7 @@ trait Loc[ParamType] {
         case pf :: Nil => pf
         case pfs => pfs.reduceLeft[PartialFunction[String, NodeSeq => NodeSeq]](_ orElse _)
       }
-      
+
       new SnippetTest {
         def isDefinedAt(in: (String, Can[ParamType])): Boolean =
         func.isDefinedAt(in._1)
@@ -314,6 +314,19 @@ object Loc {
    * a Loc
    */
   trait LocSnippets extends PartialFunction[String, NodeSeq => NodeSeq] with LocParam
+
+  /**
+   * A subclass of LocSnippets with a built in dispatch method (no need to
+   * implement isDefinedAt or apply... just
+   * def dispatch: PartialFunction[String, NodeSeq => NodeSeq]
+   */
+  trait DispatchLocSnippets extends LocSnippets {
+    def dispatch: PartialFunction[String, NodeSeq => NodeSeq]
+  
+    def isDefinedAt(n: String) = dispatch.isDefinedAt(n)
+    
+    def apply(n: String) = dispatch.apply(n)
+  }
 
   /**
    * What's the link text.
