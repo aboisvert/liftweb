@@ -203,38 +203,3 @@ trait JDBCFieldFlavor[MyType] {
 trait KeyField[MyType, OwnerType <: Record[OwnerType] with KeyedRecord[OwnerType, MyType]] extends Field[MyType, OwnerType] {
   def ===(other: KeyField[MyType, OwnerType]): Boolean = this.value == other.value
 }
-
-trait FieldHandler
-
-trait FieldHandlerRequest[RetType <: FieldHandler]
-
-object JdbcHandler extends JdbcFieldHandler
-class JdbcFieldHandler extends FieldHandler
-object XmlHandler extends XmlHandlerClass
-class XmlHandlerClass extends FieldHandler
-object JdbcRequest extends FieldHandlerRequest[JdbcFieldHandler]
-object XmlRequest extends FieldHandlerRequest[XmlHandlerClass]
-
-trait FieldLocator[MyType, OwnerType <: Record[OwnerType]] { self: Field[MyType, OwnerType] =>
-  def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] = Empty
-}
-
-trait JdbcLocator[MyType, OwnerType <: Record[OwnerType]] extends FieldLocator[MyType, OwnerType] {
-  self: Field[MyType, OwnerType] =>
-
-  override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
-  request match {
-    case JdbcRequest => Full(JdbcHandler)
-    case _ => super.locateFieldHandler(request)
-  }
-}
-
-trait XmlLocator[MyType, OwnerType <: Record[OwnerType]] extends FieldLocator[MyType, OwnerType] {
-  self: Field[MyType, OwnerType] =>
-
-  override def locateFieldHandler[T <: FieldHandler](request: FieldHandlerRequest[T]): Can[T] =
-  request match {
-    case XmlRequest => Full(XmlHandler)
-    case _ => super.locateFieldHandler(request)
-  }
-}
