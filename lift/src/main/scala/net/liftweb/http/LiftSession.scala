@@ -864,7 +864,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     override def transform(n: Node) = n match {
       case e: Elem if e.label == "head" && !doneHead =>
         doneHead = true
-        Elem(null, "head", e.attributes,  e.scope, (e.child ++
+        Elem(null, "head",
+             e.attributes,
+             e.scope,
+             (e.child ++
                                                     <script src={"/"+
                                                                  LiftRules.cometPath +
                                                                  "/" + uniqueId +
