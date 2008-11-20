@@ -80,19 +80,6 @@ class Boot {
     LiftRules.ajaxEnd =
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
-    /*
-    LiftRules.addRewriteBefore{
-      case RewriteRequest( path @ ParsePath("wiki" :: page :: _, _, _,_),
-			  _, _)
-      =>
-	RewriteResponse("wiki" :: Nil,
-			Map("wiki_page" -> page ::
-			    path.wholePath.drop(2).
-			    zipWithIndex.map(p =>
-			      ("param"+(p._2 + 1)) -> p._1) :_*))
-    }
-    */
-
     val wikibind_rewriter: LiftRules.RewritePf = {
       case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_),
 			  _, _)

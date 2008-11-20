@@ -8,6 +8,7 @@ import Helpers._
 import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConnectionIdentifier, ConnectionIdentifier}
 import _root_.java.sql.{Connection, DriverManager}
 import _root_.${packageName}.model._
+import _root_.javax.servlet.http.{HttpServletRequest}
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -25,8 +26,31 @@ class Boot {
     // Build SiteMap
     val entries = Menu(Loc("Home", List("index"), "Home")) :: User.sitemap
     LiftRules.setSiteMap(SiteMap(entries:_*))
-    S.addAround(User.requestLoans)
+
+    /*
+     * Show the spinny image when an Ajax call starts
+     */
+    LiftRules.ajaxStart =
+      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
+
+    /*
+     * Make the spinny image go away when it ends
+     */
+    LiftRules.ajaxEnd =
+      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+
+    LiftRules.appendEarly(makeUtf8)
+
+    S.addAround(DB.buildLoanWrapper)
   }
+
+  /**
+   * Force the request to be UTF-8
+   */
+  private def makeUtf8(req: HttpServletRequest) {
+    req.setCharacterEncoding("UTF-8")
+  }
+
 }
 
 
