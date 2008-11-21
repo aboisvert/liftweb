@@ -59,5 +59,23 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
   }
   // def buildChildLine: List[MenuItem] = kids.toList.flatMap(m => m.loc.buildItem(Nil, false, false))
 
+  def makeMenuItem(path: List[Loc[_]]): Can[MenuItem] = 
+  loc.buildItem(kids.flatMap(_.makeMenuItem(path)).toList, _lastInPath(path), _inPath(path))
+
+  private def _inPath(in: List[Loc[_]]): Boolean = in match {
+    case Nil => false
+    case x :: xs if x eq loc => true
+    case x :: xs => _inPath(xs)
+  }
+
+  private def _lastInPath(path: List[Loc[_]]): Boolean = path match {
+    case Nil => false
+    case xs => xs.last eq loc
+  }
+
+  def breadCrumbs: List[Loc[_]] = _parent match {
+    case Full(m: Menu) => m.loc.breadCrumbs
+    case _ => Nil
+  }
 }
 

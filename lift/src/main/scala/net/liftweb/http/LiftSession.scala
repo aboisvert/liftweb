@@ -317,6 +317,14 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     LiftSession.onShutdownSession.foreach(_(this))
   }
 
+  /**
+   * Find the template assocaited with the Loc
+   */
+  private[http] def locTemplate: Can[NodeSeq] =
+  for (req <- S.request;
+       loc <- req.location;
+       template <- loc.template) yield template
+
   private[http] def processRequest(request: Req): Can[LiftResponse] = {
     S.oldNotices(notices)
     LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
@@ -345,7 +353,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
         // Process but make sure we're okay, sitemap wise
         val response: Can[LiftResponse] = request.testLocation match {
-          case Left(true) => (findVisibleTemplate(request.path, request).map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
+          case Left(true) => 
+            ((locTemplate or findVisibleTemplate(request.path, request)).
+             map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
                 case Full(rawXml: NodeSeq) => {
                     val xml = HeadHelper.mergeToHtmlHead(rawXml)
                     val cometXform: List[RewriteRule] =
@@ -643,7 +653,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                         Null)
     }
 
-  if (ret.isEmpty) ret else
+    if (ret.isEmpty) ret else
     attrs.get("form").map(ft => (
         (<form action={S.uri} method={ft.text.trim.toLowerCase}>{ret}</form> %
          checkMultiPart(attrs)) %
@@ -756,7 +766,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), classOf[CometActor]).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
-      case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
+          case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
         val constr = cls.getConstructor()
         val ret = constr.newInstance().asInstanceOf[CometActor]
         ret.initCometActor(this, name, defaultXml, attributes)
@@ -849,9 +859,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         done = true
         Elem(null, "head", e.attributes,  e.scope, (e.child ++
                                                     <script
-						    src={"/"+
-                                                         LiftRules.ajaxPath +
-                                                         "/" + LiftRules.ajaxScriptName()}
+              src={"/"+
+                   LiftRules.ajaxPath +
+                   "/" + LiftRules.ajaxScriptName()}
               type="text/javascript"/>) :_*)
       case n => n
     }
@@ -868,10 +878,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
              e.attributes,
              e.scope,
              (e.child ++
-                                                    <script src={"/"+
-                                                                 LiftRules.cometPath +
-                                                                 "/" + uniqueId +
-                                                                 "/" + LiftRules.cometScriptName()}
+              <script src={"/"+
+                           LiftRules.cometPath +
+                           "/" + uniqueId +
+                           "/" + LiftRules.cometScriptName()}
               type="text/javascript"/>) :_*)
 
       case e: Elem if e.label == "body" && !doneBody =>
@@ -959,10 +969,10 @@ object TemplateFinder {
         tryo(List(classOf[ClassNotFoundException]), Empty) (Class.forName(clsName).asInstanceOf[Class[AnyRef]]).flatMap{
           c =>
           (c.newInstance match {
-            case inst: InsecureLiftView => c.getMethod(action).invoke(inst)
-            case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
-            case _ => Empty
-          }) match {
+              case inst: InsecureLiftView => c.getMethod(action).invoke(inst)
+              case inst: LiftView if inst.dispatch.isDefinedAt(action) => inst.dispatch(action)()
+              case _ => Empty
+            }) match {
             case null | Empty | None => Empty
             case n: Group => Full(n)
             case n: Elem => Full(n)

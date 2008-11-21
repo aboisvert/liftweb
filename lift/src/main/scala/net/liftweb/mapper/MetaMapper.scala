@@ -122,10 +122,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   def findAllDb(dbId:ConnectionIdentifier): List[A] =
   findMapDb(dbId, Nil :_*)(v => Full(v))
 
-  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): Long =
+  def countByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): scala.Long =
   countByInsecureSqlDb(dbDefaultConnectionIdentifier, query, checkedBy)
 
-  def countByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, checkedBy: IHaveValidatedThisSQL): Long =
+  def countByInsecureSqlDb(dbId: ConnectionIdentifier, query: String, checkedBy: IHaveValidatedThisSQL): scala.Long =
   DB.use(dbId)(DB.prepareStatement(query, _)(DB.exec(_)(rs => if (rs.next) rs.getLong(1) else 0L)))
 
   def findAllByInsecureSql(query: String, checkedBy: IHaveValidatedThisSQL): List[A] = findAllByInsecureSqlDb(dbDefaultConnectionIdentifier, query, checkedBy)

@@ -50,6 +50,14 @@ case class SiteMap(kids: Menu*) extends HasKids  {
       case Left(true) => true case _ => false})
 
   lazy val menus: List[Menu] = locs.values.map(_.menu).toList
+
+  def buildMenu(current: Can[Loc[_]]): CompleteMenu = {
+    val path: List[Loc[_]] = current match {
+      case Full(loc) => loc.breadCrumbs
+      case _ => Nil
+    }
+    CompleteMenu(kids.flatMap(_.makeMenuItem(path)))
+  }
 }
 
 object SiteMap {

@@ -124,6 +124,24 @@ trait Loc[ParamType] {
     }
   }
 
+  /**
+   * Is there a template assocaited with this Loc?
+   */
+  def template: Can[NodeSeq] =
+  paramTemplate.map(_.template()) or calcTemplate
+
+  /**
+   * A method that can be override to provide a template for this Loc
+   */
+  def calcTemplate: Can[NodeSeq] = Empty
+
+  /**
+   * Look for the Loc.Template in the param list
+   */
+  lazy val paramTemplate: Can[Loc.Template] =
+  params.flatMap{case v: Loc.Template => Some(v) case _ => None}.firstOption
+
+
   private def findTitle(lst: List[Loc.LocParam]): Can[Loc.Title[ParamType]] = lst match {
     case Nil => Empty
     case (t : Loc.Title[ParamType]) :: xs => Full(t)
@@ -173,6 +191,8 @@ trait Loc[ParamType] {
       case x => x.openOr(false)
     }
   } else false
+
+  def breadCrumbs: List[Loc[_]] = _menu.breadCrumbs ::: List(this)
 
   def buildMenu: CompleteMenu = {
     val theKids = _menu.kids.toList.flatMap(_.loc.buildItem(Nil, false, false))
@@ -308,6 +328,8 @@ object Loc {
    * name and the snippet function'
    */
   case class Snippet(name: String, func: NodeSeq => NodeSeq) extends LocParam
+
+  case class Template(template: () => NodeSeq) extends LocParam
 
   /**
    * Allows you to create a handler for many snippets that are associated with
