@@ -1037,6 +1037,7 @@ object OprEnum extends Enumeration {
   val < = Value(6, "<")
   val IsNull = Value(7, "IS NULL")
   val IsNotNull = Value(8, "IS NOT NULL")
+  val Like = Value(9, "LIKE")
 }
 
 
@@ -1054,7 +1055,7 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
   def indexDesc: String = field.dbColumnName+"("+len+")"
 }
 
-abstract class QueryParam[O<:Mapper[O]]
+trait QueryParam[O<:Mapper[O]]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],
                                     order: AscOrDesc) extends QueryParam[O]
@@ -1077,6 +1078,7 @@ case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) exten
 case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: Long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: Long) extends QueryParam[O]
+case class Ignore[O <: Mapper[O]]() extends QueryParam[O]
 
 abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterType] {
   type JoinType
@@ -1137,6 +1139,11 @@ object In {
   }
 
 
+}
+
+object Like {
+  def apply[O <: Mapper[O]](field: MappedField[String, O], value: String) =
+  Cmp[O, String](field, OprEnum.Like, Full(value), Empty)
 }
 
 object By {
