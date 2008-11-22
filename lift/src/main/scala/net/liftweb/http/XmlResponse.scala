@@ -11,6 +11,18 @@ import _root_.net.liftweb.util._
 import js._
 import _root_.javax.servlet.http.Cookie
 
+/**
+ * Allows you to create custom 200 responses for clients using different
+ * Content-Types.
+ */
+case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
+  def docType = Empty
+  def code = 200
+  def headers = List("Content-Type" -> mime)
+  def cookies = Nil
+  def out = xml
+}
+
 case class XmlResponse(xml: Node) extends ToResponse {
   def docType = Empty
   def code = 200
@@ -19,14 +31,46 @@ case class XmlResponse(xml: Node) extends ToResponse {
   def out = xml
 }
 
-object JavaScriptResponse {
-  def apply(js: JsCmd): LiftResponse = JavaScriptResponse(js, Nil, Nil, 200)
+/**
+ * Returning an Atom document.
+ */
+case class AtomResponse(xml: Node) extends ToResponse {
+  def docType = Empty
+  def code = 200
+  def headers = List("Content-Type" -> "application/atom+xml")
+  def cookies = Nil
+  def out = xml
 }
 
-case class JavaScriptResponse(js: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
-  def toResponse = {
-    val bytes = js.toJsCmd.getBytes("UTF-8")
-    InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/javascript") :: headers, cookies, code)
-  }
+/**
+ * Returning an OpenSearch Description Document.
+ */
+case class OpenSearchResponse(xml: Node) extends ToResponse {
+  def docType = Empty
+  def code = 200
+  def headers = List("Content-Type" -> "application/opensearchdescription+xml")
+  def cookies = Nil
+  def out = xml
+}
+
+/**
+ * The Atom entity was successfully created and is shown to the client.
+ */
+case class AtomCreatedResponse(xml: Node) extends LiftResponse {
+  def toResponse = CreatedResponse(xml, "application/atom+xml").toResponse
+}
+
+/**
+ * Returning an Atom category document.
+ */
+case class AtomCategoryResponse(xml: Node) extends LiftResponse {
+  def toResponse = XmlMimeResponse(xml, "application/atomcat+xml").toResponse
+}
+
+/**
+ * Returning an Atom Service Document.
+ */
+case class AtomServiceResponse(xml: Node) extends LiftResponse {
+  def toResponse = XmlMimeResponse(xml, "application/atomsvc+xml").toResponse
 }
 
