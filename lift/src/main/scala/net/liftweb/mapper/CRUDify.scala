@@ -358,7 +358,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
 
    def showAllId = "show_all"
    def showAllClass = "show_all"
-  
+
    def _showAllTemplate =
    <lift:crud.all>
       <table id={showAllId} class={showAllClass}>

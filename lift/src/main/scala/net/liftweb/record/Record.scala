@@ -94,57 +94,13 @@ trait Record[MyType <: Record[MyType]] {
   }
 
   /**
-   * Present the model as a form and execute the function on submission of the form.
-   * The form is based on the given template. This template is any given XHtml that contains
-   * three nodes acting as placeholders such as:
+   * Present the model as a form and execute the function on submission of the form
    *
-   * <pre>
-   *
-   * &lt;lift:field_label name="firstName"/&gt; - the label for firstName field will be rendered here
-   * &lt;lift:field name="firstName"/&gt; - the firstName field will be rendered here (typically an input field)
-   * &lt;lift:field_msg name="firstName"/&gt; - the <lift:msg> will be rendered here hafing the id given by
-   *                                             uniqueFieldId of the firstName field.
-   *
-   *
-   * Example.
-   *
-   * Having:
-   *
-   * class MyRecord extends Record[MyRecord] {
-   *
-   * 	def meta = MyRecordMeta
-   *
-   * 	object firstName extends StringField(this, "John")
-   *
-   * }
-   *
-   * object MyRecordMeta extends MyRecord with MetaRecord[MyRecord] {
-   *  override def mutable_? = false
-   * }
-   *
-   * ...
-   *
-   * val rec = MyRecordMeta.createRecord.firstName("McLoud")
-   *
-   * val template =
-   * &lt;div&gt;
-   * 	&lt;div&gt;
-   * 		&lt;div&gt;&lt;lift:field_label name="firstName"/&gt;&lt;/div&gt;
-   * 		&lt;div&gt;&lt;lift:field name="firstName"/&gt;&lt;/div&gt;
-   * 		&lt;div&gt;&lt;lift:field_msg name="firstName"/&gt;&lt;/div&gt;
-   * 	&lt;/div&gt;
-   * &lt;/div&gt;
-   *
-   * rec.toForm(template){(r:MyRecord) => println(r)});
-   *
-   * </pre>
-   *
-   * @param template - the XHtml template for rendering the form
    * @param f - the function to execute on form submission
    *
    * @return the form
    */
-  def toForm(template: NodeSeq)(f: MyType => Unit): NodeSeq = meta.toForm(this, template) ++ (SHtml.hidden(() => f(this)))
+  def toForm(f: MyType => Unit): NodeSeq = meta.toForm(this) ++ (SHtml.hidden(() => f(this)))
 
   /**
    * Find the field by name

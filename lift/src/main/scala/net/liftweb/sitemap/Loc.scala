@@ -89,7 +89,7 @@ trait Loc[ParamType] {
       new SnippetTest {
         def isDefinedAt(in: (String, Can[ParamType])): Boolean =
         func.isDefinedAt(in._1)
-     
+
         def apply(in: (String, Can[ParamType])): NodeSeq => NodeSeq =
         func.apply(in._1)
       }
@@ -344,9 +344,9 @@ object Loc {
    */
   trait DispatchLocSnippets extends LocSnippets {
     def dispatch: PartialFunction[String, NodeSeq => NodeSeq]
-  
+
     def isDefinedAt(n: String) = dispatch.isDefinedAt(n)
-    
+
     def apply(n: String) = dispatch.apply(n)
   }
 

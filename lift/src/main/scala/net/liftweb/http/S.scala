@@ -279,7 +279,7 @@ object S extends HasParams {
   ?(str)
   else
   String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray :_*)
-  
+
   /**
    * Get a core lift localized string or return the original string
    *

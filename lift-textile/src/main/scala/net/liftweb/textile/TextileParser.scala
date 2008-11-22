@@ -154,11 +154,11 @@ import _root_.scala.collection.mutable.HashMap
     lazy val lineElem : Parser[Textile] = {
 	not(discard(blankLine)) ~> (endOfLine | image | footnote_def |
 				    anchor | dimension | elipsis  |
-				    copyright | trademark | registered | 
+				    copyright | trademark | registered |
 				    emDash |
 				    enDash | italic | emph | bold  |
 				    cite |  span | code | delete | insert |
-				    sup | sub | strong | html | 
+				    sup | sub | strong | html |
 				    single_quote | quote | acronym | charBlock)
     }
 
@@ -191,19 +191,19 @@ import _root_.scala.collection.mutable.HashMap
     /**
     * Look for an acronym, but don't mistake registered, copyright, and trademarks
     */
-    lazy val acronym : Parser[Acronym] =  
-      ((chrsExcept(' ', '(', '\n') <~ 
-	not(discard(copyright | trademark | registered))) ~ 
+    lazy val acronym : Parser[Acronym] =
+      ((chrsExcept(' ', '(', '\n') <~
+	not(discard(copyright | trademark | registered))) ~
        ('(' ~> chrsExcept(')', '\n') <~ ')') ) ^^ flatten2(Acronym)
 
     /**
     * is it an !image!
     */
-    lazy val image : Parser[Textile] = 
-      ('!' ~> opt('<')) ~ opt('>') ~ 
+    lazy val image : Parser[Textile] =
+      ('!' ~> opt('<')) ~ opt('>') ~
     (rep1(not(accept('!')) ~> elem("", validUrlChar)) ^^ mkString) ~
     (opt('(' ~> chrsExcept(')', '\n') <~ ')') <~ '!') ~
-    opt(':' ~> url ^? {case a: Anchor => a}) ^^ 
+    opt(':' ~> url ^? {case a: Anchor => a}) ^^
     { case fl ~ fr ~ img_url ~ alt ~ link =>
       Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null,
             if (!fl.isEmpty) List(AnyAttribute("style", "float:left"))
@@ -219,52 +219,52 @@ import _root_.scala.collection.mutable.HashMap
     /**
     * various things that make up an anchor (a tag)
     */
-    lazy val anchor = 
+    lazy val anchor =
       url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
 
 
-    lazy val upper: Parser[Char] = 
+    lazy val upper: Parser[Char] =
       elem("Uppercase character", Character.isUpperCase)
-    
-    lazy val lower: Parser[Char] = 
+
+    lazy val lower: Parser[Char] =
       elem("Lowercase character", Character.isLowerCase)
-    
-    lazy val lowerOrNumber: Parser[Char] = 
-      elem("Lowercase character or digit", c => Character.isLowerCase(c) || 
+
+    lazy val lowerOrNumber: Parser[Char] =
+      elem("Lowercase character or digit", c => Character.isLowerCase(c) ||
 	   Character.isDigit(c))
 
     /**
     * Don't use the CamelCase thing for a wikiword if it's prefixed by
     * a backslash
     */
-    lazy val escCamelUrl: Parser[CharBlock] = 
+    lazy val escCamelUrl: Parser[CharBlock] =
       ('\\'  ~ upper ~ lower ~ rep(lowerOrNumber) ~
        upper ~ lower ~ rep(lowerOrNumber) ~
-       rep(upper ~ lower ~ rep(lowerOrNumber) ^^ 
+       rep(upper ~ lower ~ rep(lowerOrNumber) ^^
 	   {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^
-    {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8 
-     => CharBlock(mkString(List(c1, c2, c3)) + 
-		  mkString(s4) + 
+    {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8
+     => CharBlock(mkString(List(c1, c2, c3)) +
+		  mkString(s4) +
 		  mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
 
     /**
     * is the work camelized?
     */
-    lazy val camelizedWord: Parser[CharBlock] = 
-      upper ~ lower ~ rep(lowerOrNumber) ^^ 
+    lazy val camelizedWord: Parser[CharBlock] =
+      upper ~ lower ~ rep(lowerOrNumber) ^^
     { case u ~ l ~ cs => CharBlock(mkString(u :: (l :: cs))) }
 
-    lazy val lowerWord: Parser[String] = 
+    lazy val lowerWord: Parser[String] =
       lower ~ rep1(lowerOrNumber) ^^ {case x ~ xs => (x :: xs).mkString("")}
-    
-    
+
+
     /**
      * a WikiWord
      */
-    lazy val camelUrl: Parser[Textile] = 
+    lazy val camelUrl: Parser[Textile] =
       noCatCamelUrl | catCamelUrl | tickUrl | catTickUrl
 
-    lazy val catTickUrl: Parser[WikiAnchor] = 
+    lazy val catTickUrl: Parser[WikiAnchor] =
       lowerWord ~ ':' ~ tickUrl ^^
     {case cat ~ colon ~ rest => WikiAnchor(rest.word, Some(cat), wikiUrlFunc)}
 
@@ -276,15 +276,15 @@ import _root_.scala.collection.mutable.HashMap
 
     lazy val tickUrlChar: Parser[Char] = elem("tick url char", isTickUrlChar)
 
-    lazy val noCatCamelUrl: Parser[Textile] = 
-      camelizedWord ~ rep1(camelizedWord) ^^ 
-    { case c ~ cs => val ss = mkString((c :: cs).map(_.s)); 
+    lazy val noCatCamelUrl: Parser[Textile] =
+      camelizedWord ~ rep1(camelizedWord) ^^
+    { case c ~ cs => val ss = mkString((c :: cs).map(_.s));
      WikiAnchor(ss, None, wikiUrlFunc)}
 
-    lazy val catCamelUrl: Parser[Textile] = 
+    lazy val catCamelUrl: Parser[Textile] =
       lowerWord ~ ':' ~ camelizedWord ~ rep1(camelizedWord) ^^ {
-	case cat ~ colon ~ c ~ cs => 
-	  val ss = mkString((c :: cs).map(_.s)); 
+	case cat ~ colon ~ c ~ cs =>
+	  val ss = mkString((c :: cs).map(_.s));
 	WikiAnchor(ss, Some(cat), wikiUrlFunc)}
 
 
@@ -293,15 +293,15 @@ import _root_.scala.collection.mutable.HashMap
     /**
     * "reference":reference
     */
-    lazy val quote_ref: Parser[Textile] = 
+    lazy val quote_ref: Parser[Textile] =
       ('"' ~> chrsExcept('"', '\n') <~ '"') ~ (':' ~> urlStr) ^^
     {case fs ~ rc => RefAnchor(Nil, rc, fs, Nil)}
-    
-    
-    lazy val httpStr = 
-      (accept("https://") ^^ mkString | accept("http://") ^^ 
+
+
+    lazy val httpStr =
+      (accept("https://") ^^ mkString | accept("http://") ^^
        mkString) ~ urlStr ^^ { case protocol ~ rc => protocol + rc }
-    
+
     /**
     * "google":http://google.com
     */
@@ -455,13 +455,13 @@ import _root_.scala.collection.mutable.HashMap
         {case fbl ~ abl => Bullet(fbl :: abl, numbered)}
     }
 
-    def formattedLineElem[Q <% Parser[Any]](m: Q): 
+    def formattedLineElem[Q <% Parser[Any]](m: Q):
     Parser[List[Textile] ~ List[Attribute]] =
     formattedLineElem(m, rep(attribute))
 
-    def formattedLineElem[Q <% Parser[Any]](m: Q, p: Parser[List[Attribute]]): 
+    def formattedLineElem[Q <% Parser[Any]](m: Q, p: Parser[List[Attribute]]):
     Parser[List[Textile] ~ List[Attribute]] =
-       (m ~> p) ~ (rep1(not(discard(m) | endOfLine) ~> lineElem) <~ m) ^^ 
+       (m ~> p) ~ (rep1(not(discard(m) | endOfLine) ~> lineElem) <~ m) ^^
        {case attrs ~ ln => new ~(reduceCharBlocks(ln), attrs) }
 
     lazy val spaceOrStart: UnitParser = beginl | accept(' ')
@@ -766,8 +766,8 @@ import _root_.scala.collection.mutable.HashMap
 
   case class Quoted(elems : List[Textile]) extends ATextile(elems, Nil) {
     override def toHtml: NodeSeq = {
-      (<xml:group>&#8220;</xml:group> ++ 
-       flattenAndDropLastEOL(elems)) ++ 
+      (<xml:group>&#8220;</xml:group> ++
+       flattenAndDropLastEOL(elems)) ++
       <xml:group>&#8221;</xml:group>
     }
   }
@@ -814,7 +814,7 @@ import _root_.scala.collection.mutable.HashMap
   }
 
   case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
-    override def toHtml : NodeSeq = 
+    override def toHtml : NodeSeq =
       XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*) ++
     Text("\n")
   }
@@ -882,9 +882,9 @@ import _root_.scala.collection.mutable.HashMap
 
   case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
-      XmlElem(null, 
-	      if (isHeader) "th" else "td", fromStyle(attrs), 
-	      TopScope, 
+      XmlElem(null,
+	      if (isHeader) "th" else "td", fromStyle(attrs),
+	      TopScope,
 	      (if (elems == Nil) <xml:group>&nbsp;</xml:group> else
 		flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }

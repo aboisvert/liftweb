@@ -40,7 +40,6 @@ object ActorWatcher extends Actor {
     react {
       case Exit(actor: Actor, why: Throwable) =>
         failureFuncs.foreach(f => tryo(f(actor, why)))
-
       case _ =>
     }
   }

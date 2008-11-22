@@ -20,7 +20,7 @@ import _root_.net.liftweb.mapper._
 /**
  * The singleton that has methods for accessing the database
  */
-object WikiEntry extends WikiEntry with LongKeyedMetaMapper[WikiEntry] 
+object WikiEntry extends WikiEntry with LongKeyedMetaMapper[WikiEntry]
 
 /**
  * An O-R mapped wiki entry

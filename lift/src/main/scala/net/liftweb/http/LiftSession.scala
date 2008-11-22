@@ -353,7 +353,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
         // Process but make sure we're okay, sitemap wise
         val response: Can[LiftResponse] = request.testLocation match {
-          case Left(true) => 
+          case Left(true) =>
             ((locTemplate or findVisibleTemplate(request.path, request)).
              map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
                 case Full(rawXml: NodeSeq) => {

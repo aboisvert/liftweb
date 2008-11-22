@@ -54,7 +54,7 @@ import _root_.net.liftweb.util.{Full, Empty}
 //     }
 //   }
 // }
-// 
+//
 // import _root_.net.liftweb.mapper._
 // import _root_.net.liftweb.example.model._
 // import _root_.net.liftweb.example.snippet._

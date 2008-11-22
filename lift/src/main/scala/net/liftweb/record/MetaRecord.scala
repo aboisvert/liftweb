@@ -32,6 +32,56 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
 
   private[record] var lifecycleCallbacks: List[(String, Method)] = Nil
 
+  /**
+   * Set this to use your own form template when rendering a Record to a form.
+   *
+   * This template is any given XHtml that contains three nodes acting as placeholders such as:
+   *
+   * <pre>
+   *
+   * &lt;lift:field_label name="firstName"/&gt; - the label for firstName field will be rendered here
+   * &lt;lift:field name="firstName"/&gt; - the firstName field will be rendered here (typically an input field)
+   * &lt;lift:field_msg name="firstName"/&gt; - the <lift:msg> will be rendered here hafing the id given by
+   *                                             uniqueFieldId of the firstName field.
+   *
+   *
+   * Example.
+   *
+   * Having:
+   *
+   * class MyRecord extends Record[MyRecord] {
+   *
+   * 	def meta = MyRecordMeta
+   *
+   * 	object firstName extends StringField(this, "John")
+   *
+   * }
+   *
+   * object MyRecordMeta extends MyRecord with MetaRecord[MyRecord] {
+   *  override def mutable_? = false
+   * }
+   *
+   * ...
+   *
+   * val rec = MyRecordMeta.createRecord.firstName("McLoud")
+   *
+   * val template =
+   * &lt;div&gt;
+   * 	&lt;div&gt;
+   * 		&lt;div&gt;&lt;lift:field_label name="firstName"/&gt;&lt;/div&gt;
+   * 		&lt;div&gt;&lt;lift:field name="firstName"/&gt;&lt;/div&gt;
+   * 		&lt;div&gt;&lt;lift:field_msg name="firstName"/&gt;&lt;/div&gt;
+   * 	&lt;/div&gt;
+   * &lt;/div&gt;
+   *
+   * MyRecordMeta.formTemplate = Full(template)
+   * rec.toForm((r:MyRecord) => println(r));
+   *
+   * </pre>
+   *
+   */
+  var formTemplate: Can[NodeSeq] = Empty
+
   protected val rootClass = this.getClass.getSuperclass
 
   private def isMagicObject(m: Method) = m.getReturnType.getName.endsWith("$"+m.getName+"$") && m.getParameterTypes.length == 0
@@ -160,23 +210,21 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
   def asJs(inst: BaseRecord): JsExp = JE.JsObj(("$lift_class", JE.Str("temp"))) // TODO - implement this
 
   /**
-   * Returns the XHTML representation of inst Record.
+   * Returns the XHTML representation of inst Record. If formTemplate is set,
+   * this template will be used otherwise a default template is considered.
    *
    * @param inst - the record to be rendered
    * @return the XHTML content as a NodeSeq
    */
-  def toForm(inst: BaseRecord): NodeSeq =
-    fieldList.flatMap(holder =>
-      inst.fieldByName(holder.name).map((field:Field[Any, BaseRecord]) =>
+  def toForm(inst: BaseRecord): NodeSeq = {
+    formTemplate match {
+      case Full(template) => _toForm(inst, template)
+      case Empty => fieldList.flatMap(holder => inst.fieldByName(holder.name).map((field:Field[Any, BaseRecord]) =>
         field.toForm).openOr(NodeSeq.Empty) ++ Text("\n"))
+      }
+    }
 
-  /**
-   * Returns the XHTML representation of inst Record based of a provided template
-   *
-   * @param inst - the record to be rendered
-   * @return the XHTML content as a NodeSeq
-   */
-  def toForm(inst: BaseRecord, template: NodeSeq): NodeSeq = {
+  private def _toForm(inst: BaseRecord, template: NodeSeq): NodeSeq = {
     template match {
       case e @ <lift:field_label>{_*}</lift:field_label> => e.attribute("name") match{
         case Some(name) => inst.fieldByName(name.toString).map((field: Field[Any, BaseRecord]) => field.label).openOr(NodeSeq.Empty)
@@ -197,11 +245,11 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
       }
 
       case Elem(namespace, label, attrs, scp, ns @ _*) =>
-        Elem(namespace, label, attrs, scp, toForm(inst, ns.flatMap(n => toForm(inst, n))):_* )
+        Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
 
       case s : Seq[_] => s.flatMap(e => e match {
         case Elem(namespace, label, attrs, scp, ns @ _*) =>
-        Elem(namespace, label, attrs, scp, toForm(inst, ns.flatMap(n => toForm(inst, n))):_* )
+        Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
         case x => x
       })
 

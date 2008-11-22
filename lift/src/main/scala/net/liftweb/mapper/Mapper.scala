@@ -133,7 +133,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   def flatMapFieldTitleForm[T]
   (func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
   getSingleton.flatMapFieldTitleForm(this, func)
-  
+
   /**
    * Present the model as a form and execute the function on submission of the form
    *

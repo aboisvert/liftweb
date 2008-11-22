@@ -61,7 +61,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
     }
     "provide an acceptCI parser to parse whatever string matching another string ignoring case" in {
       import abcdStringGen._
-      val ignoreCaseStringParse: Function2[String, String, Boolean] = 
+      val ignoreCaseStringParse: Function2[String, String, Boolean] =
         (s: String, s2: String) => acceptCI(s).apply(s2) match {
           case Success(x, y) => s2.toUpperCase must startWith(s.toUpperCase)
           case _ => true
@@ -137,7 +137,7 @@ object whiteStringGen {
   def genWhite = for (len <- choose(1, 4);
          string <- vectorOf(len, frequency((1, value(" ")), (1, value("\t")), (1, value("\r")), (1, value("\n"))))
          ) yield string.mkString("")
- 
+
   implicit def genWhiteString: Arbitrary[String] = Arbitrary {
     genWhite
   }

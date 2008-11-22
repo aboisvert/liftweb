@@ -23,9 +23,9 @@ import Helpers._
 import _root_.scala.xml.{NodeSeq, Text, Elem, UnprefixedAttribute, Null, Node}
 
 /**
-* Mix this trait into your REST service provider to convert between different
-* response and a LiftResponse
-*/
+ * Mix this trait into your REST service provider to convert between different
+ * response and a LiftResponse
+ */
 trait XMLApiHelper {
   implicit def boolToResponse(in: Boolean): LiftResponse =
   buildResponse(in, Empty, <xml:group/>)
@@ -38,11 +38,6 @@ trait XMLApiHelper {
 
   implicit def pairToResponse(in: (Boolean, String)): LiftResponse =
   buildResponse(in._1, Full(Text(in._2)), <xml:group/>)
-
-  /*
-  implicit def unitToSuccess(in: Unit): LiftResponse =
-  buildResponse(true, Empty, <xml:group/>)
-  */
 
   protected def operation: Option[NodeSeq] =
   (for (req <- S.request) yield req.path.partPath match {
@@ -65,29 +60,29 @@ trait XMLApiHelper {
   implicit def putResponseInCan(in: LiftResponse): Can[LiftResponse] = Full(in)
 
   /**
-  * The method that wraps the outer-most tag around the body
-  */
+   * The method that wraps the outer-most tag around the body
+   */
   def createTag(in: NodeSeq): Elem
 
   /**
-  * The attribute name for success
-  */
+   * The attribute name for success
+   */
   def successAttrName = "success"
 
   /**
-  * The attribute name for operation
-  */
+   * The attribute name for operation
+   */
   def operationAttrName = "operation"
 
   /**
-  * The attribute name for any msg attribute
-  */
+   * The attribute name for any msg attribute
+   */
   def msgAttrName = "msg"
 
   /**
-  * Build the Response based on Success, an optional message
-  * and the body
-  */
+   * Build the Response based on Success, an optional message
+   * and the body
+   */
   protected def buildResponse(success: Boolean, msg: Can[NodeSeq],
                             body: NodeSeq): LiftResponse =
   XmlResponse(createTag(body) % (successAttrName -> success) %
