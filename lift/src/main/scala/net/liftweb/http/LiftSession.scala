@@ -859,9 +859,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         done = true
         Elem(null, "head", e.attributes,  e.scope, (e.child ++
                                                     <script
-              src={"/"+
+              src={S.encodeURL("/"+
                    LiftRules.ajaxPath +
-                   "/" + LiftRules.ajaxScriptName()}
+                   "/" + LiftRules.ajaxScriptName())}
               type="text/javascript"/>) :_*)
       case n => n
     }
@@ -878,10 +878,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
              e.attributes,
              e.scope,
              (e.child ++
-              <script src={"/"+
+              <script src={S.encodeURL("/"+
                            LiftRules.cometPath +
                            "/" + uniqueId +
-                           "/" + LiftRules.cometScriptName()}
+                           "/" + LiftRules.cometScriptName())}
               type="text/javascript"/>) :_*)
 
       case e: Elem if e.label == "body" && !doneBody =>
