@@ -48,8 +48,8 @@ trait Record[MyType <: Record[MyType]] {
   /**
    * Returns the HTML representation ofthis Record
    */
-  def asHtml: NodeSeq = {
-    meta.asHtml(this)
+  def toXHtml: NodeSeq = {
+    meta.toXHtml(this)
   }
 
   /**
