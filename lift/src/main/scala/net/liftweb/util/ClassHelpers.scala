@@ -325,7 +325,7 @@ trait ClassHelpers { self: ControlHelpers =>
                                             case Failure(_, Full(c), _) => if (c.getCause != null) throw c.getCause else throw c
                                    }) match {
                                             case Some(result@Full(_)) => result
-                                            case None => Failure("invokeMethod " + meth, Empty, Nil)
+                                            case None => Failure("invokeMethod " + meth, Empty, Empty)
                                    }
   }
 

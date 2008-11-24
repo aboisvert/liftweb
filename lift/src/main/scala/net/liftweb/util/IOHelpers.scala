@@ -42,9 +42,9 @@ trait IoHelpers {
       t1.join
       t2.join
       if (res == 0) Full(stdOut)
-      else Failure(stdErr, Empty, Nil)
+      else Failure(stdErr, Empty, Empty)
     } catch {
-      case e => Failure(e.getMessage, Full(e), Nil)
+      case e => Failure(e.getMessage, Full(e), Empty)
     }
   }
     def readWholeThing(in: Reader): String = {

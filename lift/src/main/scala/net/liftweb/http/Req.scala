@@ -250,7 +250,7 @@ class Req(val path: ParsePath,
     try {
       body.map(b => XML.load(new _root_.java.io.ByteArrayInputStream(b)))
     } catch {
-      case e => Failure(e.getMessage, Full(e), Nil)
+      case e => Failure(e.getMessage, Full(e), Empty)
     }
   }
 

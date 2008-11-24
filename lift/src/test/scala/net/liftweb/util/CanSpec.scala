@@ -92,7 +92,7 @@ object CanSpec extends Specification {
       Full(1) filter {_ == 0} mustBe Empty
     }
     "define a 'filterMsg' method, returning a Failure if the filter predicate is not satisfied" in {
-      Full(1).filterMsg("not equal to 0")(_ == 0) must_== Failure("not equal to 0", Empty, Nil)
+      Full(1).filterMsg("not equal to 0")(_ == 0) must_== Failure("not equal to 0", Empty, Empty)
     }
     "define a 'foreach' method using its value (to display it for instance)" in {
       var total = 0
@@ -169,7 +169,7 @@ object CanSpec extends Specification {
       empty filter {_ > 0} mustBe Empty
     }
     "define a 'filterMsg' method, returning a Failure" in {
-      Empty.filterMsg("not equal to 0")(_ == 0) must_== Failure("not equal to 0", Empty, Nil)
+      Empty.filterMsg("not equal to 0")(_ == 0) must_== Failure("not equal to 0", Empty, Empty)
     }
     "define a 'foreach' doing nothing" in {
       var total = 0
@@ -193,10 +193,10 @@ object CanSpec extends Specification {
       Empty.toOption must_== None
     }
     "return a failure with a message if asked for its status with the operator ?~" in {
-      Empty ?~ "nothing" must_== Failure("nothing", Empty, Nil)
+      Empty ?~ "nothing" must_== Failure("nothing", Empty, Empty)
     }
     "return a failure with a message if asked for its status with the operator ?~!" in {
-      Empty ?~! "nothing" must_== Failure("nothing", Empty, Nil)
+      Empty ?~! "nothing" must_== Failure("nothing", Empty, Empty)
     }
     "define a 'isA' method returning Empty" in {
       Empty.isA(classOf[Double]) must_== Empty
@@ -205,24 +205,24 @@ object CanSpec extends Specification {
   "A Failure is an Empty Can which" can {
     "return its cause as an exception" in {
       case class LiftException(m: String) extends Exception
-      Failure("error", Full(new LiftException("broken")), Nil).exception.get must_== new LiftException("broken")
+      Failure("error", Full(new LiftException("broken")), Empty).exception.get must_== new LiftException("broken")
     }
     "return a chained list of causes" in {
       Failure("error",
                Full(new Exception("broken")),
-               List(Failure("nested cause", Empty, Nil))).chain must_== List(Failure("nested cause", Empty, Nil))
+               Full(Failure("nested cause", Empty, Empty))).chain must_== Full(Failure("nested cause", Empty, Empty))
     }
   }
   "A Failure is an Empty Can which" should {
     "return itself if mapped or flatmapped" in {
-      Failure("error", Empty, Nil) map {_.toString} must_== Failure("error", Empty, Nil)
-      Failure("error", Empty, Nil) flatMap {x: String => Full(x.toString)} must_== Failure("error", Empty, Nil)
+      Failure("error", Empty, Empty) map {_.toString} must_== Failure("error", Empty, Empty)
+      Failure("error", Empty, Empty) flatMap {x: String => Full(x.toString)} must_== Failure("error", Empty, Empty)
     }
     "return a itself when asked for its status with the operator ?~" in {
-      Failure("error", Empty, Nil) ?~ "nothing" must_== Failure("error", Empty, Nil)
+      Failure("error", Empty, Empty) ?~ "nothing" must_== Failure("error", Empty, Empty)
     }
     "create a new failure with a chained message if asked for its status with the operator ?~!" in {
-      Failure("error", Empty, Nil) ?~! "error2" must_== Failure("error2", Empty, Failure("error", Empty, Nil):::Nil)
+      Failure("error", Empty, Empty) ?~! "error2" must_== Failure("error2", Empty, Full(Failure("error", Empty, Empty)))
     }
   }
 }

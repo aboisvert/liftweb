@@ -44,7 +44,7 @@ object CanUnit extends Specification with CanGen with ScalaCheck {
       Empty must_!= "hello"
     }
     "return false with comparing one Failure and another object" in {
-      Failure("", Empty, Nil) must_!= "hello"
+      Failure("", Empty, Empty) must_!= "hello"
     }
   }
 }
@@ -69,6 +69,6 @@ trait CanGen {
     exception <- value(Full(new Exception("")))
     chainLen <- choose(1, 5)
     chain <- frequency((1, vectorOf(chainLen, genFailureCan)), (3, value(Nil)))
-  } yield Failure(msg.mkString, exception, chain.toList)
+  } yield Failure(msg.mkString, exception, Can(chain.firstOption))
 
 }

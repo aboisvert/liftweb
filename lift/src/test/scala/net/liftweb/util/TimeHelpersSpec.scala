@@ -166,7 +166,7 @@ object TimeHelpersSpec extends Specification with TimeHelpers with TimeAmountsGe
     }
     "provide a toDate returning a Full(date) from many kinds of objects" in {
       val d = now
-      (null, Nil, None, Failure("", Empty, Nil)).toList forall { toDate(_) must_== Empty }
+      (null, Nil, None, Failure("", Empty, Empty)).toList forall { toDate(_) must_== Empty }
       (Full(d), Some(d), d :: d).toList forall { toDate(_) must_== Full(d) }
       toDate(internetDateFormatter.format(d)).get.getTime.toLong must beCloseTo(d.getTime.toLong, 1000L)
     }
