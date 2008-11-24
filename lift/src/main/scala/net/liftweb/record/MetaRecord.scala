@@ -173,7 +173,9 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
    * @param inst - th designated Record
    * @return a NodeSeq
    */
-  def asHtml(inst: BaseRecord): NodeSeq = NodeSeq.Empty
+  def toXHtml(inst: BaseRecord): NodeSeq = fieldList.flatMap(holder =>
+      inst.fieldByName(holder.name).map((field:Field[Any, BaseRecord]) => field.toXHtml).openOr(NodeSeq.Empty) ++ Text("\n"))
+
 
   /**
    * Validates the inst Record by calling validators for each field
