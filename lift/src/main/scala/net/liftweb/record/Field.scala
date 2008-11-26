@@ -43,6 +43,8 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
    */
   def owner: OwnerType
 
+  def couldNotSetValue = valueCouldNotBeSet = true
+
   protected def dirty_?(b: Boolean) = dirty = b
 
   def resetDirty {
@@ -161,7 +163,7 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
   /**
    * The error message used when the fiel value could not be set
    */
-  def errorMessage : String = ""
+  def noValueErrorMessage : String = ""
 
   /**
    * Return a list of functions that will be subsequently called for validating this field.
