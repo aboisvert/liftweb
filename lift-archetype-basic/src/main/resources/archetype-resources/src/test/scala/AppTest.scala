@@ -6,14 +6,14 @@ import Assert._
 import _root_.scala.xml.XML
 
 object AppTest {
-    def suite: Test = {
-        val suite = new TestSuite(classOf[AppTest])
-        suite
-    }
+  def suite: Test = {
+    val suite = new TestSuite(classOf[AppTest])
+    suite
+  }
 
-    def main(args : Array[String]) {
-        _root_.junit.textui.TestRunner.run(suite)
-    }
+  def main(args : Array[String]) {
+    _root_.junit.textui.TestRunner.run(suite)
+  }
 }
 
 /**
