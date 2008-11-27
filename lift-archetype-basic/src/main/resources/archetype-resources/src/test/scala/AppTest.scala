@@ -36,15 +36,19 @@ class AppTest extends TestCase("app") {
   def testXml() = {
     var failed: List[File] = Nil
     
+    def handled(file: String) =
+      file.endsWith(".html") || file.endsWith(".xml") ||
+      file.endsWith(".htm")  || file.endsWith(".xhtml")
+    
     def wellFormed(file: File) {
       if (file.isDirectory)
         for (f <- file.listFiles) wellFormed(f)
 
-      if (file.isFile && (file.getName.endsWith(".html") || file.getName.endsWith(".xml"))) {
+      if (file.isFile && handled(file.getName)) {
         try {
           XML.loadFile(file)
         } catch {
-          case e: org.xml.sax.SAXParseException => failed = file :: failed
+          case e: _root_.org.xml.sax.SAXParseException => failed = file :: failed
         }
       }
     }
