@@ -190,7 +190,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
 	      case Full(field) => if (!field.valueCouldNotBeSet) {
 	        field.validators.flatMap(_(field.value).map(FieldError(field, _)))
 	      } else {
-	        FieldError(field, Text(field.errorMessage)) :: Nil
+	        FieldError(field, Text(field.noValueErrorMessage)) :: Nil
 	      }
 	      case _ => Nil
 	    })

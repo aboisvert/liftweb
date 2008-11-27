@@ -11,7 +11,7 @@ trait NumericField[MyType, OwnerType <: Record[OwnerType]] extends Field[MyType,
   private def elem = <input type="text" name={S.mapFunc{s: List[String] => {
       this.setFromAny(s) match {
         case Empty => valueCouldNotBeSet = true
-        case _ => valueCouldNotBeSet = false
+        case _ =>
       }}}} value={value.toString}
       tabindex={tabIndex toString}/>
 
@@ -38,5 +38,5 @@ trait NumericField[MyType, OwnerType <: Record[OwnerType]] extends Field[MyType,
     }
   }
 
-  override def errorMessage = S.??("number.required")
+  override def noValueErrorMessage = S.??("number.required")
 }
