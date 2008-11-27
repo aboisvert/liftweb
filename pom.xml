@@ -124,6 +124,12 @@ Lift is a scala web framework.
         <role>Advanced Localization</role>
       </roles>
     </developer>
+    <developer>
+      <id>dchenbecker</id>
+      <name>Derek Chen-Becker</name>
+      <email>java [at] chen-becker.org</email>
+      <timezone>-7</timezone>
+    </developer>
   </developers>
 
   <mailingLists>
