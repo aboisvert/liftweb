@@ -6,25 +6,26 @@ import Assert._
 import _root_.scala.xml.XML
 
 object AppTest {
-  def suite: Test = {
-    val suite = new TestSuite(classOf[AppTest])
-    suite
-  }
+    def suite: Test = {
+        val suite = new TestSuite(classOf[AppTest])
+        suite
+    }
 
-  def main(args : Array[String]) {
-    _root_.junit.textui.TestRunner.run(suite)
-  }
+    def main(args : Array[String]) {
+        _root_.junit.textui.TestRunner.run(suite)
+    }
 }
 
 /**
  * Unit test for simple App.
  */
 class AppTest extends TestCase("app") {
+
   /**
    * Rigourous Tests :-)
    */
   def testOK() = assertTrue(true)
-  //def testKO() = assertTrue(false)
+  // def testKO() = assertTrue(false);
 
   /**
    * Tests to make sure the project's XML files are well-formed.
@@ -53,7 +54,9 @@ class AppTest extends TestCase("app") {
     val numFails = failed.size
     if (numFails > 0) {
       val fileStr = if (numFails == 1) "file" else "files"
-      fail("Malformed XML in " + numFails + " files: " + failed.mkString(", "))
+      val msg = "Malformed XML in " + numFails + " " + fileStr + ": " + failed.mkString(", ")
+      println(msg)
+      fail(msg)
     }
   }
 }
