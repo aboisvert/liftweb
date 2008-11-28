@@ -34,11 +34,11 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>Empty if the exception class is in the ignore list
    *   </ul>
    */
-  def tryo[T](ignore: List[Class[CL] forSome {type CL}], onError: Can[Throwable => Unit])(f: => T): Can[T] = {
+  def tryo[T](ignore: List[Class[_]], onError: Can[Throwable => Unit])(f: => T): Can[T] = {
     try {
       Full(f)
     } catch {
-      case c if (containsClass(c.getClass, ignore)) => onError.foreach(_(c)); Empty
+      case c if ignore.exists(_.isAssignableFrom(c.getClass)) => onError.foreach(_(c)); Empty
       case c if (ignore == null || ignore.isEmpty) => onError.foreach(_(c)); Failure("tryo", Full(c), Empty)
     }
   }
@@ -70,7 +70,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>Empty if the exception class is in the ignore list
    *   </ul>
    */
-  def tryo[T](ignore: List[Class[CL] forSome {type CL}])(f: => T): Can[T] = tryo(ignore, Empty)(f)
+  def tryo[T](ignore: List[Class[_]])(f: => T): Can[T] = tryo(ignore, Empty)(f)
 
   /**
    * Wraps a "try" block around the function f. Takes only one Class of exception to ignore

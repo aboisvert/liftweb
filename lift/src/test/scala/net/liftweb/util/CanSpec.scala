@@ -139,6 +139,12 @@ object CanSpec extends Specification {
     "define a 'isA' method returning Empty if the value is not the instance of a given class" in {
       Full("s").isA(classOf[Double]) must_== Empty
     }
+    "define a 'asA' method returning a Full(value) if the value is the instance of a given type" in {
+      Full("s").asA[String] must_== Full("s")
+    }
+    "define a 'asA' method returning Empty if the value is not the instance of a given type" in {
+      Full("s").asA[Double] must_== Empty
+    }
   }
   "An Empty Can" should {
     "beEmpty" in {
@@ -200,6 +206,9 @@ object CanSpec extends Specification {
     }
     "define a 'isA' method returning Empty" in {
       Empty.isA(classOf[Double]) must_== Empty
+    }
+    "define a 'asA' method returning Empty" in {
+      Empty.asA[Double] must_== Empty
     }
   }
   "A Failure is an Empty Can which" can {

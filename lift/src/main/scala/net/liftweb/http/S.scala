@@ -601,7 +601,7 @@ object S extends HasParams {
   /**
    * Returns the LiftSession parameter denominated by 'what'
    */
-  def get(what: String): Can[String] = session.flatMap(_.get(what, classOf[String]))
+  def get(what: String): Can[String] = session.flatMap(_.get[String](what))
 
   /**
    * Returns the HttpSession parameter denominated by 'what'

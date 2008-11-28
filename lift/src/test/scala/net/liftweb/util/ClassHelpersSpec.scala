@@ -10,6 +10,14 @@ import _root_.org.specs.ScalaCheck
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
 object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelpers with StringGenerators with ScalaCheck {
+  "the findType function" should {
+    "return a Full can with the found class when given the type, the name, and a list of packages to conform to" in {
+      findType[_root_.java.util.List[Object]]("ArrayList", List("java.util")) must_== Full(classOf[_root_.java.util.ArrayList[Object]])
+    }
+    "return an Empty can if the class cannot be coerced to the expected type" in {
+      findType[String]("ClassHelpersSpecTest", List("net.liftweb.util")) must_== Empty
+    }
+  }
   "the findClass function" should {
     "return a Full can with the found class when given the name and package" in {
       findClass("ClassHelpersSpecTest", List("net.liftweb.util")) must_== Full(classOf[ClassHelpersSpecTest])

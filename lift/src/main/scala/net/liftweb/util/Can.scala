@@ -13,6 +13,8 @@ package net.liftweb.util
  * limitations under the License.
  */
 
+import _root_.scala.reflect.Manifest
+
 /**
  * The Can object provide methods to create Cans from:<li>
  * <ul/> an Option
@@ -74,18 +76,22 @@ object Can {
    * This def allows to use any object as a Can, permitting null values to be handled as Empty
    * @returns Full(in) if in is not null Empty otherwise
    */
-  def legacyNullTest[T <: AnyRef](in: T): Can[T] = if (in eq null) Empty else Full(in)
+  def legacyNullTest[T](in: T): Can[T] = in match {
+    case null => Empty
+    case _ => Full(in)
+  }
 
   /**
    * This def allows to use any object as a Can, permitting null values to be handled as Empty
    * @returns Full(in) if in is not null Empty otherwise
    */
-  def !![T <: AnyRef](in: T): Can[T] = legacyNullTest(in)
+  def !![T](in: T): Can[T] = legacyNullTest(in)
 
-  def isA[A, B](in: A, clz: Class[B]): Can[B] = in match {
-    case null => Empty
-    case v => Full(v).isA(clz)
-  }
+  def isA[A, B](in: A, clz: Class[B]): Can[B] =
+    (Can !! in).isA(clz)
+  
+  def asA[B](in: T forSome {type T})(implicit m: Manifest[B]): Can[B] =
+    (Can !! in).asA[B]
 }
 
 /**
@@ -152,6 +158,12 @@ sealed abstract class Can[+A] extends Product {
    * Empty
    */
   def isA[B](cls: Class[B]): Can[B] = Empty
+
+  /**
+   * If the contents of the Can are an instance of the given
+   * type, return a Full[B], otherwise Empty
+   */
+  def asA[B](implicit m: Manifest[B]): Can[B] = Empty
 
   /**
    * @returns a this or an alternative Can if this is an Empty Can
@@ -291,6 +303,12 @@ final case class Full[+A](value: A) extends Can[A] {
     case _ => Empty
   }
 
+  /**
+   * If the contents of the Can are an instance of the given
+   * type, return a Full[B], otherwise Empty
+   */
+  override def asA[B](implicit m: Manifest[B]): Can[B] = this.isA(m.erasure).asInstanceOf[Can[B]]
+
   override def ===[B >: A](to: B): Boolean = value == to
 }
 
@@ -346,6 +364,12 @@ case class Failure(msg: String, exception: Can[Throwable], chain: Can[Failure]) 
    * Empty
    */
   override def isA[B](cls: Class[B]): Can[B] = this
+  
+  /**
+   * If the contents of the Can are an instance of the given
+   * type, return a Full[B], otherwise Empty
+   */
+  override def asA[B](implicit m: Manifest[B]): Can[B] = this
 
   private def chainList: List[Failure] = chain match {
     case Full(f) => f :: f.chainList

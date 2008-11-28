@@ -16,6 +16,7 @@ package net.liftweb.util
 
 import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import _root_.java.lang.reflect.Modifier._
+import _root_.scala.reflect.Manifest
 
 /**
  * ClassHelpers provide several functions to instantiate a Class object given the class name and one or more package names
@@ -30,9 +31,12 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def ^ [T](i: T*): List[T] = i.toList
 
+  
   /**
-   * General method to in find a class according to its name, a list of possible packages and a list of functions modifying the given name
-   * create a target name to look for (e.g: 'name' is hello_world and the target name may be 'HelloWorld').
+   * General method to in find a class according to its name, a list of possible packages,
+   * a list of functions modifying the given name create a target name to look for
+   * (e.g: 'name' is hello_world and the target name may be 'HelloWorld').
+   *
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
@@ -40,53 +44,74 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Can[Class[C]] = {
-
-    // Find the class in a single package. Return a can containing the found class or Empty
-    def findClass_s(name : String, where: String): Can[Class[C]] = {
-      tryo(classOf[ClassNotFoundException]) {
-        val c = Class.forName(where + "." + name).asInstanceOf[Class[C]]
-        tryo(classOf[ClassCastException]) { c.asSubclass(targetType); c } openOr(throw new ClassNotFoundException)
-      }
-    }
-
-    // Find the class in a list of packages. Return a can containing the found class or Empty
-    def findClass_l(name: String, where: List[String]): Can[Class[C]] = {
-      where match {
-        case Nil => Empty
-        case c :: rest => findClass_s(name, c) or findClass_l(name, rest)
-      }
-    }
-
-    modifiers match {
-      case Nil => Empty
-      case tryName :: rest => findClass_l(tryName(name), where) or findClass[C](name, where, rest, targetType)
-    }
-  }
+  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Can[Class[C]] =
+    (for (
+      place <- where.projection;
+      mod <- modifiers.projection;
+      val fullName = place + "." + mod(name);
+      val ignore = List(classOf[ClassNotFoundException], classOf[ClassCastException]);
+      klass <- tryo(ignore)(Class.forName(fullName).asSubclass(targetType).asInstanceOf[Class[C]])
+    ) yield klass).firstOption
 
   /**
-   * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary.
-   * It doesn't check that the resulting class isAssignable by Class[C]
+   * General method to in find a class according to its type, its name, a list of possible
+   * packages and a list of functions modifying the given name create a target name to look for
+   * (e.g: 'name' is hello_world and the target name may be 'HelloWorld').
+   * 
+   * @parameter C type of the class to find
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass(name: String, where: List[String], modifiers: List[Function1[String, String]]): Can[Class[AnyRef]] = findClass(name, where, modifiers, classOf[AnyRef])
+  def findType[C <: AnyRef](name: String, where: List[String], modifiers: List[String => String])(implicit m: Manifest[C]): Can[Class[C]] =
+    findClass(name, where, modifiers, m.erasure.asInstanceOf[Class[C]])
 
   /**
-   * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary.
+   * General method to in find a class according to its name, a list of possible packages and a
+   * list of functions modifying the given name create a target name to look for (e.g: 'name' is
+   * hello_world and the target name may be 'HelloWorld').
+   * 
+   * @parameter name name of the class to find
+   * @parameter where list of package names which may contain the class
+   * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
+   *
+   * @return a Can, either containing the found class or an Empty can.
+   */
+  def findClass(name: String, where: List[String], modifiers: List[String => String]): Can[Class[AnyRef]] =
+    findType[AnyRef](name, where, modifiers)
+
+  /**
+   * Find a class given its name and a list of packages, turning underscored names to
+   * CamelCase if necessary.
+   *
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    * @parameter targetType optional expected type which the retrieved class should conform to
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Can[Class[C]] = findClass(name, where, nameModifiers, targetType)
+  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Can[Class[C]] =
+    findClass(name, where, nameModifiers, targetType)
 
   /**
-   * Find a class given its name and a list of packages, turning underscored names to CamelCase if necessary
+   * Find a class given its type, its name and a list of packages, turning underscored names to
+   * CamelCase if necessary.
+   *
+   * @parameter C type of the class to find
+   * @parameter name name of the class to find
+   * @parameter where list of package names which may contain the class
+   *
+   * @return a Can, either containing the found class or an Empty can.
+   */
+  def findType[C <: AnyRef](name: String, where: List[String])(implicit m: Manifest[C]): Can[Class[C]] =
+    findType[C](name, where, nameModifiers)
+
+  /**
+   * Find a class given its name and a list of packages, turning underscored names to CamelCase if
+   * necessary.
+   *
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    *
@@ -94,23 +119,33 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def findClass(name: String, where: List[String]): Can[Class[AnyRef]] =
     findClass(name, where, nameModifiers)
-
+    
   /**
-   * Find a class given a list of possible names and corresponding packages, turning underscored names to CamelCase if necessary
+   * Find a class given its type, a list of possible names and corresponding packages, turning
+   * underscored names to CamelCase if necessary
+   *
+   * @parameter C type of the class to find
    * @parameter where list of pairs (name, package names) which may contain the class
    *
    * @return a Can, either containing the found class or an Empty can.
    */
-  def findClass(where: List[(String, List[String])]): Can[Class[AnyRef]] = where match {
-    case Nil => Empty
-    case s :: rest => {
-      findClass(s._1, s._2) match {
-        case Full(s) => Full(s)
-        case _ => findClass(rest)
-      }
-    }
-  }
+  def findType[C <: AnyRef](where: List[(String, List[String])])(implicit m: Manifest[C]): Can[Class[C]] =
+    (for (
+      (name, packages) <- where.projection;
+      klass <- findType[C](name, packages)
+    ) yield klass).firstOption
 
+  /**
+   * Find a class given a list of possible names and corresponding packages, turning underscored
+   * names to CamelCase if necessary
+   *
+   * @parameter where list of pairs (name, package names) which may contain the class
+   *
+   * @return a Can, either containing the found class or an Empty can.
+   */
+  def findClass(where: List[(String, List[String])]): Can[Class[AnyRef]] =
+    findType[AnyRef](where)
+  
   /**
    * Turns a string of format "foo_bar" into camel case "FooBar"
    *
@@ -180,14 +215,13 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param toMatch the list of classes to match against
    *
    * @return true if clz is assignable from any of the matching classes
+   *
+   * @deprecated use List.exists instead
    */
-  def containsClass[C](clz: Class[C], toMatch: List[Class[CL] forSome {type CL}]): Boolean = {
-    toMatch match {
-      case null | Nil => false
-      case c :: rest if (c.isAssignableFrom(clz)) => true
-      case c :: rest => containsClass(clz, rest)
-    }
-  }
+  @deprecated
+  def containsClass[C](clz: Class[C], toMatch: List[Class[_]]): Boolean =
+    if (toMatch eq null) false
+    else toMatch.exists(_.isAssignableFrom(clz))
 
   /**
    * Check that the method 'name' is callable for class 'clz'
@@ -268,7 +302,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can containing the value returned by the method
    */
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[(Class[CL] forSome {type CL})]): Can[Any] = {
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[Class[_]]): Can[Any] = {
     _invokeMethod(clz, inst, meth, params, Full(ptypes)) or
     _invokeMethod(clz, inst, camelCase(meth), params, Full(ptypes)) or
     _invokeMethod(clz, inst, camelCaseMethod(meth), params, Full(ptypes))
@@ -287,7 +321,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Can containing the value returned by the method
    */
-  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[(Class[CL] forSome {type CL})]]): Can[Any] = {
+  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[Class[_]]]): Can[Any] = {
      // try to find a method matching the given parameters
     def possibleMethods: List[Method] = {
       /*
@@ -300,7 +334,7 @@ trait ClassHelpers { self: ControlHelpers =>
                                             m.getParameterTypes.length == params.length)
 
       try {
-        val classes: Array[(Class[CL] forSome {type CL})] = ptypes openOr params.map(_.getClass)
+        val classes: Array[Class[_]] = ptypes openOr params.map(_.getClass)
         List(clz.getMethod(meth, classes : _*))
       } catch {
         case e: NullPointerException => Nil

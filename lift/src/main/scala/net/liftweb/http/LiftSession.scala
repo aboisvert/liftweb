@@ -17,11 +17,13 @@ package net.liftweb.http
 
 import _root_.scala.actors.Actor
 import _root_.scala.actors.Actor._
+import _root_.scala.reflect.Manifest
 import _root_.javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
 import _root_.scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Unparsed, Text}
 import _root_.net.liftweb.mapper.DB
 import _root_.net.liftweb.util._
+import Can._
 import _root_.net.liftweb.http.js.{JsCmd, AjaxInfo}
 import _root_.net.liftweb.util.Helpers._
 import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
@@ -431,27 +433,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
    *
    * @return Full(value) if found, Empty otherwise
    */
-  private [liftweb] def get[T](name: String): Can[T] = synchronized {
-    myVariables.get(name) match {
-      case Some(v: T) => Full(v)
-      case _ => Empty
-    }
-  }
-
-
-  /**
-   * Gets the named variable if it exists
-   *
-   * @param name -- the name of the session-local variable to get
-   * @param clz -- the class of the return type
-   *
-   * @return Full(value) if found, Empty otherwise
-   */
-  private [liftweb] def get[T](name: String, clz: Class[T]): Can[T] = synchronized {
-    myVariables.get(name) match {
-      case Some(v) => Full(v) isA clz
-      case _ => Empty
-    }
+  private [liftweb] def get[T](name: String)(implicit m: Manifest[T]): Can[T] = synchronized {
+    myVariables.get(name).asA[T]
   }
 
   /**
@@ -551,15 +534,15 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-  private def findSnippetClass[C <: AnyRef](name: String, bound: Class[C]): Can[Class[C]] = {
+  private def findSnippetClass(name: String): Can[Class[AnyRef]] = {
     if (name == null) Empty
-    else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil), bound)
+    else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
 
   private def findAttributeSnippet(name: String, rest: MetaData): MetaData = {
     val (cls, method) = splitColonPair(name, null, "render")
 
-    findSnippetClass(cls, classOf[AnyRef]).flatMap(clz => instantiate(clz).flatMap(inst =>
+    findSnippetClass(cls).flatMap(clz => instantiate(clz).flatMap(inst =>
         (invokeMethod(clz, inst, method) match {
             case Full(md: MetaData) => Full(md.copy(rest))
             case _ => Empty
@@ -583,7 +566,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   private def findSnippetInstance(cls: String): Can[AnyRef] =
   S.snippetForClass(cls) or
-  (findSnippetClass(cls, classOf[AnyRef]).flatMap(c => instantiate(c)) match {
+  (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
       case Full(inst: StatefulSnippet) =>
         inst.snippetName = cls; S.setSnippetForClass(cls, inst); Full(inst)
       case Full(ret) => Full(ret)
@@ -763,7 +746,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   }
 
   private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
-    findClass(contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil), classOf[CometActor]).flatMap{
+    findType[CometActor](contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil)).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
           case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
