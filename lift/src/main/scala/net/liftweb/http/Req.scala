@@ -22,7 +22,8 @@ import _root_.javax.servlet.ServletContext
 // import _root_.scala.collection.Map
 // import _root_.scala.collection.mutable.HashMap
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal}
+import _root_.net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal,
+			      NamedPF, NamedPartialFunction}
 import _root_.net.liftweb.sitemap._
 import _root_.java.io.InputStream
 import _root_.scala.xml._
@@ -42,7 +43,7 @@ case class FileParamHolder(name: String, mimeType: String,
 object Req {
   object NilPath extends ParsePath(Nil, "", true, false)
 
-  def apply(request: HttpServletRequest, rewrite: LiftRules.RewritePf, nanoStart: Long): Req = {
+  def apply(request: HttpServletRequest, rewrite: List[LiftRules.RewritePF], nanoStart: Long): Req = {
     val reqType = RequestType(request)
     val turi = request.getRequestURI.substring(request.getContextPath.length)
     val tmpUri = if (turi.length > 0) turi else "/"
@@ -53,12 +54,17 @@ object Req {
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
       val toMatch = RewriteRequest(path, reqType, request)
+      NamedPF.applyCan(toMatch, rewrite) match {
+	case Full(resp) => processRewrite(resp.path, resp.params)
+	case _ => RewriteResponse(path, params)
+      }
+      /*
       if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(path, params)
       else {
         val resp = rewrite(toMatch)
         processRewrite(resp.path, resp.params)
         // rewrite(toMatch)
-      }
+      }*/
     }
 
 
@@ -271,11 +277,11 @@ class Req(val path: ParsePath,
 
 
   def createNotFound = {
-    LiftRules.uriNotFound((this, Empty))
+    NamedPF((this, Empty), LiftRules.uriNotFound)
   }
 
   def createNotFound(failure: Failure) = {
-    LiftRules.uriNotFound((this, Can(failure)))
+    NamedPF((this, Full(failure)), LiftRules.uriNotFound)
   }
 
 

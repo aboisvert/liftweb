@@ -238,24 +238,24 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    */
   def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
 
-  type FieldPf = PartialFunction[String, NodeSeq => NodeSeq]
+  type FieldPF = PartialFunction[String, NodeSeq => NodeSeq]
 
-  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq)): FieldPf = {
-    getSingleton.fieldMapperPf(transform, this)
+  def fieldMapperPF(transform: (BaseOwnedMappedField[A] => NodeSeq)): FieldPF = {
+    getSingleton.fieldMapperPF(transform, this)
   }
 
-  private var fieldPf_i: FieldPf = Map.empty
+  private var fieldPF_i: FieldPF = Map.empty
 
-  def fieldPf = fieldPf_i
+  def fieldPF = fieldPF_i
 
-  def addFieldAfter(pf: FieldPf) {
-    fieldPf_i = fieldPf_i orElse pf
-    fieldPf_i
+  def appendField(pf: FieldPF) {
+    fieldPF_i = fieldPF_i orElse pf
+    fieldPF_i
   }
 
-  def addFieldBefore(pf: FieldPf) {
-    fieldPf_i = pf orElse fieldPf_i
-    fieldPf_i
+  def prependField(pf: FieldPF) {
+    fieldPF_i = pf orElse fieldPF_i
+    fieldPF_i
   }
 
   /**

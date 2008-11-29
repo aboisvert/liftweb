@@ -13,7 +13,13 @@ package net.liftweb.util
  * limitations under the License.
  */
 
-import _root_.scala.xml.{NodeSeq, Text, Elem, Group, MetaData, Null, UnprefixedAttribute, PrefixedAttribute}
+import _root_.scala.xml.{NodeSeq, Node, SpecialNode, Text, Elem,
+                         Group, MetaData, Null, UnprefixedAttribute,
+                         PrefixedAttribute}
+
+trait Bindable {
+  def asHtml: NodeSeq
+}
 
 /**
  * The helpers assocated with bindings
@@ -78,39 +84,79 @@ trait BindHelpers {
   /**
    * Base class for Bind parameters. A bind parameter has a name and is able to extract its value from a NodeSeq.
    */
-  sealed abstract class BindParam {
+  sealed trait BindParam {
     def name: String
     def calcValue(in: NodeSeq): NodeSeq
+  }
+
+  trait BindWithAttr {
+    def newAttr: String
   }
 
   /**
    * Constant BindParam always returning the same value
    */
-  case class TheBindParam(name: String, value: NodeSeq) extends BindParam {
+  case class TheBindParam(name: String, value: NodeSeq) extends Tuple2(name, value) with BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value
+  }
+
+  /**
+   * Constant BindParam always returning the same value
+   */
+  case class TheStrBindParam(name: String, value: String) extends Tuple2(name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = Text(value)
   }
 
   /**
    * BindParam taking its value from an attribute
    */
-  case class AttrBindParam(name: String, value: NodeSeq, newAttr: String) extends BindParam {
-    def calcValue(in: NodeSeq): NodeSeq = value
+  case class AttrBindParam(name: String, myValue: NodeSeq,
+                           newAttr: String) extends BindParam with BindWithAttr {
+    def calcValue(in: NodeSeq): NodeSeq = myValue
   }
 
   /**
    * BindParam using a function to calculate its value
    */
-  case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends BindParam {
+  case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends Tuple2(name, value) with BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
   /**
    * BindParam using a function to calculate its value
    */
-  case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam {
+  case class FuncAttrBindParam(name: String, value: NodeSeq => NodeSeq, newAttr: String) extends BindParam with BindWithAttr {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
 
-  /**
+  case class OptionBindParam(name: String, value: Option[NodeSeq]) extends Tuple2(name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value getOrElse NodeSeq.Empty
+  }
+
+  case class CanBindParam(name: String, value: Can[NodeSeq]) extends Tuple2(name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value openOr NodeSeq.Empty
+  }
+
+  case class SymbolBindParam(name: String, value: Symbol) extends Tuple2(name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = Text(value.name)
+  }
+
+  case class IntBindParam(name: String, value: Int) extends Tuple2[String, Int](name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = Text(value.toString)
+  }
+
+  case class LongBindParam(name: String, value: Long) extends Tuple2[String, Long](name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = Text(value.toString)
+  }
+
+  case class BooleanBindParam(name: String, value: Boolean) extends Tuple2[String, Boolean](name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = Text(value.toString)
+  }
+
+case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends Tuple2[String, T](name, value) with BindParam {
+  def calcValue(in: NodeSeq): NodeSeq = value.asHtml
+}
+
+/**
    * transforms a Can into a Text node
    */
   object BindParamAssoc {
@@ -119,6 +165,32 @@ trait BindHelpers {
         case v => Text(v.toString)
       })
   }
+
+  private def snToNs(in: Seq[Node]): NodeSeq = in
+
+  class SuperArrowAssoc(name: String) {
+    // Because JsObj is a subclass of Node, we don't want it
+    // getting caught because it's not a bind param
+    def ->[T <: SpecialNode](in: T with SpecialNode) = Tuple2[String, T](name, in)
+
+    def ->(in: String) = TheStrBindParam(name, in)
+    // def ->[T](in: T)(implicit f: T => String) = TheStrBindParam(name, f(in))
+    def ->(in: NodeSeq) = TheBindParam(name, in)
+    def ->(in: Text) = TheBindParam(name, in)
+    def ->(in: Node) = TheBindParam(name, in)
+    def ->(in: Seq[Node]) = TheBindParam(name, in)
+    def ->(in: NodeSeq => NodeSeq) = FuncBindParam(name, in)
+    def ->(in: Can[NodeSeq]) = CanBindParam(name, in)
+    def ->(in: Option[NodeSeq]) = OptionBindParam(name, in)
+    def ->(in: Symbol) = SymbolBindParam(name, in)
+    def ->(in: Int) = IntBindParam(name, in)
+    def ->(in: Long) = LongBindParam(name, in)
+    def ->(in: Boolean) = BooleanBindParam(name, in)
+    def ->[T <: Bindable](in: T with Bindable) = TheBindableBindParam[T](name, in)
+    def ->[T](in: T) = Tuple2[String, T](name, in)
+  }
+
+  implicit def strToSuperArrowAssoc(in: String): SuperArrowAssoc = new SuperArrowAssoc(in)
 
   /**
    * This class creates a BindParam from an input value
@@ -160,48 +232,51 @@ trait BindHelpers {
    * actually a NodeSeq => NodeSeq. This is a hack to get around JVM type
    * erasure.
    */
-  object Function1NodeSeqToNodeSeq {
-    def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
-    if (f.getClass.getMethods.exists{ method =>
-        lazy val params: Seq[Class[_]] = method.getParameterTypes
-        method.getName == "apply" &&
-        params.length == 1 &&
-        params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
-        classOf[NodeSeq].isAssignableFrom(method.getReturnType)
-      }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
-    else None
-  }
+  /*
+   object Function1NodeSeqToNodeSeq {
+   def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
+   if (f.getClass.getMethods.exists{ method =>
+   lazy val params: Seq[Class[_]] = method.getParameterTypes
+   method.getName == "apply" &&
+   params.length == 1 &&
+   params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
+   classOf[NodeSeq].isAssignableFrom(method.getReturnType)
+   }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
+   else None
+   }*/
 
-  /**
-   * Transforms a Tuple2[String, _] to a BindParam
+  /*
+   /**
+    * Transforms a Tuple2[String, _] to a BindParam
+    */
+   implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
+   val (name, value) = p
+   value match {
+   case v: String => TheBindParam(name, Text(v))
+   case v: NodeSeq => TheBindParam(name, v)
+   case v: Symbol => TheBindParam(name, Text(v.name))
+   case fn: Function1[_, _] =>
+   Function1NodeSeqToNodeSeq.unapply(fn) match {
+   case Some(func) => FuncBindParam(name, func)
+   case _ => TheBindParam(name, Text(fn.toString))
+   }
+   case v: Can[_] =>
+   val ov = v openOr Text("Empty")
+   ov match {
+   case o: NodeSeq => TheBindParam(name, o)
+   case _ => TheBindParam(name, Text(v.toString))
+   }
+   case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
+   }
+   }
    */
-  implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
-    val (name, value) = p
-    value match {
-      case v: String => TheBindParam(name, Text(v))
-      case v: NodeSeq => TheBindParam(name, v)
-      case v: Symbol => TheBindParam(name, Text(v.name))
-      case fn: Function1[_, _] =>
-        Function1NodeSeqToNodeSeq.unapply(fn) match {
-          case Some(func) => FuncBindParam(name, func)
-          case _ => TheBindParam(name, Text(fn.toString))
-        }
-      case v: Can[_] =>
-        val ov = v openOr Text("Empty")
-        ov match {
-          case o: NodeSeq => TheBindParam(name, o)
-          case _ => TheBindParam(name, Text(v.toString))
-        }
-      case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
-    }
-  }
-
   /**
    * Transforms a Tuple2[Symbol, _] to a BindParam
    */
-  implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
-  pairToBindParam((p._1.name, p._2))
-
+  /*
+   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
+   pairToBindParam((p._1.name, p._2))
+   */
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
@@ -253,10 +328,8 @@ trait BindHelpers {
       case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
       case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
           case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
-          case Some(abp @ AttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-          case Some(abp @ FuncAttrBindParam(_, _, newAttr)) => new UnprefixedAttribute(newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-          case Some(bp: TheBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
-          case Some(bp: FuncBindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+          case Some(abp: BindWithAttr) => new UnprefixedAttribute(abp.newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+          case Some(bp: BindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
         }
       case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
     }
@@ -366,6 +439,5 @@ trait BindHelpers {
   }
 
 }
-
 
 // vim: set ts=2 sw=2 et:

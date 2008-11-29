@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import _root_.net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log}
+import _root_.net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log, NamedPF}
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.mapper._
 import Helpers._
@@ -32,7 +32,7 @@ class Boot {
     if ((System.getProperty("create_users") != null) && User.count < User.createdCount) User.createTestUsers
 
     // map certain urls to the right place
-    val rewriter: LiftRules.RewritePf = {
+    val rewriter: LiftRules.RewritePF = NamedPF("User and Friend mapping") {
     case RewriteRequest(ParsePath("user" :: user :: _, _, _,_), _, _) =>
        RewriteResponse("user" :: Nil, Map("user" -> user))
     case RewriteRequest(ParsePath("friend" :: user :: _, _, _,_), _, _) =>
@@ -41,7 +41,7 @@ class Boot {
        RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
 
-  LiftRules.addRewriteBefore(rewriter)
+  LiftRules.prependRewrite(rewriter)
 
   // load up the list of user actors
   UserList.create

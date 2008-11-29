@@ -28,7 +28,7 @@ class WatchUser extends CometActor {
   def render = {
     val ret: NodeSeq = (for (ua <- userActor;
           user <- getUser(ua)) yield {
-	    bind("username" -> Text(user.name+" -> "+user.fullName),
+	    bind("username" -> Text(user.name+" -> "+user.fullName) ,
 		 "content" -> <span>{friendList(user) ++
 		              ajaxForm(textarea("", msg => ua ! SendMessage(msg, "web")) % ("cols" -> "40") ++
                                        submit("msg", () => true))

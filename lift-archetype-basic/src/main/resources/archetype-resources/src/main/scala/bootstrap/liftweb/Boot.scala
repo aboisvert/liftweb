@@ -21,7 +21,7 @@ class Boot {
     LiftRules.addToPackages("${groupId}")
     Schemifier.schemify(true, Log.infoF _, User)
 
-    LiftRules.addTemplateBefore(User.templates)
+    LiftRules.prependTemplate(User.templates)
 
     // Build SiteMap
     val entries = Menu(Loc("Home", List("index"), "Home")) :: User.sitemap

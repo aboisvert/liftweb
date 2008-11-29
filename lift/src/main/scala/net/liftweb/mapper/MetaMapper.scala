@@ -21,7 +21,7 @@ import _root_.java.lang.reflect.Method
 import _root_.java.sql.{ResultSet, Types, PreparedStatement, Statement}
 import _root_.scala.xml.{Elem, Node, Text, NodeSeq, Null, TopScope, UnprefixedAttribute, MetaData}
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{Can, Empty, Full, Failure, NamedPF}
 import _root_.net.liftweb.http.{LiftRules, S, SHtml, FieldError}
 import _root_.java.util.Date
 import _root_.net.liftweb.http.js._
@@ -728,7 +728,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
-  def fieldMapperPf(transform: (BaseOwnedMappedField[A] => NodeSeq), actual: A): PartialFunction[String, NodeSeq => NodeSeq] = {
+  def fieldMapperPF(transform: (BaseOwnedMappedField[A] => NodeSeq), actual: A): PartialFunction[String, NodeSeq => NodeSeq] = {
     Map.empty ++ mappedFieldList.map ( mf =>
       (mf.name, ((ignore: NodeSeq) => transform(??(mf.method, actual))))
     )
@@ -1342,7 +1342,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   override def afterSchemifier {
     if (crudSnippets_?) {
-      LiftRules.addSnippetAfter(crudSnippets)
+      LiftRules.appendSnippet(crudSnippets)
     }
   }
 
@@ -1363,10 +1363,10 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
    *
    * (No, there's no D in CRUD.)
    */
-  def crudSnippets: LiftRules.SnippetPf = {
+  def crudSnippets: LiftRules.SnippetPF = {
     val Name = _dbTableName
 
-    {
+    NamedPF("crud "+Name) {
       case Name :: "add"  :: _ => addSnippet
       case Name :: "edit" :: _ => editSnippet
       case Name :: "view" :: _ => viewSnippet
@@ -1383,7 +1383,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
       cleanup(obj)
     }
 
-    xbind(name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.toForm.openOr(Text(""))) orElse {
+    xbind(name, xhtml)(obj.fieldPF orElse obj.fieldMapperPF(_.toForm.openOr(Text(""))) orElse {
         case "submit" => label => SHtml.submit(label.text, callback _)
       })
   }
@@ -1409,7 +1409,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     val Name = _dbTableName
     val obj: A = viewSnippetSetup
 
-    xbind(Name, xhtml)(obj.fieldPf orElse obj.fieldMapperPf(_.asHtml))
+    xbind(Name, xhtml)(obj.fieldPF orElse obj.fieldMapperPF(_.asHtml))
   }
 
   /**

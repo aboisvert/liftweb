@@ -33,21 +33,21 @@ import JE._
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPf = PartialFunction[Req, () => Can[LiftResponse]];
-  type RewritePf = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePf = PartialFunction[Req,() => Can[NodeSeq]]
-  type SnippetPf = PartialFunction[List[String], NodeSeq => NodeSeq]
+  type DispatchPF = PartialFunction[Req, () => Can[LiftResponse]];
+  type RewritePF = PartialFunction[RewriteRequest, RewriteResponse]
+  type TemplatePF = PartialFunction[Req,() => Can[NodeSeq]]
+  type SnippetPF = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
-  type SnippetDispatchPf = PartialFunction[String, DispatchSnippet]
-  type ViewDispatchPf = PartialFunction[List[String], LiftView]
+  type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
+  type ViewDispatchPF = PartialFunction[List[String], LiftView]
 
   /**
    * A partial function that allows the application to define requests that should be
    * handled by lift rather than the default servlet handler
    */
-  type LiftRequestPf = PartialFunction[Req, Boolean]
+  type LiftRequestPF = PartialFunction[Req, Boolean]
 
   private var _early: List[(HttpServletRequest) => Any] = Nil
   private[http] var _beforeSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
@@ -79,7 +79,8 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.
    */
-  var urlDecorate: URLDecorator = {case arg => arg}
+  var urlDecorate: List[URLDecorator] =
+    List(NamedPF("default"){case arg => arg})
 
   private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 
@@ -169,7 +170,28 @@ object LiftRules {
     }
   }
 
-  var liftTagProcessing: LiftTagPF = Map.empty
+  private var _liftTagProcessing: List[LiftTagPF] = Nil // Map.empty
+
+  /**
+   * The additional "lift" tags that are global to the application
+   */
+  def liftTagProcessing = _liftTagProcessing
+
+  /**
+   * Append a named partial function defining application-wide
+   * &lt;lift:xxx/&gt; tags
+   */
+  def appendLiftTagProcessing(in: LiftTagPF) {
+    _liftTagProcessing = _liftTagProcessing ::: List(in)
+  }
+
+  /**
+   * Prepend a named partial function defining application-wide
+   * &lt;lift:xxx/&gt; tags
+   */
+  def prependLiftTagProcessing(in: LiftTagPF) {
+    _liftTagProcessing = in :: _liftTagProcessing
+  }
 
   /**
    * If you don't want lift to send the application/xhtml+xml mime type to those browsers
@@ -239,16 +261,59 @@ object LiftRules {
    * The dispatcher that takes a Snippet and converts it to a
    * DispatchSnippet instance
    */
-  var snippetDispatch: SnippetDispatchPf = Map.empty
+  private var snippetDispatch: List[SnippetDispatchPF] = Nil
+
+  /**
+   * Append a partial function to look up snippets to
+   * the rules
+   */
+  def appendSnippetDispatch(in: SnippetDispatchPF) {
+    snippetDispatch = snippetDispatch ::: List(in)
+  }
+
+  /**
+   * Prepend a partial function to look up snippets to
+   * the rules
+   */
+  def prependSnippetDispatch(in: SnippetDispatchPF) {
+    snippetDispatch = in :: snippetDispatch
+  }
+
+  
 
   /**
    * Change this variable to set view dispatching
    */
-  var viewDispatch: ViewDispatchPf = Map.empty
+  private var _viewDispatch: List[ViewDispatchPF] = Nil
+
+  /**
+   * The list of partial functions that dispatch views
+   */
+  def viewDispatch = _viewDispatch
+
+  /**
+   * Prepend a partial function to the list of partial functions
+   * the define views
+   */
+  def prependViewDispatch(in: ViewDispatchPF) {
+    _viewDispatch = in :: _viewDispatch
+  }
+
+  /**
+   * Append a partial function to the list of partial functions
+   * that define views
+   */
+  def appendViewDispatch(in: ViewDispatchPF) {
+    _viewDispatch = in :: _viewDispatch
+  }
+
 
   def snippet(name: String): Can[DispatchSnippet] =
+    NamedPF.applyCan(name, snippetDispatch)
+  /*
   if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
   else Empty
+  */
 
   /**
    * If the request times out (or returns a non-Response) you can
@@ -349,11 +414,9 @@ object LiftRules {
 
   def setSiteMap(sm: SiteMap) {
     _sitemap = Full(sm)
-    val rewriters = sm.menus.map(_.loc).
-    flatMap(_.rewritePf).
-    foldLeft[RewritePf](Map.empty)(_ orElse _)
-
-    addRewriteAfter(rewriters)
+    for (menu <- sm.menus;
+	 val loc = menu.loc;
+	 rewrite <- loc.rewritePF) appendRewrite(rewrite)
   }
 
   def siteMap: Can[SiteMap] = _sitemap
@@ -361,47 +424,72 @@ object LiftRules {
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
 
   var ending = false
-  private case object Never
+  // private case object Never
 
+  /*
   private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
     case Nil => last
     case x :: xs => x orElse rpf(xs, last)
+  }*/
+
+  private var _statelessDispatchTable: List[DispatchPF] = Nil // Map.empty
+
+  /**
+   * Prepend a request handler to the stateless request handler
+   */
+  def prependStatelessDispatch(in: DispatchPF) {
+    _statelessDispatchTable = in :: _statelessDispatchTable
   }
 
-  var statelessDispatchTable: DispatchPf = Map.empty
+  /**
+   * Postpend a request handler to the stateless request handler
+   */
+  def appendStatelessDispatch(in: DispatchPF) {
+    _statelessDispatchTable = _statelessDispatchTable ::: List(in)
+  }
 
-  def dispatchTable(req: HttpServletRequest): DispatchPf = {
+  /**
+   * Dispatch the request without initializing state for the session.
+   * Good for stateless REST apis
+   */
+  def statelessDispatchTable = _statelessDispatchTable
+
+  def dispatchTable(req: HttpServletRequest): List[DispatchPF] = {
     req match {
       case null => dispatchTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-              rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
+	    S.highLevelSessionDispatchList.map(_.dispatch) :::
+	    dispatchTable_i
+            // rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
             }
           case _ => dispatchTable_i
         }
     }
   }
 
-  def rewriteTable(req: HttpServletRequest): RewritePf = {
+  def rewriteTable(req: HttpServletRequest): List[RewritePF] = {
     req match {
       case null => rewriteTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-              rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
+            // rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
+	    S.sessionRewriter.map(_.rewrite) ::: rewriteTable_i
             }
           case _ => rewriteTable_i
         }
     }
   }
 
-  def snippetTable: SnippetPf = snippetTable_i
+  def snippetTable: List[SnippetPF] = snippetTable_i
 
-  def templateTable(req: HttpServletRequest): TemplatePf = {
+  def templateTable(req: HttpServletRequest): List[TemplatePF] = {
     req match {
       case null => templateTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-              rpf(S.sessionTemplater.map(_.template), templateTable_i)
+            // rpf(S.sessionTemplater.map(_.template), templateTable_i)
+	    S.sessionTemplater.map(_.template) ::: templateTable_i
             }
           case _ => templateTable_i
         }
@@ -492,23 +580,23 @@ object LiftRules {
    * Get the partial function that defines if a request should be handled by
    * the application (rather than the default servlet handler)
    */
-  def isLiftRequest_? : LiftRequestPf = i_isLiftRequest_?
+  def isLiftRequest_? : List[LiftRequestPF] = i_isLiftRequest_?
 
   /**
    * Append a partial function to the list of interceptors to test
    * if the request should be handled by lift
    */
-  def addLiftRequest(what: LiftRequestPf) {i_isLiftRequest_? = i_isLiftRequest_? orElse what}
+  def appendLiftRequest(what: LiftRequestPF) {i_isLiftRequest_? = i_isLiftRequest_? ::: List(what)}
 
-  private var i_isLiftRequest_? : LiftRequestPf = Map.empty
+  private var i_isLiftRequest_? : List[LiftRequestPF] = Nil
 
-  private var dispatchTable_i : DispatchPf = Map.empty
+  private var dispatchTable_i : List[DispatchPF] = Nil
 
-  private var rewriteTable_i : RewritePf = Map.empty
+  private var rewriteTable_i : List[RewritePF] = Nil
 
-  private var templateTable_i: TemplatePf = Map.empty
+  private var templateTable_i: List[TemplatePF] = Nil
 
-  private var snippetTable_i: SnippetPf = Map.empty
+  private var snippetTable_i: List[SnippetPF] = Nil
 
   var cometLoggerBuilder: () => LiftLogger = () => {
     val ret = LogBoot.loggerByName("comet_trace")
@@ -518,43 +606,41 @@ object LiftRules {
 
   lazy val cometLogger: LiftLogger = cometLoggerBuilder()
 
-  def addSnippetBefore(pf: SnippetPf) = {
-    snippetTable_i = pf orElse snippetTable_i
-    snippetTable_i
+  def prependSnippet(pf: SnippetPF) = {
+    snippetTable_i = pf :: snippetTable_i
   }
 
-  def addSnippetAfter(pf: SnippetPf) = {
-    snippetTable_i = snippetTable_i orElse pf
-    snippetTable_i
+  def appendSnippet(pf: SnippetPF) = {
+    snippetTable_i = snippetTable_i ::: List(pf)
   }
 
-  def addTemplateBefore(pf: TemplatePf) = {
-    templateTable_i = pf orElse templateTable_i
+  def prependTemplate(pf: TemplatePF) = {
+    templateTable_i = pf :: templateTable_i
     templateTable_i
   }
 
-  def addTemplateAfter(pf: TemplatePf) = {
-    templateTable_i = templateTable_i orElse pf
+  def appendTemplate(pf: TemplatePF) = {
+    templateTable_i = templateTable_i ::: List(pf)
     templateTable_i
   }
 
-  def addRewriteBefore(pf: RewritePf) = {
-    rewriteTable_i = pf orElse rewriteTable_i
+  def prependRewrite(pf: RewritePF) = {
+    rewriteTable_i = pf :: rewriteTable_i
     rewriteTable_i
   }
 
-  def addRewriteAfter(pf: RewritePf) = {
-    rewriteTable_i = rewriteTable_i orElse pf
+  def appendRewrite(pf: RewritePF) = {
+    rewriteTable_i = rewriteTable_i ::: List(pf)
     rewriteTable_i
   }
 
-  def addDispatchBefore(pf: DispatchPf) = {
-    dispatchTable_i = pf orElse dispatchTable_i
+  def prependDispatch(pf: DispatchPF) = {
+    dispatchTable_i = pf :: dispatchTable_i
     dispatchTable_i
   }
 
-  def addDispatchAfter(pf: DispatchPf) = {
-    dispatchTable_i = dispatchTable_i orElse pf
+  def appendDispatch(pf: DispatchPF) = {
+    dispatchTable_i = dispatchTable_i ::: List(pf)
     dispatchTable_i
   }
 
@@ -643,14 +729,29 @@ object LiftRules {
   }
 
   /**
-   * The partial function for defining the behavior of what happens when
+   * The list of partial function for defining the behavior of what happens when
    * URI is invalid and you're not using a site map
    *
-   * It is strongly recommended to use partial functions composition like:
-   * uriNotFound = {case (...) => ...} orElse uriNotFound if the pattern used is not exhaustive
    */
-  var uriNotFound: URINotFoundPF = {
+  private var _uriNotFound: List[URINotFoundPF] =
+    List(NamedPF("default") {
     case (r, _) => Req.defaultCreateNotFound(r)
+    })
+
+  /**
+   * The list of partial function for defining the behavior of what happens when
+   * URI is invalid and you're not using a site map
+   *
+   */
+  def uriNotFound: List[URINotFoundPF] = _uriNotFound
+  
+  /**
+   *  Prepend the URINotFound handler to the existing list.
+   * Because the default Lift URI Not Found handler handles
+   * The default case, you need only handle special cases.
+   */
+  def prependUriNotFound(in: URINotFoundPF) {
+    _uriNotFound = in :: _uriNotFound
   }
 
 
@@ -686,7 +787,9 @@ object LiftRules {
    */
   def fixCSS(path: List[String], prefix: Can[String]) {
 
-    val liftReq: LiftRules.LiftRequestPf = new LiftRules.LiftRequestPf {
+    val liftReq: LiftRules.LiftRequestPF = new LiftRules.LiftRequestPF {
+      def functionName = "Default CSS Fixer"
+
       def isDefinedAt(r: Req): Boolean = {
         r.path.partPath == path
       }
@@ -695,7 +798,8 @@ object LiftRules {
       }
     }
 
-    val cssFixer: LiftRules.DispatchPf = new LiftRules.DispatchPf {
+    val cssFixer: LiftRules.DispatchPF = new LiftRules.DispatchPF {
+      def functionName = "default css fixer"
       def isDefinedAt(r: Req): Boolean = {
         r.path.partPath == path
       }
@@ -715,8 +819,8 @@ object LiftRules {
         }
       }
     }
-    LiftRules.addDispatchBefore(cssFixer);
-    LiftRules.addLiftRequest(liftReq);
+    LiftRules.prependDispatch(cssFixer)
+    LiftRules.appendLiftRequest(liftReq)
   }
 
   var onBeginServicing: List[Req => Unit] = Nil

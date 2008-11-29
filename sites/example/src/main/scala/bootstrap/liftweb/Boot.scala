@@ -16,7 +16,7 @@
 package bootstrap.liftweb
 
 import _root_.net.liftweb._
-import util.{Helpers, Can, Full, Empty, Failure, Log}
+import util.{Helpers, Can, Full, Empty, Failure, Log, NamedPF}
 import http._
 import sitemap._
 import Helpers._
@@ -46,7 +46,7 @@ class Boot {
 
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry, Person)
 
-    LiftRules.addDispatchBefore {
+    LiftRules.prependDispatch(NamedPF("Web Services Example") {
       // if the url is "showcities" then return the showCities function
       case Req("showcities":: _, "", _) => XmlServer.showCities
 
@@ -56,17 +56,15 @@ class Boot {
 
       // if it's a web service, pass it to the web services invoker
       case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
-    }
+    })
 
-    LiftRules.addDispatchBefore {
+    LiftRules.prependDispatch(NamedPF("Login Validation") {
          case Req("login" :: page , "", _)
       if !LoginStuff.is && page.head != "validate" =>
         () => Full(RedirectResponse("/login/validate"))
-    }
+    })
 
-    LiftRules.snippetDispatch =
-      LiftRules.snippetDispatch orElse
-    Map("Template" -> Template)
+    LiftRules.appendSnippetDispatch(NamedPF("Template")(Map("Template" -> Template)))
 
     /*
      * Show the spinny image when an Ajax call starts
@@ -80,7 +78,7 @@ class Boot {
     LiftRules.ajaxEnd =
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
-    val wikibind_rewriter: LiftRules.RewritePf = {
+    val wikibind_rewriter: LiftRules.RewritePF = NamedPF("WikiBind") {
       case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_),
 			  _, _)
       =>
@@ -92,7 +90,7 @@ class Boot {
 
     LiftRules.appendEarly(makeUtf8)
 
-    LiftRules.addRewriteBefore(wikibind_rewriter)
+    LiftRules.prependRewrite(wikibind_rewriter)
 
     LiftSession.onBeginServicing = RequestLogger.beginServicing _ ::
     LiftSession.onBeginServicing

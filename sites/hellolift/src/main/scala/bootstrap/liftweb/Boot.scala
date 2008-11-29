@@ -27,7 +27,7 @@ class Boot {
 
     // Add a template handler to requests that come in for User related
     // function (e.g., log in, log out, etc.) are handled appropriately
-    LiftRules.addTemplateBefore(User.templates) // LiftNote 5
+    LiftRules.prependTemplate(User.templates) // LiftNote 5
 
     // The locale is either calculated based on the incoming user or
     // based on the http request

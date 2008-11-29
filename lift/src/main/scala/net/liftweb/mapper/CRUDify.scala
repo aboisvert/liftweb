@@ -61,25 +61,25 @@ extends KeyedMetaMapper[KeyType, CrudType] {
   /**
    * The menu item for listing items (make this "Empty" to disable)
    */
-  def showAllMenuLoc: Can[Menu] = {
+  def showAllMenuLoc: Can[Menu] = 
     Full(Menu(Loc("List "+Prefix, listPath, showAllMenuName,
                   locSnippets,
                   Loc.Template(showAllTemplate))))
-  }
+  
 
   /**
    * The menu item for listing items (make this "Empty" to disable)
    */
-  def createMenuLoc: Can[Menu] = {
+  def createMenuLoc: Can[Menu] = 
     Full(Menu(Loc("Create "+Prefix, createPath, createMenuName,
                   locSnippets,
                   Loc.Template(createTemplate))))
-  }
+  
 
   /**
    * The menu item for viewing an item (make this "Empty" to disable)
    */
-  def viewMenuLoc: Can[Menu] = {
+  def viewMenuLoc: Can[Menu] = 
     Full(Menu(new Loc[CrudType]{
           // the name of the page
           def name = "View "+Prefix
@@ -103,7 +103,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
            * Rewrite the request and emit the type-safe parameter
            */
           override val rewrite: LocRewrite =
-          Full({
+          Full(NamedPF(name) {
               case RewriteRequest(pp , _, _)
                 if pp.wholePath.startsWith(viewPath) &&
                 pp.wholePath.length == (viewPath.length + 1) &&
@@ -129,7 +129,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
             Full(Text(viewPathString+"/"+obscurePrimaryKey(in)))
           }
         }))
-  }
+  
 
   /**
    * The menu item for editing an item (make this "Empty" to disable)
@@ -158,7 +158,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
              * Rewrite the request and emit the type-safe parameter
              */
             override val rewrite: LocRewrite =
-            Full({
+            Full(NamedPF(name) {
                 case RewriteRequest(pp , _, _)
                   if pp.wholePath.startsWith(editPath) &&
                   pp.wholePath.length == (editPath.length + 1) &&
@@ -253,7 +253,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
              * Rewrite the request and emit the type-safe parameter
              */
             override val rewrite: LocRewrite =
-            Full({
+            Full(NamedPF(name) {
                 case RewriteRequest(pp , _, _)
                   if pp.wholePath.startsWith(deletePath) &&
                   pp.wholePath.length == (deletePath.length + 1) &&

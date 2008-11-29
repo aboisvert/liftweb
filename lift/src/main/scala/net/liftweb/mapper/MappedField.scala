@@ -33,7 +33,7 @@ import Helpers._
   * (e.g., MappedPassword) in the database
   */
 @serializable
-trait BaseMappedField extends SelectableField {
+trait BaseMappedField extends SelectableField with Bindable {
   /**
     * Get a JDBC friendly representation of the named field (this is used for MappedFields that correspond to more than
     * 1 column in the database.)

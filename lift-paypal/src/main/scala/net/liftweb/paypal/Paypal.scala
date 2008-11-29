@@ -276,7 +276,7 @@ case class PaypalDataTransferResponse(response: List[String]) extends PaypalResp
 //
 
 /**
- * Users would generally invoke this case class in a DispatchPf call in
+ * Users would generally invoke this case class in a DispatchPF call in
  * Boot.scala as it handles the incomming request and dispatches the IPN
  * callback, and handles the subsequent response.
  */
@@ -339,12 +339,14 @@ object SimplePaypal extends PaypalIPN with PaypalPDT {
   }
 }
 
-trait BasePaypalTrait extends LiftRules.DispatchPf {
+trait BasePaypalTrait extends LiftRules.DispatchPF {
   lazy val RootPath = rootPath
+
+  def functionName = "Paypal"
 
   def rootPath = "paypal"
 
-  def dispatch:  LiftRules.DispatchPf = Map.empty
+  def dispatch: List[LiftRules.DispatchPF] = Nil
 
   lazy val mode: PaypalMode = Props.mode match {
     case Props.RunModes.Production => PaypalLive
@@ -353,8 +355,9 @@ trait BasePaypalTrait extends LiftRules.DispatchPf {
 
   def connection: PaypalConnection = PaypalSSL
 
-    def isDefinedAt(r: Req) = dispatch.isDefinedAt(r)
-  def apply(r: Req) = dispatch(r)
+    def isDefinedAt(r: Req) = NamedPF.isDefinedAt(r, dispatch)
+
+  def apply(r: Req) = NamedPF(r, dispatch)
 }
 
 trait PaypalPDT extends BasePaypalTrait {
@@ -363,10 +366,14 @@ trait PaypalPDT extends BasePaypalTrait {
   lazy val PDTPath = pdtPath
   def pdtPath = "pdt"
 
-  override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
-    case r @ Req(RootPath :: PDTPath :: Nil, "", _) =>
-      r.params // force the lazy value to be evaluated
+  override def dispatch: List[LiftRules.DispatchPF] = {
+    val nf: LiftRules.DispatchPF = NamedPF("Default PDT") {
+      case r @ Req(RootPath :: PDTPath :: Nil, "", _) =>
+	r.params // force the lazy value to be evaluated
       processPDT(r) _
+    }
+    
+    super.dispatch ::: List(nf)
   }
 
   def pdtResponse:  PartialFunction[(PayPalInfo, Req), LiftResponse]
@@ -400,7 +407,7 @@ trait PaypalPDT extends BasePaypalTrait {
  *    LiftRules.statelessDispatchTable
  * </code>
  *
- * In this way you then get all the DispatchPf processing stuff for free.
+ * In this way you then get all the DispatchPF processing stuff for free.
  *
  */
 trait PaypalIPN extends BasePaypalTrait {
@@ -409,11 +416,15 @@ trait PaypalIPN extends BasePaypalTrait {
 
   def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
 
-  override def dispatch: LiftRules.DispatchPf = super.dispatch orElse {
-    case r @ Req(RootPath :: IPNPath :: Nil, "", PostRequest) =>
-      r.params // force the lazy value to be evaluated
+  override def dispatch: List[LiftRules.DispatchPF] = {
+    val nf: LiftRules.DispatchPF = NamedPF("Default PaypalIPN") {
+      case r @ Req(RootPath :: IPNPath :: Nil, "", PostRequest) =>
+	r.params // force the lazy value to be evaluated
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
+    }
+    
+    super.dispatch ::: List(nf)
   }
 
   def actions:  PartialFunction[(PaypalTransactionStatus.Value, PayPalInfo, Req), Unit]

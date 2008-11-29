@@ -234,7 +234,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   MenuItem(S.??("edit.profile"), editPath, true) ::
   MenuItem("", validateUserPath, false) :: Nil
 
-  def templates: LiftRules.TemplatePf = {
+  def templates: LiftRules.TemplatePF = NamedPF("ProtoUser") {
     case Req(path, "", _)
       if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
 
@@ -373,7 +373,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                            signupXhtml(theUser),
                            "submit" -> SHtml.submit(S.??("sign.up"), testSignup _))
 
-    S.addSessionTemplater(theName, {
+    S.addSessionTemplater(theName, NamedPF(theName) {
         case Req(path, "", _)
           if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) =>  () => innerSignup
       })
@@ -586,7 +586,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     def innerEdit = bind("user", editXhtml(theUser),
                          "submit" -> SHtml.submit(S.??("edit"), testEdit _))
 
-    S.addSessionTemplater(theName, {
+    S.addSessionTemplater(theName, NamedPF(theName) {
         case Req(path, "", _)
           if path.startsWith(editPath) && testLoggedIn(editSuffix) =>
           () => innerEdit})

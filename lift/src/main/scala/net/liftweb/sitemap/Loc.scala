@@ -49,8 +49,13 @@ trait Loc[ParamType] {
 
   override def toString = "Loc("+name+", "+link+", "+text+", "+params+")"
 
-  def rewritePf: Can[LiftRules.RewritePf] = rewrite.map(rw =>
-    new AnyRef with PartialFunction[RewriteRequest, RewriteResponse] {
+  def rewritePF: Can[LiftRules.RewritePF] = rewrite.map(
+    rw =>
+    new AnyRef with NamedPartialFunction[RewriteRequest, RewriteResponse] {
+      def functionName = rw match {
+        case rw: NamedPartialFunction[RewriteRequest, RewriteResponse] => rw.functionName
+          case _ => "Unnamed"
+      }
       def isDefinedAt(in: RewriteRequest) = rw.isDefinedAt(in)
 
       def apply(in: RewriteRequest): RewriteResponse = {
@@ -66,7 +71,7 @@ trait Loc[ParamType] {
   def snippets: SnippetTest = Map.empty
 
   lazy val calcSnippets: SnippetTest = {
-    def buildPf(in: Loc.Snippet): PartialFunction[String, NodeSeq => NodeSeq] =
+    def buildPF(in: Loc.Snippet): PartialFunction[String, NodeSeq => NodeSeq] =
     new PartialFunction[String, NodeSeq => NodeSeq] {
       def isDefinedAt(s: String) = s == in.name
       def apply(s: String): NodeSeq => NodeSeq =
@@ -75,7 +80,7 @@ trait Loc[ParamType] {
     }
 
     val singles = params.flatMap{case v: Loc.Snippet => Some(v)
-      case _ => None}.toList.map(buildPf) :::
+      case _ => None}.toList.map(buildPF) :::
     params.flatMap{case v: Loc.LocSnippets => Some(v)
       case _ => None}.toList
 

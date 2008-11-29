@@ -67,7 +67,7 @@ class LiftServlet extends HttpServlet {
   override def init = {
     try {
       LiftRules.ending = false
-      LiftRules.addDispatchAfter({
+      LiftRules.appendDispatch(NamedPF("Classpath service") {
           case r @ Req(mainPath :: subPath, suffx, _)
             if mainPath == LiftRules.ResourceServerPath =>
             ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
@@ -139,6 +139,7 @@ class LiftServlet extends HttpServlet {
     LiftRules.onBeginServicing.foreach(_(requestState))
     val statelessToMatch = requestState
 
+    var tmpStatelessHolder: Can[() => Can[LiftResponse]] = null
 
     val resp: Can[LiftResponse] =
     // if the servlet is shutting down, return a 404
@@ -148,15 +149,19 @@ class LiftServlet extends HttpServlet {
     } else
     // if the request is matched is defined in the stateless table, dispatch
     // it
-    if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
-      val f = LiftRules.statelessDispatchTable(statelessToMatch)
-      f() match {
-        case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
-        case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
-        case f: Failure => Full(requestState.createNotFound(f))
-      }
-    } else
-    // otherwise do a stateful response
+      if ({tmpStatelessHolder = NamedPF.applyCan(statelessToMatch,
+					       LiftRules.statelessDispatchTable);
+	   tmpStatelessHolder.isDefined}) 
+	{
+	  //if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
+	  val f = tmpStatelessHolder.open_! //LiftRules.statelessDispatchTable(statelessToMatch)
+	  f() match {
+	    case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
+            case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
+              case f: Failure => Full(requestState.createNotFound(f))
+	  }
+	} else
+	  // otherwise do a stateful response
     {
       val liftSession = getLiftSession(requestState, request.getSession)
 
@@ -186,30 +191,32 @@ class LiftServlet extends HttpServlet {
   Can[LiftResponse] =
   {
     val toMatch = requestState
-    val dispatch: (Boolean, Can[LiftResponse]) =
-    if (LiftRules.dispatchTable(request).isDefinedAt(toMatch)) {
-      LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
-      val ret: (Boolean, Can[LiftResponse]) = try {
-        val f = LiftRules.dispatchTable(request)(toMatch)
-        f() match {
-          case Full(v) =>
-            (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
-                                                    S.responseCookies, requestState) )))
-
-          case Empty =>
-            (true, LiftRules.notFoundOrIgnore(requestState, Full(liftSession)))
-
-          case f: Failure =>
-            (true, Full(liftSession.checkRedirect(requestState.createNotFound(f))))
-        }
-      } finally {
-        liftSession.notices = S.getNotices
+    
+    val dispatch: (Boolean, Can[LiftResponse]) = 
+      NamedPF.applyCan(toMatch, LiftRules.dispatchTable(request)) match {
+	case Full(f) =>
+	  LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
+	val ret: (Boolean, Can[LiftResponse]) = try {
+          f() match {
+            case Full(v) =>
+              (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
+                                                      S.responseCookies, requestState) )))
+	      
+              case Empty =>
+		(true, LiftRules.notFoundOrIgnore(requestState, Full(liftSession)))
+		
+		case f: Failure =>
+		  (true, Full(liftSession.checkRedirect(requestState.createNotFound(f))))
+          }
+	} finally {
+          liftSession.notices = S.getNotices
+	}
+	LiftSession.onEndServicing.foreach(_(liftSession, requestState,
+                                             ret._2))
+	ret
+	  
+	case _ => (false, Empty)
       }
-      LiftSession.onEndServicing.foreach(_(liftSession, requestState,
-                                           ret._2))
-      ret
-
-    } else (false, Empty)
 
     val wp = requestState.path.wholePath
 
@@ -476,7 +483,8 @@ trait LiftFilterTrait {
 
           val session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-          URLRewriter.doWith(url => LiftRules.urlDecorate(httpRes.encodeURL(url))) {
+          URLRewriter.doWith(url => NamedPF(httpRes.encodeURL(url),
+					    LiftRules.urlDecorate)) {
             if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
             } else {
               chain.doFilter(req, res)
@@ -546,9 +554,13 @@ class LiftFilter extends Filter with LiftFilterTrait
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
   def isLiftRequest_?(session: Req): Boolean = {
-    if (LiftRules.isLiftRequest_?.isDefinedAt(session)) LiftRules.isLiftRequest_?(session)
-    else session.path.endSlash || (session.path.wholePath.takeRight(1) match {case Nil => true case x :: xs => liftHandled(x)}) ||
-    context.getResource(session.uri) == null
+    NamedPF.applyCan(session, LiftRules.isLiftRequest_?) match {
+      case Full(b) => b
+      case _ =>  session.path.endSlash || 
+      (session.path.wholePath.takeRight(1) match 
+       {case Nil => true case x :: xs => liftHandled(x)}) ||
+      context.getResource(session.uri) == null
+    }
   }
 
 }

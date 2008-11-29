@@ -107,7 +107,7 @@ object WikiStuff extends Loc[WikiLoc] {
    * Rewrite the request and emit the type-safe parameter
    */
   override val rewrite: LocRewrite =
-    Full({
+    Full(NamedPF("Wiki Rewrite") {
       case RewriteRequest(ParsePath("wiki" :: "edit" :: page :: Nil, _, _,_),
 			  _, _) =>
       (RewriteResponse("wiki" :: Nil), WikiLoc(page, true))

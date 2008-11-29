@@ -68,7 +68,7 @@ trait OpenIdVendor {
 
   def currentUser: Can[UserType]
 
-  def snippetPf: LiftRules.SnippetPf = {
+  def snippetPF: LiftRules.SnippetPF = NamedPF ("OpenID Default") {
     case SnippetPrefix :: "ifLoggedIn" :: Nil => showIfLoggedIn
     case SnippetPrefix :: "ifLoggedOut" :: Nil => showIfLoggedOut
     case SnippetPrefix :: "userBox" :: Nil => showUserBox
@@ -115,7 +115,7 @@ def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[Verificat
     })
 }
 
-  def dispatchPf: LiftRules.DispatchPf = {
+  def dispatchPF: LiftRules.DispatchPF = NamedPF("Login default") {
     case Req(PathRoot :: LogOutPath :: Nil, "", _) =>
     () => {
       logUserOut()
