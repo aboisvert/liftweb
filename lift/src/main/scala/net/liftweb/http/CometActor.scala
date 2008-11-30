@@ -67,6 +67,7 @@ object ActorWatcher extends Actor {
 @serializable
 trait CometActor extends Actor with BindHelpers {
   val uniqueId = "LC"+randomString(20)
+  private var spanId = uniqueId
   private var lastRenderTime = CometActor.next
 
   private var lastRendering: RenderOut = _
@@ -146,7 +147,7 @@ trait CometActor extends Actor with BindHelpers {
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq =
   Elem(parentTag.prefix, parentTag.label, parentTag.attributes,
        parentTag.scope, Group(xml)) %
-  (new UnprefixedAttribute("id", Text(uniqueId), Null)) %
+  (new UnprefixedAttribute("id", Text(spanId), Null)) %
   (new PrefixedAttribute("lift", "when", Text(time.toString), Null))
 
 
@@ -161,6 +162,12 @@ trait CometActor extends Actor with BindHelpers {
       def apply(in: Any): Unit = {
         S.initIfUninitted(theSession) {
           pf.apply(in)
+
+          if (S.functionMap.size > 0) {
+            theSession.updateFunctionMap(S.functionMap, 
+					 uniqueId, lastRenderTime)
+	    S.clearFunctionMap
+	  }
         }
       }
 
@@ -200,13 +207,15 @@ trait CometActor extends Actor with BindHelpers {
         case Full(who) => who forward l
         case _ =>
           if (when < lastRenderTime) {
-            toDo(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, wasLastFullRender))
+            toDo(AnswerRender(new XmlOrJsCmd(spanId, lastRendering,
+                                             buildSpan _, notices toList),
+                              whosAsking openOr this, lastRenderTime, wasLastFullRender))
           } else {
             deltas.filter(_.when > when) match {
               case Nil => listeners = (seqId, toDo) :: listeners
 
               case all @ (hd :: xs) =>
-                toDo( AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
+                toDo( AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                   Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false, notices toList),
                                    whosAsking openOr this, hd.when, false))
             }
@@ -222,27 +231,32 @@ trait CometActor extends Actor with BindHelpers {
       askingWho match {
         case Full(who) => who forward AskRender
         case _ => if (!deltas.isEmpty || devMode) performReRender(false);
-          reply(AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList), whosAsking openOr this, lastRenderTime, true))
+          reply(AnswerRender(new XmlOrJsCmd(spanId, lastRendering, buildSpan _, notices toList),
+                             whosAsking openOr this, lastRenderTime, true))
       }
 
-    case ActionMessageSet(msgs, request) =>
-      S.init(request, theSession) {
+    case ActionMessageSet(msgs, req) =>
+      S.init(req, theSession) {
         val ret = msgs.map(_())
-        theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
         reply(ret)
       }
 
-    case AskQuestion(what, who) =>
+    case AskQuestion(what, who, otherlisteners) =>
+      this.spanId = who.uniqueId
+      this.listeners = otherlisteners ::: this.listeners
       startQuestion(what)
       whosAsking = Full(who)
+      this.reRender(true)
 
-    case AnswerQuestion(what, request) =>
-      S.init(request, theSession) {
+
+    case AnswerQuestion(what, otherListeners) =>
+      S.initIfUninitted(theSession) {
         askingWho.foreach {
-          askingWho =>
+          ah =>
           reply("A null message to release the actor from its send and await reply... do not delete this message")
           // askingWho.unlink(self)
-          askingWho ! ShutDown
+          ah ! ShutDown
+          this.listeners  = this.listeners ::: otherListeners
           this.askingWho = Empty
           val aw = answerWith
           answerWith = Empty
@@ -264,6 +278,7 @@ trait CometActor extends Actor with BindHelpers {
     case ShutDown =>
       Log.info("The CometActor "+this+" Received Shutdown")
       theSession.removeCometActor(this)
+      unlink(ActorWatcher)
       localShutdown()
       self.exit("Politely Asked to Exit")
 
@@ -271,13 +286,15 @@ trait CometActor extends Actor with BindHelpers {
       val cmd: JsCmd = cmdF.apply
       val time = CometActor.next
       val delta = JsDelta(time, cmd)
-       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
+      theSession.updateFunctionMap(S.functionMap, uniqueId, time)
+      S.clearFunctionMap
       //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
       //deltas = delta :: deltas.filter(_.when < garbageTime)
       deltas = delta :: deltas
       if (!listeners.isEmpty) {
-        val rendered = AnswerRender(new XmlOrJsCmd(uniqueId, Empty, Empty,
-                                                   Full(cmd), Empty, buildSpan, false, notices toList), whosAsking openOr this, time, false)
+        val rendered = AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
+                                                   Full(cmd), Empty, buildSpan, false, notices toList),
+                                    whosAsking openOr this, time, false)
         listeners.foreach(_._2(rendered))
         listeners = Nil
       }
@@ -304,10 +321,10 @@ trait CometActor extends Actor with BindHelpers {
     deltas = Nil
 
     lastRendering = render ++ jsonInCode
-    theSession.updateFunctionMap(S.functionMap, uniqueId, lastRenderTime)
+    theSession.updateFunctionMap(S.functionMap, spanId, lastRenderTime)
 
     val rendered: AnswerRender =
-    AnswerRender(new XmlOrJsCmd(uniqueId, lastRendering, buildSpan _, notices toList),
+    AnswerRender(new XmlOrJsCmd(spanId, lastRendering, buildSpan _, notices toList),
                  this, lastRenderTime, sendAll)
 
     listeners.foreach(_._2(rendered))
@@ -339,18 +356,19 @@ trait CometActor extends Actor with BindHelpers {
   def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, _defaultXml, vals :_*)
   def bind(vals: BindParam *): NodeSeq = bind(defaultPrefix, vals :_*)
 
-  protected def ask(who: CometActor, what: Any)(answerWith: Any => Any) {
+  protected def ask(who: CometActor, what: Any)(answerWith: Any => Unit) {
     who.initCometActor(theSession, name, defaultXml, attributes)
     theSession.addCometActor(who)
     // who.link(this)
     who ! PerformSetupComet
     askingWho = Full(who)
     this.answerWith = Full(answerWith)
-    who ! AskQuestion(what, this)
+    who ! AskQuestion(what, this, listeners)
+    // this ! AskRender
   }
 
   protected def answer(answer: Any) {
-    whosAsking.foreach(_ !? AnswerQuestion(answer, S.request.open_!))
+    whosAsking.foreach(_ !? AnswerQuestion(answer, listeners))
     whosAsking = Empty
     performReRender(false)
   }
@@ -423,11 +441,11 @@ case class PartialUpdateMsg(cmd: () => JsCmd) extends CometMessage
 case object AskRender extends CometMessage
 case class AnswerRender(response: XmlOrJsCmd, who: CometActor, when: Long, displayAll: Boolean) extends CometMessage
 case object PerformSetupComet extends CometMessage
-case class AskQuestion(what: Any, who: CometActor) extends CometMessage
-case class AnswerQuestion(what: Any, request: Req) extends CometMessage
+case class AskQuestion(what: Any, who: CometActor, listeners: List[(ListenerId, AnswerRender => Unit)]) extends CometMessage
+case class AnswerQuestion(what: Any, listeners: List[(ListenerId, AnswerRender => Unit)]) extends CometMessage
 case class Listen(when: Long, uniqueId: ListenerId, action: AnswerRender => Unit) extends CometMessage
 case class Unlisten(uniqueId: ListenerId) extends CometMessage
-case class ActionMessageSet(msg: List[() => Any], request: Req) extends CometMessage
+case class ActionMessageSet(msg: List[() => Any], req: Req) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
 case class ListenerId(id: Long)
 case class Error(id: Can[String], msg: NodeSeq) extends CometMessage

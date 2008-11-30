@@ -86,6 +86,11 @@ object S extends HasParams {
   private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
 
   /**
+   * Are we in the Scope of "S"
+   */
+  def inStatefulScope_? : Boolean = inS.value
+
+  /**
    * Get the current Req
    *
    * @return the current Req
@@ -583,10 +588,10 @@ object S extends HasParams {
       }).map(_._2)
 
     def apply(what: String, default: => String): String =
-      apply(what) openOr default
+    apply(what) openOr default
 
     def apply[T](what: String, f: String => T,
-		 default: => T): T =
+                 default: => T): T =
     apply(what).map(f) openOr default
     
   }
@@ -671,7 +676,14 @@ object S extends HasParams {
   /**
    * Get a map of the name/functions
    */
-  def functionMap: Map[String, AFuncHolder] = Can.legacyNullTest(_functionMap.value).map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
+  def functionMap: Map[String, AFuncHolder] =
+  Can.legacyNullTest(_functionMap.value).
+  map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
+
+  /**
+   * Clears the function map.  potentially very destuctive... use at own risk
+   */
+  def clearFunctionMap {Can.!!(_functionMap.value).foreach(_.clear)}
 
   /**
    * The current context path

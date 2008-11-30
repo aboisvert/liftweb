@@ -67,10 +67,20 @@ class Chat extends CometActor {
   </span>)
 
   override def localSetup {
+    askForName
+    super.localSetup
+  }
+
+  private def askForName {
     if (userName.length == 0) {
       ask(new AskName, "what's your username") {
-        case s: String if (s.trim.length > 2) => userName = s.trim; reRender(true)
-        case s => localSetup; reRender(false)
+        case s: String if (s.trim.length > 2) =>
+	  userName = s.trim
+	reRender(true)
+
+        case s =>
+          askForName
+	reRender(false)
       }
     }
   }

@@ -80,7 +80,7 @@ object LiftRules {
    * to any URL reference from the markup of Ajax request.
    */
   var urlDecorate: List[URLDecorator] =
-    List(NamedPF("default"){case arg => arg})
+  List(NamedPF("default"){case arg => arg})
 
   private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 
@@ -109,7 +109,7 @@ object LiftRules {
   var determineContentType:
   PartialFunction[(Can[Req], Can[String]), String] = {
     case (_, Full(accept)) if this.useXhtmlMimeType && accept.toLowerCase.contains("application/xhtml+xml") =>
-       "application/xhtml+xml"
+      "application/xhtml+xml"
 
     case _ => "text/html"
   }
@@ -144,7 +144,7 @@ object LiftRules {
    * Should pages that are not found be passed along the servlet chain to the
    * next handler?
    */
-  var passNotFoundToChain = true
+  var passNotFoundToChain = false
 
   /**
    * The maximum allowed size of a single file in a mime multi-part POST.
@@ -197,7 +197,7 @@ object LiftRules {
    * If you don't want lift to send the application/xhtml+xml mime type to those browsers
    * that understand it, then set this to {@code false}
    */
- var useXhtmlMimeType: Boolean = true
+  var useXhtmlMimeType: Boolean = true
 
 
   private def _stringToXml(s: String): NodeSeq = Text(s)
@@ -309,11 +309,11 @@ object LiftRules {
 
 
   def snippet(name: String): Can[DispatchSnippet] =
-    NamedPF.applyCan(name, snippetDispatch)
+  NamedPF.applyCan(name, snippetDispatch)
   /*
-  if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
-  else Empty
-  */
+   if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
+   else Empty
+   */
 
   /**
    * If the request times out (or returns a non-Response) you can
@@ -415,8 +415,8 @@ object LiftRules {
   def setSiteMap(sm: SiteMap) {
     _sitemap = Full(sm)
     for (menu <- sm.menus;
-	 val loc = menu.loc;
-	 rewrite <- loc.rewritePF) appendRewrite(rewrite)
+         val loc = menu.loc;
+         rewrite <- loc.rewritePF) appendRewrite(rewrite)
   }
 
   def siteMap: Can[SiteMap] = _sitemap
@@ -427,10 +427,10 @@ object LiftRules {
   // private case object Never
 
   /*
-  private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
-    case Nil => last
-    case x :: xs => x orElse rpf(xs, last)
-  }*/
+   private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
+   case Nil => last
+   case x :: xs => x orElse rpf(xs, last)
+   }*/
 
   private var _statelessDispatchTable: List[DispatchPF] = Nil // Map.empty
 
@@ -459,9 +459,9 @@ object LiftRules {
       case null => dispatchTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-	    S.highLevelSessionDispatchList.map(_.dispatch) :::
-	    dispatchTable_i
-            // rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
+              S.highLevelSessionDispatchList.map(_.dispatch) :::
+              dispatchTable_i
+              // rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
             }
           case _ => dispatchTable_i
         }
@@ -473,8 +473,8 @@ object LiftRules {
       case null => rewriteTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-            // rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
-	    S.sessionRewriter.map(_.rewrite) ::: rewriteTable_i
+              // rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
+              S.sessionRewriter.map(_.rewrite) ::: rewriteTable_i
             }
           case _ => rewriteTable_i
         }
@@ -488,8 +488,8 @@ object LiftRules {
       case null => templateTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-            // rpf(S.sessionTemplater.map(_.template), templateTable_i)
-	    S.sessionTemplater.map(_.template) ::: templateTable_i
+              // rpf(S.sessionTemplater.map(_.template), templateTable_i)
+              S.sessionTemplater.map(_.template) ::: templateTable_i
             }
           case _ => templateTable_i
         }
@@ -619,6 +619,12 @@ object LiftRules {
     templateTable_i
   }
 
+  @deprecated
+  def addTemplateBefore(pf: TemplatePF) = prependTemplate(pf)
+
+  @deprecated
+  def addTemplateAfter(pf: TemplatePF) = appendTemplate(pf)
+
   def appendTemplate(pf: TemplatePF) = {
     templateTable_i = templateTable_i ::: List(pf)
     templateTable_i
@@ -634,10 +640,22 @@ object LiftRules {
     rewriteTable_i
   }
 
+  @deprecated
+  def addRewriteBefore(pf: RewritePF) = prependRewrite(pf)
+
+  @deprecated
+  def addRewriteAfter(pf: RewritePF) = appendRewrite(pf)
+
   def prependDispatch(pf: DispatchPF) = {
     dispatchTable_i = pf :: dispatchTable_i
     dispatchTable_i
   }
+
+  @deprecated
+  def addDispatchBefore(pf: DispatchPF) = prependDispatch(pf)
+
+  @deprecated
+  def addDispatchAfter(pf: DispatchPF) = appendDispatch(pf)
 
   def appendDispatch(pf: DispatchPF) = {
     dispatchTable_i = dispatchTable_i ::: List(pf)
@@ -734,8 +752,8 @@ object LiftRules {
    *
    */
   private var _uriNotFound: List[URINotFoundPF] =
-    List(NamedPF("default") {
-    case (r, _) => Req.defaultCreateNotFound(r)
+  List(NamedPF("default") {
+      case (r, _) => Req.defaultCreateNotFound(r)
     })
 
   /**

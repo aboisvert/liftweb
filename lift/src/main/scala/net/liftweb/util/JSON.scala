@@ -22,7 +22,7 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
 
   def parse(in: String): Can[Any] = theValue(in) match {
     case Success(v, _) => Full(v)
-    case x => /*println(x);*/ Empty
+    case x => Empty
   }
 
   def whitespace = elem(' ') | elem('\t') | elem('\n') | elem('\r')

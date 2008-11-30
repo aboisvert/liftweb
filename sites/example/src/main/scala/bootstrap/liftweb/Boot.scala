@@ -31,12 +31,13 @@ import _root_.net.liftweb.mapper.{DB, ConnectionManager, Schemifier, DefaultConn
 
 import _root_.java.sql.{Connection, DriverManager}
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession}
-
+import _root_.scala.actors._
+import Actor._
 
 /**
-* A class that's instantiated early and run.  It allows the application
-* to modify lift's environment
-*/
+ * A class that's instantiated early and run.  It allows the application
+ * to modify lift's environment
+ */
 class Boot {
   def boot {
     DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
@@ -47,22 +48,22 @@ class Boot {
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry, Person)
 
     LiftRules.prependDispatch(NamedPF("Web Services Example") {
-      // if the url is "showcities" then return the showCities function
-      case Req("showcities":: _, "", _) => XmlServer.showCities
+        // if the url is "showcities" then return the showCities function
+        case Req("showcities":: _, "", _) => XmlServer.showCities
 
-      // if the url is "showstates" "curry" the showStates function with the optional second parameter
-      case Req("showstates":: xs, "", _) =>
-	XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
+          // if the url is "showstates" "curry" the showStates function with the optional second parameter
+        case Req("showstates":: xs, "", _) =>
+          XmlServer.showStates(if (xs.isEmpty) "default" else xs.head)
 
-      // if it's a web service, pass it to the web services invoker
-      case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
-    })
+          // if it's a web service, pass it to the web services invoker
+        case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
+      })
 
     LiftRules.prependDispatch(NamedPF("Login Validation") {
-         case Req("login" :: page , "", _)
-      if !LoginStuff.is && page.head != "validate" =>
-        () => Full(RedirectResponse("/login/validate"))
-    })
+        case Req("login" :: page , "", _)
+          if !LoginStuff.is && page.head != "validate" =>
+          () => Full(RedirectResponse("/login/validate"))
+      })
 
     LiftRules.appendSnippetDispatch(NamedPF("Template")(Map("Template" -> Template)))
 
@@ -70,22 +71,22 @@ class Boot {
      * Show the spinny image when an Ajax call starts
      */
     LiftRules.ajaxStart =
-      Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
+    Full(() => LiftRules.jsArtifacts.show("ajax-loader").cmd)
 
     /*
      * Make the spinny image go away when it ends
      */
     LiftRules.ajaxEnd =
-      Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
+    Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
     val wikibind_rewriter: LiftRules.RewritePF = NamedPF("WikiBind") {
       case RewriteRequest(path @ ParsePath("wikibind" :: page :: _, _, _,_),
-			  _, _)
-      =>
-	RewriteResponse(ParsePath("wikibind" :: Nil, "", true, false),
-			Map("wiki_page" -> page ::
-			    path.wholePath.drop(2).zipWithIndex.
-			    map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
+                          _, _)
+        =>
+        RewriteResponse(ParsePath("wikibind" :: Nil, "", true, false),
+                        Map("wiki_page" -> page ::
+                            path.wholePath.drop(2).zipWithIndex.
+                            map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
     LiftRules.appendEarly(makeUtf8)
@@ -100,16 +101,22 @@ class Boot {
 
     LiftRules.setSiteMap(SiteMap(MenuInfo.menu :_*))
 
+    // Dump information about session every 10 minutes
+    SessionMaster.sessionWatchers = SessionInfoDumper :: SessionMaster.sessionWatchers
+
+    // Dump browser information each time a new connection is made
+    LiftSession.onBeginServicing = BrowserLogger.haveSeenYou _ :: LiftSession.onBeginServicing
+
   }
 
   private def invokeWebService(methodName: String)():
   Can[LiftResponse] =
-    for (req <- S.request;
-	 invoker <- createInvoker(methodName, new WebServices(req));
-	 ret <- invoker() match {
-	   case Full(ret: LiftResponse) => Full(ret)
-	   case _ => Empty
-	 }) yield ret
+  for (req <- S.request;
+       invoker <- createInvoker(methodName, new WebServices(req));
+       ret <- invoker() match {
+      case Full(ret: LiftResponse) => Full(ret)
+      case _ => Empty
+    }) yield ret
 
   private def makeUtf8(req: HttpServletRequest): Unit = {req.setCharacterEncoding("UTF-8")}
 }
@@ -143,52 +150,52 @@ object MenuInfo {
   Menu(Loc("template", List("template"), "Templates")) ::
   Menu(Loc("ws", List("ws"), "Web Services")) ::
   Menu(Loc("simple", Link(List("simple"), true, "/simple/index"),
-	   "Simple Forms")) ::
+           "Simple Forms")) ::
   Menu(Loc("lang", List("lang"), "Localization")) ::
   Menu(Loc("menu_top", List("menu", "index"), "Menus"),
        Menu(Loc("menu_one", List("menu", "one"), "First Submenu")),
        Menu(Loc("menu_two", List("menu", "two"), "Second Submenu (has more)"),
-	    Menu(Loc("menu_two_one", List("menu", "two_one"),
-		     "First (2) Submenu")),
-	    Menu(Loc("menu_two_two", List("menu", "two_two"),
-		     "Second (2) Submenu"))
+            Menu(Loc("menu_two_one", List("menu", "two_one"),
+                     "First (2) Submenu")),
+            Menu(Loc("menu_two_two", List("menu", "two_two"),
+                     "Second (2) Submenu"))
 	  ),
        Menu(Loc("menu_three", List("menu", "three"), "Third Submenu")),
        Menu(Loc("menu_four", List("menu", "four"), "Forth Submenu"))
-     ) ::
+  ) ::
   Menu(Loc("file_upload", List("file_upload"), "File Upload")) ::
   // Menu(Loc("wiki", Link(List("wiki"), true, "/wiki/HomePage"), "Wiki")) ::
   Menu(WikiStuff) ::
   Menu(Loc("guess", List("guess"), "Number Guessing")) ::
   Menu(Loc("count", List("count"), "Counting")) ::
   Menu(Loc("login", Link(List("login"), true, "/login/index"),
-	   <xml:group>Requiring Login <strike>SiteMap</strike></xml:group>)) ::
+           <xml:group>Requiring Login <strike>SiteMap</strike></xml:group>)) ::
   Menu(Loc("arc", List("arc"), "Arc Challenge #1")) ::
   Menu(Loc("lift", ExtLink("http://liftweb.net"),
-	 <xml:group><i>Lift</i> project home</xml:group>)) ::
+           <xml:group><i>Lift</i> project home</xml:group>)) ::
   Nil
 }
 
 object XmlServer {
   def showStates(which: String)(): Can[XmlResponse] = Full(XmlResponse(
-    <states renderedAt={timeNow.toString}>{
-      which match {
-	case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
+      <states renderedAt={timeNow.toString}>{
+          which match {
+            case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
 
-	case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
+            case "blue" => <state name="New York"/><state name="Pennsylvania"/><state name="Vermont"/>
 
-	case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
-      } }
-    </states>))
+            case _ => <state name="California"/><state name="Rhode Island"/><state name="Maine"/>
+          } }
+      </states>))
 
   def showCities(): Can[XmlResponse] =
-    Full(XmlResponse(
+  Full(XmlResponse(
       <cities>
-      <city name="Boston"/>
-      <city name="New York"/>
-      <city name="San Francisco"/>
-      <city name="Dallas"/>
-      <city name="Chicago"/>
+        <city name="Boston"/>
+        <city name="New York"/>
+        <city name="San Francisco"/>
+        <city name="Dallas"/>
+        <city name="Chicago"/>
       </cities>))
 
 }
@@ -204,4 +211,38 @@ object DBVendor extends ConnectionManager {
     }
   }
   def releaseConnection(conn: Connection) {conn.close}
+}
+
+object BrowserLogger {
+  object HaveSeenYou extends SessionVar(false)
+
+  def haveSeenYou(session: LiftSession, request: Req) {
+    if (!HaveSeenYou.is) {
+      Log.info("Created session "+session.uniqueId+" IP: {"+request.request.getRemoteAddr+"} UserAgent: {{"+request.userAgent.openOr("N/A")+"}}")
+      HaveSeenYou(true)
+    }
+  }
+}
+
+object SessionInfoDumper extends Actor {
+  private var lastTime = millis
+
+  val tenMinutes: Long = 10 minutes
+  def act = {
+    link(ActorWatcher)
+    loop {
+      react {
+        case SessionWatcherInfo(sessions) =>
+          if ((millis - tenMinutes) > lastTime) {
+            lastTime = millis
+            val rt = Runtime.getRuntime
+            Log.info("Number of open sessions: "+sessions.size)
+            Log.info("Free Memory: "+rt.freeMemory)
+            Log.info("Total Memory: "+rt.totalMemory)
+          }
+      }
+    }
+  }
+
+  this.start
 }
