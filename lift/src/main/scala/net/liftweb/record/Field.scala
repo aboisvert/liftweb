@@ -17,26 +17,15 @@ import net.liftweb.util._
 import net.liftweb.http.{S, FieldIdentifier, FieldError}
 import scala.xml._
 
-/**
-  * A simple field that can store and retreive a value of a given type
-  */
-trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
-  type ValidationFunction = MyType => Can[Node]
-
-  private[record] var data: MyType = _
-  private[record] var needsDefault = true
-  private[record] var obscured: MyType = _
-  private[record] var fieldName: String = _
+trait OwnedField[OwnerType <: Record[OwnerType]] extends FieldIdentifier {
   private[record] var valueCouldNotBeSet = false
+  private[record] var needsDefault = true
   private[record] var dirty = false
+  private[record] var fieldName: String = _
 
-  def apply(in: MyType): OwnerType = if (owner.meta.mutable_?) {
-    this.set(in)
-    owner
-  } else {
-    owner.meta.createWithMutableField(owner, this, in)
-  }
+  type MyType
+  type ValidationFunction = MyType => Can[Node]
 
   /**
    * Return the owner of this field
@@ -57,24 +46,9 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
   def ignoreField_? = false
 
   /**
-   * The default value of the field
-   */
-  def defaultValue: MyType
-
-  /**
    * The text name of this field
    */
   def name: String = fieldName
-
-  /**
-   * Convert the field to a String... usually of the form "displayName=value"
-   */
-  def asString = displayName + "=" + data
-
-  /**
-   * Convert the field value to an XHTML representation
-   */
-  def toXHtml = Text(toString)
 
   /**
    * The display name of the field (by default, the 'internal' name of the field)
@@ -96,16 +70,81 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
   def checkCanWrite_? = true
 
+  /**
+   * Convert the field value to an XHTML representation
+   */
+  def toXHtml: NodeSeq = Text(toString)
+
+  def toForm: NodeSeq
+
+  def asXHtml: NodeSeq
+
+  /**
+   * Are we in "safe" mode (i.e., the value of the field can be read or written without any security checks.)
+   */
+  final def safe_? : Boolean = owner.safe_?
+
+  /**
+   * Set the name of this field
+   */
+  private[record] final def setName_!(newName : String) : String = {
+    if (safe_?) fieldName = newName
+    fieldName
+  }
+
+  /**
+   * The error message used when the fiel value could not be set
+   */
+  def noValueErrorMessage : String = ""
+
+  def tabIndex: Int = 1
+
+  override def uniqueFieldId: Can[String] = Full(name+"_id")
+
+
+  def label: NodeSeq = uniqueFieldId match {
+    case Full(id) =>  <label for={id+"_field"}>{displayName}</label>
+    case _ => NodeSeq.Empty
+  }
+
+  /**
+   * Return a list of functions that will be subsequently called for validating this field.
+   * Each function takes a field-type parameter and returns a Can[Node].
+   *
+   * The field values is valid if all validation functions return an Empty Can
+   */
+  def validators: List[ValidationFunction] = Nil
+
+
+
+  private[record] var data: MyType = _
+
+  private[record] var obscured: MyType = _
+
+
+  def apply(in: MyType): OwnerType
+
+  /**
+   * The default value of the field
+   */
+  def defaultValue: MyType
+
+
+  /**
+   * Convert the field to a String... usually of the form "displayName=value"
+   */
+  def asString = displayName + "=" + data
+
   def obscure(in: MyType): MyType = obscured
 
   def set(in: MyType): MyType = synchronized {
     if (checkCanWrite_?) {
-        data = set_!(in)
-        valueCouldNotBeSet = false
-        needsDefault = false
+      data = set_!(in)
+      valueCouldNotBeSet = false
+      needsDefault = false
     } else {
-        valueCouldNotBeSet = true
-        needsDefault = false
+      valueCouldNotBeSet = true
+      needsDefault = false
     }
     data
   }
@@ -142,46 +181,21 @@ trait Field[MyType, OwnerType <: Record[OwnerType]] extends FieldIdentifier {
     case null => "null"
     case s => s.toString
   }
+}
 
-  def toForm: NodeSeq
+/**
+ * A simple field that can store and retreive a value of a given type
+ */
+trait Field[ThisType, OwnerType <: Record[OwnerType]] extends OwnedField[OwnerType] {
+  type MyType = ThisType
 
-  def asXHtml: NodeSeq
 
-  /**
-   * Are we in "safe" mode (i.e., the value of the field can be read or written without any security checks.)
-   */
-  final def safe_? : Boolean = owner.safe_?
-
-  /**
-   * Set the name of this field
-   */
-  private[record] final def setName_!(newName : String) : String = {
-    if (safe_?) fieldName = newName
-    fieldName
+  def apply(in: MyType): OwnerType = if (owner.meta.mutable_?) {
+    this.set(in)
+    owner
+  } else {
+    owner.meta.createWithMutableField(owner, this, in)
   }
-
-  /**
-   * The error message used when the fiel value could not be set
-   */
-  def noValueErrorMessage : String = ""
-
-  /**
-   * Return a list of functions that will be subsequently called for validating this field.
-   * Each function takes a field-type parameter and returns a Can[Node].
-   *
-   * The field values is valid if all validation functions return an Empty Can
-   */
-  def validators : List[ValidationFunction] = Nil
-
-  def tabIndex: Int = 1
-
-  override def uniqueFieldId: Can[String] = Full(name+"_id")
-
-  def label: NodeSeq = uniqueFieldId match {
-    case Full(id) =>  <label for={id+"_field"}>{displayName}</label>
-    case _ => NodeSeq.Empty
-  }
-
 }
 
 import java.sql.{ResultSet, Types}

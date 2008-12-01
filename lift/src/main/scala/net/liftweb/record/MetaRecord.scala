@@ -26,11 +26,12 @@ import field._
 /**
  * Holds meta information and operations on a record
  */
-trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
+trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
+  self: BaseRecord =>
 
-  private[record] var fieldList: List[FieldHolder[BaseRecord]] = Nil
+  private var fieldList: List[FieldHolder] = Nil
 
-  private[record] var lifecycleCallbacks: List[(String, Method)] = Nil
+  private var lifecycleCallbacks: List[(String, Method)] = Nil
 
   /**
    * Set this to use your own form template when rendering a Record to a form.
@@ -85,13 +86,13 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
   protected val rootClass = this.getClass.getSuperclass
 
   private def isMagicObject(m: Method) = m.getReturnType.getName.endsWith("$"+m.getName+"$") && m.getParameterTypes.length == 0
-  private def isMappedField(m: Method) = classOf[Field[Nothing, BaseRecord]].isAssignableFrom(m.getReturnType)
+  private def isMappedField(m: Method) = classOf[OwnedField[BaseRecord]].isAssignableFrom(m.getReturnType)
   private def isLifecycle(m: Method) = classOf[LifecycleCallbacks].isAssignableFrom(m.getReturnType)
 
-  def introspect(rec: BaseRecord, methods: Array[Method])(f: (Method, Field[_, BaseRecord]) => Any) = {
+  def introspect(rec: BaseRecord, methods: Array[Method])(f: (Method, OwnedField[BaseRecord]) => Any) = {
     for (v <- methods  if isMagicObject(v) && isMappedField(v)) {
       v.invoke(rec, null) match {
-        case mf: Field[_, BaseRecord] if !mf.ignoreField_? =>
+        case mf: OwnedField[BaseRecord] if !mf.ignoreField_? =>
           mf.setName_!(v.getName)
           f(v, mf)
         case _ =>
@@ -101,7 +102,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
   }
 
   this.runSafe {
-    val tArray = new ListBuffer[FieldHolder[BaseRecord]]
+    val tArray = new ListBuffer[FieldHolder]
 
     lifecycleCallbacks = for (v <- this.getClass.getSuperclass.getMethods.toList
                               if isMagicObject(v) && isLifecycle(v)) yield (v.getName, v)
@@ -117,7 +118,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
       }
     }
 
-    val resArray = new ListBuffer[FieldHolder[BaseRecord]];
+    val resArray = new ListBuffer[FieldHolder]
 
     fieldOrder.foreach(f => findPos(f).foreach(pos => resArray += tArray.remove(pos)))
 
@@ -156,13 +157,13 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
     val rec = createRecord
 
     for (f <- fieldList) {
-      (f.name == field.name) match {
-        case true => rec.fieldByName(f.name).map((recField: Field[Any, BaseRecord]) => recField.setFromAny(newValue) )
-        case _ => rec.fieldByName(f.name).map((recField: Field[Any, BaseRecord]) =>
-          original.fieldByName(f.name).map((m: Field[Any, BaseRecord]) => recField.setFromAny(m.value))
-        )
+      if (f.name == field.name)
+      fieldByName(f.name, rec).map(recField => recField.set(newValue.asInstanceOf[recField.MyType]) )
+      else
+        fieldByName(f.name, rec).map(recField =>
+            fieldByName(f.name, original).map(m => recField.setFromAny(m.value))
+          )
       }
-    }
 
     rec
   }
@@ -174,7 +175,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
    * @return a NodeSeq
    */
   def toXHtml(inst: BaseRecord): NodeSeq = fieldList.flatMap(holder =>
-      inst.fieldByName(holder.name).map((field:Field[Any, BaseRecord]) => field.toXHtml).openOr(NodeSeq.Empty) ++ Text("\n"))
+    fieldByName(holder.name, inst).map(_.toXHtml).openOr(NodeSeq.Empty) ++ Text("\n"))
 
 
   /**
@@ -187,13 +188,13 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
     foreachCallback(inst, _.beforeValidation)
     try{
 	    fieldList.flatMap(holder => inst.fieldByName(holder.name) match {
-	      case Full(field) => if (!field.valueCouldNotBeSet) {
-	        field.validators.flatMap(_(field.value).map(FieldError(field, _)))
-	      } else {
-	        FieldError(field, Text(field.noValueErrorMessage)) :: Nil
-	      }
-	      case _ => Nil
-	    })
+          case Full(field) => if (!field.valueCouldNotBeSet) {
+              field.validators.flatMap(_(field.value).map(FieldError(field, _)))
+            } else {
+              FieldError(field, Text(field.noValueErrorMessage)) :: Nil
+            }
+          case _ => Nil
+        })
     } finally {
       foreachCallback(inst, _.afterValidation)
     }
@@ -221,46 +222,46 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
   def toForm(inst: BaseRecord): NodeSeq = {
     formTemplate match {
       case Full(template) => _toForm(inst, template)
-      case Empty => fieldList.flatMap(holder => inst.fieldByName(holder.name).map((field:Field[Any, BaseRecord]) =>
-        field.toForm).openOr(NodeSeq.Empty) ++ Text("\n"))
-      }
+      case Empty => fieldList.flatMap(holder => fieldByName(holder.name, inst).
+                                      map(_.toForm).openOr(NodeSeq.Empty) ++ Text("\n"))
     }
+  }
 
   private def _toForm(inst: BaseRecord, template: NodeSeq): NodeSeq = {
     template match {
       case e @ <lift:field_label>{_*}</lift:field_label> => e.attribute("name") match{
-        case Some(name) => inst.fieldByName(name.toString).map((field: Field[Any, BaseRecord]) => field.label).openOr(NodeSeq.Empty)
-        case _ => NodeSeq.Empty
-      }
+          case Some(name) => fieldByName(name.toString, inst).map(_.label).openOr(NodeSeq.Empty)
+          case _ => NodeSeq.Empty
+        }
 
       case e @ <lift:field>{_*}</lift:field> => e.attribute("name") match{
-        case Some(name) => inst.fieldByName(name.toString).map((field: Field[Any, BaseRecord]) => field.asXHtml).openOr(NodeSeq.Empty)
-        case _ => NodeSeq.Empty
-      }
+          case Some(name) => fieldByName(name.toString, inst).map(_.asXHtml).openOr(NodeSeq.Empty)
+          case _ => NodeSeq.Empty
+        }
 
       case e @ <lift:field_msg>{_*}</lift:field_msg> => e.attribute("name") match{
-        case Some(name) => inst.fieldByName(name.toString).map((field: Field[Any, BaseRecord]) => field.uniqueFieldId match {
-          case Full(id) => <lift:msg id={id}/>
+          case Some(name) => fieldByName(name.toString, inst).map(_.uniqueFieldId match {
+                case Full(id) => <lift:msg id={id}/>
+                case _ => NodeSeq.Empty
+              }).openOr(NodeSeq.Empty)
           case _ => NodeSeq.Empty
-        }).openOr(NodeSeq.Empty)
-        case _ => NodeSeq.Empty
-      }
+        }
 
       case Elem(namespace, label, attrs, scp, ns @ _*) =>
         Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
 
       case s : Seq[_] => s.flatMap(e => e match {
-        case Elem(namespace, label, attrs, scp, ns @ _*) =>
-        Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
-        case x => x
-      })
+            case Elem(namespace, label, attrs, scp, ns @ _*) =>
+              Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
+            case x => x
+          })
 
     }
   }
 
 
 
-  private[record] def ??(meth: Method, inst: BaseRecord) = meth.invoke(inst, null).asInstanceOf[Field[_, BaseRecord]]
+  private def ??(meth: Method, inst: BaseRecord) = meth.invoke(inst, null).asInstanceOf[OwnedField[BaseRecord]]
 
   /**
    * Get a field by the field name
@@ -269,8 +270,8 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
    *
    * @return Can[The Field] (Empty if the field is not found)
    */
-  def fieldByName[T](fieldName: String, inst: BaseRecord): Can[Field[T, BaseRecord]] = {
-    Can(fieldList.find(f => f.name == fieldName)).map(holder => ??(holder.method, inst).asInstanceOf[Field[T, BaseRecord]])
+  def fieldByName(fieldName: String, inst: BaseRecord): Can[OwnedField[BaseRecord]] = {
+    Can(fieldList.find(f => f.name == fieldName)).map(holder => ??(holder.method, inst).asInstanceOf[OwnedField[BaseRecord]])
   }
 
   /**
@@ -278,9 +279,9 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] { self: BaseRecord =>
    *
    * @return a List of Field
    */
-  def fieldOrder: List[Field[_, BaseRecord]] = Nil
+  def fieldOrder: List[OwnedField[BaseRecord]] = Nil
 
-  case class FieldHolder[T](name: String, method: Method, field: Field[_, T])
+  case class FieldHolder(name: String, method: Method, field: OwnedField[BaseRecord])
 }
 
 trait LifecycleCallbacks {
