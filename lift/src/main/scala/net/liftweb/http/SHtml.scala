@@ -33,8 +33,10 @@ object SHtml {
    *
    * @return a button to put on your page
    */
-  def ajaxButton(text: NodeSeq, func: () => JsCmd): Elem =
-    <button onclick={makeAjaxCall(Str(mapFunc(func)+"=true"))}>{text}</button> // <input type="button" value={text}/> % ("onclick" -> makeAjaxCall(Str(mapFunc(func)+"=true")))
+  def ajaxButton(text: NodeSeq, func: () => JsCmd, attrs: (String, String)*): Elem =
+    attrs.foldLeft(<button onclick={makeAjaxCall(Str(mapFunc(func)+"=true")).toJsCmd+"; return false;"}
+        >{text}</button>)(_ % _)
+    // <input type="button" value={text}/> % ("onclick" -> makeAjaxCall(Str(mapFunc(func)+"=true")))
 
   /**
    * Create an Ajax button. When it's pressed, the function is executed
@@ -44,8 +46,8 @@ object SHtml {
    *
    * @return a button to put on your page
    */
-  def ajaxButton(text: String, func: () => JsCmd): Elem =
-  ajaxButton(Text(text), func)
+  def ajaxButton(text: String, func: () => JsCmd, attrs: (String, String)*): Elem =
+  ajaxButton(Text(text), func, attrs :_*)
 //    <button onclick={makeAjaxCall(Str(mapFunc(func)+"=true"))}>{text}</button>
 
   /**
@@ -54,10 +56,10 @@ object SHtml {
    * @param func - the function to invoke when the link is clicked
    * @param body - the NodeSeq to wrap in the anchor tag
    */
-  def a(func: () => JsCmd, body: NodeSeq): Elem = {
+  def a(func: () => JsCmd, body: NodeSeq, attrs: (String, String)*): Elem = {
     val key = "F"+System.nanoTime+"_"+randomString(3)
     addFunctionMap(key, (a: List[String]) => func())
-      (<lift:a key={key}>{body}</lift:a>)
+      attrs.foldLeft(<lift:a key={key}>{body}</lift:a>)(_ % _)
   }
 
   def makeAjaxCall(in: JsExp): JsExp = new JsExp {
@@ -67,17 +69,21 @@ object SHtml {
   /**
    * Create an anchor with a body and the function to be executed when the anchor is clicked
    */
-  def a(body: NodeSeq)(func: => JsCmd): Elem = a(() => func, body)
+  def a(body: NodeSeq, attrs: (String, String)*)(func: => JsCmd): Elem =
+  a(() => func, body, attrs :_*)
 
   /**
    * Create an anchor that will run a JavaScript command when clicked
    */
-  def a(body: NodeSeq, cmd: JsCmd): Elem = (<a href="javascript://" onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)
+  def a(body: NodeSeq, cmd: JsCmd, attrs: (String, String)*): Elem =
+  attrs.foldLeft(<a href="javascript://"
+      onclick={cmd.toJsCmd + "; return false;"}>{body}</a>)(_ % _)
 
   /**
    * Create a span that will run a JavaScript command when clicked
    */
-  def span(body: NodeSeq, cmd: JsCmd): Elem = (<span onclick={cmd.toJsCmd}>{body}</span>)
+  def span(body: NodeSeq, cmd: JsCmd, attrs: (String, String)*): Elem =
+  attrs.foldLeft(<span onclick={cmd.toJsCmd}>{body}</span>)(_ % _)
 
   /**
    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
@@ -119,38 +125,44 @@ object SHtml {
    *
    * @return a text field
    */
-  def jsonText(value: String, json: JsExp => JsCmd): Elem = {
-    (<input type="text" value={value}/>) %
+  def jsonText(value: String, json: JsExp => JsCmd, attrs: (String, String)*): Elem = {
+    (attrs.foldLeft(<input type="text" value={value}/>)(_ % _)) %
     ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
     ("onblur" -> (json(JE.JsRaw("this.value"))))
   }
 
   def ajaxText(value: String, func: String => JsCmd): Elem = ajaxText_*(value, SFuncHolder(func))
 
-  private def ajaxText_*(value: String, func: AFuncHolder): Elem = {
+  private def ajaxText_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem = {
     val funcName = mapFunc(func)
-      (<input type="text" value={value}/>) %
+      (attrs.foldLeft(<input type="text" value={value}/>)(_ % _)) %
         ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
         ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
   }
 
-  def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd): Elem = ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))))
+  def ajaxCheckbox(value: Boolean, func: Boolean => JsCmd, attrs: (String, String)*): Elem =
+  ajaxCheckbox_*(value, LFuncHolder(in =>  func(in.exists(toBoolean(_)))), attrs :_*)
 
-  private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder): Elem = {
+  private def ajaxCheckbox_*(value: Boolean, func: AFuncHolder, attrs: (String, String)*): Elem = {
     val funcName = mapFunc(func)
-      (<input type="checkbox"/>) % checked(value) % ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
+      (attrs.foldLeft(<input type="checkbox"/>)(_ % _)) %
+      checked(value) %
+      ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
   }
 
-  def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => JsCmd): Elem = ajaxSelect_*(opts, deflt, SFuncHolder(func))
+  def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], 
+                 func: String => JsCmd, attrs: (String, String)*): Elem =
+  ajaxSelect_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
+  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Can[String], 
+                           func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
     val funcName = mapFunc(testFunc)
 
-    (<select>{
+    (attrs.foldLeft(<select>{
        opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>) % ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
+    }</select>)(_ % _)) % ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
   }
 
   def ajaxInvoke(func: () => JsCmd): JsExp = makeAjaxCall(Str(mapFunc(NFuncHolder(func)) + "=true"))
@@ -194,21 +206,39 @@ object SHtml {
    * @param func - the function to invoke when the link is clicked
    * @param body - the NodeSeq to wrap in the anchor tag
    */
-  def link(to: String, func: () => Any, body: NodeSeq): Elem = {
+  def link(to: String, func: () => Any, body: NodeSeq,
+           attrs: (String, String)*): Elem = {
     val key = mapFunc((a: List[String]) => {func(); true})
-      (<a href={to+"?"+key+"=_"}>{body}</a>)
+      attrs.foldLeft(<a href={to+"?"+key+"=_"}>{body}</a>)(_ % _)
   }
 
-  private def makeFormElement(name: String, func: AFuncHolder): Elem = (<input type={name} name={mapFunc(func)}/>)
+  private def makeFormElement(name: String, func: AFuncHolder,
+                              attrs: (String, String)*): Elem =
+  attrs.foldLeft(<input type={name} name={mapFunc(func)}/>)(_ % _)
 
-  def text_*(value: String, func: AFuncHolder): Elem = makeFormElement("text", func) % new UnprefixedAttribute("value", Text(value), Null)
-  def password_*(value: String, func: AFuncHolder): Elem = makeFormElement("password", func) % new UnprefixedAttribute("value", Text(value), Null)
-  def hidden_*(func: AFuncHolder): Elem = makeFormElement("hidden", func) % ("value" -> "true")
-  def submit_*(value: String, func: AFuncHolder): Elem = makeFormElement("submit", func) % new UnprefixedAttribute("value", Text(value), Null)
-  def text(value: String, func: String => Any): Elem = makeFormElement("text", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-  def password(value: String, func: String => Any): Elem = makeFormElement("password", SFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
-  def hidden(func: () => Any): Elem = makeFormElement("hidden", NFuncHolder(func)) % ("value" -> "true")
-  def submit(value: String, func: () => Any): Elem = makeFormElement("submit", NFuncHolder(func)) % new UnprefixedAttribute("value", Text(value), Null)
+  def text_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
+  makeFormElement("text", func, attrs :_*) % new UnprefixedAttribute("value", Text(value), Null)
+
+  def password_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
+  makeFormElement("password", func, attrs :_*) % ("value" -> value)
+  def hidden_*(func: AFuncHolder, attrs: (String, String)*): Elem =
+  makeFormElement("hidden", func, attrs :_*) % ("value" -> "true")
+
+  def submit_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
+  makeFormElement("submit", func, attrs :_*) % ("value" -> value)
+
+  def text(value: String, func: String => Any, attrs: (String, String)*): Elem =
+  makeFormElement("text", SFuncHolder(func), attrs :_*) % new UnprefixedAttribute("value", Text(value), Null)
+
+  def password(value: String, func: String => Any, attrs: (String, String)*): Elem =
+  makeFormElement("password", SFuncHolder(func), attrs :_*) % new UnprefixedAttribute("value", Text(value), Null)
+
+  def hidden(func: () => Any, attrs: (String, String)*): Elem =
+  makeFormElement("hidden", NFuncHolder(func), attrs :_*) % ("value" -> "true")
+
+  def submit(value: String, func: () => Any, attrs: (String, String)*): Elem =
+  makeFormElement("submit", NFuncHolder(func), attrs :_*) %
+  new UnprefixedAttribute("value", Text(value), Null)
 
   def ajaxForm(body: NodeSeq) = (<lift:form>{body}</lift:form>)
   def ajaxForm(onSubmit: JsCmd, body: NodeSeq) = (<lift:form onsubmit={onSubmit.toJsCmd}>{body}</lift:form>)
@@ -240,8 +270,8 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-   def select(opts: Seq[(String, String)], deflt: Can[String], func: String => Any): Elem =
-     select_*(opts, deflt, SFuncHolder(func))
+   def select(opts: Seq[(String, String)], deflt: Can[String], func: String => Any, attrs: (String, String)*): Elem =
+     select_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
   /**
    * Create a select box based on the list with a default value and the function
@@ -252,11 +282,11 @@ object SHtml {
    * @param onSubmit -- the function to execute on form submission
    */
    def selectObj[T](options: Seq[(T, String)], default: Can[T],
-                    onSubmit: T => Unit): Elem = {
+                    onSubmit: T => Unit, attrs: (String, String)*): Elem = {
     val (nonces, defaultNonce, secureOnSubmit) =
       secureOptions(options, default, onSubmit)
 
-    select_*(nonces, defaultNonce, secureOnSubmit)
+    select_*(nonces, defaultNonce, secureOnSubmit, attrs:_*)
    }
 
   /**
@@ -267,13 +297,14 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def select_*(opts: Seq[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
+  def select_*(opts: Seq[(String, String)],deflt: Can[String], 
+               func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
 
-    (<select name={mapFunc(testFunc)}>{
+    attrs.foldLeft(<select name={mapFunc(testFunc)}>{
       opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>)
+    }</select>)(_ % _)
   }
 
   /**
@@ -285,7 +316,9 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def untrustedSelect(opts: Seq[(String, String)], deflt: Can[String], func: String => Any): Elem = untrustedSelect_*(opts, deflt, SFuncHolder(func))
+  def untrustedSelect(opts: Seq[(String, String)], deflt: Can[String],
+                      func: String => Any, attrs: (String, String)*): Elem =
+  untrustedSelect_*(opts, deflt, SFuncHolder(func))
 
   /**
    * Create a select box based on the list with a default value and the function to be executed on
@@ -296,32 +329,43 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def untrustedSelect_*(opts: Seq[(String, String)],deflt: Can[String], func: AFuncHolder): Elem = {
-    (<select name={mapFunc(func)}>{
+  def untrustedSelect_*(opts: Seq[(String, String)],deflt: Can[String],
+                        func: AFuncHolder, attrs: (String, String)*): Elem = {
+    attrs.foldLeft(<select name={mapFunc(func)}>{
       opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-    }</select>)
+    }</select>)(_ % _)
   }
 
 
   private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "selected", Null) else Null
 
-  def multiSelect(opts: Seq[(String, String)], deflt: Seq[String], func: String => Any): Elem = multiSelect_*(opts, deflt, SFuncHolder(func))
+  def multiSelect(opts: Seq[(String, String)], deflt: Seq[String], 
+                  func: String => Any, attrs: (String, String)*): Elem =
+  multiSelect_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  def multiSelect_*(opts: Seq[(String, String)], deflt: Seq[String],func: AFuncHolder): Elem = (<select multiple="true" name={mapFunc(func)}>{
+  def multiSelect_*(opts: Seq[(String, String)],
+                    deflt: Seq[String],
+                    func: AFuncHolder, attrs: (String, String)*): Elem =
+  attrs.foldLeft(<select multiple="true" name={mapFunc(func)}>{
     opts.flatMap(o => (<option value={o._1}>{o._2}</option>) % selected(deflt.contains(o._1)))
-  }</select>)
+  }</select>)(_ % _)
 
 
-  def textarea(value: String, func: String => Any): Elem = textarea_*(value, SFuncHolder(func))
+  def textarea(value: String, func: String => Any, attrs: (String, String)*): Elem =
+  textarea_*(value, SFuncHolder(func), attrs :_*)
 
-  def textarea_*(value: String, func: AFuncHolder): Elem = (<textarea name={mapFunc(func)}>{value}</textarea>)
+  def textarea_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
+  attrs.foldLeft(<textarea name={mapFunc(func)}>{value}</textarea>)(_ % _)
 
-  def radio(opts: Seq[String], deflt: Can[String], func: String => Any): ChoiceHolder[String] =
-    radio_*(opts, deflt, SFuncHolder(func))
+  def radio(opts: Seq[String], deflt: Can[String], func: String => Any,
+            attrs: (String, String)*): ChoiceHolder[String] =
+    radio_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  def radio_*(opts: Seq[String], deflt: Can[String], func: AFuncHolder): ChoiceHolder[String] = {
+  def radio_*(opts: Seq[String], deflt: Can[String], 
+              func: AFuncHolder, attrs: (String, String)*): ChoiceHolder[String] = {
     val name = mapFunc(func)
-    val itemList = opts.map(v => ChoiceItem(v, (<input type="radio" name={name} value={v}/>) %
+    val itemList = opts.map(v => ChoiceItem(v, 
+                                            attrs.foldLeft(<input type="radio" name={name} value={v}/>)(_ % _) %
       checked(deflt.filter((s: String) => s == v).isDefined)))
       ChoiceHolder(itemList)
   }
@@ -342,38 +386,42 @@ object SHtml {
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null
   private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
 
-  def checkbox[T](possible: Seq[T], actual: Seq[T], func: Seq[T] => Any): ChoiceHolder[T] = {
+  def checkbox[T](possible: Seq[T], actual: Seq[T], func: Seq[T] => Any, attrs: (String, String)*): ChoiceHolder[T] = {
     val len = possible.length
     val name = mapFunc(LFuncHolder( (strl: List[String]) => {func(strl.map(toInt(_)).filter(x =>x >= 0 && x < len).map(possible(_))); true}))
 
     ChoiceHolder(possible.toList.zipWithIndex.map(p =>
-    ChoiceItem(p._1, (<input type="checkbox" name={name} value={p._2.toString}/>) % checked(actual.contains(p._1)) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
+    ChoiceItem(p._1,
+               attrs.foldLeft(<input type="checkbox" name={name} value={p._2.toString}/>)(_ % _) %
+               checked(actual.contains(p._1)) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
   }
 
   /**
    * Defines a new checkbox set to {@code value} and running {@code func} when the
    * checkbox is submitted.
    */
-  def checkbox(value: Boolean, func: Boolean => Any): NodeSeq = {
-    checkbox_id(value, func, Empty)
+  def checkbox(value: Boolean, func: Boolean => Any, attrs: (String, String)*): NodeSeq = {
+    checkbox_id(value, func, Empty, attrs :_*)
   }
 
   /**
    * Defines a new checkbox set to {@code value} and running {@code func} when the
    * checkbox is submitted. Has an id of {@code id}.
    */
-  def checkbox_id(value: Boolean, func: Boolean => Any, id: Can[String]): NodeSeq = {
+  def checkbox_id(value: Boolean, func: Boolean => Any,
+                  id: Can[String], attrs: (String, String)*): NodeSeq = {
     def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
       f(in.exists(toBoolean(_)))
         true
     }
-    checkbox_*(value, LFuncHolder(from(func)), id)
+    checkbox_*(value, LFuncHolder(from(func)), id, attrs :_*)
   }
 
-  def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String]): NodeSeq = {
+  def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String],
+                 attrs: (String, String)*): NodeSeq = {
     val name = mapFunc(func)
     (<input type="hidden" name={name} value="false"/>) ++
-      ((<input type="checkbox" name={name} value="true" />) % checked(value) % setId(id))
+      (attrs.foldLeft(<input type="checkbox" name={name} value="true" />)(_ % _) % checked(value) % setId(id))
   }
 
 }
