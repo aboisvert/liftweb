@@ -88,10 +88,11 @@ object Can {
   def !![T](in: T): Can[T] = legacyNullTest(in)
 
   def isA[A, B](in: A, clz: Class[B]): Can[B] =
-    (Can !! in).isA(clz)
+  (Can !! in).isA(clz)
   
   def asA[B](in: T forSome {type T})(implicit m: Manifest[B]): Can[B] =
-    (Can !! in).asA[B]
+  (Can !! in).asA[B]
+
 }
 
 /**
@@ -250,6 +251,11 @@ sealed abstract class Can[+A] extends Product {
   }
 
   def ===[B >: A](to: B): Boolean = false
+
+  /**
+   * Run the map or return the default value
+   */
+  def dmap[B](dflt: => B)(f: A => B): B = dflt
 }
 
 /**
@@ -310,6 +316,11 @@ final case class Full[+A](value: A) extends Can[A] {
   override def asA[B](implicit m: Manifest[B]): Can[B] = this.isA(m.erasure).asInstanceOf[Can[B]]
 
   override def ===[B >: A](to: B): Boolean = value == to
+
+  /**
+   * Run the map or return the default value
+   */
+  override def dmap[B](dflt: => B)(f: A => B): B = f(value)
 }
 
 /**
