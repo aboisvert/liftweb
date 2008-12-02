@@ -85,14 +85,13 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
 
   protected val rootClass = this.getClass.getSuperclass
 
-  private def isMagicObject(m: Method) = m.getReturnType.getName.endsWith("$"+m.getName+"$") && m.getParameterTypes.length == 0
-  private def isMappedField(m: Method) = classOf[OwnedField[BaseRecord]].isAssignableFrom(m.getReturnType)
   private def isLifecycle(m: Method) = classOf[LifecycleCallbacks].isAssignableFrom(m.getReturnType)
+  private def isField(m: Method) = classOf[Field[_, _]].isAssignableFrom(m.getReturnType)
 
-  def introspect(rec: BaseRecord, methods: Array[Method])(f: (Method, OwnedField[BaseRecord]) => Any) = {
-    for (v <- methods  if isMagicObject(v) && isMappedField(v)) {
+  def introspect(rec: BaseRecord, methods: Array[Method])(f: (Method, OwnedField[_]) => Any) = {
+    for (v <- methods  if isField(v)) {
       v.invoke(rec, null) match {
-        case mf: OwnedField[BaseRecord] if !mf.ignoreField_? =>
+        case mf: OwnedField[_] if !mf.ignoreField_? =>
           mf.setName_!(v.getName)
           f(v, mf)
         case _ =>
@@ -104,10 +103,10 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
   this.runSafe {
     val tArray = new ListBuffer[FieldHolder]
 
-    lifecycleCallbacks = for (v <- this.getClass.getSuperclass.getMethods.toList
-                              if isMagicObject(v) && isLifecycle(v)) yield (v.getName, v)
+    lifecycleCallbacks = for (v <- rootClass.getMethods.toList
+                              if isLifecycle(v)) yield (v.getName, v)
 
-    introspect(this, this.getClass.getSuperclass.getMethods) {
+    introspect(this, rootClass.getMethods) {
       case (v, mf) => tArray += FieldHolder(mf.name, v, mf)
     }
 
@@ -281,7 +280,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
    */
   def fieldOrder: List[OwnedField[BaseRecord]] = Nil
 
-  case class FieldHolder(name: String, method: Method, field: OwnedField[BaseRecord])
+  case class FieldHolder(name: String, method: Method, field: OwnedField[_])
 }
 
 trait LifecycleCallbacks {
