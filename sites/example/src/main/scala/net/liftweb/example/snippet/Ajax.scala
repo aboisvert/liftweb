@@ -20,6 +20,7 @@ import S._
 import SHtml._
 import js._
 import js.jquery._
+import _root_.net.liftweb.http.jquery._
 import JqJsCmds._
 import JsCmds._
 import _root_.net.liftweb.util._
@@ -64,8 +65,6 @@ class Ajax {
        & SetHtml("the_text", Text(v))))
     } <br />
 
-
-
     <textarea id="the_area" cols="50" rows="10"></textarea>
     <br />
 
@@ -93,7 +92,18 @@ class Ajax {
       ajaxForm(hidden(() => JsCmds.Alert("Test Passed")) ++ submit("Test Ajax Form", () => ()))
     } <br />
 
+    An example of autocomplete with a server round trip to 
+    calculate the autocomplete list
+      {
+        JqSHtml.autocomplete("", buildQuery _, _ => ())
+      }
+      <br />
     </span>
+  }
+
+  private def buildQuery(current: String, limit: Int): Seq[String] = {
+    Log.info("Checking on server side with "+current+" limit "+limit)
+    (1 to limit).map(n => current+""+n)
   }
 
   def time = Text(timeNow.toString)
