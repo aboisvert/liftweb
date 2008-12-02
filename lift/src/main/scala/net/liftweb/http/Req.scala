@@ -56,7 +56,7 @@ object Req {
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = 
       NamedPF.applyCan(RewriteRequest(path, reqType, request), rewrite) match {
-        case Full(resp) if resp.stopRewriting => resp
+        case Full(resp @ RewriteResponse(_, _, true)) => resp
         case _: EmptyCan[_] => RewriteResponse(path, params)
         case Full(resp) => processRewrite(resp.path, resp.params)
       }
