@@ -22,8 +22,10 @@ import _root_.javax.servlet.ServletContext
 // import _root_.scala.collection.Map
 // import _root_.scala.collection.mutable.HashMap
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Log, Can, Full, Empty, Failure, ThreadGlobal,
-			      NamedPF, NamedPartialFunction}
+import _root_.net.liftweb.util.{Log, Can, Full, Empty,
+                                EmptyCan,
+                                Failure, ThreadGlobal,
+                                NamedPF, NamedPartialFunction}
 import _root_.net.liftweb.sitemap._
 import _root_.java.io.InputStream
 import _root_.scala.xml._
@@ -52,20 +54,13 @@ object Req {
 
     val tmpPath = parsePath(tmpUri)
 
-    def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = {
-      val toMatch = RewriteRequest(path, reqType, request)
-      NamedPF.applyCan(toMatch, rewrite) match {
-	case Full(resp) => processRewrite(resp.path, resp.params)
-	case _ => RewriteResponse(path, params)
+    def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse = 
+      NamedPF.applyCan(RewriteRequest(path, reqType, request), rewrite) match {
+        case Full(resp) if resp.stopRewriting => resp
+        case _: EmptyCan[_] => RewriteResponse(path, params)
+        case Full(resp) => processRewrite(resp.path, resp.params)
       }
-      /*
-      if (!rewrite.isDefinedAt(toMatch)) RewriteResponse(path, params)
-      else {
-        val resp = rewrite(toMatch)
-        processRewrite(resp.path, resp.params)
-        // rewrite(toMatch)
-      }*/
-    }
+    
 
 
     // val (uri, path, localSingleParams) = processRewrite(tmpUri, tmpPath, TreeMap.empty)
@@ -134,7 +129,7 @@ object Req {
 
     new Req(rewritten.path, contextPath, reqType,
             request.getContentType, request, nanoStart,
-	    System.nanoTime, paramCalculator)
+            System.nanoTime, paramCalculator)
   }
 
   private def fixURI(uri : String) = uri indexOf ";jsessionid"  match {
@@ -143,7 +138,7 @@ object Req {
   }
 
   def nil = new Req(NilPath, "", GetRequest, "", null,
-		    System.nanoTime, System.nanoTime,
+                    System.nanoTime, System.nanoTime,
                     () => (Nil, Map.empty, Nil, Empty))
 
   def parsePath(in: String): ParsePath = {
@@ -343,7 +338,7 @@ class Req(val path: ParsePath,
 }
 
 case class RewriteRequest(path: ParsePath, requestType: RequestType, httpRequest: HttpServletRequest)
-case class RewriteResponse(path: ParsePath, params: Map[String, String])
+case class RewriteResponse(path: ParsePath, params: Map[String, String], stopRewriting: Boolean)
 
 
 @serializable
@@ -360,10 +355,12 @@ case class ParsePath(partPath: List[String], suffix: String, absolute: Boolean, 
  * ancodes the URL.
  */
 object RewriteResponse {
-  def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, "", true, false), params)
-  def apply(path: List[String]) = new RewriteResponse(ParsePath(path, "", true, false), Map.empty)
+  def apply(path: List[String], params: Map[String, String]) = new RewriteResponse(ParsePath(path, "", true, false), params, false)
+  def apply(path: List[String]) = new RewriteResponse(ParsePath(path, "", true, false), Map.empty, false)
 
-  def apply(path: List[String], suffix: String) = new RewriteResponse(ParsePath(path, suffix, true, false), Map.empty)
+  def apply(path: List[String], suffix: String) = new RewriteResponse(ParsePath(path, suffix, true, false), Map.empty, false)
+
+  def apply(path: ParsePath, params: Map[String, String]) = new RewriteResponse(path, params, false)
 }
 
 object URLRewriter {
