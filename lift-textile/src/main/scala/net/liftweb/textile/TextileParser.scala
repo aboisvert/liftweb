@@ -21,97 +21,113 @@ import _root_.scala.collection.mutable.HashMap
  *
  * ported to the scala.util.parsing.combinator style of parsing by Adriaan Moors
  */
- object TextileParser {
-   type RewriteFunc = WikiURLInfo => (String, NodeSeq, Option[String])
+object TextileParser {
+  type RewriteFunc = WikiURLInfo => (String, NodeSeq, Option[String])
 
-   case class WikiURLInfo(word: String, category: Option[String]) {
-     override def toString = category match {
-       case Some(cat) => cat+"/"+word
-       case _ => word
-     }
-   }
+  case class WikiURLInfo(word: String, category: Option[String]) {
+    override def toString = category match {
+      case Some(cat) => cat+"/"+word
+      case _ => word
+    }
+  }
 
 
-   def parse(toParse: String, urlRewrite: Option[RewriteFunc]): Option[Lst] =
-   parse(toParse, urlRewrite, false)
+  def parse(toParse: String, urlRewrite: Option[RewriteFunc]): Option[Lst] =
+  parse(toParse, urlRewrite, false)
 
-   /**
+  private def fixBadWindows(in: String): String = {
+    val len = in.length
+    val minOne = len - 1
+    val ret = new StringBuilder(len)
+    var pos = 0
+    while (pos < len) {
+      in.charAt(pos) match {
+        case '\r' if pos < minOne && in.charAt(pos + 1) == '\n' => // ignore CR/LF
+        case '\r' => ret.append('\n')
+        case c => ret.append(c)
+      }
+      pos = pos + 1
+    }
+    ret.toString
+  }
+
+  /**
    * Take a string and return the parsed value.
    * Lst is a list of Textile parsed elements.  You can do a .toHtml on the Lst
    * to get the XHTML result to send to the browser.
    * int will be the number of characters parsed.
    */
-   def parse(_toParse: String, urlRewrite: Option[RewriteFunc], disableLinks: Boolean): Option[Lst] = {
-     val toParse = _toParse match {
-       case null => "null\n\n"
-       case s if !s.endsWith("\n\n") => s + "\n\n"
-       case s => s
-     }
+  def parse(_toParse: String, urlRewrite: Option[RewriteFunc], disableLinks: Boolean): Option[Lst] = {
+    val toParse = fixBadWindows(_toParse) match {
+      case null => "null\n\n"
+      case s if !s.endsWith("\n\n") => s + "\n\n"
+      case s => s
+    }
 
-     def findRefs(in : List[Textile]) : List[Pair[String,String]] = in match {
-       case (s : ARef) :: rest => {Pair(s.name, s.href) :: findRefs(rest)}
-       case (s : ATextile) :: rest => {findRefs(s.theElems) ::: findRefs(rest)}
-       case x :: rest => {findRefs(rest)}
-       case _ => Nil
-     }
+    def findRefs(in : List[Textile]) : List[Pair[String,String]] = in match {
+      case (s : ARef) :: rest => {Pair(s.name, s.href) :: findRefs(rest)}
+      case (s : ATextile) :: rest => {findRefs(s.theElems) ::: findRefs(rest)}
+      case x :: rest => {findRefs(rest)}
+      case _ => Nil
+    }
 
 
-     def fixRefs(in : List[Textile], refs: HashMap[String, String]): Unit = in match {
-       case Nil =>
+    def fixRefs(in : List[Textile], refs: HashMap[String, String]): Unit = in match {
+      case Nil =>
 
-       case (s: RefAnchor) :: rest =>
-       refs.get(s.ref) match {case Some(tr) => s.href = tr case None => s.href = "javascript://"}
-       fixRefs(rest, refs)
+      case (s: RefAnchor) :: rest =>
+        refs.get(s.ref) match {case Some(tr) => s.href = tr case None => s.href = "javascript://"}
+        fixRefs(rest, refs)
 
-       case (s: ATextile) :: rest =>
-       fixRefs(s.theElems, refs)
-       fixRefs(rest, refs)
+      case (s: ATextile) :: rest =>
+        fixRefs(s.theElems, refs)
+        fixRefs(rest, refs)
 
-       case _ :: rest => fixRefs(rest, refs)
+      case _ :: rest => fixRefs(rest, refs)
 
-       case huh => // println(huh)
-     }
+      case huh => // println(huh)
+    }
 
-     val parser = new TextileParsers(urlRewrite, disableLinks)
-     val lst = parser.document(new _root_.scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
+    val parser = new TextileParsers(urlRewrite, disableLinks)
+    val lst = parser.document(new _root_.scala.util.parsing.input.CharArrayReader(toParse.toCharArray()))
 
-     lst map { it =>
-       val tr = findRefs(List(it))
-	     val refs = new HashMap[String,String];
-	     tr.foreach{b => refs(b._1) = b._2}
+    lst map { it =>
+      val tr = findRefs(List(it))
+      val refs = new HashMap[String,String];
+      tr.foreach{b => refs(b._1) = b._2}
 
-	     fixRefs(List(it), refs)
+      fixRefs(List(it), refs)
 
-	     Some(it)
-	   } getOrElse None
-   }
+      Some(it)
+    } getOrElse None
+  }
 
-   def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean): NodeSeq = {
-     parse(toParse, wikiUrlFunc, disableLinks).map(_.toHtml) getOrElse Text("")
-   }
+  def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean): NodeSeq = {
+    parse(toParse, wikiUrlFunc, disableLinks).map(_.toHtml) getOrElse Text("")
+  }
 
-   def toHtml(toParse: String, disableLinks: Boolean): NodeSeq =
-   toHtml(toParse, None, disableLinks)
+  def toHtml(toParse: String, disableLinks: Boolean): NodeSeq =
+  toHtml(toParse, None, disableLinks)
 
-   def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc]): NodeSeq =
-   toHtml(toParse, wikiUrlFunc, false)
+  def toHtml(toParse: String, wikiUrlFunc: Option[RewriteFunc]): NodeSeq =
+  toHtml(toParse, wikiUrlFunc, false)
 
-   def toHtml(toParse: String): NodeSeq =
-   toHtml(toParse, None, false)
+  def toHtml(toParse: String): NodeSeq =
+  toHtml(toParse, None, false)
 
-   /**
-    * Useful helper function for stripping out the surrounding <p> tags.
-    */
-   def paraFixer(in: NodeSeq): NodeSeq = in match {
-     case g: Group => paraFixer(g.nodes)
-     case e: XmlElem if e.label == "p" => e.child
-     case e: XmlElem => e
-     case ns: Seq[Node] if ns.length == 2 &&
-     ns(1).text.trim.length == 0 => paraFixer(ns(0))
-     case x => x
-   }
+  /**
+   * Useful helper function for stripping out the surrounding <p> tags.
+   */
+  def paraFixer(in: NodeSeq): NodeSeq = in match {
+    case g: Group => paraFixer(g.nodes)
+    case e: XmlElem if e.label == "p" => e.child
+    case e: XmlElem => e
+    case ns: Seq[Node] if ns.length == 2 &&
+      ns(1).text.trim.length == 0 => paraFixer(ns(0))
+    case x => x
+  }
 
-    /**
+  /**
    * the thing that actually does the textile parsing
    */
   class TextileParsers(wikiUrlFunc: Option[RewriteFunc], disableLinks: Boolean) extends Parsers with ImplicitConversions {
@@ -152,14 +168,14 @@ import _root_.scala.collection.mutable.HashMap
      * Line elements make up paragraphs and block elements
      */
     lazy val lineElem : Parser[Textile] = {
-	not(discard(blankLine)) ~> (endOfLine | image | footnote_def |
-				    anchor | dimension | elipsis  |
-				    copyright | trademark | registered |
-				    emDash |
-				    enDash | italic | emph | bold  |
-				    cite |  span | code | delete | insert |
-				    sup | sub | strong | html |
-				    single_quote | quote | acronym | charBlock)
+      not(discard(blankLine)) ~> (endOfLine | image | footnote_def |
+                                  anchor | dimension | elipsis  |
+                                  copyright | trademark | registered |
+                                  emDash |
+                                  enDash | italic | emph | bold  |
+                                  cite |  span | code | delete | insert |
+                                  sup | sub | strong | html |
+                                  single_quote | quote | acronym | charBlock)
     }
 
     /**
@@ -168,104 +184,104 @@ import _root_.scala.collection.mutable.HashMap
      */
     lazy val lineElem_notEmph : Parser[Textile] = {
       not(discard(blankLine)) ~> (endOfLine | image | footnote_def | anchor |
-                          dimension | elipsis |
-                          copyright | trademark | registered | emDash | enDash | italic |
-                          bold  |
-                          cite |  span| code | delete | insert| sup | sub | strong  |
-                          html| single_quote | quote | acronym | charBlock)
+                                  dimension | elipsis |
+                                  copyright | trademark | registered | emDash | enDash | italic |
+                                  bold  |
+                                  cite |  span| code | delete | insert| sup | sub | strong  |
+                                  html| single_quote | quote | acronym | charBlock)
     }
 
     /**
-    * Don't look for *strong* if we're currently in a **bold** element
-    */
+     * Don't look for *strong* if we're currently in a **bold** element
+     */
     lazy val lineElem_notStrong : Parser[Textile] = {
       not(discard(blankLine)) ~> (endOfLine | image | footnote_def | anchor |
-                          dimension | elipsis |
-                          copyright | trademark | registered | emDash | enDash | italic |
-                          emph |
-                          cite |  span | code | delete | insert  | sup |
-                          sub | bold  | html| single_quote | quote | acronym  | charBlock)
+                                  dimension | elipsis |
+                                  copyright | trademark | registered | emDash | enDash | italic |
+                                  emph |
+                                  cite |  span | code | delete | insert  | sup |
+                                  sub | bold  | html| single_quote | quote | acronym  | charBlock)
     }
 
 
     /**
-    * Look for an acronym, but don't mistake registered, copyright, and trademarks
-    */
+     * Look for an acronym, but don't mistake registered, copyright, and trademarks
+     */
     lazy val acronym : Parser[Acronym] =
-      ((chrsExcept(' ', '(', '\n') <~
-	not(discard(copyright | trademark | registered))) ~
-       ('(' ~> chrsExcept(')', '\n') <~ ')') ) ^^ flatten2(Acronym)
+    ((chrsExcept(' ', '(', '\n') <~
+      not(discard(copyright | trademark | registered))) ~
+     ('(' ~> chrsExcept(')', '\n') <~ ')') ) ^^ flatten2(Acronym)
 
     /**
-    * is it an !image!
-    */
+     * is it an !image!
+     */
     lazy val image : Parser[Textile] =
-      ('!' ~> opt('<')) ~ opt('>') ~
+    ('!' ~> opt('<')) ~ opt('>') ~
     (rep1(not(accept('!')) ~> elem("", validUrlChar)) ^^ mkString) ~
     (opt('(' ~> chrsExcept(')', '\n') <~ ')') <~ '!') ~
     opt(':' ~> url ^? {case a: Anchor => a}) ^^
     { case fl ~ fr ~ img_url ~ alt ~ link =>
-      Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null,
-            if (!fl.isEmpty) List(AnyAttribute("style", "float:left"))
-            else if (!fr.isEmpty) List(AnyAttribute("style", "float:right"))
-            else Nil)}
+        Image(img_url, alt getOrElse "", link.map(_.href) getOrElse null,
+              if (!fl.isEmpty) List(AnyAttribute("style", "float:left"))
+              else if (!fr.isEmpty) List(AnyAttribute("style", "float:right"))
+              else Nil)}
 
 
     /**
-    * [footnote]
-    */
+     * [footnote]
+     */
     lazy val footnote_def: Parser[Textile] = '[' ~> num <~ ']' ^^ FootnoteDef
 
     /**
-    * various things that make up an anchor (a tag)
-    */
+     * various things that make up an anchor (a tag)
+     */
     lazy val anchor =
-      url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
+    url | quote_url | quote_ref | a_ref | escCamelUrl | camelUrl
 
 
     lazy val upper: Parser[Char] =
-      elem("Uppercase character", Character.isUpperCase)
+    elem("Uppercase character", Character.isUpperCase)
 
     lazy val lower: Parser[Char] =
-      elem("Lowercase character", Character.isLowerCase)
+    elem("Lowercase character", Character.isLowerCase)
 
     lazy val lowerOrNumber: Parser[Char] =
-      elem("Lowercase character or digit", c => Character.isLowerCase(c) ||
-	   Character.isDigit(c))
+    elem("Lowercase character or digit", c => Character.isLowerCase(c) ||
+         Character.isDigit(c))
 
     /**
-    * Don't use the CamelCase thing for a wikiword if it's prefixed by
-    * a backslash
-    */
+     * Don't use the CamelCase thing for a wikiword if it's prefixed by
+     * a backslash
+     */
     lazy val escCamelUrl: Parser[CharBlock] =
-      ('\\'  ~ upper ~ lower ~ rep(lowerOrNumber) ~
-       upper ~ lower ~ rep(lowerOrNumber) ~
-       rep(upper ~ lower ~ rep(lowerOrNumber) ^^
-	   {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^
+    ('\\'  ~ upper ~ lower ~ rep(lowerOrNumber) ~
+     upper ~ lower ~ rep(lowerOrNumber) ~
+     rep(upper ~ lower ~ rep(lowerOrNumber) ^^
+         {case c1 ~ c2 ~ s => mkString(List(c1, c2))+ mkString(s)})) ^^
     {case c1 ~ c2 ~ c3 ~ s4 ~ c5 ~ c6 ~ s7 ~ s8
-     => CharBlock(mkString(List(c1, c2, c3)) +
-		  mkString(s4) +
-		  mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
+        => CharBlock(mkString(List(c1, c2, c3)) +
+                     mkString(s4) +
+                     mkString(List(c5, c6)) + mkString(s7) + s8.mkString(""))}
 
     /**
-    * is the work camelized?
-    */
+     * is the work camelized?
+     */
     lazy val camelizedWord: Parser[CharBlock] =
-      upper ~ lower ~ rep(lowerOrNumber) ^^
+    upper ~ lower ~ rep(lowerOrNumber) ^^
     { case u ~ l ~ cs => CharBlock(mkString(u :: (l :: cs))) }
 
     lazy val lowerWord: Parser[String] =
-      lower ~ rep1(lowerOrNumber) ^^ {case x ~ xs => (x :: xs).mkString("")}
+    lower ~ rep1(lowerOrNumber) ^^ {case x ~ xs => (x :: xs).mkString("")}
 
 
     /**
      * a WikiWord
      */
     lazy val camelUrl: Parser[Textile] =
-      noCatCamelUrl | catCamelUrl | tickUrl | catTickUrl
+    noCatCamelUrl | catCamelUrl | tickUrl | catTickUrl
 
     lazy val catTickUrl: Parser[WikiAnchor] =
-      lowerWord ~ ':' ~ tickUrl ^^
+    lowerWord ~ ':' ~ tickUrl ^^
     {case cat ~ colon ~ rest => WikiAnchor(rest.word, Some(cat), wikiUrlFunc)}
 
     lazy val tickUrl: Parser[WikiAnchor] = '`' ~ rep1(tickUrlChar) ~ '`' ^^
@@ -277,51 +293,51 @@ import _root_.scala.collection.mutable.HashMap
     lazy val tickUrlChar: Parser[Char] = elem("tick url char", isTickUrlChar)
 
     lazy val noCatCamelUrl: Parser[Textile] =
-      camelizedWord ~ rep1(camelizedWord) ^^
+    camelizedWord ~ rep1(camelizedWord) ^^
     { case c ~ cs => val ss = mkString((c :: cs).map(_.s));
-     WikiAnchor(ss, None, wikiUrlFunc)}
+        WikiAnchor(ss, None, wikiUrlFunc)}
 
     lazy val catCamelUrl: Parser[Textile] =
-      lowerWord ~ ':' ~ camelizedWord ~ rep1(camelizedWord) ^^ {
-	case cat ~ colon ~ c ~ cs =>
-	  val ss = mkString((c :: cs).map(_.s));
-	WikiAnchor(ss, Some(cat), wikiUrlFunc)}
+    lowerWord ~ ':' ~ camelizedWord ~ rep1(camelizedWord) ^^ {
+      case cat ~ colon ~ c ~ cs =>
+        val ss = mkString((c :: cs).map(_.s));
+        WikiAnchor(ss, Some(cat), wikiUrlFunc)}
 
 
     lazy val urlStr = (rep1(elem("", validUrlChar))^^ mkString)
 
     /**
-    * "reference":reference
-    */
+     * "reference":reference
+     */
     lazy val quote_ref: Parser[Textile] =
-      ('"' ~> chrsExcept('"', '\n') <~ '"') ~ (':' ~> urlStr) ^^
+    ('"' ~> chrsExcept('"', '\n') <~ '"') ~ (':' ~> urlStr) ^^
     {case fs ~ rc => RefAnchor(Nil, rc, fs, Nil)}
 
 
     lazy val httpStr =
-      (accept("https://") ^^ mkString | accept("http://") ^^
-       mkString) ~ urlStr ^^ { case protocol ~ rc => protocol + rc }
+    (accept("https://") ^^ mkString | accept("http://") ^^
+     mkString) ~ urlStr ^^ { case protocol ~ rc => protocol + rc }
 
     /**
-    * "google":http://google.com
-    */
+     * "google":http://google.com
+     */
     lazy val quote_url: Parser[Textile] = ('"' ~> chrsExcept('"', '\n')) ~ ('"' ~> ':' ~> httpStr) ^^
-      { case fs ~ url => Anchor(Nil, url, fs, Nil, disableLinks) }
+    { case fs ~ url => Anchor(Nil, url, fs, Nil, disableLinks) }
 
     /**
-    * [reference]:http://reference.com
-    */
+     * [reference]:http://reference.com
+     */
 
     lazy val a_ref: Parser[Textile] = ('[' ~> urlStr <~ ']') ~ url ^^ {case  fr ~ (url: Anchor) => ARef(fr, url.href) }
 
     /**
-    * http://google.com
-    */
+     * http://google.com
+     */
     lazy val url: Parser[Textile] = httpStr ^^ { u => Anchor(Nil, u, u, Nil, disableLinks) }
 
     /**
-    * a valid character in a URL
-    */
+     * a valid character in a URL
+     */
     def validUrlChar(c : Char) : Boolean = {
       Character.isLetterOrDigit(c) || c == '/' || c == '%' || c == '&' || c == '?' || c == '#' ||
       c == '$' || c == '.' ||
@@ -330,8 +346,8 @@ import _root_.scala.collection.mutable.HashMap
 
 
     /**
-    * an EOL character
-    */
+     * an EOL character
+     */
     lazy val endOfLine: Parser[Textile] = (('\r' ~ '\n') | '\n') ^^^ EOL()
 
     // replaced by checking the position of the current input (not that beginl does not consume any input,
@@ -340,25 +356,25 @@ import _root_.scala.collection.mutable.HashMap
 
 
     /**
-    * if we're in a &lt;pre&gt; block, an end of line is just an end of line.  We
-    * pass the '\n' on though.
-    */
+     * if we're in a &lt;pre&gt; block, an end of line is just an end of line.  We
+     * pass the '\n' on though.
+     */
     lazy val preEndOfLine: Parser[Textile] = (('\r' ~ '\n') | '\n') ^^^ CharBlock("\n")
 
 
     /**
-    * a &lt;pre&gt; block.  Just send text of through, unmolested.
-    */
+     * a &lt;pre&gt; block.  Just send text of through, unmolested.
+     */
     lazy val preBlock: Parser[Textile] =
     beginlS ~> accept("<pre") ~> rep(' ') ~> '>' ~>
-      rep(not(discard(accept("</pre"))) ~> (preEndOfLine | charBlock )) <~
-      accept("</pre") <~ rep(' ') <~ '>' <~ rep(' ') <~ '\n' ^^ {
-        case elms => Pre(reduceCharBlocks(elms), Nil)
-      }
+    rep(not(discard(accept("</pre"))) ~> (preEndOfLine | charBlock )) <~
+    accept("</pre") <~ rep(' ') <~ '>' <~ rep(' ') <~ '\n' ^^ {
+      case elms => Pre(reduceCharBlocks(elms), Nil)
+    }
 
     /**
-    * (c)
-    */
+     * (c)
+     */
     lazy val copyright: Parser[Textile] =
     '(' ~ (accept('c') | 'C') ~ ')' ^^^ Copyright()  // accept necesary because of clash with | on char's
 
@@ -372,25 +388,25 @@ import _root_.scala.collection.mutable.HashMap
     mkString ^? {case s if isValidTag(s) => s}
 
     /**
-    * An HTML block is made up of single HTML tag (e.g., &lt;br /&gt;) and
-    * tags that contain other stuff
-    */
+     * An HTML block is made up of single HTML tag (e.g., &lt;br /&gt;) and
+     * tags that contain other stuff
+     */
     lazy val html = single_html | multi_html
 
     def closingTag(tag: String) =
     accept("</") ~ accept(tag) ~ rep(' ') ~ '>'
 
     /**
-    * an HTML tag that contains other stuff
-    */
+     * an HTML tag that contains other stuff
+     */
     lazy val multi_html: Parser[Textile] = ('<' ~> validTag) >> { tag =>
       rep(tag_attr) ~
       ('>' ~> rep(not(discard(closingTag(tag))) ~> (lineElem | paragraph)) <~ closingTag(tag)) ^^ {
-           case attrs ~ body => HTML(tag, reduceCharBlocks(body), attrs)}}
+        case attrs ~ body => HTML(tag, reduceCharBlocks(body), attrs)}}
 
     /**
-    * A stand-alone tag
-    */
+     * A stand-alone tag
+     */
     lazy val single_html: Parser[Textile] =
     ('<' ~> validTag) ~ (rep(tag_attr) <~ accept("/>")) ^^
     { case tag ~ attrs => HTML(tag, Nil, attrs) }
@@ -402,29 +418,29 @@ import _root_.scala.collection.mutable.HashMap
     def attr_value(c: Char) = c >= ' '
 
     /**
-    * an attribute with single quotes
-    */
+     * an attribute with single quotes
+     */
     lazy val single_quote_attr =
     (rep(' ') ~> str1("attribute name", attr_name)) ~
-      ('=' ~> enclosed('\'', "attribute value", attr_value(_))) ^^
-      flatten2(AnyAttribute)
+    ('=' ~> enclosed('\'', "attribute value", attr_value(_))) ^^
+    flatten2(AnyAttribute)
 
     /**
-    * an attribute with double quotes
-    */
+     * an attribute with double quotes
+     */
     lazy val double_quote_attr: Parser[Attribute] =
     (rep(' ') ~> str1("attribute name", attr_name) <~ '=') ~
-      enclosed('"', "attribute value", attr_value(_)) ^^ flatten2(AnyAttribute)
+    enclosed('"', "attribute value", attr_value(_)) ^^ flatten2(AnyAttribute)
 
     /**
-    * is it a valid HTML tag?  This list should be expanded
-    */
+     * is it a valid HTML tag?  This list should be expanded
+     */
     def isValidTag(in : String) = in == "b" || in == "em" || in == "code" || in == "div" || in == "span"
 
 
     /**
-    * A "dimension" pretty printer
-    */
+     * A "dimension" pretty printer
+     */
     lazy val dimension: Parser[Textile] = accept(" x ") ^^^ Dimension()
 
     lazy val registered: Parser[Textile] =
@@ -451,8 +467,8 @@ import _root_.scala.collection.mutable.HashMap
       {case elms => BulletLine(reduceCharBlocks(elms), Nil)}
 
       bullet_line(depth, numbered) ~
-        (rep1(bullet(depth + 1, numbered) | bullet_line(depth, numbered))) ^^
-        {case fbl ~ abl => Bullet(fbl :: abl, numbered)}
+      (rep1(bullet(depth + 1, numbered) | bullet_line(depth, numbered))) ^^
+      {case fbl ~ abl => Bullet(fbl :: abl, numbered)}
     }
 
     def formattedLineElem[Q <% Parser[Any]](m: Q):
@@ -461,19 +477,19 @@ import _root_.scala.collection.mutable.HashMap
 
     def formattedLineElem[Q <% Parser[Any]](m: Q, p: Parser[List[Attribute]]):
     Parser[List[Textile] ~ List[Attribute]] =
-       (m ~> p) ~ (rep1(not(discard(m) | endOfLine) ~> lineElem) <~ m) ^^
-       {case attrs ~ ln => new ~(reduceCharBlocks(ln), attrs) }
+    (m ~> p) ~ (rep1(not(discard(m) | endOfLine) ~> lineElem) <~ m) ^^
+    {case attrs ~ ln => new ~(reduceCharBlocks(ln), attrs) }
 
     lazy val spaceOrStart: UnitParser = beginl | accept(' ')
     lazy val spaceOrEnd: UnitParser = accept(' ') | discard(endOfLine)
 
-  // TODO: generalize formattedLineElem some more
-  lazy val bold: Parser[Textile] =
-  (accept("**") ~> rep(attribute)) ~
-  (rep1(not(discard(accept("**") |
-                    endOfLine)) ~>
-        lineElem_notStrong) <~ accept("**")) ^^ {
-    case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
+    // TODO: generalize formattedLineElem some more
+    lazy val bold: Parser[Textile] =
+    (accept("**") ~> rep(attribute)) ~
+    (rep1(not(discard(accept("**") |
+                      endOfLine)) ~>
+          lineElem_notStrong) <~ accept("**")) ^^ {
+      case attrs ~ ln => Bold(reduceCharBlocks(ln), attrs) }
 
     lazy val strong: Parser[Textile] = formattedLineElem('*') ^^ flatten2(Strong)
 
@@ -536,14 +552,14 @@ import _root_.scala.collection.mutable.HashMap
     lazy val quote : Parser[Textile] = formattedLineElem('"', success(Nil)) ^^ flatten2((x, y) => Quoted(x))
 
     def reduceCharBlocks(in : List[Textile]) : List[Textile] =
-      (in: @unchecked) match {
-        case Nil => Nil
+    (in: @unchecked) match {
+      case Nil => Nil
         // this is now done (hacked) in flattenAndDropLastEOL
-//        case EOL() :: BOL() :: rest => EOL :: reduceCharBlocks(rest)
-//        case EOL() :: rest => reduceCharBlocks(rest)
-        case CharBlock(s1) :: CharBlock(s2) :: rest => reduceCharBlocks(CharBlock(s1 + s2) :: rest)
-        case x :: xs => x :: reduceCharBlocks(xs)
-      }
+        //        case EOL() :: BOL() :: rest => EOL :: reduceCharBlocks(rest)
+        //        case EOL() :: rest => reduceCharBlocks(rest)
+      case CharBlock(s1) :: CharBlock(s2) :: rest => reduceCharBlocks(CharBlock(s1 + s2) :: rest)
+      case x :: xs => x :: reduceCharBlocks(xs)
+    }
 
     lazy val charBlock : Parser[Textile] = chrExcept('\n') ^^ {c => CharBlock(c.toString)}
 
@@ -554,9 +570,9 @@ import _root_.scala.collection.mutable.HashMap
     lazy val not_blank_line : Parser[Textile] = not(discard(blankLine)) ~> lineElem
 
     lazy val head_line : Parser[Textile] = (beginl ~> 'h' ~> elem("1, 2 or 3", {c => c == '1' | c == '2' | c == '3'})) ~
-      rep(para_attribute) ~
-      (accept(". ") ~> rep1(not_blank_line) <~ blankLine) ^^ {
-        case n ~ attrs ~ ln => Header(n - '0', reduceCharBlocks(ln), attrs) }
+    rep(para_attribute) ~
+    (accept(". ") ~> rep1(not_blank_line) <~ blankLine) ^^ {
+      case n ~ attrs ~ ln => Header(n - '0', reduceCharBlocks(ln), attrs) }
 
     lazy val blockquote : Parser[Textile] = (beginl ~> accept("bq") ~> rep(para_attribute)) ~ (accept(". ") ~> rep1(not_blank_line) <~ blankLine) ^^ {
       case attrs ~ ln => BlockQuote(reduceCharBlocks(ln), attrs)}
@@ -595,7 +611,7 @@ import _root_.scala.collection.mutable.HashMap
       case td ~ el => TableElement(reduceCharBlocks(el), isHeader, td.map(_.attrs) getOrElse Nil)}
 
     lazy val paragraph : Parser[Textile] =
-      preBlock | footnote | table | bullet(0, false) | bullet(0, true) | blockquote | head_line | blankPara | normPara
+    preBlock | footnote | table | bullet(0, false) | bullet(0, true) | blockquote | head_line | blankPara | normPara
   }
 
 
@@ -695,8 +711,8 @@ import _root_.scala.collection.mutable.HashMap
       def crunchStyle(st : List[Pair[String, String]]) : List[Pair[String,String]] = {
         val p = st.partition {a => a._1 == "style"}
         if (p._1 == Nil) p._2 else
-          (p._1.reduceLeft{(a : Pair[String,String],b : Pair[String,String]) => Pair("style", a._2 + ";"+ b._2)}) :: p._2
-  }
+        (p._1.reduceLeft{(a : Pair[String,String],b : Pair[String,String]) => Pair("style", a._2 + ";"+ b._2)}) :: p._2
+      }
 
       def fromList(st : List[Pair[String,String]]) : MetaData = {
         st match {
@@ -718,17 +734,17 @@ import _root_.scala.collection.mutable.HashMap
 
   case class Lst(elems : List[Textile]) extends ATextile(elems, Nil) {
     /*
-    def performOnWikiAnchor(f : (WikiAnchor) => Any) : Unit = {
-      def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : Unit = {
-        in match {
-          case (s : WikiAnchor) :: rest => {f(s) ; findWikiAnchor(rest, f)}
-          case (s : ATextile) :: rest => {findWikiAnchor(s.theElems, f); findWikiAnchor(rest, f)}
-          case x :: rest => {findWikiAnchor(rest, f)}
-          case _ => Nil
-        }
-      }
-      findWikiAnchor(List(this), f)
-    }*/
+     def performOnWikiAnchor(f : (WikiAnchor) => Any) : Unit = {
+     def findWikiAnchor(in : List[Textile], f : (WikiAnchor) => Any) : Unit = {
+     in match {
+     case (s : WikiAnchor) :: rest => {f(s) ; findWikiAnchor(rest, f)}
+     case (s : ATextile) :: rest => {findWikiAnchor(s.theElems, f); findWikiAnchor(rest, f)}
+     case x :: rest => {findWikiAnchor(rest, f)}
+     case _ => Nil
+     }
+     }
+     findWikiAnchor(List(this), f)
+     }*/
   }
 
   // drop the last EOL to prevent needless <br />
@@ -744,7 +760,7 @@ import _root_.scala.collection.mutable.HashMap
 
   case class Acronym(thing : String, acro : String) extends ATextile(Nil, Nil) {
     override def toHtml : NodeSeq =
-      XmlElem(null, "acronym", fromStyle(AnyAttribute("title", acro) :: Nil), TopScope, Text(thing) : _*)
+    XmlElem(null, "acronym", fromStyle(AnyAttribute("title", acro) :: Nil), TopScope, Text(thing) : _*)
   }
 
   case class Image(url : String, alt : String, link : String, attrs : List[Attribute] ) extends ATextile(Nil, attrs) {
@@ -776,9 +792,9 @@ import _root_.scala.collection.mutable.HashMap
     def toHtml : NodeSeq = <xml:group> &#8212; </xml:group>
   }
 
-/*  case class BOL extends Textile  {
-    def toHtml : NodeSeq = Text("")
-  }*/
+  /*  case class BOL extends Textile  {
+   def toHtml : NodeSeq = Text("")
+   }*/
 
   case class EOL extends Textile  {
     // return the characters because Scala's XML library returns <br></br> in the
@@ -815,7 +831,7 @@ import _root_.scala.collection.mutable.HashMap
 
   case class Header(what : Int, elems : List[Textile], attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq =
-      XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*) ++
+    XmlElem(null, "h"+what, fromStyle(attrs), TopScope, super.toHtml : _*) ++
     Text("\n")
   }
 
@@ -840,7 +856,7 @@ import _root_.scala.collection.mutable.HashMap
   case class FootnoteDef(num : String) extends ATextile(null, Nil) {
     override def toHtml : NodeSeq = {
       XmlElem(null, "sup", Null, TopScope,
-           XmlElem(null, "a", fromStyle(List(AnyAttribute("href", "#fn"+num))), TopScope, Text(num) : _*) : _*)
+              XmlElem(null, "a", fromStyle(List(AnyAttribute("href", "#fn"+num))), TopScope, Text(num) : _*) : _*)
     }
   }
 
@@ -849,7 +865,7 @@ import _root_.scala.collection.mutable.HashMap
   case class Footnote(elems : List[Textile], attrs : List[Attribute], num : String) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
       XmlElem(null, "p", fromStyle(AnyAttribute("id", "fn"+num) :: attrs), TopScope,
-           (XmlElem(null, "sup", null, TopScope, Text(num) : _*) :: flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
+              (XmlElem(null, "sup", null, TopScope, Text(num) : _*) :: flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
@@ -883,10 +899,10 @@ import _root_.scala.collection.mutable.HashMap
   case class TableElement(elems : List[Textile], isHeader : Boolean, attrs : List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
       XmlElem(null,
-	      if (isHeader) "th" else "td", fromStyle(attrs),
-	      TopScope,
-	      (if (elems == Nil) <xml:group>&nbsp;</xml:group> else
-		flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
+              if (isHeader) "th" else "td", fromStyle(attrs),
+              TopScope,
+              (if (elems == Nil) <xml:group>&nbsp;</xml:group> else
+               flattenAndDropLastEOL(elems)) : _*) ++ Text("\n")
     }
   }
 
@@ -957,40 +973,40 @@ import _root_.scala.collection.mutable.HashMap
     override def toHtml : NodeSeq = Text("")
   }
 
-     case class WikiAnchor(word: String, category: Option[String], wikiFunc: Option[RewriteFunc]) extends ATextile(Nil, Nil) {
-     // var rootUrl = ""
-     def allAttrs: List[AnyAttribute] = wikiFunc match {
-       case Some(func) =>
-       func(WikiURLInfo(word, category)) match {
-         case (href, _, Some(cls)) => AnyAttribute("href", href) :: AnyAttribute("class", cls) :: Nil
-         case (href, _, _) => AnyAttribute("href", href) :: Nil
-       }
-
-       case _ => Nil
-     }
-     // def allAttrs = wikiFunc.map(wf => AnyAttribute("href", wf(href)) :: attrs) getOrElse attrs
-     override def toHtml: NodeSeq =
-     wikiFunc match {
-       case Some(func) =>
-       func(WikiURLInfo(word, category)) match {
-         case (href, text, Some(cls)) => <a href={href} class={cls}>{text}</a>
-         case (href, text, _) => <a href={href}>{text}</a>
-       }
-
-       case _ => Text(word)
-     }
-
-     // wikiFunc.map(ignore => Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)) getOrElse Text(alt)
-   }
-   /*
-  case class WikiAnchor(elems: List[Textile], href: String, alt: String, attrs: List[Attribute], wikiFunc: Option[RewriteFunc]) extends ATextile(elems, attrs) {
+  case class WikiAnchor(word: String, category: Option[String], wikiFunc: Option[RewriteFunc]) extends ATextile(Nil, Nil) {
     // var rootUrl = ""
-    def allAttrs = wikiFunc.map(wf => AnyAttribute("href", wf(href)) :: attrs) getOrElse attrs
-    override def toHtml: NodeSeq = wikiFunc.map(ignore => XmlElem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)) getOrElse Text(alt)
-  }*/
+    def allAttrs: List[AnyAttribute] = wikiFunc match {
+      case Some(func) =>
+        func(WikiURLInfo(word, category)) match {
+          case (href, _, Some(cls)) => AnyAttribute("href", href) :: AnyAttribute("class", cls) :: Nil
+          case (href, _, _) => AnyAttribute("href", href) :: Nil
+        }
+
+      case _ => Nil
+    }
+    // def allAttrs = wikiFunc.map(wf => AnyAttribute("href", wf(href)) :: attrs) getOrElse attrs
+    override def toHtml: NodeSeq =
+    wikiFunc match {
+      case Some(func) =>
+        func(WikiURLInfo(word, category)) match {
+          case (href, text, Some(cls)) => <a href={href} class={cls}>{text}</a>
+          case (href, text, _) => <a href={href}>{text}</a>
+        }
+
+      case _ => Text(word)
+    }
+
+    // wikiFunc.map(ignore => Elem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)) getOrElse Text(alt)
+  }
+  /*
+   case class WikiAnchor(elems: List[Textile], href: String, alt: String, attrs: List[Attribute], wikiFunc: Option[RewriteFunc]) extends ATextile(elems, attrs) {
+   // var rootUrl = ""
+   def allAttrs = wikiFunc.map(wf => AnyAttribute("href", wf(href)) :: attrs) getOrElse attrs
+   override def toHtml: NodeSeq = wikiFunc.map(ignore => XmlElem(null, "a", fromStyle(allAttrs), TopScope, Text(alt) : _*)) getOrElse Text(alt)
+   }*/
 
   val example =
-"""I am <em>very</em> serious
+  """I am <em>very</em> serious
 
 Observe -- very nice!
 
@@ -1216,22 +1232,22 @@ We use CSS(Cascading Style Sheets).
 
 
   def tryit = (for (res <- parse(example, Some(DefaultRewriter("/foo")))) yield {
-    // res.performOnWikiAnchor{a => a.rootUrl = "/foo/"}
-    res.toHtml
-  }) getOrElse ""
+      // res.performOnWikiAnchor{a => a.rootUrl = "/foo/"}
+      res.toHtml
+    }) getOrElse ""
 
   // println(tryit)
 
   case class DefaultRewriter(base: String) extends RewriteFunc {
-  def apply(in: WikiURLInfo) = in match {
-    case WikiURLInfo(word, Some(cat)) =>
-    (base+"/"+urlEncode(cat)+"/"+urlEncode(word), Text(word), None)
-    case WikiURLInfo(word, _) =>
-    (base+"/"+urlEncode(word), Text(word), None)
-  }
+    def apply(in: WikiURLInfo) = in match {
+      case WikiURLInfo(word, Some(cat)) =>
+        (base+"/"+urlEncode(cat)+"/"+urlEncode(word), Text(word), None)
+      case WikiURLInfo(word, _) =>
+        (base+"/"+urlEncode(word), Text(word), None)
+    }
 
-   def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
-}
+    def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
+  }
 }
 
 case class DefaultRewriter(base: String) extends TextileParser.RewriteFunc {
@@ -1239,10 +1255,10 @@ case class DefaultRewriter(base: String) extends TextileParser.RewriteFunc {
 
   def apply(in: WikiURLInfo) = in match {
     case WikiURLInfo(word, Some(cat)) =>
-    (base+"/"+urlEncode(cat)+"/"+urlEncode(word), Text(word), None)
+      (base+"/"+urlEncode(cat)+"/"+urlEncode(word), Text(word), None)
     case WikiURLInfo(word, _) =>
-    (base+"/"+urlEncode(word), Text(word), None)
+      (base+"/"+urlEncode(word), Text(word), None)
   }
 
-   def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
+  def urlEncode(in : String) = _root_.java.net.URLEncoder.encode(in, "UTF-8")
 }
