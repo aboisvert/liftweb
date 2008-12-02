@@ -23,17 +23,6 @@ case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
   def out = xml
 }
 
-case class PlainTextResponse(text: String) extends LiftResponse {
-  def code = 200
-  def headers = List("Content-Type" -> "text/plain")
-  def cookies = Nil
-
-  def toResponse = {
-    InMemoryResponse(text.getBytes("UTF-8"), headers, cookies, code)
-  }
-  
-}
-
 case class XmlResponse(xml: Node) extends ToResponse {
   def docType = Empty
   def code = 200
