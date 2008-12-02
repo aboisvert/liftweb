@@ -20,7 +20,7 @@ class Boot {
       DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
 
     // where to search snippet
-    LiftRules.addToPackages("${groupId}")
+    LiftRules.addToPackages("${packageName}")
     Schemifier.schemify(true, Log.infoF _, User)
 
     LiftRules.prependTemplate(User.templates)
