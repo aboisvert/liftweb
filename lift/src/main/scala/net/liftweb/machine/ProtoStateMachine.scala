@@ -318,7 +318,10 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         val now = System.currentTimeMillis
         try {
         val name = metaOwner.nextTransitionAt.dbColumnName
-        metaOwner.findAll(By(metaOwner.inProcess, false), BySql(name+" > 0 AND "+name+" <= ?", now)).foreach {
+        metaOwner.findAll(By(metaOwner.inProcess, false), 
+			  BySql(name+" > 0 AND "+name+" <= ?",
+				IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				now)).foreach {
           stateItem =>
           stateItem.inProcess(true).save
           val event = TimerEvent(TimeSpan(now - stateItem.timedEventAt.is))

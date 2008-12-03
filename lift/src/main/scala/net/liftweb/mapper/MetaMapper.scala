@@ -365,7 +365,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
 
 
               // Executes a subquery with {@code query}
-            case BySql(query, _*) =>
+            case BySql(query, _,  _*) =>
               updatedWhat = updatedWhat + whereOrAnd + " ( "+ query +" ) "
             case _ =>
           }
@@ -398,7 +398,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
                                                      curPos)
         setStatementFields(st, xs, newPos)
 
-      case BySql(query, params @ _*) :: xs => {
+      case BySql(query, who, params @ _*) :: xs => {
           params.toList match {
             case Nil => setStatementFields(st, xs, curPos)
             case List(i: Int) =>
@@ -417,7 +417,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
               setStatementFields(st, xs, curPos + 1)
 
             case p :: ps =>
-              setStatementFields(st, BySql[A](query, p) :: BySql[A](query, ps: _*) :: xs, curPos)
+              setStatementFields(st, BySql[A](query, who, p) :: BySql[A](query, who, ps: _*) :: xs, curPos)
           }
         }
       case _ :: xs => {
@@ -431,7 +431,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   private def _addOrdering(in: String, params: List[QueryParam[A]]): String = {
     params.flatMap{
       case OrderBy(field, order) => List(field.dbColumnName+" "+order.sql)
-      case OrderBySql(sql) => List(sql)
+      case OrderBySql(sql, _) => List(sql)
       case _ => Nil
     } match {
       case Nil => in
@@ -1121,10 +1121,13 @@ case object Descending extends AscOrDesc {
   def sql: String = " DESC "
 }
 
-case class OrderBySql[O <: Mapper[O]](sql: String) extends QueryParam[O]
+case class OrderBySql[O <: Mapper[O]](sql: String,
+                                     checkedBy: IHaveValidatedThisSQL) extends QueryParam[O]
 
 case class ByList[O<:Mapper[O], T](field: MappedField[T,O], vals: List[T]) extends QueryParam[O]
-case class BySql[O<:Mapper[O]](query: String, params: Any*) extends QueryParam[O]
+case class BySql[O<:Mapper[O]](query: String,
+                                     checkedBy: IHaveValidatedThisSQL,
+                                     params: Any*) extends QueryParam[O]
 case class MaxRows[O<:Mapper[O]](max: Long) extends QueryParam[O]
 case class StartAt[O<:Mapper[O]](start: Long) extends QueryParam[O]
 case class Ignore[O <: Mapper[O]]() extends QueryParam[O]

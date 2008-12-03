@@ -48,15 +48,38 @@ class UserTests extends TestCase("User Tests") {
     assert(User.find(1).isDefined)
     assert(User.find(By(User.email, "mr9@foo.com")).isDefined)
     assert(!User.find(By(User.email, "eemr1@foo.com")).isDefined)
-    assert(User.find(BySql("email = ?", "mr9@foo.com")).isDefined)
-    assert(!User.find(BySql("email = ?", "eemr1@foo.com")).isDefined)
-    assert(User.find(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9"), BySql("firstname = ?", 9)).isDefined)
-    assert(User.find(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")).isDefined)
-    assert(!User.find(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).isDefined)
+    assert(User.find(BySql("email = ?",
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   "mr9@foo.com")).isDefined)
+    assert(!User.find(BySql("email = ?",
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "eemr1@foo.com")).isDefined)
+    assert(User.find(BySql("email = ?", 
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   "mr9@foo.com"), 
+		     BySql("firstname = ?", 
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   "9"),
+		     BySql("firstname = ?",
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   9)).isDefined)
+
+    assert(User.find(BySql("email = ? AND firstname = ?", 
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   "mr9@foo.com", "9")).isDefined)
+    assert(!User.find(BySql[User]("email = ? AND firstname = ?", 
+				  IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				  "mr1@foo.com", "33")).isDefined)
     val u = User.find(33).open_!
-    assert(User.find(BySql("email = ?", u.email)).open_!.id == u.id)
-    assert(User.find(BySql("id = ?", 33)).open_!.id == u.id)
-    assert(User.find(BySql("id = ?", u.id)).open_!.id == u.id)
+    assert(User.find(BySql("email = ?",
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   u.email)).open_!.id == u.id)
+    assert(User.find(BySql("id = ?",
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   33)).open_!.id == u.id)
+    assert(User.find(BySql("id = ?",
+			   IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			   u.id)).open_!.id == u.id)
 
     for (uKey <- 1 to maxUsers) {
       val u = User.find(uKey)
@@ -73,13 +96,29 @@ class UserTests extends TestCase("User Tests") {
     assert(User.findAll(StartAt[User](25)).length == (maxUsers - 25))
     assert(User.findAll(By(User.email, "mr33@foo.com")).length == 1)
     assert(User.findAll(By(User.email, "dogmr33@foo.com")).length == 0)
-    assert(User.findAll(BySql[User]("email = ?", "mr9@foo.com")).length == 1)
-    assert(User.findAll(BySql[User]("email = ?", "eemr1@foo.com")).length == 0)
-    assert(User.findAll(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")).length == 1)
-    assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr9@foo.com", "9")).length == 1)
-    assert(User.findAll(BySql[User]("email = ? AND firstname = ?", "mr1@foo.com", "33")).length == 0)
+    assert(User.findAll(BySql[User]("email = ?",
+				    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				    "mr9@foo.com")).length == 1)
+    assert(User.findAll(BySql[User]("email = ?",
+				    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				    "eemr1@foo.com")).length == 0)
+    assert(User.findAll(BySql("email = ?",
+			      IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			      "mr9@foo.com"), 
+			BySql("firstname = ?", 
+			      IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			      "9")).length == 1)
+
+    assert(User.findAll(BySql[User]("email = ? AND firstname = ?", 
+				    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				    "mr9@foo.com", "9")).length == 1)
+    assert(User.findAll(BySql[User]("email = ? AND firstname = ?",
+				    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				    "mr1@foo.com", "33")).length == 0)
     val u = User.find(33).open_!
-    assert(User.findAll(BySql[User]("email = ?", u.email)).length == 1)
+    assert(User.findAll(BySql[User]("email = ?", 
+				    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+				    u.email)).length == 1)
     assert(User.findAll(OrderBy(User.firstName, Ascending))(0).firstName == "1")
     assert(User.findAll(OrderBy(User.firstName, Descending))(0).firstName == "99")
   }
@@ -89,15 +128,41 @@ class UserTests extends TestCase("User Tests") {
 
     assert(User.count(By(User.email, "mr33@foo.com")) == 1)
     assert(User.count(By(User.email, "dogmr33@foo.com")) == 0)
-    assert(User.count(BySql("email = ?", "mr9@foo.com")) == 1)
-    assert(User.count(BySql("email = ?", "eemr1@foo.com")) == 0)
-    assert(User.count(BySql("email = ?", "mr9@foo.com"), BySql("firstname = ?", "9")) == 1)
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr9@foo.com", "9")) == 1)
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "33")) == 0)
-    assert(User.count(BySql("email = ? AND firstname = ?", "mr1@foo.com", "1")) == 1)
+    assert(User.count(BySql("email = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "mr9@foo.com")) == 1)
+
+    assert(User.count(BySql("email = ?",
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "eemr1@foo.com")) == 0)
+    
+    assert(User.count(BySql("email = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "mr9@foo.com"), 
+		      BySql("firstname = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "9")) == 1)
+
+    assert(User.count(BySql("email = ? AND firstname = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "mr9@foo.com", "9")) == 1)
+    
+    assert(User.count(BySql("email = ? AND firstname = ?",
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "mr1@foo.com", "33")) == 0)
+
+    assert(User.count(BySql("email = ? AND firstname = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    "mr1@foo.com", "1")) == 1)
+    
     val u = User.find(33).open_!
-    assert(User.count(BySql("email = ?", u.email)) == 1)
-    assert(User.count(BySql("email = ? AND id = ?", u.email, u.id)) == 1)
+    assert(User.count(BySql("email = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    u.email)) == 1)
+
+    assert(User.count(BySql("email = ? AND id = ?", 
+			    IHaveValidatedThisSQL("dpp", "2008/12/03"),
+			    u.email, u.id)) == 1)
   }
 
   def pwdTest {
