@@ -198,6 +198,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
+  type KeyDude = T forSome {type T}
+  type OtherMapper = T forSome {type T <: KeyedMapper[KeyDude, T]}
+  type OtherMetaMapper = T forSome {type T <: KeyedMetaMapper[KeyDude, OtherMapper]}
+  //type OtherMapper = KeyedMapper[_, (T forSome {type T})]
+  //type OtherMetaMapper = KeyedMetaMapper[_, OtherMapper]
+
   def findAllFields(fields: Seq[SelectableField],
                     by: QueryParam[A]*): List[A] =
   findMapFieldDb(dbDefaultConnectionIdentifier,
@@ -208,11 +214,54 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
                       by: QueryParam[A]*):
   List[A] = findMapFieldDb(dbId, fields, by :_*)(v => Full(v))
 
-  def findAll(by: QueryParam[A]*): List[A] =
-  findMapDb(dbDefaultConnectionIdentifier, by :_*)(v => Full(v))
+  private def dealWithJoins(ret: List[A], by: Seq[QueryParam[A]]): List[A] = {
 
-  def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*):
-  List[A] = findMapDb(dbId, by :_*)(v => Full(v))
+    val join = by.flatMap{case j: Join[A] => List(j) case _ => Nil}
+    for (j <- join) {
+      type FT = j.field.FieldType
+    type MT = T forSome {type T <: KeyedMapper[FT, T]}
+    
+
+      val ol: List[MT] = j.field.dbKeyToTable.
+      asInstanceOf[MetaMapper[A]].
+      findAll(new InThing[A]{
+          type JoinType = FT
+          type InnerType = A
+
+          val outerField: MappedField[JoinType, A] =
+          j.field.dbKeyToTable.primaryKeyField.asInstanceOf[MappedField[JoinType, A]]
+          val innerField: MappedField[JoinType, A] = j.field.asInstanceOf[MappedField[JoinType, A]]
+          val innerMeta: MetaMapper[A] = j.field.fieldOwner.getSingleton
+
+          val queryParams: List[QueryParam[A]] = by.toList
+        }.asInstanceOf[QueryParam[A]] ).asInstanceOf[List[MT]]
+
+      val map: Map[FT, MT] =
+      Map(ol.map(v => (v.primaryKeyField.is, v)) :_*)
+
+      for (i <- ret) {
+        
+        val field: MappedForeignKey[FT, A, _] =
+        getActualField(i, j.field).asInstanceOf[MappedForeignKey[FT, A, _]]
+
+        map.get(field.is) match {
+          case Some(v) => field.primeObj(Full(v))
+            case _ => field.primeObj(Empty)
+        }
+        //field.primeObj(Can(map.get(field.is).map(_.asInstanceOf[QQ])))
+      }
+    }
+
+    ret
+  }
+
+  def findAll(by: QueryParam[A]*): List[A] =
+  dealWithJoins(findMapDb(dbDefaultConnectionIdentifier, by :_*)
+                (v => Full(v)), by)
+
+
+  def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] =
+  dealWithJoins(findMapDb(dbId, by :_*)(v => Full(v)), by)
 
   def bulkDelete_!!(by: QueryParam[A]*): Boolean = bulkDelete_!!(dbDefaultConnectionIdentifier, by :_*)
   def bulkDelete_!!(dbId: ConnectionIdentifier, by: QueryParam[A]*): Boolean = {
@@ -931,7 +980,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
    * @param func called with displayHtml, fieldId, form
    */
   def mapFieldTitleForm[T](toMap: A,
-  func: (NodeSeq, Can[NodeSeq], NodeSeq) => T): List[T] =
+                           func: (NodeSeq, Can[NodeSeq], NodeSeq) => T): List[T] =
   formFields(toMap).flatMap(field => field.toForm.
                             map(fo => func(field.displayHtml, field.fieldId, fo)))
 
@@ -941,7 +990,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
    * @param func called with displayHtml, fieldId, form
    */
   def flatMapFieldTitleForm[T](toMap: A,
-  func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
+                               func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
   formFields(toMap).flatMap(field => field.toForm.toList.
                             flatMap(fo => func(field.displayHtml,
                                                field.fieldId, fo)))
@@ -1089,6 +1138,9 @@ abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterT
   def innerMeta: MetaMapper[InnerType]
   def queryParams: List[QueryParam[InnerType]]
 }
+
+case class Join[TheType <: Mapper[TheType]](field: MappedForeignKey[_, TheType, _])
+extends QueryParam[TheType]
 
 case class InRaw[TheType <:
                  Mapper[TheType], T](field: MappedField[T, TheType],

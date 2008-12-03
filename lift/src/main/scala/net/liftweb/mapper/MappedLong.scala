@@ -27,7 +27,7 @@ import _root_.net.liftweb.http.js._
 import S._
 
 class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, foreign: => KeyedMetaMapper[Long, O])
-   extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
+extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
 
   def can: Can[Long] = if (defined_?) Full(is) else Empty
@@ -38,23 +38,6 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
 
   override def jdbcFriendly(field : String) = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
   override def jdbcFriendly = if (defined_?) new _root_.java.lang.Long(i_is_!) else null
-
-  def obj: Can[O] = synchronized {
-    if (!_calcedObj) {
-      _calcedObj = true
-      _obj = can.flatMap(foreign.find)
-    }
-    _obj
-    if(defined_?) foreign.find(i_is_!) else Empty
-  }
-
-  def primeObj(obj: Can[O]) = synchronized {
-    _obj = obj
-    _calcedObj = true
-  }
-
-  private var _obj: Can[O] = Empty
-  private var _calcedObj = false
 
   lazy val dbKeyToTable: KeyedMetaMapper[Long, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
@@ -67,32 +50,32 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
   def asSafeJs(obs: Can[KeyObfuscator]): JsExp =
   obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Num(is))
 
-      /**
-      * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
-      * is done with the schemification.
-      */
-    def dbAddedForeignKey: Can[() => Unit] = Empty
+  /**
+   * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
+   * is done with the schemification.
+   */
+  def dbAddedForeignKey: Can[() => Unit] = Empty
 
-    override def toString = if (defined_?) super.toString else "NULL"
+  override def toString = if (defined_?) super.toString else "NULL"
 
-      /*
-      def :=(v : Can[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
+  /*
+   def :=(v : Can[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
    def :=(v : O) : Long = this.:=(v.primaryKeyField.is)
-      */
+   */
 
-   def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
-   def apply(v: O): T = this(v.primaryKeyField.is)
+  def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
+  def apply(v: O): T = this(v.primaryKeyField.is)
 
   def findFor(key: KeyType): List[OwnerType] = theOwner.getSingleton.findAll(By(this, key))
 
   def findFor(key: KeyedForeignType): List[OwnerType] = theOwner.getSingleton.findAll(By(this, key))
 
-   def +(in: Long): Long = is + in
+  def +(in: Long): Long = is + in
 
-   /**
-      * Given the driver type, return the string required to create the column in the database
-      */
-    override def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.longForeignKeyColumnType
+  /**
+   * Given the driver type, return the string required to create the column in the database
+   */
+  override def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.longForeignKeyColumnType
 
 }
 
@@ -152,8 +135,8 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   protected def i_is_! = data
   protected def i_was_! = orgData
   /**
-     * Called after the field is saved to the database
-     */
+   * Called after the field is saved to the database
+   */
   override protected[mapper] def doneWithSave() {
     orgData = data
   }
@@ -168,7 +151,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   override def readPermission_? = true
   override def writePermission_? = true
 
-   def asJsExp: JsExp = JE.JsArray(is.map(v => JE.Num(v.id)) :_*)
+  def asJsExp: JsExp = JE.JsArray(is.map(v => JE.Num(v.id)) :_*)
 
   def real_convertToJDBCFriendly(value: Seq[ENUM#Value]): Object = new _root_.java.lang.Long(Helpers.toLong(value))
 
@@ -204,35 +187,35 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   }
 
   def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String): (T, AnyRef) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+  (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
 
   def buildSetLongValue(accessor: Method, columnName: String): (T, Long, Boolean) => Unit =
-    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (isNull) defaultValue else fromLong(v))})
+  (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (isNull) defaultValue else fromLong(v))})
 
   def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+  (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
 
   def buildSetDateValue(accessor: Method, columnName: String): (T, Date) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
+  (inst, v) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(if (v eq null) defaultValue else fromLong(Helpers.toLong(v)))})
 
   def buildSetBooleanValue(accessor : Method, columnName : String): (T, Boolean, Boolean) => Unit =
-    (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(defaultValue)})
+  (inst, v, isNull) => doField(inst, accessor, {case f: MappedEnumList[T, ENUM] => f.st(defaultValue)})
 
   /**
    * Given the driver type, return the string required to create the column in the database
    */
   def fieldCreatorString(dbType: DriverType, colName: String): String = colName + " " + dbType.enumListColumnType
 
-    /**
+  /**
    * Create an input field for the item
    */
   override def _toForm: Can[NodeSeq] =
-     Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
+  Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
 }
 
 /**
-* Mix with MappedLong to give a default time of millis
-*/
+ * Mix with MappedLong to give a default time of millis
+ */
 trait DefaultMillis extends TypedField[Long] {
   override def defaultValue = millis
 }
@@ -252,8 +235,8 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   protected def i_is_! = data
   protected def i_was_! = orgData
   /**
-     * Called after the field is saved to the database
-     */
+   * Called after the field is saved to the database
+   */
   override protected[mapper] def doneWithSave() {
     orgData = data
   }
@@ -302,16 +285,16 @@ class MappedLong[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Long, T] {
   }
 
   def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
+  (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
 
   def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) => Unit =
-    (inst, v, isNull) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (isNull) defaultValue else v)})
+  (inst, v, isNull) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (isNull) defaultValue else v)})
 
   def buildSetStringValue(accessor: Method, columnName: String): (T, String) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
+  (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(toLong(v))})
 
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =
-    (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (v == null) defaultValue else v.getTime)})
+  (inst, v) => doField(inst, accessor, {case f: MappedLong[T] => f.st(if (v == null) defaultValue else v.getTime)})
 
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit = null
 

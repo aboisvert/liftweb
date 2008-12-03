@@ -95,16 +95,13 @@ extends MappedString[T](fieldOwner, maxLen) with MappedForeignKey[String,T,O] wi
   override def jdbcFriendly(field: String) = i_is_!
   override def jdbcFriendly = i_is_!
 
-  lazy val obj: Can[O] = if(defined_?) foreign.find(i_is_!) else Empty
-
   def dbKeyToTable: KeyedMetaMapper[String, O] = foreign
   def dbKeyToColumn = dbKeyToTable.primaryKeyField
 
   override def dbIndexed_? = true
 
   override def dbForeignKey_? = true
-
-
+  
   def asSafeJs(obs: Can[KeyObfuscator]): JsExp =
     obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Str(is))
 
