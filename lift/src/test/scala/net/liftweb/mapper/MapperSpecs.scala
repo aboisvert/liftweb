@@ -36,18 +36,69 @@ object MapperSpecs extends Specification {
       "schemify" in {
         try { provider.setupDB } catch { case e => skip(e.getMessage) }
 
-        Schemifier.destroyTables_!!(ignoreLogger _, SampleModel)
-        Schemifier.schemify(true, ignoreLogger _, SampleModel)
+        Schemifier.destroyTables_!!(ignoreLogger _, SampleModel, SampleTag)
+        Schemifier.schemify(true, ignoreLogger _, SampleModel, SampleTag)
 
         val elwood = SampleModel.find(By(SampleModel.firstName, "Elwood")).open_!
         val madeline = SampleModel.find(By(SampleModel.firstName, "Madeline")).open_!
         val archer = SampleModel.find(By(SampleModel.firstName, "Archer")).open_!
 
-        elwood.firstName.toString must_== "Elwood"
-        madeline.firstName.toString must_== "Madeline"
-        archer.firstName.toString must_== "Archer"
+        elwood.firstName.is must_== "Elwood"
+        madeline.firstName.is must_== "Madeline"
+        archer.firstName.is must_== "Archer"
+
+	val meow = SampleTag.find(By(SampleTag.tag, "Meow")).open_!
+
+	meow.tag.is must_== "Meow"
 
         elwood.id.is must be_<(madeline.id.is)
+      }
+
+      "Like works" in {
+        try { provider.setupDB } catch { case e => skip(e.getMessage) }
+
+        Schemifier.destroyTables_!!(ignoreLogger _, SampleModel, SampleTag)
+        Schemifier.schemify(true, ignoreLogger _, SampleModel, SampleTag)
+
+	val oo = SampleTag.findAll(Like(SampleTag.tag, "%oo%"))
+
+	(oo.length > 0) must beTrue
+
+	for (t <- oo)
+	  (t.tag.is.indexOf("oo") >= 0) must beTrue
+
+	for (t <- oo)
+	  t.model.cached_? must beFalse
+
+	val mm = SampleTag.findAll(Like(SampleTag.tag, "M%"))
+
+	(mm.length > 0) must beTrue
+
+	for (t <- mm)
+	  (t.tag.is.startsWith("M")) must beTrue
+
+	for (t <- mm) {
+	  t.model.cached_? must beFalse
+	  t.model.obj
+	  t.model.cached_? must beTrue
+	}
+
+      }
+
+      "Join works" in {
+        try { provider.setupDB } catch { case e => skip(e.getMessage) }
+
+        Schemifier.destroyTables_!!(ignoreLogger _, SampleModel, SampleTag)
+        Schemifier.schemify(true, ignoreLogger _, SampleModel, SampleTag)
+
+
+	val oo = SampleTag.findAll(By(SampleTag.tag, "Meow"),
+				 Join(SampleTag.model))
+
+	(oo.length > 0) must beTrue
+
+	for (t <- oo)
+	  t.model.cached_? must beTrue
       }
     }
  })
@@ -55,13 +106,20 @@ object MapperSpecs extends Specification {
  private def ignoreLogger(f: => AnyRef): Unit = ()
 }
 
-object SampleTag extends SampleTag with KeyedMetaMapper[Long, SampleTag]
+object SampleTag extends SampleTag with LongKeyedMetaMapper[SampleTag] {
+  override def dbAddTable = Full(populate _)
+  private def populate {
+    val samp = SampleModel.findAll()
+    val tags = List("Hello", "Moose", "Frog", "WooHoo", "Sloth",
+		    "Meow", "Moof")
+    for (t <- tags;
+	 m <- samp) SampleTag.create.tag(t).model(m).save
+  }
+}
 
-class SampleTag extends KeyedMapper[Long, SampleTag] {
+class SampleTag extends LongKeyedMapper[SampleTag] with IdPK {
   def getSingleton = SampleTag // what's the "meta" server
-  def primaryKeyField = id
 
-  object id extends MappedLongIndex(this)
   object tag extends MappedString(this, 32)
   object model extends MappedLongForeignKey(this, SampleModel)
 }

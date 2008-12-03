@@ -194,10 +194,18 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     }.openOr(immutableMsg))
 
   /**
-  * Is the key defined
-  */
+   * Is the key defined
+   */
   def defined_? : Boolean
 
+  /**
+   * Is the obj field cached
+   */
+  def cached_? : Boolean = synchronized{ _calcedObj}
+
+  /**
+   * Load and cache the record that this field references
+   */
   def obj: Can[Other] = synchronized {
     if (!_calcedObj) {
       _calcedObj = true
@@ -206,6 +214,9 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
     _obj
   }
 
+  /**
+   * Prime the reference of this FK reference
+   */
   def primeObj(obj: Can[Other]) = synchronized {
     _obj
     _calcedObj = true
