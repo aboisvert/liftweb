@@ -79,8 +79,10 @@ object DB {
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
       Helpers.tryo {
+        val uniqueId = if (Log.isDebugEnabled) Helpers.randomString(10) else ""
+        Log.debug("Connection ID "+uniqueId+" for JNDI connection "+name.jndiName+" opened")
         val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
-        new SuperConnection(conn, () => conn.close)
+        new SuperConnection(conn, () => {Log.debug("Connection ID "+uniqueId+" for JNDI connection "+name.jndiName+" closed"); conn.close})
       } openOr {throw new NullPointerException("Looking for Connection Identifier "+name+" but failed to find either a JNDI data source "+
                                                "with the name "+name.jndiName+" or a lift connection manager with the correct name")}
     }
@@ -107,7 +109,7 @@ object DB {
       case x :: xs => use(x)(ignore => doWith(xs, f))
     }
 
-    def apply[T](f: => T): T = doWith(in, f)
+    def apply[T](f: => T): T = try {doWith(in, f)} finally {clearThread}
   }
 
   private def releaseConnection(conn : SuperConnection) : Unit = conn.close
@@ -123,9 +125,15 @@ object DB {
 
   private def releaseConnectionNamed(name: ConnectionIdentifier) {
     info.get(name) match {
-      case Some(ConnectionHolder(c, 1, post)) => c.commit; c.releaseFunc(); info -= name; post.reverse.foreach(_()); logger.trace("Released connection "+name)
-      case Some(ConnectionHolder(c, n, post)) => info(name) = ConnectionHolder(c, n - 1, post)
-      case _ =>
+      case Some(ConnectionHolder(c, 1, post)) => 
+        c.commit
+        c.releaseFunc()
+        info -= name
+        post.reverse.foreach(_())
+        logger.trace("Released connection "+name)
+
+      case Some(ConnectionHolder(c, n, post)) =>
+        info(name) = ConnectionHolder(c, n - 1, post)
     }
   }
 
