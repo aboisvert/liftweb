@@ -124,7 +124,7 @@ object DB {
   }
 
   private def releaseConnectionNamed(name: ConnectionIdentifier) {
-    info.get(name) match {
+    (info.get(name): @unchecked) match {
       case Some(ConnectionHolder(c, 1, post)) => 
         c.commit
         c.releaseFunc()

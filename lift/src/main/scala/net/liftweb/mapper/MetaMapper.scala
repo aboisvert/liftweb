@@ -214,10 +214,10 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
                       by: QueryParam[A]*):
   List[A] = findMapFieldDb(dbId, fields, by :_*)(v => Full(v))
 
-  private def dealWithJoins(ret: List[A], by: Seq[QueryParam[A]]): List[A] = {
+  private def dealWithPrecache(ret: List[A], by: Seq[QueryParam[A]]): List[A] = {
 
-    val join = by.flatMap{case j: Join[A] => List(j) case _ => Nil}
-    for (j <- join) {
+    val precache = by.flatMap{case j: PreCache[A] => List(j) case _ => Nil}
+    for (j <- precache) {
       type FT = j.field.FieldType
     type MT = T forSome {type T <: KeyedMapper[FT, T]}
     
@@ -256,12 +256,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
   }
 
   def findAll(by: QueryParam[A]*): List[A] =
-  dealWithJoins(findMapDb(dbDefaultConnectionIdentifier, by :_*)
+  dealWithPrecache(findMapDb(dbDefaultConnectionIdentifier, by :_*)
                 (v => Full(v)), by)
 
 
   def findAllDb(dbId: ConnectionIdentifier,by: QueryParam[A]*): List[A] =
-  dealWithJoins(findMapDb(dbId, by :_*)(v => Full(v)), by)
+  dealWithPrecache(findMapDb(dbId, by :_*)(v => Full(v)), by)
 
   def bulkDelete_!!(by: QueryParam[A]*): Boolean = bulkDelete_!!(dbDefaultConnectionIdentifier, by :_*)
   def bulkDelete_!!(dbId: ConnectionIdentifier, by: QueryParam[A]*): Boolean = {
@@ -279,6 +279,12 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     }
   }
 
+  private def distinct(in: Seq[QueryParam[A]]): String =
+  in.filter{case Distinct() => true case _ => false} match {
+    case Nil => ""
+      case _ => " DISTINCT "
+  }
+
   def findMap[T](by: QueryParam[A]*)(f: A => Can[T]) =
   findMapDb(dbDefaultConnectionIdentifier, by :_*)(f)
 
@@ -292,6 +298,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       conn =>
       val bl = by.toList
       val (query, start, max) = addEndStuffs(addFields("SELECT "+
+                                                        distinct(by)+
                                                        fields.map(_.dbSelectString).
                                                        mkString(", ")+
                                                        " FROM "+dbTableName+
@@ -358,6 +365,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
               updatedWhat = updatedWhat + whereOrAnd +
               in.outerField.dbColumnName+
               " IN ("+in.innerMeta.addFields("SELECT "+
+                                             in.distinct+
                                              in.innerField.dbColumnName+
                                              " FROM "+
                                              in.innerMeta.dbTableName+" ",false,
@@ -1104,7 +1112,7 @@ case class BoundedIndexField[A <: Mapper[A]](field: MappedField[String, A], len:
   def indexDesc: String = field.dbColumnName+"("+len+")"
 }
 
-trait QueryParam[O<:Mapper[O]]
+sealed trait QueryParam[O<:Mapper[O]]
 case class Cmp[O<:Mapper[O], T](field: MappedField[T,O], opr: OprEnum.Value, value: Can[T], otherField: Can[MappedField[T, O]]) extends QueryParam[O]
 case class OrderBy[O<:Mapper[O], T](field: MappedField[T,O],
                                     order: AscOrDesc) extends QueryParam[O]
@@ -1120,6 +1128,8 @@ case object Ascending extends AscOrDesc {
 case object Descending extends AscOrDesc {
   def sql: String = " DESC "
 }
+
+case class Distinct[O <: Mapper[O]]() extends QueryParam[O]
 
 case class OrderBySql[O <: Mapper[O]](sql: String,
                                      checkedBy: IHaveValidatedThisSQL) extends QueryParam[O]
@@ -1140,9 +1150,15 @@ abstract class InThing[OuterType <: Mapper[OuterType]] extends QueryParam[OuterT
   def innerField: MappedField[JoinType, InnerType]
   def innerMeta: MetaMapper[InnerType]
   def queryParams: List[QueryParam[InnerType]]
+
+  def distinct: String =
+  queryParams.filter{case Distinct() => true case _ => false} match {
+    case Nil => ""
+      case _ => " DISTINCT "
+  }
 }
 
-case class Join[TheType <: Mapper[TheType]](field: MappedForeignKey[_, TheType, _])
+case class PreCache[TheType <: Mapper[TheType]](field: MappedForeignKey[_, TheType, _])
 extends QueryParam[TheType]
 
 case class InRaw[TheType <:

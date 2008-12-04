@@ -85,7 +85,7 @@ object MapperSpecs extends Specification {
 
       }
 
-      "Join works" in {
+      "Precache works" in {
         try { provider.setupDB } catch { case e => skip(e.getMessage) }
 
         Schemifier.destroyTables_!!(ignoreLogger _, SampleModel, SampleTag)
@@ -93,10 +93,10 @@ object MapperSpecs extends Specification {
 
 
 	val oo = SampleTag.findAll(By(SampleTag.tag, "Meow"),
-				 Join(SampleTag.model))
-
+				   PreCache(SampleTag.model))
+	
 	(oo.length > 0) must beTrue
-
+	
 	for (t <- oo)
 	  t.model.cached_? must beTrue
       }
