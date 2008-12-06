@@ -43,7 +43,6 @@ object S extends HasParams {
    */
   case class RewriteHolder(name: String, rewrite: LiftRules.RewritePF)
   case class DispatchHolder(name: String, dispatch: LiftRules.DispatchPF)
-  case class TemplateHolder(name: String, template: LiftRules.TemplatePF)
 
   /**
    * Holds information about cookies
@@ -197,21 +196,6 @@ object S extends HasParams {
   session map (_.highLevelSessionDispatcher -= name)
 
   def clearHighLevelSessionDispatcher = session map (_.highLevelSessionDispatcher.clear)
-
-  /**
-   * Gets the list of templaters (partial functions that match and return a template rather than
-   * loading a template from a file or a class)
-   */
-  def sessionTemplater: List[TemplateHolder] =
-  session map (_.sessionTemplater.toList.map(t => TemplateHolder(t._1, t._2))) openOr Nil
-
-  def addSessionTemplater(name: String, rw: LiftRules.TemplatePF) =
-  session map (_.sessionTemplater += (name -> rw))
-
-  def removeSessionTemplater(name: String) =
-  session map (_.sessionTemplater -= name)
-
-  def clearSessionTemplater = session map (_.sessionTemplater.clear)
 
 
   def sessionRewriter: List[RewriteHolder] =

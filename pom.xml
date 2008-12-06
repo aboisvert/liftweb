@@ -158,7 +158,11 @@ Lift is a scala web framework.
     <scala.version>2.7.2</scala.version>
   </properties>
   <modules>
+    <module>lift-util</module>
     <module>lift</module>
+    <module>lift-mapper</module>
+    <module>lift-machine</module>
+    <module>lift-record</module>
     <module>lift-textile</module>
     <module>lift-facebook</module>
     <module>lift-amqp</module>

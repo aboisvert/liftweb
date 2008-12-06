@@ -19,7 +19,7 @@ import scala.collection.mutable.{ListBuffer}
 import scala.xml._
 import net.liftweb.http.js.{JsExp, JE}
 import net.liftweb.http.{FieldError, SHtml}
-import net.liftweb.mapper.{Safe, KeyObfuscator}
+// import net.liftweb.mapper.{Safe, KeyObfuscator}
 import java.lang.reflect.Method
 import field._
 

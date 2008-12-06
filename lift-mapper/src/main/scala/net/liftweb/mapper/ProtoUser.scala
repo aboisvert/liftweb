@@ -20,7 +20,7 @@ import _root_.net.liftweb.mapper._
 import _root_.net.liftweb.http._
 import js._
 import JsCmds._
-import _root_.scala.xml.{NodeSeq, Node, Group, Text}
+import _root_.scala.xml.{NodeSeq, Node, Group, Text, Elem}
 import _root_.scala.xml.transform._
 import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
@@ -126,7 +126,8 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
 
 
 
-  case class MenuItem(name: String, path: List[String], loggedIn: Boolean) {
+  case class MenuItem(name: String, path: List[String],
+                      loggedIn: Boolean) {
     lazy val endOfPath = path.last
     lazy val pathStr: String = path.mkString("/", "/", "")
     lazy val display = name match {
@@ -155,21 +156,26 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    */
   def loginMenuLoc: Can[Menu] = {
     Full(Menu(Loc("Login", loginPath, S.??("login"),
-                  If(notLoggedIn_? _, S.??("already.logged.in")))))
+                  If(notLoggedIn_? _, S.??("already.logged.in")),
+                  Template(() => wrapIt(login)))))
   }
 
   /**
    * The menu item for logout (make this "Empty" to disable)
    */
   def logoutMenuLoc: Can[Menu] =
-  Full(Menu(Loc("Logout", logoutPath, S.??("logout"), testLogginIn)))
+  Full(Menu(Loc("Logout", logoutPath, S.??("logout"),
+                Template(() => wrapIt(logout)),
+                testLogginIn)))
 
   /**
    * The menu item for creating the user/sign up (make this "Empty" to disable)
    */
   def createUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("CreateUser", signUpPath,
-                S.??("sign.up"), If(notLoggedIn_? _, S.??("logout.first")))))
+                S.??("sign.up"), 
+                Template(() => wrapIt(signupFunc.map(_()) openOr signup)),
+                If(notLoggedIn_? _, S.??("logout.first")))))
 
   /**
    * The menu item for lost password (make this "Empty" to disable)
@@ -177,6 +183,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def lostPasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("LostPassword", lostPasswordPath,
                 S.??("lost.password"),
+                Template(() => wrapIt(lostPassword)),
                 If(notLoggedIn_? _, S.??("logout.first"))))) // not logged in
 
   /**
@@ -185,6 +192,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def resetPasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("ResetPassword", (passwordResetPath, true),
                 S.??("reset.password"), Hidden,
+                Template(() => wrapIt(passwordReset(snarfLastItem))),
                 If(notLoggedIn_? _,
                    S.??("logout.first"))))) //not Logged in
 
@@ -192,14 +200,18 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    * The menu item for editing the user (make this "Empty" to disable)
    */
   def editUserMenuLoc: Can[Menu] =
-  Full(Menu(Loc("EditUser", editPath, S.??("edit.user"), testLogginIn)))
+  Full(Menu(Loc("EditUser", editPath, S.??("edit.user"),
+                Template(() => wrapIt(editFunc.map(_()) openOr edit)),
+                testLogginIn)))
 
   /**
    * The menu item for changing password (make this "Empty" to disable)
    */
   def changePasswordMenuLoc: Can[Menu] =
   Full(Menu(Loc("ChangePassword", changePasswordPath,
-                S.??("change.password"), testLogginIn)))
+                S.??("change.password"),
+                Template(() => wrapIt(changePassword)),
+                testLogginIn)))
 
   /**
    * The menu item for validating a user (make this "Empty" to disable)
@@ -207,6 +219,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
   def validateUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("ValidateUser", (validateUserPath, true),
                 S.??("validate.user"), Hidden,
+                Template(() => wrapIt(validateUser(snarfLastItem))),
                 If(notLoggedIn_? _, S.??("logout.first")))))
 
   lazy val sitemap: List[Menu] =
@@ -225,49 +238,20 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
     map(i => (<a href={i.pathStr}>{i.name}</a>))
   }
 
-  lazy val ItemList: List[MenuItem] = MenuItem(S.??("sign.up"), signUpPath, false) ::
-  MenuItem(S.??("log.in"), loginPath, false) ::
-  MenuItem(S.??("lost.password"), lostPasswordPath, false) ::
-  MenuItem("", passwordResetPath, false) ::
-  MenuItem(S.??("change.password"), changePasswordPath, true) ::
-  MenuItem(S.??("log.out"), logoutPath, true) ::
-  MenuItem(S.??("edit.profile"), editPath, true) ::
-  MenuItem("", validateUserPath, false) :: Nil
+  protected def snarfLastItem: String =
+  (for (r <- S.request) yield r.path.wholePath.last) openOr ""
 
-  def templates: LiftRules.TemplatePF = NamedPF("ProtoUser") {
-    case Req(path, "", _)
-      if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) => () => signup
+  lazy val ItemList: List[MenuItem] =
+  List(MenuItem(S.??("sign.up"), signUpPath, false),
+       MenuItem(S.??("log.in"), loginPath, false),
+       MenuItem(S.??("lost.password"), lostPasswordPath, false),
+       MenuItem("", passwordResetPath, false),
+       MenuItem(S.??("change.password"), changePasswordPath, true),
+       MenuItem(S.??("log.out"), logoutPath, true),
+       MenuItem(S.??("edit.profile"), editPath, true),
+       MenuItem("", validateUserPath, false))
 
-    case Req(path, "", _)
-      if path.startsWith(loginPath) && testLoggedIn(loginSuffix) => () => login
-
-    case Req(path, "", _)
-      if path.startsWith(lostPasswordPath) &&
-      testLoggedIn(lostPasswordSuffix) => () => lostPassword
-
-    case Req(path, "", _)
-      if path.startsWith(passwordResetPath) &&
-      testLoggedIn(passwordResetSuffix) =>
-      () => passwordReset(path.drop(passwordResetPath.length).head)
-
-    case Req(path, "", _)
-      if path.startsWith(changePasswordPath) &&
-      testLoggedIn(changePasswordSuffix) => () => changePassword
-
-    case Req(path, "", _)
-      if path.startsWith(logoutPath) &&
-      testLoggedIn(logoutSuffix) => () => logout
-
-    case Req(path, "", _)
-      if path.startsWith(editPath) && testLoggedIn(editSuffix) => () => edit
-
-    case Req(path, "", _)
-      if path.startsWith(validateUserPath) &&
-      testLoggedIn(validateUserSuffix) =>
-      () => validateUser(path.drop(validateUserPath.length).head)
-  }
-
-  def requestLoans: List[LoanWrapper] = Nil // List(curUser)
+  // def requestLoans: List[LoanWrapper] = Nil // List(curUser)
 
   var onLogIn: List[ModelType => Unit] = Nil
 
@@ -346,13 +330,15 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                      (bccEmail.toList.map(BCC(_)))) :_* )
   }
 
+  protected object signupFunc extends RequestVar[Can[() => NodeSeq]](Empty)
+
   def signup = {
     val theUser: ModelType = create
     val theName = signUpPath.mkString("")
 
     def testSignup() {
       theUser.validate match {
-        case Nil => S.removeSessionTemplater(theName)
+        case Nil =>
           theUser.validated(skipEmailValidation).uniqueId.reset()
           theUser.save
           if (!skipEmailValidation) {
@@ -365,7 +351,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
 
           S.redirectTo(homePage)
 
-        case xs => S.error(xs)
+        case xs => S.error(xs) ; signupFunc(Full(innerSignup _))
       }
     }
 
@@ -373,10 +359,6 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
                            signupXhtml(theUser),
                            "submit" -> SHtml.submit(S.??("sign.up"), testSignup _))
 
-    S.addSessionTemplater(theName, NamedPF(theName) {
-        case Req(path, "", _)
-          if path.startsWith(signUpPath) && testLoggedIn(signUpSuffix) =>  () => innerSignup
-      })
     innerSignup
   }
 
@@ -568,28 +550,26 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
      </form>)
   }
 
+  object editFunc extends RequestVar[Can[() => NodeSeq]](Empty)
+
   def edit = {
     val theUser: ModelType = currentUser.open_! // we know we're logged in
     val theName = editPath.mkString("")
 
     def testEdit() {
       theUser.validate match {
-        case Nil => S.removeSessionTemplater(theName)
+        case Nil => 
           theUser.save
           S.notice(S.??("profle.updated"))
           S.redirectTo(homePage)
 
-        case xs => S.error(xs)
+        case xs => S.error(xs) ; editFunc(Full(innerEdit _))
       }
     }
 
     def innerEdit = bind("user", editXhtml(theUser),
                          "submit" -> SHtml.submit(S.??("edit"), testEdit _))
 
-    S.addSessionTemplater(theName, NamedPF(theName) {
-        case Req(path, "", _)
-          if path.startsWith(editPath) && testLoggedIn(editSuffix) =>
-          () => innerEdit})
     innerEdit
   }
 
@@ -610,17 +590,13 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
         (<tr><td>{f.displayName}</td><td>{form}</td></tr>) ) )
   }
 
-  implicit def nodeSeqToOption(in: NodeSeq): Can[NodeSeq] =
-  screenWrap.map{
-    theDoc =>
-    val rw = new RewriteRule {
-      override def transform(n: Node) = n match {
-        case e @ (<bind />) if "lift" == e.prefix => in
-        case _ => n
-      }
-    }
-    (new RuleTransformer(rw))(theDoc)
-  } or Full(in)
+  protected def wrapIt(in: NodeSeq): NodeSeq =
+  screenWrap.map(new RuleTransformer(new RewriteRule {
+        override def transform(n: Node) = n match {
+          case e: Elem if "bind" == e.label && "lift" == e.prefix => in
+          case _ => n
+        }
+      })) openOr in
 }
 
 trait MegaProtoUser[T <: MegaProtoUser[T]] extends ProtoUser[T] {

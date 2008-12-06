@@ -23,7 +23,6 @@ import _root_.scala.xml.transform._
 import _root_.scala.actors._
 import _root_.scala.actors.Actor._
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.mapper.DB
 import _root_.net.liftweb.util._
 import _root_.net.liftweb.util.Helpers
 import _root_.net.liftweb.util.ActorPing
@@ -59,22 +58,16 @@ class LiftServlet extends HttpServlet {
       // super.destroy
     } catch {
       case e => Log.error("Servlet destruction failure",e)
-    } finally {
-      clearThread
     }
   }
 
   override def init = {
-    try {
-      LiftRules.ending = false
-      LiftRules.appendDispatch(NamedPF("Classpath service") {
-          case r @ Req(mainPath :: subPath, suffx, _)
-            if mainPath == LiftRules.ResourceServerPath =>
-            ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
-        })
-    } finally {
-      clearThread
-    }
+    LiftRules.ending = false
+    LiftRules.appendDispatch(NamedPF("Classpath service") {
+        case r @ Req(mainPath :: subPath, suffx, _)
+          if mainPath == LiftRules.ResourceServerPath =>
+          ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
+      })
   }
 
   def getLiftSession(request: Req, httpSession: HttpSession): LiftSession = {
@@ -118,8 +111,6 @@ class LiftServlet extends HttpServlet {
     } catch {
       case e if e.getClass.getName.endsWith("RetryRequest") => throw e
       case e => Log.warn("Request for "+req.getRequestURI+" failed "+e.getMessage, e); throw e
-    } finally {
-      clearThread
     }
   }
 
@@ -198,8 +189,8 @@ class LiftServlet extends HttpServlet {
         LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
         val ret: (Boolean, Can[LiftResponse]) =
         try {
-        pf(toMatch)() match {
-          case Full(v) =>
+          pf(toMatch)() match {
+            case Full(v) =>
               (true, Full(LiftRules.convertResponse( (liftSession.checkRedirect(v), Nil,
                                                       S.responseCookies, requestState) )))
 
@@ -248,7 +239,7 @@ class LiftServlet extends HttpServlet {
       val what = flatten(liftSession.runParams(requestState))
 
       val what2 = what.flatMap{
-	case js: JsCmd => List(js)
+        case js: JsCmd => List(js)
         case n: NodeSeq => List(n)
         case js: JsCommands => List(js)
         case r: LiftResponse => List(r)
@@ -448,124 +439,115 @@ class LiftServlet extends HttpServlet {
 
       case StreamingResponse(stream, endFunc, _, _, _, _) =>
         try {
-            var len = 0
-            val ba = new Array[Byte](8192)
-            val os = response.getOutputStream
+          var len = 0
+          val ba = new Array[Byte](8192)
+          val os = response.getOutputStream
+          len = stream.read(ba)
+          while (len >= 0) {
+            if (len > 0) os.write(ba, 0, len)
             len = stream.read(ba)
-            while (len >= 0) {
-              if (len > 0) os.write(ba, 0, len)
-              len = stream.read(ba)
-            }
-
-          } finally {
-            endFunc()
           }
-      }
 
-      LiftRules._afterSend.foreach(f => tryo(f(resp, response, header, request)))
+        } finally {
+          endFunc()
+        }
     }
 
-    /**
-     * Remove any thread-local associations
-     */
-    def clearThread: Unit = {
-      Actor.clearSelf
-      DB.clearThread
-    }
-
+    LiftRules._afterSend.foreach(f => tryo(f(resp, response, header, request)))
   }
+}
 
-  trait LiftFilterTrait {
-    def actualServlet: LiftServlet
+trait LiftFilterTrait {
+  def actualServlet: LiftServlet
 
-    def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
-    {
-      RequestVarHandler(
-        (req, res) match {
-          case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-            LiftRules.early.foreach(_(httpReq))
-
-            val session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
-
-            URLRewriter.doWith(url => NamedPF(httpRes.encodeURL(url),
-                                              LiftRules.urlDecorate)) {
-              if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
-              } else {
-                chain.doFilter(req, res)
-              }
-            }
-
-          case _ => chain.doFilter(req, res)
-        })
-    }
-
-    def isLiftRequest_?(session: Req): Boolean
-  }
-
-  class LiftFilter extends Filter with LiftFilterTrait
+  def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
   {
-    //The variable holds the current ServletContext (we need it for request URI - handling
-    private var context: ServletContext = null
-    var actualServlet: LiftServlet = _
+    RequestVarHandler(
+      (req, res) match {
+        case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
+          LiftRules.early.foreach(_(httpReq))
 
+          val session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
+          URLRewriter.doWith(url => NamedPF(httpRes.encodeURL(url),
+                                            LiftRules.urlDecorate)) {
+            if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
+            } else {
+              chain.doFilter(req, res)
+            }
+          }
 
-    //We need to capture the ServletContext on init
-    def init(config:FilterConfig) {
-      context = config.getServletContext
-
-      LiftRules.setContext(context)
-      bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
-
-      actualServlet = new LiftServlet(context)
-      actualServlet.init
-    }
-
-    //And throw it away on destruction
-    def destroy {
-      context = null
-      if (actualServlet != null) {
-        actualServlet.destroy
-        actualServlet = null
-      }
-    }
-
-    def bootLift(loader : Can[String]) : Unit =
-    {
-      try
-      {
-        val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
-
-        b.boot
-        postBoot
-      } catch {
-        case e => Log.error("Failed to Boot", e); None
-      }
-    }
-
-    private def postBoot {
-      try {
-        ResourceBundle getBundle (LiftRules.liftCoreResourceName)
-      } catch {
-        case _ => Log.error("LiftWeb core resource bundle for locale " + Locale.getDefault() + ", was not found ! ")
-      }
-    }
-
-
-    //This function tells you wether a resource exists or not, could probably be better
-    private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
-    in.endsWith(".htm") ||
-    in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
-
-    def isLiftRequest_?(session: Req): Boolean = {
-      NamedPF.applyCan(session, LiftRules.isLiftRequest_?) match {
-        case Full(b) => b
-        case _ =>  session.path.endSlash ||
-          (session.path.wholePath.takeRight(1) match
-           {case Nil => true case x :: xs => liftHandled(x)}) ||
-          context.getResource(session.uri) == null
-      }
-    }
-
+        case _ => chain.doFilter(req, res)
+      })
   }
+
+  def isLiftRequest_?(session: Req): Boolean
+}
+
+class LiftFilter extends Filter with LiftFilterTrait
+{
+  //The variable holds the current ServletContext (we need it for request URI - handling
+  private var context: ServletContext = null
+  var actualServlet: LiftServlet = _
+
+
+
+  //We need to capture the ServletContext on init
+  def init(config:FilterConfig) {
+    context = config.getServletContext
+
+    LiftRules.setContext(context)
+    bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
+
+    actualServlet = new LiftServlet(context)
+    actualServlet.init
+  }
+
+  //And throw it away on destruction
+  def destroy {
+    context = null
+    if (actualServlet != null) {
+      actualServlet.destroy
+      actualServlet = null
+    }
+  }
+
+  def bootLift(loader : Can[String]) : Unit =
+  {
+    try
+    {
+      val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
+
+      b.boot
+      postBoot
+    } catch {
+      case e => Log.error("Failed to Boot", e); None
+    }
+  }
+
+  private def postBoot {
+    try {
+      ResourceBundle getBundle (LiftRules.liftCoreResourceName)
+    } catch {
+      case _ => Log.error("LiftWeb core resource bundle for locale " + Locale.getDefault() + ", was not found ! ")
+    }
+  }
+
+
+  //This function tells you wether a resource exists or not, could probably be better
+  private def liftHandled(in: String): Boolean = (in.indexOf(".") == -1) || in.endsWith(".html") || in.endsWith(".xhtml") ||
+  in.endsWith(".htm") ||
+  in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
+
+  def isLiftRequest_?(session: Req): Boolean = {
+    NamedPF.applyCan(session, LiftRules.isLiftRequest_?) match {
+      case Full(b) => b
+      case _ =>  session.path.endSlash ||
+        (session.path.wholePath.takeRight(1) match
+         {case Nil => true case x :: xs => liftHandled(x)}) ||
+        context.getResource(session.uri) == null
+    }
+  }
+
+}
 

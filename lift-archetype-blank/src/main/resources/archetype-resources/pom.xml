@@ -45,7 +45,17 @@
     </dependency>
     <dependency>
       <groupId>net.liftweb</groupId>
+      <artifactId>lift-util</artifactId>
+      <version>$lift_version</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
       <artifactId>lift-webkit</artifactId>
+      <version>$lift_version</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-mapper</artifactId>
       <version>$lift_version</version>
     </dependency>
     <dependency>

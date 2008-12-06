@@ -1350,7 +1350,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   def find(dbId: ConnectionIdentifier, key: String): Can[A] =  dbStringToKey(key) flatMap (realKey =>  findDbByKey(dbId, realKey))
 
-  def findByKey(key: Type) : Can[A] = findDbByKey(dbDefaultConnectionIdentifier, key)
+  def findByKey(key: Type): Can[A] = findDbByKey(selectDbForKey(key), key)
 
   def dbStringToKey(in: String): Can[Type] = primaryKeyField.convertKey(in)
 

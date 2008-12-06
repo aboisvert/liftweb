@@ -6,19 +6,14 @@
     <version>0.10-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
-  <artifactId>lift-webkit</artifactId>
+  <artifactId>lift-util</artifactId>
   <packaging>jar</packaging>
-  <name>Lift WebKit</name>
-  <description>Tool Kit to create webapp with lift framework</description>
+  <name>Lift Utils</name>
+  <description>Basic Utilities that underly the Lift Web Framework</description>
   <properties>
     <slf4j.version>1.5.0</slf4j.version>
   </properties>
   <dependencies>
-    <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>lift-util</artifactId>
-      <version>${project.version}</version>
-    </dependency>
     <dependency>
       <groupId>org.scala-lang</groupId>
       <artifactId>scala-library</artifactId>
@@ -35,24 +30,6 @@
       <version>1.2.12</version>
     </dependency>
     <dependency>
-      <groupId>org.apache.derby</groupId>
-      <artifactId>derby</artifactId>
-      <version>10.2.2.0</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>com.h2database</groupId>
-      <artifactId>h2</artifactId>
-      <version>1.0.63</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
-      <groupId>postgresql</groupId>
-      <artifactId>postgresql</artifactId>
-      <version>8.2-507.jdbc3</version>
-      <optional>true</optional>
-    </dependency>
-    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
       <scope>provided</scope>
@@ -66,12 +43,6 @@
       <groupId>javax.activation</groupId>
       <artifactId>activation</artifactId>
       <version>1.1</version>
-    </dependency>
-    <dependency>
-      <groupId>mysql</groupId>
-      <artifactId>mysql-connector-java</artifactId>
-      <version>5.0.4</version>
-      <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>commons-httpclient</groupId>

@@ -23,8 +23,6 @@ class Boot {
     LiftRules.addToPackages("${packageName}")
     Schemifier.schemify(true, Log.infoF _, User)
 
-    LiftRules.prependTemplate(User.templates)
-
     // Build SiteMap
     val entries = Menu(Loc("Home", List("index"), "Home")) :: User.sitemap
     LiftRules.setSiteMap(SiteMap(entries:_*))

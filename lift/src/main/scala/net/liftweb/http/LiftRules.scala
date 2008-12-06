@@ -35,13 +35,13 @@ object LiftRules {
 
   type DispatchPF = PartialFunction[Req, () => Can[LiftResponse]];
   type RewritePF = PartialFunction[RewriteRequest, RewriteResponse]
-  type TemplatePF = PartialFunction[Req,() => Can[NodeSeq]]
+  // type TemplatePF = PartialFunction[Req,() => Can[NodeSeq]]
   type SnippetPF = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
-  type ViewDispatchPF = PartialFunction[List[String], LiftView]
+  type ViewDispatchPF = PartialFunction[List[String], Either[() => Can[NodeSeq], LiftView]]
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -483,6 +483,7 @@ object LiftRules {
 
   def snippetTable: List[SnippetPF] = snippetTable_i
 
+  /*
   def templateTable(req: HttpServletRequest): List[TemplatePF] = {
     req match {
       case null => templateTable_i
@@ -494,7 +495,7 @@ object LiftRules {
           case _ => templateTable_i
         }
     }
-  }
+  }*/
 
   var ajaxPath = "ajax_request"
 
@@ -594,7 +595,7 @@ object LiftRules {
 
   private var rewriteTable_i : List[RewritePF] = Nil
 
-  private var templateTable_i: List[TemplatePF] = Nil
+  // private var templateTable_i: List[TemplatePF] = Nil
 
   private var snippetTable_i: List[SnippetPF] = Nil
 
@@ -614,6 +615,7 @@ object LiftRules {
     snippetTable_i = snippetTable_i ::: List(pf)
   }
 
+  /*
   def prependTemplate(pf: TemplatePF) = {
     templateTable_i = pf :: templateTable_i
     templateTable_i
@@ -629,7 +631,7 @@ object LiftRules {
     templateTable_i = templateTable_i ::: List(pf)
     templateTable_i
   }
-
+*/
   def prependRewrite(pf: RewritePF) = {
     rewriteTable_i = pf :: rewriteTable_i
     rewriteTable_i

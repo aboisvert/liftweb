@@ -25,10 +25,6 @@ class Boot {
     // Update the database schema to be in sync
     Schemifier.schemify(true, Log.infoF _, User, Entry)
 
-    // Add a template handler to requests that come in for User related
-    // function (e.g., log in, log out, etc.) are handled appropriately
-    LiftRules.prependTemplate(User.templates) // LiftNote 5
-
     // The locale is either calculated based on the incoming user or
     // based on the http request
     LiftRules.localeCalculator = r => User.currentUser.map(_.locale.isAsLocale).openOr(LiftRules.defaultLocaleCalculator(r))
@@ -39,9 +35,6 @@ class Boot {
     User.sitemap ::: Entry.sitemap
 
     LiftRules.setSiteMap(SiteMap(entries:_*))
-
-    // lazily load the current user on a request-by-request basis
-    S.addAround(User.requestLoans)
   }
 }
 
