@@ -577,7 +577,7 @@ object S extends HasParams {
     def apply[T](what: String, f: String => T,
                  default: => T): T =
     apply(what).map(f) openOr default
-    
+
   }
 
   /**
@@ -677,7 +677,6 @@ object S extends HasParams {
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = {
     val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
     NamedPF.applyCan(snippet, LiftRules.snippetTable)
-    // if (LiftRules.snippetTable.isDefinedAt(snippet)) Full(LiftRules.snippetTable(snippet)) else Empty
   }
 
   private object _currentSnippet extends RequestVar[Can[String]](Empty)

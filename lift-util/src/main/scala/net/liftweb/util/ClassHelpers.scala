@@ -31,7 +31,7 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def ^ [T](i: T*): List[T] = i.toList
 
-  
+
   /**
    * General method to in find a class according to its name, a list of possible packages,
    * a list of functions modifying the given name create a target name to look for
@@ -57,7 +57,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * General method to in find a class according to its type, its name, a list of possible
    * packages and a list of functions modifying the given name create a target name to look for
    * (e.g: 'name' is hello_world and the target name may be 'HelloWorld').
-   * 
+   *
    * @parameter C type of the class to find
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
@@ -72,7 +72,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * General method to in find a class according to its name, a list of possible packages and a
    * list of functions modifying the given name create a target name to look for (e.g: 'name' is
    * hello_world and the target name may be 'HelloWorld').
-   * 
+   *
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
@@ -119,7 +119,7 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def findClass(name: String, where: List[String]): Can[Class[AnyRef]] =
     findClass(name, where, nameModifiers)
-    
+
   /**
    * Find a class given its type, a list of possible names and corresponding packages, turning
    * underscored names to CamelCase if necessary
@@ -145,7 +145,7 @@ trait ClassHelpers { self: ControlHelpers =>
    */
   def findClass(where: List[(String, List[String])]): Can[Class[AnyRef]] =
     findType[AnyRef](where)
-  
+
   /**
    * Turns a string of format "foo_bar" into camel case "FooBar"
    *

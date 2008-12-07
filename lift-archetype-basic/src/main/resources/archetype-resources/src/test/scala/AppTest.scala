@@ -29,17 +29,17 @@ class AppTest extends TestCase("app") {
 
   /**
    * Tests to make sure the project's XML files are well-formed.
-   * 
+   *
    * Finds every *.html and *.xml file in src/main/webapp (and its
    * subdirectories) and tests to make sure they are well-formed.
    */
   def testXml() = {
     var failed: List[File] = Nil
-    
+
     def handled(file: String) =
       file.endsWith(".html") || file.endsWith(".xml") ||
       file.endsWith(".htm")  || file.endsWith(".xhtml")
-    
+
     def wellFormed(file: File) {
       if (file.isDirectory)
         for (f <- file.listFiles) wellFormed(f)
@@ -54,7 +54,7 @@ class AppTest extends TestCase("app") {
     }
 
     wellFormed(new File("src/main/webapp"))
-    
+
     val numFails = failed.size
     if (numFails > 0) {
       val fileStr = if (numFails == 1) "file" else "files"

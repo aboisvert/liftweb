@@ -35,7 +35,6 @@ object LiftRules {
 
   type DispatchPF = PartialFunction[Req, () => Can[LiftResponse]];
   type RewritePF = PartialFunction[RewriteRequest, RewriteResponse]
-  // type TemplatePF = PartialFunction[Req,() => Can[NodeSeq]]
   type SnippetPF = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
@@ -68,7 +67,7 @@ object LiftRules {
   /**
    * The path to handle served resources
    */
-  var ResourceServerPath = "classpath"
+  var resourceServerPath = "classpath"
 
   /**
    * Holds the JS library specific UI artifacts. By efault it uses JQuery's artifacts
@@ -79,8 +78,7 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.
    */
-  var urlDecorate: List[URLDecorator] =
-  List(NamedPF("default"){case arg => arg})
+  var urlDecorate: List[URLDecorator] = List(NamedPF("default"){case arg => arg})
 
   private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 
@@ -106,14 +104,11 @@ object LiftRules {
    * A partial function that determines content type based on an incoming
    * Req and Accept header
    */
-  var determineContentType:
-  PartialFunction[(Can[Req], Can[String]), String] = {
+  var determineContentType: PartialFunction[(Can[Req], Can[String]), String] = {
     case (_, Full(accept)) if this.useXhtmlMimeType && accept.toLowerCase.contains("application/xhtml+xml") =>
       "application/xhtml+xml"
-
     case _ => "text/html"
   }
-
 
   /**
    * Hooks to be run when LiftServlet.destroy is called.
@@ -279,8 +274,6 @@ object LiftRules {
     snippetDispatch = in :: snippetDispatch
   }
 
-  
-
   /**
    * Change this variable to set view dispatching
    */
@@ -308,12 +301,7 @@ object LiftRules {
   }
 
 
-  def snippet(name: String): Can[DispatchSnippet] =
-  NamedPF.applyCan(name, snippetDispatch)
-  /*
-   if (snippetDispatch.isDefinedAt(name)) Full(snippetDispatch(name))
-   else Empty
-   */
+  def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch)
 
   /**
    * If the request times out (or returns a non-Response) you can
@@ -322,19 +310,15 @@ object LiftRules {
   var requestTimedOut: Can[(Req, Any) => Can[LiftResponse]] = Empty
 
   def early = {
-    // test_boot
     _early
   }
 
   /**
    * A function that takes the current HTTP request and returns the current
    */
-  var timeZoneCalculator: Can[HttpServletRequest] => TimeZone =
-  defaultTimeZoneCalculator _
+  var timeZoneCalculator: Can[HttpServletRequest] => TimeZone = defaultTimeZoneCalculator _
 
-  def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone =
-  TimeZone.getDefault
-
+  def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone = TimeZone.getDefault
 
   /**
    * How many times do we retry an Ajax command before calling it a failure?
@@ -366,8 +350,7 @@ object LiftRules {
 
   def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
 
-
-  val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
+  private val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
       val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
       val meth = cc.getMethod("getContinuation", classOf[HttpServletRequest], classOf[AnyRef])
@@ -424,13 +407,6 @@ object LiftRules {
   def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
 
   var ending = false
-  // private case object Never
-
-  /*
-   private def rpf[A,B](in: List[PartialFunction[A,B]], last: PartialFunction[A,B]): PartialFunction[A,B] = in match {
-   case Nil => last
-   case x :: xs => x orElse rpf(xs, last)
-   }*/
 
   private var _statelessDispatchTable: List[DispatchPF] = Nil // Map.empty
 
@@ -461,7 +437,6 @@ object LiftRules {
           case Full(s) => S.initIfUninitted(s) {
               S.highLevelSessionDispatchList.map(_.dispatch) :::
               dispatchTable_i
-              // rpf(S.highLevelSessionDispatchList.map(_.dispatch), dispatchTable_i)
             }
           case _ => dispatchTable_i
         }
@@ -473,7 +448,6 @@ object LiftRules {
       case null => rewriteTable_i
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-              // rpf(S.sessionRewriter.map(_.rewrite), rewriteTable_i)
               S.sessionRewriter.map(_.rewrite) ::: rewriteTable_i
             }
           case _ => rewriteTable_i
@@ -483,28 +457,13 @@ object LiftRules {
 
   def snippetTable: List[SnippetPF] = snippetTable_i
 
-  /*
-  def templateTable(req: HttpServletRequest): List[TemplatePF] = {
-    req match {
-      case null => templateTable_i
-      case _ => SessionMaster.getSession(req, Empty) match {
-          case Full(s) => S.initIfUninitted(s) {
-              // rpf(S.sessionTemplater.map(_.template), templateTable_i)
-              S.sessionTemplater.map(_.template) ::: templateTable_i
-            }
-          case _ => templateTable_i
-        }
-    }
-  }*/
-
   var ajaxPath = "ajax_request"
 
   var cometPath = "comet_request"
 
-  var calcCometPath: String => JsExp =
-  prefix => Str(prefix + "/" + cometPath + "/") +
-  JsRaw("Math.floor(Math.random() * 100000000000)") +
-  Str(S.session.map(s => "/"+s.uniqueId) openOr "")
+  var calcCometPath: String => JsExp = prefix => Str(prefix + "/" + cometPath + "/") +
+    JsRaw("Math.floor(Math.random() * 100000000000)") +
+    Str(S.session.map(s => "/"+s.uniqueId) openOr "")
 
 
   /**
@@ -531,9 +490,7 @@ object LiftRules {
 
   def setContext(in: ServletContext): Unit =  synchronized {
     if (in ne _context) {
-      // Helpers.setResourceFinder(in.getResource)
       _context = in
-      //   performBoot(in)
     }
   }
 
@@ -595,8 +552,6 @@ object LiftRules {
 
   private var rewriteTable_i : List[RewritePF] = Nil
 
-  // private var templateTable_i: List[TemplatePF] = Nil
-
   private var snippetTable_i: List[SnippetPF] = Nil
 
   var cometLoggerBuilder: () => LiftLogger = () => {
@@ -615,23 +570,6 @@ object LiftRules {
     snippetTable_i = snippetTable_i ::: List(pf)
   }
 
-  /*
-  def prependTemplate(pf: TemplatePF) = {
-    templateTable_i = pf :: templateTable_i
-    templateTable_i
-  }
-
-  @deprecated
-  def addTemplateBefore(pf: TemplatePF) = prependTemplate(pf)
-
-  @deprecated
-  def addTemplateAfter(pf: TemplatePF) = appendTemplate(pf)
-
-  def appendTemplate(pf: TemplatePF) = {
-    templateTable_i = templateTable_i ::: List(pf)
-    templateTable_i
-  }
-*/
   def prependRewrite(pf: RewritePF) = {
     rewriteTable_i = pf :: rewriteTable_i
     rewriteTable_i
@@ -740,7 +678,7 @@ object LiftRules {
     case (Props.RunModes.Development, r, e) =>
       XhtmlResponse((<html><body>Exception occured while processing {r.uri}
               <pre>{
-                  _showException(e)
+                  showException(e)
                 }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
 
     case (_, r, e) =>
@@ -764,9 +702,9 @@ object LiftRules {
    *
    */
   def uriNotFound: List[URINotFoundPF] = _uriNotFound
-  
+
   /**
-   *  Prepend the URINotFound handler to the existing list.
+   * Prepend the URINotFound handler to the existing list.
    * Because the default Lift URI Not Found handler handles
    * The default case, you need only handle special cases.
    */
@@ -781,13 +719,13 @@ object LiftRules {
    *
    * @return the stack trace
    */
-  def _showException(le: Throwable): String = {
+  def showException(le: Throwable): String = {
     val ret = "Message: "+le.toString+"\n\t"+
     le.getStackTrace.map(_.toString).mkString("\n\t") + "\n"
 
     val also = le.getCause match {
       case null => ""
-      case sub: Throwable => "\nCaught and thrown by:\n"+ _showException(sub)
+      case sub: Throwable => "\nCaught and thrown by:\n"+ showException(sub)
     }
 
     ret + also
@@ -992,10 +930,6 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
     object when extends SessionVar[Long](millis)
     when.is
   }
-
-  var ajaxScriptURL: String => String = url => url
-
-  var cometScriptURL: String => String = url => url
 
   var ajaxScriptName: () => String = () => "liftAjax.js"
 

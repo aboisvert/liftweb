@@ -16,7 +16,7 @@ import _root_.javax.servlet.http.{HttpServletRequest}
   */
 class Boot {
   def boot {
-    if (!DB.jndiJdbcConnAvailable_?) 
+    if (!DB.jndiJdbcConnAvailable_?)
       DB.defineConnectionManager(DefaultConnectionIdentifier, DBVendor)
 
     // where to search snippet
@@ -60,29 +60,29 @@ object DBVendor extends ConnectionManager {
   private var pool: List[Connection] = Nil
   private var poolSize = 0
   private val maxPoolSize = 4
-  
+
   private def createOne: Can[Connection] = try {
     val driverName: String = Props.get("db.driver") openOr
     "org.apache.derby.jdbc.EmbeddedDriver"
 
-    val dbUrl: String = Props.get("db.url") openOr 
+    val dbUrl: String = Props.get("db.url") openOr
     "jdbc:derby:lift_example;create=true"
 
     Class.forName(driverName)
 
     val dm = (Props.get("db.user"), Props.get("db.password")) match {
-      case (Full(user), Full(pwd)) => 
+      case (Full(user), Full(pwd)) =>
 	DriverManager.getConnection(dbUrl, user, pwd)
-      
+
       case _ => DriverManager.getConnection(dbUrl)
     }
-    
+
     Full(dm)
   } catch {
     case e: Exception => e.printStackTrace; Empty
   }
-  
-  def newConnection(name: ConnectionIdentifier): Can[Connection] = 
+
+  def newConnection(name: ConnectionIdentifier): Can[Connection] =
     synchronized {
       pool match {
 	case Nil if poolSize < maxPoolSize =>
@@ -90,7 +90,7 @@ object DBVendor extends ConnectionManager {
         poolSize = poolSize + 1
         ret.foreach(c => pool = c :: pool)
         ret
-	
+
 	case Nil => wait(1000L); newConnection(name)
 	case x :: xs => try {
           x.setAutoCommit(false)
@@ -107,7 +107,7 @@ object DBVendor extends ConnectionManager {
         }
       }
     }
-  
+
   def releaseConnection(conn: Connection): Unit = synchronized {
     pool = conn :: pool
     notify

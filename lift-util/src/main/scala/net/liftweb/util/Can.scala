@@ -89,7 +89,7 @@ object Can {
 
   def isA[A, B](in: A, clz: Class[B]): Can[B] =
   (Can !! in).isA(clz)
-  
+
   def asA[B](in: T forSome {type T})(implicit m: Manifest[B]): Can[B] =
   (Can !! in).asA[B]
 
@@ -375,7 +375,7 @@ case class Failure(msg: String, exception: Can[Throwable], chain: Can[Failure]) 
    * Empty
    */
   override def isA[B](cls: Class[B]): Can[B] = this
-  
+
   /**
    * If the contents of the Can are an instance of the given
    * type, return a Full[B], otherwise Empty

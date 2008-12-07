@@ -344,7 +344,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
         case _ =>
           runParams(request)
-	
+
           def idAndWhen(in: Node): Can[CometVersionPair] =
           ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
             case (x :: _, y :: _) => Full(CVP(x.text,toLong(y.value.text)))
@@ -367,15 +367,15 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                           new AddScriptToBody(comets) :: Nil
                       }
                       else Nil
-		 
+
                       val ajaxXform: List[RewriteRule] =
                       if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
                       else cometXform
-		 
-		 
+
+
                       val realXml = if (ajaxXform.isEmpty) xml
                       else (new RuleTransformer(ajaxXform :_*)).transform(xml)
-		 
+
                       this.synchronized {
                         S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
                       }
@@ -390,7 +390,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
             case Right(msg) => msg
             case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
           }
-	
+
           // Before returning the response check for redirect and set the appropriate state.
           response.map(checkRedirect)
       }
@@ -652,7 +652,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   /**
    * The basic partial function that does lift tag processing
    */
-  private def _defaultLiftTagProcessing: LiftRules.LiftTagPF = 
+  private def _defaultLiftTagProcessing: LiftRules.LiftTagPF =
   NamedPF("Default Lift Tags") {
     case ("snippet", elm, metaData, kids, page) =>
       metaData.get("type") match {
@@ -874,17 +874,10 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   }
 }
 
-
-
-// abstract class SessionMessage
-
-
 /**
  * The response from a page saying that it's been rendered
  */
 case object ShutDown
-
-// case class AnswerHolder(what: LiftResponse)
 
 /**
  * If a class is to be used as a lift view (rendering from code rather than a static template)
@@ -892,7 +885,6 @@ case object ShutDown
  * because there exists the ability to execute arbitrary methods based on wire content
  */
 trait InsecureLiftView
-
 
 /**
  *  The preferred way to do lift views... implement a partial function that dispatches
@@ -924,7 +916,7 @@ object TemplateFinder {
     }
     else Empty
 
-  private def findInViews(whole: List[String], part: List[String], 
+  private def findInViews(whole: List[String], part: List[String],
                           last: String,
                           what: List[ViewDispatchPF]): Can[NodeSeq] =
   what match {
@@ -954,7 +946,7 @@ object TemplateFinder {
       case _ =>
         val pls = places.mkString("/","/", "")
         val toTry = for (s <- suffixes; p <- locales) yield pls + p + (if (s.length > 0) "." + s else "")
-      
+
         first(toTry)(v => LiftRules.finder(v).flatMap(fc => PCDataXmlParser(fc))) or lookForClasses(places)
     }
   }

@@ -101,7 +101,7 @@ extends MappedString[T](fieldOwner, maxLen) with MappedForeignKey[String,T,O] wi
   override def dbIndexed_? = true
 
   override def dbForeignKey_? = true
-  
+
   def asSafeJs(obs: Can[KeyObfuscator]): JsExp =
     obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Str(is))
 

@@ -372,7 +372,7 @@ trait PaypalPDT extends BasePaypalTrait {
 	r.params // force the lazy value to be evaluated
       processPDT(r) _
     }
-    
+
     super.dispatch ::: List(nf)
   }
 
@@ -423,7 +423,7 @@ trait PaypalIPN extends BasePaypalTrait {
       requestQueue ! IPNRequest(r, 0, millis)
       defaultResponse _
     }
-    
+
     super.dispatch ::: List(nf)
   }
 

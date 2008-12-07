@@ -65,7 +65,7 @@ class LiftServlet extends HttpServlet {
     LiftRules.ending = false
     LiftRules.appendDispatch(NamedPF("Classpath service") {
         case r @ Req(mainPath :: subPath, suffx, _)
-          if mainPath == LiftRules.ResourceServerPath =>
+          if mainPath == LiftRules.resourceServerPath =>
           ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
       })
   }
@@ -182,10 +182,10 @@ class LiftServlet extends HttpServlet {
   Can[LiftResponse] =
   {
     val toMatch = requestState
-    
-    val dispatch: (Boolean, Can[LiftResponse]) = 
+
+    val dispatch: (Boolean, Can[LiftResponse]) =
     NamedPF.find(toMatch, LiftRules.dispatchTable(request)) match {
-      case Full(pf) => 
+      case Full(pf) =>
         LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
         val ret: (Boolean, Can[LiftResponse]) =
         try {

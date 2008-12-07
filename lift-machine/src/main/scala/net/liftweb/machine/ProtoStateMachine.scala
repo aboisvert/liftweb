@@ -318,7 +318,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
         val now = System.currentTimeMillis
         try {
         val name = metaOwner.nextTransitionAt.dbColumnName
-        metaOwner.findAll(By(metaOwner.inProcess, false), 
+        metaOwner.findAll(By(metaOwner.inProcess, false),
 			  BySql(name+" > 0 AND "+name+" <= ?",
 				IHaveValidatedThisSQL("dpp", "2008/12/03"),
 				now)).foreach {

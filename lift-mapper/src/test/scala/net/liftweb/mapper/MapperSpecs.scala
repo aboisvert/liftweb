@@ -94,9 +94,9 @@ object MapperSpecs extends Specification {
 
 	val oo = SampleTag.findAll(By(SampleTag.tag, "Meow"),
 				   PreCache(SampleTag.model))
-	
+
 	(oo.length > 0) must beTrue
-	
+
 	for (t <- oo)
 	  t.model.cached_? must beTrue
       }

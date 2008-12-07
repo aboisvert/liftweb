@@ -164,7 +164,7 @@ trait CometActor extends Actor with BindHelpers {
           pf.apply(in)
 
           if (S.functionMap.size > 0) {
-            theSession.updateFunctionMap(S.functionMap, 
+            theSession.updateFunctionMap(S.functionMap,
 					 uniqueId, lastRenderTime)
 	    S.clearFunctionMap
 	  }

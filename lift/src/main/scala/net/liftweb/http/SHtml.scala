@@ -150,11 +150,11 @@ object SHtml {
       ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
   }
 
-  def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String], 
+  def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String],
                  func: String => JsCmd, attrs: (String, String)*): Elem =
   ajaxSelect_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Can[String], 
+  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Can[String],
                            func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
@@ -297,7 +297,7 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def select_*(opts: Seq[(String, String)],deflt: Can[String], 
+  def select_*(opts: Seq[(String, String)],deflt: Can[String],
                func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
@@ -339,7 +339,7 @@ object SHtml {
 
   private def selected(in: Boolean) = if (in) new UnprefixedAttribute("selected", "selected", Null) else Null
 
-  def multiSelect(opts: Seq[(String, String)], deflt: Seq[String], 
+  def multiSelect(opts: Seq[(String, String)], deflt: Seq[String],
                   func: String => Any, attrs: (String, String)*): Elem =
   multiSelect_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
@@ -361,10 +361,10 @@ object SHtml {
             attrs: (String, String)*): ChoiceHolder[String] =
     radio_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  def radio_*(opts: Seq[String], deflt: Can[String], 
+  def radio_*(opts: Seq[String], deflt: Can[String],
               func: AFuncHolder, attrs: (String, String)*): ChoiceHolder[String] = {
     val name = mapFunc(func)
-    val itemList = opts.map(v => ChoiceItem(v, 
+    val itemList = opts.map(v => ChoiceItem(v,
                                             attrs.foldLeft(<input type="radio" name={name} value={v}/>)(_ % _) %
       checked(deflt.filter((s: String) => s == v).isDefined)))
       ChoiceHolder(itemList)

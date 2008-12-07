@@ -173,7 +173,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
    */
   def createUserMenuLoc: Can[Menu] =
   Full(Menu(Loc("CreateUser", signUpPath,
-                S.??("sign.up"), 
+                S.??("sign.up"),
                 Template(() => wrapIt(signupFunc.map(_()) openOr signup)),
                 If(notLoggedIn_? _, S.??("logout.first")))))
 
@@ -558,7 +558,7 @@ trait MetaMegaProtoUser[ModelType <: MegaProtoUser[ModelType]] extends KeyedMeta
 
     def testEdit() {
       theUser.validate match {
-        case Nil => 
+        case Nil =>
           theUser.save
           S.notice(S.??("profle.updated"))
           S.redirectTo(homePage)

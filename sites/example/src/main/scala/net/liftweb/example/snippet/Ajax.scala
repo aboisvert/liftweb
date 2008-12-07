@@ -92,7 +92,7 @@ class Ajax {
       ajaxForm(hidden(() => JsCmds.Alert("Test Passed")) ++ submit("Test Ajax Form", () => ()))
     } <br />
 
-    An example of autocomplete with a server round trip to 
+    An example of autocomplete with a server round trip to
     calculate the autocomplete list
       {
         JqSHtml.autocomplete("", buildQuery _, _ => ())

@@ -220,7 +220,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     for (j <- precache) {
       type FT = j.field.FieldType
     type MT = T forSome {type T <: KeyedMapper[FT, T]}
-    
+
 
       val ol: List[MT] = j.field.dbKeyToTable.
       asInstanceOf[MetaMapper[A]].
@@ -240,7 +240,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
       Map(ol.map(v => (v.primaryKeyField.is, v)) :_*)
 
       for (i <- ret) {
-        
+
         val field: MappedForeignKey[FT, A, _] =
         getActualField(i, j.field).asInstanceOf[MappedForeignKey[FT, A, _]]
 
