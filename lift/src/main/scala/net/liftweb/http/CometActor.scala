@@ -162,7 +162,6 @@ trait CometActor extends Actor with BindHelpers {
       def apply(in: Any): Unit = {
         S.initIfUninitted(theSession) {
           pf.apply(in)
-
           if (S.functionMap.size > 0) {
             theSession.updateFunctionMap(S.functionMap,
 					 uniqueId, lastRenderTime)
