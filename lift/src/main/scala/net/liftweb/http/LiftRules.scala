@@ -112,8 +112,8 @@ object LiftRules {
   /**
    * Adds an URLDecorator at th end of the list
    */
-  def appendUrlDecorate(in: URLDecorator) {
-    urlDecorate = urlDecorate ::: List(in)
+  def prependUrlDecorate(in: URLDecorator) {
+    urlDecorate = in :: urlDecorate
     urlDecorate
   }
 
