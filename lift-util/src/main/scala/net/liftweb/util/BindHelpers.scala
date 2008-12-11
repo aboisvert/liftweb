@@ -438,6 +438,12 @@ case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends T
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
 
+  def findNode(in: Elem, nodes: NodeSeq): Can[Elem] = nodes match {
+    case seq if seq.isEmpty => None
+     case Seq(x: Elem, xs @_*)
+       if x.label == in.label && x.prefix == in.prefix => Full(x)
+     case Seq(x, xs @_*) => findNode(in, x.child) or findNode(in, xs)
+  }
 }
 
 // vim: set ts=2 sw=2 et:

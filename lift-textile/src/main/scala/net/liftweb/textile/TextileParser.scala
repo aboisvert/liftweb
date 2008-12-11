@@ -138,7 +138,7 @@ object TextileParser {
     implicit def discard[T](p: Parser[T]): Parser[Unit] = p ^^ {x => ()}
 
     lazy val document : Parser[Lst] = rep(paragraph) ^^ Lst
-    // final val EofCh = '\032'
+    // final val  Ch = '\032'
     private def chrExcept(cs: Char*): Parser[Char] = elem("", {c => ('\032' :: cs.toList) forall (_ != c)}) //{x =>  !cs.contains(x)})
     private def mkString(cs: List[Any]) = cs.mkString("")
 
