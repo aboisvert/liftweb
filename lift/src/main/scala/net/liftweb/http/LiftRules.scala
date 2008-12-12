@@ -29,6 +29,7 @@ import _root_.javax.servlet.{ServletContext}
 import _root_.java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
 import js._
 import JE._
+import auth._
 
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
@@ -41,6 +42,8 @@ object LiftRules {
   type URLDecorator = PartialFunction[String, String]
   type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPF = PartialFunction[List[String], Either[() => Can[NodeSeq], LiftView]]
+  type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Can[Role]]
+
 
   /**
    * A partial function that allows the application to define requests that should be
@@ -53,6 +56,32 @@ object LiftRules {
 
   def appendBeforeSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any) {
     _beforeSend = _beforeSend ::: List(f)
+  }
+
+  /**
+   * Defines the resources that are protected by authentication and authorization. If this function
+   * is notdefined for the input data, the resource is considered unprotected ergo no authentication
+   * is performed. If this function is defined and returns a Full can, it means that this resource
+   * is protected by authentication,and authenticated subjed must be assigned to the role returned by
+   * this function or to a role that is child-of this role. If this function returns Empty it means that
+   * this resource is protected by authentication but no authorization is performed meaning that roles are
+   * not verified.
+   */
+  private[http] var _httpAuthProtectedResource: List[HttpAuthProtectedResourcePF] = Nil
+
+  def httpAuthProtectedResource = _httpAuthProtectedResource
+
+  /**
+   * The HTTP authentication mechanism that ift will perform. See <i>LiftRules.protectedResource</i>
+   */
+  var authentication : HttpAuthentication = NoAuthentication
+
+  /**
+   * Adds a HttpAuthProtectedResourcePf
+   */
+  def addHttpAuthProtectedResource(pr: HttpAuthProtectedResourcePF) = {
+    _httpAuthProtectedResource = _httpAuthProtectedResource ::: List(pr)
+    _httpAuthProtectedResource
   }
 
   /**
@@ -78,7 +107,15 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.
    */
-  var urlDecorate: List[URLDecorator] = List(NamedPF("default"){case arg => arg})
+  private[http] var urlDecorate: List[URLDecorator] = List(NamedPF("default"){case arg => arg})
+
+  /**
+   * Adds an URLDecorator at th end of the list
+   */
+  def prependUrlDecorate(in: URLDecorator) {
+    urlDecorate = in :: urlDecorate
+    urlDecorate
+  }
 
   private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
 

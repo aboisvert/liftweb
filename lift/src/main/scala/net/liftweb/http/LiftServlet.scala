@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.http;
+package net.liftweb.http
 
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.javax.servlet.{ServletContext}
@@ -30,6 +30,7 @@ import _root_.java.util.{Locale, ResourceBundle}
 import _root_.java.net.URL
 import js._
 import _root_.javax.servlet._
+import auth._
 
 /**
  * An implementation of HttpServlet.  Just drop this puppy into
@@ -123,6 +124,18 @@ class LiftServlet extends HttpServlet {
     case x :: xs => flatten(xs)
   }
 
+  private def authPassed_?(req : Req) : Boolean = {
+    val role = NamedPF.applyCan(req.path, LiftRules.httpAuthProtectedResource)
+    role.map(_ match {
+       case Full(r) =>
+         LiftRules.authentication.verified_?(req) match {
+          case true => userRole.get.map(usrRole => usrRole.isChildOf(r)) openOr false
+          case _ => false
+         }
+       case _ => true
+     }) openOr true
+  }
+
   /**
    * Service the HTTP request
    */
@@ -137,15 +150,15 @@ class LiftServlet extends HttpServlet {
     if (LiftRules.ending) {
       LiftRules.notFoundOrIgnore(requestState, Empty)
 
+    } else if (!authPassed_?(requestState)) {
+      Full(LiftRules.authentication.unauthorizedResponse)
     } else
     // if the request is matched is defined in the stateless table, dispatch
-    // it
     if ({tmpStatelessHolder = NamedPF.applyCan(statelessToMatch,
                                                LiftRules.statelessDispatchTable);
-         tmpStatelessHolder.isDefined})
+       tmpStatelessHolder.isDefined})
     {
-      //if (LiftRules.statelessDispatchTable.isDefinedAt(statelessToMatch)) {
-      val f = tmpStatelessHolder.open_! //LiftRules.statelessDispatchTable(statelessToMatch)
+      val f = tmpStatelessHolder.open_!
       f() match {
         case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
         case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
