@@ -8,7 +8,7 @@
   </parent>
   <artifactId>lift-machine</artifactId>
   <packaging>jar</packaging>
-  <name>Lift Mapper</name>
+  <name>Lift Machine</name>
   <description>Lift's State Machine</description>
   <dependencies>
     <dependency>
