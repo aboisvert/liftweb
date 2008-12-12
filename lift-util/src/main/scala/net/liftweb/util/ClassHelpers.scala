@@ -18,6 +18,8 @@ import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import _root_.java.lang.reflect.Modifier._
 import _root_.scala.reflect.Manifest
 
+object ClassHelpers extends ClassHelpers with ControlHelpers
+
 /**
  * ClassHelpers provide several functions to instantiate a Class object given the class name and one or more package names
  */

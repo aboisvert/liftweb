@@ -21,6 +21,8 @@ trait Bindable {
   def asHtml: NodeSeq
 }
 
+object BindHelpers extends BindHelpers
+
 /**
  * The helpers assocated with bindings
  */

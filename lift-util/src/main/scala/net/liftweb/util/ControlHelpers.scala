@@ -13,6 +13,7 @@ package net.liftweb.util
  * limitations under the License.
  */
 
+object ControlHelpers extends ControlHelpers with ClassHelpers
 
 /**
  * Control helpers are providing alternate ways to catch exceptions and ignore them as necessary

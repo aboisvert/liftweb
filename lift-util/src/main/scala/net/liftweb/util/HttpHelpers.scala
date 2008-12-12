@@ -19,6 +19,8 @@ import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, 
 import _root_.scala.collection.{Map}
 import _root_.scala.collection.mutable.HashMap
 
+object HttpHelpers extends ListHelpers with StringHelpers
+
 trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
   /**

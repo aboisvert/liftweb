@@ -16,6 +16,8 @@ package net.liftweb.util
 import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
 
+object IoHelpers extends IoHelpers
+
 trait IoHelpers {
   def exec(cmds: String*): Can[String] = {
     try {

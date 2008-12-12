@@ -13,6 +13,7 @@ package net.liftweb.util
  * limitations under the License.
  */
 
+object ListHelpers extends ListHelpers
 
 /**
  * The ListHelpers trait provides useful functions which can be applied to Lists.<p/>

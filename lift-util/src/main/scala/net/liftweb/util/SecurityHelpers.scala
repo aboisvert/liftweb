@@ -20,6 +20,8 @@ import _root_.java.security.{SecureRandom, MessageDigest}
 import _root_.javax.crypto._
 import _root_.javax.crypto.spec._
 
+object SecurityHelpers extends StringHelpers with IoHelpers
+
 /**
  * The SecurityHelpers trait provides functions to:<ul>
  * <li> generate random numbers
