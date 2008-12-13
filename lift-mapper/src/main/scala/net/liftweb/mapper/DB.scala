@@ -21,12 +21,11 @@ import _root_.javax.sql.{ DataSource}
 import _root_.javax.naming.{Context, InitialContext}
 import _root_.scala.collection.mutable._
 import _root_.net.liftweb.util._
-// import _root_.net.liftweb.util.Lazy._
+import Helpers._
 
 object DB {
   private val threadStore = new ThreadLocal[HashMap[ConnectionIdentifier, ConnectionHolder]]
   private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
-  val logger = LogBoot.loggerByClass(DB.getClass.asInstanceOf[Class[AnyRef]])
 
   var queryTimeout: Can[Int] = Empty
 
@@ -74,7 +73,16 @@ object DB {
   }
 
   // remove thread-local association
-  def clearThread: Unit = { threadStore.remove }
+  def clearThread: Unit = { 
+    val i = info
+    val ks = i.keySet
+    if (ks.isEmpty)
+    threadStore.remove
+    else {
+      ks.foreach(n => releaseConnectionNamed(n))
+      clearThread
+    }
+  }
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
@@ -115,24 +123,29 @@ object DB {
   private def releaseConnection(conn : SuperConnection) : Unit = conn.close
 
   private def getConnection(name : ConnectionIdentifier): SuperConnection =  {
+    Log.trace("Acquiring connection "+name+" On thread "+Thread.currentThread)
     var ret = info.get(name) match {
       case None => ConnectionHolder(newConnection(name), 1, Nil)
       case Some(ConnectionHolder(conn, cnt, post)) => ConnectionHolder(conn, cnt + 1, post)
     }
     info(name) = ret
+    Log.trace("Acquired connection "+name+" on thread "+Thread.currentThread+
+    " count "+ret.cnt)
     ret.conn
   }
 
   private def releaseConnectionNamed(name: ConnectionIdentifier) {
+    Log.trace("Requect to release connection: "+name+" on thread "+Thread.currentThread)
     (info.get(name): @unchecked) match {
       case Some(ConnectionHolder(c, 1, post)) =>
         c.commit
-        c.releaseFunc()
+        tryo(c.releaseFunc())
         info -= name
-        post.reverse.foreach(_())
-        logger.trace("Released connection "+name)
+        post.reverse.foreach(f => tryo(f()))
+        Log.trace("Released connection "+name+" on thread "+Thread.currentThread)
 
       case Some(ConnectionHolder(c, n, post)) =>
+        Log.trace("Did not release connection: "+name+" on thread "+Thread.currentThread+" count "+(n - 1))
         info(name) = ConnectionHolder(c, n - 1, post)
     }
   }
@@ -669,6 +682,12 @@ object SuperConnection {
 
 trait ConnectionIdentifier {
   def jndiName: String
+  override def toString() = "ConnectionIdentifier("+jndiName+")"
+  override def hashCode() = jndiName.hashCode()
+  override def equals(other: Any): Boolean = other match {
+    case ci: ConnectionIdentifier => ci.jndiName == this.jndiName
+    case _ => false
+  }
 }
 
 case object DefaultConnectionIdentifier extends ConnectionIdentifier {
