@@ -503,12 +503,6 @@ class LiftFilter extends Filter with LiftFilterTrait
 
     LiftRules.setContext(context)
 
-    LiftRules.dispatch.prepend(NamedPF("Classpath service") {
-      case r @ Req(mainPath :: subPath, suffx, _)
-        if mainPath == LiftRules.resourceServerPath =>
-          ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
-    })
-
     bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
 
     actualServlet = new LiftServlet(context)
@@ -530,11 +524,20 @@ class LiftFilter extends Filter with LiftFilterTrait
     {
       val b : Bootable = loader.map(b => Class.forName(b).newInstance.asInstanceOf[Bootable]) openOr DefaultBootstrap
 
+      preBoot
       b.boot
       postBoot
     } catch {
       case e => Log.error("Failed to Boot", e); None
     }
+  }
+
+  private def preBoot() {
+    LiftRules.dispatch.prepend(NamedPF("Classpath service") {
+      case r @ Req(mainPath :: subPath, suffx, _)
+        if mainPath == LiftRules.resourceServerPath =>
+          ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
+    })
   }
 
   private def postBoot {
