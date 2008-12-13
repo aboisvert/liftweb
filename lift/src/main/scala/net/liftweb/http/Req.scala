@@ -272,11 +272,11 @@ class Req(val path: ParsePath,
 
 
   def createNotFound = {
-    NamedPF((this, Empty), LiftRules.uriNotFound)
+    NamedPF((this, Empty), LiftRules.uriNotFound.toList)
   }
 
   def createNotFound(failure: Failure) = {
-    NamedPF((this, Full(failure)), LiftRules.uriNotFound)
+    NamedPF((this, Full(failure)), LiftRules.uriNotFound.toList)
   }
 
 

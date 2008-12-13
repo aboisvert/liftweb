@@ -39,7 +39,7 @@ class Boot {
     LiftRules.ajaxEnd =
       Full(() => LiftRules.jsArtifacts.hide("ajax-loader").cmd)
 
-    LiftRules.appendEarly(makeUtf8)
+    LiftRules.early.append(makeUtf8)
 
     S.addAround(DB.buildLoanWrapper)
   }

@@ -73,7 +73,7 @@ object DB {
   }
 
   // remove thread-local association
-  def clearThread: Unit = { 
+  def clearThread: Unit = {
     val i = info
     val ks = i.keySet
     if (ks.isEmpty)

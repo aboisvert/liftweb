@@ -41,7 +41,7 @@ class Boot {
        RewriteResponse("unfriend" :: Nil, Map("user" -> user))
   }
 
-  LiftRules.prependRewrite(rewriter)
+  LiftRules.rewrite.prepend(rewriter)
 
   // load up the list of user actors
   UserList.create

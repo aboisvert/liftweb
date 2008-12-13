@@ -47,7 +47,7 @@ class Boot {
 
     Schemifier.schemify(true, Log.infoF _, User, WikiEntry, Person)
 
-    LiftRules.prependDispatch(NamedPF("Web Services Example") {
+    LiftRules.dispatch.prepend(NamedPF("Web Services Example") {
         // if the url is "showcities" then return the showCities function
         case Req("showcities":: _, "", _) => XmlServer.showCities
 
@@ -59,13 +59,13 @@ class Boot {
         case Req("webservices" :: c :: _, "", _) => invokeWebService(c)
       })
 
-    LiftRules.prependDispatch(NamedPF("Login Validation") {
+    LiftRules.dispatch.prepend(NamedPF("Login Validation") {
         case Req("login" :: page , "", _)
           if !LoginStuff.is && page.head != "validate" =>
           () => Full(RedirectResponse("/login/validate"))
       })
 
-    LiftRules.appendSnippetDispatch(NamedPF("Template")(Map("Template" -> Template)))
+    LiftRules.snippetDispatch.append(NamedPF("Template")(Map("Template" -> Template)))
 
     /*
      * Show the spinny image when an Ajax call starts
@@ -89,9 +89,9 @@ class Boot {
                             map(p => ("param"+(p._2 + 1)) -> p._1) :_*))
     }
 
-    LiftRules.appendEarly(makeUtf8)
+    LiftRules.early.append(makeUtf8)
 
-    LiftRules.prependRewrite(wikibind_rewriter)
+    LiftRules.rewrite.prepend(wikibind_rewriter)
 
     LiftSession.onBeginServicing = RequestLogger.beginServicing _ ::
     LiftSession.onBeginServicing

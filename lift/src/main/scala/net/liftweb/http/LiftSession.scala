@@ -593,26 +593,26 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
                 if (inst.dispatch.isDefinedAt(method))
                 (if (isForm) SHtml.hidden(() => inst.registerThisSnippet) else Text("")) ++
                 inst.dispatch(method)(kids)
-                else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                else {LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                      LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
               case Full(inst: DispatchSnippet) =>
                 if (inst.dispatch.isDefinedAt(method)) inst.dispatch(method)(kids)
-                else {LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                else {LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                      LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
               case Full(inst) => {
                   val ar: Array[Object] = List(Group(kids)).toArray
                   ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
                     case Full(md: NodeSeq) => md
-                    case it => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                    case it => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                               LiftRules.SnippetFailures.MethodNotFound))); kids
                   }
                 }
-              case _ => LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+              case _ => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                        LiftRules.SnippetFailures.ClassNotFound))); kids
             }
           }))).openOr{
-      LiftRules.snippetFailedFunc.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+      LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                      LiftRules.SnippetFailures.NoNameSpecified)))
       Comment("FIX"+"ME -- no type defined for snippet")
       kids
@@ -671,7 +671,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     case (snippetInfo, elm, metaData, kids, page) => processSnippet(page, Full(snippetInfo) , metaData, kids)
   }
 
-  liftTagProcessing = LiftRules.liftTagProcessing ::: List(_defaultLiftTagProcessing)
+  liftTagProcessing = LiftRules.liftTagProcessing.toList ::: List(_defaultLiftTagProcessing)
 
   private def asNodeSeq(in: Seq[Node]): NodeSeq = in
 
@@ -939,7 +939,7 @@ object TemplateFinder {
     val part = places.dropRight(1)
     val last = places.last
 
-    findInViews(places, part, last, LiftRules.viewDispatch) match {
+    findInViews(places, part, last, LiftRules.viewDispatch.toList) match {
       case Full(lv) =>
         Full(lv)
 

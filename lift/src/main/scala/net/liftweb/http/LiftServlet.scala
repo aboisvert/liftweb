@@ -64,11 +64,6 @@ class LiftServlet extends HttpServlet {
 
   override def init = {
     LiftRules.ending = false
-    LiftRules.appendDispatch(NamedPF("Classpath service") {
-        case r @ Req(mainPath :: subPath, suffx, _)
-          if mainPath == LiftRules.resourceServerPath =>
-          ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
-      })
   }
 
   def getLiftSession(request: Req, httpSession: HttpSession): LiftSession = {
@@ -125,7 +120,7 @@ class LiftServlet extends HttpServlet {
   }
 
   private def authPassed_?(req : Req) : Boolean = {
-    val role = NamedPF.applyCan(req.path, LiftRules.httpAuthProtectedResource)
+    val role = NamedPF.applyCan(req.path, LiftRules.httpAuthProtectedResource.toList)
     role.map(_ match {
        case Full(r) =>
          LiftRules.authentication.verified_?(req) match {
@@ -140,7 +135,7 @@ class LiftServlet extends HttpServlet {
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
-    LiftRules.onBeginServicing.foreach(_(requestState))
+    LiftRules.onBeginServicing.toList.foreach(_(requestState))
     val statelessToMatch = requestState
 
     var tmpStatelessHolder: Can[() => Can[LiftResponse]] = null
@@ -155,7 +150,7 @@ class LiftServlet extends HttpServlet {
     } else
     // if the request is matched is defined in the stateless table, dispatch
     if ({tmpStatelessHolder = NamedPF.applyCan(statelessToMatch,
-                                               LiftRules.statelessDispatchTable);
+                                               LiftRules.statelessDispatchTable.toList);
        tmpStatelessHolder.isDefined})
     {
       val f = tmpStatelessHolder.open_!
@@ -174,7 +169,7 @@ class LiftServlet extends HttpServlet {
       }
     }
 
-    LiftRules.onEndServicing.foreach(_(requestState, resp))
+    LiftRules.onEndServicing.toList.foreach(_(requestState, resp))
 
     resp match {
       case Full(cresp) =>
@@ -438,7 +433,7 @@ class LiftServlet extends HttpServlet {
                                                              LiftRules.determineContentType( pairFromRequest(request) )),
                                                             ("Content-Length", len.toString)))
 
-    LiftRules._beforeSend.foreach(f => tryo(f(resp, response, header, request)))
+    LiftRules.beforeSend.toList.foreach(f => tryo(f(resp, response, header, request)))
     // set the cookies
     resp.cookies.foreach(cookie => response.addCookie(cookie))
 
@@ -466,7 +461,7 @@ class LiftServlet extends HttpServlet {
         }
     }
 
-    LiftRules._afterSend.foreach(f => tryo(f(resp, response, header, request)))
+    LiftRules.afterSend.toList.foreach(f => tryo(f(resp, response, header, request)))
   }
 }
 
@@ -478,12 +473,11 @@ trait LiftFilterTrait {
     RequestVarHandler(
       (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-          LiftRules.early.foreach(_(httpReq))
+          LiftRules.early.toList.foreach(_(httpReq))
 
           val session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-          URLRewriter.doWith(url => NamedPF(httpRes.encodeURL(url),
-                                            LiftRules.urlDecorate)) {
+          URLRewriter.doWith(url => NamedPF.applyCan(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr url) {
             if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
             } else {
               chain.doFilter(req, res)
@@ -503,13 +497,18 @@ class LiftFilter extends Filter with LiftFilterTrait
   private var context: ServletContext = null
   var actualServlet: LiftServlet = _
 
-
-
   //We need to capture the ServletContext on init
   def init(config:FilterConfig) {
     context = config.getServletContext
 
     LiftRules.setContext(context)
+
+    LiftRules.dispatch.prepend(NamedPF("Classpath service") {
+      case r @ Req(mainPath :: subPath, suffx, _)
+        if mainPath == LiftRules.resourceServerPath =>
+          ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
+    })
+
     bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
 
     actualServlet = new LiftServlet(context)
@@ -539,6 +538,7 @@ class LiftFilter extends Filter with LiftFilterTrait
   }
 
   private def postBoot {
+    LiftRules.doneBoot = true;
     try {
       ResourceBundle getBundle (LiftRules.liftCoreResourceName)
     } catch {
@@ -553,7 +553,7 @@ class LiftFilter extends Filter with LiftFilterTrait
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
   def isLiftRequest_?(session: Req): Boolean = {
-    NamedPF.applyCan(session, LiftRules.isLiftRequest_?) match {
+    NamedPF.applyCan(session, LiftRules.liftRequest.toList) match {
       case Full(b) => b
       case _ =>  session.path.endSlash ||
         (session.path.wholePath.takeRight(1) match

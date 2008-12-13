@@ -1413,7 +1413,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
 
   override def afterSchemifier {
     if (crudSnippets_?) {
-      LiftRules.appendSnippet(crudSnippets)
+      LiftRules.snippets.append(crudSnippets)
     }
   }
 

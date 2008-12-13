@@ -51,12 +51,9 @@ object LiftRules {
    */
   type LiftRequestPF = PartialFunction[Req, Boolean]
 
-  private var _early: List[(HttpServletRequest) => Any] = Nil
-  private[http] var _beforeSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
+  val early = RulesSeq[(HttpServletRequest) => Any]
 
-  def appendBeforeSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any) {
-    _beforeSend = _beforeSend ::: List(f)
-  }
+  val beforeSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any]
 
   /**
    * Defines the resources that are protected by authentication and authorization. If this function
@@ -67,22 +64,12 @@ object LiftRules {
    * this resource is protected by authentication but no authorization is performed meaning that roles are
    * not verified.
    */
-  private[http] var _httpAuthProtectedResource: List[HttpAuthProtectedResourcePF] = Nil
-
-  def httpAuthProtectedResource = _httpAuthProtectedResource
+  val httpAuthProtectedResource = RulesSeq[HttpAuthProtectedResourcePF]
 
   /**
    * The HTTP authentication mechanism that ift will perform. See <i>LiftRules.protectedResource</i>
    */
   var authentication : HttpAuthentication = NoAuthentication
-
-  /**
-   * Adds a HttpAuthProtectedResourcePf
-   */
-  def addHttpAuthProtectedResource(pr: HttpAuthProtectedResourcePF) = {
-    _httpAuthProtectedResource = _httpAuthProtectedResource ::: List(pr)
-    _httpAuthProtectedResource
-  }
 
   /**
    * A function that takes the HTTPSession and the contextPath as parameters
@@ -107,21 +94,9 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.
    */
-  private[http] var urlDecorate: List[URLDecorator] = List(NamedPF("default"){case arg => arg})
+  val urlDecorate = RulesSeq[URLDecorator]
 
-  /**
-   * Adds an URLDecorator at th end of the list
-   */
-  def prependUrlDecorate(in: URLDecorator) {
-    urlDecorate = in :: urlDecorate
-    urlDecorate
-  }
-
-  private[http] var _afterSend: List[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any] = Nil
-
-  def appendAfterSend(f: (BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any) {
-    _afterSend = _afterSend ::: List(f)
-  }
+  val afterSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any]
 
   /**
    * Calculate the Comet Server (by default, the server that
@@ -150,20 +125,13 @@ object LiftRules {
   /**
    * Hooks to be run when LiftServlet.destroy is called.
    */
-  val unloadHooks = new ListBuffer[() => Unit]()
+  val unloadHooks = RulesSeq[() => Unit]
 
   /**
    * For each unload hook registered, run them during destroy()
    */
   def runUnloadHooks() {
-    unloadHooks.foreach(_())
-  }
-
-  /**
-   * Adds a function to get run during Servlet.destroy
-   */
-  def addUnloadHook(f: () => Unit) {
-    unloadHooks += f
+    unloadHooks.toList.foreach(_())
   }
 
   /**
@@ -190,7 +158,8 @@ object LiftRules {
   var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
 
   /**
-   * The default location to send people if SiteMap access control fails
+   * The default location to send people if SiteMap access control fails. The path is
+   * expressed a a List[String]
    */
   var siteMapFailRedirectLocation: List[String] = List()
 
@@ -202,28 +171,7 @@ object LiftRules {
     }
   }
 
-  private var _liftTagProcessing: List[LiftTagPF] = Nil // Map.empty
-
-  /**
-   * The additional "lift" tags that are global to the application
-   */
-  def liftTagProcessing = _liftTagProcessing
-
-  /**
-   * Append a named partial function defining application-wide
-   * &lt;lift:xxx/&gt; tags
-   */
-  def appendLiftTagProcessing(in: LiftTagPF) {
-    _liftTagProcessing = _liftTagProcessing ::: List(in)
-  }
-
-  /**
-   * Prepend a named partial function defining application-wide
-   * &lt;lift:xxx/&gt; tags
-   */
-  def prependLiftTagProcessing(in: LiftTagPF) {
-    _liftTagProcessing = in :: _liftTagProcessing
-  }
+  val liftTagProcessing = RulesSeq[LiftTagPF]
 
   /**
    * If you don't want lift to send the application/xhtml+xml mime type to those browsers
@@ -293,62 +241,20 @@ object LiftRules {
    * The dispatcher that takes a Snippet and converts it to a
    * DispatchSnippet instance
    */
-  private var snippetDispatch: List[SnippetDispatchPF] = Nil
-
-  /**
-   * Append a partial function to look up snippets to
-   * the rules
-   */
-  def appendSnippetDispatch(in: SnippetDispatchPF) {
-    snippetDispatch = snippetDispatch ::: List(in)
-  }
-
-  /**
-   * Prepend a partial function to look up snippets to
-   * the rules
-   */
-  def prependSnippetDispatch(in: SnippetDispatchPF) {
-    snippetDispatch = in :: snippetDispatch
-  }
+  val snippetDispatch = RulesSeq[SnippetDispatchPF]
 
   /**
    * Change this variable to set view dispatching
    */
-  private var _viewDispatch: List[ViewDispatchPF] = Nil
+  val viewDispatch = RulesSeq[ViewDispatchPF]
 
-  /**
-   * The list of partial functions that dispatch views
-   */
-  def viewDispatch = _viewDispatch
-
-  /**
-   * Prepend a partial function to the list of partial functions
-   * the define views
-   */
-  def prependViewDispatch(in: ViewDispatchPF) {
-    _viewDispatch = in :: _viewDispatch
-  }
-
-  /**
-   * Append a partial function to the list of partial functions
-   * that define views
-   */
-  def appendViewDispatch(in: ViewDispatchPF) {
-    _viewDispatch = in :: _viewDispatch
-  }
-
-
-  def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch)
+  def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch.toList)
 
   /**
    * If the request times out (or returns a non-Response) you can
    * intercept the response here and create your own response
    */
   var requestTimedOut: Can[(Req, Any) => Can[LiftResponse]] = Empty
-
-  def early = {
-    _early
-  }
 
   /**
    * A function that takes the current HTTP request and returns the current
@@ -436,63 +342,41 @@ object LiftRules {
     _sitemap = Full(sm)
     for (menu <- sm.menus;
          val loc = menu.loc;
-         rewrite <- loc.rewritePF) appendRewrite(rewrite)
+         rewrite <- loc.rewritePF) LiftRules.rewrite.append(rewrite)
   }
 
   def siteMap: Can[SiteMap] = _sitemap
 
-  def appendEarly(f: HttpServletRequest => Any) = _early = _early ::: List(f)
+  private[http] var ending = false
 
-  var ending = false
+  private[http] var doneBoot = false;
 
-  private var _statelessDispatchTable: List[DispatchPF] = Nil // Map.empty
-
-  /**
-   * Prepend a request handler to the stateless request handler
-   */
-  def prependStatelessDispatch(in: DispatchPF) {
-    _statelessDispatchTable = in :: _statelessDispatchTable
-  }
-
-  /**
-   * Postpend a request handler to the stateless request handler
-   */
-  def appendStatelessDispatch(in: DispatchPF) {
-    _statelessDispatchTable = _statelessDispatchTable ::: List(in)
-  }
-
-  /**
-   * Dispatch the request without initializing state for the session.
-   * Good for stateless REST apis
-   */
-  def statelessDispatchTable = _statelessDispatchTable
+  val statelessDispatchTable = RulesSeq[DispatchPF]
 
   def dispatchTable(req: HttpServletRequest): List[DispatchPF] = {
     req match {
-      case null => dispatchTable_i
+      case null => dispatch.toList
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
               S.highLevelSessionDispatchList.map(_.dispatch) :::
-              dispatchTable_i
+              dispatch.toList
             }
-          case _ => dispatchTable_i
+          case _ => dispatch.toList
         }
     }
   }
 
   def rewriteTable(req: HttpServletRequest): List[RewritePF] = {
     req match {
-      case null => rewriteTable_i
+      case null => rewrite.toList
       case _ => SessionMaster.getSession(req, Empty) match {
           case Full(s) => S.initIfUninitted(s) {
-              S.sessionRewriter.map(_.rewrite) ::: rewriteTable_i
+              S.sessionRewriter.map(_.rewrite) ::: LiftRules.rewrite.toList
             }
-          case _ => rewriteTable_i
+          case _ => rewrite.toList
         }
     }
   }
-
-  def snippetTable: List[SnippetPF] = snippetTable_i
 
   var ajaxPath = "ajax_request"
 
@@ -575,21 +459,13 @@ object LiftRules {
    * Get the partial function that defines if a request should be handled by
    * the application (rather than the default servlet handler)
    */
-  def isLiftRequest_? : List[LiftRequestPF] = i_isLiftRequest_?
+  val liftRequest = RulesSeq[LiftRequestPF]
 
-  /**
-   * Append a partial function to the list of interceptors to test
-   * if the request should be handled by lift
-   */
-  def appendLiftRequest(what: LiftRequestPF) {i_isLiftRequest_? = i_isLiftRequest_? ::: List(what)}
+  val dispatch = RulesSeq[DispatchPF]
 
-  private var i_isLiftRequest_? : List[LiftRequestPF] = Nil
+  val rewrite = RulesSeq[RewritePF]
 
-  private var dispatchTable_i : List[DispatchPF] = Nil
-
-  private var rewriteTable_i : List[RewritePF] = Nil
-
-  private var snippetTable_i: List[SnippetPF] = Nil
+  val snippets = RulesSeq[SnippetPF]
 
   var cometLoggerBuilder: () => LiftLogger = () => {
     val ret = LogBoot.loggerByName("comet_trace")
@@ -597,47 +473,7 @@ object LiftRules {
     ret
   }
 
-  lazy val cometLogger: LiftLogger = cometLoggerBuilder()
-
-  def prependSnippet(pf: SnippetPF) = {
-    snippetTable_i = pf :: snippetTable_i
-  }
-
-  def appendSnippet(pf: SnippetPF) = {
-    snippetTable_i = snippetTable_i ::: List(pf)
-  }
-
-  def prependRewrite(pf: RewritePF) = {
-    rewriteTable_i = pf :: rewriteTable_i
-    rewriteTable_i
-  }
-
-  def appendRewrite(pf: RewritePF) = {
-    rewriteTable_i = rewriteTable_i ::: List(pf)
-    rewriteTable_i
-  }
-
-  @deprecated
-  def addRewriteBefore(pf: RewritePF) = prependRewrite(pf)
-
-  @deprecated
-  def addRewriteAfter(pf: RewritePF) = appendRewrite(pf)
-
-  def prependDispatch(pf: DispatchPF) = {
-    dispatchTable_i = pf :: dispatchTable_i
-    dispatchTable_i
-  }
-
-  @deprecated
-  def addDispatchBefore(pf: DispatchPF) = prependDispatch(pf)
-
-  @deprecated
-  def addDispatchAfter(pf: DispatchPF) = appendDispatch(pf)
-
-  def appendDispatch(pf: DispatchPF) = {
-    dispatchTable_i = dispatchTable_i ::: List(pf)
-    dispatchTable_i
-  }
+  val cometLogger: LiftLogger = cometLoggerBuilder()
 
   /**
    * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
@@ -651,15 +487,13 @@ object LiftRules {
     case _ => List(("Expires", "0"))
   }
 
-  def performTransform(in: LiftResponse): LiftResponse =
-  responseTransformers.foldLeft(in){
+  def performTransform(in: LiftResponse): LiftResponse = responseTransformers.toList.foldLeft(in) {
     case (in, pf: PartialFunction[LiftResponse, LiftResponse]) =>
       if (pf.isDefinedAt(in)) pf(in) else in
     case (in, f) => f(in)
   }
 
-  var responseTransformers: List[LiftResponse => LiftResponse] =
-  Nil
+  val responseTransformers = RulesSeq[LiftResponse => LiftResponse]
 
   /**
    * convertResponse is a PartialFunction that reduces a given Tuple4 into a
@@ -681,7 +515,7 @@ object LiftRules {
   /**
    * Set a snippet failure handler here.  The class and method for the snippet are passed in
    */
-  var snippetFailedFunc: List[SnippetFailure => Unit] = logSnippetFailure _ :: Nil
+  val snippetFailedFunc = RulesSeq[SnippetFailure => Unit].prepend(logSnippetFailure _)
 
   private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
 
@@ -728,27 +562,9 @@ object LiftRules {
    * URI is invalid and you're not using a site map
    *
    */
-  private var _uriNotFound: List[URINotFoundPF] =
-  List(NamedPF("default") {
-      case (r, _) => Req.defaultCreateNotFound(r)
-    })
-
-  /**
-   * The list of partial function for defining the behavior of what happens when
-   * URI is invalid and you're not using a site map
-   *
-   */
-  def uriNotFound: List[URINotFoundPF] = _uriNotFound
-
-  /**
-   * Prepend the URINotFound handler to the existing list.
-   * Because the default Lift URI Not Found handler handles
-   * The default case, you need only handle special cases.
-   */
-  def prependUriNotFound(in: URINotFoundPF) {
-    _uriNotFound = in :: _uriNotFound
-  }
-
+  val uriNotFound = RulesSeq[URINotFoundPF].prepend(NamedPF("default") {
+    case (r, _) => Req.defaultCreateNotFound(r)
+  })
 
   /**
    * A utility method to convert an exception to a string of stack traces
@@ -814,12 +630,12 @@ object LiftRules {
         }
       }
     }
-    LiftRules.prependDispatch(cssFixer)
-    LiftRules.appendLiftRequest(liftReq)
+    LiftRules.dispatch.prepend(cssFixer)
+    LiftRules.liftRequest.append(liftReq)
   }
 
-  var onBeginServicing: List[Req => Unit] = Nil
-  var onEndServicing: List[(Req, Can[LiftResponse]) => Unit] = Nil
+  val onBeginServicing = RulesSeq[Req => Unit]
+  val onEndServicing = RulesSeq[(Req, Can[LiftResponse]) => Unit]
 
   var autoIncludeComet: LiftSession => Boolean =
   session => true
@@ -1005,6 +821,44 @@ case object BreakOut
 
 abstract class Bootable {
   def boot() : Unit;
+}
+
+/**
+ * Factory object for RulesSeq instances
+ */
+object RulesSeq {
+  def apply[T]: RulesSeq[T] = new RulesSeq[T]{}
+}
+
+/**
+ * Generic container used mainly for adding functions
+ *
+ */
+trait RulesSeq[T] {
+  var rules : List[T] = Nil
+
+  private def safe_?(f : => Any) {
+    LiftRules.doneBoot match {
+      case false => f
+      case _ => throw new IllegalStateException("Can not modify after boot.");
+    }
+  }
+
+  private[http] def toList = rules
+
+  def prepend(r: T): RulesSeq[T] = {
+    safe_? {
+      rules = r :: rules
+    }
+    this
+  }
+
+  def append(r: T): RulesSeq[T] = {
+    safe_? {
+      rules = rules ::: List(r)
+    }
+    this
+  }
 }
 
 private[http] case object DefaultBootstrap extends Bootable {

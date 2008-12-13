@@ -674,7 +674,7 @@ object S extends HasParams {
 
   def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = {
     val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
-    NamedPF.applyCan(snippet, LiftRules.snippetTable)
+    NamedPF.applyCan(snippet, LiftRules.snippets.toList)
   }
 
   private object _currentSnippet extends RequestVar[Can[String]](Empty)

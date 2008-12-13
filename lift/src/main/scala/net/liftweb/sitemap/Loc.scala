@@ -279,7 +279,7 @@ object Loc {
   def checkProtected(link: Link[_], params: List[LocParam]) {
     params.map(lp => {
       lp match {
-        case Loc.HttpAuthProtected(role) => LiftRules.addHttpAuthProtectedResource(
+        case Loc.HttpAuthProtected(role) => LiftRules.httpAuthProtectedResource.append (
           new LiftRules.HttpAuthProtectedResourcePF() {
 			def isDefinedAt(in: ParsePath) = in.partPath == link.uriList
 			def apply(in: ParsePath): Can[Role] = role()
