@@ -39,7 +39,7 @@ object LiftRules {
   type SnippetPF = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
   type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
-  type URLDecorator = PartialFunction[String, String]
+  type URLDecoratorPF = PartialFunction[String, String]
   type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPF = PartialFunction[List[String], Either[() => Can[NodeSeq], LiftView]]
   type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Can[Role]]
@@ -94,7 +94,7 @@ object LiftRules {
    * Use this PartialFunction to to automatically add static URL parameters
    * to any URL reference from the markup of Ajax request.
    */
-  val urlDecorate = RulesSeq[URLDecorator]
+  val urlDecorate = RulesSeq[URLDecoratorPF]
 
   val afterSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any]
 
