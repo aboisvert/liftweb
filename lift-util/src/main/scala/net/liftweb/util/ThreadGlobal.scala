@@ -24,6 +24,8 @@ class ThreadGlobal[T]
     this
   }
 
+  def apply(v: T) = set(v)
+
   def doWith[R](x: T)(f : => R) : R = {
     val original = value
     try {
