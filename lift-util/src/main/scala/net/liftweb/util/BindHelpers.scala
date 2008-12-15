@@ -304,7 +304,7 @@ trait BindHelpers {
 
                 case Some(ns) => 
                   val toRet = ns.calcValue(s.child)
-                  mergeBindAttrs(toRet, s.attributes)
+                  mergeBindAttrs(toRet, namespace, s.attributes)
               }
             }
           case Group(nodes) => Group(in_bind(nodes))
@@ -322,10 +322,11 @@ trait BindHelpers {
     case v => v
   }
   
-  private def mergeBindAttrs(in: NodeSeq, attrs: MetaData): NodeSeq = attrs match {
+  private def mergeBindAttrs(in: NodeSeq, nameSpace: String, attrs: MetaData): NodeSeq = attrs match {
     case Null => in
-    case p: PrefixedAttribute if p.pre == "lift" =>  mergeBindAttrs(setElemId(in, p.key, p.value), p.next)
-    case m => mergeBindAttrs(in, m.next)
+    case p: PrefixedAttribute if p.pre == nameSpace =>
+      mergeBindAttrs(setElemId(in, p.key, p.value), nameSpace, p.next)
+    case m => mergeBindAttrs(in, nameSpace, m.next)
   }
 
   /**
