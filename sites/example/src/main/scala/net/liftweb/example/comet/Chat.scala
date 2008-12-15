@@ -54,7 +54,7 @@ class Chat extends CometActor {
   }
 
   override lazy val fixedRender: Can[NodeSeq] = {
-    val n = "id"+randomString(10)
+    val n = Helpers.nextFuncName
 
     ajaxForm(After(100, SetValueAndFocus(n, "")),
     (text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )

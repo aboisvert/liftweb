@@ -18,6 +18,7 @@ import _root_.scala.collection.mutable.{HashSet, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
 import _root_.scala.collection.{Map}
 import _root_.scala.collection.mutable.HashMap
+import _root_.java.util.concurrent.atomic.AtomicLong
 
 object HttpHelpers extends ListHelpers with StringHelpers
 
@@ -63,30 +64,30 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /*
-  /**
-   * Set of all valid files extensions
-   * @return a mutable HashSet[String]
-   */
-  val validSuffixes = {
-    val ret = new HashSet[String]
-    ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
-    ret
-  }
+   /**
+    * Set of all valid files extensions
+    * @return a mutable HashSet[String]
+    */
+   val validSuffixes = {
+   val ret = new HashSet[String]
+   ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
+   ret
+   }
 
-  /**
-   * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
+   /**
+    * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
+    */
+   def goodPath_?(path : String): Boolean = {
+   if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
+   else {
+   val lastPoint = path.lastIndexOf('.')
+   val lastSlash = path.lastIndexOf('/')
+   if (lastPoint <= lastSlash) false else {
+   validSuffixes.contains(path.substring(lastPoint + 1))
+   }
+   }
+   }
    */
-  def goodPath_?(path : String): Boolean = {
-    if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
-    else {
-      val lastPoint = path.lastIndexOf('.')
-      val lastSlash = path.lastIndexOf('/')
-      if (lastPoint <= lastSlash) false else {
-        validSuffixes.contains(path.substring(lastPoint + 1))
-      }
-    }
-  }
-*/
   /**
    * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"
@@ -95,15 +96,15 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
    *                                 ("Content-Type", "application/xhtml+xml")
    */
   def couldBeHtml(in: Map[String, String]): Boolean =
-    in match {
-      case null => true
-      case n => {
+  in match {
+    case null => true
+    case n => {
         n.get("Content-Type") match {
           case Some(s) => { (s.toLowerCase == "text/html") ||
-                            (s.toLowerCase == "application/xhtml+xml") }
+                           (s.toLowerCase == "application/xhtml+xml") }
           case None => true
+        }
       }
-    }
   }
 
   /**
@@ -170,11 +171,33 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
    */
   def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
     case Nil => {
-       val id = "R" + randomString(12)
-       (in % ("id" -> id), id)
-    }
+        val id = nextFuncName
+        (in % ("id" -> id), id)
+      }
     case x :: xs => (in, x.text)
   }
+
+  private val serial = new AtomicLong(Math.abs(Helpers.randomLong(Helpers.millis)))
+
+  /**
+   * Get a monotonically increasing number that's guaranteed to be unique for the
+   * current session
+   */
+  def nextNum = serial.incrementAndGet
+
+  /**
+   * Get a guanateed unique field name
+   * (16 or 17 letters and numbers, starting with a letter)
+   */
+  def nextFuncName = {
+    val sb = new StringBuilder(20)
+    sb.append('F')
+    sb.append(nextNum)
+    // sb.append('_')
+    sb.append(randomString(3))
+    sb.toString
+  }
+		   
 
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
@@ -183,15 +206,15 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     ActorPing.schedule(Actor.self, BailOut(seq), timeout)
     receive(func orElse {case BailOut(seq) => null}) match {
       case null => Empty
-        case r: T => Full(r)
+      case r: T => Full(r)
     }
   }
 
 }
 
 /**
-* Is this something that can be converted to a JavaScript Command
-*/
+ * Is this something that can be converted to a JavaScript Command
+ */
 trait ToJsCmd {
   def toJsCmd: String
 }

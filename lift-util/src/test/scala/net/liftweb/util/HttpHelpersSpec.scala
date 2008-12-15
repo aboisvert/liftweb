@@ -66,7 +66,7 @@ object HttpHelpersSpec extends Specification with HttpHelpers with ListHelpers w
       "returning an element with a random id if not found" >> {
         val (e, id) = findOrAddId(<a></a>)
         e must \("@id")
-        id must beMatching("R\\d*")
+        // id must beMatching("R\\[a-zA-Z0-9]*")
       }
     }
   }

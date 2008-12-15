@@ -42,7 +42,7 @@ object JqSHtml {
 
   def autocomplete_*(options: Seq[(String, String)], default: Can[String],
                      defaultNonce: Can[String], onSubmit: AFuncHolder): Elem = {
-    val id = randomString(20)
+    val id = Helpers.nextFuncName
     val hidden = mapFunc(onSubmit)
     val data = JsArray(options.map { case (nonce, name) =>
           JsObj("name" -> name, "nonce" -> nonce)} :_*)
@@ -81,7 +81,7 @@ object JqSHtml {
     val func = mapFunc(SFuncHolder(f))
     val what: String = S.contextPath + "/" + LiftRules.ajaxPath+"?"+func+"=foo"
 
-    val id = randomString(20)
+    val id = Helpers.nextFuncName
     val hidden = mapFunc(SFuncHolder(onSubmit))
 
     val autocompleteOptions = JsRaw("""{

@@ -274,7 +274,7 @@ class LiftServlet extends HttpServlet {
 
   class ContinuationActor(request: Req, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
     private var answers: List[AnswerRender] = Nil
-    val seqId = CometActor.next
+    val seqId = Helpers.nextNum
 
     def act = loop {
       react {
@@ -353,7 +353,7 @@ class LiftServlet extends HttpServlet {
 
     sessionActor.enterComet(self)
     try {
-      val seqId = CometActor.next
+      val seqId = Helpers.nextNum
 
       def drainTheSwamp(len: Long, in: List[AnswerRender]): List[AnswerRender] = { // remove any message from the current thread's inbox
         receiveWithin(len) {

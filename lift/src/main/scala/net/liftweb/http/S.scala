@@ -715,16 +715,6 @@ object S extends HasParams {
     URLRewriter.rewriteFunc map (_(url)) openOr url
   }
   
-private val serial = new AtomicLong(Math.abs(Helpers.randomLong(millis)))
-
-def nextFuncName = {
-  val sb = new StringBuilder(20)
-  sb.append('F')
-  sb.append(serial.incrementAndGet)
-  sb.append('_')
-  sb.append(randomString(3))
-  sb.toString
-}
 
   /**
    * Build a handler for incoming JSON commands
@@ -746,7 +736,7 @@ def nextFuncName = {
    * @return (JsonCall, JsCmd)
    */
   def buildJsonFunc(name: Can[String], onError: Can[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
-    val key = nextFuncName
+    val key = Helpers.nextFuncName
 
     def checkCmd(in: Any) = in match {
       case v: _root_.scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
@@ -912,7 +902,7 @@ def nextFuncName = {
   /**
    * Maps a function with an random generated and name
    */
-  def mapFunc(in: AFuncHolder): String = mapFunc(nextFuncName, in)
+  def mapFunc(in: AFuncHolder): String = mapFunc(Helpers.nextFuncName, in)
 
   /**
    * Similar with addFunctionMap but also returns the name.

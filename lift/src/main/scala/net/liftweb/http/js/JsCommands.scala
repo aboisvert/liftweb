@@ -91,7 +91,7 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
   }
 
   def appendToParent(parentName: String): JsCmd = {
-    val ran = "v"+randomString(10)
+    val ran = "v"+Helpers.nextFuncName
     JsCmds.JsCrVar(ran, this) &
     JE.JsRaw("if ("+ran+".parentNode) "+ran+" = "+ran+".cloneNode(true)").cmd &
     JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+");} else {"+
@@ -300,6 +300,7 @@ object JE {
    */
   case class JsFunc(method: String, params: JsExp*) extends JsMethod {
     def toJsCmd = params.map(_.toJsCmd).mkString(method+"(", ", ", ")")
+    def cmd: JsCmd = JsCmds.Run(toJsCmd+";")
   }
 
   /**

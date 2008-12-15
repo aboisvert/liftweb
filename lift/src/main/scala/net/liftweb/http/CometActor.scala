@@ -29,11 +29,13 @@ import JsCmds._
 import JE._
 import _root_.java.util.concurrent.atomic.AtomicLong
 
+/*
 object CometActor {
   private val serial = new AtomicLong
 
   def next: Long = serial.incrementAndGet
 }
+*/
 
 object ActorWatcher extends Actor {
   def act = loop {
@@ -66,9 +68,9 @@ object ActorWatcher extends Actor {
 */
 @serializable
 trait CometActor extends Actor with BindHelpers {
-  val uniqueId = "LC"+randomString(20)
+  val uniqueId = Helpers.nextFuncName
   private var spanId = uniqueId
-  private var lastRenderTime = CometActor.next
+  private var lastRenderTime = Helpers.nextNum
 
   private var lastRendering: RenderOut = _
   private var wasLastFullRender = false
@@ -283,7 +285,7 @@ trait CometActor extends Actor with BindHelpers {
 
     case PartialUpdateMsg(cmdF) =>
       val cmd: JsCmd = cmdF.apply
-      val time = CometActor.next
+      val time = Helpers.nextNum
       val delta = JsDelta(time, cmd)
       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       S.clearFunctionMap
@@ -315,7 +317,7 @@ trait CometActor extends Actor with BindHelpers {
   }
 
   private def performReRender(sendAll: Boolean) {
-    lastRenderTime = CometActor.next
+    lastRenderTime = Helpers.nextNum
     wasLastFullRender = sendAll & hasOuter
     deltas = Nil
 

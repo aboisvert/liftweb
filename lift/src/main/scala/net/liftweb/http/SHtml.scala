@@ -57,7 +57,7 @@ object SHtml {
    * @param body - the NodeSeq to wrap in the anchor tag
    */
   def a(func: () => JsCmd, body: NodeSeq, attrs: (String, String)*): Elem = {
-    val key = S.nextFuncName
+    val key = Helpers.nextFuncName
     addFunctionMap(key, (a: List[String]) => func())
       attrs.foldLeft(<lift:a key={key}>{body}</lift:a>)(_ % _)
   }
@@ -183,7 +183,7 @@ object SHtml {
 
   def swappable(shown: Elem, hidden: String => Elem): Elem = {
     val (rs, sid) = findOrAddId(shown)
-    val hid = "S"+randomString(10)
+    val hid = Helpers.nextFuncName
     val ui = LiftRules.jsArtifacts
 
     val rh = <span id={hid}>{hidden(ui.show(sid).toJsCmd + ";" + ui.hide(hid).toJsCmd + ";")}</span>
@@ -246,7 +246,7 @@ object SHtml {
 
   def jsonForm(jsonHandler: JsonHandler, body: NodeSeq): NodeSeq = jsonForm(jsonHandler, Noop, body)
   def jsonForm(jsonHandler: JsonHandler, onSubmit: JsCmd, body: NodeSeq): NodeSeq = {
-    val id = "F"+randomString(15)
+    val id = Helpers.nextFuncName
     <form onsubmit={(onSubmit & jsonHandler.call("processForm", FormToJSON(id)) & JsReturn(false)).toJsCmd} id={id}>
       {body}
     </form>

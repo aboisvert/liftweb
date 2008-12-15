@@ -447,7 +447,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private[http] def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
     f map { fnc =>
       val func: String = LiftSession.this.synchronized {
-        val funcName = "fn"+randomString(20)
+        val funcName = Helpers.nextFuncName
         messageCallback(funcName) = S.NFuncHolder(() => {
             try {
               fnc()
@@ -775,7 +775,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
-    val id = "F"+randomString(15)
+    val id = Helpers.nextFuncName
     val pre = attr.filter(_.key == "onsubmit").toList match {
       case Nil => ""
       case x :: xs => x.value.text +";"

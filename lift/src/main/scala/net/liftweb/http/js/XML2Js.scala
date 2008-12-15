@@ -31,7 +31,7 @@ trait JxBase {
       case exp: JsExp =>
       JsRaw( varName+"."+m.key+" = "+exp.toJsCmd).cmd
 
-      case cmd: JsCmd => val varName = "v"+randomString(20)
+      case cmd: JsCmd => val varName = "v"+Helpers.nextFuncName
       JsCrVar(varName, AnonFunc(cmd)) &
       JsRaw(varName+"."+m.key+" = "+varName+"()")
 
@@ -68,7 +68,7 @@ trait JxBase {
     case Text(txt) => JsRaw(parent+".appendChild(document.createTextNode("+fixText(txt).encJs+"));").cmd
     case a: Atom[_] => JsRaw(parent+".appendChild(document.createTextNode("+a.text.encJs+"));").cmd
     case e: _root_.scala.xml.Elem =>
-    val varName = "v"+randomString(10)
+    val varName = "v"+Helpers.nextFuncName
     JsCrVar(varName, JsRaw("document.createElement("+e.label.encJs+")")) &
     addAttrs(varName, e.attributes.toList) &
     JsRaw(parent+".appendChild("+varName+")") &
@@ -108,9 +108,9 @@ case class JxMap(in: JsExp, what: JxYieldFunc) extends Node with JxBase {
   def child = Nil
 
   def appendToParent(parentName: String): JsCmd = {
-    val ran = "v"+randomString(10)
-    val fr = "f"+randomString(10)
-    val cr = "c"+randomString(10)
+    val ran = "v"+Helpers.nextFuncName
+    val fr = "f"+Helpers.nextFuncName
+    val cr = "c"+Helpers.nextFuncName
     JsCrVar(ran, in) &
     JsCrVar(fr, what.yieldFunction) &
     JsRaw("for ("+cr+" = 0; "+cr+" < "+ran+".length; "+cr+"++) {"+
@@ -129,7 +129,7 @@ case class JxMatch(exp: JsExp, cases: JxCase*) extends Node with JxBase {
   def child = Nil
 
   def appendToParent(parentName: String): JsCmd = {
-    val vn = "v" + randomString(10)
+    val vn = "v" + Helpers.nextFuncName
     JsCrVar(vn, exp) &
     JsRaw("if (false) {\n} "+
     cases.map{c =>

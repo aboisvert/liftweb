@@ -39,7 +39,7 @@ trait JsonComet {
 
     def field: MappedField[FieldType, KMType]
 
-    val FieldId = "fi"+randomString(20)
+    val FieldId = Helpers.nextFuncName
     val handler: PartialFunction[Any, JsCmd] = {
       case JsonCmd(FieldId, target, value, _) =>
       (for (key <- keyStore.recover(meta, target);

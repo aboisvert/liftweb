@@ -87,7 +87,7 @@ object DB {
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
     val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
       Helpers.tryo {
-        val uniqueId = if (Log.isDebugEnabled) Helpers.randomString(10) else ""
+        val uniqueId = if (Log.isDebugEnabled) Helpers.nextNum.toString else ""
         Log.debug("Connection ID "+uniqueId+" for JNDI connection "+name.jndiName+" opened")
         val conn = envContext.get.lookup(name.jndiName).asInstanceOf[DataSource].getConnection
         new SuperConnection(conn, () => {Log.debug("Connection ID "+uniqueId+" for JNDI connection "+name.jndiName+" closed"); conn.close})
