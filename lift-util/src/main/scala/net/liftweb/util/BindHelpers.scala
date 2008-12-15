@@ -154,11 +154,11 @@ trait BindHelpers {
     def calcValue(in: NodeSeq): NodeSeq = Text(value.toString)
   }
 
-case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends Tuple2[String, T](name, value) with BindParam {
-  def calcValue(in: NodeSeq): NodeSeq = value.asHtml
-}
+  case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends Tuple2[String, T](name, value) with BindParam {
+    def calcValue(in: NodeSeq): NodeSeq = value.asHtml
+  }
 
-/**
+  /**
    * transforms a Can into a Text node
    */
   object BindParamAssoc {
@@ -230,49 +230,6 @@ case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends T
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
 
   /**
-   * This extractor is used to determine at runtime if a Function1[_, _] is
-   * actually a NodeSeq => NodeSeq. This is a hack to get around JVM type
-   * erasure.
-   */
-  /*
-   object Function1NodeSeqToNodeSeq {
-   def unapply[A, B](f: Function1[A, B]): Option[NodeSeq => NodeSeq] =
-   if (f.getClass.getMethods.exists{ method =>
-   lazy val params: Seq[Class[_]] = method.getParameterTypes
-   method.getName == "apply" &&
-   params.length == 1 &&
-   params.exists(_.isAssignableFrom(classOf[NodeSeq])) &&
-   classOf[NodeSeq].isAssignableFrom(method.getReturnType)
-   }) Some(f.asInstanceOf[NodeSeq => NodeSeq])
-   else None
-   }*/
-
-  /*
-   /**
-    * Transforms a Tuple2[String, _] to a BindParam
-    */
-   implicit def pairToBindParam[T](p: Tuple2[String, T]): BindParam = {
-   val (name, value) = p
-   value match {
-   case v: String => TheBindParam(name, Text(v))
-   case v: NodeSeq => TheBindParam(name, v)
-   case v: Symbol => TheBindParam(name, Text(v.name))
-   case fn: Function1[_, _] =>
-   Function1NodeSeqToNodeSeq.unapply(fn) match {
-   case Some(func) => FuncBindParam(name, func)
-   case _ => TheBindParam(name, Text(fn.toString))
-   }
-   case v: Can[_] =>
-   val ov = v openOr Text("Empty")
-   ov match {
-   case o: NodeSeq => TheBindParam(name, o)
-   case _ => TheBindParam(name, Text(v.toString))
-   }
-   case _ => TheBindParam(name, Text(if (value == null) "null" else value.toString))
-   }
-   }
-   */
-  /**
    * Transforms a Tuple2[Symbol, _] to a BindParam
    */
   /*
@@ -340,12 +297,14 @@ case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends T
       xml.flatMap {
         node =>
         node match {
-          case s : Elem if (node.prefix == namespace) => {
+          case s : Elem if node.prefix == namespace => {
               map.get(node.label) match {
                 case None =>
                   nodeFailureXform.map(_(s)) openOr s
 
-                case Some(ns) => ns.calcValue(s.child)
+                case Some(ns) => 
+                  val toRet = ns.calcValue(s.child)
+                  mergeBindAttrs(toRet, s.attributes)
               }
             }
           case Group(nodes) => Group(in_bind(nodes))
@@ -355,6 +314,18 @@ case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends T
       }
     }
     in_bind(xml)
+  }
+
+  private def setElemId(in: NodeSeq, attr: String, value: Seq[Node]): NodeSeq =
+  in.map {
+    case e: Elem => e % new UnprefixedAttribute(attr, value, Null)
+    case v => v
+  }
+  
+  private def mergeBindAttrs(in: NodeSeq, attrs: MetaData): NodeSeq = attrs match {
+    case Null => in
+    case p: PrefixedAttribute if p.pre == "lift" =>  mergeBindAttrs(setElemId(in, p.key, p.value), p.next)
+    case m => mergeBindAttrs(in, m.next)
   }
 
   /**
@@ -442,9 +413,9 @@ case class TheBindableBindParam[T <: Bindable](name: String, value: T) extends T
 
   def findNode(in: Elem, nodes: NodeSeq): Can[Elem] = nodes match {
     case seq if seq.isEmpty => None
-     case Seq(x: Elem, xs @_*)
-       if x.label == in.label && x.prefix == in.prefix => Full(x)
-     case Seq(x, xs @_*) => findNode(in, x.child) or findNode(in, xs)
+    case Seq(x: Elem, xs @_*)
+      if x.label == in.label && x.prefix == in.prefix => Full(x)
+    case Seq(x, xs @_*) => findNode(in, x.child) or findNode(in, xs)
   }
 }
 

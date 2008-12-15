@@ -157,9 +157,9 @@ trait Loc[ParamType] {
   /**
    * The title of the location
    */
-  def title: NodeSeq = (foundParam.is or defaultParams).map(p => title(p)) openOr Text(name)
+  def title: NodeSeq = ((foundParam.is or defaultParams).map(p => title(p)) or linkText) openOr Text(name)
 
-  def title(in: ParamType): NodeSeq = findTitle(params).map(_.title(in)) openOr text.text(in)
+  def title(in: ParamType): NodeSeq = findTitle(params).map(_.title(in)) openOr linkText(in)
 
   def linkText: Can[NodeSeq] = (foundParam.is or defaultParams).map(p => linkText(p))
 
