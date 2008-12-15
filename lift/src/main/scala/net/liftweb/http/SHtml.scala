@@ -57,7 +57,7 @@ object SHtml {
    * @param body - the NodeSeq to wrap in the anchor tag
    */
   def a(func: () => JsCmd, body: NodeSeq, attrs: (String, String)*): Elem = {
-    val key = "F"+System.nanoTime+"_"+randomString(3)
+    val key = S.nextFuncName
     addFunctionMap(key, (a: List[String]) => func())
       attrs.foldLeft(<lift:a key={key}>{body}</lift:a>)(_ % _)
   }

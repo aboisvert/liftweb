@@ -835,7 +835,7 @@ object RulesSeq {
  *
  */
 trait RulesSeq[T] {
-  var rules : List[T] = Nil
+  private var rules: List[T] = Nil
 
   private def safe_?(f : => Any) {
     LiftRules.doneBoot match {

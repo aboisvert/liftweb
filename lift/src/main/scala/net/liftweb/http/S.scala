@@ -27,6 +27,7 @@ import Helpers._
 import js._
 import _root_.java.io.InputStream
 import _root_.java.util.{Locale, TimeZone, ResourceBundle}
+import _root_.java.util.concurrent.atomic.AtomicLong
 
 trait HasParams {
   def param(name: String): Can[String]
@@ -713,6 +714,17 @@ object S extends HasParams {
   def encodeURL(url: String) = {
     URLRewriter.rewriteFunc map (_(url)) openOr url
   }
+  
+private val serial = new AtomicLong(Math.abs(Helpers.randomLong(millis)))
+
+def nextFuncName = {
+  val sb = new StringBuilder(20)
+  sb.append('F')
+  sb.append(serial.incrementAndGet)
+  sb.append('_')
+  sb.append(randomString(3))
+  sb.toString
+}
 
   /**
    * Build a handler for incoming JSON commands
@@ -734,7 +746,7 @@ object S extends HasParams {
    * @return (JsonCall, JsCmd)
    */
   def buildJsonFunc(name: Can[String], onError: Can[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
-    val key = "F"+System.nanoTime+"_"+randomString(3)
+    val key = nextFuncName
 
     def checkCmd(in: Any) = in match {
       case v: _root_.scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
@@ -900,7 +912,7 @@ object S extends HasParams {
   /**
    * Maps a function with an random generated and name
    */
-  def mapFunc(in: AFuncHolder): String = mapFunc("F"+System.nanoTime+"_"+randomString(3), in)
+  def mapFunc(in: AFuncHolder): String = mapFunc(nextFuncName, in)
 
   /**
    * Similar with addFunctionMap but also returns the name.
