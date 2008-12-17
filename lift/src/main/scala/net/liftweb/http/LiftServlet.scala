@@ -325,7 +325,9 @@ class LiftServlet extends HttpServlet {
   }
 
   private def handleComet(requestState: Req, sessionActor: LiftSession): Can[LiftResponse] = {
-    val actors: List[(CometActor, Long)] = requestState.params.toList.flatMap{case (name, when) => sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
+    val actors: List[(CometActor, Long)] =
+    requestState.params.toList.flatMap{case (name, when) =>
+        sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
 
     if (actors.isEmpty) Full(new JsCommands(JsCmds.RedirectTo(LiftRules.noCometSessionPage) :: Nil).toResponse)
     else LiftRules.checkContinuations(requestState.request) match {

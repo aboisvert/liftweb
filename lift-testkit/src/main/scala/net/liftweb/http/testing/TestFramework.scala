@@ -7,6 +7,7 @@ import _root_.java.util.{Map => JavaMap, Set => JavaSet, Iterator => JavaIterato
 import _root_.java.util.regex.Pattern
 import _root_.java.io.IOException
 import _root_.org.apache.commons.httpclient._
+import _root_.org.apache.commons.httpclient.cookie._
 import methods._
 import _root_.java.io.OutputStream
 import _root_.org.apache.commons.httpclient.auth.AuthScope
@@ -15,11 +16,12 @@ trait GetPoster {
   def baseUrl: String
 
   private def slurpApacheHeaders(in: Array[Header]):
-  Map[String, List[String]]
-  = {
+  Map[String, List[String]] = {
     val headerSet: List[(String, String)] =
-      for (e <- in.toList ; h <- e.getElements)
-      yield (h.getName -> h.getValue);
+    for (e <- in.toList /*; h <- e.getElements*/)
+    yield (e.getName -> e.getValue);
+
+    println("In slurp... header set: "+headerSet)
 
     headerSet.foldLeft[Map[String, List[String]]](Map.empty)((acc, e) =>
       acc + (e._1 -> (e._2 :: acc.getOrElse(e._1, Nil))))
@@ -27,12 +29,13 @@ trait GetPoster {
 
 
   def get(url: String, httpClient: HttpClient,
-	  headers: List[(String, String)],
-	  faux_params: (String, Any)*): Response
+          headers: List[(String, String)],
+          faux_params: (String, Any)*): Response
   = {
     val params = faux_params.toList.map(x => (x._1, x._2.toString))
     val fullUrl = url + (params.map(v => urlEncode(v._1)+"="+urlEncode(v._2)).mkString("&") match {case s if s.length == 0 => ""; case s => "?"+s})
     val getter = new GetMethod(baseUrl + fullUrl)
+    getter.getParams().setCookiePolicy(CookiePolicy.RFC_2965)
     for ((name, value) <- headers) getter.setRequestHeader(name, value)
 
     val ret = try {
@@ -40,10 +43,10 @@ trait GetPoster {
         case (server, responseCode) =>
           val respHeaders = slurpApacheHeaders(getter.getResponseHeaders)
 
-        new HttpResponse(baseUrl,
-			 responseCode, getter.getStatusText,
-			 respHeaders, getter.getResponseBody,
-			 httpClient)
+          new HttpResponse(baseUrl,
+                           responseCode, getter.getStatusText,
+                           respHeaders, getter.getResponseBody,
+                           httpClient)
       }
     } catch {
       case e: IOException => new CompleteFailure(baseUrl + fullUrl, Full(e))
@@ -54,22 +57,23 @@ trait GetPoster {
   }
 
   def post(url: String, httpClient: HttpClient,
-	   headers: List[(String, String)],
-	   faux_params: (String, Any)*): Response
+           headers: List[(String, String)],
+           faux_params: (String, Any)*): Response
   = {
     val params = faux_params.toList.map(x => (x._1, x._2.toString))
     val poster = new PostMethod(baseUrl + url)
+    poster.getParams().setCookiePolicy(CookiePolicy.RFC_2965)
     for ((name, value) <- headers) poster.setRequestHeader(name, value)
     for ((name, value) <- params) poster.setParameter(name, value)
 
     val ret = try {
       (baseUrl + url, httpClient.executeMethod(poster)) match {
-	case (server, responseCode) =>
-	  val respHeaders = slurpApacheHeaders(poster.getResponseHeaders)
+        case (server, responseCode) =>
+          val respHeaders = slurpApacheHeaders(poster.getResponseHeaders)
           new HttpResponse(baseUrl,
-			   responseCode, poster.getStatusText,
-			   respHeaders, poster.getResponseBody,
-			   httpClient)
+                           responseCode, poster.getStatusText,
+                           respHeaders, poster.getResponseBody,
+                           httpClient)
       }
     } catch {
       case e: IOException => new CompleteFailure(baseUrl + url, Full(e))
@@ -80,31 +84,32 @@ trait GetPoster {
   }
 
   def post(url: String, httpClient: HttpClient,
-	   headers: List[(String, String)],
-	   body: NodeSeq): Response
+           headers: List[(String, String)],
+           body: NodeSeq): Response
   = {
     val poster = new PostMethod(baseUrl + url)
+    poster.getParams().setCookiePolicy(CookiePolicy.RFC_2965)
     for ((name, value) <- headers) poster.setRequestHeader(name, value)
     poster.setRequestEntity(new RequestEntity {
-      private val bytes = body.toString.getBytes("UTF-8")
+        private val bytes = body.toString.getBytes("UTF-8")
 
-      def getContentLength() = bytes.length
-      def getContentType() = "text/xml"
-      def isRepeatable() = true
-      def writeRequest(out: OutputStream) {
-	out.write(bytes)
-      }
-    })
+        def getContentLength() = bytes.length
+        def getContentType() = "text/xml"
+        def isRepeatable() = true
+        def writeRequest(out: OutputStream) {
+          out.write(bytes)
+        }
+      })
 
     val paramByte = body.toString.getBytes("UTF-8")
     val ret = try {
       (baseUrl + url, httpClient.executeMethod(poster)) match {
-	case (server, responseCode) =>
-	  val respHeaders = slurpApacheHeaders(poster.getResponseHeaders)
+        case (server, responseCode) =>
+          val respHeaders = slurpApacheHeaders(poster.getResponseHeaders)
           new HttpResponse(baseUrl,
-			   responseCode, poster.getStatusText,
-			   respHeaders, poster.getResponseBody,
-			   httpClient)
+                           responseCode, poster.getStatusText,
+                           respHeaders, poster.getResponseBody,
+                           httpClient)
       }
     } catch {
       case e: IOException => new CompleteFailure(baseUrl + url, Full(e))
@@ -123,17 +128,17 @@ trait TestFramework extends GetPoster {
   def buildRunner: TestRunner
 
   /*
-  private var assertFunc: (String, () => Response) => Response = _
-  def runTests = synchronized {
-    val (runner, tAssert) = buildRunner.setup[Response](tests)
-    try {
-      assertFunc = tAssert
-      runner()
-    } finally {
-      assertFunc = null
-    }
-  }
-  */
+   private var assertFunc: (String, () => Response) => Response = _
+   def runTests = synchronized {
+   val (runner, tAssert) = buildRunner.setup[Response](tests)
+   try {
+   assertFunc = tAssert
+   runner()
+   } finally {
+   assertFunc = null
+   }
+   }
+   */
 
   class TestHandler(res: Response) {
     def then (f: Response => Response): Response = f(res)
@@ -143,15 +148,15 @@ trait TestFramework extends GetPoster {
 
 
   def get(url: String, buildHttpClient: () => HttpClient,
-	  params: (String, Any)*): Response =
-    get(url, buildHttpClient(), Nil, params :_*)
+          params: (String, Any)*): Response =
+  get(url, buildHttpClient(), Nil, params :_*)
 
   def post(url: String, buildHttpClient: () => HttpClient,
-	   params: (String, Any)*): Response =
-    post(url, buildHttpClient(), Nil, params :_*)
+           params: (String, Any)*): Response =
+  post(url, buildHttpClient(), Nil, params :_*)
 
   def buildNoAuthClient =
-    new HttpClient(new SimpleHttpConnectionManager(false))
+  new HttpClient(new SimpleHttpConnectionManager(false))
 
   def buildBasicAuthClient(name: String, pwd: String) = {
     val ret = new HttpClient(new SimpleHttpConnectionManager(false))
@@ -163,20 +168,20 @@ trait TestFramework extends GetPoster {
 
 
   def getCookie(headers: List[(String, String)],
-		respHeaders: Map[String, List[String]]): Can[String]
+                respHeaders: Map[String, List[String]]): Can[String]
   =
-    {
-      val ret = (headers.filter{case ("Cookie", _) => true; case _ => false}.
-		 map(_._2) :::
-		 respHeaders.get("Set-Cookie").toList.flatMap(x => x)) match {
-		   case Nil => Empty
-		   case "" :: Nil => Empty
-		   case "" :: xs => Full(xs.mkString(","))
-		   case xs => Full(xs.mkString(","))
-		 }
-
-      ret
+  {
+    val ret = (headers.filter{case ("Cookie", _) => true; case _ => false}.
+               map(_._2) :::
+               respHeaders.get("Set-Cookie").toList.flatMap(x => x)) match {
+      case Nil => Empty
+      case "" :: Nil => Empty
+      case "" :: xs => Full(xs.mkString(","))
+      case xs => Full(xs.mkString(","))
     }
+
+    ret
+  }
 
   // protected lazy val httpClient = new HttpClient(new MultiThreadedHttpConnectionManager)
 
@@ -217,13 +222,13 @@ trait TestFramework extends GetPoster {
 
 object TestHelpers {
   /**
-  * Get the function name given a particular comet actor name
-  *
-  * @param cometName the name (default prefix) for the comet actor
-  * @param body the body of the response
-  *
-  * @return the name of the JSON function associated with the Comet actor
-  */
+   * Get the function name given a particular comet actor name
+   *
+   * @param cometName the name (default prefix) for the comet actor
+   * @param body the body of the response
+   *
+   * @return the name of the JSON function associated with the Comet actor
+   */
   def jsonFuncForCometName(cometName: String, body: String): Can[String] = {
     val p = Pattern.compile("""JSON Func """+cometName+""" \$\$ (F[^ ]*)""")
     val m = p.matcher(body)
@@ -233,32 +238,32 @@ object TestHelpers {
 
 
   /**
-  * Given an HTML page, find the list of "lift_toWatch" names and values
-  * These can be fed back into a comet request
-  *
-  * @param body the page body returned from an HTTP request
-  *
-  * @return a list of the "to watch" tokens and the last update tokens
-  */
+   * Given an HTML page, find the list of "lift_toWatch" names and values
+   * These can be fed back into a comet request
+   *
+   * @param body the page body returned from an HTTP request
+   *
+   * @return a list of the "to watch" tokens and the last update tokens
+   */
   def toWatchFromPage(body: String): List[(String, String)] = {
     val p = Pattern.compile("""lift_toWatch[ ]*\=[ ]*\{([^}]*)\}""")
     val rp = new REMatcher(body, p)
     val p2 = Pattern.compile("""(L[^\:]*)\: \'([0-9]*)""")
 
     for (it <- rp.capture;
-    val q = new REMatcher(it, p2);
-    em <- q.eachFound) yield (em(1), em(2))
+         val q = new REMatcher(it, p2);
+         em <- q.eachFound) yield (em(1), em(2))
   }
 
   /**
-  * Given the body of a Comet response, parse for updates "lift_toWatch" values
-  * and update the current sequence to reflect any updated values
-  *
-  * @param old the old toWatch sequence
-  * @param body the body of the comet response
-  *
-  * @return the updated sequences
-  */
+   * Given the body of a Comet response, parse for updates "lift_toWatch" values
+   * and update the current sequence to reflect any updated values
+   *
+   * @param old the old toWatch sequence
+   * @param body the body of the comet response
+   *
+   * @return the updated sequences
+   */
   def toWatchUpdates(old: Seq[(String, String)], body: String): Seq[(String, String)] = {
     val p = Pattern.compile("""lift_toWatch\[\'(L[^\']*)\'] \= \'([0-9]*)""")
     val re = new REMatcher(body, p)
@@ -267,28 +272,28 @@ object TestHelpers {
   }
 }
 
-  trait Response {
-    //def assertSuccess = this
-    def xml: Elem = <xml:group />
+trait Response {
+  //def assertSuccess = this
+  def xml: Elem = <xml:group />
 
-    /*
-    def assert(f: => Boolean, msg: String): Response = {
-      TestFramework.this.assertFunc(msg,{() =>
-        if (!f) throw new TestFailureError(msg)
-        this
-      })
-    }
-    */
+  /*
+   def assert(f: => Boolean, msg: String): Response = {
+   TestFramework.this.assertFunc(msg,{() =>
+   if (!f) throw new TestFailureError(msg)
+   this
+   })
+   }
+   */
 
-    def headers: Map[String, List[String]] = Map.empty
-    // def assertTag(tag: String, msg:String) = assert((xml \\ tag).length > 0, msg)
-  }
+  def headers: Map[String, List[String]] = Map.empty
+  // def assertTag(tag: String, msg:String) = assert((xml \\ tag).length > 0, msg)
+}
 
 class HttpResponse(override val baseUrl: String,
-		   val code: Int, val msg: String,
-		   override val headers: Map[String, List[String]],
-		   val body: Array[Byte],
-		   val httpClient: HttpClient) extends
+                   val code: Int, val msg: String,
+                   override val headers: Map[String, List[String]],
+                   val body: Array[Byte],
+                   val httpClient: HttpClient) extends
 Response with GetPoster
 {
 
@@ -298,13 +303,13 @@ Response with GetPoster
   lazy val bodyAsString = new String(body, "UTF-8")
 
   def get(url: String, params: (String, Any)*): Response =
-    get(url, httpClient, Nil, params:_*)
+  get(url, httpClient, Nil, params:_*)
 
   def post(url: String, params: (String, Any)*): Response =
-    post(url, httpClient, Nil, params:_*)
+  post(url, httpClient, Nil, params:_*)
 
   def post(url: String, body: NodeSeq): Response =
-    post(url, httpClient, Nil, body)
+  post(url, httpClient, Nil, body)
 }
 
 class CompleteFailure(val serverName: String, val exception: Can[Throwable]) extends Response {

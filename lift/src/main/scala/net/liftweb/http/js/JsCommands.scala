@@ -347,6 +347,10 @@ object JE {
     def toJsCmd = "true"
   }
 
+case class Call(function: String, params: JsExp*) extends JsExp {
+  def toJsCmd = function+"("+params.map(_.toJsCmd).mkString(",")+")"
+}
+
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
       def toJsCmd = AnonFunc.this.toJsCmd + "()"
