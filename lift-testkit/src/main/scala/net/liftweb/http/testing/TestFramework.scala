@@ -21,8 +21,6 @@ trait GetPoster {
     for (e <- in.toList /*; h <- e.getElements*/)
     yield (e.getName -> e.getValue);
 
-    println("In slurp... header set: "+headerSet)
-
     headerSet.foldLeft[Map[String, List[String]]](Map.empty)((acc, e) =>
       acc + (e._1 -> (e._2 :: acc.getOrElse(e._1, Nil))))
   }
@@ -127,18 +125,9 @@ trait TestFramework extends GetPoster {
   def tests: List[Item]
   def buildRunner: TestRunner
 
-  /*
-   private var assertFunc: (String, () => Response) => Response = _
-   def runTests = synchronized {
-   val (runner, tAssert) = buildRunner.setup[Response](tests)
-   try {
-   assertFunc = tAssert
-   runner()
-   } finally {
-   assertFunc = null
-   }
-   }
-   */
+  def theHttpClient: HttpClient = defaultHttpClient
+
+  lazy val defaultHttpClient = buildNoAuthClient
 
   class TestHandler(res: Response) {
     def then (f: Response => Response): Response = f(res)
@@ -147,13 +136,11 @@ trait TestFramework extends GetPoster {
   implicit def reqToHander(in: Response): TestHandler = new TestHandler(in)
 
 
-  def get(url: String, buildHttpClient: () => HttpClient,
-          params: (String, Any)*): Response =
-  get(url, buildHttpClient(), Nil, params :_*)
+  def get(url: String, params: (String, Any)*): Response =
+  get(url, theHttpClient, Nil, params :_*)
 
-  def post(url: String, buildHttpClient: () => HttpClient,
-           params: (String, Any)*): Response =
-  post(url, buildHttpClient(), Nil, params :_*)
+  def post(url: String, params: (String, Any)*): Response =
+  post(url, theHttpClient, Nil, params :_*)
 
   def buildNoAuthClient =
   new HttpClient(new SimpleHttpConnectionManager(false))
@@ -248,9 +235,11 @@ object TestHelpers {
   def toWatchFromPage(body: String): List[(String, String)] = {
     val p = Pattern.compile("""lift_toWatch[ ]*\=[ ]*\{([^}]*)\}""")
     val rp = new REMatcher(body, p)
-    val p2 = Pattern.compile("""(L[^\:]*)\: \'([0-9]*)""")
+    val p2 = Pattern.compile("""'([^']*)'\: ([0-9]*)""")
 
     for (it <- rp.capture;
+         val _ = println("Captured: "+it);
+         val _ = println("Does match: "+p2.matcher(it).find);
          val q = new REMatcher(it, p2);
          em <- q.eachFound) yield (em(1), em(2))
   }
@@ -265,7 +254,7 @@ object TestHelpers {
    * @return the updated sequences
    */
   def toWatchUpdates(old: Seq[(String, String)], body: String): Seq[(String, String)] = {
-    val p = Pattern.compile("""lift_toWatch\[\'(L[^\']*)\'] \= \'([0-9]*)""")
+    val p = Pattern.compile("""lift_toWatch\[\'([^\']*)\'] \= \'([0-9]*)""")
     val re = new REMatcher(body, p)
     val np = re.eachFound.foldLeft(Map(old :_*))((a, b) => a + ( (b(1), b(2))) )
     np.elements.toList
@@ -276,17 +265,7 @@ trait Response {
   //def assertSuccess = this
   def xml: Elem = <xml:group />
 
-  /*
-   def assert(f: => Boolean, msg: String): Response = {
-   TestFramework.this.assertFunc(msg,{() =>
-   if (!f) throw new TestFailureError(msg)
-   this
-   })
-   }
-   */
-
   def headers: Map[String, List[String]] = Map.empty
-  // def assertTag(tag: String, msg:String) = assert((xml \\ tag).length > 0, msg)
 }
 
 class HttpResponse(override val baseUrl: String,
