@@ -130,7 +130,7 @@ object LiftRules {
   /**
    * For each unload hook registered, run them during destroy()
    */
-  def runUnloadHooks() {
+  private[http] def runUnloadHooks() {
     unloadHooks.toList.foreach(_())
   }
 
@@ -248,7 +248,7 @@ object LiftRules {
    */
   val viewDispatch = RulesSeq[ViewDispatchPF]
 
-  def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch.toList)
+  private[http] def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch.toList)
 
   /**
    * If the request times out (or returns a non-Response) you can
@@ -353,7 +353,7 @@ object LiftRules {
 
   val statelessDispatchTable = RulesSeq[DispatchPF]
 
-  def dispatchTable(req: HttpServletRequest): List[DispatchPF] = {
+  private[http] def dispatchTable(req: HttpServletRequest): List[DispatchPF] = {
     req match {
       case null => dispatch.toList
       case _ => SessionMaster.getSession(req, Empty) match {
@@ -366,7 +366,7 @@ object LiftRules {
     }
   }
 
-  def rewriteTable(req: HttpServletRequest): List[RewritePF] = {
+  private[http] def rewriteTable(req: HttpServletRequest): List[RewritePF] = {
     req match {
       case null => rewrite.toList
       case _ => SessionMaster.getSession(req, Empty) match {
@@ -808,7 +808,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
                             Nil, 200))
   }
 
-  def testFor304(req: Req, lastModified: Long): Can[LiftResponse] = {
+  private def testFor304(req: Req, lastModified: Long): Can[LiftResponse] = {
     val mod = req.request.getHeader("if-modified-since")
     if (mod != null && ((lastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime)
     Full(InMemoryResponse(new Array[Byte](0), Nil, Nil, 304))

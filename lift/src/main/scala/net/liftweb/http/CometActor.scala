@@ -29,13 +29,6 @@ import JsCmds._
 import JE._
 import _root_.java.util.concurrent.atomic.AtomicLong
 
-/*
-object CometActor {
-  private val serial = new AtomicLong
-
-  def next: Long = serial.incrementAndGet
-}
-*/
 
 object ActorWatcher extends Actor {
   def act = loop {

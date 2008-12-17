@@ -23,7 +23,7 @@ case class OkResponse() extends LiftResponse {
  * The Resource was created. We then return the resource, post-processing, to
  * the client. Usually used with HTTP PUT.
  */
-case class CreatedResponse(xml: Node, mime: String) extends ToResponse {
+case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
   def docType = Empty
   def code = 201
   def headers = List("Content-Type" -> mime)

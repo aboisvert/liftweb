@@ -714,7 +714,6 @@ object S extends HasParams {
   def encodeURL(url: String) = {
     URLRewriter.rewriteFunc map (_(url)) openOr url
   }
-  
 
   /**
    * Build a handler for incoming JSON commands

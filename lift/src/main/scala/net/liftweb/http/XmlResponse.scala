@@ -6,16 +6,55 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
  \*                                                 */
 
-import _root_.scala.xml.Node
+import _root_.scala.xml.{Node, Unparsed, Group, NodeSeq}
 import _root_.net.liftweb.util._
+import _root_.net.liftweb.util.Helpers._
 import js._
 import _root_.javax.servlet.http.Cookie
+
+trait NodeResponse extends LiftResponse {
+  def out: Node
+  def headers: List[(String, String)]
+  def cookies: List[Cookie]
+  def code: Int
+  def docType: Can[String]
+
+  def toResponse = {
+    val encoding =
+    (out, headers.ciGet("Content-Type")) match {
+    case (up: Unparsed,  _) => ""
+    case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
+                          s.toLowerCase.startsWith("text/html") ||
+                          s.toLowerCase.startsWith("text/xhtml") ||
+			  s.toLowerCase.startsWith("application/xml") ||
+			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    case _ => ""
+    }
+
+    val doc = docType.map(_ + "\n") openOr ""
+
+    val sb = new StringBuilder(64000)
+    sb.append(encoding)
+    sb.append(doc)
+    AltXML.toXML(out, _root_.scala.xml.TopScope, sb, false, false)
+    sb.append("  \n  ")
+
+    val ret = sb.toString // (encoding + doc + AltXML.toXML(out, false, false))
+
+    InMemoryResponse(ret.getBytes("UTF-8"), headers, cookies, code)
+    }
+}
+
+case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
+			 cookies: List[Cookie], code: Int) extends NodeResponse
+
 
 /**
  * Allows you to create custom 200 responses for clients using different
  * Content-Types.
  */
-case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
+case class XmlMimeResponse(xml: Node, mime: String) extends NodeResponse {
   def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> mime)
@@ -23,7 +62,7 @@ case class XmlMimeResponse(xml: Node, mime: String) extends ToResponse {
   def out = xml
 }
 
-case class XmlResponse(xml: Node) extends ToResponse {
+case class XmlResponse(xml: Node) extends NodeResponse {
   def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> "text/xml")
@@ -34,7 +73,7 @@ case class XmlResponse(xml: Node) extends ToResponse {
 /**
  * Returning an Atom document.
  */
-case class AtomResponse(xml: Node) extends ToResponse {
+case class AtomResponse(xml: Node) extends NodeResponse {
   def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> "application/atom+xml")
@@ -45,7 +84,7 @@ case class AtomResponse(xml: Node) extends ToResponse {
 /**
  * Returning an OpenSearch Description Document.
  */
-case class OpenSearchResponse(xml: Node) extends ToResponse {
+case class OpenSearchResponse(xml: Node) extends NodeResponse {
   def docType = Empty
   def code = 200
   def headers = List("Content-Type" -> "application/opensearchdescription+xml")

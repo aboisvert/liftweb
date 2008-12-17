@@ -6,53 +6,14 @@ package net.liftweb.http
  http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import _root_.scala.xml.{Node, Unparsed, Group, NodeSeq}
 import _root_.net.liftweb.util._
-import _root_.net.liftweb.util.Helpers._
 import _root_.javax.servlet.http.Cookie
 import js._
 import _root_.java.io.InputStream
 
-trait ToResponse extends LiftResponse {
-  def out: Node
-  def headers: List[(String, String)]
-  def cookies: List[Cookie]
-  def code: Int
-  def docType: Can[String]
-
-  def toResponse = {
-    val encoding =
-    (out, headers.ciGet("Content-Type")) match {
-    case (up: Unparsed,  _) => ""
-    case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
-                          s.toLowerCase.startsWith("text/html") ||
-                          s.toLowerCase.startsWith("text/xhtml") ||
-			  s.toLowerCase.startsWith("application/xml") ||
-			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    case _ => ""
-    }
-
-    val doc = docType.map(_ + "\n") openOr ""
-
-    val sb = new StringBuilder(64000)
-    sb.append(encoding)
-    sb.append(doc)
-    AltXML.toXML(out, _root_.scala.xml.TopScope, sb, false, false)
-    sb.append("  \n  ")
-
-    val ret = sb.toString // (encoding + doc + AltXML.toXML(out, false, false))
-
-    InMemoryResponse(ret.getBytes("UTF-8"), headers, cookies, code)
-    }
-}
-
 trait LiftResponse {
   def toResponse: BasicResponse
 }
-
-case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
-			 cookies: List[Cookie], code: Int) extends ToResponse
 
 object JsonResponse {
   def apply(json: JsExp): LiftResponse = JsonResponse(json, Nil, Nil, 200)
