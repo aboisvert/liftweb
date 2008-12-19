@@ -127,7 +127,7 @@ object SHtml {
    */
   def jsonText(value: String, json: JsExp => JsCmd, attrs: (String, String)*): Elem = {
     (attrs.foldLeft(<input type="text" value={value}/>)(_ % _)) %
-    ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
+    ("onkeypress" -> """lift_blurIfReturn(event)""") %
     ("onblur" -> (json(JE.JsRaw("this.value"))))
   }
 
@@ -136,7 +136,7 @@ object SHtml {
   private def ajaxText_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem = {
     val funcName = mapFunc(func)
       (attrs.foldLeft(<input type="text" value={value}/>)(_ % _)) %
-        ("onkeypress" -> """var e = event ; var char = ''; if (e && e.which) {char = e.which;} else {char = e.keyCode;}; if (char == 13) {this.blur(); return false;} else {return true;};""") %
+        ("onkeypress" -> """lift_blurIfReturn(event)""") %
         ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
   }
 

@@ -741,6 +741,22 @@ function lift_doAjaxCycle() {
   setTimeout("lift_doAjaxCycle();", 200);
 }
 
+function lift_blurIfReturn(e) {
+  var code;
+	if (!e) var e = window.event;
+	if (e.keyCode) code = e.keyCode;
+	else if (e.which) code = e.which;
+
+  var targ;
+
+	if (e.target) targ = e.target;
+	else if (e.srcElement) targ = e.srcElement;
+	if (targ.nodeType == 3) // defeat Safari bug
+		targ = targ.parentNode;
+
+  if (code == 13) {targ.blur(); return false;} else {return true;};
+}
+
 function lift_actualAjaxCall(data, onSuccess, onFailure) {
 """+
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
