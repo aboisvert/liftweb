@@ -400,8 +400,6 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
       case rd: _root_.net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
 
-      case e  => Full(LiftRules.logAndReturnExceptionToBrowser(request, e))
-
     }
 
     LiftSession.onEndServicing.foreach(f => tryo(f(this, request, ret)))

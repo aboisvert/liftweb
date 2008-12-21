@@ -135,41 +135,42 @@ class LiftServlet extends HttpServlet {
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
-    LiftRules.onBeginServicing.toList.foreach(_(requestState))
-    val statelessToMatch = requestState
-
+    var resp: Can[LiftResponse] = Empty
     var tmpStatelessHolder: Can[() => Can[LiftResponse]] = null
 
-    val resp: Can[LiftResponse] =
-    // if the servlet is shutting down, return a 404
-    if (LiftRules.ending) {
-      LiftRules.notFoundOrIgnore(requestState, Empty)
+    tryo { LiftRules.onBeginServicing.toList.foreach(_(requestState)) }
 
-    } else if (!authPassed_?(requestState)) {
-      Full(LiftRules.authentication.unauthorizedResponse)
-    } else
-    // if the request is matched is defined in the stateless table, dispatch
-    if ({tmpStatelessHolder = NamedPF.applyCan(statelessToMatch,
-                                               LiftRules.statelessDispatchTable.toList);
-       tmpStatelessHolder.isDefined})
-    {
-      val f = tmpStatelessHolder.open_!
-      f() match {
-        case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
-        case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
-        case f: Failure => Full(requestState.createNotFound(f))
+    try {
+      resp =
+      // if the servlet is shutting down, return a 404
+      if (LiftRules.ending) {
+        LiftRules.notFoundOrIgnore(requestState, Empty)
+      } else if (!authPassed_?(requestState)) {
+        Full(LiftRules.authentication.unauthorizedResponse)
+      } else
+      // if the request is matched is defined in the stateless table, dispatch
+      if ({tmpStatelessHolder = NamedPF.applyCan(requestState,
+                                                 LiftRules.statelessDispatchTable.toList);
+        tmpStatelessHolder.isDefined})
+      {
+        val f = tmpStatelessHolder.open_!
+        f() match {
+          case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
+          case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
+          case f: Failure => Full(requestState.createNotFound(f))
+        }
+      } else {
+	    // otherwise do a stateful response
+        val liftSession = getLiftSession(requestState, request.getSession)
+        S.init(requestState, liftSession) {
+          dispatchStatefulRequest(request, liftSession, requestState)
+        }
       }
-    } else
-	  // otherwise do a stateful response
-    {
-      val liftSession = getLiftSession(requestState, request.getSession)
-
-      S.init(requestState, liftSession) {
-        dispatchStatefulRequest(request, liftSession, requestState)
-      }
+    } catch {
+      case e => resp = Full(LiftRules.logAndReturnExceptionToBrowser(requestState, e));
     }
 
-    LiftRules.onEndServicing.toList.foreach(_(requestState, resp))
+    tryo { LiftRules.onEndServicing.toList.foreach(_(requestState, resp)) }
 
     resp match {
       case Full(cresp) =>
@@ -475,17 +476,15 @@ trait LiftFilterTrait {
     RequestVarHandler(
       (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
-          LiftRules.early.toList.foreach(_(httpReq))
+          tryo { LiftRules.early.toList.foreach(_(httpReq)) }
 
-          val session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
+          var session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
           URLRewriter.doWith(url => NamedPF.applyCan(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr url) {
-            if (isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session)) {
-            } else {
-              chain.doFilter(req, res)
-            }
-          }
-
+            if (!(isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session))) {
+	          chain.doFilter(req, res)
+	        }
+	      }
         case _ => chain.doFilter(req, res)
       })
   }

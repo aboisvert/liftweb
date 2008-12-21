@@ -302,7 +302,7 @@ trait BindHelpers {
                 case None =>
                   nodeFailureXform.map(_(s)) openOr s
 
-                case Some(ns) => 
+                case Some(ns) =>
                   val toRet = ns.calcValue(s.child)
                   mergeBindAttrs(toRet, namespace, s.attributes)
               }
@@ -321,7 +321,7 @@ trait BindHelpers {
     case e: Elem => e % new UnprefixedAttribute(attr, value, Null)
     case v => v
   }
-  
+
   private def mergeBindAttrs(in: NodeSeq, nameSpace: String, attrs: MetaData): NodeSeq = attrs match {
     case Null => in
     case p: PrefixedAttribute if p.pre == nameSpace =>

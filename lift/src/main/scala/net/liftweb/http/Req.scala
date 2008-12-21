@@ -19,8 +19,6 @@ package net.liftweb.http
 
 import _root_.javax.servlet.http._
 import _root_.javax.servlet.ServletContext
-// import _root_.scala.collection.Map
-// import _root_.scala.collection.mutable.HashMap
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.{Log, Can, Full, Empty,
                                 EmptyCan,
