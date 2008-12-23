@@ -175,13 +175,11 @@ object S extends HasParams {
   def timeZone: TimeZone =
   LiftRules.timeZoneCalculator(request.map(_.request))
 
-  /*
-   private def reduxio(in: List[LiftRules.DispatchPF]): LiftRules.DispatchPF = in match {
-   case Nil => Map.empty
-   case x :: Nil => x
-   case x :: xs => x orElse reduxio(xs)
-   }
+  /**
+   * Should the output be rendered in IE6&7 compatible mode?
    */
+  def ieMode: Boolean = (for (r <- request) yield r.isIE6 || r.isIE7) openOr true
+
 
   def highLevelSessionDispatcher: List[LiftRules.DispatchPF] = highLevelSessionDispatchList.map(_.dispatch)
   /**

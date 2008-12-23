@@ -20,27 +20,37 @@ trait NodeResponse extends LiftResponse {
   def docType: Can[String]
 
   def toResponse = {
-    val encoding =
+    val (encoding: String, ieMode: Boolean) =
     (out, headers.ciGet("Content-Type")) match {
-    case (up: Unparsed,  _) => ""
-    case (_, Empty) | (_, Failure(_, _, _)) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
+    case (up: Unparsed,  _) => ("", true)
+    
+    case (_, Empty) | (_, Failure(_, _, _)) => 
+      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", true)
+
+    case (_, Full(s)) if (s.toLowerCase.startsWith("text/html")) =>
+      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", true)
+
     case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
-                          s.toLowerCase.startsWith("text/html") ||
                           s.toLowerCase.startsWith("text/xhtml") ||
 			  s.toLowerCase.startsWith("application/xml") ||
-			  s.toLowerCase.startsWith("application/xhtml+xml")) => "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
-    case _ => ""
+			  s.toLowerCase.startsWith("application/xhtml+xml")) =>
+      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", false)
+
+    case _ => ("", true)
     }
 
     val doc = docType.map(_ + "\n") openOr ""
 
     val sb = new StringBuilder(64000)
+
     sb.append(encoding)
     sb.append(doc)
-    AltXML.toXML(out, _root_.scala.xml.TopScope, sb, false, false)
+    AltXML.toXML(out, _root_.scala.xml.TopScope,
+		 sb, false, false, ieMode)
+
     sb.append("  \n  ")
 
-    val ret = sb.toString // (encoding + doc + AltXML.toXML(out, false, false))
+    val ret = sb.toString
 
     InMemoryResponse(ret.getBytes("UTF-8"), headers, cookies, code)
     }

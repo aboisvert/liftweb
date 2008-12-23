@@ -404,7 +404,7 @@ case class Call(function: String, params: JsExp*) extends JsExp {
 trait HtmlFixer {
   def fixHtml(uid: String, content: NodeSeq): String =
   AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)),
-  false, true).encJs
+  false, true, S.ieMode).encJs
 
 }
 

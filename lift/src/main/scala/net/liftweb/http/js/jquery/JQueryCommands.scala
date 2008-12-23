@@ -234,7 +234,7 @@ object JqJsCmds {
 
   class ModalDialog(html: NodeSeq, width: Can[String]) extends JsCmd {
     def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s =>
-    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true).encJs+
+    s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true, S.ieMode).encJs+
     (width.map(w => ", { width: '"+w+"' }").openOr("")) + ");"
   }
 
