@@ -45,6 +45,10 @@ class Msg {
   def render(styles: NodeSeq): NodeSeq = {
 
      val msgs: (String) => NodeSeq = (id) => {
+       attr("errorClass").map(cls => MsgErrorMeta += (id -> cls))
+       attr("warningClass").map(cls => MsgWarningMeta += (id -> cls))
+       attr("noticeClass").map(cls => MsgNoticeMeta += (id -> cls))
+
        val f = messagesById(id) _
        List((f(S.errors), attr("errorClass")),
                (f(S.warnings), attr("warningClass")),
@@ -57,8 +61,8 @@ class Msg {
                        case _ => msgList flatMap ( n => n )
                      }
                    }
-       }
-    }
+               }
+     }
 
     attr("id") match {
       case Full(id) => <span>{msgs(id)}</span> % ("id" -> id)
@@ -67,3 +71,7 @@ class Msg {
 
   }
 }
+
+object MsgErrorMeta extends SessionVar[HashMap[String, String]](new HashMap)
+object MsgWarningMeta extends SessionVar[HashMap[String, String]](new HashMap)
+object MsgNoticeMeta extends SessionVar[HashMap[String, String]](new HashMap)
