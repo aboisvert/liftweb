@@ -400,7 +400,11 @@ object Loc {
 
 
     def createLink(params: T): Can[NodeSeq] =
-    Full(Text(uriList.mkString("/", "/", "")))
+    if (matchHead_?)
+    Full(Text((uriList).mkString("/", "/", "") + "/"))
+    else if (uriList.last == "index")
+    Full(Text(uriList.dropRight(1).mkString("/", "/", "")+"/"))
+    else Full(Text(uriList.mkString("/", "/", "")))
   }
 
   /**
