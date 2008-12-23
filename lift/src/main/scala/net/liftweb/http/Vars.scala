@@ -101,14 +101,6 @@ abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) 
  * @param dflt - the default value of the session variable
  */
 abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
-  /*
-  override protected def findFunc(name: String): Can[T] = S.requestState(name)
-  override protected def setFunc(name: String, value: T): Unit = S.requestState(name) = value
-  override protected def clearFunc(name: String): Unit = S.requestState.clear(name)
-
-  def registerCleanupFunc(in: () => Unit): Unit =
-  S.addCleanupFunc(in)
-  */
 
   override protected def findFunc(name: String): Can[T] = RequestVarHandler.get(name)
   override protected def setFunc(name: String, value: T): Unit = RequestVarHandler.set(name, value)

@@ -160,8 +160,8 @@ trait CometActor extends Actor with BindHelpers {
           if (S.functionMap.size > 0) {
             theSession.updateFunctionMap(S.functionMap,
 					 uniqueId, lastRenderTime)
-	    S.clearFunctionMap
-	  }
+            S.clearFunctionMap
+          }
         }
       }
 
