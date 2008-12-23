@@ -46,32 +46,9 @@ trait JQueryLeft {
 }
 
 object JqJE {
-    case object JqTabsSelected extends JsExp with JQueryRight {
-    def toJsCmd = "tabsSelected()"
-  }
 
   case object JqScrollToBottom extends JsExp with JQueryRight with JQueryLeft {
     def toJsCmd = "each(function(i) {this.scrollTop=this.scrollHeight;})"
-  }
-
-  object JqTabsClick {
-    def apply(tab: JsExp): JsExp with JQueryRight with JQueryLeft =
-    new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "tabsClick("+tab.toJsCmd+")"
-    }
-
-    def apply(tab: Int): JsExp with JQueryRight with JQueryLeft =
-    apply(Num(tab))
-  }
-
-  object JqTabs {
-    def apply(in: JsExp): JsExp with JQueryRight with JQueryLeft =
-    new JsExp with JQueryRight with JQueryLeft {
-      def toJsCmd = "tabs("+in.toJsCmd+")"
-    }
-
-    def apply(): JsExp with JQueryRight with JQueryLeft =
-    apply(JsRaw(""))
   }
 
   case class JqClick(exp: JsExp) extends JsExp with JQueryLeft with JQueryRight {

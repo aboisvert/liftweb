@@ -170,7 +170,11 @@ object AltXML {
         for (c <- g.nodes) toXML(c, x.scope, sb, stripComment, convertAmp)
 
       case _  =>
-        if (((x.child eq null) || (x.child.length == 0)) && x.label != "div" && x.label != "script" && x.label != "textarea") {
+        if (((x.child eq null) || (x.child.length == 0)) &&
+              x.label != "div" &&
+              x.label != "span" &&
+              x.label != "script" &&
+              x.label != "textarea") {
           sb.append('<')
           x.nameToString(sb)
           if (x.attributes ne null) x.attributes.toString(sb)
