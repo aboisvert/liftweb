@@ -20,6 +20,7 @@ import _root_.net.liftweb.http.S._
 import _root_.scala.xml._
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.{Can, Full}
+import _root_.scala.collection.mutable.HashMap
 
 
 /**

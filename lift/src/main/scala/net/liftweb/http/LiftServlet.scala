@@ -135,13 +135,11 @@ class LiftServlet extends HttpServlet {
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
-    var resp: Can[LiftResponse] = Empty
     var tmpStatelessHolder: Can[() => Can[LiftResponse]] = null
 
     tryo { LiftRules.onBeginServicing.toList.foreach(_(requestState)) }
 
-    try {
-      resp =
+    val resp =
       // if the servlet is shutting down, return a 404
       if (LiftRules.ending) {
         LiftRules.notFoundOrIgnore(requestState, Empty)
@@ -166,9 +164,6 @@ class LiftServlet extends HttpServlet {
           dispatchStatefulRequest(request, liftSession, requestState)
         }
       }
-    } catch {
-      case e => resp = Full(LiftRules.logAndReturnExceptionToBrowser(requestState, e));
-    }
 
     tryo { LiftRules.onEndServicing.toList.foreach(_(requestState, resp)) }
 
