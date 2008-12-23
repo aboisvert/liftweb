@@ -28,6 +28,7 @@ import js._
 import _root_.java.io.InputStream
 import _root_.java.util.{Locale, TimeZone, ResourceBundle}
 import _root_.java.util.concurrent.atomic.AtomicLong
+import _root_.net.liftweb.builtin.snippet._
 
 trait HasParams {
   def param(name: String): Can[String]
@@ -174,14 +175,6 @@ object S extends HasParams {
    */
   def timeZone: TimeZone =
   LiftRules.timeZoneCalculator(request.map(_.request))
-
-  /*
-   private def reduxio(in: List[LiftRules.DispatchPF]): LiftRules.DispatchPF = in match {
-   case Nil => Map.empty
-   case x :: Nil => x
-   case x :: xs => x orElse reduxio(xs)
-   }
-   */
 
   def highLevelSessionDispatcher: List[LiftRules.DispatchPF] = highLevelSessionDispatchList.map(_.dispatch)
   /**
@@ -789,9 +782,9 @@ object S extends HasParams {
     }
 
     val f = noIdMessages _
-    val xml = List((LiftRules.ajaxNoticeMeta, f(S.errors), S.??("msg.error")),
-                   (LiftRules.ajaxWarningMeta, f(S.warnings), S.??("msg.warning")),
-                   (LiftRules.ajaxErrorMeta, f(S.notices), S.??("msg.notice"))) flatMap {
+    val xml = List((MsgsErrorMeta.get, f(S.errors), S.??("msg.error")),
+                   (MsgsWarningMeta.get, f(S.warnings), S.??("msg.warning")),
+                   (MsgsNoticeMeta.get, f(S.notices), S.??("msg.notice"))) flatMap {
       msg => msg._1 match {
         case Full(meta) => func(msg._2 _, meta.title openOr "", meta.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null)
         case _ => func(msg._2 _, msg._3, Null)
@@ -804,14 +797,13 @@ object S extends HasParams {
     }
 
     val g = idMessages _
-    List((LiftRules.ajaxErrorMeta, g(S.errors)),
-         (LiftRules.ajaxWarningMeta, g(S.warnings)),
-         (LiftRules.ajaxNoticeMeta, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
+    List((MsgErrorMeta.get, g(S.errors)),
+         (MsgWarningMeta.get, g(S.warnings)),
+         (MsgNoticeMeta.get, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
         case (meta, m) => m.foldLeft(car)((left, r) =>
             left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
-                                                 (meta map(_.cssClass.map(new UnprefixedAttribute("class", _, Null)) openOr Null) openOr Null)))
-      }
-    )
+                                                 (Can(meta.get(r._1)).map(new UnprefixedAttribute("class", _, Null)) openOr Null)))
+        })
   }
 
   implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)

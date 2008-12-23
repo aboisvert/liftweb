@@ -25,6 +25,7 @@ import _root_.net.liftweb.util._
 import Can._
 import _root_.net.liftweb.http.js.{JsCmd, AjaxInfo}
 import _root_.net.liftweb.util.Helpers._
+import _root_.net.liftweb.builtin.snippet._
 import _root_.java.lang.reflect.{Method, Modifier, InvocationTargetException}
 import _root_.scala.xml.{Node, NodeSeq, Elem, MetaData, Null, UnprefixedAttribute, PrefixedAttribute, XML, Comment, Group}
 import _root_.java.io.InputStream
@@ -354,37 +355,39 @@ class LiftSession(val contextPath: String, val uniqueId: String,
           // Process but make sure we're okay, sitemap wise
           val response: Can[LiftResponse] = request.testLocation match {
             case Left(true) =>
+              cleanUpBeforeRender
               ((locTemplate or findVisibleTemplate(request.path, request)).
                map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
                   case Full(rawXml: NodeSeq) => {
-                      val xml = HeadHelper.mergeToHtmlHead(rawXml)
-                      val cometXform: List[RewriteRule] =
-                      if (LiftRules.autoIncludeComet(this))
+
+                    val xml = HeadHelper.mergeToHtmlHead(rawXml)
+                    val cometXform: List[RewriteRule] =
+                    if (LiftRules.autoIncludeComet(this))
                       allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
                         case Nil => Nil
                         case xs =>
                           val comets: List[CometVersionPair] = xs.flatMap(x => idAndWhen(x))
                           new AddScriptToBody(comets) :: Nil
                       }
-                      else Nil
+                    else Nil
 
-                      val ajaxXform: List[RewriteRule] =
-                      if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
+                    val ajaxXform: List[RewriteRule] =
+                    if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
                       else cometXform
 
 
-                      val realXml = if (ajaxXform.isEmpty) xml
+                    val realXml = if (ajaxXform.isEmpty) xml
                       else (new RuleTransformer(ajaxXform :_*)).transform(xml)
 
-                      this.synchronized {
-                        S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
-                      }
-                      notices = Nil // S.getNotices
-                      Full(LiftRules.convertResponse((realXml,
-                                                      S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
-                                                      S.responseCookies,
-                                                      request)))
+                    this.synchronized {
+                      S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
                     }
+                    notices = Nil // S.getNotices
+                    Full(LiftRules.convertResponse((realXml,
+                                                    S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
+                                                    S.responseCookies,
+                                                    request)))
+                  }
                   case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
                 })
             case Right(msg) => msg
@@ -400,12 +403,19 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
       case rd: _root_.net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
 
-      case e => Full(LiftRules.logAndReturnExceptionToBrowser(request, e));
+      case e => NamedPF.applyCan((Props.mode, request, e), LiftRules.exceptionHandler.toList);
 
     }
 
     LiftSession.onEndServicing.foreach(f => tryo(f(this, request, ret)))
     ret
+  }
+
+  private def cleanUpBeforeRender {
+    // Reset the mapping between ID and Style for Ajax notices.
+	MsgErrorMeta(new HashMap)
+    MsgWarningMeta(new HashMap)
+    MsgNoticeMeta(new HashMap)
   }
 
   private def handleRedirect(re: ResponseShortcutException, request: Req): LiftResponse = {

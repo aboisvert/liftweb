@@ -43,6 +43,7 @@ object LiftRules {
   type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
   type ViewDispatchPF = PartialFunction[List[String], Either[() => Can[NodeSeq], LiftView]]
   type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Can[Role]]
+  type ExceptionHandlerPF = PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse]
 
 
   /**
@@ -221,21 +222,6 @@ object LiftRules {
    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
    */
   var cometRequestTimeout: Can[Int] = Empty
-
-  /**
-   * Meta information for the notices that are applied via Ajax response
-   */
-  var ajaxNoticeMeta: Can[AjaxMessageMeta] = Empty
-
-  /**
-   * Meta information for the warnings that are applied via Ajax response
-   */
-  var ajaxWarningMeta: Can[AjaxMessageMeta] = Empty
-
-  /**
-   * Meta information for the errors that are applied via Ajax response
-   */
-  var ajaxErrorMeta: Can[AjaxMessageMeta] = Empty
 
   /**
    * The dispatcher that takes a Snippet and converts it to a
@@ -534,22 +520,15 @@ object LiftRules {
   }
 
   /**
-   * The function that deals with how exceptions are presented to the user during processing
-   * of an HTTP request.  Put a new function here to change the behavior.
-   *
-   * The function takes the Req and the Exception and returns a LiftResponse that's
-   * sent to the browser.
-   */
-  var logAndReturnExceptionToBrowser: (Req, Throwable) => LiftResponse = showException
-
-  /**
-   * The partial function (pattern matching) for handling converting an exception to something to
+   * The sequence of partial functions (pattern matching) for handling converting an exception to something to
    * be sent to the browser depending on the current RunMode (development, etc.)
    *
-   * The best thing to do is browserResponseToException = { case (...) => } orElse browserResponseToException
-   * so that your response over-rides the default, but the processing falls through to the default.
+   * By default it returns an XhtmlResponse containing a predefined markup. You can overwrite this by calling
+   * LiftRules.exceptionHandler.prepend(...). If you are calling append then your code will not be calle since
+   * a default implementation is already appended.
+   *
    */
-  var browserResponseToException: PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse] = {
+  var exceptionHandler = RulesSeq[ExceptionHandlerPF].append {
     case (Props.RunModes.Development, r, e) =>
       XhtmlResponse((<html><body>Exception occured while processing {r.uri}
               <pre>{
@@ -557,6 +536,7 @@ object LiftRules {
                 }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
 
     case (_, r, e) =>
+      Log.error("Exception being returned to browser when processing "+r, e)
       XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri}
                            </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
   }
@@ -576,7 +556,7 @@ object LiftRules {
    *
    * @return the stack trace
    */
-  def showException(le: Throwable): String = {
+  private def showException(le: Throwable): String = {
     val ret = "Message: "+le.toString+"\n\t"+
     le.getStackTrace.map(_.toString).mkString("\n\t") + "\n"
 
@@ -586,11 +566,6 @@ object LiftRules {
     }
 
     ret + also
-  }
-
-  private def showException(r: Req, e: Throwable): LiftResponse = {
-    Log.error("Exception being returned to browser when processing "+r, e)
-    browserResponseToException(Props.mode, r, e)
   }
 
   /**
@@ -758,4 +733,3 @@ trait CometVersionPair {
 
 case class CVP(guid: String, version: Long) extends CometVersionPair
 
-case class AjaxMessageMeta(title: Can[String], cssClass: Can[String])
