@@ -484,7 +484,11 @@ object LiftRules {
                                  headers, cookies, 200), headers, cookies, session))
 
   var defaultHeaders: PartialFunction[(NodeSeq, Req), List[(String, String)]] = {
-    case _ => List(("Expires", "0"))
+    case _ => List("Expires" -> "Mon, 26 Jul 1997 05:00:00 GMT",
+                   "Cache-Control" ->
+                   "no-cache; private; no-store; must-revalidate; max-stale=0; post-check=0; pre-check=0; max-age=0",
+                   "Pragma" -> "no-cache" /*,
+      "Keep-Alive" -> "timeout=3, max=993" */)
   }
 
   def performTransform(in: LiftResponse): LiftResponse = responseTransformers.toList.foldLeft(in) {
