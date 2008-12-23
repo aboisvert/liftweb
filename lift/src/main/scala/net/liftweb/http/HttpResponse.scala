@@ -4,7 +4,7 @@ package net.liftweb.http
  (c) 2008 WorldWide Conferencing, LLC
  Distributed under an Apache License
  http://www.apache.org/licenses/LICENSE-2.0
-*/
+ */
 
 import _root_.scala.xml.Node
 import _root_.net.liftweb.util._
@@ -15,6 +15,7 @@ import _root_.javax.servlet.http.Cookie
  */
 case class OkResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 200)
+  def renderInIEMode: Boolean = true
 }
 
 /**
@@ -29,6 +30,7 @@ case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
   def headers = List("Content-Type" -> mime)
   def cookies = Nil
   def out = xml
+  def renderInIEMode: Boolean = true
 }
 
 /**
@@ -36,6 +38,7 @@ case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
  */
 case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
+  def renderInIEMode: Boolean = true
 }
 
 /**
@@ -64,11 +67,11 @@ object Qop extends Enumeration(0, "auth", "auth-int", "auth,auth-int") {
  */
 case class UnauthorizedDigestResponse(override val realm: String, qop: Qop.Value, nonce: String, opaque: String) extends UnauthorizedResponse(realm) {
   override def toResponse = InMemoryResponse(Array(), List("WWW-Authenticate" -> (
-    "Digest realm=\"" + realm + "\", " +
-    "qop=\"" + qop + "\", " +
-    "nonce=\"" + nonce + "\", " +
-    "opaque=\"" + opaque + "\""
-  )), Nil, 401)
+        "Digest realm=\"" + realm + "\", " +
+        "qop=\"" + qop + "\", " +
+        "nonce=\"" + nonce + "\", " +
+        "opaque=\"" + opaque + "\""
+      )), Nil, 401)
 }
 
 /**

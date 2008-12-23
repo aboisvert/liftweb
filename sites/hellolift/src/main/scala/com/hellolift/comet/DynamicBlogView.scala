@@ -12,7 +12,7 @@ import _root_.com.hellolift.controller.BlogUpdate
 import _root_.com.hellolift.controller.AddBlogWatcher
 
 class DynamicBlogView extends CometActor {
-  def defaultPrefix = "blog"
+  override def defaultPrefix = Full("blog")
   var blogtitle = ""
   var blog : List[Entry] = Nil
   var blogid : Long = 0L

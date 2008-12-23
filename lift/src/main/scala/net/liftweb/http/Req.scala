@@ -199,7 +199,7 @@ object Req {
 
   private[liftweb] def defaultCreateNotFound(in: Req) =
   XhtmlResponse((<html><body>The Requested URL {in.contextPath+in.uri} was not found on this server</body></html>),
-                ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404)
+                ResponseInfo.docType(in), List("Content-Type" -> "text/html"), Nil, 404, S.ieMode)
 
   def unapply(in: Req): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType))
 }

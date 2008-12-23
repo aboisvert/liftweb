@@ -21,7 +21,7 @@ import _root_.net.liftweb.mapper._
 class WatchUser extends CometActor {
   private var userActor: Can[UserActor] = Empty
   private var messages: List[Message] = Nil
-  def defaultPrefix = "sk"
+  override def defaultPrefix = Full("sk")
 
   private def getUser(ua: UserActor) = (ua !? (400L, GetUserIdAndName)) match {case Some(u: UserIdInfo) => Full(u) case _ => Empty}
 

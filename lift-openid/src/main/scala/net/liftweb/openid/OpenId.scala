@@ -1,18 +1,18 @@
 /*
-* Copyright 2008 WorldWide Conferencing, LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions
-* and limitations under the License.
-*/
+ * Copyright 2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 package net.liftweb.openid
 
@@ -60,8 +60,8 @@ trait OpenIdVendor {
   def postUrl = "/"+ PathRoot + "/" + LoginPath
 
   /**
-  * A session var that keeps track of the OpenID object through the request/response
-  */
+   * A session var that keeps track of the OpenID object through the request/response
+   */
   object OpenIdObject extends SessionVar[ConsumerType](createAConsumer)
 
   def createAConsumer: ConsumerType
@@ -79,15 +79,15 @@ trait OpenIdVendor {
   def logoutLink: NodeSeq = <xml:group> <a href={"/"+PathRoot+"/"+LogOutPath}>Log Out</a></xml:group>
 
   def loginForm: NodeSeq = <form method="post" action={"/"+PathRoot+"/"+LoginPath}>
-  OpenId <input class="openidfield" name={PostParamName}/> <input type='submit' value="Log In"/>
-  </form>
+    OpenId <input class="openidfield" name={PostParamName}/> <input type='submit' value="Log In"/>
+                           </form>
 
   def showUserBox(ignore: NodeSeq): NodeSeq = <div class="openidbox">{
-    currentUser match {
-      case Full(user) => displayUser(user) ++ logoutLink
-      case _ => loginForm
-    }
-  }</div>
+      currentUser match {
+        case Full(user) => displayUser(user) ++ logoutLink
+        case _ => loginForm
+      }
+    }</div>
 
   def showIfLoggedIn(in: NodeSeq): NodeSeq = currentUser match {
     case Full(_) => in
@@ -101,54 +101,54 @@ trait OpenIdVendor {
 
   def logUserOut(): Unit
 
-/**
- * Try to log a user into the system with a given openId
- */
-def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse) {
-  val oid = OpenIdObject.is
-  oid.onComplete = Full(onComplete)
+  /**
+   * Try to log a user into the system with a given openId
+   */
+  def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse) {
+    val oid = OpenIdObject.is
+    oid.onComplete = Full(onComplete)
 
-  throw ResponseShortcutException.shortcutResponse(try {
-      oid.authRequest(openId, "/"+PathRoot+"/"+ResponsePath)
-    } catch {
-      case e: Exception => onComplete(Empty, Empty, Full(e))
-    })
-}
+    throw ResponseShortcutException.shortcutResponse(try {
+        oid.authRequest(openId, "/"+PathRoot+"/"+ResponsePath)
+      } catch {
+        case e: Exception => onComplete(Empty, Empty, Full(e))
+      })
+  }
 
   def dispatchPF: LiftRules.DispatchPF = NamedPF("Login default") {
     case Req(PathRoot :: LogOutPath :: Nil, "", _) =>
-    () => {
-      logUserOut()
-      Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
-    }
-
-    case r @ Req(PathRoot :: LoginPath :: Nil, "", PostRequest)
-    if r.param(PostParamName).isDefined =>
       () => {
-      try {
-        RedirectBackTo(S.referer)
-        Full(OpenIdObject.is.authRequest(r.param(PostParamName).get, "/"+PathRoot+"/"+ResponsePath))
-      } catch {
-        case e => S.error("OpenID Failure: "+e.getMessage)
-        // FIXME -- log the name and the error
+        logUserOut()
         Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
       }
-    }
+
+    case r @ Req(PathRoot :: LoginPath :: Nil, "", PostRequest)
+      if r.param(PostParamName).isDefined =>
+      () => {
+        try {
+          RedirectBackTo(S.referer)
+          Full(OpenIdObject.is.authRequest(r.param(PostParamName).get, "/"+PathRoot+"/"+ResponsePath))
+        } catch {
+          case e => S.error("OpenID Failure: "+e.getMessage)
+            // FIXME -- log the name and the error
+            Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
+        }
+      }
 
     case r @ Req(PathRoot :: ResponsePath :: Nil, "", _) =>
       () => {
-	for (req <- S.request;
-	     ret <- {
-	       val (id, res) = OpenIdObject.is.verifyResponse(req.request)
+        for (req <- S.request;
+             ret <- {
+            val (id, res) = OpenIdObject.is.verifyResponse(req.request)
 
-	       OpenIdObject.onComplete match {
-		 case Full(f) => Full(f(id, Full(res), Empty))
+            OpenIdObject.onComplete match {
+              case Full(f) => Full(f(id, Full(res), Empty))
 
-		 case _ => postLogin(id, res)
-		 val rb = RedirectBackTo.is
-		 Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
-	       }
-	     }) yield ret
+              case _ => postLogin(id, res)
+                val rb = RedirectBackTo.is
+                Full(RedirectResponse(rb openOr "/", S responseCookies :_*))
+            }
+          }) yield ret
 
 
       }
@@ -217,9 +217,9 @@ trait OpenIDConsumer[UserType]
     // Attribute Exchange example: fetching the 'email' attribute
     val fetch = FetchRequest.createFetchRequest()
     fetch.addAttribute("email",
-    // attribute alias
-    "http://schema.openid.net/contact/email",   // type URI
-    true);                                      // required
+                       // attribute alias
+                       "http://schema.openid.net/contact/email",   // type URI
+                       true);                                      // required
 
     // attach the extension to the authentication request
     authReq.addExtension(fetch);
@@ -241,22 +241,21 @@ trait OpenIDConsumer[UserType]
       map(k => (k.toString, pm.get(k).toString))
 
       XhtmlResponse(
-	    <html xmlns="http://www.w3.org/1999/xhtml">
-	    <head>
-	    <title>OpenID HTML FORM Redirection</title>
-	    </head>
-	    <body onload="document.forms['openid-form-redirection'].submit();">
-	    <form name="openid-form-redirection" action={authReq.getDestinationUrl(false)} method="post" accept-charset="utf-8">
-	    {
-        info.map{ case(key, value) =>
-          <input type="hidden" name={key} value={value}/>
-        }
-	    }
-	    <button type="submit">Continue...</button>
-	    </form>
-	    </body>
-	    </html>
-      ,   Empty, Nil, Nil, 200)
+        <html xmlns="http://www.w3.org/1999/xhtml">
+          <head>
+            <title>OpenID HTML FORM Redirection</title>
+          </head>
+          <body onload="document.forms['openid-form-redirection'].submit();">
+            <form name="openid-form-redirection" action={authReq.getDestinationUrl(false)} method="post" accept-charset="utf-8">
+              {
+                info.map{ case(key, value) =>
+                    <input type="hidden" name={key} value={value}/>
+                }
+              }
+              <button type="submit">Continue...</button>
+            </form>
+          </body>
+        </html>, Empty, Nil, Nil, 200, true)
     }
   }
 
@@ -282,7 +281,7 @@ trait OpenIDConsumer[UserType]
     // verify the response; ConsumerManager needs to be the same
     // (static) instance used to place the authentication request
     val verification = manager.verify(receivingURL.toString(),
-    response, discovered)
+                                      response, discovered)
 
     // examine the verification result and extract the verified identifier
 

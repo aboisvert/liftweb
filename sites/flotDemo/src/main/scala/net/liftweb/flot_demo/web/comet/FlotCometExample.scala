@@ -21,7 +21,7 @@ class FlotCometExample extends CometActor
   var series : List [FlotSerie] = Nil
   val idPlaceholder = "ph_graph"
 
-  def defaultPrefix = "flot"
+  override def defaultPrefix = Full("flot")
 
   def render = {
     bind("flot", "graph" -> Flot.render ("ph_graph", series, options, Text ("")))

@@ -152,46 +152,46 @@ object AltXML {
    */
   def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, 
             stripComment: Boolean, convertAmp: Boolean,
-            ieMode: Boolean): Unit = {
-    x match {
+            ieMode: Boolean): Unit = 
+  x match {
+    case c: Comment if !stripComment =>
+      c.toString(sb)
 
-      case c: Comment if !stripComment =>
-        c.toString(sb)
+    case er: EntityRef if convertAmp =>
+      HtmlEntities.entMap.get(er.entityName) match {
+        case Some(chr) if chr.toInt >= 128 => sb.append(chr)
+        case _ => er.toString(sb)
+      }
 
-      case er: EntityRef if convertAmp =>
-        HtmlEntities.entMap.get(er.entityName) match {
-          case Some(chr) if chr.toInt >= 128 => sb.append(chr)
-          case _ => er.toString(sb)
-        }
+    case x: SpecialNode =>
+      x.toString(sb)
 
-      case x: SpecialNode =>
-        x.toString(sb)
+    case g: Group =>
+      for (c <- g.nodes)
+      toXML(c, x.scope, sb, stripComment, convertAmp, ieMode)
 
-      case g: Group =>
-        for (c <- g.nodes) 
-        toXML(c, x.scope, sb, stripComment, convertAmp, ieMode)
+    case e: Elem if !ieMode && ((e.child eq null) || e.child.isEmpty) =>
+      sb.append('<')
+      e.nameToString(sb)
+      if (e.attributes ne null) e.attributes.toString(sb)
+      e.scope.toString(sb, pscope)
+      sb.append("/>")
 
-      case _  =>
-        if (((x.child eq null) || (x.child.isEmpty)) && !ieMode) {
-          sb.append('<')
-          x.nameToString(sb)
-          if (x.attributes ne null) x.attributes.toString(sb)
-          x.scope.toString(sb, pscope)
-          sb.append(" />")
-        } else {
-          // print tag with namespace declarations
-          sb.append('<')
-          x.nameToString(sb)
-          if (x.attributes ne null) x.attributes.toString(sb)
-          x.scope.toString(sb, pscope)
-          sb.append('>')
-          sequenceToXML(x.child, x.scope, sb, stripComment, convertAmp, ieMode)
-          sb.append("</")
-          x.nameToString(sb)
-          sb.append('>')
-        }
-    }
+    case e: Elem =>
+      // print tag with namespace declarations
+      sb.append('<')
+      e.nameToString(sb)
+      if (e.attributes ne null) e.attributes.toString(sb)
+      e.scope.toString(sb, pscope)
+      sb.append('>')
+      sequenceToXML(e.child, e.scope, sb, stripComment, convertAmp, ieMode)
+      sb.append("</")
+      e.nameToString(sb)
+      sb.append('>')
+
+    case _ => // dunno what it is, but ignore it
   }
+  
 
   /**
    * @param children     ...

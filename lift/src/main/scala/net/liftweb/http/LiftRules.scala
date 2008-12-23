@@ -275,6 +275,13 @@ object LiftRules {
   var ajaxStart: Can[() => JsCmd] = Empty
 
   /**
+  * The function that calculates if the response should be rendered in
+  * IE6/7 compatibility mode
+  */
+  var calcIEMode: () => Boolean =
+  () => (for (r <- S.request) yield r.isIE6 || r.isIE7) openOr true
+
+  /**
    * The JavaScript to execute at the end of an
    * Ajax request (for example, removing the spinning working thingy)
    */
@@ -481,7 +488,8 @@ object LiftRules {
   private def cvt(ns: Node, headers: List[(String, String)], cookies: List[Cookie], session: Req) =
   convertResponse((XhtmlResponse(Group(session.fixHtml(ns)),
                                  ResponseInfo.docType(session),
-                                 headers, cookies, 200), headers, cookies, session))
+                                 headers, cookies, 200,
+			       S.ieMode), headers, cookies, session))
 
   var defaultHeaders: PartialFunction[(NodeSeq, Req), List[(String, String)]] = {
     case _ => List("Expires" -> "Mon, 26 Jul 1997 05:00:00 GMT",
@@ -554,11 +562,11 @@ object LiftRules {
       XhtmlResponse((<html><body>Exception occured while processing {r.uri}
               <pre>{
                   showException(e)
-                }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
+                }</pre></body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500, S.ieMode)
 
     case (_, r, e) =>
       XhtmlResponse((<html><body>Something unexpected happened while serving the page at {r.uri}
-                           </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500)
+                           </body></html>),ResponseInfo.docType(r), List("Content-Type" -> "text/html"), Nil, 500, S.ieMode)
   }
 
   /**

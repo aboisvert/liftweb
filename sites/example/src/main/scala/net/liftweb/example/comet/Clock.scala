@@ -23,7 +23,7 @@ import js._
 import JsCmds._
 
 class Clock extends CometActor {
-  def defaultPrefix = "clk"
+  override def defaultPrefix = Full("clk")
   ActorPing.schedule(this, Tick, 10 seconds) // schedule a ping every 10 seconds so we redraw
 
   private lazy val spanId = uniqueId+"_timespan"

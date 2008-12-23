@@ -33,7 +33,7 @@ import JqJsCmds._
 class Chat extends CometActor {
   private var userName = ""
   private var currentData: List[ChatLine] = Nil
-  def defaultPrefix = "chat"
+  override def defaultPrefix = Full("chat")
 
   private lazy val infoId = uniqueId + "_info"
 

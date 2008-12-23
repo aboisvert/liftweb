@@ -1,10 +1,20 @@
 package net.liftweb.http
 
-/*                                                *\
- (c) 2007 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*
+ * Copyright 2006-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import _root_.scala.xml.{Node, Unparsed, Group, NodeSeq}
 import _root_.net.liftweb.util._
@@ -18,25 +28,26 @@ trait NodeResponse extends LiftResponse {
   def cookies: List[Cookie]
   def code: Int
   def docType: Can[String]
+  def renderInIEMode: Boolean
 
   def toResponse = {
-    val (encoding: String, ieMode: Boolean) =
+    val encoding: String =
     (out, headers.ciGet("Content-Type")) match {
-    case (up: Unparsed,  _) => ("", true)
+      case (up: Unparsed,  _) => ""
     
-    case (_, Empty) | (_, Failure(_, _, _)) => 
-      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", true)
+      case (_, Empty) | (_, Failure(_, _, _)) =>
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 
-    case (_, Full(s)) if (s.toLowerCase.startsWith("text/html")) =>
-      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", true)
+      case (_, Full(s)) if (s.toLowerCase.startsWith("text/html")) =>
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 
-    case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
-                          s.toLowerCase.startsWith("text/xhtml") ||
-			  s.toLowerCase.startsWith("application/xml") ||
-			  s.toLowerCase.startsWith("application/xhtml+xml")) =>
-      ("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n", false)
+      case (_, Full(s)) if (s.toLowerCase.startsWith("text/xml") ||
+                            s.toLowerCase.startsWith("text/xhtml") ||
+                            s.toLowerCase.startsWith("application/xml") ||
+                            s.toLowerCase.startsWith("application/xhtml+xml")) =>
+        "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 
-    case _ => ("", true)
+      case _ => ""
     }
 
     val doc = docType.map(_ + "\n") openOr ""
@@ -46,18 +57,21 @@ trait NodeResponse extends LiftResponse {
     sb.append(encoding)
     sb.append(doc)
     AltXML.toXML(out, _root_.scala.xml.TopScope,
-		 sb, false, false, ieMode)
+                 sb, false, false, renderInIEMode)
 
     sb.append("  \n  ")
 
     val ret = sb.toString
 
     InMemoryResponse(ret.getBytes("UTF-8"), headers, cookies, code)
-    }
+  }
 }
 
-case class XhtmlResponse(out: Node, docType: Can[String], headers: List[(String, String)],
-			 cookies: List[Cookie], code: Int) extends NodeResponse
+case class XhtmlResponse(out: Node, docType: Can[String],
+                         headers: List[(String, String)],
+                         cookies: List[Cookie],
+                         code: Int,
+                         renderInIEMode: Boolean) extends NodeResponse
 
 
 /**
@@ -70,6 +84,7 @@ case class XmlMimeResponse(xml: Node, mime: String) extends NodeResponse {
   def headers = List("Content-Type" -> mime)
   def cookies = Nil
   def out = xml
+   def renderInIEMode: Boolean = false
 }
 
 case class XmlResponse(xml: Node) extends NodeResponse {
@@ -78,6 +93,7 @@ case class XmlResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "text/xml")
   def cookies = Nil
   def out = xml
+   def renderInIEMode: Boolean = false
 }
 
 /**
@@ -89,6 +105,7 @@ case class AtomResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "application/atom+xml")
   def cookies = Nil
   def out = xml
+   def renderInIEMode: Boolean = false
 }
 
 /**
@@ -100,6 +117,7 @@ case class OpenSearchResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "application/opensearchdescription+xml")
   def cookies = Nil
   def out = xml
+   def renderInIEMode: Boolean = false
 }
 
 /**

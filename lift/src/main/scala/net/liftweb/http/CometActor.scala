@@ -100,8 +100,9 @@ trait CometActor extends Actor with BindHelpers {
     this.start()
   }
 
+  def defaultPrefix: Can[String] = Empty
 
-  def defaultPrefix: String
+  private lazy val _defaultPrefix: String = (defaultPrefix or _name) openOr "comet"
 
   /**
    * Set to 'true' if we should run "render" on every page load
@@ -137,7 +138,7 @@ trait CometActor extends Actor with BindHelpers {
   */
   def onJsonError: Can[JsCmd] = Empty
 
-  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(defaultPrefix), onJsonError, _handleJson)
+  lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(_defaultPrefix), onJsonError, _handleJson)
 
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq =
   Elem(parentTag.prefix, parentTag.label, parentTag.attributes,
@@ -348,7 +349,7 @@ trait CometActor extends Actor with BindHelpers {
   def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
 
   def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, _defaultXml, vals :_*)
-  def bind(vals: BindParam *): NodeSeq = bind(defaultPrefix, vals :_*)
+  def bind(vals: BindParam *): NodeSeq = bind(_defaultPrefix, vals :_*)
 
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Unit) {
     who.initCometActor(theSession, name, defaultXml, attributes)
