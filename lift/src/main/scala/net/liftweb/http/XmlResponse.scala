@@ -28,7 +28,7 @@ trait NodeResponse extends LiftResponse {
   def cookies: List[Cookie]
   def code: Int
   def docType: Can[String]
-  def renderInIEMode: Boolean
+  def renderInIEMode: Boolean = false
 
   def toResponse = {
     val encoding: String =
@@ -71,7 +71,7 @@ case class XhtmlResponse(out: Node, docType: Can[String],
                          headers: List[(String, String)],
                          cookies: List[Cookie],
                          code: Int,
-                         renderInIEMode: Boolean) extends NodeResponse
+                         override val renderInIEMode: Boolean) extends NodeResponse
 
 
 /**
@@ -84,7 +84,6 @@ case class XmlMimeResponse(xml: Node, mime: String) extends NodeResponse {
   def headers = List("Content-Type" -> mime)
   def cookies = Nil
   def out = xml
-   def renderInIEMode: Boolean = false
 }
 
 case class XmlResponse(xml: Node) extends NodeResponse {
@@ -93,7 +92,6 @@ case class XmlResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "text/xml")
   def cookies = Nil
   def out = xml
-   def renderInIEMode: Boolean = false
 }
 
 /**
@@ -105,7 +103,6 @@ case class AtomResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "application/atom+xml")
   def cookies = Nil
   def out = xml
-   def renderInIEMode: Boolean = false
 }
 
 /**
@@ -117,7 +114,6 @@ case class OpenSearchResponse(xml: Node) extends NodeResponse {
   def headers = List("Content-Type" -> "application/opensearchdescription+xml")
   def cookies = Nil
   def out = xml
-   def renderInIEMode: Boolean = false
 }
 
 /**

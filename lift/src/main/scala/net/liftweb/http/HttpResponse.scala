@@ -15,7 +15,6 @@ import _root_.javax.servlet.http.Cookie
  */
 case class OkResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 200)
-  def renderInIEMode: Boolean = true
 }
 
 /**
@@ -30,7 +29,6 @@ case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
   def headers = List("Content-Type" -> mime)
   def cookies = Nil
   def out = xml
-  def renderInIEMode: Boolean = true
 }
 
 /**
@@ -38,7 +36,6 @@ case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
  */
 case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
-  def renderInIEMode: Boolean = true
 }
 
 /**
