@@ -205,6 +205,7 @@ trait CometActor extends Actor with BindHelpers {
             toDo(AnswerRender(new XmlOrJsCmd(spanId, lastRendering,
                                              buildSpan _, notices toList),
                               whosAsking openOr this, lastRenderTime, wasLastFullRender))
+            clearNotices
           } else {
             deltas.filter(_.when > when) match {
               case Nil => listeners = (seqId, toDo) :: listeners
@@ -213,6 +214,7 @@ trait CometActor extends Actor with BindHelpers {
                 toDo( AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                   Full(all.reverse.foldLeft(Noop)(_ & _.js)), Empty, buildSpan, false, notices toList),
                                    whosAsking openOr this, hd.when, false))
+                clearNotices
             }
           }
       }
@@ -228,6 +230,7 @@ trait CometActor extends Actor with BindHelpers {
         case _ => if (!deltas.isEmpty || devMode) performReRender(false);
           reply(AnswerRender(new XmlOrJsCmd(spanId, lastRendering, buildSpan _, notices toList),
                              whosAsking openOr this, lastRenderTime, true))
+          clearNotices
       }
 
     case ActionMessageSet(msgs, req) =>
@@ -283,13 +286,12 @@ trait CometActor extends Actor with BindHelpers {
       val delta = JsDelta(time, cmd)
       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       S.clearFunctionMap
-      //val garbageTime = time - 1200000L // remove anything that's more than 20 minutes old
-      //deltas = delta :: deltas.filter(_.when < garbageTime)
       deltas = delta :: deltas
       if (!listeners.isEmpty) {
         val rendered = AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                    Full(cmd), Empty, buildSpan, false, notices toList),
                                     whosAsking openOr this, time, false)
+        clearNotices
         listeners.foreach(_._2(rendered))
         listeners = Nil
       }
@@ -322,6 +324,7 @@ trait CometActor extends Actor with BindHelpers {
     AnswerRender(new XmlOrJsCmd(spanId, lastRendering, buildSpan _, notices toList),
                  this, lastRenderTime, sendAll)
 
+    clearNotices
     listeners.foreach(_._2(rendered))
     listeners = Nil
   }
