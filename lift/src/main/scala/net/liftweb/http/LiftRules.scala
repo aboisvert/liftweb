@@ -486,7 +486,7 @@ object LiftRules {
   }
 
   def performTransform(in: LiftResponse): LiftResponse = responseTransformers.toList.foldLeft(in) {
-    case (in, pf: PartialFunction[LiftResponse, LiftResponse]) =>
+    case (in, pf: PartialFunction[_, _]) =>
       if (pf.isDefinedAt(in)) pf(in) else in
     case (in, f) => f(in)
   }
