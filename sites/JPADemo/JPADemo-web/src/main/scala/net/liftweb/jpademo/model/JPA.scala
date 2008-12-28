@@ -18,14 +18,14 @@ package net.liftweb.jpademo.model
 import javax.persistence._
 import scala.collection.jcl.{BufferWrapper,SetWrapper}
 import net.liftweb.http.RequestVar
-import net.liftweb.util.{Can,Full,Empty}
+import net.liftweb.util.{Box,Full,Empty}
 import java.util.{Date,Calendar}
 
 object JPA {
   implicit def setToWrapper[A](set : java.util.Set[A]) = new SetWrapper[A]{override def underlying = set}
   implicit def listToWrapper[A](list : java.util.List[A]) = new BufferWrapper[A]{override def underlying = list}
 
-  def findToCan[A](f: => A): Can[A] =
+  def findToBox[A](f: => A): Box[A] =
     try {
       f match {
         case found: A => Full(found)
@@ -43,7 +43,7 @@ abstract class ScalaEntityManager(val persistanceName: String) {
   protected def closeEM (em : EntityManager)
 
   private object emVar extends RequestVar(openEM()) {
-    override def cleanupFunc : Can[() => Unit]= Full(() => closeEM(this.is))
+    override def cleanupFunc : Box[() => Unit]= Full(() => closeEM(this.is))
   }
 
   // dont encourage use of the entity manager directly
@@ -90,7 +90,7 @@ class ScalaQuery[A](val query: Query) {
 
   // value added methods
   def findAll = getResultList()
-  def findOne = JPA.findToCan[A](query.getSingleResult.asInstanceOf[A])
+  def findOne = JPA.findToBox[A](query.getSingleResult.asInstanceOf[A])
   def setParams(params : Pair[String,Any]*) = {params.foreach(param => query.setParameter(param._1, param._2)); this}
 
   // methods defined on Query

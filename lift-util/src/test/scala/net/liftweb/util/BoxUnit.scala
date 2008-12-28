@@ -16,7 +16,7 @@
 package net.liftweb.util
 
 import _root_.org.specs._
-import _root_.net.liftweb.util.Can._
+import _root_.net.liftweb.util.Box._
 import _root_.org.specs.runner._
 import _root_.org.specs.Sugar._
 import _root_.org.specs.ScalaCheck
@@ -25,11 +25,11 @@ import _root_.org.scalacheck._
 import _root_.org.scalacheck.Arbitrary._
 import _root_.org.scalacheck.Prop.{property, forAll}
 
-class CanUnitTest extends Runner(CanUnit) with JUnit
-object CanUnit extends Specification with CanGen with ScalaCheck {
-  "A Can equals method" should {
-    "return true with comparing two identical Can messages" in {
-      val equality = (c1: Can[Int], c2: Can[Int]) => (c1, c2) match {
+class BoxUnitTest extends Runner(BoxUnit) with JUnit
+object BoxUnit extends Specification with BoxGen with ScalaCheck {
+  "A Box equals method" should {
+    "return true with comparing two identical Box messages" in {
+      val equality = (c1: Box[Int], c2: Box[Int]) => (c1, c2) match {
         case (Empty, Empty) => c1 == c2
         case (Full(x), Full(y)) => (c1 == c2) == (x == y)
         case (Failure(m1, e1, l1), Failure(m2, e2, l2)) => (c1 == c2) == ((m1, e1, l1) == (m2, e2, l2))
@@ -48,27 +48,27 @@ object CanUnit extends Specification with CanGen with ScalaCheck {
     }
   }
 }
-trait CanGen {
+trait BoxGen {
 
   implicit def genThrowable: Arbitrary[Throwable] = Arbitrary[Throwable] {
     case class UserException extends Throwable
     value(UserException())
   }
 
-  implicit def genCan[T](implicit a: Arbitrary[T]): Arbitrary[Can[T]] = Arbitrary[Can[T]] {
+  implicit def genBox[T](implicit a: Arbitrary[T]): Arbitrary[Box[T]] = Arbitrary[Box[T]] {
     frequency(
       (3, value(Empty)),
       (3, a.arbitrary.map(Full[T])),
-      (1, genFailureCan)
+      (1, genFailureBox)
     )
   }
 
-  def genFailureCan: Gen[Failure] = for {
+  def genFailureBox: Gen[Failure] = for {
     msgLen <- choose(0, 4)
     msg <- vectorOf(msgLen, alphaChar)
     exception <- value(Full(new Exception("")))
     chainLen <- choose(1, 5)
-    chain <- frequency((1, vectorOf(chainLen, genFailureCan)), (3, value(Nil)))
-  } yield Failure(msg.mkString, exception, Can(chain.firstOption))
+    chain <- frequency((1, vectorOf(chainLen, genFailureBox)), (3, value(Nil)))
+  } yield Failure(msg.mkString, exception, Box(chain.firstOption))
 
 }

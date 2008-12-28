@@ -21,7 +21,7 @@ import _root_.net.liftweb.util._
 import Helpers._
 
 case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
-  private[sitemap] var _parent: Can[HasKids] = Empty
+  private[sitemap] var _parent: Box[HasKids] = Empty
   private[sitemap] var siteMap: SiteMap = _
 
   private[sitemap] def init(siteMap: SiteMap) {
@@ -36,14 +36,14 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
     kids.foreach(_.validate)
   }
 
-  private[sitemap] def testParentAccess: Either[Boolean, Can[LiftResponse]] = _parent match {
+  private[sitemap] def testParentAccess: Either[Boolean, Box[LiftResponse]] = _parent match {
     case Full(p) => p.testAccess
     case _ => Left(true)
   }
 
-  override private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = loc.testAccess
+  override private[sitemap] def testAccess: Either[Boolean, Box[LiftResponse]] = loc.testAccess
 
-  def findLoc(req: Req): Can[Loc[_]] =
+  def findLoc(req: Req): Box[Loc[_]] =
   if (loc.doesMatch_?(req)) Full(loc)
   else first(kids)(_.findLoc(req))
 
@@ -59,7 +59,7 @@ case class Menu(loc: Loc[_], kids: Menu*) extends HasKids {
   }
   // def buildChildLine: List[MenuItem] = kids.toList.flatMap(m => m.loc.buildItem(Nil, false, false))
 
-  def makeMenuItem(path: List[Loc[_]]): Can[MenuItem] =
+  def makeMenuItem(path: List[Loc[_]]): Box[MenuItem] =
   loc.buildItem(kids.flatMap(_.makeMenuItem(path)).toList, _lastInPath(path), _inPath(path))
 
   private def _inPath(in: List[Loc[_]]): Boolean = in match {

@@ -25,7 +25,7 @@ import _root_.scala.collection.mutable.{HashMap, ListBuffer}
 abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
   self: MyType =>
   private lazy val name = "_lift_sv_"+getClass.getName+"_"+__nameSalt
-  protected def findFunc(name: String): Can[T]
+  protected def findFunc(name: String): Box[T]
   protected def setFunc(name: String, value: T): Unit
   protected def clearFunc(name: String): Unit
 
@@ -61,7 +61,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
 
   def remove(): Unit = clearFunc(name)
 
-  def cleanupFunc: Can[() => Unit] = Empty
+  def cleanupFunc: Box[() => Unit] = Empty
 
   def registerCleanupFunc(in: () => Unit): Unit
 
@@ -81,7 +81,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
  * @param dflt - the default value of the session variable
  */
 abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) {
-  override protected def findFunc(name: String): Can[T] = S.session.flatMap(_.get(name))
+  override protected def findFunc(name: String): Box[T] = S.session.flatMap(_.get(name))
   override protected def setFunc(name: String, value: T): Unit = S.session.foreach(_.set(name, value))
   override protected def clearFunc(name: String): Unit = S.session.foreach(_.unset(name))
 
@@ -102,7 +102,7 @@ abstract class SessionVar[T](dflt: => T) extends AnyVar[T, SessionVar[T]](dflt) 
  */
 abstract class RequestVar[T](dflt: => T) extends AnyVar[T, RequestVar[T]](dflt) {
 
-  override protected def findFunc(name: String): Can[T] = RequestVarHandler.get(name)
+  override protected def findFunc(name: String): Box[T] = RequestVarHandler.get(name)
   override protected def setFunc(name: String, value: T): Unit = RequestVarHandler.set(name, value)
   override protected def clearFunc(name: String): Unit = RequestVarHandler.clear(name)
 
@@ -115,21 +115,21 @@ object RequestVarHandler extends LoanWrapper {
   private val cleanup: ThreadGlobal[ListBuffer[() => Unit]] = new ThreadGlobal
   private val isIn: ThreadGlobal[String] = new ThreadGlobal
 
-  private[http] def get[T](name: String): Can[T] =
-    for (ht <- Can.legacyNullTest(vals.value);
+  private[http] def get[T](name: String): Box[T] =
+    for (ht <- Box.legacyNullTest(vals.value);
 	 v <- ht.get(name).asInstanceOf[Option[T]]) yield v;
 
 
   private[http] def set[T](name: String, value: T): Unit =
-    for (ht <- Can.legacyNullTest(vals.value))
+    for (ht <- Box.legacyNullTest(vals.value))
       ht(name) = value
 
   private[http] def clear(name: String): Unit =
-    for (ht <- Can.legacyNullTest(vals.value))
+    for (ht <- Box.legacyNullTest(vals.value))
       ht -= name
 
   private[http] def addCleanupFunc(f: () => Unit): Unit =
-    for (cu <- Can.legacyNullTest(cleanup.value))
+    for (cu <- Box.legacyNullTest(cleanup.value))
       cu += f
 
   def apply[T](f: => T): T = {

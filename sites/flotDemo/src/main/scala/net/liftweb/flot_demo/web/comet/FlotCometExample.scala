@@ -5,7 +5,7 @@ import scala.xml.{NodeSeq, Text}
 
 import net.liftweb.http._
 import net.liftweb.http.js.JsCmds.Noop
-import net.liftweb.util.Can
+import net.liftweb.util.Box
 
 import net.liftweb.widgets.flot._
 

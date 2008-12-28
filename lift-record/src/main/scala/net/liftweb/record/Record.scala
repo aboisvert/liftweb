@@ -57,7 +57,7 @@ trait Record[MyType <: Record[MyType]] {
    * fields for JSON object, put the calculated fields
    * here
    */
-  def suplementalJs(ob: Can[KeyObfuscator]): List[(String, JsExp)] = Nil
+  def suplementalJs(ob: Box[KeyObfuscator]): List[(String, JsExp)] = Nil
 
   /**
    * Validates this Record by calling validators for each field
@@ -87,7 +87,7 @@ trait Record[MyType <: Record[MyType]] {
    *
    * @return the form
    */
-  def toForm(button: Can[String])(f: MyType => Unit): NodeSeq = {
+  def toForm(button: Box[String])(f: MyType => Unit): NodeSeq = {
     meta.toForm(this) ++
     (SHtml.hidden(() => f(this))) ++
     ((button.map(b => (<input type="submit" value={b}/>)) openOr scala.xml.Text("")))
@@ -106,9 +106,9 @@ trait Record[MyType <: Record[MyType]] {
    * Find the field by name
    * @param fieldName -- the name of the field to find
    *
-   * @return Can[MappedField]
+   * @return Box[MappedField]
    */
-  def fieldByName(fieldName: String): Can[OwnedField[MyType]] = meta.fieldByName(fieldName, this)
+  def fieldByName(fieldName: String): Box[OwnedField[MyType]] = meta.fieldByName(fieldName, this)
 }
 
 trait ExpandoRecord[MyType <: Record[MyType] with ExpandoRecord[MyType]] {
@@ -117,11 +117,11 @@ trait ExpandoRecord[MyType <: Record[MyType] with ExpandoRecord[MyType]] {
   /**
    * If there's a field in this record that defines the locale, return it
    */
-  def localeField: Can[LocaleField[MyType]] = Empty
+  def localeField: Box[LocaleField[MyType]] = Empty
 
-  def timeZoneField: Can[TimeZoneField[MyType]] = Empty
+  def timeZoneField: Box[TimeZoneField[MyType]] = Empty
 
-  def countryField: Can[CountryField[MyType]] = Empty
+  def countryField: Box[CountryField[MyType]] = Empty
 }
 
 

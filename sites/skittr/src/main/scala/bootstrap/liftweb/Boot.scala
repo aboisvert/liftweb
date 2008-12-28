@@ -6,7 +6,7 @@ package bootstrap.liftweb
   http://www.apache.org/licenses/LICENSE-2.0
 \*                                                 */
 
-import _root_.net.liftweb.util.{Helpers, Can, Empty, Full, Failure, Log, NamedPF}
+import _root_.net.liftweb.util.{Helpers, Box, Empty, Full, Failure, Log, NamedPF}
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.mapper._
 import Helpers._
@@ -52,7 +52,7 @@ class Boot {
   * A singleton that vends a database connection to a Derby database
   */
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Box[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm =  DriverManager.getConnection("jdbc:derby:skittr;create=true")

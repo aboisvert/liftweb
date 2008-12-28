@@ -73,7 +73,7 @@ object UserList {
   def add(name: String, who: UserActor) = writeLock(set(name) = who)
 
   // find a user by name
-  def find(name: String): Can[UserActor] = readLock(Can(set.get(name)))
+  def find(name: String): Box[UserActor] = readLock(Box(set.get(name)))
 
   // remove a user
   def remove(name: String) = writeLock(set -= name)

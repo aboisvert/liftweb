@@ -26,8 +26,8 @@ import _root_.net.liftweb.http.js._
 import _root_.scala.xml.NodeSeq
 
 class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean, T] {
-  private var data : Can[Boolean] = Full(defaultValue)
-  private var orgData: Can[Boolean] = Full(defaultValue)
+  private var data : Box[Boolean] = Full(defaultValue)
+  private var orgData: Box[Boolean] = Full(defaultValue)
 
   def defaultValue: Boolean = false
 
@@ -79,7 +79,7 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
     }
   }
 
-  private def allSet(in: Can[Boolean]) {
+  private def allSet(in: Box[Boolean]) {
     this.data = in
     this.orgData = in
   }
@@ -106,6 +106,6 @@ class MappedBoolean[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Boolean
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] = Full(SHtml.checkbox(is,this.apply _))
+  override def _toForm: Box[NodeSeq] = Full(SHtml.checkbox(is,this.apply _))
 }
 

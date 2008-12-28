@@ -18,7 +18,7 @@ package net.liftweb.mapper
 
 import _root_.java.sql.{ResultSet, Types}
 import _root_.java.lang.reflect.Method
-import _root_.net.liftweb.util.{FatLazy, Can, Full, Empty, Failure}
+import _root_.net.liftweb.util.{FatLazy, Box, Full, Empty, Failure}
 import _root_.java.util.Date
 import _root_.java.util.regex._
 import _root_.scala.xml.{NodeSeq, Text}
@@ -93,7 +93,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
     orgData.setFrom(data)
   }
 
-  override def _toForm: Can[NodeSeq] =
+  override def _toForm: Box[NodeSeq] =
     Full(<input type='text' id={fieldId} maxlength={maxLen.toString}
 	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
 	 value={is match {case null => "" case s => s.toString}}/>)
@@ -116,7 +116,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   }
 
 
-  def apply(ov: Can[String]): T = {
+  def apply(ov: Box[String]): T = {
     ov.foreach(v => this.set(v))
     fieldOwner
   }

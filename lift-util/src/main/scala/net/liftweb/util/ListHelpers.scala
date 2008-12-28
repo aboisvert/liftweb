@@ -28,10 +28,10 @@ trait ListHelpers {
    * @param in  a list of elements to which f can be applied
    * @param f   a function that can be applied to elements of in
    *
-   * @return a Can containing the found element (or Empty if not found)
+   * @return a Box containing the found element (or Empty if not found)
    */
-  def first_? [B](in: Seq[B])(f: => B => Boolean): Can[B] =
-    Can(in.find(f))
+  def first_? [B](in: Seq[B])(f: => B => Boolean): Box[B] =
+    Box(in.find(f))
 
   /**
    * Returns the first application of f to an element of in that
@@ -43,11 +43,11 @@ trait ListHelpers {
    * @param in  a list of elements to which f can be applied
    * @param f   a function that can be applied to elements of in
    *
-   * @return a Can containing the first Full can or Empty if f never returns a Full can
+   * @return a Box containing the first Full can or Empty if f never returns a Full can
    */
-  def first[B,C](in: Seq[B])(_f : B => Can[C]): Can[C] = {
-    val f: B => Iterable[C] = _f andThen Can.can2Iterable[C]
-    Can(in.projection.flatMap(f).firstOption)
+  def first[B,C](in: Seq[B])(_f : B => Box[C]): Box[C] = {
+    val f: B => Iterable[C] = _f andThen Box.box2Iterable[C]
+    Box(in.projection.flatMap(f).firstOption)
   }
 
   /**
@@ -55,16 +55,16 @@ trait ListHelpers {
    */
   class ListMapish(val theList: Seq[(String, String)]) {
     /**
-     * Return a Can containing the second element of the first pair having key as the first element
+     * Return a Box containing the second element of the first pair having key as the first element
      * The comparison is made ignoring the case of the keys
      *
      * @param key the string to find
      *
      * @return a Full can containing the found value or Empty
      */
-    def ciGet(swhat: String): Can[String] = {
+    def ciGet(swhat: String): Box[String] = {
       val what = swhat.toLowerCase
-      def tGet(in: Seq[(String, String)]): Can[String] =
+      def tGet(in: Seq[(String, String)]): Box[String] =
       in match {
         case Nil => Empty
         case x :: xs if (x._1.toLowerCase == what) => Full(x._2)

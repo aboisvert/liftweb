@@ -92,7 +92,7 @@ object LogBoot {
   def _log4JSetup() =
   {
     def log4jIsConfigured = LogManager.getLoggerRepository.getCurrentLoggers.hasMoreElements
-    def findTheFile: Can[(_root_.java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml")))
+    def findTheFile: Box[(_root_.java.net.URL, String)] = (first(Props.toTry.flatMap(f => List(f()+"log4j.props", f()+"log4j.xml")))
     (name =>tryo(getClass.getResource(name)).filter(_ ne null).map(s => (s, name))))
 
     val (log4jUrl, fileName) = findTheFile match {

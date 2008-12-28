@@ -39,10 +39,10 @@ case class SiteMap(kids: Menu*) extends HasKids  {
     else locs = locs + (name -> in.asInstanceOf[Loc[_]])
   }
 
-  def findLoc(name: String): Can[Loc[_]] =
-  Can(locs.get(name))
+  def findLoc(name: String): Box[Loc[_]] =
+  Box(locs.get(name))
 
-  def findLoc(req: Req): Can[Loc[_]] =
+  def findLoc(req: Req): Box[Loc[_]] =
   first(kids)(_.findLoc(req))
 
   def locForGroup(group: String): Seq[Loc[_]] =
@@ -51,7 +51,7 @@ case class SiteMap(kids: Menu*) extends HasKids  {
 
   lazy val menus: List[Menu] = locs.values.map(_.menu).toList
 
-  def buildMenu(current: Can[Loc[_]]): CompleteMenu = {
+  def buildMenu(current: Box[Loc[_]]): CompleteMenu = {
     val path: List[Loc[_]] = current match {
       case Full(loc) => loc.breadCrumbs
       case _ => Nil
@@ -61,11 +61,11 @@ case class SiteMap(kids: Menu*) extends HasKids  {
 }
 
 object SiteMap {
-  def findLoc(name: String): Can[Loc[_]] =
+  def findLoc(name: String): Box[Loc[_]] =
   for (sm <- LiftRules.siteMap;
        loc <- sm.findLoc(name)) yield loc
 
-  def findAndTestLoc(name: String): Can[Loc[_]] =
+  def findAndTestLoc(name: String): Box[Loc[_]] =
   findLoc(name).flatMap(l => l.testAccess match {
       case Left(true) => Full(l)
       case _ => Empty
@@ -92,5 +92,5 @@ trait HasKids {
 
   def isRoot_? = false
 
-  private[sitemap] def testAccess: Either[Boolean, Can[LiftResponse]] = Left(true)
+  private[sitemap] def testAccess: Either[Boolean, Box[LiftResponse]] = Left(true)
 }

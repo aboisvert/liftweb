@@ -74,7 +74,7 @@ KeyedMetaMapper[Long, T] {
 
   def logUserIdIn(uid: String): Unit
 
-  def recoverUserId: Can[String]
+  def recoverUserId: Box[String]
 
   def userDidLogin(uid: UserType) {
     userDidLogout(Full(uid))
@@ -85,7 +85,7 @@ KeyedMetaMapper[Long, T] {
     S.addCookie(cookie)
   }
 
-  def userDidLogout(uid: Can[UserType]) {
+  def userDidLogout(uid: Box[UserType]) {
     for (cook <- S.findCookie(CookieName)) {
       S.deleteCookie(cook)
       find(By(cookieId, cook.getValue)).foreach(_.delete_!)

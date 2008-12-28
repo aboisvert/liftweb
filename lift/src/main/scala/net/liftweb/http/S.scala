@@ -22,7 +22,7 @@ import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaDat
                          PrefixedAttribute,
                          Group, Node, HasKeyValue}
 import _root_.scala.collection.immutable.{ListMap, TreeMap}
-import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Can, Empty, Full, Failure, Log, JSONParser, NamedPartialFunction, NamedPF}
+import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Box, Empty, Full, Failure, Log, JSONParser, NamedPartialFunction, NamedPF}
 import Helpers._
 import js._
 import _root_.java.io.InputStream
@@ -31,7 +31,7 @@ import _root_.java.util.concurrent.atomic.AtomicLong
 import _root_.net.liftweb.builtin.snippet._
 
 trait HasParams {
-  def param(name: String): Can[String]
+  def param(name: String): Box[String]
 }
 
 /**
@@ -76,15 +76,15 @@ object S extends HasParams {
   // RequestVars are handled by a different mechanism
   // private val _requestVar = new ThreadGlobal[HashMap[String, Any]]
   private val _sessionInfo = new ThreadGlobal[LiftSession]
-  private val _resBundle = new ThreadGlobal[Can[ResourceBundle]]
-  private val _liftCoreResBundle = new ThreadGlobal[Can[ResourceBundle]]
+  private val _resBundle = new ThreadGlobal[Box[ResourceBundle]]
+  private val _liftCoreResBundle = new ThreadGlobal[Box[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
 
   private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
   private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
-  private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])])
+  private object p_notice extends RequestVar(new ListBuffer[(NoticeType.Value, NodeSeq, Box[String])])
 
   /**
    * Are we in the Scope of "S"
@@ -96,27 +96,27 @@ object S extends HasParams {
    *
    * @return the current Req
    */
-  def request: Can[Req] = _request.value match {case null => Empty case r => Full(r)}
+  def request: Box[Req] = _request.value match {case null => Empty case r => Full(r)}
 
   /**
    * @return a List of any Cookies that have been set for this Response.
    */
   def receivedCookies: List[Cookie] =
-  for (rc <- Can.legacyNullTest(_responseCookies.value).toList; c <- rc.inCookies)
+  for (rc <- Box.legacyNullTest(_responseCookies.value).toList; c <- rc.inCookies)
   yield c.clone().asInstanceOf[Cookie]
 
   /**
    * Finds a cookie with the given name
    * @param name - the name of the cookie to find
    *
-   * @return a Can of the cookie
+   * @return a Box of the cookie
    */
-  def findCookie(name: String): Can[Cookie] =
-  Can.legacyNullTest(_responseCookies.value).flatMap(
-    rc => Can(rc.inCookies.filter(_.getName == name)).
+  def findCookie(name: String): Box[Cookie] =
+  Box.legacyNullTest(_responseCookies.value).flatMap(
+    rc => Box(rc.inCookies.filter(_.getName == name)).
     map(_.clone().asInstanceOf[Cookie]))
 
-  def responseCookies: List[Cookie] = Can.legacyNullTest(_responseCookies.value).
+  def responseCookies: List[Cookie] = Box.legacyNullTest(_responseCookies.value).
   toList.flatMap(_.outCookies)
 
   /**
@@ -126,7 +126,7 @@ object S extends HasParams {
    * a MaxAge of 0.
    */
   def addCookie(cookie: Cookie) {
-    Can.legacyNullTest(_responseCookies.value).foreach(rc =>
+    Box.legacyNullTest(_responseCookies.value).foreach(rc =>
       _responseCookies.set(rc.add(cookie))
     )
   }
@@ -136,7 +136,7 @@ object S extends HasParams {
    * @param cookie the Cookie to delete
    */
   def deleteCookie(cookie: Cookie) {
-    Can.legacyNullTest(_responseCookies.value).foreach(rc =>
+    Box.legacyNullTest(_responseCookies.value).foreach(rc =>
       _responseCookies.set(rc.delete(cookie))
     )
   }
@@ -146,7 +146,7 @@ object S extends HasParams {
    * @param name the name of the cookie to delete
    */
   def deleteCookie(name: String) {
-    Can.legacyNullTest(_responseCookies.value).foreach(rc =>
+    Box.legacyNullTest(_responseCookies.value).foreach(rc =>
       _responseCookies.set(rc.delete(name))
     )
   }
@@ -155,7 +155,7 @@ object S extends HasParams {
   /**
    * Find a template based on the attribute "template"
    */
-  def templateFromTemplateAttr: Can[NodeSeq] =
+  def templateFromTemplateAttr: Box[NodeSeq] =
   for (templateName <- attr("template") ?~ "Template Attribute missing";
        val tmplList = templateName.roboSplit("/");
        template <- TemplateFinder.findAnyTemplate(tmplList) ?~
@@ -219,7 +219,7 @@ object S extends HasParams {
    *
    * @return the localized XML or Empty if there's no way to do localization
    */
-  def loc(str: String): Can[NodeSeq] =
+  def loc(str: String): Box[NodeSeq] =
   resourceBundle.flatMap(r => tryo(r.getObject(str) match {
         case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
         case s: String => Full(LiftRules.localizeStringToXml(s))
@@ -233,7 +233,7 @@ object S extends HasParams {
   /**
    * Get the resource bundle for the current locale
    */
-  def resourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_resBundle.value).openOr {
+  def resourceBundle: Box[ResourceBundle] = Box.legacyNullTest(_resBundle.value).openOr {
     val rb = tryo(ResourceBundle.getBundle(LiftRules.resourceName, locale))
     _resBundle.set(rb)
     rb
@@ -242,11 +242,12 @@ object S extends HasParams {
   /**
    * Get the lift core resource bundle for the current locale
    */
-  def liftCoreResourceBundle: Can[ResourceBundle] = Can.legacyNullTest(_liftCoreResBundle.value).openOr {
-    val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
-    _liftCoreResBundle.set(rb)
-    rb
-  }
+  def liftCoreResourceBundle: Box[ResourceBundle] = 
+    Box.legacyNullTest(_liftCoreResBundle.value).openOr {
+      val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
+      _liftCoreResBundle.set(rb)
+      rb
+    }
 
   /**
    * Get a localized string or return the original string
@@ -279,7 +280,7 @@ object S extends HasParams {
    */
   def ??(str: String): String = ?!(str, liftCoreResourceBundle)
 
-  private def ?!(str: String, resBundle: Can[ResourceBundle]) = resBundle.flatMap(r => tryo(r.getObject(str) match {
+  private def ?!(str: String, resBundle: Box[ResourceBundle]) = resBundle.flatMap(r => tryo(r.getObject(str) match {
         case s: String => Full(s)
         case _ => Empty
       }).flatMap(s => s)).openOr {
@@ -319,7 +320,7 @@ object S extends HasParams {
 
 
   private[http] object oldNotices extends
-  RequestVar[Seq[(NoticeType.Value, NodeSeq, Can[String])]](Nil)
+  RequestVar[Seq[(NoticeType.Value, NodeSeq, Box[String])]](Nil)
 
   /**
    * Initialize the current request session
@@ -331,7 +332,7 @@ object S extends HasParams {
   /**
    * The current LiftSession
    */
-  def session: Can[LiftSession] = Can.legacyNullTest(_sessionInfo.value)
+  def session: Box[LiftSession] = Box.legacyNullTest(_sessionInfo.value)
 
   /**
    * Log a query for the given request.  The query log can be tested to see
@@ -339,23 +340,23 @@ object S extends HasParams {
    */
   def logQuery(query: String, time: Long) = p_queryLog.is += (query, time)
 
-  private[http] def snippetForClass(cls: String): Can[StatefulSnippet] =
-  Can.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
+  private[http] def snippetForClass(cls: String): Box[StatefulSnippet] =
+  Box.legacyNullTest(_stateSnip.value).flatMap(_.get(cls))
 
   private[http] def setSnippetForClass(cls: String, inst: StatefulSnippet): Unit =
-  Can.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
+  Box.legacyNullTest(_stateSnip.value).foreach(_(cls) = inst)
 
   private[http] def unsetSnippetForClass(cls: String): Unit =
-  Can.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
+  Box.legacyNullTest(_stateSnip.value).foreach(_ -= cls)
 
 
-  private var _queryAnalyzer: List[(Can[Req], Long,
+  private var _queryAnalyzer: List[(Box[Req], Long,
                                     List[(String, Long)]) => Any] = Nil
 
   /**
    * Add a query analyzer (passed queries for analysis or logging)
    */
-  def addAnalyzer(f: (Can[Req], Long,
+  def addAnalyzer(f: (Box[Req], Long,
                       List[(String, Long)]) => Any): Unit =
   _queryAnalyzer = _queryAnalyzer ::: List(f)
 
@@ -400,7 +401,7 @@ object S extends HasParams {
    * Sets a HTTP header attribute
    */
   def setHeader(name: String, value: String) {
-    Can.legacyNullTest(_responseHeaders.value).foreach(
+    Box.legacyNullTest(_responseHeaders.value).foreach(
       rh =>
       rh.headers = rh.headers + (name -> value)
     )
@@ -410,7 +411,7 @@ object S extends HasParams {
    * Returns the HTTP headers as a List[(String, String)]
    */
   def getHeaders(in: List[(String, String)]): List[(String, String)] = {
-    Can.legacyNullTest(_responseHeaders.value).map(
+    Box.legacyNullTest(_responseHeaders.value).map(
       rh =>
       rh.headers.elements.toList :::
       in.filter{case (n, v) => !rh.headers.contains(n)}
@@ -420,8 +421,8 @@ object S extends HasParams {
   /**
    * Sets the document type for the response
    */
-  def setDocType(what: Can[String]) {
-    Can.legacyNullTest(_responseHeaders.value).foreach(
+  def setDocType(what: Box[String]) {
+    Box.legacyNullTest(_responseHeaders.value).foreach(
       rh =>
       rh.docType = what
     )
@@ -430,7 +431,7 @@ object S extends HasParams {
   /**
    * Returns the document type that was set for the response
    */
-  def getDocType: (Boolean, Can[String]) = Can.legacyNullTest(_responseHeaders.value).map(
+  def getDocType: (Boolean, Box[String]) = Box.legacyNullTest(_responseHeaders.value).map(
     rh => (rh.overrodeDocType, rh.docType)
   ).openOr( (false, Empty) )
 
@@ -474,8 +475,8 @@ object S extends HasParams {
    * @return a List[Cookie] even if the underlying request's Cookies are null.
    */
   private def getCookies(request: HttpServletRequest): List[Cookie] =
-  for (r <- Can.legacyNullTest(request).toList;
-       ca <- Can.legacyNullTest(r.getCookies).toList;
+  for (r <- Box.legacyNullTest(request).toList;
+       ca <- Box.legacyNullTest(r.getCookies).toList;
        c <- ca) yield c
 
   private def _init[B](request: Req, session: LiftSession)(f: () => B): B = {
@@ -495,7 +496,7 @@ object S extends HasParams {
   /**
    * Returns the 'Referer' HTTP header attribute
    */
-  def referer: Can[String] = request.flatMap(r => Can.legacyNullTest(r.request.getHeader("Referer")))
+  def referer: Box[String] = request.flatMap(r => Box.legacyNullTest(r.request.getHeader("Referer")))
 
   /**
    * Get a list of current attributes
@@ -563,7 +564,7 @@ object S extends HasParams {
    * Used to get an attribute by its name
    */
   object attr {
-    def apply(what: String): Can[String] = Can(attrs.find{
+    def apply(what: String): Box[String] = Box(attrs.find{
         case (Left(v), _) if v == what => true
         case _ => false
       }).map(_._2)
@@ -597,17 +598,17 @@ object S extends HasParams {
   /**
    * Returns the LiftSession parameter denominated by 'what'
    */
-  def get(what: String): Can[String] = session.flatMap(_.get[String](what))
+  def get(what: String): Box[String] = session.flatMap(_.get[String](what))
 
   /**
    * Returns the HttpSession parameter denominated by 'what'
    */
-  def getSessionAttribute(what: String): Can[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty})
+  def getSessionAttribute(what: String): Box[String] = servletSession.flatMap(_.getAttribute(what) match {case s: String => Full(s) case _ => Empty})
 
   /**
    * Returns the HttpSession
    */
-  def servletSession: Can[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
+  def servletSession: Box[HttpSession] = session.map(_.httpSession).or(servletRequest.map(_.getSession))
 
   /**
    * Returns 'type' S attribute
@@ -637,7 +638,7 @@ object S extends HasParams {
   /**
    * The current servlet request
    */
-  def servletRequest: Can[HttpServletRequest] = Can.legacyNullTest(_request.value).map(_.request)
+  def servletRequest: Box[HttpServletRequest] = Box.legacyNullTest(_request.value).map(_.request)
 
   /**
    * The host that the request was made on
@@ -658,25 +659,25 @@ object S extends HasParams {
    * Get a map of the name/functions
    */
   def functionMap: Map[String, AFuncHolder] =
-  Can.legacyNullTest(_functionMap.value).
+  Box.legacyNullTest(_functionMap.value).
   map(s => Map(s.elements.toList :_*)).openOr(Map.empty)
 
   /**
    * Clears the function map.  potentially very destuctive... use at own risk
    */
-  def clearFunctionMap {Can.!!(_functionMap.value).foreach(_.clear)}
+  def clearFunctionMap {Box.!!(_functionMap.value).foreach(_.clear)}
 
   /**
    * The current context path
    */
   def contextPath = session.map(_.contextPath).openOr("")
 
-  def locateSnippet(name: String): Can[NodeSeq => NodeSeq] = {
+  def locateSnippet(name: String): Box[NodeSeq => NodeSeq] = {
     val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
-    NamedPF.applyCan(snippet, LiftRules.snippets.toList)
+    NamedPF.applyBox(snippet, LiftRules.snippets.toList)
   }
 
-  private object _currentSnippet extends RequestVar[Can[String]](Empty)
+  private object _currentSnippet extends RequestVar[Box[String]](Empty)
 
   private[http] def doSnippet[T](name: String)(f: => T): T = {
     val old = _currentSnippet.is
@@ -688,9 +689,9 @@ object S extends HasParams {
     }
   }
 
-  def currentSnippet: Can[String] = _currentSnippet.is
+  def currentSnippet: Box[String] = _currentSnippet.is
 
-  def locateMappedSnippet(name: String): Can[NodeSeq => NodeSeq] = Can(snippetMap.value.get(name))
+  def locateMappedSnippet(name: String): Box[NodeSeq => NodeSeq] = Box(snippetMap.value.get(name))
 
   /**
    * Associates a name with a snippet function 'func'
@@ -732,7 +733,7 @@ object S extends HasParams {
    * @param f - function returning a JsCmds
    * @return (JsonCall, JsCmd)
    */
-  def buildJsonFunc(name: Can[String], onError: Can[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
+  def buildJsonFunc(name: Box[String], onError: Box[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
     val key = Helpers.nextFuncName
 
     def checkCmd(in: Any) = in match {
@@ -807,7 +808,7 @@ object S extends HasParams {
          (MsgNoticeMeta.get, g(S.notices))).foldLeft(groupMessages)((car, cdr) => cdr match {
         case (meta, m) => m.foldLeft(car)((left, r) =>
             left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
-                                                 (Can(meta.get(r._1)).map(new UnprefixedAttribute("class", _, Null)) openOr Null)))
+                                                 (Box(meta.get(r._1)).map(new UnprefixedAttribute("class", _, Null)) openOr Null)))
         })
   }
 
@@ -821,7 +822,7 @@ object S extends HasParams {
    * it is automatically cleaned up from functions caches.
    */
   def mapFuncToURI(uri: String, f : () => Unit): String = {
-    session map (_ attachRedirectFunc(uri, Can.legacyNullTest(f))) openOr uri
+    session map (_ attachRedirectFunc(uri, Box.legacyNullTest(f))) openOr uri
   }
 
   /**
@@ -829,7 +830,7 @@ object S extends HasParams {
    */
   @serializable
   abstract class AFuncHolder {
-    def owner: Can[String]
+    def owner: Box[String]
     def apply(in: List[String]): Any
     def duplicate(newOwner: String): AFuncHolder
   }
@@ -838,7 +839,7 @@ object S extends HasParams {
    * Impersonates a function that will be called when uploading files
    */
   @serializable
-  class BinFuncHolder(val func: FileParamHolder => Any, val owner: Can[String]) extends AFuncHolder {
+  class BinFuncHolder(val func: FileParamHolder => Any, val owner: Box[String]) extends AFuncHolder {
     def apply(in: List[String]) {Log.error("You attempted to call a 'File Upload' function with a normal parameter.  Did you forget to 'enctype' to 'multipart/form-data'?")}
     def apply(in: FileParamHolder) = func(in)
     def duplicate(newOwner: String) = new BinFuncHolder(func, Full(newOwner))
@@ -846,12 +847,12 @@ object S extends HasParams {
 
   object BinFuncHolder {
     def apply(func: FileParamHolder => Any) = new BinFuncHolder(func, Empty)
-    def apply(func: FileParamHolder => Any, owner: Can[String]) = new BinFuncHolder(func, owner)
+    def apply(func: FileParamHolder => Any, owner: Box[String]) = new BinFuncHolder(func, owner)
   }
 
   object SFuncHolder {
     def apply(func: String => Any) = new SFuncHolder(func, Empty)
-    def apply(func: String => Any, owner: Can[String]) = new SFuncHolder(func, owner)
+    def apply(func: String => Any, owner: Box[String]) = new SFuncHolder(func, owner)
   }
 
   /**
@@ -859,7 +860,7 @@ object S extends HasParams {
    * takes a String as the only parameter and returns an Any.
    */
   @serializable
-  class SFuncHolder(val func: String => Any, val owner: Can[String]) extends AFuncHolder {
+  class SFuncHolder(val func: String => Any, val owner: Box[String]) extends AFuncHolder {
     def this(func: String => Any) = this(func, Empty)
     def apply(in: List[String]): Any = in.map(func(_))
     def duplicate(newOwner: String) = new SFuncHolder(func, Full(newOwner))
@@ -867,7 +868,7 @@ object S extends HasParams {
 
   object LFuncHolder {
     def apply(func: List[String] => Any) = new LFuncHolder(func, Empty)
-    def apply(func: List[String] => Any, owner: Can[String]) = new LFuncHolder(func, owner)
+    def apply(func: List[String] => Any, owner: Box[String]) = new LFuncHolder(func, owner)
   }
 
   /**
@@ -875,14 +876,14 @@ object S extends HasParams {
    * takes a List[String] as the only parameter and returns an Any.
    */
   @serializable
-  class LFuncHolder(val func: List[String] => Any,val owner: Can[String]) extends AFuncHolder {
+  class LFuncHolder(val func: List[String] => Any,val owner: Box[String]) extends AFuncHolder {
     def apply(in: List[String]): Any = func(in)
     def duplicate(newOwner: String) = new LFuncHolder(func, Full(newOwner))
   }
 
   object NFuncHolder {
     def apply(func: () => Any) = new NFuncHolder(func, Empty)
-    def apply(func: () => Any, owner: Can[String]) = new NFuncHolder(func, owner)
+    def apply(func: () => Any, owner: Box[String]) = new NFuncHolder(func, owner)
   }
 
   /**
@@ -890,7 +891,7 @@ object S extends HasParams {
    * takes zero arguments and returns an Any.
    */
   @serializable
-  class NFuncHolder(val func: () => Any,val owner: Can[String]) extends AFuncHolder {
+  class NFuncHolder(val func: () => Any,val owner: Box[String]) extends AFuncHolder {
     def apply(in: List[String]): Any = in.map(s => func())
     def duplicate(newOwner: String) = new NFuncHolder(func, Full(newOwner))
   }
@@ -915,7 +916,7 @@ object S extends HasParams {
   /**
    * Returns the HTTP parameter having 'n' name
    */
-  def param(n: String): Can[String] = request.flatMap(r => Can(r.param(n)))
+  def param(n: String): Box[String] = request.flatMap(r => Box(r.param(n)))
 
   /**
    * Sets an ERROR notice as a plain text
@@ -974,25 +975,25 @@ object S extends HasParams {
 
   private [http] def message(msg: String, notice: NoticeType.Value) { message(Text(msg), notice)}
   private [http] def message(msg: NodeSeq, notice: NoticeType.Value) { p_notice += (notice, msg, Empty)}
-  private [http] def messagesFromList(list: List[(NoticeType.Value, NodeSeq, Can[String])]) { list foreach ( p_notice += _) }
+  private [http] def messagesFromList(list: List[(NoticeType.Value, NodeSeq, Box[String])]) { list foreach ( p_notice += _) }
 
   /**
    * Returns the current notices
    */
-  def getNotices: List[(NoticeType.Value, NodeSeq, Can[String])] = p_notice.toList
+  def getNotices: List[(NoticeType.Value, NodeSeq, Box[String])] = p_notice.toList
 
   /**
    * Returns only ERROR notices
    */
-  def errors: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Error).map(n => (n._2, n._3)))
+  def errors: List[(NodeSeq, Box[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Error).map(n => (n._2, n._3)))
   /**
    * Returns only NOTICE notices
    */
-  def notices: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Notice).map(n => (n._2, n._3)))
+  def notices: List[(NodeSeq, Box[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Notice).map(n => (n._2, n._3)))
   /**
    * Returns only WARNING notices
    */
-  def warnings: List[(NodeSeq, Can[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Warning).map(n => (n._2, n._3)))
+  def warnings: List[(NodeSeq, Box[String])] = List(oldNotices.is, p_notice.is).flatMap(_.filter(_._1 == NoticeType.Warning).map(n => (n._2, n._3)))
   /**
    * Clears up the notices
    */
@@ -1004,14 +1005,14 @@ object S extends HasParams {
    * @param id - the lookup id
    * @param f - the function that returns the messages
    */
-  def messagesById(id: String)(f: => List[(NodeSeq, Can[String])]): List[NodeSeq] = f filter( _._2 map (_ equals id ) openOr false) map(_._1)
+  def messagesById(id: String)(f: => List[(NodeSeq, Box[String])]): List[NodeSeq] = f filter( _._2 map (_ equals id ) openOr false) map(_._1)
 
   /**
    *  Returns the messages that are not associated with any id
    *
    * @param f - the function that returns the messages
    */
-  def noIdMessages(f: => List[(NodeSeq, Can[String])]): List[NodeSeq] = f filter( _._2 isEmpty) map (_._1)
+  def noIdMessages(f: => List[(NodeSeq, Box[String])]): List[NodeSeq] = f filter( _._2 isEmpty) map (_._1)
 
   /**
    * Returns the messages that are associated with any id.
@@ -1019,7 +1020,7 @@ object S extends HasParams {
    *
    * @param f - the function that returns the messages
    */
-  def idMessages(f: => List[(NodeSeq, Can[String])]):List[(String, List[NodeSeq])] = {
+  def idMessages(f: => List[(NodeSeq, Box[String])]):List[(String, List[NodeSeq])] = {
     val res = new HashMap[String, List[NodeSeq]]
     f filter(  _._2.isEmpty == false) foreach (_ match {
         case (node, id) => val key = id open_!; res += (key -> (res.getOrElseUpdate(key, Nil) ::: List(node)))
@@ -1074,11 +1075,11 @@ case class JsonCmd(command: String, target: String, params: Any,
  */
 class ResponseInfoHolder {
   var headers: Map[String, String] = Map.empty
-  private var _docType: Can[String] = Empty
+  private var _docType: Box[String] = Empty
   private var _setDocType = false
 
   def docType = _docType
-  def docType_=(in: Can[String]) {
+  def docType_=(in: Box[String]) {
     _docType = in
     _setDocType = true
   }
@@ -1090,7 +1091,7 @@ class ResponseInfoHolder {
  * Defines the association of this reference with an markup tag ID
  */
 trait FieldIdentifier {
-  def uniqueFieldId: Can[String] = Empty
+  def uniqueFieldId: Box[String] = Empty
 }
 
 /**

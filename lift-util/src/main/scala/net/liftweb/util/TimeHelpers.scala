@@ -294,7 +294,7 @@ trait TimeHelpers { self: ControlHelpers =>
   def toInternetDate(in: Long): String = internetDateFormatter.format(new Date(in))
 
   /** @return a Full(date) or a failure if the input couldn't be translated to date (or Empty if the input is null)*/
-  def toDate(in: Any): Can[Date] = {
+  def toDate(in: Any): Box[Date] = {
     try {
       in match {
         case null => Empty

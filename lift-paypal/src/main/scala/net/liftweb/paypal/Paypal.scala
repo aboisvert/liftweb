@@ -85,7 +85,7 @@ object PaypalTransactionStatus extends Enumeration {
   val PartiallyRefundedPayment = Value(15, "Partially-Refunded")
   val ProcessedPayment = Value(16, "Processed")
 
-  def find(name: String): Can[Value] = {
+  def find(name: String): Box[Value] = {
     val n = name.trim.toLowerCase
     this.elements.filter(v => v.toString.toLowerCase == n).toList.firstOption
   }
@@ -207,15 +207,15 @@ trait PaypalResponse extends PaypalUtilities with HasParams {
   private lazy val info: Map[String, String] =
   Map((for (v <- response; s <- split(v)) yield s) :_*)
 
-  def param(name: String) = Can(info.get(name))
+  def param(name: String): Box[String] = Box(info.get(name))
 
-  lazy val paypalInfo: Can[PayPalInfo] =
+  lazy val paypalInfo: Box[PayPalInfo] =
   if (this.isVerified) Full(new PayPalInfo(this))
   else Empty
 
-  def rawHead: Can[String] = Can(response.firstOption)
+  def rawHead: Box[String] = Box(response.firstOption)
 
-  private def split(in: String): Can[(String, String)] = {
+  private def split(in: String): Box[(String, String)] = {
     val pos = in.indexOf("=")
     if (pos < 0) Empty
     else Full((urlDecode(in.substring(0, pos)),
@@ -378,7 +378,7 @@ trait PaypalPDT extends BasePaypalTrait {
 
   def pdtResponse:  PartialFunction[(PayPalInfo, Req), LiftResponse]
 
-  def processPDT(r: Req)(): Can[LiftResponse] = {
+  def processPDT(r: Req)(): Box[LiftResponse] = {
     for (tx <- r.param("tx");
          val resp = PaypalDataTransfer(paypalAuthToken, tx, mode, connection);
          info <- resp.paypalInfo;
@@ -414,7 +414,7 @@ trait PaypalIPN extends BasePaypalTrait {
   lazy val IPNPath = ipnPath
   def ipnPath = "ipn"
 
-  def defaultResponse(): Can[LiftResponse] = Full(PlainTextResponse("ok"))
+  def defaultResponse(): Box[LiftResponse] = Full(PlainTextResponse("ok"))
 
   override def dispatch: List[LiftRules.DispatchPF] = {
     val nf: LiftRules.DispatchPF = NamedPF("Default PaypalIPN") {
@@ -433,7 +433,7 @@ trait PaypalIPN extends BasePaypalTrait {
   protected case object PingMe
 
 
-  protected def buildInfo(resp: PaypalResponse, req: Req): Can[PayPalInfo] = {
+  protected def buildInfo(resp: PaypalResponse, req: Req): Box[PayPalInfo] = {
     if (resp.isVerified) Full(new PayPalInfo(req))
     else Empty
   }
@@ -486,7 +486,7 @@ class PayPalInfo(val params: HasParams) {
   val itemName = r.param("item_name")
   val business = r.param("business")
   val itemNumber = r.param("item_number")
-  val paymentStatus: Can[PaypalTransactionStatus.Value] = r.param("payment_status").flatMap(PaypalTransactionStatus.find)
+  val paymentStatus: Box[PaypalTransactionStatus.Value] = r.param("payment_status").flatMap(PaypalTransactionStatus.find)
   val mcGross = r.param("mc_gross")
   val paymentCurrency = r.param("mc_currency")
   val txnId = r.param("txn_id")

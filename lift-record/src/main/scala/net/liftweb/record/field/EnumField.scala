@@ -36,7 +36,7 @@ class EnumField[OwnerType <: Record[OwnerType], ENUM <: Enumeration](rec: OwnerT
     data
   }
 
-  def setFromAny(in: Any): Can[ENUM#Value] = {
+  def setFromAny(in: Any): Box[ENUM#Value] = {
     in match {
       case n: Int => Full(set(fromInt(n)))
       case n: Long => Full(set(fromInt(n.toInt)))
@@ -53,7 +53,7 @@ class EnumField[OwnerType <: Record[OwnerType], ENUM <: Enumeration](rec: OwnerT
     }
   }
 
-  def setFromString(s: String) : Can[ENUM#Value] = setFromAny(s)
+  def setFromString(s: String): Box[ENUM#Value] = setFromAny(s)
 
   /**
    * Build a list for v => this.set(fromInt(v)the select.  Return a tuple of (String, String) where the first string

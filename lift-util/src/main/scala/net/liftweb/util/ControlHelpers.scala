@@ -35,7 +35,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>Empty if the exception class is in the ignore list
    *   </ul>
    */
-  def tryo[T](ignore: List[Class[_]], onError: Can[Throwable => Unit])(f: => T): Can[T] = {
+  def tryo[T](ignore: List[Class[_]], onError: Box[Throwable => Unit])(f: => T): Box[T] = {
     try {
       Full(f)
     } catch {
@@ -51,7 +51,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>a Failure if f throws an exception
    *   </ul>
    */
-  def tryo[T](f: => T): Can[T] = tryo(Nil, Empty)(f)
+  def tryo[T](f: => T): Box[T] = tryo(Nil, Empty)(f)
 
 
   /**
@@ -61,7 +61,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>a Failure if f throws an exception
    *   </ul>
    */
-  def tryo[T](onError: Throwable => Unit)(f: => T): Can[T] = tryo(Nil, Full(onError))(f)
+  def tryo[T](onError: Throwable => Unit)(f: => T): Box[T] = tryo(Nil, Full(onError))(f)
 
   /**
    * Wraps a "try" block around the function f
@@ -71,7 +71,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>Empty if the exception class is in the ignore list
    *   </ul>
    */
-  def tryo[T](ignore: List[Class[_]])(f: => T): Can[T] = tryo(ignore, Empty)(f)
+  def tryo[T](ignore: List[Class[_]])(f: => T): Box[T] = tryo(ignore, Empty)(f)
 
   /**
    * Wraps a "try" block around the function f. Takes only one Class of exception to ignore
@@ -81,7 +81,7 @@ trait ControlHelpers extends ClassHelpers {
    *   <li>Empty if the exception class is in the ignore list
    *   </ul>
    */
-  def tryo[T](ignore: Class[_])(f: => T): Can[T] = tryo(List(ignore), Empty)(f)
+  def tryo[T](ignore: Class[_])(f: => T): Box[T] = tryo(List(ignore), Empty)(f)
 }
 
 

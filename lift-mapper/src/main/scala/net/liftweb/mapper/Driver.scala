@@ -64,7 +64,7 @@ abstract class DriverType(val name : String) {
    * Name of the default db schema. If not set, then the schema is assumed to
    * equal the db user name.
    */
-  def defaultSchemaName : Can[String] = Empty
+  def defaultSchemaName : Box[String] = Empty
 }
 
 object DerbyDriver extends DriverType("Apache Derby") {
@@ -152,5 +152,5 @@ object PostgreSqlDriver extends DriverType("PostgreSQL") {
    * "$user" schema is searched before "public", but it does not exist by default,
    * so "public" is our default choice.
    */
-  override def defaultSchemaName : Can[String] = Full("public")
+  override def defaultSchemaName : Box[String] = Full("public")
 }

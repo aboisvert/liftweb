@@ -117,7 +117,7 @@ extends MappedField[String, T] {
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] = {
+  override def _toForm: Box[NodeSeq] = {
     val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
     Full(<span><input id={fieldId} type='password' name={funcName}
 	 value={is.toString}/>&nbsp;{S.??("repeat")}&nbsp;<input

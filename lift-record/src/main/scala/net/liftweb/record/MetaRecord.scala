@@ -81,7 +81,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
    * </pre>
    *
    */
-  var formTemplate: Can[NodeSeq] = Empty
+  var formTemplate: Box[NodeSeq] = Empty
 
   protected val rootClass = this.getClass.getSuperclass
 
@@ -110,7 +110,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
       case (v, mf) => tArray += FieldHolder(mf.name, v, mf)
     }
 
-    def findPos(in: AnyRef) : Can[Int] = {
+    def findPos(in: AnyRef): Box[Int] = {
       tArray.toList.zipWithIndex.filter(mft => in eq mft._1.field) match {
         case Nil => Empty
         case x :: xs => Full(x._2)
@@ -267,10 +267,12 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
    * @param fieldName -- the name of the field to get
    * @param actual -- the instance to get the field on
    *
-   * @return Can[The Field] (Empty if the field is not found)
+   * @return Box[The Field] (Empty if the field is not found)
    */
-  def fieldByName(fieldName: String, inst: BaseRecord): Can[OwnedField[BaseRecord]] = {
-    Can(fieldList.find(f => f.name == fieldName)).map(holder => ??(holder.method, inst).asInstanceOf[OwnedField[BaseRecord]])
+  def fieldByName(fieldName: String, inst: BaseRecord): 
+  Box[OwnedField[BaseRecord]] = {
+    Box(fieldList.find(f => f.name == fieldName)).
+    map(holder => ??(holder.method, inst).asInstanceOf[OwnedField[BaseRecord]])
   }
 
   /**

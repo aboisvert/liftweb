@@ -30,7 +30,7 @@ class Menu extends DispatchSnippet {
   }
 
   def builder: NodeSeq = {
-    var r: Can[NodeSeq] =
+    var r: Box[NodeSeq] =
 
     S.request.map(_.buildMenu.lines.toList match {
         case Nil => List(Text("No Navigation Defined."))

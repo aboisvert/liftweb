@@ -31,7 +31,7 @@ class IntField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends NumericFi
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(in: Any): Can[Int] = {
+  def setFromAny(in: Any): Box[Int] = {
     in match {
       case n: Int => Full(this.set(n))
       case n: Number => Full(this.set(n.intValue))
@@ -46,7 +46,7 @@ class IntField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends NumericFi
     }
   }
 
-  def setFromString(s: String) : Can[Int] = {
+  def setFromString(s: String): Box[Int] = {
     try{
       Full(set(java.lang.Integer.parseInt(s)));
     } catch {

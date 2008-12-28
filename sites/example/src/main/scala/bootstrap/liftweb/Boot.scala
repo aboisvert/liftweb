@@ -16,7 +16,7 @@
 package bootstrap.liftweb
 
 import _root_.net.liftweb._
-import util.{Helpers, Can, Full, Empty, Failure, Log, NamedPF}
+import util.{Helpers, Box, Full, Empty, Failure, Log, NamedPF}
 import http._
 import sitemap._
 import Helpers._
@@ -110,7 +110,7 @@ class Boot {
   }
 
   private def invokeWebService(methodName: String)():
-  Can[LiftResponse] =
+  Box[LiftResponse] =
   for (req <- S.request;
        invoker <- createInvoker(methodName, new WebServices(req));
        ret <- invoker() match {
@@ -129,7 +129,7 @@ object RequestLogger {
   }
 
   def endServicing(session: LiftSession, req: Req,
-                   response: Can[LiftResponse]) {
+                   response: Box[LiftResponse]) {
     val delta = millis - startTime.is
     Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(
         response.map(r => " Headers: "+r.toResponse.headers) openOr ""
@@ -177,7 +177,7 @@ object MenuInfo {
 }
 
 object XmlServer {
-  def showStates(which: String)(): Can[XmlResponse] = Full(XmlResponse(
+  def showStates(which: String)(): Box[XmlResponse] = Full(XmlResponse(
       <states renderedAt={timeNow.toString}>{
           which match {
             case "red" => <state name="Ohio"/><state name="Texas"/><state name="Colorado"/>
@@ -188,7 +188,7 @@ object XmlServer {
           } }
       </states>))
 
-  def showCities(): Can[XmlResponse] =
+  def showCities(): Box[XmlResponse] =
   Full(XmlResponse(
       <cities>
         <city name="Boston"/>
@@ -201,7 +201,7 @@ object XmlServer {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Box[Connection] = {
     try {
       Class.forName("org.h2.Driver")
       val dm =  DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")

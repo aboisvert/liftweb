@@ -10,7 +10,7 @@ import _root_.scala.actors._
 import _root_.scala.actors.Actor._
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
+import _root_.net.liftweb.util.{Helpers, Box, Full, Empty, Failure}
 import _root_.scala.xml._
 import _root_.com.skittr.actor._
 import S._
@@ -19,7 +19,7 @@ import _root_.com.skittr.model.{Friend, User}
 import _root_.net.liftweb.mapper._
 
 class WatchUser extends CometActor {
-  private var userActor: Can[UserActor] = Empty
+  private var userActor: Box[UserActor] = Empty
   private var messages: List[Message] = Nil
   override def defaultPrefix = Full("sk")
 

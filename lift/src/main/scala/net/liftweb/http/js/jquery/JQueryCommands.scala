@@ -234,7 +234,7 @@ object JqJsCmds {
     def apply(uid: String, time: TimeSpan) = new Show(uid, Full(time))
   }
 
-  class Show(val uid: String,val time: Can[TimeSpan]) extends JsCmd with HasTime {
+  class Show(val uid: String,val time: Box[TimeSpan]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").show("+timeStr+");} catch (e) {}"
   }
 
@@ -243,7 +243,7 @@ object JqJsCmds {
     def apply(uid: String, time: TimeSpan) = new Hide(uid, Full(time))
   }
 
-  class Hide(val uid: String, val time: Can[TimeSpan]) extends JsCmd with HasTime {
+  class Hide(val uid: String, val time: Box[TimeSpan]) extends JsCmd with HasTime {
     def toJsCmd = "try{jQuery("+("#"+uid).encJs+").hide("+timeStr+");} catch (e) {}"
   }
 
@@ -256,7 +256,7 @@ object JqJsCmds {
     def apply(html: NodeSeq, width: String) = new ModalDialog(html, Full(width))
   }
 
-  class ModalDialog(html: NodeSeq, width: Can[String]) extends JsCmd {
+  class ModalDialog(html: NodeSeq, width: Box[String]) extends JsCmd {
     def toJsCmd = "jQuery.blockUI("+AltXML.toXML(Group(S.session.map(s =>
     s.fixHtml(s.processSurroundAndInclude("Modal Dialog", html))).openOr(html)), false, true, S.ieMode).encJs+
     (width.map(w => ", { width: '"+w+"' }").openOr("")) + ");"

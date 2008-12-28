@@ -21,7 +21,7 @@ import _root_.java.util.{Calendar, Locale}
 import _root_.java.util.Calendar._
 import _root_.java.text.SimpleDateFormat
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.js.jquery._
 import _root_.net.liftweb.http.SHtml._
@@ -45,16 +45,16 @@ object CalendarMonthView {
 
   def apply(when: Calendar,
             calendars: Seq[CalendarItem],
-            itemClick: Can[AnonFunc],
-            dayClick: Can[AnonFunc],
-            weekClick: Can[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
+            itemClick: Box[AnonFunc],
+            dayClick: Box[AnonFunc],
+            weekClick: Box[AnonFunc]) = new CalendarMonthView(when).render(calendars, itemClick, dayClick, weekClick)
 
   def apply(when: Calendar,
             meta: MonthViewMeta,
             calendars: Seq[CalendarItem],
-            itemClick: Can[AnonFunc],
-            dayClick: Can[AnonFunc],
-            weekClick: Can[AnonFunc]) = new CalendarMonthView(when, meta) render(calendars, itemClick, dayClick, weekClick)
+            itemClick: Box[AnonFunc],
+            dayClick: Box[AnonFunc],
+            weekClick: Box[AnonFunc]) = new CalendarMonthView(when, meta) render(calendars, itemClick, dayClick, weekClick)
 
 
 }
@@ -124,9 +124,9 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
    * @return NodeSeq - the markup to be rendered
    */
   def render(calendars: Seq[CalendarItem],
-             itemClick: Can[AnonFunc],
-             dayClick: Can[AnonFunc],
-             weekClick: Can[AnonFunc]): NodeSeq = {
+             itemClick: Box[AnonFunc],
+             dayClick: Box[AnonFunc],
+             weekClick: Box[AnonFunc]): NodeSeq = {
 
     def makeCells(calendar: Calendar): NodeSeq = {
 

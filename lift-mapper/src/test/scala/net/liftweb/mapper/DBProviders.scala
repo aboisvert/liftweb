@@ -15,7 +15,7 @@
  */
 package net.liftweb.mapper
 
-import _root_.net.liftweb.util.{Helpers, Log, Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{Helpers, Log, Box, Empty, Full, Failure}
 import Helpers._
 import _root_.scala.testing.SUnit
 import _root_.net.liftweb.mapper._
@@ -88,7 +88,7 @@ object DBProviders {
     }
 
     abstract class Vendor(driverClass : String) extends ConnectionManager {
-      def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+      def newConnection(name: ConnectionIdentifier): Box[Connection] = {
         Class.forName(driverClass)
         Full(mkConn)
       }

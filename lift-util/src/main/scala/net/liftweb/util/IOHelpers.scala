@@ -19,7 +19,7 @@ import _root_.scala.collection.mutable.{HashSet, ListBuffer}
 object IoHelpers extends IoHelpers
 
 trait IoHelpers {
-  def exec(cmds: String*): Can[String] = {
+  def exec(cmds: String*): Box[String] = {
     try {
       class ReadItAll(in: InputStream, done: String => Unit) extends Runnable {
         def run {

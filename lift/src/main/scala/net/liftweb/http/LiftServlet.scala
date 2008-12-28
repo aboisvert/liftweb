@@ -120,7 +120,7 @@ class LiftServlet extends HttpServlet {
   }
 
   private def authPassed_?(req : Req) : Boolean = {
-    val role = NamedPF.applyCan(req.path, LiftRules.httpAuthProtectedResource.toList)
+    val role = NamedPF.applyBox(req.path, LiftRules.httpAuthProtectedResource.toList)
     role.map(_ match {
        case Full(r) =>
          LiftRules.authentication.verified_?(req) match {
@@ -135,7 +135,7 @@ class LiftServlet extends HttpServlet {
    * Service the HTTP request
    */
   def doService(request: HttpServletRequest, response: HttpServletResponse, requestState: Req): Boolean = {
-    var tmpStatelessHolder: Can[() => Can[LiftResponse]] = null
+    var tmpStatelessHolder: Box[() => Box[LiftResponse]] = null
 
     tryo { LiftRules.onBeginServicing.toList.foreach(_(requestState)) }
 
@@ -147,7 +147,7 @@ class LiftServlet extends HttpServlet {
         Full(LiftRules.authentication.unauthorizedResponse)
       } else
       // if the request is matched is defined in the stateless table, dispatch
-      if ({tmpStatelessHolder = NamedPF.applyCan(requestState,
+      if ({tmpStatelessHolder = NamedPF.applyBox(requestState,
                                                  LiftRules.statelessDispatchTable.toList);
         tmpStatelessHolder.isDefined})
       {
@@ -183,15 +183,15 @@ class LiftServlet extends HttpServlet {
   private def dispatchStatefulRequest(request: HttpServletRequest,
                                       liftSession: LiftSession,
                                       requestState: Req):
-  Can[LiftResponse] =
+  Box[LiftResponse] =
   {
     val toMatch = requestState
 
-    val dispatch: (Boolean, Can[LiftResponse]) =
+    val dispatch: (Boolean, Box[LiftResponse]) =
     NamedPF.find(toMatch, LiftRules.dispatchTable(request)) match {
       case Full(pf) =>
         LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
-        val ret: (Boolean, Can[LiftResponse]) =
+        val ret: (Boolean, Box[LiftResponse]) =
         try {
           pf(toMatch)() match {
             case Full(v) =>
@@ -217,7 +217,7 @@ class LiftServlet extends HttpServlet {
 
     val wp = requestState.path.wholePath
 
-    val toTransform: Can[LiftResponse] =
+    val toTransform: Box[LiftResponse] =
     if (dispatch._1) dispatch._2
     else if (wp.length == 3 && wp.head == LiftRules.cometPath &&
              wp(2) == LiftRules.cometScriptName())
@@ -235,7 +235,7 @@ class LiftServlet extends HttpServlet {
   }
 
   private def handleAjax(liftSession: LiftSession,
-                         requestState: Req): Can[LiftResponse] =
+                         requestState: Req): Box[LiftResponse] =
   {
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
     LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
@@ -320,7 +320,7 @@ class LiftServlet extends HttpServlet {
     LiftRules.doContinuation(requestState.request, cometTimeout + 2000L)
   }
 
-  private def handleComet(requestState: Req, sessionActor: LiftSession): Can[LiftResponse] = {
+  private def handleComet(requestState: Req, sessionActor: LiftSession): Box[LiftResponse] = {
     val actors: List[(CometActor, Long)] =
     requestState.params.toList.flatMap{case (name, when) =>
         sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
@@ -345,7 +345,7 @@ class LiftServlet extends HttpServlet {
     (new JsCommands(JsCmds.Run(jsUpdateTime) :: jsUpdateStuff)).toResponse
   }
 
-  private def handleNonContinuationComet(requestState: Req, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Can[LiftResponse] = {
+  private def handleNonContinuationComet(requestState: Req, sessionActor: LiftSession, actors: List[(CometActor, Long)]): Box[LiftResponse] = {
 
     LiftRules.cometLogger.debug("Comet Request: "+sessionActor.uniqueId+" "+requestState.params)
 
@@ -410,16 +410,16 @@ class LiftServlet extends HttpServlet {
    * Sends the {@code HttpServletResponse} to the browser using data from the
    * {@link Response} and {@link Req}.
    */
-  def sendResponse(resp: BasicResponse, response: HttpServletResponse, request: Can[Req]) {
+  def sendResponse(resp: BasicResponse, response: HttpServletResponse, request: Box[Req]) {
     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
         case ("Location", uri) => (v._1, response.encodeURL(request map (_ updateWithContextPath(uri)) openOr uri))
         case _ => v
       })
 
-    def pairFromRequest(in: Can[Req]): (Can[Req], Can[String]) = {
+    def pairFromRequest(in: Box[Req]): (Box[Req], Box[String]) = {
       val acceptHeader = for (req <- in;
-                              innerReq <- Can.legacyNullTest(req.request);
-                              accept <- Can.legacyNullTest(innerReq.getHeader("Accept"))) yield accept
+                              innerReq <- Box.legacyNullTest(req.request);
+                              accept <- Box.legacyNullTest(innerReq.getHeader("Accept"))) yield accept
 
       (in, acceptHeader)
     }
@@ -475,7 +475,7 @@ trait LiftFilterTrait {
 
           var session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-          URLRewriter.doWith(url => NamedPF.applyCan(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr url) {
+          URLRewriter.doWith(url => NamedPF.applyBox(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr url) {
             if (!(isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session))) {
 	          chain.doFilter(req, res)
 	        }
@@ -499,7 +499,7 @@ class LiftFilter extends Filter with LiftFilterTrait
 
     LiftRules.setContext(context)
 
-    bootLift(Can.legacyNullTest(config.getInitParameter("bootloader")))
+    bootLift(Box.legacyNullTest(config.getInitParameter("bootloader")))
 
     actualServlet = new LiftServlet(context)
     actualServlet.init
@@ -514,7 +514,7 @@ class LiftFilter extends Filter with LiftFilterTrait
     }
   }
 
-  def bootLift(loader : Can[String]) : Unit =
+  def bootLift(loader : Box[String]) : Unit =
   {
     try
     {
@@ -552,7 +552,7 @@ class LiftFilter extends Filter with LiftFilterTrait
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
   def isLiftRequest_?(session: Req): Boolean = {
-    NamedPF.applyCan(session, LiftRules.liftRequest.toList) match {
+    NamedPF.applyBox(session, LiftRules.liftRequest.toList) match {
       case Full(b) => b
       case _ =>  session.path.endSlash ||
         (session.path.wholePath.takeRight(1) match

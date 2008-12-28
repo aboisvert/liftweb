@@ -27,7 +27,7 @@ import _root_.net.liftweb.util._
 import _root_.java.util.Locale
 
 class Misc {
-  private object selectedUser extends RequestVar[Can[User]](Empty)
+  private object selectedUser extends RequestVar[Box[User]](Empty)
 
   /**
    * Get the XHTML containing a list of users
@@ -111,7 +111,7 @@ class Misc {
      ) openOr {error("User not found"); redirectTo("/simple/index.html")}
 
   // the request-local variable that hold the file parameter
-  private object theUpload extends RequestVar[Can[FileParamHolder]](Empty)
+  private object theUpload extends RequestVar[Box[FileParamHolder]](Empty)
 
   /**
     * Bind the appropriate XHTML to the form
@@ -121,7 +121,7 @@ class Misc {
                     "file_upload" -> fileUpload(ul => theUpload(Full(ul))))
   else bind("ul", chooseTemplate("choose", "post", xhtml),
       "file_name" -> theUpload.is.map(v => Text(v.fileName)),
-      "mime_type" -> theUpload.is.map(v => Can.legacyNullTest(v.mimeType).map(Text).openOr(Text("No mime type supplied"))), // Text(v.mimeType)),
+      "mime_type" -> theUpload.is.map(v => Box.legacyNullTest(v.mimeType).map(Text).openOr(Text("No mime type supplied"))), // Text(v.mimeType)),
       "length" -> theUpload.is.map(v => Text(v.file.length.toString)),
       "md5" -> theUpload.is.map(v => Text(hexEncode(md5(v.file))))
       );
@@ -146,6 +146,6 @@ class Misc {
   }
 }
 
-object definedLocale extends SessionVar[Can[Locale]](Empty)
+object definedLocale extends SessionVar[Box[Locale]](Empty)
 
 

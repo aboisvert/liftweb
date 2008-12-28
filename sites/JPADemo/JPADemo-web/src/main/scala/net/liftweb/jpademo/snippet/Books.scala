@@ -18,7 +18,7 @@ package net.liftweb.jpademo.snippet
 import scala.xml.{NodeSeq,Text}
 
 import net.liftweb.http.{RequestVar,S,SHtml}
-import net.liftweb.util.{Can,Empty,Full,Helpers}
+import net.liftweb.util.{Box,Empty,Full,Helpers}
 import S._
 import Helpers._
 
@@ -67,7 +67,7 @@ class BookOps {
 	 "id" -> SHtml.hidden(() => book.id = currentId),
 	 "title" -> SHtml.text(book.title, book.title = _),
 	 "published" -> SHtml.text(formatter.format(book.published), {id : String => book.published = formatter.parse(id)}) % ("id" -> "published"),
-	 "genre" -> SHtml.select(Genre.getNameDescriptionList, (Can.legacyNullTest(book.genre).map(_.toString) or Full("")), choice => book.genre = Genre.valueOf(choice)),
+	 "genre" -> SHtml.select(Genre.getNameDescriptionList, (Box.legacyNullTest(book.genre).map(_.toString) or Full("")), choice => book.genre = Genre.valueOf(choice)),
 	 "author" -> SHtml.select(choices, default, {authId : String => book.author = Model.getReference(classOf[Author], authId.toLong)}),
 	 "save" -> SHtml.submit(?("Save"), doAdd))
   }

@@ -53,7 +53,7 @@ class Chat extends CometActor {
     currentData = value
   }
 
-  override lazy val fixedRender: Can[NodeSeq] = {
+  override lazy val fixedRender: Box[NodeSeq] = {
     val n = Helpers.nextFuncName
 
     ajaxForm(After(100, SetValueAndFocus(n, "")),

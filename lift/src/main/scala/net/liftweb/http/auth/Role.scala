@@ -1,6 +1,6 @@
 package net.liftweb.http.auth
 
-import net.liftweb.util.{Can, Full, Empty}
+import net.liftweb.util.{Box, Full, Empty}
 
 object AuthRole {
   def apply(roleName: String) = new Role {
@@ -15,7 +15,7 @@ object AuthRole {
  */
 trait Role {
 
-  private var parent: Can[Role] = Empty
+  private var parent: Box[Role] = Empty
   private var childs: List[Role] = Nil
 
   /**
@@ -44,7 +44,8 @@ trait Role {
   /**
    * Search for a child Role with this name
    */
-  def getRoleByName(roleName : String) : Can[Role] = (this.name == roleName) match {
+  def getRoleByName(roleName: String): Box[Role] = 
+    (this.name == roleName) match {
     case false => childs.find(role => role.getRoleByName(roleName) match {
         case Empty => false
         case theRole @ _ => return theRole
@@ -56,14 +57,14 @@ trait Role {
   /**
    * Removes the child Role
    */
-  def removeRoleByName(roleName : String) : Can[Role] = {
+  def removeRoleByName(roleName: String): Box[Role] = {
     getRoleByName(roleName).map(_.detach) openOr Empty
   }
 
   /**
    * Removes this Role from its parent
    */
-  def detach : Can[Role] = {
+  def detach: Box[Role] = {
     this.parent.map {
       case p =>
         p.childs = p.childs.filter(role => role.name != this.name)

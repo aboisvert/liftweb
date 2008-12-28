@@ -60,7 +60,7 @@ trait BindHelpers {
   /**
    * Choose one of many templates from the children
    */
-  def template(xhtml: NodeSeq, prefix: String, tag: String): Can[NodeSeq] =
+  def template(xhtml: NodeSeq, prefix: String, tag: String): Box[NodeSeq] =
   (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
     case Nil => Empty
     case x :: xs => Full(x.child)
@@ -70,7 +70,7 @@ trait BindHelpers {
    * Choose two of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag1: String,
-               tag2: String): Can[(NodeSeq, NodeSeq)] =
+               tag2: String): Box[(NodeSeq, NodeSeq)] =
   for (x1 <- template(xhtml, prefix, tag1);
        x2 <- template(xhtml, prefix, tag2)) yield (x1, x2)
 
@@ -78,7 +78,7 @@ trait BindHelpers {
    * Choose three of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag1: String,
-               tag2: String, tag3: String): Can[(NodeSeq, NodeSeq, NodeSeq)] =
+               tag2: String, tag3: String): Box[(NodeSeq, NodeSeq, NodeSeq)] =
   for (x1 <- template(xhtml, prefix, tag1);
        x2 <- template(xhtml, prefix, tag2);
        x3 <- template(xhtml, prefix, tag3)) yield (x1, x2, x3)
@@ -134,7 +134,7 @@ trait BindHelpers {
     def calcValue(in: NodeSeq): NodeSeq = value getOrElse NodeSeq.Empty
   }
 
-  case class CanBindParam(name: String, value: Can[NodeSeq]) extends Tuple2(name, value) with BindParam {
+  case class BoxBindParam(name: String, value: Box[NodeSeq]) extends Tuple2(name, value) with BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value openOr NodeSeq.Empty
   }
 
@@ -159,10 +159,10 @@ trait BindHelpers {
   }
 
   /**
-   * transforms a Can into a Text node
+   * transforms a Box into a Text node
    */
   object BindParamAssoc {
-    implicit def canStrCanNodeSeq(in: Can[Any]): Can[NodeSeq] = in.map(_ match {
+    implicit def canStrBoxNodeSeq(in: Box[Any]): Box[NodeSeq] = in.map(_ match {
         case null => Text("null")
         case v => Text(v.toString)
       })
@@ -182,7 +182,7 @@ trait BindHelpers {
     def ->(in: Node) = TheBindParam(name, in)
     def ->(in: Seq[Node]) = TheBindParam(name, in)
     def ->(in: NodeSeq => NodeSeq) = FuncBindParam(name, in)
-    def ->(in: Can[NodeSeq]) = CanBindParam(name, in)
+    def ->(in: Box[NodeSeq]) = BoxBindParam(name, in)
     def ->(in: Option[NodeSeq]) = OptionBindParam(name, in)
     def ->(in: Symbol) = SymbolBindParam(name, in)
     def ->(in: Int) = IntBindParam(name, in)
@@ -206,7 +206,7 @@ trait BindHelpers {
     def -->(value: Symbol): BindParam = TheBindParam(name, Text(value.name))
     def -->(value: Any): BindParam = TheBindParam(name, Text(if (value == null) "null" else value.toString))
     def -->(func: NodeSeq => NodeSeq): BindParam = FuncBindParam(name, func)
-    def -->(value: Can[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))
+    def -->(value: Box[NodeSeq]): BindParam = TheBindParam(name, value.openOr(Text("Empty")))
   }
 
   /**
@@ -277,8 +277,8 @@ trait BindHelpers {
    *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
    * </pre>
    */
-  def bind(namespace: String, nodeFailureXform: Can[NodeSeq => NodeSeq],
-           paramFailureXform: Can[PrefixedAttribute => MetaData],
+  def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
+           paramFailureXform: Box[PrefixedAttribute => MetaData],
            xml: NodeSeq, params: BindParam*): NodeSeq = {
     val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
@@ -365,7 +365,7 @@ trait BindHelpers {
   /**
    * Bind a list of maps name/xml to a block of XML containing lift:bind nodes (see the bind(Map, NodeSeq) function)
    */
-  def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Can[NodeSeq] = {
+  def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Box[NodeSeq] = {
     def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
       case Nil => ret
       case vals :: rest => build(rest, ret ++ bind(vals, xml))
@@ -407,12 +407,12 @@ trait BindHelpers {
    *
    * @return a Full can containing the value of the found attribute if it is not empty
    */
-  def xmlParam(in: NodeSeq, param: String): Can[String] = {
+  def xmlParam(in: NodeSeq, param: String): Box[String] = {
     val tmp = (in \ ("@" + param))
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
 
-  def findNode(in: Elem, nodes: NodeSeq): Can[Elem] = nodes match {
+  def findNode(in: Elem, nodes: NodeSeq): Box[Elem] = nodes match {
     case seq if seq.isEmpty => None
     case Seq(x: Elem, xs @_*)
       if x.label == in.label && x.prefix == in.prefix => Full(x)

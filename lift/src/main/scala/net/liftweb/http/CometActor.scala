@@ -20,7 +20,7 @@ import _root_.scala.actors.{Actor, Exit}
 import _root_.scala.actors.Actor._
 import _root_.scala.collection.mutable.{ListBuffer}
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Helpers, Log, Can, Full, Empty, Failure, BindHelpers}
+import _root_.net.liftweb.util.{Helpers, Log, Box, Full, Empty, Failure, BindHelpers}
 import _root_.scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import _root_.scala.collection.immutable.TreeMap
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
@@ -69,12 +69,12 @@ trait CometActor extends Actor with BindHelpers {
   private var wasLastFullRender = false
   @transient
   private var listeners: List[(ListenerId, AnswerRender => Unit)] = Nil
-  private var askingWho: Can[CometActor] = Empty
-  private var whosAsking: Can[CometActor] = Empty
-  private var answerWith: Can[Any => Any] = Empty
+  private var askingWho: Box[CometActor] = Empty
+  private var whosAsking: Box[CometActor] = Empty
+  private var answerWith: Box[Any => Any] = Empty
   private var deltas: List[Delta] = Nil
   private var jsonHandlerChain: PartialFunction[Any, JsCmd] = Map.empty
-  private val notices = new ListBuffer[(NoticeType.Value, NodeSeq, Can[String])]
+  private val notices = new ListBuffer[(NoticeType.Value, NodeSeq, Box[String])]
 
   private var _theSession: LiftSession = _
   def theSession = _theSession
@@ -82,13 +82,13 @@ trait CometActor extends Actor with BindHelpers {
   private var _defaultXml: NodeSeq = _
   def defaultXml = _defaultXml
 
-  private var _name: Can[String] = Empty
+  private var _name: Box[String] = Empty
   def name = _name
 
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
 
-  private[http] def initCometActor(theSession: LiftSession, name: Can[String],
+  private[http] def initCometActor(theSession: LiftSession, name: Box[String],
                      defaultXml: NodeSeq,
                      attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
@@ -100,7 +100,7 @@ trait CometActor extends Actor with BindHelpers {
     this.start()
   }
 
-  def defaultPrefix: Can[String] = Empty
+  def defaultPrefix: Box[String] = Empty
 
   private lazy val _defaultPrefix: String = (defaultPrefix or _name) openOr "comet"
 
@@ -136,7 +136,7 @@ trait CometActor extends Actor with BindHelpers {
   * If there's actor-specific JSON behavior on failure to make the JSON
   * call, include the JavaScript here.
   */
-  def onJsonError: Can[JsCmd] = Empty
+  def onJsonError: Box[JsCmd] = Empty
 
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(_defaultPrefix), onJsonError, _handleJson)
 
@@ -176,7 +176,7 @@ trait CometActor extends Actor with BindHelpers {
     super.react(myPf)
   }
 
-  def fixedRender: Can[NodeSeq] = Empty
+  def fixedRender: Box[NodeSeq] = Empty
 
   def highPriority : PartialFunction[Any, Unit] = {
     case Never =>
@@ -374,8 +374,8 @@ trait CometActor extends Actor with BindHelpers {
   implicit def xmlToXmlOrJsCmd(in: NodeSeq): RenderOut = new RenderOut(Full(in), fixedRender, Empty, Empty, false)
   implicit def jsToXmlOrJsCmd(in: JsCmd): RenderOut = new RenderOut(Empty, Empty, Full(in), Empty, false)
   implicit def pairToPair(in: (String, Any)): (String, NodeSeq) = (in._1, Text(in._2 match {case null => "null" case s => s.toString}))
-  implicit def nodeSeqToFull(in: NodeSeq): Can[NodeSeq] = Full(in)
-  implicit def elemToFull(in: Elem): Can[NodeSeq] = Full(in)
+  implicit def nodeSeqToFull(in: NodeSeq): Box[NodeSeq] = Full(in)
+  implicit def elemToFull(in: Elem): Box[NodeSeq] = Full(in)
 
 
 
@@ -404,12 +404,12 @@ case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)
 
 sealed abstract class CometMessage
 
-case class CometActorInitInfo(theSession: LiftSession,name: Can[String],defaultXml: NodeSeq, val attributes: Map[String, String])
+case class CometActorInitInfo(theSession: LiftSession,name: Box[String],defaultXml: NodeSeq, val attributes: Map[String, String])
 
 
-class XmlOrJsCmd(val id: String,val xml: Can[NodeSeq],val fixedXhtml: Can[NodeSeq], val javaScript: Can[JsCmd], val destroy: Can[JsCmd],
-                 spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(NoticeType.Value, NodeSeq, Can[String])]) {
-  def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Can[String])]) =
+class XmlOrJsCmd(val id: String,val xml: Box[NodeSeq],val fixedXhtml: Box[NodeSeq], val javaScript: Box[JsCmd], val destroy: Box[JsCmd],
+                 spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) {
+  def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) =
   this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     var ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
@@ -446,9 +446,9 @@ case class Unlisten(uniqueId: ListenerId) extends CometMessage
 case class ActionMessageSet(msg: List[() => Any], req: Req) extends CometMessage
 case class ReRender(doAll: Boolean) extends CometMessage
 case class ListenerId(id: Long)
-case class Error(id: Can[String], msg: NodeSeq) extends CometMessage
-case class Warning(id: Can[String], msg: NodeSeq) extends CometMessage
-case class Notice(id: Can[String], msg: NodeSeq) extends CometMessage
+case class Error(id: Box[String], msg: NodeSeq) extends CometMessage
+case class Warning(id: Box[String], msg: NodeSeq) extends CometMessage
+case class Notice(id: Box[String], msg: NodeSeq) extends CometMessage
 case object ClearNotices extends CometMessage
 
 object Error {
@@ -478,7 +478,7 @@ object Notice {
  * @param ignoreHtmlOnJs -- if the reason for sending the render is a Comet update, ignore the xhtml part and just run the JS commands.  This is useful in IE when you need to redraw the stuff inside <table><tr><td>... just doing innerHtml on <tr> is broken in IE
  */
 @serializable
-case class RenderOut(xhtml: Can[NodeSeq], fixedXhtml: Can[NodeSeq], script: Can[JsCmd], destroyScript: Can[JsCmd], ignoreHtmlOnJs: Boolean) {
+case class RenderOut(xhtml: Box[NodeSeq], fixedXhtml: Box[NodeSeq], script: Box[JsCmd], destroyScript: Box[JsCmd], ignoreHtmlOnJs: Boolean) {
   def this(xhtml: NodeSeq) = this(Full(xhtml), Empty, Empty, Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd) = this(Full(xhtml), Empty, Full(js), Empty, false)
   def this(xhtml: NodeSeq, js: JsCmd, destroy: JsCmd) = this(Full(xhtml), Empty, Full(js), Full(destroy), false)

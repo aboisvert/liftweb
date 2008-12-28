@@ -28,7 +28,7 @@ trait SimpleController
   def request: Req
   def httpRequest: HttpServletRequest
 
-  def param(name: String): Can[String] = {
+  def param(name: String): Box[String] = {
     request.params.get(name) match {
       case None => Empty
       case Some(nl) => nl.take(1) match {
@@ -40,7 +40,7 @@ trait SimpleController
 
   def post_? : Boolean = request.post_?
 
-  def get(name: String): Can[String] =
+  def get(name: String): Box[String] =
     httpRequest.getSession.getAttribute(name) match {
       case null => Empty
       case n: String => Full(n)

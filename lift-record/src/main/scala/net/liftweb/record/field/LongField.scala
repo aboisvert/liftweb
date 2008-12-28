@@ -26,7 +26,7 @@ class LongField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends NumericF
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(in: Any): Can[Long] = {
+  def setFromAny(in: Any): Box[Long] = {
     in match {
       case n: Int => Full(this.set(n))
       case n: Number => Full(this.set(n.longValue))
@@ -41,7 +41,7 @@ class LongField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends NumericF
     }
   }
 
-  def setFromString(s: String) : Can[Long] = {
+  def setFromString(s: String): Box[Long] = {
     try{
       Full(set(java.lang.Long.parseLong(s)));
     } catch {

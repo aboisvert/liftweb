@@ -2,11 +2,11 @@ package net.liftweb.http.testing;
 
 
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Helpers, Can, Full, Empty, Failure}
+import _root_.net.liftweb.util.{Helpers, Box, Full, Empty, Failure}
 import _root_.scala.collection.mutable.ListBuffer
 
-class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertListeners: List[String => Any],  afterAssertListeners: List[(String, Boolean) => Any],
-    beforeTestListeners: List[String => Any], afterTestListeners: List[(String, Boolean, Can[Throwable], List[StackTraceElement]) => Any]) {
+class TestRunner(clearDB: Box[() => Any], setupDB: Box[() => Any],beforeAssertListeners: List[String => Any],  afterAssertListeners: List[(String, Boolean) => Any],
+    beforeTestListeners: List[String => Any], afterTestListeners: List[(String, Boolean, Box[Throwable], List[StackTraceElement]) => Any]) {
   implicit def fToItem(f: () => Any): Item = Item(f)
 
   def setup[T](what: List[Item]): (() => TestResults, (String,() => T) => T)  = {
@@ -39,7 +39,7 @@ class TestRunner(clearDB: Can[() => Any], setupDB: Can[() => Any],beforeAssertLi
       beforeTestListeners.foreach(_(name))
     }
 
-    def afterTest(name: String, success: Boolean, excp: Can[Throwable], trace: List[StackTraceElement]) {
+    def afterTest(name: String, success: Boolean, excp: Box[Throwable], trace: List[StackTraceElement]) {
       log += Tracker(name, false, false, success, excp, trace)
       afterTestListeners.foreach(_(name, success, excp, trace))
     }
@@ -154,7 +154,7 @@ case class TestResults(res: List[Tracker]) {
 
 class TestFailureError(msg: String) extends _root_.java.lang.Error(msg)
 
-class Item(val name: String, val resetDB: Boolean, val func: Can[() => Any], val forkCnt: Int, forkFunc: Can[Int => Any]) {
+class Item(val name: String, val resetDB: Boolean, val func: Box[() => Any], val forkCnt: Int, forkFunc: Box[Int => Any]) {
   def getFunc(cnt: Int) = {
     (func, forkFunc) match {
       case (Full(f), _) => f
@@ -179,7 +179,7 @@ object Item {
 }
 
 case class Tracker(name: String, isAssert: Boolean, isBegin: Boolean, success: Boolean,
-    exception: Can[Throwable], trace: List[StackTraceElement]) {
+    exception: Box[Throwable], trace: List[StackTraceElement]) {
   val at = millis
   def isTest = !isAssert
 }

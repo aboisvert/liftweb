@@ -30,7 +30,7 @@ trait XMLApiHelper {
   implicit def boolToResponse(in: Boolean): LiftResponse =
   buildResponse(in, Empty, <xml:group/>)
 
-  implicit def canBoolToResponse(in: Can[Boolean]): LiftResponse =
+  implicit def canBoolToResponse(in: Box[Boolean]): LiftResponse =
   buildResponse(in openOr false, in match {
       case Failure(msg, _, _) => Full(Text(msg))
       case _ => Empty
@@ -51,13 +51,13 @@ trait XMLApiHelper {
   implicit def listElemToResponse(in: Seq[Node]): LiftResponse =
   buildResponse(true, Empty, in)
 
-  implicit def canNodeToResponse(in: Can[NodeSeq]): LiftResponse = in match {
+  implicit def canNodeToResponse(in: Box[NodeSeq]): LiftResponse = in match {
     case Full(n) => buildResponse(true, Empty, n)
     case Failure(msg, _, _) => buildResponse(false, Full(Text(msg)), Text(""))
     case _ => buildResponse(false, Empty, Text(""))
   }
 
-  implicit def putResponseInCan(in: LiftResponse): Can[LiftResponse] = Full(in)
+  implicit def putResponseInBox(in: LiftResponse): Box[LiftResponse] = Full(in)
 
   /**
    * The method that wraps the outer-most tag around the body
@@ -83,7 +83,7 @@ trait XMLApiHelper {
    * Build the Response based on Success, an optional message
    * and the body
    */
-  protected def buildResponse(success: Boolean, msg: Can[NodeSeq],
+  protected def buildResponse(success: Boolean, msg: Box[NodeSeq],
                             body: NodeSeq): LiftResponse =
   XmlResponse(createTag(body) % (successAttrName -> success) %
               (new UnprefixedAttribute(operationAttrName, operation, Null)) %

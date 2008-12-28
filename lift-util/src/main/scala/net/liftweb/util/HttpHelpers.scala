@@ -202,7 +202,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
   import Actor._
-  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Can[T] = {
+  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Box[T] = {
     ActorPing.schedule(Actor.self, BailOut(seq), timeout)
     receive(func orElse {case BailOut(seq) => null}) match {
       case null => Empty

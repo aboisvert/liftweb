@@ -22,7 +22,7 @@ package net.liftweb.util
  * @param f -- a function that evaluates to the default value of the instance
  */
 class FatLazy[T](f: => T) {
-  private var value: Can[T] = Empty
+  private var value: Box[T] = Empty
 
   /**
    * Get the value of the instance.  If it's not yet been set, call f to calculate it

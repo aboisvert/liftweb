@@ -58,6 +58,6 @@ class CountGame extends StatefulSnippet {
   }
 
   private val number = 1 + randomInt(100)
-  private var lastGuess: Can[Int] = Empty
+  private var lastGuess: Box[Int] = Empty
   private var count = 0
 }

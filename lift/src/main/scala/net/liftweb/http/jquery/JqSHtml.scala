@@ -32,7 +32,7 @@ object JqSHtml {
   /**
    * Create an autocomplete form based on a sequence.
    */
-  def autocompleteObj[T](options: Seq[(T, String)], default: Can[T],
+  def autocompleteObj[T](options: Seq[(T, String)], default: Box[T],
                          onSubmit: T => Unit): Elem = {
     val (nonces, defaultNonce, secureOnSubmit) = secureOptions(options, default, onSubmit)
     val defaultString = default.flatMap(d => options.find(_._1 == d).map(_._2))
@@ -40,8 +40,8 @@ object JqSHtml {
     autocomplete_*(nonces, defaultString, defaultNonce, secureOnSubmit)
   }
 
-  def autocomplete_*(options: Seq[(String, String)], default: Can[String],
-                     defaultNonce: Can[String], onSubmit: AFuncHolder): Elem = {
+  def autocomplete_*(options: Seq[(String, String)], default: Box[String],
+                     defaultNonce: Box[String], onSubmit: AFuncHolder): Elem = {
     val id = Helpers.nextFuncName
     val hidden = mapFunc(onSubmit)
     val data = JsArray(options.map { case (nonce, name) =>

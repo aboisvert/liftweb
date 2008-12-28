@@ -18,7 +18,7 @@ package net.liftweb.widgets.calendars;
 
 import _root_.java.util.Calendar
 import _root_.java.util.Calendar._
-import _root_.net.liftweb.util.{Can, Empty, Full}
+import _root_.net.liftweb.util.{Box, Empty, Full}
 
 object CalendarItem {
   def apply(id: String, start: Calendar, calendarType: CalendarType.Value) = new CalendarItem(id, start, calendarType)
@@ -26,16 +26,16 @@ object CalendarItem {
 case class CalendarItem(id: String,
                         start: Calendar,
                         calendarType: CalendarType.Value,
-                        end: Can[Calendar],
-                        subject: Can[String],
-                        description: Can[String],
-                        baseCSSClassName: Can[String]) {
+                        end: Box[Calendar],
+                        subject: Box[String],
+                        description: Box[String],
+                        baseCSSClassName: Box[String]) {
 
   def this(id: String, start: Calendar, calendarType: CalendarType.Value) = this(id, start, calendarType, Empty, Empty, Empty, Empty)
 
-  def end (end: Calendar) = CalendarItem(id, start, calendarType, Can.legacyNullTest(end), Empty, Empty, Empty)
-  def subject (subject: String) = CalendarItem(id, start, calendarType, Empty, Can.legacyNullTest(subject), Empty, Empty)
-  def description(description: String) = CalendarItem(id, start, calendarType, Empty, Empty, Can.legacyNullTest(description), Empty)
+  def end (end: Calendar) = CalendarItem(id, start, calendarType, Box.legacyNullTest(end), Empty, Empty, Empty)
+  def subject (subject: String) = CalendarItem(id, start, calendarType, Empty, Box.legacyNullTest(subject), Empty, Empty)
+  def description(description: String) = CalendarItem(id, start, calendarType, Empty, Empty, Box.legacyNullTest(description), Empty)
   /**
    * Defines the base name of the css classes describing the calendar items rendered.
    * For instance if "greenItem" is provided the css needs to have the following classes:
@@ -43,9 +43,9 @@ case class CalendarItem(id: String,
    * calendarItemHead and calendarItemBody classes. If this is missing calendarItem base name
    * will be assumed by JS code.
    */
-  def baseCSSClassName(name: String) = CalendarItem(id, start, calendarType, Empty, Empty, Empty, Can.legacyNullTest(name))
+  def baseCSSClassName(name: String) = CalendarItem(id, start, calendarType, Empty, Empty, Empty, Box.legacyNullTest(name))
 
-  private def choose[T](l: Can[T], r: Can[T]): Can[T] = l match {case Empty => r case _ => l}
+  private def choose[T](l: Box[T], r: Box[T]): Box[T] = l match {case Empty => r case _ => l}
 
   def optional(f: (CalendarItem) => CalendarItem*): CalendarItem = {
     f.map(c => c(this)).foldLeft(this)((l, r) => CalendarItem(id, start, calendarType,

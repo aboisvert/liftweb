@@ -61,7 +61,7 @@ object DBVendor extends ConnectionManager {
   private var poolSize = 0
   private val maxPoolSize = 4
 
-  private def createOne: Can[Connection] = try {
+  private def createOne: Box[Connection] = try {
     val driverName: String = Props.get("db.driver") openOr
     "org.apache.derby.jdbc.EmbeddedDriver"
 
@@ -82,7 +82,7 @@ object DBVendor extends ConnectionManager {
     case e: Exception => e.printStackTrace; Empty
   }
 
-  def newConnection(name: ConnectionIdentifier): Can[Connection] =
+  def newConnection(name: ConnectionIdentifier): Box[Connection] =
     synchronized {
       pool match {
 	case Nil if poolSize < maxPoolSize =>

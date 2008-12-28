@@ -26,7 +26,7 @@ class PostalCodeField[OwnerType <: Record[OwnerType]](rec: OwnerType, country: C
 
   override def setFilter = notNull _ :: toUpper _ :: trim _ :: super.setFilter
 
-  private def genericCheck(zip: String): Can[Node] = {
+  private def genericCheck(zip: String): Box[Node] = {
     zip match {
       case null => Full(Text(S.??("invalid.postal.code")))
       case s if s.length < 3 => Full(Text(S.??("invalid.postal.code")))

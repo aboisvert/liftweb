@@ -30,7 +30,7 @@ class BooleanField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(in: Any): Can[Boolean] = {
+  def setFromAny(in: Any): Box[Boolean] = {
     in match {
       case b: Boolean => Full(this.set(b))
       case (b: Boolean) :: _ => Full(this.set(b))
@@ -44,7 +44,7 @@ class BooleanField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field
     }
   }
 
-  def setFromString(s: String) : Can[Boolean] = {
+  def setFromString(s: String): Box[Boolean] = {
     try{
       Full(set(java.lang.Boolean.parseBoolean(s)));
     } catch {

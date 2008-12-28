@@ -16,7 +16,7 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import _root_.net.liftweb.util.{FatLazy, Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{FatLazy, Box, Empty, Full, Failure}
 import _root_.scala.collection.mutable.HashSet
 
 class HasManyThrough[From <: KeyedMapper[ThroughType, From],

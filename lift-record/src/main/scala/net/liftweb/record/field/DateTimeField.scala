@@ -32,14 +32,14 @@ class DateTimeField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(f : Any): Can[Calendar] = toDate(f).map(d => {
+  def setFromAny(f : Any): Box[Calendar] = toDate(f).map(d => {
     val cal = Calendar.getInstance()
     cal.setTime(d)
     this.set(cal)
   })
 
 
-  def setFromString(s: String) : Can[Calendar] = {
+  def setFromString(s: String): Box[Calendar] = {
    try{
     val cal = Calendar.getInstance()
     cal.setTime(parseInternetDate(s))

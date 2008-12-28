@@ -24,7 +24,7 @@ trait MetaProtoTag[ModelType <: ProtoTag[ModelType]] extends KeyedMetaMapper[Lon
     }
   }
 
-  override def findDbByKey(dbId: ConnectionIdentifier,key: Long) : Can[ModelType] = synchronized {
+  override def findDbByKey(dbId: ConnectionIdentifier, key: Long): Box[ModelType] = synchronized {
     if (idCache.contains(key)) Full(idCache(key))
     else {
       val ret = super.findDbByKey(dbId,key)

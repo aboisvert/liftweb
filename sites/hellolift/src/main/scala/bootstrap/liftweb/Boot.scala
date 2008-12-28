@@ -39,7 +39,7 @@ class Boot {
 }
 
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Can[Connection] = {
+  def newConnection(name: ConnectionIdentifier): Box[Connection] = {
     try {
       Class.forName("org.apache.derby.jdbc.EmbeddedDriver")
       val dm = DriverManager.getConnection("jdbc:derby:lift_example;create=true")

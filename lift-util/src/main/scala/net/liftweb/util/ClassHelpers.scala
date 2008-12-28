@@ -44,9 +44,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
    * @parameter targetType optional expected type which the retrieved class should conform to
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Can[Class[C]] =
+  def findClass[C <: AnyRef](name: String, where: List[String], modifiers: List[Function1[String, String]], targetType: Class[C]): Box[Class[C]] =
     (for (
       place <- where.projection;
       mod <- modifiers.projection;
@@ -65,9 +65,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter where list of package names which may contain the class
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findType[C <: AnyRef](name: String, where: List[String], modifiers: List[String => String])(implicit m: Manifest[C]): Can[Class[C]] =
+  def findType[C <: AnyRef](name: String, where: List[String], modifiers: List[String => String])(implicit m: Manifest[C]): Box[Class[C]] =
     findClass(name, where, modifiers, m.erasure.asInstanceOf[Class[C]])
 
   /**
@@ -79,9 +79,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter where list of package names which may contain the class
    * @parameter modifiers list of functions that modify the 'name' of the class (e.g., leave it alone, make it camel case, etc.)
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findClass(name: String, where: List[String], modifiers: List[String => String]): Can[Class[AnyRef]] =
+  def findClass(name: String, where: List[String], modifiers: List[String => String]): Box[Class[AnyRef]] =
     findType[AnyRef](name, where, modifiers)
 
   /**
@@ -92,9 +92,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter where list of package names which may contain the class
    * @parameter targetType optional expected type which the retrieved class should conform to
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Can[Class[C]] =
+  def findClass[C <: AnyRef](name: String, where: List[String], targetType: Class[C]): Box[Class[C]] =
     findClass(name, where, nameModifiers, targetType)
 
   /**
@@ -105,9 +105,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findType[C <: AnyRef](name: String, where: List[String])(implicit m: Manifest[C]): Can[Class[C]] =
+  def findType[C <: AnyRef](name: String, where: List[String])(implicit m: Manifest[C]): Box[Class[C]] =
     findType[C](name, where, nameModifiers)
 
   /**
@@ -117,9 +117,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter name name of the class to find
    * @parameter where list of package names which may contain the class
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findClass(name: String, where: List[String]): Can[Class[AnyRef]] =
+  def findClass(name: String, where: List[String]): Box[Class[AnyRef]] =
     findClass(name, where, nameModifiers)
 
   /**
@@ -129,9 +129,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @parameter C type of the class to find
    * @parameter where list of pairs (name, package names) which may contain the class
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findType[C <: AnyRef](where: List[(String, List[String])])(implicit m: Manifest[C]): Can[Class[C]] =
+  def findType[C <: AnyRef](where: List[(String, List[String])])(implicit m: Manifest[C]): Box[Class[C]] =
     (for (
       (name, packages) <- where.projection;
       klass <- findType[C](name, packages)
@@ -143,9 +143,9 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @parameter where list of pairs (name, package names) which may contain the class
    *
-   * @return a Can, either containing the found class or an Empty can.
+   * @return a Box, either containing the found class or an Empty can.
    */
-  def findClass(where: List[(String, List[String])]): Can[Class[AnyRef]] =
+  def findClass(where: List[(String, List[String])]): Box[Class[AnyRef]] =
     findType[AnyRef](where)
 
   /**
@@ -269,9 +269,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param inst instance of the class who method should be invoked, if the method is not static
    * @param meth method to invoke
    *
-   * @return a Can containing the value returned by the method
+   * @return a Box containing the value returned by the method
    */
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Can[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String): Box[Any] = invokeMethod(clz, inst, meth, Nil.toArray)
 
   /**
    * Invoke the given method for the given class, with some parameters.
@@ -283,9 +283,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param meth method to invoke
    * @param params parameters to pass to the method
    *
-   * @return a Can containing the value returned by the method
+   * @return a Box containing the value returned by the method
    */
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef]): Can[Any] = {
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef]): Box[Any] = {
     _invokeMethod(clz, inst, meth, params, Empty) or
     _invokeMethod(clz, inst, camelCase(meth), params, Empty) or
     _invokeMethod(clz, inst, camelCaseMethod(meth), params, Empty)
@@ -302,9 +302,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param params parameters to pass to the method
    * @param ptypes list of types of the parameters
    *
-   * @return a Can containing the value returned by the method
+   * @return a Box containing the value returned by the method
    */
-  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[Class[_]]): Can[Any] = {
+  def invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Array[Class[_]]): Box[Any] = {
     _invokeMethod(clz, inst, meth, params, Full(ptypes)) or
     _invokeMethod(clz, inst, camelCase(meth), params, Full(ptypes)) or
     _invokeMethod(clz, inst, camelCaseMethod(meth), params, Full(ptypes))
@@ -321,9 +321,9 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param params parameters to pass to the method
    * @param ptypes list of types of the parameters
    *
-   * @return a Can containing the value returned by the method
+   * @return a Box containing the value returned by the method
    */
-  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Can[Array[Class[_]]]): Can[Any] = {
+  private def _invokeMethod[C](clz: Class[C], inst: AnyRef, meth: String, params: Array[AnyRef], ptypes: Box[Array[Class[_]]]): Box[Any] = {
      // try to find a method matching the given parameters
     def possibleMethods: List[Method] = {
       /*
@@ -343,7 +343,7 @@ trait ClassHelpers { self: ControlHelpers =>
         case e: NoSuchMethodException => alternateMethods
       }
     }
-    def findFirst[T, U](l: List[T], f: T => U, predicate: U => Boolean): Can[U] = {
+    def findFirst[T, U](l: List[T], f: T => U, predicate: U => Boolean): Box[U] = {
       l match {
         case Nil => Empty
         case x :: xs => {
@@ -354,7 +354,7 @@ trait ClassHelpers { self: ControlHelpers =>
     }
     possibleMethods.elements.filter(m => inst != null || isStatic(m.getModifiers)).
                                    map((m: Method) => tryo{m.invoke(inst, params : _*)}).
-                                   find((x: Can[Any]) => x match {
+                                   find((x: Box[Any]) => x match {
                                             case result@Full(_) => true
                                             case Failure(_, Full(c: IllegalAccessException), _) => false
                                             case Failure(_, Full(c: IllegalArgumentException), _) => false
@@ -370,7 +370,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return a Full can with the instance or a Failure if the instance can't be created
    */
-  def instantiate[C](clz: Class[C]): Can[C] = tryo { clz.newInstance }
+  def instantiate[C](clz: Class[C]): Box[C] = tryo { clz.newInstance }
 
   /**
    * Create a function (the 'invoker') which will trigger any public, parameterless method
@@ -381,7 +381,7 @@ trait ClassHelpers { self: ControlHelpers =>
    *
    * @return Empty if instance is null or Full(invoker)
    */
-  def createInvoker[C <: AnyRef](name: String, on: C): Can[() => Can[Any]] = {
+  def createInvoker[C <: AnyRef](name: String, on: C): Box[() => Box[Any]] = {
     def controllerMethods(instance: C) = instance.getClass.getDeclaredMethods.filter { m =>
       m.getName == name && isPublic(m.getModifiers) && m.getParameterTypes.isEmpty
     }

@@ -89,7 +89,7 @@ class PCDataXmlParser(val input: Source) extends ConstructingHandler with PCData
 }
 
 object PCDataXmlParser {
-  def apply(in: InputStream): Can[NodeSeq] = {
+  def apply(in: InputStream): Box[NodeSeq] = {
     val source = Source.fromInputStream(in)
     val p = new PCDataXmlParser(source)
     while (p.ch != '<' && p.curInput.hasNext) p.nextch
@@ -99,7 +99,7 @@ object PCDataXmlParser {
     }
   }
 
-  def apply(in: String): Can[NodeSeq] = {
+  def apply(in: String): Box[NodeSeq] = {
     val source = Source.fromString(in)
     val p = new PCDataXmlParser(source)
     while (p.ch != '<' && p.curInput.hasNext) p.nextch

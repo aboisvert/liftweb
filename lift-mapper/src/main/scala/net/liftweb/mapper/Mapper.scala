@@ -13,7 +13,7 @@ import _root_.scala.xml.{Elem, Node, NodeSeq}
 import _root_.net.liftweb.http.{S, FieldError}
 import S._
 import _root_.net.liftweb.http.js._
-import _root_.net.liftweb.util.{Can, Empty, Full, Failure}
+import _root_.net.liftweb.util.{Box, Empty, Full, Failure}
 
 trait BaseMapper {
   type MapperType <: Mapper[MapperType]
@@ -26,7 +26,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
 
   private val secure_# = Safe.next
   private var was_deleted_? = false
-  private var dbConnectionIdentifier:Can[ConnectionIdentifier] = Empty
+  private var dbConnectionIdentifier: Box[ConnectionIdentifier] = Empty
   private[mapper] var addedPostCommit = false
 
   def getSingleton : MetaMapper[A];
@@ -88,7 +88,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    * fields for JSON object, put the calculated fields
    * here
    */
-  def suplementalJs(ob: Can[KeyObfuscator]): List[(String, JsExp)] = Nil
+  def suplementalJs(ob: Box[KeyObfuscator]): List[(String, JsExp)] = Nil
 
   def validate : List[FieldError] = {
     runSafe {
@@ -122,7 +122,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    * map the fields titles and forms to generate a list
    * @param func called with displayHtml, fieldId, form
    */
-  def mapFieldTitleForm[T](func: (NodeSeq, Can[NodeSeq], NodeSeq) => T): List[T] =
+  def mapFieldTitleForm[T](func: (NodeSeq, Box[NodeSeq], NodeSeq) => T): List[T] =
   getSingleton.mapFieldTitleForm(this, func)
 
 
@@ -131,7 +131,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    * @param func called with displayHtml, fieldId, form
    */
   def flatMapFieldTitleForm[T]
-  (func: (NodeSeq, Can[NodeSeq], NodeSeq) => Seq[T]): List[T] =
+  (func: (NodeSeq, Box[NodeSeq], NodeSeq) => Seq[T]): List[T] =
   getSingleton.flatMapFieldTitleForm(this, func)
 
   /**
@@ -142,7 +142,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    *
    * @return the form
    */
-  def toForm(button: Can[String], onSuccess: String): NodeSeq =
+  def toForm(button: Box[String], onSuccess: String): NodeSeq =
   toForm(button, (what: A) => {what.validate match {
         case Nil => what.save ; S.redirectTo(onSuccess)
         case xs => S.error(xs)
@@ -173,11 +173,11 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    *
    * @return the form
    */
-  def toForm(button: Can[String], f: A => Any): NodeSeq =
+  def toForm(button: Box[String], f: A => Any): NodeSeq =
   getSingleton.toForm(this) ++ (<input type='hidden' name={S.mapFunc((ignore: List[String]) => f(this))} value="n/a" />) ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
 
-  def toForm(button: Can[String], redoSnippet: NodeSeq => NodeSeq, onSuccess: A => Unit): NodeSeq = {
+  def toForm(button: Box[String], redoSnippet: NodeSeq => NodeSeq, onSuccess: A => Unit): NodeSeq = {
     val snipName = S.currentSnippet
     def doSubmit() {
       this.validate match {
@@ -234,9 +234,9 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    * Find the field by name
    * @param fieldName -- the name of the field to find
    *
-   * @return Can[MappedField]
+   * @return Box[MappedField]
    */
-  def fieldByName[T](fieldName: String): Can[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
+  def fieldByName[T](fieldName: String): Box[MappedField[T, A]] = getSingleton.fieldByName[T](fieldName, this)
 
   type FieldPF = PartialFunction[String, NodeSeq => NodeSeq]
 
@@ -261,11 +261,11 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   /**
    * If there's a field in this record that defines the locale, return it
    */
-  def localeField: Can[MappedLocale[A]] = Empty
+  def localeField: Box[MappedLocale[A]] = Empty
 
-  def timeZoneField: Can[MappedTimeZone[A]] = Empty
+  def timeZoneField: Box[MappedTimeZone[A]] = Empty
 
-  def countryField: Can[MappedCountry[A]] = Empty
+  def countryField: Box[MappedCountry[A]] = Empty
 }
 
 trait LongKeyedMapper[OwnerType <: LongKeyedMapper[OwnerType]] extends KeyedMapper[Long, OwnerType] with BaseLongKeyedMapper {

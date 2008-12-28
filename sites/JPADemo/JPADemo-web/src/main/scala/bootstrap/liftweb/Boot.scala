@@ -19,7 +19,7 @@ import java.util.Locale
 
 import javax.servlet.http.HttpServletRequest
 
-import net.liftweb.util.{Can,Empty,Full,LoanWrapper,LogBoot}
+import net.liftweb.util.{Box,Empty,Full,LoanWrapper,LogBoot}
 import net.liftweb.http._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
@@ -64,7 +64,7 @@ class Boot {
 
     object swedishOn extends SessionVar(false)
 
-    def localeCalculator (request : Can[HttpServletRequest]) : Locale =
+    def localeCalculator (request : Box[HttpServletRequest]) : Locale =
       request.flatMap(_.getParameter("swedish") match {
 	case null if swedishOn.is == true => Full(swedishChef)
 	case null => Full(LiftRules.defaultLocaleCalculator(request))

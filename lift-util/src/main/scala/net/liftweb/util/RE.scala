@@ -46,7 +46,7 @@ object RE {
   implicit def strToRe(in: String): REDoer[Nothing] = new REDoer(in, Empty)
 }
 
-class REDoer[T](val pattern: String,val func: Can[PartialFunction[(T, List[String]), T]]) extends Function2[T, String, Can[T]] {
+class REDoer[T](val pattern: String,val func: Box[PartialFunction[(T, List[String]), T]]) extends Function2[T, String, Box[T]] {
   val compiled = Pattern.compile(pattern)
 
   def =~(other: String) = {
@@ -57,7 +57,7 @@ class REDoer[T](val pattern: String,val func: Can[PartialFunction[(T, List[Strin
     new REMatcher(other, compiled)
   }
 
-  def apply(obj: T, other: String): Can[T] = {
+  def apply(obj: T, other: String): Box[T] = {
     val ma = new REMatcher(other, compiled)
     if (!ma.matches) Empty
     else func.flatMap(f => if (f.isDefinedAt((obj, ma.capture))) Full(f((obj, ma.capture))) else Empty)
@@ -74,8 +74,9 @@ class REMatcher(val str: String,val compiled: Pattern) {
 
   lazy val matches = matcher.find
 
-  lazy val matchStr: Can[String] = if (matches) Full(str.substring(matcher.start, matcher.end))
-                 else Empty
+  lazy val matchStr: Box[String] = 
+    if (matches) Full(str.substring(matcher.start, matcher.end))
+    else Empty
 
   lazy val capture = map(s => s)
 

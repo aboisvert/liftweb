@@ -27,7 +27,7 @@ object DB {
   private val threadStore = new ThreadLocal[HashMap[ConnectionIdentifier, ConnectionHolder]]
   private val envContext = FatLazy((new InitialContext).lookup("java:/comp/env").asInstanceOf[Context])
 
-  var queryTimeout: Can[Int] = Empty
+  var queryTimeout: Box[Int] = Empty
 
   private var logFuncs: List[(String, Long) => Any] = Nil
 
@@ -52,7 +52,7 @@ object DB {
     ret
   }
 
-  // var connectionManager: Can[ConnectionManager] = Empty
+  // var connectionManager: Box[ConnectionManager] = Empty
   private val connectionManagers = new HashMap[ConnectionIdentifier, ConnectionManager];
 
   def defineConnectionManager(name: ConnectionIdentifier, mgr: ConnectionManager) {
@@ -85,7 +85,7 @@ object DB {
   }
 
   private def newConnection(name : ConnectionIdentifier) : SuperConnection = {
-    val ret = (Can(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
+    val ret = (Box(connectionManagers.get(name)).flatMap(cm => cm.newConnection(name).map(c => new SuperConnection(c, () => cm.releaseConnection(c))))) openOr {
       Helpers.tryo {
         val uniqueId = if (Log.isDebugEnabled) Helpers.nextNum.toString else ""
         Log.debug("Connection ID "+uniqueId+" for JNDI connection "+name.jndiName+" opened")

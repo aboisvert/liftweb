@@ -22,13 +22,13 @@ import _root_.org.apache.commons.collections.map.AbstractLinkedMap.LinkEntry
  * @param size the maximum number of Elements allowed in the LRU map
  * @param loadFactor the Load Factor to construct our LRU with.
  */
-class LRU[KeyType, ValueType](size: Int, loadFactor: Can[Float]) {
+class LRU[KeyType, ValueType](size: Int, loadFactor: Box[Float]) {
   // Alternate constructor that gives you no load factor.
   def this(size: Int) = this(size, Empty)
 
   private val map = loadFactor match {
     case Full(lf) => new LRUMap(size, lf)
-    case Empty => new LRUMap(size)
+    case _ => new LRUMap(size)
   }
 
   def update(k: KeyType, v: ValueType) {

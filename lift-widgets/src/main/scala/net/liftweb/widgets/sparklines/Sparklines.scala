@@ -2,7 +2,7 @@ package net.liftweb.widgets.sparklines
 
 import _root_.scala.xml._
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 import _root_.net.liftweb.http.S._
 import _root_.net.liftweb.http.LiftRules
 import _root_.net.liftweb.http.{LiftResponse, JsonResponse}

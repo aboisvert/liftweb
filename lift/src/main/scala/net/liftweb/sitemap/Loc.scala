@@ -30,7 +30,7 @@ object NullLocParams extends NullLocParams
  * A menu location
  */
 trait Loc[ParamType] {
-  type LocRewrite =  Can[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
+  type LocRewrite =  Box[PartialFunction[RewriteRequest, (RewriteResponse, ParamType)]]
 
   def name: String
 
@@ -40,7 +40,7 @@ trait Loc[ParamType] {
 
   def params: List[Loc.LocParam]
 
-  def defaultParams: Can[ParamType]
+  def defaultParams: Box[ParamType]
 
   def rewrite: LocRewrite = Empty
 
@@ -50,7 +50,7 @@ trait Loc[ParamType] {
 
   override def toString = "Loc("+name+", "+link+", "+text+", "+params+")"
 
-  def rewritePF: Can[LiftRules.RewritePF] = rewrite.map(
+  def rewritePF: Box[LiftRules.RewritePF] = rewrite.map(
     rw =>
     new AnyRef with NamedPartialFunction[RewriteRequest, RewriteResponse] {
       def functionName = rw match {
@@ -67,7 +67,7 @@ trait Loc[ParamType] {
     }
   )
 
-  type SnippetTest = PartialFunction[(String, Can[ParamType]), NodeSeq => NodeSeq]
+  type SnippetTest = PartialFunction[(String, Box[ParamType]), NodeSeq => NodeSeq]
 
   def snippets: SnippetTest = Map.empty
 
@@ -93,24 +93,24 @@ trait Loc[ParamType] {
       }
 
       new SnippetTest {
-        def isDefinedAt(in: (String, Can[ParamType])): Boolean =
+        def isDefinedAt(in: (String, Box[ParamType])): Boolean =
         func.isDefinedAt(in._1)
 
-        def apply(in: (String, Can[ParamType])): NodeSeq => NodeSeq =
+        def apply(in: (String, Box[ParamType])): NodeSeq => NodeSeq =
         func.apply(in._1)
       }
     }
   }
 
-  def snippet(name: String): Can[NodeSeq => NodeSeq] = {
+  def snippet(name: String): Box[NodeSeq => NodeSeq] = {
     val test = (name, foundParam.is)
 
     if ((snippets orElse calcSnippets).isDefinedAt(test)) Full((snippets orElse calcSnippets)(test))
     else Empty
   }
 
-  def testAccess: Either[Boolean, Can[LiftResponse]] = {
-    def testParams(what: List[Loc.LocParam]): Either[Boolean, Can[LiftResponse]] = what match {
+  def testAccess: Either[Boolean, Box[LiftResponse]] = {
+    def testParams(what: List[Loc.LocParam]): Either[Boolean, Box[LiftResponse]] = what match {
       case Nil => Left(true)
 
       case Loc.If(test, msg) :: xs =>
@@ -133,22 +133,22 @@ trait Loc[ParamType] {
   /**
    * Is there a template assocaited with this Loc?
    */
-  def template: Can[NodeSeq] =
+  def template: Box[NodeSeq] =
   paramTemplate.map(_.template()) or calcTemplate
 
   /**
    * A method that can be override to provide a template for this Loc
    */
-  def calcTemplate: Can[NodeSeq] = Empty
+  def calcTemplate: Box[NodeSeq] = Empty
 
   /**
    * Look for the Loc.Template in the param list
    */
-  lazy val paramTemplate: Can[Loc.Template] =
+  lazy val paramTemplate: Box[Loc.Template] =
   params.flatMap{case v: Loc.Template => Some(v) case _ => None}.firstOption
 
 
-  private def findTitle(lst: List[Loc.LocParam]): Can[Loc.Title[ParamType]] = lst match {
+  private def findTitle(lst: List[Loc.LocParam]): Box[Loc.Title[ParamType]] = lst match {
     case Nil => Empty
     case (t : Loc.Title[ParamType]) :: xs => Full(t)
     case _ => findTitle(lst.tail)
@@ -161,7 +161,7 @@ trait Loc[ParamType] {
 
   def title(in: ParamType): NodeSeq = findTitle(params).map(_.title(in)) openOr linkText(in)
 
-  def linkText: Can[NodeSeq] = (foundParam.is or defaultParams).map(p => linkText(p))
+  def linkText: Box[NodeSeq] = (foundParam.is or defaultParams).map(p => linkText(p))
 
   def linkText(in: ParamType): NodeSeq = text.text(in)
 
@@ -171,7 +171,7 @@ trait Loc[ParamType] {
     p.siteMap.addLoc(this)
   }
 
-  protected object foundParam extends RequestVar[Can[ParamType]](Empty) {
+  protected object foundParam extends RequestVar[Box[ParamType]](Empty) {
     override val __nameSalt = randomString(10)
   }
 
@@ -206,7 +206,7 @@ trait Loc[ParamType] {
     CompleteMenu(_menu.buildUpperLines(_menu, _menu, theKids))
   }
 
-  private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Can[MenuItem] =
+  private[sitemap] def buildItem(kids: List[MenuItem], current: Boolean, path: Boolean): Box[MenuItem] =
   (hidden, testAccess) match {
     case (false, Left(true)) =>
       defaultParams.flatMap(p =>
@@ -254,7 +254,7 @@ object Loc {
     val link: Loc.Link[NullLocParams] = theLink
 
     val text: Loc.LinkText[NullLocParams] = theText
-    val defaultParams: Can[NullLocParams] = Full(NullLocParams)
+    val defaultParams: Box[NullLocParams] = Full(NullLocParams)
 
     val params: List[LocParam] = theParams.toList
 
@@ -267,7 +267,7 @@ object Loc {
   new Loc[NullLocParams] {
     val name = theName
     val link: Loc.Link[NullLocParams] = theLink
-    val defaultParams: Can[NullLocParams] = Full(NullLocParams)
+    val defaultParams: Box[NullLocParams] = Full(NullLocParams)
 
     val text: Loc.LinkText[NullLocParams] = theText
 
@@ -282,7 +282,7 @@ object Loc {
         case Loc.HttpAuthProtected(role) => LiftRules.httpAuthProtectedResource.append (
           new LiftRules.HttpAuthProtectedResourcePF() {
 			def isDefinedAt(in: ParsePath) = in.partPath == link.uriList
-			def apply(in: ParsePath): Can[Role] = role()
+			def apply(in: ParsePath): Box[Role] = role()
           })
        case _ => lp
       }})
@@ -306,7 +306,7 @@ object Loc {
    * and only a user assigned to this role or to a role that is child-of this role
    * can access it.
    */
-  case class HttpAuthProtected(role: () => Can[Role]) extends LocParam
+  case class HttpAuthProtected(role: () => Box[Role]) extends LocParam
 
   /**
    * If the Loc is in a group (or groups) like "legal" "community" etc.
@@ -388,18 +388,18 @@ object Loc {
    * @param create -- create a URL based on incoming parameters
    */
   class Link[T](val uriList: List[String], val matchHead_? : Boolean) extends
-  PartialFunction[Req, Can[Boolean]] {
+  PartialFunction[Req, Box[Boolean]] {
     def this(b: List[String]) = this(b, false)
 
     def isDefinedAt(req: Req): Boolean =
     if (matchHead_?) req.path.partPath.take(uriList.length) == uriList
     else uriList == req.path.partPath
 
-    def apply(in: Req): Can[Boolean] = if (isDefinedAt(in)) Full(true)
+    def apply(in: Req): Box[Boolean] = if (isDefinedAt(in)) Full(true)
     else throw new MatchError("Failed for Link "+uriList)
 
 
-    def createLink(params: T): Can[NodeSeq] =
+    def createLink(params: T): Box[NodeSeq] =
     if (matchHead_?)
     Full(Text((uriList).mkString("/", "/", "") + "/"))
     else if (uriList.last == "index" && uriList.length > 1)
@@ -413,7 +413,7 @@ object Loc {
   object Link {
     def apply(urlLst: List[String], matchHead_? : Boolean, url: String) =
     new Link[NullLocParams](urlLst, matchHead_?) {
-      override def createLink(params: NullLocParams): Can[NodeSeq] =
+      override def createLink(params: NullLocParams): Box[NodeSeq] =
       Full(Text(url))
     }
 
@@ -421,7 +421,7 @@ object Loc {
 
   object ExtLink {
     def apply(url: String) = new Link[NullLocParams](Nil, false) {
-      override def createLink(params: NullLocParams): Can[NodeSeq] =
+      override def createLink(params: NullLocParams): Box[NodeSeq] =
       Full(Text(url))
     }
   }
@@ -431,7 +431,7 @@ object Loc {
   }
 
   trait LocInfo[T] extends LocParam {
-    def apply(): Can[LocInfoVal[T]]
+    def apply(): Box[LocInfoVal[T]]
   }
 
   def alwaysTrue(a: Req) = true

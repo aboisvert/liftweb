@@ -170,7 +170,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   protected def instantiate: MyType
 
   def newInstance(firstEvent: Meta#Event): MyType = createNewInstance(firstEvent, Empty)
-  def createNewInstance(firstEvent: Meta#Event, setup: Can[MyType => Unit]): MyType = {
+  def createNewInstance(firstEvent: Meta#Event, setup: Box[MyType => Unit]): MyType = {
     val state = instantiate
     setup.foreach(_(state))
     state.processEvent(firstEvent)
@@ -271,7 +271,7 @@ trait MetaProtoStateMachine [MyType <: ProtoStateMachine[MyType, StateType],
   case class On(override val on: PartialFunction[Meta#Event, Any], override val to: StV) extends ATransition(to, on)
 
   object Event {
-    def unmatchedHandler: Can[(MyType, Meta#State, Event) => Any] = Empty
+    def unmatchedHandler: Box[(MyType, Meta#State, Event) => Any] = Empty
     def unmatchedEventHandler(who: MyType, state: Meta#State, event: Event) {
       val f = unmatchedHandler openOr ((who: MyType,state: Meta#State,what: Event) => throw new UnmatchedEventException("Event "+what+" was not matched at state "+who.state, who, what))
       f(who, state, event)

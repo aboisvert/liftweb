@@ -110,24 +110,24 @@ trait BaseMappedField extends SelectableField with Bindable {
   /**
    * Called when a column has been added to the database via Schemifier
    */
-  def dbAddedColumn: Can[() => Unit]
+  def dbAddedColumn: Box[() => Unit]
 
   /**
    * Called when a column has indexed via Schemifier
    */
-  def dbAddedIndex: Can[() => Unit]
+  def dbAddedIndex: Box[() => Unit]
 
   /**
    * Create an input field for the item
    */
-  def toForm: Can[NodeSeq]
+  def toForm: Box[NodeSeq]
 
   /**
    * A unique 'id' for the field for form generation
    */
   def fieldId: Option[NodeSeq] = None
 
-  def displayNameHtml: Can[NodeSeq] = Empty
+  def displayNameHtml: Box[NodeSeq] = Empty
 
   def displayHtml: NodeSeq = displayNameHtml openOr Text(displayName)
 
@@ -136,7 +136,7 @@ trait BaseMappedField extends SelectableField with Bindable {
    * The actual toForm method wraps the information based on
    * mode.
    */
-  def _toForm: Can[NodeSeq]
+  def _toForm: Box[NodeSeq]
 
   def asHtml: NodeSeq
 
@@ -178,17 +178,17 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
 
   def dbKeyToTable: KeyedMetaMapper[KeyType, Other]
 
-  def validSelectValues: Can[List[(KeyType, String)]] = Empty
+  def validSelectValues: Box[List[(KeyType, String)]] = Empty
 
 
   def immutableMsg: NodeSeq = Text(?("Can't change"))
 
-  override def _toForm: Can[NodeSeq] = Full(validSelectValues.flatMap{
+  override def _toForm: Box[NodeSeq] = Full(validSelectValues.flatMap{
       case Nil => Empty
 
       case xs =>
         val mapBack: HashMap[String, KeyType] = new HashMap
-        var selected: Can[String] = Empty
+        var selected: Box[String] = Empty
 
         Full(SHtml.selectObj(xs, Full(this.is), this.set))
     }.openOr(immutableMsg))
@@ -206,7 +206,7 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
   /**
    * Load and cache the record that this field references
    */
-  def obj: Can[Other] = synchronized {
+  def obj: Box[Other] = synchronized {
     if (!_calcedObj) {
       _calcedObj = true
       this._obj = if(defined_?) dbKeyToTable.find(i_is_!) else Empty
@@ -217,12 +217,12 @@ trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper
   /**
    * Prime the reference of this FK reference
    */
-  def primeObj(obj: Can[Other]) = synchronized {
+  def primeObj(obj: Box[Other]) = synchronized {
     _obj
     _calcedObj = true
   }
 
-  private var _obj: Can[Other] = Empty
+  private var _obj: Box[Other] = Empty
   private var _calcedObj = false
 }
 
@@ -289,12 +289,12 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
   /**
    * Called when a column has been added to the database via Schemifier
    */
-  def dbAddedColumn: Can[() => Unit] = Empty
+  def dbAddedColumn: Box[() => Unit] = Empty
 
   /**
    * Called when a column has indexed via Schemifier
    */
-  def dbAddedIndex: Can[() => Unit] = Empty
+  def dbAddedIndex: Box[() => Unit] = Empty
 
   /**
    * override this method in indexed fields to indicate that the field has been saved
@@ -395,7 +395,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
   def calcFieldName: String = fieldOwner.getSingleton._dbTableName+":"+name
 
 
-  final def toForm: Can[NodeSeq] = {
+  final def toForm: Box[NodeSeq] = {
     def mf(in: Node): NodeSeq = in match {
       case g: Group => g.nodes.flatMap(mf)
       case e: Elem => e % toFormAppendedAttributes
@@ -408,7 +408,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] =
+  override def _toForm: Box[NodeSeq] =
   Full(<input type='text' id={fieldId}
       name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
       value={is match {case null => "" case s => s.toString}}/>)
@@ -422,9 +422,9 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
   }
 
   /**
-   * Set the field to the Can value if the Can is Full
+   * Set the field to the Box value if the Box is Full
    */
-  def set_?(value: Can[FieldType]): Can[FieldType] = {
+  def set_?(value: Box[FieldType]): Box[FieldType] = {
     value.foreach(v => this.set(v))
     value
   }
@@ -577,10 +577,10 @@ object MappedField {
 }
 
 trait IndexedField[O] extends BaseIndexedField {
-  def convertKey(in: String): Can[O]
-  def convertKey(in: Int): Can[O]
-  def convertKey(in: Long): Can[O]
-  def convertKey(in: AnyRef): Can[O]
+  def convertKey(in: String): Box[O]
+  def convertKey(in: Int): Box[O]
+  def convertKey(in: Long): Box[O]
+  def convertKey(in: AnyRef): Box[O]
   def makeKeyJDBCFriendly(in: O): AnyRef
   def dbDisplay_? = false
 }
@@ -620,7 +620,7 @@ trait BaseForeignKey extends BaseMappedField {
    * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
    * is done with the schemification.
    */
-  def dbAddedForeignKey: Can[() => Unit]
+  def dbAddedForeignKey: Box[() => Unit]
 }
 
 trait LifecycleCallbacks {

@@ -19,7 +19,7 @@ import _root_.net.liftweb.http._
 import S._
 import _root_.scala.xml._
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 
 /**
  * This class is a built in snippet that renders the messages (Errors, Warnings, Notices). Typically it is used in templates
@@ -74,8 +74,8 @@ class Msgs {
   }
 }
 
-object MsgsNoticeMeta extends SessionVar[Can[AjaxMessageMeta]](Empty)
-object MsgsWarningMeta extends SessionVar[Can[AjaxMessageMeta]](Empty)
-object MsgsErrorMeta extends SessionVar[Can[AjaxMessageMeta]](Empty)
+object MsgsNoticeMeta extends SessionVar[Box[AjaxMessageMeta]](Empty)
+object MsgsWarningMeta extends SessionVar[Box[AjaxMessageMeta]](Empty)
+object MsgsErrorMeta extends SessionVar[Box[AjaxMessageMeta]](Empty)
 
-case class AjaxMessageMeta(title: Can[String], cssClass: Can[String])
+case class AjaxMessageMeta(title: Box[String], cssClass: Box[String])

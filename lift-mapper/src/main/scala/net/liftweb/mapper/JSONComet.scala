@@ -44,7 +44,7 @@ trait JsonComet {
       case JsonCmd(FieldId, target, value, _) =>
       (for (key <- keyStore.recover(meta, target);
       obj <- meta.find(key);
-      cannedNewValue <- Can(cvt)(value);
+      cannedNewValue <- Box(cvt)(value);
       newValue <- cannedNewValue
       ) yield {
         val record = meta.getActualField(obj, field)(newValue)
@@ -60,7 +60,7 @@ trait JsonComet {
     def theCall(value: JsExp) = jsonCall(FieldId, JsVar("it", meta.primaryKeyField.name), value)
 
 
-    def cvt: PartialFunction[Any, Can[FieldType]]
+    def cvt: PartialFunction[Any, Box[FieldType]]
 
     self.appendJsonHandler(handler)
   }
@@ -79,7 +79,7 @@ trait JsonComet {
     def buildCheckbox = <input type="checkbox" onclick={AnonFunc(theCall(JsRaw("this.checked")))}
     defaultChecked={JsVar("it", field.name)} />
 
-    def cvt: PartialFunction[Any, Can[Boolean]] = {
+    def cvt: PartialFunction[Any, Box[Boolean]] = {
       case b: Boolean => Full(b)
       case "on" => Full(true)
       case "off" => Full(false)
@@ -103,7 +103,7 @@ trait JsonComet {
 
     def onBlurCmd: JsCmd = theCall(JsRaw("this.value"))
 
-    def cvt: PartialFunction[Any, Can[String]] = {
+    def cvt: PartialFunction[Any, Box[String]] = {
       case null => Empty
       case x => Full(x.toString)
     }
@@ -194,7 +194,7 @@ trait JsonComet {
 
     def onChangeCmd: JsCmd = theCall(JsRaw("this.options[this.selectedIndex].value")) & JsRaw("this.blur()")
 
-    def cvt: PartialFunction[Any, Can[Enum#Value]] = {
+    def cvt: PartialFunction[Any, Box[Enum#Value]] = {
       case null => Empty
       case x: Int => tryo(enum(x))
       case x: String => tryo(x.toInt).flatMap(i => tryo(enum(i)))

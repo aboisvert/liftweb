@@ -17,7 +17,7 @@ import _root_.scala.actors.Actor._
  */
 trait HttpAuthentication {
 
-  def header(r: Req) = Can !! r.request.getHeader("Authorization")
+  def header(r: Req) = Box !! r.request.getHeader("Authorization")
 
   def verified_? : PartialFunction[Req, Boolean]
 
@@ -33,7 +33,7 @@ object NoAuthentication extends HttpAuthentication {
   def verified_? = {case req => true}
 }
 
-object userRole extends RequestVar[Can[Role]](Empty)
+object userRole extends RequestVar[Box[Role]](Empty)
 
 /**
  * Methods that are specific to HTTP basic are defined here.
@@ -42,7 +42,7 @@ object userRole extends RequestVar[Can[Role]](Empty)
  */
 case class HttpBasicAuthentication(realmName: String)(func: PartialFunction[(String, String, Req), Boolean]) extends HttpAuthentication {
 
-  def credentials(r: Req): Can[(String, String)] = {
+  def credentials(r: Req): Box[(String, String)] = {
     header(r).flatMap(auth => {
       val decoded = new String(Base64.decodeBase64(auth.substring(6,auth.length).getBytes)).split(":").toList
       decoded match {
@@ -102,7 +102,7 @@ case class HttpDigestAuthentication(realmName: String)(func: PartialFunction[(St
 
   override def shutDown = NonceWatcher ! ShutDown
 
-  def getInfo(req: Req) : Can[DigestAuthentication] = header(req).map(auth => {
+  def getInfo(req: Req): Box[DigestAuthentication] = header(req).map(auth => {
 
 	 val info = auth.substring(7,auth.length)
      val pairs = splitNameValuePairs(info)

@@ -20,7 +20,7 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
   implicit def strToInput(in: String): Input = new _root_.scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
 
-  def parse(in: String): Can[Any] = theValue(in) match {
+  def parse(in: String): Box[Any] = theValue(in) match {
     case Success(v, _) => Full(v)
     case x => Empty
   }

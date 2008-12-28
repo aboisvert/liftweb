@@ -56,7 +56,7 @@ object Mailer {
    * setting the authenticator.
    */
   //def authenticator = authenticatorFunc
-  var authenticator: Can[Authenticator] = Empty
+  var authenticator: Box[Authenticator] = Empty
 
 
   /**

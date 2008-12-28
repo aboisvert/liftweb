@@ -37,7 +37,7 @@ class PasswordField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
 
   override def set_!(in: String) = hash("{"+in+"} salt={"+salt_i.get+"}")
 
-  def setFromAny(in: Any): Can[String] = {
+  def setFromAny(in: Any): Box[String] = {
     in match {
       case a : Array[String] if (a.length == 2 && a(0) == a(1)) => Full(this.set(a(0)))
       case l : List[String] if (l.length == 2 && l.head == l(1)) => Full(this.set(l.head))
@@ -46,7 +46,7 @@ class PasswordField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
     }
   }
 
-  def setFromString(s: String) : Can[String] = Full(set(s))
+  def setFromString(s: String): Box[String] = Full(set(s))
 
   private def elem = <input type="pasword"
       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
@@ -73,7 +73,7 @@ class PasswordField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
     }
   }
 
-  private def validatePassword(pwd: String): Can[Node] = pwd match {
+  private def validatePassword(pwd: String): Box[Node] = pwd match {
     case "*" | PasswordField.blankPw if (pwd.length < 3) => Full(Text(S.??("password.too.short")))
     case "" | null => Full(Text(S.??("password.must.be.set")))
     case _ => Empty

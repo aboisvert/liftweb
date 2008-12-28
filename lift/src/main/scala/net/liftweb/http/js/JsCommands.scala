@@ -501,7 +501,7 @@ object OnLoad{
   }
 
   trait HasTime {
-    def time: Can[TimeSpan]
+    def time: Box[TimeSpan]
     def timeStr = time.map(_.millis.toString) openOr ""
   }
 
@@ -538,7 +538,7 @@ object OnLoad{
   /**
   * Update a Select with new Options
   */
-  case class ReplaceOptions(select: String, opts: List[(String, String)], dflt: Can[String]) extends JsCmd {
+  case class ReplaceOptions(select: String, opts: List[(String, String)], dflt: Box[String]) extends JsCmd {
     def toJsCmd = """var x=document.getElementById("""+select.encJs+""");
     while (x.length > 0) {x.remove(0);}
     var y = null;

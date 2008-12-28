@@ -157,7 +157,7 @@ trait StringHelpers {
   }
 
   /** @return an Empty can if the node seq is empty and a full can with the NodeSeq text otherwise */
-  implicit def nodeSeqToOptionString(in: NodeSeq): Can[String] = if (in.length == 0) Empty else Full(in.text)
+  implicit def nodeSeqToOptionString(in: NodeSeq): Box[String] = if (in.length == 0) Empty else Full(in.text)
 
   /**
    * Parse a string and return the Long value of that string.<p/>

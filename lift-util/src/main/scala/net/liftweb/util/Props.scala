@@ -30,15 +30,15 @@ object Props {
    *
    * @return the value of the property if defined
    */
-  def get(name: String): Can[String] = Can(props.get(name))
+  def get(name: String): Box[String] = Box(props.get(name))
 
   // def apply(name: String): String = props(name)
 
-  def getInt(name: String): Can[Int] = get(name).map(toInt) // toInt(props.get(name))
+  def getInt(name: String): Box[Int] = get(name).map(toInt) // toInt(props.get(name))
   def getInt(name: String, defVal: Int): Int = getInt(name) openOr defVal // props.get(name).map(toInt(_)) getOrElse defVal
-  def getLong(name: String): Can[Long] = props.get(name).map(toLong)
+  def getLong(name: String): Box[Long] = props.get(name).flatMap(asLong)
   def getLong(name: String, defVal: Long): Long = getLong(name) openOr defVal // props.get(name).map(toLong(_)) getOrElse defVal
-  def getBool(name: String): Can[Boolean] = props.get(name).map(toBoolean) // (props.get(name))
+  def getBool(name: String): Box[Boolean] = props.get(name).map(toBoolean) // (props.get(name))
   def getBool(name: String, defVal: Boolean): Boolean = getBool(name) openOr defVal // props.get(name).map(toBoolean(_)) getOrElse defVal
   def get(name: String, defVal: String) = props.get(name) getOrElse defVal
 
@@ -65,7 +65,7 @@ object Props {
   val propFileName = "lift.props"
   val fileName = "lift.props"
 
-lazy val mode = Can.legacyNullTest((System.getProperty("run.mode"))).map(_.toLowerCase) match {
+lazy val mode = Box.legacyNullTest((System.getProperty("run.mode"))).map(_.toLowerCase) match {
     case Full("test") => Test
     case Full("production") => Production
     case Full("staging") => Staging

@@ -150,11 +150,11 @@ object SHtml {
       ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
   }
 
-  def ajaxSelect(opts: Seq[(String, String)], deflt: Can[String],
+  def ajaxSelect(opts: Seq[(String, String)], deflt: Box[String],
                  func: String => JsCmd, attrs: (String, String)*): Elem =
   ajaxSelect_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Can[String],
+  private def ajaxSelect_*(opts: Seq[(String, String)],deflt: Box[String],
                            func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
@@ -252,7 +252,7 @@ object SHtml {
     </form>
   }
 
-  private[http] def secureOptions[T](options: Seq[(T, String)], default: Can[T],
+  private[http] def secureOptions[T](options: Seq[(T, String)], default: Box[T],
                     onSubmit: T => Unit) = {
      val secure = options.map{case (obj, txt) => (obj, randomString(20), txt)}
      val defaultNonce = default.flatMap(d => secure.find(_._1 == d).map(_._2))
@@ -270,7 +270,7 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-   def select(opts: Seq[(String, String)], deflt: Can[String], func: String => Any, attrs: (String, String)*): Elem =
+   def select(opts: Seq[(String, String)], deflt: Box[String], func: String => Any, attrs: (String, String)*): Elem =
      select_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
   /**
@@ -281,7 +281,7 @@ object SHtml {
    * @param default  -- the default value (or Empty if no default value)
    * @param onSubmit -- the function to execute on form submission
    */
-   def selectObj[T](options: Seq[(T, String)], default: Can[T],
+   def selectObj[T](options: Seq[(T, String)], default: Box[T],
                     onSubmit: T => Unit, attrs: (String, String)*): Elem = {
     val (nonces, defaultNonce, secureOnSubmit) =
       secureOptions(options, default, onSubmit)
@@ -297,7 +297,7 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def select_*(opts: Seq[(String, String)],deflt: Can[String],
+  def select_*(opts: Seq[(String, String)],deflt: Box[String],
                func: AFuncHolder, attrs: (String, String)*): Elem = {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
@@ -316,7 +316,7 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def untrustedSelect(opts: Seq[(String, String)], deflt: Can[String],
+  def untrustedSelect(opts: Seq[(String, String)], deflt: Box[String],
                       func: String => Any, attrs: (String, String)*): Elem =
   untrustedSelect_*(opts, deflt, SFuncHolder(func))
 
@@ -329,7 +329,7 @@ object SHtml {
    * @param deflt -- the default value (or Empty if no default value)
    * @param func -- the function to execute on form submission
    */
-  def untrustedSelect_*(opts: Seq[(String, String)],deflt: Can[String],
+  def untrustedSelect_*(opts: Seq[(String, String)],deflt: Box[String],
                         func: AFuncHolder, attrs: (String, String)*): Elem = {
     attrs.foldLeft(<select name={mapFunc(func)}>{
       opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
@@ -357,11 +357,11 @@ object SHtml {
   def textarea_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
   attrs.foldLeft(<textarea name={mapFunc(func)}>{value}</textarea>)(_ % _)
 
-  def radio(opts: Seq[String], deflt: Can[String], func: String => Any,
+  def radio(opts: Seq[String], deflt: Box[String], func: String => Any,
             attrs: (String, String)*): ChoiceHolder[String] =
     radio_*(opts, deflt, SFuncHolder(func), attrs :_*)
 
-  def radio_*(opts: Seq[String], deflt: Can[String],
+  def radio_*(opts: Seq[String], deflt: Box[String],
               func: AFuncHolder, attrs: (String, String)*): ChoiceHolder[String] = {
     val name = mapFunc(func)
     val itemList = opts.map(v => ChoiceItem(v,
@@ -384,7 +384,7 @@ object SHtml {
   }
 
   private def checked(in: Boolean) = if (in) new UnprefixedAttribute("checked", "checked", Null) else Null
-  private def setId(in: Can[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
+  private def setId(in: Box[String]) = in match { case Full(id) => new UnprefixedAttribute("id", Text(id), Null); case _ => Null}
 
   def checkbox[T](possible: Seq[T], actual: Seq[T], func: Seq[T] => Any, attrs: (String, String)*): ChoiceHolder[T] = {
     val len = possible.length
@@ -409,7 +409,7 @@ object SHtml {
    * checkbox is submitted. Has an id of {@code id}.
    */
   def checkbox_id(value: Boolean, func: Boolean => Any,
-                  id: Can[String], attrs: (String, String)*): NodeSeq = {
+                  id: Box[String], attrs: (String, String)*): NodeSeq = {
     def from(f: Boolean => Any): List[String] => Boolean = (in: List[String]) => {
       f(in.exists(toBoolean(_)))
         true
@@ -417,7 +417,7 @@ object SHtml {
     checkbox_*(value, LFuncHolder(from(func)), id, attrs :_*)
   }
 
-  def checkbox_*(value: Boolean, func: AFuncHolder, id: Can[String],
+  def checkbox_*(value: Boolean, func: AFuncHolder, id: Box[String],
                  attrs: (String, String)*): NodeSeq = {
     val name = mapFunc(func)
     (<input type="hidden" name={name} value="false"/>) ++

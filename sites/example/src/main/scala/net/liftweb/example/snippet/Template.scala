@@ -30,7 +30,7 @@ object Template extends DispatchSnippet {
     Map("show" -> show _)
 
   def show(in: NodeSeq): NodeSeq = {
-    val ret: Can[NodeSeq] =
+    val ret: Box[NodeSeq] =
       for (tmpl <- templateFromTemplateAttr;
 	   (tbl, row) <- template(tmpl, "temp", "tbl", "row"))
 	yield {

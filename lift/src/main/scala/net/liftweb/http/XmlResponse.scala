@@ -27,7 +27,7 @@ trait NodeResponse extends LiftResponse {
   def headers: List[(String, String)]
   def cookies: List[Cookie]
   def code: Int
-  def docType: Can[String]
+  def docType: Box[String]
   def renderInIEMode: Boolean = false
 
   def toResponse = {
@@ -67,7 +67,7 @@ trait NodeResponse extends LiftResponse {
   }
 }
 
-case class XhtmlResponse(out: Node, docType: Can[String],
+case class XhtmlResponse(out: Node, docType: Box[String],
                          headers: List[(String, String)],
                          cookies: List[Cookie],
                          code: Int,

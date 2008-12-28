@@ -23,12 +23,12 @@ package net.liftweb.util
  *
  * @param size the size of the cache
  * @param loadFactor the optional Load Factor
- * @param cons A function that will take a value of type K and return a Can[T]
+ * @param cons A function that will take a value of type K and return a Box[T]
  *   populated into the cache if the return value is Full.
  *
  * @author Steve Jenson (stevej@pobox.com)
  */
-class KeyedCache[K, T](size: Int, loadFactor: Can[Float], cons: K => Can[T]) {
+class KeyedCache[K, T](size: Int, loadFactor: Box[Float], cons: K => Box[T]) {
   val cache = new LRU[K, T](size, loadFactor)
 
   /**
@@ -45,12 +45,12 @@ class KeyedCache[K, T](size: Int, loadFactor: Can[Float], cons: K => Can[T]) {
    * If the cache contains a value mapped to {@code key} then return it,
    * otherwise run cons and add that value to the cache and return it.
    */
-  def apply(key: K): Can[T] = if (cache.contains(key)) {
+  def apply(key: K): Box[T] = if (cache.contains(key)) {
     Full(cache(key))
   } else {
     cons(key) match {
       case f@Full(v) => cache.update(key, v); f
-      case Empty => Empty
+      case _ => Empty
     }
   }
 }

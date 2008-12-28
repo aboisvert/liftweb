@@ -36,7 +36,7 @@ class MappedUniqueId[T<:Mapper[T]](override val fieldOwner: T, override val maxL
 class MappedBirthYear[T <: Mapper[T]](owner: T, minAge: Int) extends MappedInt[T](owner) {
   override def defaultValue = year(timeNow) - minAge
 
-  override def _toForm: Can[NodeSeq] = {
+  override def _toForm: Box[NodeSeq] = {
     val end = (year(timeNow) - minAge)
     val start = end - 100
     Full(SHtml.selectObj((start to end).
@@ -77,10 +77,11 @@ class MappedStringIndex[T<:Mapper[T]](override val fieldOwner: T, override val m
 
   def makeKeyJDBCFriendly(in: String) = in
 
-  def convertKey(in: String): Can[String] = Can.legacyNullTest(in)
-  def convertKey(in: Int): Can[String] = Full(in.toString)
-  def convertKey(in: Long): Can[String] = Full(in.toString)
-  def convertKey(in: AnyRef): Can[String] = Can.legacyNullTest(in).map(_.toString)
+  def convertKey(in: String): Box[String] = Box.legacyNullTest(in)
+  def convertKey(in: Int): Box[String] = Full(in.toString)
+  def convertKey(in: Long): Box[String] = Full(in.toString)
+  def convertKey(in: AnyRef): Box[String] = 
+    Box.legacyNullTest(in).map(_.toString)
 }
 
 
@@ -102,18 +103,18 @@ extends MappedString[T](fieldOwner, maxLen) with MappedForeignKey[String,T,O] wi
 
   override def dbForeignKey_? = true
 
-  def asSafeJs(obs: Can[KeyObfuscator]): JsExp =
+  def asSafeJs(obs: Box[KeyObfuscator]): JsExp =
     obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Str(is))
 
   /**
    * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
    * is done with the schemification.
    */
-  def dbAddedForeignKey: Can[() => Unit] = Empty
+  def dbAddedForeignKey: Box[() => Unit] = Empty
 
   override def toString = if (defined_?) super.toString else "NULL"
 
-  def set(v: Can[O]): T = {
+  def set(v: Box[O]): T = {
     val toSet: String = v match {
       case Full(i) => i.primaryKeyField.is
       case _ => null

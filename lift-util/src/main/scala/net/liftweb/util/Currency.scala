@@ -47,7 +47,7 @@ class Currency(val amount: Long,val symbol: String, val decimals: Int) {
 class CurrencyMismatchException extends Exception
 
 object Currency {
-  def apply(s: String): Can[Currency] = s.roboSplit("&") match {
+  def apply(s: String): Box[Currency] = s.roboSplit("&") match {
     case List(cur, a, d) => for (av <- asLong(a); dv <- asInt(d)) yield new Currency(av, urlDecode(cur), dv)
     case _ => Empty
   }

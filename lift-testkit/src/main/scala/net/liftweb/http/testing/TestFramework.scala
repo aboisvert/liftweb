@@ -155,7 +155,7 @@ trait TestFramework extends GetPoster {
 
 
   def getCookie(headers: List[(String, String)],
-                respHeaders: Map[String, List[String]]): Can[String]
+                respHeaders: Map[String, List[String]]): Box[String]
   =
   {
     val ret = (headers.filter{case ("Cookie", _) => true; case _ => false}.
@@ -216,7 +216,7 @@ object TestHelpers {
    *
    * @return the name of the JSON function associated with the Comet actor
    */
-  def jsonFuncForCometName(cometName: String, body: String): Can[String] = {
+  def jsonFuncForCometName(cometName: String, body: String): Box[String] = {
     val p = Pattern.compile("""JSON Func """+cometName+""" \$\$ (F[^ ]*)""")
     val m = p.matcher(body)
     if (m.find) Full(m.group(1))
@@ -291,7 +291,7 @@ Response with GetPoster
   post(url, httpClient, Nil, body)
 }
 
-class CompleteFailure(val serverName: String, val exception: Can[Throwable]) extends Response {
+class CompleteFailure(val serverName: String, val exception: Box[Throwable]) extends Response {
   // override def assertSuccess = assert(false, "Failed to connect to server: "+serverName)
   override def toString = serverName + (exception.map(e => " Exception: " + e.getMessage) openOr "")
 }

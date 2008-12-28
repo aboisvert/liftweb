@@ -25,7 +25,7 @@ trait OwnedField[OwnerType <: Record[OwnerType]] extends FieldIdentifier {
   private[record] var fieldName: String = _
 
   type MyType
-  type ValidationFunction = MyType => Can[Node]
+  type ValidationFunction = MyType => Box[Node]
 
   /**
    * Return the owner of this field
@@ -99,7 +99,7 @@ trait OwnedField[OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
   def tabIndex: Int = 1
 
-  override def uniqueFieldId: Can[String] = Full(name+"_id")
+  override def uniqueFieldId: Box[String] = Full(name+"_id")
 
 
   def label: NodeSeq = uniqueFieldId match {
@@ -109,9 +109,9 @@ trait OwnedField[OwnerType <: Record[OwnerType]] extends FieldIdentifier {
 
   /**
    * Return a list of functions that will be subsequently called for validating this field.
-   * Each function takes a field-type parameter and returns a Can[Node].
+   * Each function takes a field-type parameter and returns a Box[Node].
    *
-   * The field values is valid if all validation functions return an Empty Can
+   * The field values is valid if all validation functions return an Empty Box
    */
   def validators: List[ValidationFunction] = Nil
 
@@ -163,9 +163,9 @@ trait OwnedField[OwnerType <: Record[OwnerType]] extends FieldIdentifier {
     case x :: xs => runFilters(x(in), xs)
   }
 
-  def setFromAny(in: Any): Can[MyType]
+  def setFromAny(in: Any): Box[MyType]
 
-  def setFromString(s: String) : Can[MyType]
+  def setFromString(s: String): Box[MyType]
 
   def value: MyType = synchronized {
     if (needsDefault) {

@@ -29,7 +29,7 @@ object NamedPF {
   NamedPartialFunction[A,B] = new NamedPF(name, f)
 
   def find[A, B](param: A, lst: Seq[PartialFunction[A, B]]):
-  Can[PartialFunction[A, B]] = lst.find(_.isDefinedAt(param))
+  Box[PartialFunction[A, B]] = lst.find(_.isDefinedAt(param))
 
 
   def isDefinedAt[A, B](in: A, lst: Seq[PartialFunction[A, B]]): Boolean =
@@ -41,7 +41,7 @@ object NamedPF {
     case _ => throw new MatchError(param)
   }
 
-  def applyCan[A, B](param: A, lst: Seq[PartialFunction[A, B]]): Can[B] =
+  def applyBox[A, B](param: A, lst: Seq[PartialFunction[A, B]]): Box[B] =
   find(param, lst) match {
     case Full(pf) => Full(pf.apply(param))
     case _ => Empty

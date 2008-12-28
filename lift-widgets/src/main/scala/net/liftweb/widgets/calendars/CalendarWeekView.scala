@@ -21,7 +21,7 @@ import _root_.java.util.{Calendar, Locale}
 import _root_.java.util.Calendar._
 import _root_.java.text.SimpleDateFormat
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.SHtml._
 import JsCmds._
@@ -42,12 +42,12 @@ object CalendarWeekView {
 
   def apply(when: Calendar,
       calendars: List[CalendarItem],
-      itemClick: Can[AnonFunc]) = new CalendarWeekView(when).render(calendars, itemClick)
+      itemClick: Box[AnonFunc]) = new CalendarWeekView(when).render(calendars, itemClick)
 
   def apply(when: Calendar,
       meta: WeekViewMeta,
       calendars: List[CalendarItem],
-      itemClick: Can[AnonFunc]) = new CalendarWeekView(when, meta) render(calendars, itemClick)
+      itemClick: Box[AnonFunc]) = new CalendarWeekView(when, meta) render(calendars, itemClick)
 
 }
 
@@ -66,7 +66,7 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
   }</tr>
 
 
-  def render(calendars: List[CalendarItem], itemClick: Can[AnonFunc]): NodeSeq = {
+  def render(calendars: List[CalendarItem], itemClick: Box[AnonFunc]): NodeSeq = {
 
     val cal = when.clone().asInstanceOf[Calendar]
 

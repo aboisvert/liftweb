@@ -58,7 +58,7 @@ trait DBRecord[MyType <: DBRecord[MyType]] extends Record[MyType] {
    */
   def can_delete_? : Boolean =  meta.saved_?(this) && !was_deleted_?
 
-  private var dbConnectionIdentifier : Can[ConnectionIdentifier] = Empty
+  private var dbConnectionIdentifier: Box[ConnectionIdentifier] = Empty
 
   def connectionIdentifier = dbConnectionIdentifier openOr calcDbId
 

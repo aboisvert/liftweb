@@ -34,15 +34,15 @@ import auth._
 object LiftRules {
   val noticesContainerId = "lift__noticesContainer__"
 
-  type DispatchPF = PartialFunction[Req, () => Can[LiftResponse]];
+  type DispatchPF = PartialFunction[Req, () => Box[LiftResponse]];
   type RewritePF = PartialFunction[RewriteRequest, RewriteResponse]
   type SnippetPF = PartialFunction[List[String], NodeSeq => NodeSeq]
   type LiftTagPF = PartialFunction[(String, Elem, MetaData, NodeSeq, String), NodeSeq]
-  type URINotFoundPF = PartialFunction[(Req, Can[Failure]), LiftResponse]
+  type URINotFoundPF = PartialFunction[(Req, Box[Failure]), LiftResponse]
   type URLDecoratorPF = PartialFunction[String, String]
   type SnippetDispatchPF = PartialFunction[String, DispatchSnippet]
-  type ViewDispatchPF = PartialFunction[List[String], Either[() => Can[NodeSeq], LiftView]]
-  type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Can[Role]]
+  type ViewDispatchPF = PartialFunction[List[String], Either[() => Box[NodeSeq], LiftView]]
+  type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Box[Role]]
   type ExceptionHandlerPF = PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse]
 
 
@@ -54,7 +54,7 @@ object LiftRules {
 
   val early = RulesSeq[(HttpServletRequest) => Any]
 
-  val beforeSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any]
+  val beforeSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Box[Req]) => Any]
 
   /**
    * Defines the resources that are protected by authentication and authorization. If this function
@@ -97,7 +97,7 @@ object LiftRules {
    */
   val urlDecorate = RulesSeq[URLDecoratorPF]
 
-  val afterSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Can[Req]) => Any]
+  val afterSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Box[Req]) => Any]
 
   /**
    * Calculate the Comet Server (by default, the server that
@@ -117,7 +117,7 @@ object LiftRules {
    * A partial function that determines content type based on an incoming
    * Req and Accept header
    */
-  var determineContentType: PartialFunction[(Can[Req], Can[String]), String] = {
+  var determineContentType: PartialFunction[(Box[Req], Box[String]), String] = {
     case (_, Full(accept)) if this.useXhtmlMimeType && accept.toLowerCase.contains("application/xhtml+xml") =>
       "application/xhtml+xml"
     case _ => "text/html"
@@ -156,7 +156,7 @@ object LiftRules {
   /**
    * The function referenced here is called if there's a localization lookup failure
    */
-  var localizationLookupFailureNotice: Can[(String, Locale) => Unit] = Empty
+  var localizationLookupFailureNotice: Box[(String, Locale) => Unit] = Empty
 
   /**
    * The default location to send people if SiteMap access control fails. The path is
@@ -164,7 +164,7 @@ object LiftRules {
    */
   var siteMapFailRedirectLocation: List[String] = List()
 
-  private[http] def notFoundOrIgnore(requestState: Req, session: Can[LiftSession]): Can[LiftResponse] = {
+  private[http] def notFoundOrIgnore(requestState: Req, session: Box[LiftSession]): Box[LiftResponse] = {
     if (passNotFoundToChain) Empty
     else session match {
       case Full(session) => Full(session.checkRedirect(requestState.createNotFound))
@@ -210,18 +210,18 @@ object LiftRules {
    * Put a function that will calculate the request timeout based on the
    * incoming request.
    */
-  var calcRequestTimeout: Can[Req => Int] = Empty
+  var calcRequestTimeout: Box[Req => Int] = Empty
 
   /**
    * If you want the standard (non-AJAX) request timeout to be something other than
    * 10 seconds, put the value here
    */
-  var stdRequestTimeout: Can[Int] = Empty
+  var stdRequestTimeout: Box[Int] = Empty
 
   /**
    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
    */
-  var cometRequestTimeout: Can[Int] = Empty
+  var cometRequestTimeout: Box[Int] = Empty
 
   /**
    * The dispatcher that takes a Snippet and converts it to a
@@ -234,31 +234,31 @@ object LiftRules {
    */
   val viewDispatch = RulesSeq[ViewDispatchPF]
 
-  private[http] def snippet(name: String): Can[DispatchSnippet] = NamedPF.applyCan(name, snippetDispatch.toList)
+  private[http] def snippet(name: String): Box[DispatchSnippet] = NamedPF.applyBox(name, snippetDispatch.toList)
 
   /**
    * If the request times out (or returns a non-Response) you can
    * intercept the response here and create your own response
    */
-  var requestTimedOut: Can[(Req, Any) => Can[LiftResponse]] = Empty
+  var requestTimedOut: Box[(Req, Any) => Box[LiftResponse]] = Empty
 
   /**
    * A function that takes the current HTTP request and returns the current
    */
-  var timeZoneCalculator: Can[HttpServletRequest] => TimeZone = defaultTimeZoneCalculator _
+  var timeZoneCalculator: Box[HttpServletRequest] => TimeZone = defaultTimeZoneCalculator _
 
-  def defaultTimeZoneCalculator(request: Can[HttpServletRequest]): TimeZone = TimeZone.getDefault
+  def defaultTimeZoneCalculator(request: Box[HttpServletRequest]): TimeZone = TimeZone.getDefault
 
   /**
    * How many times do we retry an Ajax command before calling it a failure?
    */
-  var ajaxRetryCount: Can[Int] = Empty
+  var ajaxRetryCount: Box[Int] = Empty
 
   /**
    * The JavaScript to execute at the begining of an
    * Ajax request (for example, showing the spinning working thingy)
    */
-  var ajaxStart: Can[() => JsCmd] = Empty
+  var ajaxStart: Box[() => JsCmd] = Empty
 
   /**
   * The function that calculates if the response should be rendered in
@@ -271,20 +271,20 @@ object LiftRules {
    * The JavaScript to execute at the end of an
    * Ajax request (for example, removing the spinning working thingy)
    */
-  var ajaxEnd: Can[() => JsCmd] = Empty
+  var ajaxEnd: Box[() => JsCmd] = Empty
 
   /**
    * The default action to take when the JavaScript action fails
    */
-  var ajaxDefaultFailure: Can[() => JsCmd] =
+  var ajaxDefaultFailure: Box[() => JsCmd] =
   Full(() => JsCmds.Alert(S.??("ajax.error")))
 
   /**
    * A function that takes the current HTTP request and returns the current
    */
-  var localeCalculator: Can[HttpServletRequest] => Locale = defaultLocaleCalculator _
+  var localeCalculator: Box[HttpServletRequest] => Locale = defaultLocaleCalculator _
 
-  def defaultLocaleCalculator(request: Can[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
+  def defaultLocaleCalculator(request: Box[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
 
   private val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
@@ -329,7 +329,7 @@ object LiftRules {
     }
   }
 
-  private var _sitemap: Can[SiteMap] = Empty
+  private var _sitemap: Box[SiteMap] = Empty
 
   def setSiteMap(sm: SiteMap) {
     _sitemap = Full(sm)
@@ -338,7 +338,7 @@ object LiftRules {
          rewrite <- loc.rewritePF) LiftRules.rewrite.append(rewrite)
   }
 
-  def siteMap: Can[SiteMap] = _sitemap
+  def siteMap: Box[SiteMap] = _sitemap
 
   private[http] var ending = false
 
@@ -383,7 +383,7 @@ object LiftRules {
   /**
    * The default way of calculating the context path
    */
-  def defaultCalcContextPath(request: HttpServletRequest): Can[String] = {
+  def defaultCalcContextPath(request: HttpServletRequest): Box[String] = {
     request.getHeader("X-Lift-ContextPath") match {
       case null => Empty
       case s if s.trim == "/" => Full("")
@@ -395,7 +395,7 @@ object LiftRules {
    * If there is an alternative way of calculating the context path
    * (by default inspecting the X-Lift-ContextPath header)
    */
-  var calculateContextPath: HttpServletRequest => Can[String] =
+  var calculateContextPath: HttpServletRequest => Box[String] =
   defaultCalcContextPath _
 
   private var _context: ServletContext = _
@@ -417,9 +417,9 @@ object LiftRules {
   private val defaultFinder = getClass.getResource _
   private def resourceFinder(name: String): _root_.java.net.URL = _context.getResource(name)
 
-  def getResource(name: String): Can[_root_.java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
-  def getResourceAsStream(name: String): Can[_root_.java.io.InputStream] = getResource(name).map(_.openStream)
-  def loadResource(name: String): Can[Array[Byte]] = getResourceAsStream(name).map{
+  def getResource(name: String): Box[_root_.java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
+  def getResourceAsStream(name: String): Box[_root_.java.io.InputStream] = getResource(name).map(_.openStream)
+  def loadResource(name: String): Box[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
     val buffer = new Array[Byte](2048)
     val out = new ByteArrayOutputStream
@@ -433,12 +433,12 @@ object LiftRules {
     stream.close
     out.toByteArray
   }
-  def loadResourceAsXml(name: String): Can[NodeSeq] = loadResourceAsString(name).flatMap(s => PCDataXmlParser(s))
-  def loadResourceAsString(name: String): Can[String] = loadResource(name).map(s => new String(s, "UTF-8"))
+  def loadResourceAsXml(name: String): Box[NodeSeq] = loadResourceAsString(name).flatMap(s => PCDataXmlParser(s))
+  def loadResourceAsString(name: String): Box[String] = loadResource(name).map(s => new String(s, "UTF-8"))
 
 
 
-  def finder(name: String): Can[InputStream] = {
+  def finder(name: String): Box[InputStream] = {
     LiftRules.context match {
       case null => Empty
       case c => c.getResourceAsStream(name) match {
@@ -517,7 +517,7 @@ object LiftRules {
 
   private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
 
-  case class SnippetFailure(page: String, typeName: Can[String], failure: SnippetFailures.Value)
+  case class SnippetFailure(page: String, typeName: Box[String], failure: SnippetFailures.Value)
 
   object SnippetFailures extends Enumeration {
     val NoTypeDefined = Value(1, "No Type Defined")
@@ -583,7 +583,7 @@ object LiftRules {
    * @prefix - the prefix to be added on the root relative paths. If this is Empty
    * 	       the prefix will be the application context path.
    */
-  def fixCSS(path: List[String], prefix: Can[String]) {
+  def fixCSS(path: List[String], prefix: Box[String]) {
 
     val liftReq: LiftRules.LiftRequestPF = new LiftRules.LiftRequestPF {
       def functionName = "Default CSS Fixer"
@@ -601,7 +601,7 @@ object LiftRules {
       def isDefinedAt(r: Req): Boolean = {
         r.path.partPath == path
       }
-      def apply(r: Req): () => Can[LiftResponse] = {
+      def apply(r: Req): () => Box[LiftResponse] = {
         val cssPath = path.mkString("/", "/", ".css")
         val css = LiftRules.loadResourceAsString(cssPath);
 
@@ -622,7 +622,7 @@ object LiftRules {
   }
 
   val onBeginServicing = RulesSeq[Req => Unit]
-  val onEndServicing = RulesSeq[(Req, Can[LiftResponse]) => Unit]
+  val onEndServicing = RulesSeq[(Req, Box[LiftResponse]) => Unit]
 
   var autoIncludeComet: LiftSession => Boolean =
   session => true
@@ -654,7 +654,7 @@ object LiftRules {
 
   var cometScriptName: () => String = () => "cometAjax.js"
 
-  var serveCometScript: (LiftSession, Req) => Can[LiftResponse] =
+  var serveCometScript: (LiftSession, Req) => Box[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = cometScriptUpdateTime(liftSession)
 
@@ -664,7 +664,7 @@ object LiftRules {
                             Nil, 200))
   }
 
-  var serveAjaxScript: (LiftSession, Req) => Can[LiftResponse] =
+  var serveAjaxScript: (LiftSession, Req) => Box[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = ajaxScriptUpdateTime(liftSession)
 
@@ -674,7 +674,7 @@ object LiftRules {
                             Nil, 200))
   }
 
-  private def testFor304(req: Req, lastModified: Long): Can[LiftResponse] = {
+  private def testFor304(req: Req, lastModified: Long): Box[LiftResponse] = {
     val mod = req.request.getHeader("if-modified-since")
     if (mod != null && ((lastModified / 1000L) * 1000L) <= parseInternetDate(mod).getTime)
     Full(InMemoryResponse(new Array[Byte](0), Nil, Nil, 304))
@@ -706,7 +706,7 @@ trait RulesSeq[T] {
   private def safe_?(f : => Any) {
     LiftRules.doneBoot match {
       case false => f
-      case _ => throw new IllegalStateException("Can not modify after boot.");
+      case _ => throw new IllegalStateException("Cannot modify after boot.");
     }
   }
 

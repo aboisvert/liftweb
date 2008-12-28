@@ -41,7 +41,7 @@ class DoubleField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Numeri
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(in: Any): Can[Double] = {
+  def setFromAny(in: Any): Box[Double] = {
     in match {
       case n: Double => Full(this.set(n))
       case n: Number => Full(this.set(n.doubleValue))
@@ -55,7 +55,7 @@ class DoubleField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Numeri
     }
   }
 
-  def setFromString(s: String) : Can[Double] = {
+  def setFromString(s: String): Box[Double] = {
     try{
       Full(set(java.lang.Double.parseDouble(s)));
     } catch {

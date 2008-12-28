@@ -30,7 +30,7 @@ class MappedLongForeignKey[T<:Mapper[T],O<:KeyedMapper[Long, O]](theOwner: T, fo
 extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeignKey {
   def defined_? = /*i_get_! != defaultValue &&*/ i_is_! > 0L
 
-  def can: Can[Long] = if (defined_?) Full(is) else Empty
+  def can: Box[Long] = if (defined_?) Full(is) else Empty
 
   type KeyType = Long
   type KeyedForeignType = O
@@ -47,23 +47,23 @@ extends MappedLong[T](theOwner) with MappedForeignKey[Long,T,O] with BaseForeign
   override def dbForeignKey_? = true
 
 
-  def asSafeJs(obs: Can[KeyObfuscator]): JsExp =
+  def asSafeJs(obs: Box[KeyObfuscator]): JsExp =
   obs.map(o => JE.Str(o.obscure(dbKeyToTable, is))).openOr(JE.Num(is))
 
   /**
    * Called when Schemifier adds a foreign key.  Return a function that will be called when Schemifier
    * is done with the schemification.
    */
-  def dbAddedForeignKey: Can[() => Unit] = Empty
+  def dbAddedForeignKey: Box[() => Unit] = Empty
 
   override def toString = if (defined_?) super.toString else "NULL"
 
   /*
-   def :=(v : Can[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
+   def :=(v : Box[O]) : Long = this.:=(v.map(_.primaryKeyField.is) openOr 0L)
    def :=(v : O) : Long = this.:=(v.primaryKeyField.is)
    */
 
-  def apply(v: Can[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
+  def apply(v: Box[O]): T = this(v.map(_.primaryKeyField.is) openOr 0L)
   def apply(v: O): T = this(v.primaryKeyField.is)
 
   def findFor(key: KeyType): List[OwnerType] = theOwner.getSingleton.findAll(By(this, key))
@@ -94,24 +94,24 @@ class MappedLongIndex[T<:Mapper[T]](theOwner: T) extends MappedLong[T](theOwner)
 
   def makeKeyJDBCFriendly(in: Long) = new _root_.java.lang.Long(in)
 
-  def convertKey(in: String): Can[Long] = {
+  def convertKey(in: String): Box[Long] = {
     if (in eq null) Empty
     else tryo(toLong(if (in.startsWith(name + "=")) in.substring((name + "=").length) else in))
   }
 
   override def dbDisplay_? = false
 
-  def convertKey(in : Long): Can[Long] = {
+  def convertKey(in : Long): Box[Long] = {
     if (in < 0L) Empty
     else Full(in)
   }
 
-  def convertKey(in : Int): Can[Long] = {
+  def convertKey(in : Int): Box[Long] = {
     if (in < 0) Empty
     else Full(in)
   }
 
-  def convertKey(in : AnyRef): Can[Long] = {
+  def convertKey(in : AnyRef): Box[Long] = {
     if ((in eq null) || (in eq None)) Empty
     else tryo(convertKey(in.toString)).flatMap(s => s)
   }
@@ -209,7 +209,7 @@ class MappedEnumList[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val e
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] =
+  override def _toForm: Box[NodeSeq] =
   Full(SHtml.checkbox[ENUM#Value](enum.elements.toList, is,this(_)).toForm)
 }
 

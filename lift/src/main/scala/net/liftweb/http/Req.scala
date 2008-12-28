@@ -20,8 +20,8 @@ package net.liftweb.http
 import _root_.javax.servlet.http._
 import _root_.javax.servlet.ServletContext
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Log, Can, Full, Empty,
-                                EmptyCan,
+import _root_.net.liftweb.util.{Log, Box, Full, Empty,
+                                EmptyBox,
                                 Failure, ThreadGlobal,
                                 NamedPF, NamedPartialFunction}
 import _root_.net.liftweb.sitemap._
@@ -53,9 +53,9 @@ object Req {
     val tmpPath = parsePath(tmpUri)
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse =
-      NamedPF.applyCan(RewriteRequest(path, reqType, request), rewrite) match {
+      NamedPF.applyBox(RewriteRequest(path, reqType, request), rewrite) match {
         case Full(resp @ RewriteResponse(_, _, true)) => resp
-        case _: EmptyCan[_] => RewriteResponse(path, params)
+        case _: EmptyBox[_] => RewriteResponse(path, params)
         case Full(resp) => processRewrite(resp.path, resp.params)
       }
 
@@ -70,7 +70,7 @@ object Req {
     //  val body = ()
     val eMap = Map.empty[String, List[String]]
 
-    //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Can[Array[Byte]]) =
+    //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Box[Array[Byte]]) =
     val paramCalculator = () =>
     if ((reqType.post_? ||
          reqType.put_?) && request.getContentType == "text/xml") {
@@ -159,7 +159,7 @@ object Req {
 
   var fixHref = _fixHref _
 
-  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean, rewrite: Can[String => String]): Text = {
+  private def _fixHref(contextPath: String, v : Seq[Node], fixURL: Boolean, rewrite: Box[String => String]): Text = {
     val hv = v.text
     val updated = if (hv.startsWith("/")) contextPath + hv else hv
 
@@ -212,7 +212,7 @@ class Req(val path: ParsePath,
           val request: HttpServletRequest,
           val nanoStart: Long,
           val nanoEnd: Long,
-          val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Can[Array[Byte]])) extends HasParams
+          val paramCalculator: () => (List[String], Map[String, List[String]],List[FileParamHolder],Box[Array[Byte]])) extends HasParams
 {
 
   override def toString = "Req("+paramNames+", "+params+", "+path+
@@ -237,14 +237,14 @@ class Req(val path: ParsePath,
   lazy val (paramNames: List[String],
             params: Map[String, List[String]],
             uploadedFiles: List[FileParamHolder],
-            body: Can[Array[Byte]]) = paramCalculator()
+            body: Box[Array[Byte]]) = paramCalculator()
 
   lazy val cookies = request.getCookies() match {
     case null => Nil
     case ca => ca.toList
   }
 
-  lazy val xml: Can[Elem] = if (!xml_?) Empty
+  lazy val xml: Box[Elem] = if (!xml_?) Empty
   else {
     try {
       body.map(b => XML.load(new _root_.java.io.ByteArrayInputStream(b)))
@@ -253,9 +253,9 @@ class Req(val path: ParsePath,
     }
   }
 
-  lazy val location: Can[Loc[_]] = LiftRules.siteMap.flatMap(_.findLoc(this))
+  lazy val location: Box[Loc[_]] = LiftRules.siteMap.flatMap(_.findLoc(this))
 
-  def testLocation: Either[Boolean, Can[LiftResponse]] = {
+  def testLocation: Either[Boolean, Box[LiftResponse]] = {
     if (LiftRules.siteMap.isEmpty) Left(true)
     else location.map(_.testAccess) match {
       case Full(Left(true)) => Left(true)
@@ -287,8 +287,8 @@ class Req(val path: ParsePath,
   lazy val uri: String = request match {
     case null => "Outside HTTP Request (e.g., on Actor)"
     case request =>
-      val ret = for (uri <- Can.legacyNullTest(request.getRequestURI);
-                     val cp = Can.legacyNullTest(request.getContextPath) openOr "") yield
+      val ret = for (uri <- Box.legacyNullTest(request.getRequestURI);
+                     val cp = Box.legacyNullTest(request.getContextPath) openOr "") yield
       uri.substring(cp.length)
       match {
         case "" => "/"
@@ -305,9 +305,9 @@ class Req(val path: ParsePath,
   /**
    * The user agent of the browser that sent the request
    */
-  lazy val userAgent: Can[String] =
-  for (r <- Can.legacyNullTest(request);
-       uah <- Can.legacyNullTest(request.getHeader("User-Agent")))
+  lazy val userAgent: Box[String] =
+  for (r <- Box.legacyNullTest(request);
+       uah <- Box.legacyNullTest(request.getHeader("User-Agent")))
   yield uah
 
   lazy val isIE6: Boolean = (userAgent.map(_.indexOf("MSIE 6") >= 0)) openOr false
@@ -370,5 +370,5 @@ object URLRewriter {
     }
   }
 
-  def rewriteFunc: Can[(String) => String] = Can.legacyNullTest(funcHolder value)
+  def rewriteFunc: Box[(String) => String] = Box.legacyNullTest(funcHolder value)
 }

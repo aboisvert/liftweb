@@ -124,7 +124,7 @@ class MappedEnum[T<:Mapper[T], ENUM <: Enumeration](val fieldOwner: T, val enum:
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] =
+  override def _toForm: Box[NodeSeq] =
     if (autocomplete_?)
       Full(JqSHtml.autocompleteObj[Int](buildDisplayList, Full(toInt),
                                       v => this.set(fromInt(v))))
@@ -147,7 +147,7 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 
   def makeKeyJDBCFriendly(in : Int) = new _root_.java.lang.Integer(in)
 
-  def convertKey(in : String) : Can[Int] = {
+  def convertKey(in : String): Box[Int] = {
     if (in eq null) Empty
     try {
       val what = if (in.startsWith(name + "=")) in.substring((name + "=").length) else in
@@ -159,17 +159,17 @@ class MappedIntIndex[T<:Mapper[T]](owner : T) extends MappedInt[T](owner) with I
 
   override def dbDisplay_? = false
 
-  def convertKey(in : Int) : Can[Int] = {
+  def convertKey(in : Int): Box[Int] = {
     if (in < 0) Empty
     else Full(in)
   }
 
-  def convertKey(in : Long) : Can[Int] = {
+  def convertKey(in : Long): Box[Int] = {
     if (in < 0 || in > Integer.MAX_VALUE) Empty
     else Full(in.asInstanceOf[Int])
   }
 
-  def convertKey(in : AnyRef) : Can[Int] = {
+  def convertKey(in : AnyRef): Box[Int] = {
     if ((in eq null) || (in eq None)) None
     try {
       convertKey(in.toString)

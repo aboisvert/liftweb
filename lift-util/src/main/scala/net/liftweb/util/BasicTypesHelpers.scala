@@ -94,9 +94,9 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
     }
   }
 
-  def asInt(in: String): Can[Int] = tryo{in.toInt}
+  def asInt(in: String): Box[Int] = tryo{in.toInt}
 
-def asLong(in: String): Can[Long] = tryo(in.toLong)
+  def asLong(in: String): Box[Long] = tryo(in.toLong)
 
   /**
    * Convert any object to an "equivalent" Int depending on its value

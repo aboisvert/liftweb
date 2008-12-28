@@ -37,7 +37,7 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
 
   def owner = rec
 
-  def setFromAny(in: Any): Can[String] = {
+  def setFromAny(in: Any): Box[String] = {
     in match {
       case seq: Seq[_] if !seq.isEmpty => seq.map(setFromAny)(0)
       case (s: String) :: _ => Full(set(s))
@@ -50,7 +50,7 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
     }
   }
 
-  def setFromString(s: String) : Can[String] = Full(set(s))
+  def setFromString(s: String): Box[String] = Full(set(s))
 
   private def elem = <input type="text" maxlength={maxLength.toString}
       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
@@ -83,7 +83,7 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
   /**
    * Make sure the field matches a regular expression
    */
-  def valRegex(pat: Pattern, msg: => String)(value: String): Can[Node] = pat.matcher(value).matches match {
+  def valRegex(pat: Pattern, msg: => String)(value: String): Box[Node] = pat.matcher(value).matches match {
     case true => Empty
     case false => Full(Text(msg))
   }

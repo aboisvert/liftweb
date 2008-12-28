@@ -61,7 +61,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
   /**
    * The menu item for listing items (make this "Empty" to disable)
    */
-  def showAllMenuLoc: Can[Menu] =
+  def showAllMenuLoc: Box[Menu] =
     Full(Menu(Loc("List "+Prefix, listPath, showAllMenuName,
                   locSnippets,
                   Loc.Template(showAllTemplate))))
@@ -70,7 +70,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
   /**
    * The menu item for listing items (make this "Empty" to disable)
    */
-  def createMenuLoc: Can[Menu] =
+  def createMenuLoc: Box[Menu] =
     Full(Menu(Loc("Create "+Prefix, createPath, createMenuName,
                   locSnippets,
                   Loc.Template(createTemplate))))
@@ -79,7 +79,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
   /**
    * The menu item for viewing an item (make this "Empty" to disable)
    */
-  def viewMenuLoc: Can[Menu] =
+  def viewMenuLoc: Box[Menu] =
     Full(Menu(new Loc[CrudType]{
           // the name of the page
           def name = "View "+Prefix
@@ -134,7 +134,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
   /**
    * The menu item for editing an item (make this "Empty" to disable)
    */
-   def editMenuLoc: Can[Menu] = {
+   def editMenuLoc: Box[Menu] = {
       Full(Menu(new Loc[CrudType]{
             // the name of the page
             def name = "Edit "+Prefix
@@ -210,7 +210,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
    /**
     * The menu item for deleting an item (make this "Empty" to disable)
     */
-   def deleteMenuLoc: Can[Menu] = {
+   def deleteMenuLoc: Box[Menu] = {
       Full(Menu(new Loc[CrudType]{
             // the name of the page
             def name = "Delete "+Prefix
@@ -421,7 +421,7 @@ extends KeyedMetaMapper[KeyType, CrudType] {
    def findForListParams: List[QueryParam[CrudType]] =
    List(OrderBy(primaryKeyField, Ascending))
 
-   def findForParam(in: String): Can[CrudType] = find(in)
+   def findForParam(in: String): Box[CrudType] = find(in)
 
    lazy val locSnippets = new DispatchLocSnippets {
       val dispatch: PartialFunction[String, NodeSeq => NodeSeq] = {

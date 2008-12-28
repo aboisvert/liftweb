@@ -31,14 +31,14 @@ class BinaryField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field[
   /**
    * Sets the field value from an Any
    */
-  def setFromAny(f: Any): Can[Array[Byte]] = Full(this.set(
+  def setFromAny(f: Any): Box[Array[Byte]] = Full(this.set(
     f match {
       case null => Array()
       case arr : Array[Byte] => f.asInstanceOf[Array[Byte]];
       case _ => f.toString.getBytes("UTF-8")
     }))
 
-  def setFromString(s: String) : Can[Array[Byte]] = {
+  def setFromString(s: String): Box[Array[Byte]] = {
     try{
       Full(set(s.getBytes("UTF-8")));
     } catch {

@@ -42,7 +42,7 @@ trait OpenIdVendor {
 
   type ConsumerType <: OpenIDConsumer[UserType]
 
-  private object RedirectBackTo extends SessionVar[Can[String]](Empty)
+  private object RedirectBackTo extends SessionVar[Box[String]](Empty)
   val PathRoot = "openid"
 
   val LoginPath = "login"
@@ -55,7 +55,7 @@ trait OpenIdVendor {
 
   val SnippetPrefix = "openId"
 
-  def postLogin(id: Can[Identifier],res: VerificationResult): Unit
+  def postLogin(id: Box[Identifier],res: VerificationResult): Unit
 
   def postUrl = "/"+ PathRoot + "/" + LoginPath
 
@@ -66,7 +66,7 @@ trait OpenIdVendor {
 
   def createAConsumer: ConsumerType
 
-  def currentUser: Can[UserType]
+  def currentUser: Box[UserType]
 
   def snippetPF: LiftRules.SnippetPF = NamedPF ("OpenID Default") {
     case SnippetPrefix :: "ifLoggedIn" :: Nil => showIfLoggedIn
@@ -104,7 +104,7 @@ trait OpenIdVendor {
   /**
    * Try to log a user into the system with a given openId
    */
-  def loginAndRedirect(openId: String, onComplete: (Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse) {
+  def loginAndRedirect(openId: String, onComplete: (Box[Identifier], Box[VerificationResult], Box[Exception]) => LiftResponse) {
     val oid = OpenIdObject.is
     oid.onComplete = Full(onComplete)
 
@@ -161,7 +161,7 @@ trait SimpleOpenIdVendor extends OpenIdVendor {
 
   def currentUser = OpenIdUser.is
 
-  def postLogin(id: Can[Identifier],res: VerificationResult): Unit = {
+  def postLogin(id: Box[Identifier],res: VerificationResult): Unit = {
     id match {
       case Full(id) => S.notice("Welcome "+id)
 
@@ -184,14 +184,14 @@ object SimpleOpenIdVendor extends SimpleOpenIdVendor
 
 // object SimpleOpenIdVendor extends SimpleOpenIdVendor
 
-object OpenIdUser extends SessionVar[Can[Identifier]](Empty)
+object OpenIdUser extends SessionVar[Box[Identifier]](Empty)
 
 /** * Sample Consumer (Relying Party) implementation.  */
 trait OpenIDConsumer[UserType]
 {
   val manager = new ConsumerManager
 
-  var onComplete: Can[(Can[Identifier], Can[VerificationResult], Can[Exception]) => LiftResponse] = Empty
+  var onComplete: Box[(Box[Identifier], Box[VerificationResult], Box[Exception]) => LiftResponse] = Empty
 
   // --- placing the authentication request ---
   def authRequest(userSuppliedString: String, targetUrl: String): LiftResponse =
@@ -260,7 +260,7 @@ trait OpenIDConsumer[UserType]
   }
 
   // --- processing the authentication response ---
-  def verifyResponse(httpReq: HttpServletRequest): (Can[Identifier], VerificationResult) =
+  def verifyResponse(httpReq: HttpServletRequest): (Box[Identifier], VerificationResult) =
   {
     // extract the parameters from the authentication response
     // (which comes in as a HTTP request from the OpenID provider)
@@ -287,7 +287,7 @@ trait OpenIDConsumer[UserType]
 
     val verified = verification.getVerifiedId();
 
-    (Can.legacyNullTest(verified), verification)
+    (Box.legacyNullTest(verified), verification)
   }
 }
 

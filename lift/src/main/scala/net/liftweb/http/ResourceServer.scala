@@ -15,7 +15,7 @@
  */
 package net.liftweb.http
 
-import _root_.net.liftweb.util.{Can, Full, Empty, Helpers}
+import _root_.net.liftweb.util.{Box, Full, Empty, Helpers}
 import Helpers._
 import _root_.javax.servlet.http.{HttpServletRequest , HttpServletResponse}
 import _root_.java.net.{URLConnection}
@@ -46,7 +46,7 @@ object ResourceServer {
     */
   var baseResourceLocation = "toserve"
 
-  def findResourceInClasspath(request: Req, _uri: List[String])(): Can[LiftResponse] = {
+  def findResourceInClasspath(request: Req, _uri: List[String])(): Box[LiftResponse] = {
     for (req <- S.request;
 	 r <- {
     val uri = _uri.filter(!_.startsWith("."))

@@ -73,7 +73,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] =
+  override def _toForm: Box[NodeSeq] =
   Full(<input type='text' id={fieldId}
       name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
       value={is match {case null => "" case s => toInternetDate(s)}}/>)
@@ -87,7 +87,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
 
   def real_convertToJDBCFriendly(value: Date): Object = if (value == null) null else new _root_.java.sql.Date(value.getTime)
 
-  private def st(in: Can[Date]): Unit =
+  private def st(in: Box[Date]): Unit =
   in match {
     case Full(d) => data.set(d); orgData.set(d)
     case _ => data.set(null); orgData.set(null)

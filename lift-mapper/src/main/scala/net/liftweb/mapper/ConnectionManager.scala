@@ -14,6 +14,6 @@ import _root_.net.liftweb.util._
  * Vend JDBC connections
  */
 trait ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Can[Connection]
+  def newConnection(name: ConnectionIdentifier): Box[Connection]
   def releaseConnection(conn: Connection)
 }

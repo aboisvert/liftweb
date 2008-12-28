@@ -22,7 +22,7 @@ import http._
 import js._
 import JsCmds._
 import sitemap.{Loc, Menu}
-import util.{Can, Empty, Full, Helpers}
+import util.{Box, Empty, Full, Helpers}
 import Helpers._
 
 import _root_.org.openid4java.consumer._
@@ -53,27 +53,27 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
   /**
    * The menu item for creating the user/sign up (make this "Empty" to disable)
    */
-  override def createUserMenuLoc: Can[Menu] = Empty
+  override def createUserMenuLoc: Box[Menu] = Empty
 
   /**
    * The menu item for lost password (make this "Empty" to disable)
    */
-  override def lostPasswordMenuLoc: Can[Menu] = Empty
+  override def lostPasswordMenuLoc: Box[Menu] = Empty
 
   /**
    * The menu item for resetting the password (make this "Empty" to disable)
    */
-  override def resetPasswordMenuLoc: Can[Menu] = Empty
+  override def resetPasswordMenuLoc: Box[Menu] = Empty
 
   /**
    * The menu item for changing password (make this "Empty" to disable)
    */
-  override def changePasswordMenuLoc: Can[Menu] = Empty
+  override def changePasswordMenuLoc: Box[Menu] = Empty
 
   /**
    * The menu item for validating a user (make this "Empty" to disable)
    */
-  override def validateUserMenuLoc: Can[Menu] = Empty
+  override def validateUserMenuLoc: Box[Menu] = Empty
 
   override def loginXhtml =
   <form method="post" action={S.uri}>
@@ -100,7 +100,7 @@ trait MetaOpenIDProtoUser[ModelType <: OpenIDProtoUser[ModelType]] extends MetaM
       )
     }
 
-    def performLogUserIn(openid: Can[Identifier], fo: Can[VerificationResult], exp: Can[Exception]): LiftResponse = {
+    def performLogUserIn(openid: Box[Identifier], fo: Box[VerificationResult], exp: Box[Exception]): LiftResponse = {
       (openid, exp) match {
         case (Full(id), _) =>
           val user = self.findOrCreate(id.getIdentifier)

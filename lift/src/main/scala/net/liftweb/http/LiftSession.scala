@@ -22,7 +22,7 @@ import _root_.javax.servlet.http.{HttpSessionBindingListener, HttpSessionBinding
 import _root_.scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Unparsed, Text}
 import _root_.net.liftweb.util._
-import Can._
+import Box._
 import _root_.net.liftweb.http.js.{JsCmd, AjaxInfo}
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.builtin.snippet._
@@ -48,7 +48,7 @@ object LiftSession {
   var onAboutToShutdownSession: List[LiftSession => Unit] = Nil
   var onShutdownSession: List[LiftSession => Unit] = Nil
   var onBeginServicing: List[(LiftSession, Req) => Unit] = Nil
-  var onEndServicing: List[(LiftSession, Req, Can[LiftResponse]) => Unit] = Nil
+  var onEndServicing: List[(LiftSession, Req, Box[LiftResponse]) => Unit] = Nil
 }
 
 
@@ -93,8 +93,8 @@ object SessionMaster extends Actor {
   private var sessions: Map[String, LiftSession] = Map.empty
   private object CheckAndPurge
 
-  def getSession(id: String, otherId: Can[String]): Can[LiftSession] = synchronized {
-    otherId.flatMap(sessions.get) or Can(sessions.get(id))
+  def getSession(id: String, otherId: Box[String]): Box[LiftSession] = synchronized {
+    otherId.flatMap(sessions.get) or Box(sessions.get(id))
   }
 
   /**
@@ -104,14 +104,14 @@ object SessionMaster extends Actor {
    */
   var sessionWatchers: List[Actor] = Nil
 
-  def getSession(httpSession: HttpSession, otherId: Can[String]): Can[LiftSession] =
+  def getSession(httpSession: HttpSession, otherId: Box[String]): Box[LiftSession] =
   synchronized {
-    otherId.flatMap(sessions.get) or Can(sessions.get(httpSession.getId()))
+    otherId.flatMap(sessions.get) or Box(sessions.get(httpSession.getId()))
   }
 
-  def getSession(req: HttpServletRequest, otherId: Can[String]): Can[LiftSession] =
+  def getSession(req: HttpServletRequest, otherId: Box[String]): Box[LiftSession] =
   synchronized {
-    otherId.flatMap(sessions.get) or Can(sessions.get(req.getSession.getId()))
+    otherId.flatMap(sessions.get) or Box(sessions.get(req.getSession.getId()))
   }
 
   def addSession(liftSession: LiftSession) {
@@ -185,9 +185,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   private var messageCallback: HashMap[String, S.AFuncHolder] = new HashMap
 
-  private[http] var notices: Seq[(NoticeType.Value, NodeSeq, Can[String])] = Nil
+  private[http] var notices: Seq[(NoticeType.Value, NodeSeq, Box[String])] = Nil
 
-  private var asyncComponents = new HashMap[(Can[String], Can[String]), CometActor]()
+  private var asyncComponents = new HashMap[(Box[String], Box[String]), CometActor]()
 
   private var asyncById = new HashMap[String, CometActor]()
 
@@ -225,7 +225,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     cometList = cometList.remove(_ eq what)
   }
 
-  private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Can[String])
+  private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Box[String])
 
   def runParams(state: Req): List[Any] = {
     val toRun = synchronized {
@@ -319,19 +319,19 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   /**
    * Find the template assocaited with the Loc
    */
-  private[http] def locTemplate: Can[NodeSeq] =
+  private[http] def locTemplate: Box[NodeSeq] =
   for (req <- S.request;
        loc <- req.location;
        template <- loc.template) yield template
 
-  private[http] def processRequest(request: Req): Can[LiftResponse] = {
+  private[http] def processRequest(request: Req): Box[LiftResponse] = {
     S.oldNotices(notices)
     LiftSession.onBeginServicing.foreach(f => tryo(f(this, request)))
     val ret = try {
       val sessionDispatch = S.highLevelSessionDispatcher
 
       val toMatch = request
-      NamedPF.applyCan(toMatch, sessionDispatch) match {
+      NamedPF.applyBox(toMatch, sessionDispatch) match {
         case Full(f) =>
           runParams(request)
           try {
@@ -346,14 +346,14 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         case _ =>
           runParams(request)
 
-          def idAndWhen(in: Node): Can[CometVersionPair] =
+          def idAndWhen(in: Node): Box[CometVersionPair] =
           ((in \ "@id").toList, in.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList) match {
             case (x :: _, y :: _) => Full(CVP(x.text,toLong(y.value.text)))
             case _ => Empty
           }
 
           // Process but make sure we're okay, sitemap wise
-          val response: Can[LiftResponse] = request.testLocation match {
+          val response: Box[LiftResponse] = request.testLocation match {
             case Left(true) =>
               cleanUpBeforeRender
               ((locTemplate or findVisibleTemplate(request.path, request)).
@@ -403,7 +403,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
       case rd: _root_.net.liftweb.http.ResponseShortcutException => Full(handleRedirect(rd, request))
 
-      case e => NamedPF.applyCan((Props.mode, request, e), LiftRules.exceptionHandler.toList);
+      case e => NamedPF.applyBox((Props.mode, request, e), LiftRules.exceptionHandler.toList);
 
     }
 
@@ -441,8 +441,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
    *
    * @return Full(value) if found, Empty otherwise
    */
-  private [liftweb] def get[T](name: String): Can[T] = synchronized {
-    Can(myVariables.get(name)).asInstanceOf[Can[T]]
+  private [liftweb] def get[T](name: String): Box[T] = synchronized {
+    Box(myVariables.get(name)).asInstanceOf[Box[T]]
   }
 
   /**
@@ -454,7 +454,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     myVariables -= name
   }
 
-  private[http] def attachRedirectFunc(uri: String, f : Can[() => Unit]) = {
+  private[http] def attachRedirectFunc(uri: String, f : Box[() => Unit]) = {
     f map { fnc =>
       val func: String = LiftSession.this.synchronized {
         val funcName = Helpers.nextFuncName
@@ -500,7 +500,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     lb.toList
   }
 
-private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
+private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
   val tpath = path.partPath
   val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
     case s @ _ if (!s.isEmpty) => s
@@ -509,7 +509,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   findAnyTemplate(splits)
 }
 
-  private def findTemplate(name: String) : Can[NodeSeq] = {
+  private def findTemplate(name: String): Box[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
       case Nil => List("index")
       case s => s
@@ -526,7 +526,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   }
 
 
-  private def findAndEmbed(templateName: Can[Seq[Node]], kids : NodeSeq) : NodeSeq = {
+  private def findAndEmbed(templateName: Box[Seq[Node]], kids: NodeSeq): NodeSeq = {
     templateName match {
       case Full(tn) => {
           findTemplate(tn.text) match {
@@ -538,7 +538,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     }
   }
 
-  private def findSnippetClass(name: String): Can[Class[AnyRef]] = {
+  private def findSnippetClass(name: String): Box[Class[AnyRef]] = {
     if (name == null) Empty
     else findClass(name, LiftRules.buildPackage("snippet") ::: ("lift.app.snippet" :: "net.liftweb.builtin.snippet" :: Nil))
   }
@@ -568,7 +568,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
   }
 
 
-  private def findSnippetInstance(cls: String): Can[AnyRef] =
+  private def findSnippetInstance(cls: String): Box[AnyRef] =
   S.snippetForClass(cls) or
   (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
       case Full(inst: StatefulSnippet) =>
@@ -578,14 +578,14 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     })
 
 
-  private def processSnippet(page: String, snippetName: Can[String], attrs: MetaData, passedKids: NodeSeq): NodeSeq = {
+  private def processSnippet(page: String, snippetName: Box[String], attrs: MetaData, passedKids: NodeSeq): NodeSeq = {
     val isForm = !attrs.get("form").toList.isEmpty
 
     val eagerEval: Boolean = attrs.get("eager_eval").map(toBoolean) getOrElse false
 
     val kids = if (eagerEval) processSurroundAndInclude(page, passedKids) else passedKids
 
-    def locSnippet(snippet: String): Can[NodeSeq] =
+    def locSnippet(snippet: String): Box[NodeSeq] =
     for (req <- S.request;
          loc <- req.location;
          func <- loc.snippet(snippet)) yield func(kids)
@@ -671,9 +671,9 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
         case _ => processSnippet(page, Empty , elm.attributes, elm.child)
       }
     case ("surround", elm, _, _, page) => processSurroundElement(page, elm)
-    case ("embed", _, metaData, kids, page) => findAndEmbed(Can(metaData.get("what")), kids)
+    case ("embed", _, metaData, kids, page) => findAndEmbed(Box(metaData.get("what")), kids)
     case ("ignore", _, _, _, _) => Text("")
-    case ("comet", _, metaData, kids, _) => executeComet(Can(metaData.get("type").map(_.text.trim)), Can(metaData.get("name").map(_.text.trim)), kids, metaData)
+    case ("comet", _, metaData, kids, _) => executeComet(Box(metaData.get("type").map(_.text.trim)), Box(metaData.get("name").map(_.text.trim)), kids, metaData)
     case ("children", _, _, kids, _) => kids
     case ("a", elm, metaData, kids, _) => Elem(null, "a", addAjaxHREF(metaData), elm.scope, kids :_*)
     case ("form", elm, metaData, kids, _) => Elem(null, "form", addAjaxForm(metaData), elm.scope, kids : _*)
@@ -697,7 +697,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     }
   }
 
-  private def executeComet(theType: Can[String], name: Can[String], kids: NodeSeq, attr: MetaData): NodeSeq = {
+  private def executeComet(theType: Box[String], name: Box[String], kids: NodeSeq, attr: MetaData): NodeSeq = {
     try {
       findComet(theType, name, kids, Map.empty ++
                 attr.flatMap{
@@ -723,9 +723,9 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     asyncComponents.elements.filter{case ((Full(name), _), _) => name == theType case _ => false}.toList.map{case (_, value) => value}
   }
 
-  private def findComet(theType: Can[String], name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
+  private def findComet(theType: Box[String], name: Box[String], defaultXml: NodeSeq, attributes: Map[String, String]): Box[CometActor] = {
     val what = (theType, name)
-    Can(asyncComponents.get(what)).or( {
+    Box(asyncComponents.get(what)).or( {
         theType.flatMap{
           tpe =>
           val ret = findCometByType(tpe, name, defaultXml, attributes)
@@ -739,7 +739,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
       })
   }
 
-  def getAsyncComponent(id: String): Can[CometActor] = synchronized(asyncById.get(id))
+  def getAsyncComponent(id: String): Box[CometActor] = synchronized(asyncById.get(id))
 
   def addCometActor(act: CometActor): Unit = synchronized {
     asyncById(act.uniqueId) = act
@@ -753,7 +753,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
 
   }
 
-  private def findCometByType(contType: String, name: Can[String], defaultXml: NodeSeq, attributes: Map[String, String]): Can[CometActor] = {
+  private def findCometByType(contType: String, name: Box[String], defaultXml: NodeSeq, attributes: Map[String, String]): Box[CometActor] = {
     findType[CometActor](contType, LiftRules.buildPackage("comet") ::: ("lift.app.comet" :: Nil)).flatMap{
       cls =>
       tryo((e: Throwable) => e match {case e: _root_.java.lang.NoSuchMethodException => ()
@@ -766,7 +766,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
         ret ! PerformSetupComet
         ret.asInstanceOf[CometActor]
       }  or tryo((e: Throwable) => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)) {
-        val constr = cls.getConstructor(this.getClass , classOf[Can[String]], classOf[NodeSeq], classOf[Map[String, String]])
+        val constr = cls.getConstructor(this.getClass , classOf[Box[String]], classOf[NodeSeq], classOf[Map[String, String]])
         val ret = constr.newInstance(this, name, defaultXml, attributes).asInstanceOf[CometActor];
         ret.start
         // ret.link(this)
@@ -836,7 +836,7 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Can[NodeSeq] = {
     findAndMerge(attr.get("with"), paramsMap)
   }
 
-  private def findAndMerge(templateName: Can[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
+  private def findAndMerge(templateName: Box[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
     val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
 
     findTemplate(name).map(s => processBind(s, atWhat)).
@@ -901,8 +901,8 @@ trait InsecureLiftView
  * the incoming request to an appropriate method
  */
 trait LiftView {
-  implicit def nsToCns(in: NodeSeq): Can[NodeSeq] = Can.legacyNullTest(in)
-  def dispatch : PartialFunction[String, () => Can[NodeSeq]]
+  implicit def nsToCns(in: NodeSeq): Box[NodeSeq] = Box.legacyNullTest(in)
+  def dispatch : PartialFunction[String, () => Box[NodeSeq]]
 }
 
 object TemplateFinder {
@@ -910,7 +910,7 @@ object TemplateFinder {
 
   import LiftRules.ViewDispatchPF
 
-  private def checkForLiftView(part: List[String], last: String, what: ViewDispatchPF): Can[NodeSeq] = {
+  private def checkForLiftView(part: List[String], last: String, what: ViewDispatchPF): Box[NodeSeq] = {
     if (what.isDefinedAt(part)) {
       what(part) match {
         case Right(lv) => if (lv.dispatch.isDefinedAt(last)) lv.dispatch(last)() else Empty
@@ -919,7 +919,7 @@ object TemplateFinder {
     } else Empty
   }
 
-  private def checkForFunc(whole: List[String], what: ViewDispatchPF): Can[NodeSeq] =
+  private def checkForFunc(whole: List[String], what: ViewDispatchPF): Box[NodeSeq] =
     if (what.isDefinedAt(whole)) what(whole) match {
       case Left(func) => func()
       case _ => Empty
@@ -928,7 +928,7 @@ object TemplateFinder {
 
   private def findInViews(whole: List[String], part: List[String],
                           last: String,
-                          what: List[ViewDispatchPF]): Can[NodeSeq] =
+                          what: List[ViewDispatchPF]): Box[NodeSeq] =
   what match {
     case Nil => Empty
     case x :: xs =>
@@ -945,7 +945,7 @@ object TemplateFinder {
    *
    * @return the template if it can be found
    */
-  def findAnyTemplate(places: List[String]): Can[NodeSeq] = {
+  def findAnyTemplate(places: List[String]): Box[NodeSeq] = {
     val part = places.dropRight(1)
     val last = places.last
 
@@ -967,7 +967,7 @@ object TemplateFinder {
   }
 
 
-  private def lookForClasses(places : List[String]): Can[NodeSeq] = {
+  private def lookForClasses(places : List[String]): Box[NodeSeq] = {
     val (controller, action) = places match {
       case ctl :: act :: _ => (ctl, act)
       case ctl :: _ => (ctl, "index")

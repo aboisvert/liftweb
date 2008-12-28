@@ -17,7 +17,7 @@
 package net.liftweb.http.js
 
 import _root_.net.liftweb.http.js._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 
 import _root_.scala.xml.{Elem, NodeSeq}
 
@@ -125,5 +125,5 @@ object AjaxInfo {
  */
 case class AjaxInfo(data: JsExp, action: String, timeout: Long,
                     cache: Boolean, dataType: String,
-                    successFunc: Can[String], failFunc: Can[String])
+                    successFunc: Box[String], failFunc: Box[String])
 

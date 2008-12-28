@@ -8,7 +8,7 @@ package net.liftweb.mapper
 
 import _root_.java.sql.{Connection, ResultSet, DatabaseMetaData}
 import _root_.scala.collection.mutable.{HashMap, ListBuffer}
-import _root_.net.liftweb.util.{Helpers, Full, Can}
+import _root_.net.liftweb.util.{Helpers, Full, Box}
 import Helpers._
 
 /**

@@ -25,7 +25,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[
   /**
    * Create an input field for the item
    */
-  override def _toForm: Can[NodeSeq] = {
+  override def _toForm: Box[NodeSeq] = {
     val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
     Full(<textarea name={funcName}
 	 rows={textareaRows.toString}

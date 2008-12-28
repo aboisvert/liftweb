@@ -2,7 +2,7 @@ package net.liftweb.widgets.tree
 
 import _root_.scala.xml._
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Can, Full, Empty}
+import _root_.net.liftweb.util.{Box, Full, Empty}
 import _root_.net.liftweb.http.S._
 import _root_.net.liftweb.http.LiftRules
 import _root_.net.liftweb.http.{LiftResponse, JsonResponse}
@@ -129,7 +129,7 @@ object Tree {
 /**
  * Server side representation of a node of the tree widget
  */
-case class Tree(text:String, id: Can[String], classes: Can[String], expanded: Boolean, hasChildren: Boolean, children: Can[List[Tree]]) {
+case class Tree(text:String, id: Box[String], classes: Box[String], expanded: Boolean, hasChildren: Boolean, children: Box[List[Tree]]) {
 
   def toJSON: String = {
 

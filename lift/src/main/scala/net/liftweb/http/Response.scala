@@ -58,11 +58,9 @@ object DoRedirectResponse {
 case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
 
 object RedirectState {
-  //implicit def func2Can(f: () => Unit) = Can(f)
-
   def apply(f: () => Unit, msgs: (String, NoticeType.Value)*): RedirectState = new RedirectState(Full(f), msgs :_*)
 }
-case class RedirectState(func : Can[() => Unit], msgs : (String, NoticeType.Value)*)
+case class RedirectState(func : Box[() => Unit], msgs : (String, NoticeType.Value)*)
 
 object MessageState {
   implicit def tuple2MessageState(msg : (String, NoticeType.Value)) = MessageState(msg)
@@ -85,7 +83,7 @@ object DocType {
 }
 
 object ResponseInfo {
-  var docType: PartialFunction[Req, Can[String]] = {
+  var docType: PartialFunction[Req, Box[String]] = {
     case _ if S.getDocType._1 => S.getDocType._2
     case _ => Full(DocType.xhtmlTransitional)
   }
