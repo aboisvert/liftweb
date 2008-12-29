@@ -33,7 +33,7 @@ object NoAuthentication extends HttpAuthentication {
   def verified_? = {case req => true}
 }
 
-object userRoles extends RequestVar[Box[List[Role]]](Empty)
+object userRoles extends RequestVar[List[Role]](Nil)
 
 /**
  * Methods that are specific to HTTP basic are defined here.
