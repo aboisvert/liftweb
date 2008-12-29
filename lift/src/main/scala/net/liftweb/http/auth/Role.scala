@@ -3,9 +3,13 @@ package net.liftweb.http.auth
 import _root_.net.liftweb.util.{Box, Full, Empty}
 
 object AuthRole {
-  def apply(roleName: String) = new Role {
+  def apply(roleName: String): Role = new Role {
     def name = roleName
   }
+
+  def apply(roleNames: String*): List[Role] = roleNames.toList.map(n => new Role {
+    def name = n
+  })
 }
 
 /**

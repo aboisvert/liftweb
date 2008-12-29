@@ -120,11 +120,16 @@ class LiftServlet extends HttpServlet {
   }
 
   private def authPassed_?(req : Req) : Boolean = {
+
+    val checkRoles : (Role, List[Role]) => Boolean = {
+      case (resRole, roles) => (false /: roles)((l, r) => l || resRole.isChildOf(r.name))
+    }
+
     val role = NamedPF.applyBox(req.path, LiftRules.httpAuthProtectedResource.toList)
     role.map(_ match {
        case Full(r) =>
          LiftRules.authentication.verified_?(req) match {
-          case true => userRole.get.map(usrRole => r.isChildOf(usrRole.name)) openOr false
+          case true => userRoles.get.map(roles => checkRoles(r, roles)) openOr false
           case _ => false
          }
        case _ => true
