@@ -34,7 +34,7 @@ trait NodeResponse extends LiftResponse {
     val encoding: String =
     (out, headers.ciGet("Content-Type")) match {
       case (up: Unparsed,  _) => ""
-    
+
       case (_, Empty) | (_, Failure(_, _, _)) =>
         "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n"
 

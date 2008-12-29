@@ -124,7 +124,7 @@ class LiftServlet extends HttpServlet {
     role.map(_ match {
        case Full(r) =>
          LiftRules.authentication.verified_?(req) match {
-          case true => userRole.get.map(usrRole => usrRole.isChildOf(r)) openOr false
+          case true => userRole.get.map(usrRole => r.isChildOf(usrRole.name)) openOr false
           case _ => false
          }
        case _ => true

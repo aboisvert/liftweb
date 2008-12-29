@@ -242,7 +242,7 @@ object S extends HasParams {
   /**
    * Get the lift core resource bundle for the current locale
    */
-  def liftCoreResourceBundle: Box[ResourceBundle] = 
+  def liftCoreResourceBundle: Box[ResourceBundle] =
     Box.legacyNullTest(_liftCoreResBundle.value).openOr {
       val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
       _liftCoreResBundle.set(rb)

@@ -39,12 +39,20 @@ trait Role {
     this
   }
 
+  /**
+   * Returns the child nodes
+   */
   def getChildRoles = childs
+
+  /**
+   * Retuns the parent node
+   */
+  def getParent = parent
 
   /**
    * Search for a child Role with this name
    */
-  def getRoleByName(roleName: String): Box[Role] = 
+  def getRoleByName(roleName: String): Box[Role] =
     (this.name == roleName) match {
     case false => childs.find(role => role.getRoleByName(roleName) match {
         case Empty => false
@@ -74,9 +82,17 @@ trait Role {
   }
 
   /**
-   * Verifies if this Roe is a child of provided role
+   * Verifies if this Role is a child of a role having the name <i>roleName</i>
    */
-  def isChildOf(role: Role) : Boolean = !role.getRoleByName(name).isEmpty
+  def isChildOf(roleName: String) : Boolean = (this.name == roleName) match {
+    case true => return true
+    case _ => this.parent.map(_ isChildOf(roleName)) openOr false
+  }
+
+  /**
+   * Verifies if this Role is the parent of the given Role
+   */
+  def isParentOf(roleName: String) : Boolean = !this.getRoleByName(roleName).isEmpty
 
   override def toString = {
     var str = "Role(" + name;
