@@ -1,5 +1,3 @@
-package net.liftweb.http
-
 /*
  * Copyright 2007-2008 WorldWide Conferencing, LLC
  *
@@ -16,6 +14,8 @@ package net.liftweb.http
  * and limitations under the License.
  */
 
+package net.liftweb.http
+
 import _root_.scala.actors.{Actor, Exit}
 import _root_.scala.actors.Actor._
 import _root_.scala.collection.mutable.{ListBuffer}
@@ -29,7 +29,11 @@ import JsCmds._
 import JE._
 import _root_.java.util.concurrent.atomic.AtomicLong
 
-
+/**
+ * An actor that monitors other actors that are linked with it. If a watched
+ * actor terminates,this actor captures the Exit messag, executes failureFuncs
+ * and resurects the actor.
+ */
 object ActorWatcher extends Actor {
   def act = loop {
     react {
@@ -57,8 +61,8 @@ object ActorWatcher extends Actor {
 }
 
 /**
-* Takes care of the plumbing for building Comet-based Web Apps
-*/
+ * Takes care of the plumbing for building Comet-based Web Apps
+ */
 @serializable
 trait CometActor extends Actor with BindHelpers {
   val uniqueId = Helpers.nextFuncName
@@ -133,13 +137,16 @@ trait CometActor extends Actor with BindHelpers {
   def handleJson(in: Any): JsCmd = Noop
 
   /**
-  * If there's actor-specific JSON behavior on failure to make the JSON
-  * call, include the JavaScript here.
-  */
+   * If there's actor-specific JSON behavior on failure to make the JSON
+   * call, include the JavaScript here.
+   */
   def onJsonError: Box[JsCmd] = Empty
 
   lazy val (jsonCall, jsonInCode) = S.buildJsonFunc(Full(_defaultPrefix), onJsonError, _handleJson)
 
+  /**
+   * Creates the span element acting as the real estate for commet rendering.
+   */
   def buildSpan(time: Long, xml: NodeSeq): NodeSeq =
   Elem(parentTag.prefix, parentTag.label, parentTag.attributes,
        parentTag.scope, Group(xml)) %
@@ -377,19 +384,53 @@ trait CometActor extends Actor with BindHelpers {
   implicit def nodeSeqToFull(in: NodeSeq): Box[NodeSeq] = Full(in)
   implicit def elemToFull(in: Elem): Box[NodeSeq] = Full(in)
 
-
-
+  /**
+   * Similar with S.error
+   */
   def error(n: String) {error(Text(n))}
+  /**
+   * Similar with S.error
+   */
   def error(n: NodeSeq) {notices += (NoticeType.Error, n,  Empty)}
+  /**
+   * Similar with S.error
+   */
   def error(id:String, n: NodeSeq) {notices += (NoticeType.Error, n,  Full(id))}
+  /**
+   * Similar with S.error
+   */
   def error(id:String, n: String) {error(id, Text(n))}
+  /**
+   * Similar with S.notice
+   */
   def notice(n: String) {notice(Text(n))}
+  /**
+   * Similar with S.notice
+   */
   def notice(n: NodeSeq) {notices += (NoticeType.Notice, n, Empty)}
+  /**
+   * Similar with S.notice
+   */
   def notice(id:String, n: NodeSeq) {notices += (NoticeType.Notice, n,  Full(id))}
+  /**
+   * Similar with S.notice
+   */
   def notice(id:String, n: String) {notice(id, Text(n))}
+  /**
+   * Similar with S.warning
+   */
   def warning(n: String) {warning(Text(n))}
+  /**
+   * Similar with S.warning
+   */
   def warning(n: NodeSeq) {notices += (NoticeType.Warning, n, Empty)}
+  /**
+   * Similar with S.warning
+   */
   def warning(id:String, n: NodeSeq) {notices += (NoticeType.Warning, n,  Full(id))}
+  /**
+   * Similar with S.warning
+   */
   def warning(id:String, n: String) {warning(id, Text(n))}
 
   private def clearNotices { notices clear }
@@ -404,13 +445,24 @@ case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)
 
 sealed abstract class CometMessage
 
-case class CometActorInitInfo(theSession: LiftSession,name: Box[String],defaultXml: NodeSeq, val attributes: Map[String, String])
+/**
+ * Impersonates the actual comet response content
+ */
+private [http] class XmlOrJsCmd(val id: String,
+                                val xml: Box[NodeSeq],
+                                val fixedXhtml: Box[NodeSeq],
+                                val javaScript: Box[JsCmd],
+                                val destroy: Box[JsCmd],
+                                spanFunc: (Long, NodeSeq) => NodeSeq,
+                                ignoreHtmlOnJs: Boolean,
+                                notices: List[(NoticeType.Value, NodeSeq, Box[String])]) {
 
-
-class XmlOrJsCmd(val id: String,val xml: Box[NodeSeq],val fixedXhtml: Box[NodeSeq], val javaScript: Box[JsCmd], val destroy: Box[JsCmd],
-                 spanFunc: (Long, NodeSeq) => NodeSeq, ignoreHtmlOnJs: Boolean, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) {
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) =
-  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
+    this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
+
+  /**
+   * Returns the JsCmd that will be sent to client
+   */
   def toJavaScript(session: LiftSession, displayAll: Boolean): JsCmd = {
     var ret: JsCmd = JsCmds.JsTry(JsCmds.Run("destroy_"+id+"();"), false) &
     ((if (ignoreHtmlOnJs) Empty else xml, javaScript, displayAll) match {

@@ -52,8 +52,16 @@ object LiftRules {
    */
   type LiftRequestPF = PartialFunction[Req, Boolean]
 
+  /**
+   * Holds user functions that willbe executed very early in the request processing. The functions'
+   * result will be ignored.
+   */
   val early = RulesSeq[(HttpServletRequest) => Any]
 
+  /**
+   * Holds user functions that are executed before sending the response to client. The functions'
+   * result will be ignored.
+   */
   val beforeSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Box[Req]) => Any]
 
   /**
@@ -97,6 +105,10 @@ object LiftRules {
    */
   val urlDecorate = RulesSeq[URLDecoratorPF]
 
+  /**
+   * Holds user functions that are executed after the response was sent to client. The functions' result
+   * will be ignored.
+   */
   val afterSend = RulesSeq[(BasicResponse, HttpServletResponse, List[(String, String)], Box[Req]) => Any]
 
   /**
@@ -172,6 +184,17 @@ object LiftRules {
     }
   }
 
+  /**
+   * Allows user adding additional Lift tags (the tags must be prefixed by lift namespace such as <lift:xxxx/>).
+   * Each LiftTagPF function will be called with the folowing parameters:
+   * <pre>
+   *  - Element label,
+   *  - The Element itselft,
+   *  - The attrbutes
+   *  - The child nodes
+   *  - The page name
+   * </pre>
+   */
   val liftTagProcessing = RulesSeq[LiftTagPF]
 
   /**
@@ -261,11 +284,10 @@ object LiftRules {
   var ajaxStart: Box[() => JsCmd] = Empty
 
   /**
-  * The function that calculates if the response should be rendered in
-  * IE6/7 compatibility mode
-  */
-  var calcIEMode: () => Boolean =
-  () => (for (r <- S.request) yield r.isIE6 || r.isIE7) openOr true
+   * The function that calculates if the response should be rendered in
+   * IE6/7 compatibility mode
+   */
+  var calcIEMode: () => Boolean = () => (for (r <- S.request) yield r.isIE6 || r.isIE7) openOr true
 
   /**
    * The JavaScript to execute at the end of an
@@ -301,12 +323,19 @@ object LiftRules {
     }
   }
 
+  /**
+   * User for Comet handling to resume a continuation
+   */
   def resumeRequest(what: AnyRef, req: HttpServletRequest) {
     val cont = getContinuation.invoke(contSupport, req, LiftRules)
     setObject.invoke(cont, what)
     resume.invoke(cont)
   }
 
+  /**
+   * Execute a continuation. For Jetty the Jetty specific exception will be thrown
+   * and the container will manage it.
+   */
   def doContinuation(req: HttpServletRequest, timeout: Long): Nothing = {
     try {
       val cont = getContinuation.invoke(contSupport, req, LiftRules)
@@ -319,6 +348,9 @@ object LiftRules {
     }
   }
 
+  /**
+   * Check to see if continuations are supported
+   */
   def checkContinuations(req: HttpServletRequest): Option[Any] = {
     if (!hasContinuations_?) None
     else {
@@ -344,6 +376,10 @@ object LiftRules {
 
   private[http] var doneBoot = false;
 
+  /**
+   * Holds user's DispatchPF functions that will be executed in a stateless context. This means that
+   * S object is not availble yet.
+   */
   val statelessDispatchTable = RulesSeq[DispatchPF]
 
   private[http] def dispatchTable(req: HttpServletRequest): List[DispatchPF] = {
@@ -371,14 +407,22 @@ object LiftRules {
     }
   }
 
+  /**
+   * Contains the Ajax URI path used by Lift to process Ajax requests.
+   */
   var ajaxPath = "ajax_request"
 
+  /**
+   * Contains the Comet URI path used by Lift to process Comet requests.
+   */
   var cometPath = "comet_request"
 
+  /**
+   * Computes the Comet path by adding additional tokens on top of cometPath
+   */
   var calcCometPath: String => JsExp = prefix => Str(prefix + "/" + cometPath + "/") +
     JsRaw("Math.floor(Math.random() * 100000000000)") +
     Str(S.session.map(s => "/"+s.uniqueId) openOr "")
-
 
   /**
    * The default way of calculating the context path
@@ -400,8 +444,14 @@ object LiftRules {
 
   private var _context: ServletContext = _
 
+  /**
+   * Returns the ServletContext
+   */
   def context: ServletContext = synchronized {_context}
 
+  /**
+   * Sets the ServletContext
+   */
   def setContext(in: ServletContext): Unit =  synchronized {
     if (in ne _context) {
       _context = in
@@ -410,15 +460,32 @@ object LiftRules {
 
   private var otherPackages: List[String] = Nil
 
-  def buildPackage(end: String)  = synchronized (otherPackages.map(_+"."+end))
+  /**
+   * Used by Lift to construct full pacakge names fromthe packages provided to addToPackages function
+   */
+  def buildPackage(end: String) = synchronized (otherPackages.map(_+"."+end))
 
+  /**
+   * TellsLift where to find Snippets,Views, Comet Actors and Lift ORM Model object
+   */
   def addToPackages(what: String) {synchronized {otherPackages = what :: otherPackages}}
 
   private val defaultFinder = getClass.getResource _
   private def resourceFinder(name: String): _root_.java.net.URL = _context.getResource(name)
 
+  /**
+   * Obtain the resource URL by name
+   */
   def getResource(name: String): Box[_root_.java.net.URL] = resourceFinder(name) match {case null => defaultFinder(name) match {case null => Empty; case s => Full(s)} ; case s => Full(s)}
+
+  /**
+   * Obtain the resource InputStream by name
+   */
   def getResourceAsStream(name: String): Box[_root_.java.io.InputStream] = getResource(name).map(_.openStream)
+
+  /**
+   * Obtain the resource as an array of bytes by name
+   */
   def loadResource(name: String): Box[Array[Byte]] = getResourceAsStream(name).map{
     stream =>
     val buffer = new Array[Byte](2048)
@@ -433,11 +500,20 @@ object LiftRules {
     stream.close
     out.toByteArray
   }
+
+  /**
+   * Obtain the resource as an XML by name
+   */
   def loadResourceAsXml(name: String): Box[NodeSeq] = loadResourceAsString(name).flatMap(s => PCDataXmlParser(s))
+
+  /**
+   * Obtain the resource as a String by name
+   */
   def loadResourceAsString(name: String): Box[String] = loadResource(name).map(s => new String(s, "UTF-8"))
 
-
-
+  /**
+   * Looks up a resource by name and returns an Empty Box if the resource was not found.
+   */
   def finder(name: String): Box[InputStream] = {
     LiftRules.context match {
       case null => Empty
@@ -454,19 +530,29 @@ object LiftRules {
    */
   val liftRequest = RulesSeq[LiftRequestPF]
 
+  /**
+   * Holds the user's DispatchPF functions that will be executed in stateful context
+   */
   val dispatch = RulesSeq[DispatchPF]
 
+  /**
+   * Holds the user's rewrite functions that can alter the URI parts and query parameters
+   */
   val rewrite = RulesSeq[RewritePF]
 
+  /**
+   * Holds the user's snippet functions that will be executed by lift given a certain path.
+   */
   val snippets = RulesSeq[SnippetPF]
 
-  var cometLoggerBuilder: () => LiftLogger = () => {
+  /**
+   * Holds the CometLogger that will be used to log comet activity
+   */
+  var cometLogger: LiftLogger = {
     val ret = LogBoot.loggerByName("comet_trace")
     ret.level = LiftLogLevels.Off
     ret
   }
-
-  val cometLogger: LiftLogger = cometLoggerBuilder()
 
   /**
    * Takes a Node, headers, cookies, and a session and turns it into an XhtmlResponse.
@@ -485,12 +571,18 @@ object LiftRules {
       "Keep-Alive" -> "timeout=3, max=993" */)
   }
 
+  /**
+   * Runs responseTransformers
+   */
   def performTransform(in: LiftResponse): LiftResponse = responseTransformers.toList.foldLeft(in) {
     case (in, pf: PartialFunction[_, _]) =>
       if (pf.isDefinedAt(in)) pf(in) else in
     case (in, f) => f(in)
   }
 
+  /**
+   * Holds the user's transformer functions allowing the user to modify a LiftResponse before sending it to client.
+   */
   val responseTransformers = RulesSeq[LiftResponse => LiftResponse]
 
   /**
@@ -517,6 +609,9 @@ object LiftRules {
 
   private def logSnippetFailure(sf: SnippetFailure) = Log.warn("Snippet Failure: "+sf)
 
+  /**
+   * Holds the falure information when a snippet can not be executed.
+   */
   case class SnippetFailure(page: String, typeName: Box[String], failure: SnippetFailures.Value)
 
   object SnippetFailures extends Enumeration {
@@ -621,39 +716,75 @@ object LiftRules {
     LiftRules.liftRequest.append(liftReq)
   }
 
+  /**
+   * Holds user function hooks when the request is about to be processed
+   */
   val onBeginServicing = RulesSeq[Req => Unit]
+
+  /**
+   * Holds user function hooks when the request was processed
+   */
   val onEndServicing = RulesSeq[(Req, Box[LiftResponse]) => Unit]
 
-  var autoIncludeComet: LiftSession => Boolean =
-  session => true
+  /**
+   * Tells Lift if the Comet JavaScript shoukd be included. By default it is set to true.
+   */
+  var autoIncludeComet: LiftSession => Boolean = session => true
 
-  var autoIncludeAjax: LiftSession => Boolean =
-  session => true
+  /**
+   * Tells Lift if the Ajax JavaScript shoukd be included. By default it is set to true.
+   */
+  var autoIncludeAjax: LiftSession => Boolean = session => true
 
+  /**
+   * Returns the JavaScript that manages Ajax requests.
+   */
   var renderAjaxScript: LiftSession => JsCmd = session => ScriptRenderer.ajaxScript
 
+  /**
+   * Returns the JavaScript that manages Comet requests.
+   */
   var renderCometScript: LiftSession => JsCmd = session => ScriptRenderer.cometScript
 
+  /**
+   * Renders that JavaScript that holds Comet identification information
+   */
   var renderCometPageContents: (LiftSession, Seq[CometVersionPair]) => JsCmd =
   (session, vp) => JsCmds.Run(
     "var lift_toWatch = "+vp.map(p => p.guid.encJs+": "+p.version).mkString("{", " , ", "}")+";"
   )
 
-
+  /**
+   * Hods the last update time of the Ajax request. Based on this server mayreturn HTTP 304 status
+   * indicating the client to used the cached information.
+   */
   var ajaxScriptUpdateTime: LiftSession => Long = session => {
     object when extends SessionVar[Long](millis)
     when.is
   }
 
+  /**
+   * Hods the last update time of the Comet request. Based on this server mayreturn HTTP 304 status
+   * indicating the client to used the cached information.
+   */
   var cometScriptUpdateTime: LiftSession => Long = session => {
     object when extends SessionVar[Long](millis)
     when.is
   }
 
+  /**
+   * The name of the Ajax script that manages Ajax rewuests.
+   */
   var ajaxScriptName: () => String = () => "liftAjax.js"
 
+  /**
+   * The name of the Comet script that manages Comet rewuests.
+   */
   var cometScriptName: () => String = () => "cometAjax.js"
 
+  /**
+   * Returns the Comet script as a JavaScript response
+   */
   var serveCometScript: (LiftSession, Req) => Box[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = cometScriptUpdateTime(liftSession)
@@ -664,6 +795,9 @@ object LiftRules {
                             Nil, 200))
   }
 
+  /**
+   * Returns the Ajax script as a JavaScript response
+   */
   var serveAjaxScript: (LiftSession, Req) => Box[LiftResponse] =
   (liftSession, requestState) => {
     val modTime = ajaxScriptUpdateTime(liftSession)
@@ -734,6 +868,9 @@ private[http] case object DefaultBootstrap extends Bootable {
   }
 }
 
+/**
+ * Holds the Comet identification information
+ */
 trait CometVersionPair {
   def guid: String
   def version: Long

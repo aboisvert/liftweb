@@ -1,5 +1,3 @@
-package net.liftweb.http.js
-
 /*
  * Copyright 2007-2008 WorldWide Conferencing, LLC
  *
@@ -15,6 +13,7 @@ package net.liftweb.http.js
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
+package net.liftweb.http.js
 
 import _root_.scala.xml.{NodeSeq, Group, Unparsed, Elem}
 import _root_.net.liftweb.util.Helpers._

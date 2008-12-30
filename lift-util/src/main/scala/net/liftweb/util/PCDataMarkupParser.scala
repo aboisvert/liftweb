@@ -150,9 +150,9 @@ object AltXML {
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, 
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder,
             stripComment: Boolean, convertAmp: Boolean,
-            ieMode: Boolean): Unit = 
+            ieMode: Boolean): Unit =
   x match {
     case c: Comment if !stripComment =>
       c.toString(sb)
@@ -191,7 +191,7 @@ object AltXML {
 
     case _ => // dunno what it is, but ignore it
   }
-  
+
 
   /**
    * @param children     ...

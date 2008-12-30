@@ -66,6 +66,9 @@ class LiftServlet extends HttpServlet {
     LiftRules.ending = false
   }
 
+  /**
+   * Returns a LiftSession instance.
+   */
   def getLiftSession(request: Req, httpSession: HttpSession): LiftSession = {
     val wp = request.path.wholePath
     val cometSessionId =
@@ -90,6 +93,9 @@ class LiftServlet extends HttpServlet {
     ret
   }
 
+  /**
+   * Processes the HTTP requests
+   */
   def service(req: HttpServletRequest,resp: HttpServletResponse, requestState: Req): Boolean = {
     try {
       def doIt: Boolean = {
@@ -273,6 +279,9 @@ class LiftServlet extends HttpServlet {
     ret
   }
 
+  /**
+   * An actor that manages continuations from container (Jetty style)
+   */
   class ContinuationActor(request: Req, sessionActor: LiftSession, actors: List[(CometActor, Long)]) extends Actor {
     private var answers: List[AnswerRender] = Nil
     val seqId = Helpers.nextNum
@@ -471,8 +480,10 @@ class LiftServlet extends HttpServlet {
 trait LiftFilterTrait {
   def actualServlet: LiftServlet
 
-  def doFilter(req: ServletRequest, res: ServletResponse,chain: FilterChain) =
-  {
+  /**
+   * Executes the Lift filter component.
+   */
+  def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain) = {
     RequestVarHandler(
       (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
@@ -519,6 +530,9 @@ class LiftFilter extends Filter with LiftFilterTrait
     }
   }
 
+  /**
+   * Executes Lift's Boot
+   */
   def bootLift(loader : Box[String]) : Unit =
   {
     try
@@ -556,6 +570,9 @@ class LiftFilter extends Filter with LiftFilterTrait
   in.endsWith(".htm") ||
   in.endsWith(".xml") || in.endsWith(".liftjs") || in.endsWith(".liftcss")
 
+  /**
+   * Tests if a request should be handled by Lift or passed to the container to be executed by other potential filters or servlets.
+   */
   def isLiftRequest_?(session: Req): Boolean = {
     NamedPF.applyBox(session, LiftRules.liftRequest.toList) match {
       case Full(b) => b

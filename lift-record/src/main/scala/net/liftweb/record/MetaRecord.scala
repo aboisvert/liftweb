@@ -269,7 +269,7 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
    *
    * @return Box[The Field] (Empty if the field is not found)
    */
-  def fieldByName(fieldName: String, inst: BaseRecord): 
+  def fieldByName(fieldName: String, inst: BaseRecord):
   Box[OwnedField[BaseRecord]] = {
     Box(fieldList.find(f => f.name == fieldName)).
     map(holder => ??(holder.method, inst).asInstanceOf[OwnedField[BaseRecord]])

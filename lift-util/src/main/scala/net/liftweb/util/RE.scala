@@ -74,7 +74,7 @@ class REMatcher(val str: String,val compiled: Pattern) {
 
   lazy val matches = matcher.find
 
-  lazy val matchStr: Box[String] = 
+  lazy val matchStr: Box[String] =
     if (matches) Full(str.substring(matcher.start, matcher.end))
     else Empty
 

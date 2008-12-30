@@ -1,5 +1,3 @@
-package net.liftweb.http
-
 /*
  * Copyright 2006-2008 WorldWide Conferencing, LLC
  *
@@ -15,6 +13,7 @@ package net.liftweb.http
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
+package net.liftweb.http
 
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.scala.collection.mutable.{HashMap, ListBuffer}
@@ -670,8 +669,11 @@ object S extends HasParams {
    */
   def contextPath = session.map(_.contextPath).openOr("")
 
+  /**
+   * Finds a snippet by namae
+   */
   def locateSnippet(name: String): Box[NodeSeq => NodeSeq] = {
-    val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
+    val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":")
     NamedPF.applyBox(snippet, LiftRules.snippets.toList)
   }
 

@@ -42,12 +42,39 @@ object LiftSession {
   def apply(session: HttpSession, contextPath: String, headers: List[(String, String)]) =
   LiftRules.sessionCreator(session, contextPath, headers)
 
+  /**
+   * Holds user's functions that will be called when the session is activated
+   */
   var onSessionActivate: List[LiftSession => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when the session is passivated
+   */
   var onSessionPassivate: List[LiftSession => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when the session is setup
+   */
   var onSetupSession: List[LiftSession => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when the session is about to be terminated
+   */
   var onAboutToShutdownSession: List[LiftSession => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when the session is terminated
+   */
   var onShutdownSession: List[LiftSession => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when a stateful request is about to be processed
+   */
   var onBeginServicing: List[(LiftSession, Req) => Unit] = Nil
+
+  /**
+   * Holds user's functions that will be called when a stateful request has been processed
+   */
   var onEndServicing: List[(LiftSession, Req, Box[LiftResponse]) => Unit] = Nil
 }
 
@@ -56,6 +83,9 @@ private[http] case class AddSession(session: LiftSession)
 private[http] case class RemoveSession(sessionId: String)
 case class SessionWatcherInfo(sessions: Map[String, LiftSession])
 
+/**
+ * Represents the "bridge" between HttpSession and LiftSession
+ */
 @serializable
 case class SessionToServletBridge(uniqueId: String) extends HttpSessionBindingListener with HttpSessionActivationListener {
   def sessionDidActivate(se: HttpSessionEvent) = {
@@ -69,9 +99,7 @@ case class SessionToServletBridge(uniqueId: String) extends HttpSessionBindingLi
   }
 
   def valueBound(event: HttpSessionBindingEvent) {
-
   }
-
 
   /**
    * When the session is unbound the the HTTP session, stop us
@@ -104,16 +132,25 @@ object SessionMaster extends Actor {
    */
   var sessionWatchers: List[Actor] = Nil
 
+  /**
+   * Returns a LiftSession or Empty if not found
+   */
   def getSession(httpSession: HttpSession, otherId: Box[String]): Box[LiftSession] =
   synchronized {
     otherId.flatMap(sessions.get) or Box(sessions.get(httpSession.getId()))
   }
 
+  /**
+   * Returns a LiftSession or Empty if not found
+   */
   def getSession(req: HttpServletRequest, otherId: Box[String]): Box[LiftSession] =
   synchronized {
     otherId.flatMap(sessions.get) or Box(sessions.get(req.getSession.getId()))
   }
 
+  /**
+   * Adds a new session to SessionMaster
+   */
   def addSession(liftSession: LiftSession) {
     synchronized {
       sessions = sessions + (liftSession.uniqueId -> liftSession)
@@ -176,6 +213,9 @@ object SessionMaster extends Actor {
 
 }
 
+/**
+ * The LiftSession class containg the session state information
+ */
 @serializable
 class LiftSession(val contextPath: String, val uniqueId: String,
                   val httpSession: HttpSession, val initialHeaders: List[(String, String)]) {
@@ -227,6 +267,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   private case class RunnerHolder(name: String, func: S.AFuncHolder, owner: Box[String])
 
+  /**
+   * Executes the user's functions based on the query parameters
+   */
   def runParams(state: Req): List[Any] = {
     val toRun = synchronized {
       // get all the commands, sorted by owner,
@@ -273,6 +316,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     funcs.foreach(mi => messageCallback(mi._1) = mi._2)
   }
 
+  /**
+   * Updates the internal functions mapping
+   */
   def updateFunctionMap(funcs: Map[String, S.AFuncHolder], uniqueId: String, when: Long): Unit = synchronized {
     funcs.foreach{case (name, func) => messageCallback(name) = func.duplicate(uniqueId)}
   }
@@ -291,6 +337,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     sessionRewriter = HashMap.empty
   }
 
+  /**
+   * Adds a cleanup function that will be executed when session is terminated
+   */
   def addSessionCleanup(f: LiftSession => Unit): Unit = synchronized {
     onSessionEnd = f :: onSessionEnd
   }
@@ -500,14 +549,14 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     lb.toList
   }
 
-private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
-  val tpath = path.partPath
-  val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
-    case s @ _ if (!s.isEmpty) => s
-    case _ => List("index")
+  private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
+    val tpath = path.partPath
+    val splits = tpath.toList.filter {a => !a.startsWith("_") && !a.startsWith(".") && a.toLowerCase.indexOf("-hidden") == -1} match {
+      case s @ _ if (!s.isEmpty) => s
+      case _ => List("index")
+    }
+    findAnyTemplate(splits)
   }
-  findAnyTemplate(splits)
-}
 
   private def findTemplate(name: String): Box[NodeSeq] = {
     val splits = (if (name.startsWith("/")) name else "/"+name).split("/").toList.drop(1) match {
@@ -517,14 +566,6 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
 
      findAnyTemplate("templates-hidden" :: splits) or findAnyTemplate(splits)
   }
-
-  def couldBeHtml(in : List[(String, String)]) : Boolean = {
-    in match {
-      case null | Nil => true
-      case _ => in.ciGet("Content-Type").map(_.toLowerCase.contains("html")) openOr true
-    }
-  }
-
 
   private def findAndEmbed(templateName: Box[Seq[Node]], kids: NodeSeq): NodeSeq = {
     templateName match {
@@ -649,6 +690,9 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
   }
 
 
+  /**
+   * Apply HTML specific corrections such as adding the context path etc.
+   */
   def fixHtml(in: NodeSeq): NodeSeq = Req.fixHtml(contextPath, in)
 
 
@@ -685,6 +729,9 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
 
   private def asNodeSeq(in: Seq[Node]): NodeSeq = in
 
+  /**
+   * Processes the surround tag and other lift tags
+   */
   def processSurroundAndInclude(page: String, in: NodeSeq): NodeSeq = {
     in.flatMap{
       v =>
@@ -719,6 +766,9 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
     }
   }
 
+  /**
+   * Finds all Comet actors by type
+   */
   def findComet(theType: String): List[CometActor] = synchronized {
     asyncComponents.elements.filter{case ((Full(name), _), _) => name == theType case _ => false}.toList.map{case (_, value) => value}
   }
@@ -739,12 +789,21 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
       })
   }
 
+  /**
+   * Finds a Comet actor by ID
+   */
   def getAsyncComponent(id: String): Box[CometActor] = synchronized(asyncById.get(id))
 
+  /**
+   * Adds a new COmet actor to this session
+   */
   def addCometActor(act: CometActor): Unit = synchronized {
     asyncById(act.uniqueId) = act
   }
 
+  /**
+   * Remove a Comet actor
+   */
   def removeCometActor(act: CometActor): Unit = synchronized {
     asyncById -= act.uniqueId
     messageCallback -= act.jsonCall.funcId
@@ -775,8 +834,6 @@ private def findVisibleTemplate(path: ParsePath, session: Req): Box[NodeSeq] = {
       }
     }
   }
-
-
 
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax: JsExp = SHtml.makeAjaxCall(JE.Str(attr("key")+"=true"))
@@ -905,6 +962,9 @@ trait LiftView {
   def dispatch : PartialFunction[String, () => Box[NodeSeq]]
 }
 
+/**
+ * Contains functions for obtaining templates
+ */
 object TemplateFinder {
   private val suffixes = List("", "html", "xhtml", "htm")
 
