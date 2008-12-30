@@ -25,6 +25,10 @@ object AuthRole {
   def apply(roleNames: String*): List[Role] = roleNames.toList.map(n => new Role {
     def name = n
   })
+
+  def apply(roleName: String, roles: Role*): Role = new Role {
+    def name = roleName
+  }.addRoles(roles:_*)
 }
 
 /**
