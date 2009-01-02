@@ -5,7 +5,7 @@
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.10-SNAPSHOT</version>
+  <version>0.10</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
@@ -292,7 +292,7 @@ Lift is a scala web framework.
           </jvmArgs>
           <args>
             <!--arg>-unchecked</arg--></args>
-          <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
+          <vscaladocVersion>1.2</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>
