@@ -290,7 +290,7 @@ Lift is a scala web framework.
           </jvmArgs>
           <args>
             <!--arg>-unchecked</arg--></args>
-          <vscaladocVersion>1.2</vscaladocVersion>
+          <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>
       </plugin>
