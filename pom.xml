@@ -140,11 +140,9 @@ Lift is a scala web framework.
     </mailingList>
   </mailingLists>
   <scm>
-    <connection>scm:svn:http://liftweb.googlecode.com/svn/tags/lift-0.6</connection>
-    <developerConnection>scm:svn:https://liftweb.googlecode.com/svn/tags/lift-0.6</developerConnection>
-    <!--url>http://www.google.com/codesearch?q=show:7DkPXjps4A4:Gh_MDh2h9J0&amp;cs_f=trunk/liftweb</url-->
-    <!--url>http://scala-tools.org/svn/repobrowser.svn?path=%2ftrunk%2fliftweb&amp;revision=HEAD&amp;name=liftweb&amp;bypassEmpty=true</url-->
-    <url>http://code.google.com/p/liftweb/source/browse/tags/lift-0.7</url>
+    <connection>scm:git:git://github.com/dpp/liftweb.git</connection>
+    <developerConnection>scm:git:git@github.com:dpp/liftweb.git</developerConnection>
+    <url>http://github.com/dpp/liftweb/tree/master</url>
   </scm>
   <issueManagement>
     <system>google</system>
@@ -359,7 +357,7 @@ Lift is a scala web framework.
       <distributionManagement>
         <repository>
           <id>scala-tools.org</id>
-          <url>dav:http://dav.scala-tools.org/repo-releases</url>
+          <url>http://scala-tools.org:8081/nexus/content/repositories/releases</url>
         </repository>
         <site>
           <id>scala-tools.org</id>
@@ -373,16 +371,16 @@ Lift is a scala web framework.
       <distributionManagement>
         <repository>
           <id>hudson.scala-tools.org</id>
-          <url>file://${user.home}/scala-tools.org/repo-snapshots</url>
+          <url>file://home/scala-tools.org/www/repo-snapshots</url>
         </repository>
         <snapshotRepository>
           <id>hudson.scala-tools.org</id>
-          <url>file://${user.home}/scala-tools.org/repo-snapshots</url>
+          <url>file://home/scala-tools.org/www/repo-snapshots</url>
           <uniqueVersion>false</uniqueVersion>
         </snapshotRepository>
         <site>
           <id>hudson.scala-tools.org</id>
-          <url>file://${user.home}/scala-tools.org/mvnsites-snapshots/liftweb</url>
+          <url>file://home/scala-tools.org/www/mvnsites-snapshots/liftweb</url>
         </site>
       </distributionManagement>
     </profile>
