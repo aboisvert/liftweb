@@ -332,6 +332,7 @@ Lift is a scala web framework.
   <profiles>
     <profile>
       <id>release</id>
+      <!--
       <build>
         <plugins>
           <plugin>
@@ -354,6 +355,7 @@ Lift is a scala web framework.
           </plugin>
         </plugins>
       </build>
+      -->
       <distributionManagement>
         <repository>
           <id>scala-tools.org</id>
