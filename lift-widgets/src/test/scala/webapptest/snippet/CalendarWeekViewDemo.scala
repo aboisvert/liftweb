@@ -45,13 +45,13 @@ class CalendarWeekViewDemo {
     val c3 = Calendar getInstance;
     c3.set(HOUR_OF_DAY, 5)
     c3.set(MINUTE, 30)
-    c3.set(DAY_OF_MONTH, 17)
+    c3.set(DAY_OF_MONTH, 19)
     c3.set(MONTH, 4)
 
     val c3End = Calendar getInstance;
     c3End.set(HOUR_OF_DAY, 13)
     c3End.set(MINUTE, 31)
-    c3End.set(DAY_OF_MONTH, 17)
+    c3End.set(DAY_OF_MONTH, 19)
     c3End.set(MONTH, 4)
 
     val c4 = Calendar getInstance;
