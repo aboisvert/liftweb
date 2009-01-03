@@ -73,7 +73,7 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
     val delta = cal.get(DAY_OF_WEEK) - meta.firstDayOfWeek
 
     cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
-    val startIndex = cal.get(DAY_OF_WEEK)
+    val startIndex = cal.get(DAY_OF_WEEK) - 1
 
     val headCal = cal.clone().asInstanceOf[Calendar]
     <head>
