@@ -52,7 +52,7 @@ class TreeViewDemo {
          Tree("3.3 Hey, I Can Do That! (20 min)", "file") ::
          Tree("3.4 Taconite and Form (20 min)", "file") ::
          Tree("3.5 Server-side JavaScript with jQuery and AOLserver (20 min)", "file") ::
-         Tree("3.6 This will load the children dynamically via Ajax", Full("36"), Full("folder"), false, true, Empty) ::
+         Tree("3.6 This will load the children dynamically via Ajax", Full("36"), Full("folder"), false, true, Nil) ::
          Tree("3.7 Visualizations with JavaScript and Canvas (20 min)", "file") ::
          Tree("3.8 Growing jQuery (20 min)", "file") ::
          Nil

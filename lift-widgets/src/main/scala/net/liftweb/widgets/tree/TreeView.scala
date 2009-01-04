@@ -129,15 +129,15 @@ class TreeView {
 }
 
 object Tree {
-  def apply(text:String) = new Tree(text, Empty, Empty, false, false, Empty)
-  def apply(text:String, id: String, hasChildren: Boolean) = new Tree(text, Full(id), Empty, false, true, Empty)
-  def apply(text:String, classes: String) = new Tree(text, Empty, Full(classes), false, false, Empty)
-  def apply(text:String, children: List[Tree]) = new Tree(text, Empty, Empty, false, false, Full(children))
-  def apply(text:String, classes: String, children: List[Tree]) = new Tree(text, Empty, Full(classes), false, false, Full(children))
+  def apply(text:String) = new Tree(text, Empty, Empty, false, false, Nil)
+  def apply(text:String, id: String, hasChildren: Boolean) = new Tree(text, Full(id), Empty, false, true, Nil)
+  def apply(text:String, classes: String) = new Tree(text, Empty, Full(classes), false, false, Nil)
+  def apply(text:String, children: List[Tree]) = new Tree(text, Empty, Empty, false, false, children)
+  def apply(text:String, classes: String, children: List[Tree]) = new Tree(text, Empty, Full(classes), false, false, children)
   def apply(text:String, classes: String, expanded: Boolean, hasChildren: Boolean, children: List[Tree]) =
-    new Tree(text, Empty, Full(classes), expanded, hasChildren, Full(children))
+    new Tree(text, Empty, Full(classes), expanded, hasChildren, children)
   def apply(text:String, id: String, classes: String, expanded: Boolean, hasChildren: Boolean, children: List[Tree]) =
-    new Tree(text, Full(id), Full(classes), expanded, hasChildren, Full(children))
+    new Tree(text, Full(id), Full(classes), expanded, hasChildren, children)
 
   def toJSON(nodes: List[Tree]): String = nodes.map(_ toJSON).mkString("[", ", ", "]")
 }
@@ -145,7 +145,12 @@ object Tree {
 /**
  * Server side representation of a node of the tree widget
  */
-case class Tree(text:String, id: Box[String], classes: Box[String], expanded: Boolean, hasChildren: Boolean, children: Box[List[Tree]]) {
+case class Tree(text:String,
+                id: Box[String],
+                classes: Box[String],
+                expanded: Boolean,
+                hasChildren: Boolean,
+                children: List[Tree]) {
 
   def toJSON: String = {
 
@@ -154,7 +159,10 @@ case class Tree(text:String, id: Box[String], classes: Box[String], expanded: Bo
         classes.map(cls => ", \"classes\": \"" + cls + "\"").openOr("") +
         (hasChildren match { case true => ", \"hasChildren\": true" case _ =>  ""}) +
         (expanded match { case true => ", \"expanded\": true" case _ =>  ""}) +
-        children.map(childs=> ", \"children\": " + childs.map(_ toJSON).mkString("[", ", ", "]")).openOr("") +
+        (children match {
+          case Nil => ""
+          case childs => ", \"children\": " + childs.map(_ toJSON).mkString("[", ", ", "]")
+        }) +
         " }"
   }
 
