@@ -249,7 +249,7 @@ class LiftServlet extends HttpServlet {
                          requestState: Req): Box[LiftResponse] =
   {
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
-    LiftSession.onBeginServicing.foreach(_(liftSession, requestState))
+    tryo{LiftSession.onBeginServicing.foreach(_(liftSession, requestState))}
     val ret = try {
       val what = flatten(liftSession.runParams(requestState))
 
@@ -275,7 +275,7 @@ class LiftServlet extends HttpServlet {
     } finally {
       liftSession.updateFunctionMap(S.functionMap)
     }
-    LiftSession.onEndServicing.foreach(_(liftSession, requestState, ret))
+    tryo{LiftSession.onEndServicing.foreach(_(liftSession, requestState, ret))}
     ret
   }
 
@@ -491,7 +491,7 @@ trait LiftFilterTrait {
 
           var session = Req(httpReq, LiftRules.rewriteTable(httpReq), System.nanoTime)
 
-          URLRewriter.doWith(url => NamedPF.applyBox(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr url) {
+          URLRewriter.doWith(url => NamedPF.applyBox(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr httpRes.encodeURL(url)) {
             if (!(isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session))) {
 	          chain.doFilter(req, res)
 	        }

@@ -15,6 +15,7 @@ package net.liftweb.util
 
 import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream, Reader, File, FileInputStream, BufferedReader, InputStreamReader}
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
+import ControlHelpers._
 
 object IoHelpers extends IoHelpers
 
@@ -80,5 +81,16 @@ trait IoHelpers {
     readOnce
 
     bos.toByteArray
+  }
+
+  /**
+   * Executes by-name function f and then closes the Cloaseables parameters
+   */
+  def doClose[T](is: java.io.Closeable*)(f : => T): T = {
+    try {
+      f
+    } finally {
+      is.foreach(stream => tryo{ stream.close })
+    }
   }
 }

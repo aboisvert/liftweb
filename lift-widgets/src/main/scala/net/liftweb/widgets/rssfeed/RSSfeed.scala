@@ -19,8 +19,19 @@ package net.liftweb.widgets.rssfeed
 import _root_.scala.xml._
 import _root_.java.net.{URLConnection, URL}
 import _root_.scala.collection.mutable._
+import net.liftweb.util.IoHelpers._
+
+object RSSFeed {
+  /**
+   * Renders an RSS feed using a list
+   */
+  def apply(feedUrl: String) = new RSSFeed().render(feedUrl)
+}
 
 class RSSFeed {
+  /**
+   * Renders an RSS feed using a list
+   */
   def render(feedUrl: String): NodeSeq = {
     val feed = getFeed(feedUrl)
 
@@ -35,11 +46,16 @@ class RSSFeed {
     <div class="rsswidget"><ul>{src}</ul></div>
   }
 
+  /**
+   * Returns the feed as a plain XML
+   */
   def getFeed(feedUrl: String): Elem = {
     val u = new URL(feedUrl)
     val con = u.openConnection
-
-    XML.load(con.getInputStream)
+    val is = con.getInputStream
+    doClose(is) {
+      XML.load(is)
+    }
   }
 
 }
