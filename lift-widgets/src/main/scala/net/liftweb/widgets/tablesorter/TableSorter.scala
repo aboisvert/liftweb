@@ -16,34 +16,46 @@
 
 package net.liftweb.widgets.tablesorter
 
+import _root_.net.liftweb.http.ResourceServer
 import _root_.scala.xml.NodeSeq
 import _root_.net.liftweb.http.{LiftRules}
+import _root_.net.liftweb.http.js._
+import JsCmds._
+import JE._
+import jquery.JqJE._
+import jquery.JQueryRight
 
+object TableSorter {
 
-class TableSorter {
+  def apply(selector: String) = renderOnLoad(selector)
+
+  /**
+   * Initializes the widget
+   */
   def init() {
-    import _root_.net.liftweb.http.ResourceServer
-
     ResourceServer.allow({
       case "tablesorter" :: tail => true
     })
-    println("register")
   }
-  def render(selector: String) = {
+
+  /**
+   * Transforms a regular table into a tablesorter when page is loaded
+   */
+  def renderOnLoad(selector: String) = {
     val onLoad ="""jQuery(function($){
-            // tablesorter call - maybe here?
             $('"""+selector+"""').tablesorter({sortList:[[0,0]], widgets:['zebra']});
             });
             """
-    <xml:group>
-      <head>
-        <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tablesorter/themes/blue/style.css"} type="text/css" id="" media="print, projection, screen" />
-        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tablesorter/jquery.tablesorter.js"}></script>
-        <script type="text/javascript" charset="utf-8">{onLoad}</script>
-      </head>
-      <table>
-      <tr><td>33</td></tr>
-      </table>
-    </xml:group>
+    <head>
+      <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tablesorter/themes/blue/style.css"} type="text/css" id="" media="print, projection, screen" />
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tablesorter/jquery.tablesorter.js"}></script>
+      <script type="text/javascript" charset="utf-8">{onLoad}</script>
+    </head>
   }
+
+  /**
+   * Transforms a regular table into a tablesorter
+   */
+  def jsRender(selector: String) : JsExp = JqId(selector) >> new JsRaw("tablesorter({sortList:[[0,0]], widgets:['zebra']})") with JQueryRight
+
 }
