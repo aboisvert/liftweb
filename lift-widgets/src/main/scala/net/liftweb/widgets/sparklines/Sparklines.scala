@@ -46,7 +46,7 @@ object Sparklines {
    */
   def onLoad(id: String, graphStyle: SparklineStyle.Value, data: JsArray, opts: JsObj) : NodeSeq = {
     <head>
-       <script type="text/javascript" src="/classpath/sparklines/sparklines.min.js"/>
+       <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/sparklines/sparklines.min.js"}/>
        <script type="text/javascript" charset="utf-8"> {
          OnLoad(toJsExp(id, graphStyle, data, opts)) toJsCmd
        }
@@ -76,7 +76,7 @@ object Sparklines {
    */
   def renderCanvas(id: String, cssClass: String) : NodeSeq = {
     <head>
-       <script type="text/javascript" src="/classpath/sparklines/sparklines.min.js"></script>
+       <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/sparklines/sparklines.min.js"}></script>
     </head> ++
     <canvas id={id} class={cssClass}></canvas>
   }

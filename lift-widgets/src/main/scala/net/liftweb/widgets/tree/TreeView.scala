@@ -58,8 +58,8 @@ class TreeView {
    */
   def onLoad(id: String, jsObj: JsObj) : NodeSeq = {
     <head>
-      <link rel="stylesheet" href="/classpath/tree/jquery.treeview.css" type="text/css"/>
-      <script type="text/javascript" src="/classpath/tree/jquery.treeview.js"/>
+      <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.css"} type="text/css"/>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.js"}/>
        <script type="text/javascript" charset="utf-8">{
          OnLoad(JqId(id) >> new JsExp with JQueryRight {
            def toJsCmd = "treeview(" + jsObj.toJsCmd + ")"
@@ -81,9 +81,9 @@ class TreeView {
    */
   def onLoadAsync(id: String, jsObj: JsObj, loadTree : () => List[Tree], loadNode: (String) => List[Tree]): NodeSeq = {
      <head>
-       <link rel="stylesheet" href="/classpath/tree/jquery.treeview.css" type="text/css"/>
-       <script type="text/javascript" src="/classpath/tree/jquery.treeview.js"/>
-       <script type="text/javascript" src="/classpath/tree/jquery.treeview.async.js"/>
+       <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.css"} type="text/css"/>
+       <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.js"}/>
+       <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.async.js"}/>
        <script type="text/javascript" charset="utf-8">{
          OnLoad(makeTreeView(id, jsObj, loadTree, loadNode)) toJsCmd
        }

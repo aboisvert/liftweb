@@ -17,6 +17,8 @@
 package net.liftweb.widgets.flot
 
 import scala.xml.{NodeSeq, Node, PCData, Text, Unparsed}
+import _root_.net.liftweb.http.{LiftRules}
+
 
 /**
  * renders a flot graph using http://code.google.com/p/flot/ jQuery widget
@@ -77,12 +79,14 @@ object Flot
               caps : FlotCapability*
               ) : NodeSeq =
   {
-      val ieExcanvasPackJs = Unparsed ("<!--[if IE]><script language=\"javascript\" type=\"text/javascript\" src=\"" + net.liftweb.http.S.contextPath + "/classpath/flot/excanvas.pack.js\"></script><![endif]-->")
+      val ieExcanvasPackJs = Unparsed ("<!--[if IE]><script language=\"javascript\" type=\"text/javascript\" src=\"" +
+                                         net.liftweb.http.S.contextPath + "/" +
+                                         LiftRules.resourceServerPath + "/flot/excanvas.pack.js\"></script><![endif]-->")
 
       //
       <xml:group>
       <head>
-        <script type="text/javascript" src="/classpath/flot/jquery.flot.js"></script>
+        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/flot/jquery.flot.js"}></script>
         {ieExcanvasPackJs}
         <script type="text/javascript" charset="utf-8">
 {_renderJs (idPlaceholder, datas, options, jqueryScript, caps :_*)}

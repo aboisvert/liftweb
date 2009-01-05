@@ -22,6 +22,7 @@ import _root_.java.util.Calendar._
 import _root_.java.text.SimpleDateFormat
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.{Box, Full, Empty}
+import _root_.net.liftweb.http.{LiftRules}
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.js.jquery._
 import _root_.net.liftweb.http.SHtml._
@@ -222,10 +223,10 @@ class CalendarMonthView(val when: Calendar, val meta: MonthViewMeta) {
       JsCrVar("weekClick", weekClick openOr JsRaw("function(param){}"))
 
       <head>
-        <link rel="stylesheet" href="/classpath/calendars/monthview/style.css" type="text/css"/>
-        <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
-        <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
-        <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
+        <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/calendars/monthview/style.css"} type="text/css"/>
+        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.dimensions.js"}></script>
+        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.bgiframe.js"}></script>
+        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.tooltip.js"}></script>
         <script type="text/javascript" charset="utf-8">{Unparsed(init toJsCmd)}</script>
       </head>
       <div class="monthView">{

@@ -17,6 +17,8 @@
 package net.liftweb.widgets.tablesorter
 
 import _root_.scala.xml.NodeSeq
+import _root_.net.liftweb.http.{LiftRules}
+
 
 class TableSorter {
   def init() {
@@ -35,8 +37,8 @@ class TableSorter {
             """
     <xml:group>
       <head>
-        <link rel="stylesheet" href="/classpath/tablesorter/themes/blue/style.css" type="text/css" id="" media="print, projection, screen" />
-        <script type="text/javascript" src="/classpath/tablesorter/jquery.tablesorter.js"></script>
+        <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tablesorter/themes/blue/style.css"} type="text/css" id="" media="print, projection, screen" />
+        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tablesorter/jquery.tablesorter.js"}></script>
         <script type="text/javascript" charset="utf-8">{onLoad}</script>
       </head>
       <table>

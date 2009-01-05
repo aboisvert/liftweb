@@ -22,6 +22,7 @@ import _root_.java.util.Calendar._
 import _root_.java.text.SimpleDateFormat
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.{Box, Full, Empty}
+import _root_.net.liftweb.http.{LiftRules}
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.SHtml._
 import JsCmds._
@@ -71,11 +72,11 @@ class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
     val cal = when.clone().asInstanceOf[Calendar]
 
     <head>
-      <link rel="stylesheet" href="/classpath/calendars/dayview/style.css" type="text/css"/>
-      <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
-      <script type="text/javascript" src="/classpath/calendars/dayview/dayviewcalendars.js"></script>
-      <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
-      <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
+      <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/calendars/dayview/style.css"} type="text/css"/>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.dimensions.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/calendars/dayview/dayviewcalendars.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.bgiframe.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.tooltip.js"}></script>
       <script type="text/javascript" charset="utf-8">{
         Unparsed("\nvar itemClick = " + (itemClick openOr JsRaw("function(param){}")).toJsCmd) ++
         Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameDay(c.start, when))).toJsCmd) ++
