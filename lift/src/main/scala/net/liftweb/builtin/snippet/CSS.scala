@@ -21,8 +21,8 @@ import _root_.scala.xml._
 class CSS {
   def blueprint: NodeSeq = {
     <xml:group>
-    <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/blueprint/screen.css" type="text/css"} media="screen, projection"/>
-    <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/blueprint/print.css" type="text/css"} media="print"/>
+    <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/blueprint/screen.css"} type="text/css" media="screen, projection"/>
+    <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/blueprint/print.css"} type="text/css" media="print"/>
     </xml:group>  ++
     Unparsed("""
   <!--[if IE]><link rel="stylesheet" href="""+'"'+S.contextPath+"""/""" + LiftRules.resourceServerPath+ """/blueprint/lib/ie.css" type="text/css" media="screen, projection"><![endif]-->
