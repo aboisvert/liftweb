@@ -21,39 +21,67 @@ trait Bindable {
   def asHtml: NodeSeq
 }
 
+/**
+ * BindHelpers can be used to have access to additional information while bind function is executing.
+ * Such information refers to node attributes of the current bound node or the entire NodeSeq that is
+ * to be bound. Since the context is created during bind execution and destroyed when bind terminates,
+ * you can benefit of these helpers in the context of FuncBindParam or FuncAttrBindParam. You can of
+ * course use your own implementation of BindParam and your BindParam#calcValue function will be called
+ * in the appropriate context.
+ *
+ * <pre>
+ * Example:
+ *
+ * bind("hello", xml,
+ *   	"someNode" -> {node: NodeSeq => <function-body>})
+ *
+ * In <code>function-body</code> you can safely use the BindHelpers
+ * </pre>
+ *
+ */
 object BindHelpers extends BindHelpers {
-  /**
-  * A list of NodeSeq that is beind Bound.  The head of the list is the most
-  * recent NodeSeq
-  */
-  val bindNodes = new ThreadGlobal[List[NodeSeq]]
+
+  private val _boundNodes = new ThreadGlobal[List[NodeSeq]]
+  private val _currentNode = new ThreadGlobal[Elem]
 
   /**
-  * The current Elem, the children of which are passed to the bindParam
-  */
-  val currentNode = new ThreadGlobal[Elem]
-  
+   * A list of NodeSeq that is behind Bound.  The head of the list is the most
+   * recent NodeSeq. Empty and Full(Nil) have different semantics here. It returns
+   * empty if this function is called outside its context and Full(Nil) is returned if
+   * there are no child nodes but the function is called from the appropriate context.
+   */
+  def boundNodes: Box[List[NodeSeq]] = _boundNodes.box
+
   /**
-  * Helpers to look up attributes on the currentNode
-  */
-  object curAttr {
+   * The current Elem, the children of which are passed to the bindParam
+   */
+  def currentNode: Box[Elem] = _currentNode.box
+
+  /**
+   * Helpers to look up attributes on the currentNode
+   */
+  object attr {
     /**
-    * Look for an unprefixed attribute with a given name.  The return value is
-    * Option[NodeSeq] for easy addition to the attributes
-    */
+     * Look for an unprefixed attribute with a given name. The return value is
+     * Option[NodeSeq] for easy addition to the attributes
+     */
     def apply(key: String): Option[NodeSeq] =
-    for {n <- currentNode.box.toOption
+      for {n <- _currentNode.box.toOption
          at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
-    yield at.value
+      yield at.value
 
+    /**
+     * Look for prefixed attributes with a given prefix and name. The return value is
+     * Option[NodeSeq] for easy addition to the attributes
+     */
     def apply(prefix: String, key: String): Option[NodeSeq] =
-    for {n <- currentNode.box.toOption
-         at <- n.attributes.find{
-        case at: PrefixedAttribute => at.key == key && at.pre == prefix
-        case _ => false
+      for {n <- _currentNode.box.toOption
+           at <- n.attributes.find {
+             case at: PrefixedAttribute => at.key == key && at.pre == prefix
+             case _ => false
+           }
       }
-    }
-    yield at.value
+      yield at.value
   }
 }
 
@@ -315,7 +343,7 @@ trait BindHelpers {
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
            paramFailureXform: Box[PrefixedAttribute => MetaData],
            xml: NodeSeq, params: BindParam*): NodeSeq = {
-    BindHelpers.bindNodes.doWith(xml :: (BindHelpers.bindNodes.box.openOr(Nil))) {
+    BindHelpers._boundNodes.doWith(xml :: (BindHelpers._boundNodes.box.openOr(Nil))) {
       val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
       def attrBind(attr: MetaData): MetaData = attr match {
@@ -331,7 +359,7 @@ trait BindHelpers {
 
       def in_bind(xml: NodeSeq): NodeSeq = {
         xml.flatMap {
-          case s : Elem if s.prefix == namespace => BindHelpers.currentNode.doWith(s) {
+          case s : Elem if s.prefix == namespace => BindHelpers._currentNode.doWith(s) {
               map.get(s.label) match {
                 case None =>
                   nodeFailureXform.map(_(s)) openOr s
