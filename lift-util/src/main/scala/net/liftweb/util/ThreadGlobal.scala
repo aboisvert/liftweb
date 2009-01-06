@@ -19,6 +19,8 @@ class ThreadGlobal[T]
 
   def value: T = threadLocal.get
 
+  def box: Box[T] = Box !! value
+
   def set(v: T): ThreadGlobal[T] = {
     threadLocal.set(v)
     this

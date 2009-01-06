@@ -21,12 +21,47 @@ trait Bindable {
   def asHtml: NodeSeq
 }
 
-object BindHelpers extends BindHelpers
+object BindHelpers extends BindHelpers {
+  /**
+  * A list of NodeSeq that is beind Bound.  The head of the list is the most
+  * recent NodeSeq
+  */
+  val bindNodes = new ThreadGlobal[List[NodeSeq]]
+
+  /**
+  * The current Elem, the children of which are passed to the bindParam
+  */
+  val currentNode = new ThreadGlobal[Elem]
+  
+  /**
+  * Helpers to look up attributes on the currentNode
+  */
+  object curAttr {
+    /**
+    * Look for an unprefixed attribute with a given name.  The return value is
+    * Option[NodeSeq] for easy addition to the attributes
+    */
+    def apply(key: String): Option[NodeSeq] =
+    for {n <- currentNode.box.toOption
+         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
+    yield at.value
+
+    def apply(prefix: String, key: String): Option[NodeSeq] =
+    for {n <- currentNode.box.toOption
+         at <- n.attributes.find{
+        case at: PrefixedAttribute => at.key == key && at.pre == prefix
+        case _ => false
+      }
+    }
+    yield at.value
+  }
+}
 
 /**
  * The helpers assocated with bindings
  */
 trait BindHelpers {
+
   /**
    * Takes attributes from the first node of 'in' (if any) and mixes
    * them into 'out'. Curried form can be used to produce a
@@ -280,25 +315,24 @@ trait BindHelpers {
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
            paramFailureXform: Box[PrefixedAttribute => MetaData],
            xml: NodeSeq, params: BindParam*): NodeSeq = {
-    val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
+    BindHelpers.bindNodes.doWith(xml :: (BindHelpers.bindNodes.box.openOr(Nil))) {
+      val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
-    def attrBind(attr: MetaData): MetaData = attr match {
-      case Null => Null
-      case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
-      case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
-          case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
-          case Some(abp: BindWithAttr) => new UnprefixedAttribute(abp.newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-          case Some(bp: BindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
-        }
-      case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
-    }
+      def attrBind(attr: MetaData): MetaData = attr match {
+        case Null => Null
+        case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
+        case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
+            case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
+            case Some(abp: BindWithAttr) => new UnprefixedAttribute(abp.newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+            case Some(bp: BindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+          }
+        case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
+      }
 
-    def in_bind(xml: NodeSeq): NodeSeq = {
-      xml.flatMap {
-        node =>
-        node match {
-          case s : Elem if node.prefix == namespace => {
-              map.get(node.label) match {
+      def in_bind(xml: NodeSeq): NodeSeq = {
+        xml.flatMap {
+          case s : Elem if s.prefix == namespace => BindHelpers.currentNode.doWith(s) {
+              map.get(s.label) match {
                 case None =>
                   nodeFailureXform.map(_(s)) openOr s
 
@@ -308,12 +342,14 @@ trait BindHelpers {
               }
             }
           case Group(nodes) => Group(in_bind(nodes))
-          case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
-          case n => node
+          case s : Elem => Elem(s.prefix, s.label, attrBind(s.attributes), s.scope, in_bind(s.child) : _*)
+          case n => n
         }
       }
+
+
+      in_bind(xml)
     }
-    in_bind(xml)
   }
 
   private def setElemId(in: NodeSeq, attr: String, value: Seq[Node]): NodeSeq =
