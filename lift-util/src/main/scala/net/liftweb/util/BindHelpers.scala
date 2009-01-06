@@ -41,16 +41,16 @@ trait Bindable {
  */
 object BindHelpers extends BindHelpers {
 
-  private val _boundNodes = new ThreadGlobal[List[NodeSeq]]
+  private val _bindNodes = new ThreadGlobal[List[NodeSeq]]
   private val _currentNode = new ThreadGlobal[Elem]
 
   /**
-   * A list of NodeSeq that is behind Bound.  The head of the list is the most
+   * A list of NodeSeq that is behind bind.  The head of the list is the most
    * recent NodeSeq. Empty and Full(Nil) have different semantics here. It returns
    * empty if this function is called outside its context and Full(Nil) is returned if
    * there are no child nodes but the function is called from the appropriate context.
    */
-  def boundNodes: Box[List[NodeSeq]] = _boundNodes.box
+  def bindNodes: Box[List[NodeSeq]] = _bindNodes.box
 
   /**
    * The current Elem, the children of which are passed to the bindParam
@@ -343,7 +343,7 @@ trait BindHelpers {
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
            paramFailureXform: Box[PrefixedAttribute => MetaData],
            xml: NodeSeq, params: BindParam*): NodeSeq = {
-    BindHelpers._boundNodes.doWith(xml :: (BindHelpers._boundNodes.box.openOr(Nil))) {
+    BindHelpers._bindNodes.doWith(xml :: (BindHelpers._bindNodes.box.openOr(Nil))) {
       val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
       def attrBind(attr: MetaData): MetaData = attr match {
