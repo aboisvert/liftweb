@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,14 +18,14 @@ package net.liftweb.widgets.flot
 
 import scala.xml.{NodeSeq, Node, PCData, Text, Unparsed}
 
+import _root_.net.liftweb.http.js.JsCmd
 
 /**
  * Used to generate extra capability like an overview
  */
 
 trait FlotCapability {
-  def render (flotInfo : FlotInfo) : String
-  def renderHide () : String
-  def renderShow () : String
-
+  def render (flotInfo: FlotInfo): JsCmd
+  def renderHide(): JsCmd
+  def renderShow(): JsCmd
 }

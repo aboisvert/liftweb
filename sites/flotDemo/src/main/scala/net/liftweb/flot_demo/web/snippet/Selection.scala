@@ -2,7 +2,9 @@ package net.liftweb.flot_demo.web.snippet
 
 import scala.xml.NodeSeq
 
-import net.liftweb.util.Helpers._
+import net.liftweb.util._
+import Helpers._
+import net.liftweb.http.js.JsCmds._
 
 import net.liftweb.widgets.flot._
 
@@ -19,8 +21,8 @@ class Selection {
 
     def graph () = {
       val us = new FlotSerie () {
-        override val color = Some (Right(0))
-        override val label = Some ("United States")
+        override val color = Full (Right(0))
+        override val label = Full ("United States")
         override val data = (1990.0, 18.9) ::  (1991.0, 18.7) ::  (1992.0, 18.4) ::
                             (1993.0, 19.3) ::  (1994.0, 19.5) ::  (1995.0, 19.3) ::
                             (1996.0, 19.4) ::  (1997.0, 20.2) ::  (1998.0, 19.8) ::
@@ -29,8 +31,8 @@ class Selection {
       }
 
       val russia = new FlotSerie () {
-        override val color = Some (Right(1))
-        override val label = Some ("Russia")
+        override val color = Full (Right(1))
+        override val label = Full ("Russia")
         override val data =  (1992.0, 13.4) ::  (1993.0, 12.2) ::  (1994.0, 10.6) ::
                              (1995.0, 10.2) ::  (1996.0, 10.1) ::  (1997.0, 9.7) ::
                              (1998.0, 9.5) ::  (1999.0, 9.7) ::  (2000.0, 9.9) ::
@@ -39,8 +41,8 @@ class Selection {
       }
 
       val uk = new FlotSerie () {
-        override val color = Some (Right(2))
-        override val label = Some ("United Kingdom")
+        override val color = Full (Right(2))
+        override val label = Full ("United Kingdom")
         override val data =  (1990.0, 10.0) ::  (1991.0, 11.3) ::  (1992.0, 9.9) ::
                              (1993.0, 9.6) ::  (1994.0, 9.5) ::  (1995.0, 9.5) ::
                              (1996.0, 9.9) ::  (1997.0, 9.3) ::  (1998.0, 9.2) ::
@@ -49,8 +51,8 @@ class Selection {
       }
 
       val de = new FlotSerie () {
-        override val color = Some (Right(3))
-        override val label = Some ("Germany")
+        override val color = Full (Right(3))
+        override val label = Full ("Germany")
         override val data =  (1990.0, 12.4) ::  (1991.0, 11.2) ::  (1992.0, 10.8) ::
                              (1993.0, 10.5) ::  (1994.0, 10.4) ::  (1995.0, 10.2) ::
                              (1996.0, 10.5) ::  (1997.0, 10.2) ::  (1998.0, 10.1) ::
@@ -59,8 +61,8 @@ class Selection {
       }
 
       val dk = new FlotSerie () {
-        override val color = Some (Right(4))
-        override val label = Some ("Denmark")
+        override val color = Full (Right(4))
+        override val label = Full ("Denmark")
         override val data =  (1990.0, 9.7) ::  (1991.0, 12.1) ::  (1992.0, 10.3) ::
                              (1993.0, 11.3) ::  (1994.0, 11.7) ::  (1995.0, 10.6) ::
                              (1996.0, 12.8) ::  (1997.0, 10.8) ::  (1998.0, 10.3) ::
@@ -69,8 +71,8 @@ class Selection {
       }
 
       val sw = new FlotSerie () {
-        override val color = Some (Right(5))
-        override val label = Some ("Sweden")
+        override val color = Full (Right(5))
+        override val label = Full ("Sweden")
         override val data =  (1990.0, 5.8) ::  (1991.0, 6.0) ::  (1992.0, 5.9) ::
                              (1993.0, 5.5) ::  (1994.0, 5.7) ::  (1995.0, 5.3) ::
                              (1996.0, 6.1) ::  (1997.0, 5.4) ::  (1998.0, 5.4) ::
@@ -79,8 +81,8 @@ class Selection {
       }
 
       val nw = new FlotSerie () {
-        override val color = Some (Right(6))
-        override val label = Some ("Norway")
+        override val color = Full (Right(6))
+        override val label = Full ("Norway")
         override val data =  (1990.0, 8.3) ::  (1991.0, 8.3) ::  (1992.0, 7.8) ::
                              (1993.0, 8.3) ::  (1994.0, 8.4) ::  (1995.0, 5.9) ::
                              (1996.0, 6.4) ::  (1997.0, 6.7) ::  (1998.0, 6.9) ::
@@ -89,30 +91,31 @@ class Selection {
       }
 
       val options = new FlotOptions () {
-        override val lines = Some(new FlotLinesOptions () {
-          override val show = Some (true)
+        override val lines = Full(new FlotLinesOptions () {
+          override val show = Full (true)
         })
-        override val points = Some(new FlotPointsOptions () {
-          override val show = Some (true)
+        override val points = Full(new FlotPointsOptions () {
+          override val show = Full (true)
         })
-        override val xaxis = Some (new FlotAxisOptions () {
-          override val tickDecimals = Some (0.0)
+        override val xaxis = Full (new FlotAxisOptions () {
+          override val tickDecimals = Full (0.0)
         })
-        override val yaxis = Some (new FlotAxisOptions () {
-          override val min = Some (0.0)
+        override val yaxis = Full (new FlotAxisOptions () {
+          override val min = Full (0.0)
         })
-        override val legend = Some (new FlotLegendOptions () {
-          override val noColumns = Some (4)
-          override val container = Some ("ph_legend")
+        override val legend = Full (new FlotLegendOptions () {
+          override val noColumns = Full (4)
+          override val container = Full ("ph_legend")
         })
-        override val modeSelection = Some ("x")
+        override val modeSelection = Full ("x")
       }
 
-      Flot.render ( "ph_graph", us :: russia :: uk :: de :: dk :: sw :: nw :: Nil, options)
+      Flot.render ( "ph_graph", us :: russia :: uk :: de ::
+                   dk :: sw :: nw :: Nil, options, Flot.script(xhtml))
     }
 
     //
 
-    bind ("flot", xhtml, "graph" --> graph)
+    bind ("flot", xhtml, "graph" -> graph)
   }
 }

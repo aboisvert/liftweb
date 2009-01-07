@@ -48,24 +48,24 @@ case class JsonCall(funcId: String) {
 
   def apply(command: String, params: JsExp) =
   JsCmds.Run(funcId+"({'command': "+command.encJs+", 'params':"+
-  params.toJsCmd+"});")
+             params.toJsCmd+"});")
 
   def apply(command: String, target: String, params: JsExp) =
   JsCmds.Run(funcId+"({'command': "+command.encJs+", 'target': "+
-  target.encJs+
-  ", 'params':"+
-  params.toJsCmd+"});")
+             target.encJs+
+             ", 'params':"+
+             params.toJsCmd+"});")
 
 
   def apply(command: JsExp, params: JsExp) =
   JsCmds.Run(funcId+"({'command': "+command.toJsCmd+", 'params':"+
-  params.toJsCmd+"});")
+             params.toJsCmd+"});")
 
   def apply(command: JsExp, target: JsExp, params: JsExp) =
   JsCmds.Run(funcId+"({'command': "+command.toJsCmd+", 'target': "+
-  target.toJsCmd+
-  ", 'params':"+
-  params.toJsCmd+"});")
+             target.toJsCmd+
+             ", 'params':"+
+             params.toJsCmd+"});")
 
 }
 
@@ -82,11 +82,11 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
   override def toString(sb: StringBuilder) = {
     (new Text(toJsCmd)).toString(sb)
     /*
-    sb.append("<!-- ")
-    sb.append(toJsCmd)
-    sb.append("\n-->")
-    sb
-    */
+     sb.append("<!-- ")
+     sb.append(toJsCmd)
+     sb.append("\n-->")
+     sb
+     */
   }
 
   def appendToParent(parentName: String): JsCmd = {
@@ -94,7 +94,7 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
     JsCmds.JsCrVar(ran, this) &
     JE.JsRaw("if ("+ran+".parentNode) "+ran+" = "+ran+".cloneNode(true)").cmd &
     JE.JsRaw("if ("+ran+".nodeType) {"+parentName+".appendChild("+ran+");} else {"+
-    parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
+             parentName+".appendChild(document.createTextNode("+ran+"));}").cmd
   }
 
   /**
@@ -158,7 +158,7 @@ object JE {
    */
   case class ElemById(id: String, then: String*) extends JsExp {
     override def toJsCmd = "document.getElementById("+id.encJs+")" + (
-    if (then.isEmpty) "" else then.mkString(".", ".", "")
+      if (then.isEmpty) "" else then.mkString(".", ".", "")
     )
   }
 
@@ -168,7 +168,7 @@ object JE {
         def child = Nil
         def appendToParent(name: String): JsCmd =
         JsRaw(name+".appendChild(lift$.swappable("+visible.toJsCmd
-        +", "+hidden.toJsCmd +"))").cmd
+              +", "+hidden.toJsCmd +"))").cmd
       }
     }
 
@@ -177,39 +177,39 @@ object JE {
         def child = Nil
         def appendToParent(name: String): JsCmd =
         JsRaw(name+".appendChild(lift$.swappable("+AnonFunc(
-          JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
-          addToDocFrag("df", visible.toList) &
-          JE.JsRaw("return df").cmd
-        ).toJsCmd
-        +"(), "+AnonFunc(JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
-          addToDocFrag("df", hidden.toList) &
-          JE.JsRaw("return df").cmd).toJsCmd +"()))").cmd
+            JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
+            addToDocFrag("df", visible.toList) &
+            JE.JsRaw("return df").cmd
+          ).toJsCmd
+              +"(), "+AnonFunc(JsCmds.JsCrVar("df", JsRaw("document.createDocumentFragment()")) &
+                               addToDocFrag("df", hidden.toList) &
+                               JE.JsRaw("return df").cmd).toJsCmd +"()))").cmd
       }
     }
   }
 
   object LjBuildIndex {
     def apply(obj: String,
-    indexName: String, tables: (String, String)*): JsExp = new JsExp {
+              indexName: String, tables: (String, String)*): JsExp = new JsExp {
       def toJsCmd = "lift$.buildIndex("+obj+", "+indexName.encJs+
       (if (tables.isEmpty) "" else ", "+
-      tables.map{case (l, r) => "["+l.encJs+", "+r.encJs+"]"}.mkString(", "))+
+       tables.map{case (l, r) => "["+l.encJs+", "+r.encJs+"]"}.mkString(", "))+
       ")"
     }
 
     def apply(obj: JsExp,
-    indexName: String, tables: (String, String)*): JsExp = new JsExp {
+              indexName: String, tables: (String, String)*): JsExp = new JsExp {
       def toJsCmd = "lift$.buildIndex("+obj.toJsCmd+", "+indexName.encJs+
       (if (tables.isEmpty) "" else ", "+
-      tables.map{case (l, r) => "["+l.encJs+", "+r.encJs+"]"}.mkString(", "))+
+       tables.map{case (l, r) => "["+l.encJs+", "+r.encJs+"]"}.mkString(", "))+
       ")"
     }
   }
 
   protected trait MostLjFuncs {
-     def funcName: String
+    def funcName: String
 
-     def apply(obj: String, func: String): JsExp = new JsExp {
+    def apply(obj: String, func: String): JsExp = new JsExp {
       def toJsCmd = "lift$."+funcName+"("+obj+", "+func.encJs+")"
     }
 
@@ -312,7 +312,7 @@ object JE {
 
   case class JsVar(varName: String, andThen: String*) extends JsExp {
     def toJsCmd = varName + (if (andThen.isEmpty) ""
-			     else andThen.mkString(".", ".", ""))
+                             else andThen.mkString(".", ".", ""))
   }
 
   /**
@@ -346,9 +346,9 @@ object JE {
     def toJsCmd = "true"
   }
 
-case class Call(function: String, params: JsExp*) extends JsExp {
-  def toJsCmd = function+"("+params.map(_.toJsCmd).mkString(",")+")"
-}
+  case class Call(function: String, params: JsExp*) extends JsExp {
+    def toJsCmd = function+"("+params.map(_.toJsCmd).mkString(",")+")"
+  }
 
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
@@ -403,7 +403,7 @@ case class Call(function: String, params: JsExp*) extends JsExp {
 trait HtmlFixer {
   def fixHtml(uid: String, content: NodeSeq): String =
   AltXML.toXML(Group(S.session.map(s => s.fixHtml(s.processSurroundAndInclude("JS SetHTML id: "+uid, content))).openOr(content)),
-  false, true, S.ieMode).encJs
+               false, true, S.ieMode).encJs
 
 }
 
@@ -417,13 +417,17 @@ object JsCmds {
 
   object Script {
     def apply(script: JsCmd): NodeSeq = <script type="text/javascript">{
-      Unparsed("""
+        Unparsed("""
 // <![CDATA[
 """+  script.toJsCmd+ """
 // ]]>
 """)
-    }</script>
+      }</script>
   }
+  
+  def JsHideId(what: String): JsCmd = LiftRules.jsArtifacts.hide(what).cmd
+
+  def JsShowId(what: String): JsCmd = LiftRules.jsArtifacts.show(what).cmd
 
   case class SetHtml(uid: String, content: NodeSeq) extends JsCmd {
     def toJsCmd = LiftRules.jsArtifacts.setHtml(uid, content).toJsCmd
@@ -431,12 +435,12 @@ object JsCmds {
 
 
   /**
-  * Makes the parameter the selected HTML element on load of the page
-  *
-  * @param in the element that should have focus
-  *
-  * @return the element and a script that will give the element focus
-  */
+   * Makes the parameter the selected HTML element on load of the page
+   *
+   * @param in the element that should have focus
+   *
+   * @return the element and a script that will give the element focus
+   */
   object FocusOnLoad {
     def apply(in: Elem): NodeSeq = {
       val (elem, id) = findOrAddId(in)
@@ -444,21 +448,21 @@ object JsCmds {
     }
   }
 
-object Function {
-  def apply(name: String, params: List[String], body: JsCmd): JsCmd =
-  new JsCmd {
-    def toJsCmd = "function "+name+"("+
-    params.mkString(", ")+""") {
+  object Function {
+    def apply(name: String, params: List[String], body: JsCmd): JsCmd =
+    new JsCmd {
+      def toJsCmd = "function "+name+"("+
+      params.mkString(", ")+""") {
     """+body.toJsCmd+"""
     }
 """
+    }
   }
-}
 
-object OnLoad{
-  def apply(what: JsCmd): JsCmd = LiftRules.jsArtifacts.onLoad(what)
+  object OnLoad{
+    def apply(what: JsCmd): JsCmd = LiftRules.jsArtifacts.onLoad(what)
 
-}
+  }
 
   case class SetValById(id: String, right: JsExp) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+").value = "+
@@ -475,7 +479,7 @@ object OnLoad{
 
   case class SetElemById(id: String, right: JsExp, then: String*) extends JsCmd {
     def toJsCmd = "document.getElementById("+id.encJs+")"+ (
-    if (then.isEmpty) "" else then.mkString(".", ".", "")
+      if (then.isEmpty) "" else then.mkString(".", ".", "")
     ) + " = "+right.toJsCmd + ";"
   }
 
@@ -491,8 +495,8 @@ object OnLoad{
     private def append(sb: StringBuilder, cmd: JsCmd) {
       cmd match {
         case CmdPair(l, r) => append(sb, l)
-        sb.append('\n')
-        append(sb, r)
+          sb.append('\n')
+          append(sb, r)
 
         case c => sb.append(c.toJsCmd)
       }
@@ -535,27 +539,32 @@ object OnLoad{
 
 
   /**
-  * Update a Select with new Options
-  */
+   * Update a Select with new Options
+   */
   case class ReplaceOptions(select: String, opts: List[(String, String)], dflt: Box[String]) extends JsCmd {
     def toJsCmd = """var x=document.getElementById("""+select.encJs+""");
     while (x.length > 0) {x.remove(0);}
     var y = null;
     """+
     opts.map{case (value, text) =>
-      "y=document.createElement('option'); "+
-	     "y.text = "+text.encJs+"; "+
-	     "y.value = "+value.encJs+"; "+
-	     (if (value == dflt) "y.selected = true; " else "") +
-	     " try {x.add(y, null);} catch(e) {if (typeof(e) == 'object' && typeof(e.number) == 'number' && (e.number & 0xFFFF) == 5){ x.add(y,x.options.length); } } "
-	   }.mkString("\n")
+        "y=document.createElement('option'); "+
+        "y.text = "+text.encJs+"; "+
+        "y.value = "+value.encJs+"; "+
+        (if (value == dflt) "y.selected = true; " else "") +
+        " try {x.add(y, null);} catch(e) {if (typeof(e) == 'object' && typeof(e.number) == 'number' && (e.number & 0xFFFF) == 5){ x.add(y,x.options.length); } } "
+    }.mkString("\n")
   }
 
   case object JsIf {
+    def apply(condition: JsExp, body: JsCmd):JsCmd = JE.JsRaw("if ( " + condition.toJsCmd  + " ) { " + body.toJsCmd + " }")
+
+    def apply(condition: JsExp, bodyTrue: JsCmd, bodyFalse: JsCmd) : JsCmd =
+    JE.JsRaw("if ( " + condition.toJsCmd  +" ) { " + bodyTrue.toJsCmd + " } else { " + bodyFalse.toJsCmd + " }")
+
     def apply(condition: JsExp, body: JsExp):JsCmd = JE.JsRaw("if ( " + condition.toJsCmd  + " ) { " + body.toJsCmd + " }")
 
     def apply(condition: JsExp, bodyTrue: JsExp, bodyFalse: JsExp) : JsCmd =
-      JE.JsRaw("if ( " + condition.toJsCmd  +" ) { " + bodyTrue.toJsCmd + " } else { " + bodyFalse.toJsCmd + " }")
+    JE.JsRaw("if ( " + condition.toJsCmd  +" ) { " + bodyTrue.toJsCmd + " } else { " + bodyFalse.toJsCmd + " }")
   }
 
   case class JsWhile(condition: JsExp, body: JsExp) extends JsCmd {
@@ -572,8 +581,8 @@ object OnLoad{
 
   case class JsFor(initialExp: JsExp, condition: JsExp, incrementExp: JsExp, body: JsExp) extends JsCmd {
     def toJsCmd = "for ( " + initialExp.toJsCmd + "; " +
-                             condition.toJsCmd + "; " +
-                             incrementExp.toJsCmd + " ) { " + body.toJsCmd + " }"
+    condition.toJsCmd + "; " +
+    incrementExp.toJsCmd + " ) { " + body.toJsCmd + " }"
   }
 
   case class JsForIn(initialExp: JsExp, reference: String, body: JsCmd) extends JsCmd {
@@ -581,17 +590,26 @@ object OnLoad{
   }
 
   case object JsBreak extends JsCmd {
-     def toJsCmd = "break"
+    def toJsCmd = "break"
   }
 
   case object JsContinue extends JsCmd {
-     def toJsCmd = "continue"
+    def toJsCmd = "continue"
   }
 
-  case class JsReturn(in: JsExp) extends JsCmd {
-     def toJsCmd = "return " + in.toJsCmd
+  object JsReturn {
+    def apply(in: JsExp): JsCmd = new JsCmd {
+      def toJsCmd = "return " + in.toJsCmd
+    }
+    def apply(): JsCmd =  new JsCmd {
+      def toJsCmd = "return "
+    }
   }
-
+  /*
+   case class JsReturn(in: JsExp) extends JsCmd {
+   def toJsCmd = "return " + in.toJsCmd
+   }
+   */
 
 }
 

@@ -3,7 +3,7 @@ package net.liftweb.flot_demo.web.snippet
 import scala.xml.NodeSeq
 
 import net.liftweb.util.Helpers._
-
+import net.liftweb.http.js.JsCmds._
 import net.liftweb.widgets.flot._
 
 /*
@@ -38,11 +38,11 @@ class Basic {
         override val data = d3
       }
 
-      Flot.render ( "ph_graph", s3 :: s2 :: s1 :: Nil, new FlotOptions ())
+      Flot.render ( "ph_graph", s3 :: s2 :: s1 :: Nil, new FlotOptions {}, Flot.script(xhtml))
     }
 
     //
 
-    bind ("flot", xhtml, "graph" --> graph)
+    bind ("flot", xhtml, "graph" -> graph)
   }
 }

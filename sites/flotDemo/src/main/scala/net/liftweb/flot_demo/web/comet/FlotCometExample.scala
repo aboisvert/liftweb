@@ -8,6 +8,7 @@ import net.liftweb.http.js.JsCmds.Noop
 import net.liftweb.util.Box
 
 import net.liftweb.widgets.flot._
+import net.liftweb.util._
 
 import net.liftweb.flot_demo.web.model._
 
@@ -17,14 +18,14 @@ import net.liftweb.flot_demo.web.model._
 
 class FlotCometExample extends CometActor
 {
-  var options : FlotOptions = new FlotOptions
+  var options : FlotOptions = new FlotOptions {}
   var series : List [FlotSerie] = Nil
   val idPlaceholder = "ph_graph"
 
   override def defaultPrefix = Full("flot")
 
   def render = {
-    bind("flot", "graph" -> Flot.render ("ph_graph", series, options, Text ("")))
+    bind("flot", "graph" -> Flot.render ("ph_graph", series, options, Noop))
   }
 
   //

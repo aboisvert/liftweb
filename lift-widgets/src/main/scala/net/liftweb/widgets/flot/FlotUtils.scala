@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,6 @@
 
 package net.liftweb.widgets.flot
 
-case class FlotInfo (idPlaceholder : String, series : List[FlotSerie], options : FlotOptions)
+case class FlotInfo (idPlaceholder: String, series: List[FlotSerie], options: FlotOptions)
 
-case class FlotNewData (series : List [FlotSerie], datas : List [Pair [double, double]])
+case class FlotNewData (series: List [FlotSerie], datas: List[(Double, Double)])
