@@ -65,9 +65,9 @@ extends FlotCapability {
      sz.append ("      internalSelection = false;\n")
      sz.append ("  });\n")
      */
-   
 
-     val internalSel: JsCmd = 
+
+     val internalSel: JsCmd =
      JsIf(JsVar("internalSelection"), JsReturn()) &
      (JsVar("internalSelection") === true) &
      JsRaw("plot_" + main.idPlaceholder + ".setSelection(area)") &

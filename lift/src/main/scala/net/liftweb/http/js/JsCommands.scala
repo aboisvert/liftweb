@@ -81,12 +81,6 @@ trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
 
   override def toString(sb: StringBuilder) = {
     (new Text(toJsCmd)).toString(sb)
-    /*
-     sb.append("<!-- ")
-     sb.append(toJsCmd)
-     sb.append("\n-->")
-     sb
-     */
   }
 
   def appendToParent(parentName: String): JsCmd = {
@@ -424,7 +418,7 @@ object JsCmds {
 """)
       }</script>
   }
-  
+
   def JsHideId(what: String): JsCmd = LiftRules.jsArtifacts.hide(what).cmd
 
   def JsShowId(what: String): JsCmd = LiftRules.jsArtifacts.show(what).cmd
@@ -605,11 +599,6 @@ object JsCmds {
       def toJsCmd = "return "
     }
   }
-  /*
-   case class JsReturn(in: JsExp) extends JsCmd {
-   def toJsCmd = "return " + in.toJsCmd
-   }
-   */
 
 }
 

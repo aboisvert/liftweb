@@ -21,6 +21,23 @@ trait Bindable {
   def asHtml: NodeSeq
 }
 
+trait AttrHelper[+Holder[X]] {
+  type Info
+
+  def apply(key: String): Holder[Info]
+  def apply(prefix: String, key: String): Holder[Info]
+
+  def apply(key: String, default: => String): String
+  def apply(prefix: String, key: String, default: => String): String
+
+  def apply[T](key: String, f: String => T): Holder[T]
+  def apply[T](prefix: String, key: String, f: String => T): Holder[T]
+
+  def apply[T](key: String, f: String => T, default: => T): T
+  def apply[T](prefix: String, key: String, f: String => T, default: => T): T
+
+}
+
 /**
  * BindHelpers can be used to have access to additional information while bind function is executing.
  * Such information refers to node attributes of the current bound node or the entire NodeSeq that is
@@ -60,28 +77,73 @@ object BindHelpers extends BindHelpers {
   /**
    * Helpers to look up attributes on the currentNode
    */
-  object attr {
+  object attr extends AttrHelper[Option] {
+    type Info = NodeSeq
+
     /**
      * Look for an unprefixed attribute with a given name. The return value is
      * Option[NodeSeq] for easy addition to the attributes
      */
-    def apply(key: String): Option[NodeSeq] =
-      for {n <- _currentNode.box.toOption
-         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
+    def apply(key: String) =
+      for {n  <- _currentNode.box.toOption
+           at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
       yield at.value
 
     /**
      * Look for prefixed attributes with a given prefix and name. The return value is
      * Option[NodeSeq] for easy addition to the attributes
      */
-    def apply(prefix: String, key: String): Option[NodeSeq] =
-      for {n <- _currentNode.box.toOption
+    def apply(prefix: String, key: String) =
+      for {n  <- _currentNode.box.toOption
            at <- n.attributes.find {
              case at: PrefixedAttribute => at.key == key && at.pre == prefix
              case _ => false
-           }
-      }
+          }}
       yield at.value
+
+
+    /**
+     * Returns the unprefixed attribute value as a String but applying the default
+     * by-name function if the attribute is not found
+     */
+    def apply(key: String, default: => String): String = attr(key).map(_.toString).getOrElse(default)
+
+    /**
+     * Returns the prefixed attribute value as a String but applying the default
+     * by-name function if the attribute is not found
+     */
+    def apply(prefix: String, key: String, default: => String): String =
+      attr(prefix, key).map(_.toString).getOrElse(default)
+
+    /**
+     * Returns the unprefixed attribute value as a String but applying the
+     * conversion function f. Returns None if attribute is not found
+     */
+    def apply[T](key: String, f: String => T): Option[T] =
+      attr(key).map(n => f(n.toString))
+
+    /**
+     * Returns the prefixed attribute value as a String but applying the
+     * conversion function f. Returns None if attribute is not found
+     */
+    def apply[T](prefix: String, key: String, f: String => T): Option[T] =
+      attr(prefix, key).map(n => f(n.toString))
+
+    /**
+     * Returns the unprefixed attribute value as a String but applying the
+     * conversion function f. If the attribute is not found it applies the
+     * default by-name function.
+     */
+    def apply[T](key: String, f: String => T, default: => T): T =
+      attr(key).map(n => f(n.toString)).getOrElse(default)
+
+    /**
+     * Returns the prefixed attribute value as a String but applying the
+     * conversion function f. If the attribute is not found it applies the
+     * default by-name function.
+     */
+    def apply[T](prefix: String, key: String, f: String => T, default: => T): T =
+      attr(prefix, key).map(n => f(n.toString)).getOrElse(default)
   }
 }
 
@@ -239,7 +301,6 @@ trait BindHelpers {
     def ->[T <: SpecialNode](in: T with SpecialNode) = Tuple2[String, T](name, in)
 
     def ->(in: String) = TheStrBindParam(name, in)
-    // def ->[T](in: T)(implicit f: T => String) = TheStrBindParam(name, f(in))
     def ->(in: NodeSeq) = TheBindParam(name, in)
     def ->(in: Text) = TheBindParam(name, in)
     def ->(in: Node) = TheBindParam(name, in)
@@ -256,6 +317,7 @@ trait BindHelpers {
   }
 
   implicit def strToSuperArrowAssoc(in: String): SuperArrowAssoc = new SuperArrowAssoc(in)
+
 
   /**
    * This class creates a BindParam from an input value
@@ -292,13 +354,6 @@ trait BindHelpers {
   @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
 
-  /**
-   * Transforms a Tuple2[Symbol, _] to a BindParam
-   */
-  /*
-   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
-   pairToBindParam((p._1.name, p._2))
-   */
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.

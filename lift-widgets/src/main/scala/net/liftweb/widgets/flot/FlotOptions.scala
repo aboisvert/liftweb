@@ -65,7 +65,7 @@ trait BaseFlotOptions {
   protected def buildOptions: List[Box[(String, JsExp)]]
 
   implicit def optionToJsE(in: BaseFlotOptions): JsExp = in.asJsObj
-  
+
   def c[T](name: String,value: Box[T])(implicit cvt: T => JsExp):
   Box[(String, JsExp)] = value.map(v => (name, cvt(v)))
 }
