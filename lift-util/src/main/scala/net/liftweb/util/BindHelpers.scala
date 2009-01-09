@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -24,18 +24,30 @@ trait Bindable {
 trait AttrHelper[+Holder[X]] {
   type Info
 
-  def apply(key: String): Holder[Info]
-  def apply(prefix: String, key: String): Holder[Info]
+  def apply(key: String): Holder[Info] = convert(findAttr(key))
+  def apply(prefix: String, key: String): Holder[Info] =
+  convert(findAttr(prefix, key))
 
-  def apply(key: String, default: => String): String
-  def apply(prefix: String, key: String, default: => String): String
+  def apply(key: String, default: => Info): Info =
+  findAttr(key) getOrElse default
 
-  def apply[T](key: String, f: String => T): Holder[T]
-  def apply[T](prefix: String, key: String, f: String => T): Holder[T]
+  def apply(prefix: String, key: String, default: => Info): Info =
+  findAttr(prefix, key) getOrElse default
 
-  def apply[T](key: String, f: String => T, default: => T): T
-  def apply[T](prefix: String, key: String, f: String => T, default: => T): T
+  def apply[T](key: String, f: Info => T): Holder[T] =
+  convert(findAttr(key).map(f))
 
+  def apply[T](prefix: String, key: String, f: Info => T): Holder[T] =
+  convert(findAttr(prefix, key).map(f))
+  def apply[T](key: String, f: Info => T, default: => T): T =
+  findAttr(key).map(f) getOrElse default
+
+  def apply[T](prefix: String, key: String, f: Info => T, default: => T): T =
+  findAttr(prefix, key).map(f) getOrElse default
+
+  protected def findAttr(key: String): Option[Info]
+  protected def findAttr(prefix: String, key: String): Option[Info]
+  protected def convert[T](in: Option[T]): Holder[T]
 }
 
 /**
@@ -80,70 +92,21 @@ object BindHelpers extends BindHelpers {
   object attr extends AttrHelper[Option] {
     type Info = NodeSeq
 
-    /**
-     * Look for an unprefixed attribute with a given name. The return value is
-     * Option[NodeSeq] for easy addition to the attributes
-     */
-    def apply(key: String) =
-      for {n  <- _currentNode.box.toOption
-           at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
-      yield at.value
+    protected def findAttr(key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
+    yield at.value
 
-    /**
-     * Look for prefixed attributes with a given prefix and name. The return value is
-     * Option[NodeSeq] for easy addition to the attributes
-     */
-    def apply(prefix: String, key: String) =
-      for {n  <- _currentNode.box.toOption
-           at <- n.attributes.find {
-             case at: PrefixedAttribute => at.key == key && at.pre == prefix
-             case _ => false
-          }}
-      yield at.value
+    protected def findAttr(prefix: String, key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find {
+        case at: PrefixedAttribute => at.key == key && at.pre == prefix
+        case _ => false
+      }}
+    yield at.value
 
+    protected def convert[T](in: Option[T]): Option[T] = in
 
-    /**
-     * Returns the unprefixed attribute value as a String but applying the default
-     * by-name function if the attribute is not found
-     */
-    def apply(key: String, default: => String): String = attr(key).map(_.toString).getOrElse(default)
-
-    /**
-     * Returns the prefixed attribute value as a String but applying the default
-     * by-name function if the attribute is not found
-     */
-    def apply(prefix: String, key: String, default: => String): String =
-      attr(prefix, key).map(_.toString).getOrElse(default)
-
-    /**
-     * Returns the unprefixed attribute value as a String but applying the
-     * conversion function f. Returns None if attribute is not found
-     */
-    def apply[T](key: String, f: String => T): Option[T] =
-      attr(key).map(n => f(n.toString))
-
-    /**
-     * Returns the prefixed attribute value as a String but applying the
-     * conversion function f. Returns None if attribute is not found
-     */
-    def apply[T](prefix: String, key: String, f: String => T): Option[T] =
-      attr(prefix, key).map(n => f(n.toString))
-
-    /**
-     * Returns the unprefixed attribute value as a String but applying the
-     * conversion function f. If the attribute is not found it applies the
-     * default by-name function.
-     */
-    def apply[T](key: String, f: String => T, default: => T): T =
-      attr(key).map(n => f(n.toString)).getOrElse(default)
-
-    /**
-     * Returns the prefixed attribute value as a String but applying the
-     * conversion function f. If the attribute is not found it applies the
-     * default by-name function.
-     */
-    def apply[T](prefix: String, key: String, f: String => T, default: => T): T =
-      attr(prefix, key).map(n => f(n.toString)).getOrElse(default)
   }
 }
 

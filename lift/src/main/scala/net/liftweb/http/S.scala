@@ -563,6 +563,20 @@ object S extends HasParams {
   object attr extends AttrHelper[Box] {
     type Info = String
 
+    protected def findAttr(key: String): Option[Info] =
+     attrs.find {
+        case (Left(v), _) if v == key => true
+        case _ => false
+      }.map(_._2)
+
+  protected def findAttr(prefix: String, key: String): Option[Info] =
+  attrs.find {
+        case (Right((p, n)), _) if (p == prefix && n == key) => true
+        case _ => false
+      }.map(_._2)
+
+  protected def convert[T](in: Option[T]): Box[T] = Box(in)
+
     /**
      * Returns the unprefixed attribute value as an Option[NodeSeq]
      * for easy addition to the attributes
@@ -574,61 +588,6 @@ object S extends HasParams {
      * for easy addition to the attributes
      */
     def ~(prefix: String, key: String): Option[NodeSeq] = apply(prefix, key).toOption.map(Text)
-
-    /**
-     * Returns the unprefixed attribute value as Box[String]
-     */
-    def apply(key: String): Box[String] = Box(attrs.find {
-        case (Left(v), _) if v == key => true
-        case _ => false
-      }).map(_._2)
-
-    /**
-     * Returns the prefixed attribute value as Box[String]
-     */
-    def apply(prefix: String, key: String): Box[String] = Box(attrs.find {
-        case (Right((p, n)), _) if (p == prefix && n == key) => true
-        case _ => false
-      }).map(_._2)
-
-    /**
-     * Returns the unprefixed attribute value as a String but applying the default
-     * by-name function if the attribute is not found
-     */
-    def apply(key: String, default: => String): String = apply(key) openOr default
-
-    /**
-     * Returns the prefixed attribute value as a String but applying the default
-     * by-name function if the attribute is not found
-     */
-    def apply(prefix: String, key: String, default: => String): String = apply(prefix, key) openOr (default)
-
-    /**
-     * Returns the unprefixed attribute value as T by applying the conversion
-     * function f from String to T. If the attribute is not found it returns Empty
-     */
-    def apply[T](what: String, f: String => T): Box[T] = apply(what).map(f)
-
-    /**
-     * Returns the prefixed attribute value as T by applying the conversion
-     * function f from String to T. If the attribute is not found it returns Empty
-     */
-    def apply[T](prefix: String, what: String, f: String => T): Box[T] = apply(prefix, what).map(f)
-
-    /**
-     * Returns the unprefixed attribute value as T by applying the conversion
-     * function f from String to T. If the attribute is not found it applies the default
-     * by-name function.
-     */
-    def apply[T](what: String, f: String => T, default: => T): T = apply(what).map(f) openOr default
-
-    /**
-     * Returns the prefixed attribute value as T by applying the conversion
-     * function f from String to T. If the attribute is not found it applies the default
-     * by-name function.
-     */
-    def apply[T](prefix: String, what: String, f: String => T, default: => T): T = apply(prefix, what).map(f) openOr default
-
   }
 
   /**
