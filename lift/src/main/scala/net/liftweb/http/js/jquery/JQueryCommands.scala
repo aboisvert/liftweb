@@ -84,6 +84,14 @@ object JqJE {
     override def toJsCmd = "append("+fixHtml("inline", content)+")"
   }
 
+ /**
+   * Remove JQuery
+   */
+  case class JqRemove() extends JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "remove()"
+  }
+
+
   /**
    * AppendTo content to a JQuery
    */
