@@ -75,7 +75,7 @@ class GraphTypes {
         })
       }
 
-      Flot.render ( "ph_graph", s5 :: s4 :: s3 :: s2 :: s1 :: Nil, 
+      Flot.render ( "ph_graph", s5 :: s4 :: s3 :: s2 :: s1 :: Nil,
                    new FlotOptions {}, Flot.script(xhtml))
     }
 

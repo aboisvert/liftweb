@@ -19,6 +19,7 @@ import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream,
 import _root_.java.security.{SecureRandom, MessageDigest}
 import _root_.javax.crypto._
 import _root_.javax.crypto.spec._
+import _root_.scala.xml.{Node, XML}
 
 object SecurityHelpers extends StringHelpers with IoHelpers
 
@@ -87,6 +88,20 @@ trait SecurityHelpers { self: StringHelpers with IoHelpers =>
     cipher.init(Cipher.DECRYPT_MODE, key)
     new CipherInputStream(in, cipher)
   }
+
+  def encryptXML(in: Node, key: Array[Byte]): String =
+  encryptXML(in, blowfishKeyFromBytes(key))
+
+  def encryptXML(in: Node, key: SecretKey): String =
+  blowfishEncrypt(in.toString, key)
+
+  def decryptXML(in: String, key: Array[Byte]): Box[Node] =
+  decryptXML(in, blowfishKeyFromBytes(key))
+
+  def decryptXML(in: String, key: SecretKey): Box[Node] =
+    for {str <-  Helpers.tryo(blowfishDecrypt(in, key))
+         xml <- Helpers.tryo(XML.loadString(str))
+    } yield xml
 
   /** encrypt an InputStream with a Blowfish key (as a Byte array)*/
   def encryptStream(in: InputStream, key: Array[Byte]): InputStream= encryptStream(in, blowfishKeyFromBytes(key))

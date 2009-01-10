@@ -57,7 +57,7 @@ trait MonadicCondition {
   def ~ (msg: String): MonadicCondition
 }
 
-case class True extends MonadicCondition {
+case class True() extends MonadicCondition {
   def && (cond: MonadicCondition): MonadicCondition = cond match {
     case f @ False(m) => f
     case _ => this
