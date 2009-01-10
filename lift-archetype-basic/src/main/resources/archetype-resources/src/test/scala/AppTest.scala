@@ -4,6 +4,7 @@ import _root_.java.io.File
 import _root_.junit.framework._
 import Assert._
 import _root_.scala.xml.XML
+import _root_.net.liftweb.util._
 
 object AppTest {
   def suite: Test = {
@@ -36,19 +37,27 @@ class AppTest extends TestCase("app") {
   def testXml() = {
     var failed: List[File] = Nil
 
-    def handled(file: String) =
-      file.endsWith(".html") || file.endsWith(".xml") ||
-      file.endsWith(".htm")  || file.endsWith(".xhtml")
+    def handledXml(file: String) =
+      file.endsWith(".xml")
+
+    def handledXHtml(file: String) =
+      file.endsWith(".html") || file.endsWith(".htm") || file.endsWith(".xhtml")
 
     def wellFormed(file: File) {
       if (file.isDirectory)
         for (f <- file.listFiles) wellFormed(f)
 
-      if (file.isFile && handled(file.getName)) {
+      if (file.isFile && handledXml(file.getName)) {
         try {
           XML.loadFile(file)
         } catch {
           case e: _root_.org.xml.sax.SAXParseException => failed = file :: failed
+        }
+      }
+      if (file.isFile && handledXHtml(file.getName)) {
+        PCDataXmlParser(new java.io.FileInputStream(file.getAbsolutePath)) match {
+          case Full(_) => // file is ok
+          case _ => failed = file :: failed
         }
       }
     }
