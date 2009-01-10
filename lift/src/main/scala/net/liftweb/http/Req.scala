@@ -1,5 +1,3 @@
-package net.liftweb.http
-
 /*
  * Copyright 2007-2008 WorldWide Conferencing, LLC
  *
@@ -15,7 +13,7 @@ package net.liftweb.http
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-
+package net.liftweb.http
 
 import _root_.javax.servlet.http._
 import _root_.javax.servlet.ServletContext
@@ -40,6 +38,9 @@ case class FileParamHolder(name: String, mimeType: String,
                            fileName: String,
                            file: Array[Byte]) extends ParamHolder
 
+/**
+ * Helper object for constructing Req instances
+ */
 object Req {
   object NilPath extends ParsePath(Nil, "", true, false)
 
@@ -170,6 +171,9 @@ object Req {
          rewrite.open_!.apply(updated) else updated)
   }
 
+  /**
+   * Corrects the HTML content,such as applying context path to URI's, session information if cookies are disabled etc.
+   */
   def fixHtml(contextPath: String, in: NodeSeq): NodeSeq = {
     val rewrite = URLRewriter.rewriteFunc
 
@@ -204,6 +208,9 @@ object Req {
   def unapply(in: Req): Option[(List[String], String, RequestType)] = Some((in.path.partPath, in.path.suffix, in.requestType))
 }
 
+/**
+ * Contains request information
+ */
 @serializable
 class Req(val path: ParsePath,
           val contextPath: String,
@@ -218,9 +225,14 @@ class Req(val path: ParsePath,
   override def toString = "Req("+paramNames+", "+params+", "+path+
   ", "+contextPath+", "+requestType+", "+contentType+")"
 
+  /**
+   * Returns true if the content-type is text/xml
+   */
   def xml_? = contentType != null && contentType.toLowerCase.startsWith("text/xml")
+
   val section = path(0) match {case null => "default"; case s => s}
   val view = path(1) match {case null => "index"; case s @ _ => s}
+
   val id = pathParam(0)
   def pathParam(n: Int) = head(path.wholePath.drop(n + 2), "")
   def path(n: Int):String = head(path.wholePath.drop(n), null)
@@ -338,7 +350,9 @@ class Req(val path: ParsePath,
 case class RewriteRequest(path: ParsePath, requestType: RequestType, httpRequest: HttpServletRequest)
 case class RewriteResponse(path: ParsePath, params: Map[String, String], stopRewriting: Boolean)
 
-
+/**
+ * The representation of an URI path
+ */
 @serializable
 case class ParsePath(partPath: List[String], suffix: String, absolute: Boolean, endSlash: Boolean) {
   def drop(cnt: Int) = ParsePath(partPath.drop(cnt), suffix, absolute, endSlash)

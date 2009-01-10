@@ -21,12 +21,10 @@ import _root_.net.liftweb.sitemap._
 import _root_.net.liftweb.sitemap.Loc._
 import Helpers._
 import _root_.net.liftweb.widgets.calendars._
-
 import _root_.net.liftweb.widgets.tree.TreeView
-
 import _root_.net.liftweb.widgets.sparklines.Sparklines
-
 import net.liftweb.widgets.sparklines.Sparklines
+import net.liftweb.widgets.tablesorter.TableSorter
 
 /**
   * A class that's instantiated early and run.  It allows the application
@@ -56,6 +54,7 @@ class Boot {
     CalendarDayView init;
     TreeView init;
     Sparklines init;
+    TableSorter init;
 
   }
 }

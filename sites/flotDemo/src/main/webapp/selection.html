@@ -6,11 +6,13 @@
 		  <lift:snippet type="Selection:render">
 		    <flot:graph>
 		    <script>
+          // <![CDATA[
     // insert checkboxes
     var choiceContainer = $('#choices');
     $.each(datas_ph_graph, function(key, val) {
         choiceContainer.append('<br/><input type="checkbox" name="' + key + '" checked="checked" >' + val.label + '</input>');
     });
+    // ]]>
 		    </script>
 		    </flot:graph>
 		  </lift:snippet>

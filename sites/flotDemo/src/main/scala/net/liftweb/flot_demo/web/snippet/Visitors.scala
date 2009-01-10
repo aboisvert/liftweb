@@ -2,8 +2,9 @@ package net.liftweb.flot_demo.web.snippet
 
 import scala.xml.NodeSeq
 
-import net.liftweb.util.Helpers._
-
+import net.liftweb.util._
+import Helpers._
+import net.liftweb.http.js.JsCmds._
 import net.liftweb.widgets.flot._
 
 /*
@@ -53,41 +54,41 @@ class Visitors {
       }
 
       val options = new FlotOptions () {
-        override val xaxis = Some (new FlotAxisOptions () {
-          override val mode = Some ("time")
+        override val xaxis = Full (new FlotAxisOptions () {
+          override val mode = Full ("time")
         })
-        override val modeSelection = Some ("x")
-        override val grid = Some (new FlotGridOptions () {
-          override val coloredAreas = Some ("weekendAreas")
+        override val modeSelection = Full ("x")
+        override val grid = Full (new FlotGridOptions () {
+          override val coloredAreas = Full ("weekendAreas")
         })
 
       }
 
       val optionsOverview = new FlotOptions () {
-        override val lines = Some(new FlotLinesOptions () {
-          override val show = Some (true)
-          override val lineWidth = Some (1)
+        override val lines = Full(new FlotLinesOptions () {
+          override val show = Full (true)
+          override val lineWidth = Full (1)
         })
-        override val shadowSize = Some (0)
-        override val xaxis = Some (new FlotAxisOptions () {
+        override val shadowSize = Full (0)
+        override val xaxis = Full (new FlotAxisOptions () {
           // override val ticks = 3.0 :: Nil
-          override val mode = Some ("time")
+          override val mode = Full ("time")
         })
-        override val yaxis = Some (new FlotAxisOptions () {
+        override val yaxis = Full (new FlotAxisOptions () {
           // override val ticks = 3.0 :: Nil
-          override val min = Some (0.0)
-          override val max = Some (4000.0)
+          override val min = Full (0.0)
+          override val max = Full (4000.0)
         })
-        override val modeSelection = Some ("x")
+        override val modeSelection = Full ("x")
       }
 
       val overview = new FlotOverview ("ph_overview", optionsOverview)
 
-      Flot.render ("ph_graph", s :: Nil, options, overview)
+      Flot.render ("ph_graph", s :: Nil, options, Flot.script(xhtml), overview)
     }
 
     //
 
-    bind ("flot", xhtml, "graph" --> graph)
+    bind ("flot", xhtml, "graph" -> graph)
   }
 }

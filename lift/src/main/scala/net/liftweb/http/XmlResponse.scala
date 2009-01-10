@@ -1,7 +1,5 @@
-package net.liftweb.http
-
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +13,7 @@ package net.liftweb.http
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
+package net.liftweb.http
 
 import _root_.scala.xml.{Node, Unparsed, Group, NodeSeq}
 import _root_.net.liftweb.util._

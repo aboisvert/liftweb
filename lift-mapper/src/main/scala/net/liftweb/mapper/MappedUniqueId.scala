@@ -80,7 +80,7 @@ class MappedStringIndex[T<:Mapper[T]](override val fieldOwner: T, override val m
   def convertKey(in: String): Box[String] = Box.legacyNullTest(in)
   def convertKey(in: Int): Box[String] = Full(in.toString)
   def convertKey(in: Long): Box[String] = Full(in.toString)
-  def convertKey(in: AnyRef): Box[String] = 
+  def convertKey(in: AnyRef): Box[String] =
     Box.legacyNullTest(in).map(_.toString)
 }
 

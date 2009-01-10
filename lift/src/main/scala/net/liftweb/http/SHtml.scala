@@ -111,9 +111,9 @@ object SHtml {
   }
 
   /**
-   * Create a JSON text widget that makes a JSON call on blur or "return".
-   * Note that this is not "Stateful" and will be moved out of S at some
-   * point.
+   * This function does not really submit a JSON request to server instead json is a function
+   * that allows you to build a more complex JsCmd based on the JsExp <i>JE.JsRaw("this.value")</i>.
+   * This function is called by the overloaded version of jsonText.
    *
    * @param value - the initial value of the text field
    * @param json - takes a JsExp which describes how to recover the
@@ -130,8 +130,6 @@ object SHtml {
 
   /**
    * Create a JSON text widget that makes a JSON call on blur or "return".
-   * Note that this is not "Stateful" and will be moved out of S at some
-   * point.
    *
    * @param value - the initial value of the text field
    * @param cmd - the json command name

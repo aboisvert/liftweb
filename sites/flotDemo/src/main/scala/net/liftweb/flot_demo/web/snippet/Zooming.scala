@@ -2,7 +2,9 @@ package net.liftweb.flot_demo.web.snippet
 
 import scala.xml.NodeSeq
 
-import net.liftweb.util.Helpers._
+import net.liftweb.util._
+import Helpers._
+import net.liftweb.http.js.JsCmds._
 
 import net.liftweb.widgets.flot._
 
@@ -31,57 +33,57 @@ class Zooming {
 
     def graph () = {
       val data = new FlotSerie () {
-        override val label = Some ("sin(x sin(x))")
+        override val label = Full ("sin(x sin(x))")
         override val data = getData (0.0, 3 * Math.Pi)
       }
 
       val options = new FlotOptions () {
-        override val lines = Some(new FlotLinesOptions () {
-          override val show = Some (true)
+        override val lines = Full(new FlotLinesOptions () {
+          override val show = Full (true)
         })
-        override val points = Some(new FlotPointsOptions () {
-          override val show = Some (true)
+        override val points = Full(new FlotPointsOptions () {
+          override val show = Full (true)
         })
-        override val yaxis = Some (new FlotAxisOptions () {
+        override val yaxis = Full (new FlotAxisOptions () {
           override val ticks = 10.0 :: Nil
         })
-        override val legend = Some (new FlotLegendOptions () {
-          override val show = Some (false)
+        override val legend = Full (new FlotLegendOptions () {
+          override val show = Full (false)
         })
-        override val modeSelection = Some ("xy")
+        override val modeSelection = Full ("xy")
       }
 
       val optionsOverview = new FlotOptions () {
-        override val lines = Some(new FlotLinesOptions () {
-          override val show = Some (true)
-          override val lineWidth = Some (1)
+        override val lines = Full(new FlotLinesOptions () {
+          override val show = Full (true)
+          override val lineWidth = Full (1)
         })
-        override val legend = Some (new FlotLegendOptions () {
-          override val show = Some (true)
-          override val container = Some ("ph_legend")
+        override val legend = Full (new FlotLegendOptions () {
+          override val show = Full (true)
+          override val container = Full ("ph_legend")
         })
-        override val grid = Some (new FlotGridOptions () {
-          override val color = Some ("#999")
+        override val grid = Full (new FlotGridOptions () {
+          override val color = Full ("#999")
         })
-        override val shadowSize = Some (0)
-        override val xaxis = Some (new FlotAxisOptions () {
+        override val shadowSize = Full (0)
+        override val xaxis = Full (new FlotAxisOptions () {
           override val ticks = 4.0 :: Nil
         })
-        override val yaxis = Some (new FlotAxisOptions () {
+        override val yaxis = Full (new FlotAxisOptions () {
           override val ticks = 3.0 :: Nil
-          override val min = Some (-2.0)
-          override val max = Some (2.0)
+          override val min = Full (-2.0)
+          override val max = Full (2.0)
         })
-        override val modeSelection = Some ("xy")
+        override val modeSelection = Full ("xy")
       }
 
       val overview = new FlotOverview ("ph_overview", optionsOverview)
 
-      Flot.render ("ph_graph", data :: Nil, options, overview)
+      Flot.render ("ph_graph", data :: Nil, options, Flot.script(xhtml), overview)
     }
 
     //
 
-    bind ("flot", xhtml, "graph" --> graph)
+    bind ("flot", xhtml, "graph" -> graph)
   }
 }

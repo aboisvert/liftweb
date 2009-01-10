@@ -491,7 +491,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
     ??(mft.method, toTest).dirty_?
   )
 
-  def indexedField(toSave: A): Box[MappedField[Any, A]] = 
+  def indexedField(toSave: A): Box[MappedField[Any, A]] =
     indexMap.map(im => ??(mappedColumns(im), toSave))
 
   def saved_?(toSave: A): Boolean = (for (im <- indexMap; indF <- indexedField(toSave)) yield (indF.dbIndexFieldIndicatesSaved_?)).openOr(true)
@@ -805,7 +805,7 @@ trait MetaMapper[A<:Mapper[A]] extends BaseMetaMapper with Mapper[A] {
    *
    * @return Box[The Field] (Empty if the field is not found)
    */
-  def fieldByName[T](fieldName: String, actual: A): Box[MappedField[T, A]] = 
+  def fieldByName[T](fieldName: String, actual: A): Box[MappedField[T, A]] =
     Box(_mappedFields.get(fieldName)).
   map(meth => ??(meth, actual).asInstanceOf[MappedField[T,A]])
 
@@ -1386,7 +1386,7 @@ trait KeyedMetaMapper[Type, A<:KeyedMapper[Type, A]] extends MetaMapper[A] with 
     }
   }
 
-  def find(by: QueryParam[A]*): Box[A] = 
+  def find(by: QueryParam[A]*): Box[A] =
     findDb(dbDefaultConnectionIdentifier, by :_*)
 
   def findDb(dbId: ConnectionIdentifier, by: QueryParam[A]*): Box[A] =

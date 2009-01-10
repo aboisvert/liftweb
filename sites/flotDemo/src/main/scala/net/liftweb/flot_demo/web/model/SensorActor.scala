@@ -6,6 +6,7 @@ import scala.actors.Actor
 import scala.actors.Actor._
 
 import net.liftweb.widgets.flot._
+import net.liftweb.util._
 
 /*
  * This examples simulates a sampling device that takes every 2 seconds different measures.
@@ -17,7 +18,7 @@ import net.liftweb.widgets.flot._
  * in each sample, we can have diferent measures
  */
 
-case class Sample (time : Long, measures : List [Double]) {
+case class Sample (time: Long, measures: List[Double]) {
   override def toString () = {
     "time: " + time +
       ", values: " + measures.foldLeft ("") ((sz, value) => sz + " " + value)
@@ -37,28 +38,28 @@ case class RemoveListener(listener: Actor)
 class AcumSamplesActor (max : Int) extends Actor {
 
   val options = new FlotOptions () {
-        override val xaxis = Some (new FlotAxisOptions () {
-          override val mode = Some ("time")
+        override val xaxis = Full (new FlotAxisOptions () {
+          override val mode = Full ("time")
         })
       }
 
   var series : List [FlotSerie] =
     new FlotSerie () {
-      override val label = Some ("Serie 1")
+      override val label = Full ("Serie 1")
       override val data = Nil
     } ::
     new FlotSerie () {
-      override val label = Some ("Serie 2")
+      override val label = Full ("Serie 2")
       override val data = Nil
     } ::
     new FlotSerie () {
-      override val label = Some ("Serie 3")
+      override val label = Full ("Serie 3")
       override val data = Nil
     } ::
     Nil
 
   // listeners
-  val listeners = new HashSet[Actor]
+  var listeners: List[Actor] = Nil
 
   def notifyListeners (newData : FlotNewData) = {
     listeners.foreach(_ ! newData)
@@ -88,14 +89,14 @@ class AcumSamplesActor (max : Int) extends Actor {
           notifyListeners (FlotNewData (series, newDatas))
         }
 
-        case AddListener(listener: Actor) => {
-          listeners.incl(listener)
+        case AddListener(listener: Actor) =>
+          listeners = listener :: listeners
           //
           reply (FlotInfo ("", series, options))
-        }
+
 
         case RemoveListener(listener: Actor) =>
-          listeners.excl(listener)
+          listeners = listeners.remove(listener.eq)
       }
     }
   }

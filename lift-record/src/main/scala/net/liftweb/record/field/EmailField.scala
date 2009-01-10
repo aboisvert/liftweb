@@ -38,7 +38,7 @@ class EmailField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int)
     set(value)
   }
 
-  private def validateEmail(email: String): Box[Node] = 
+  private def validateEmail(email: String): Box[Node] =
     EmailField.validEmailAddr_?(email) match {
       case false => Full(Text(S.??("invalid.email.address")))
       case _ => Empty

@@ -135,6 +135,8 @@ case class PCData(_data: String) extends Atom[String](_data) {
 }
 
 object AltXML {
+  val ieBadTags: Set[String] = Set("br")
+
   def toXML(n: Node, stripComment: Boolean, convertAmp: Boolean,
             ieMode: Boolean): String = {
     val sb = new StringBuilder()
@@ -150,9 +152,9 @@ object AltXML {
    * @param sb           stringbuffer to append to
    * @param stripComment if true, strip comments
    */
-  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder, 
+  def toXML(x: Node, pscope: NamespaceBinding, sb: StringBuilder,
             stripComment: Boolean, convertAmp: Boolean,
-            ieMode: Boolean): Unit = 
+            ieMode: Boolean): Unit =
   x match {
     case c: Comment if !stripComment =>
       c.toString(sb)
@@ -177,6 +179,14 @@ object AltXML {
       e.scope.toString(sb, pscope)
       sb.append("/>")
 
+    case e: Elem if ieMode && ((e.child eq null) || e.child.isEmpty) &&
+      ieBadTags.contains(e.label) =>
+      sb.append('<')
+      e.nameToString(sb)
+      if (e.attributes ne null) e.attributes.toString(sb)
+      e.scope.toString(sb, pscope)
+      sb.append("/>")
+
     case e: Elem =>
       // print tag with namespace declarations
       sb.append('<')
@@ -191,7 +201,7 @@ object AltXML {
 
     case _ => // dunno what it is, but ignore it
   }
-  
+
 
   /**
    * @param children     ...

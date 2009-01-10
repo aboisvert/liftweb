@@ -1,18 +1,18 @@
 /*
-* Copyright 2007-2008 WorldWide Conferencing, LLC
-*
-* Licensed under the Apache License, Version 2.0 (the "License");
-* you may not use this file except in compliance with the License.
-* You may obtain a copy of the License at
-*
-*    http://www.apache.org/licenses/LICENSE-2.0
-*
-* Unless required by applicable law or agreed to in writing,
-* software distributed under the License is distributed on an "AS IS" BASIS,
-* WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-* See the License for the specific language governing permissions
-* and limitations under the License.
-*/
+ * Copyright 2007-2008 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 package net.liftweb.widgets.calendars;
 
@@ -22,6 +22,7 @@ import _root_.java.util.Calendar._
 import _root_.java.text.SimpleDateFormat
 import _root_.net.liftweb.util.Helpers._
 import _root_.net.liftweb.util.{Box, Full, Empty}
+import _root_.net.liftweb.http.{LiftRules}
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.SHtml._
 import JsCmds._
@@ -69,22 +70,40 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
   def render(calendars: List[CalendarItem], itemClick: Box[AnonFunc]): NodeSeq = {
 
     val cal = when.clone().asInstanceOf[Calendar]
+    cal.set(Calendar.MILLISECOND, 0)
+    cal.set(Calendar.SECOND, 0)
+    cal.set(Calendar.MINUTE, 0)
+    cal.set(Calendar.HOUR_OF_DAY, 0)
 
     val delta = cal.get(DAY_OF_WEEK) - meta.firstDayOfWeek
 
     cal add(DAY_OF_MONTH, if (delta < 0) -delta-7 else -delta)
+
+    val lastCal = cal.clone().asInstanceOf[Calendar]
+    lastCal.add(DAY_OF_MONTH, 7);
+
     val startIndex = cal.get(DAY_OF_WEEK)
 
+    val f : (Int, Int) => Int = {
+      case (day, startIndex) =>
+        var st = day + startIndex
+        if (st > 7) {
+          st = st - 7
+        }
+        st
+    }
+
     val headCal = cal.clone().asInstanceOf[Calendar]
+
     <head>
-      <link rel="stylesheet" href="/classpath/calendars/weekview/style.css" type="text/css"/>
-      <script type="text/javascript" src="/classpath/common/jquery.dimensions.js"></script>
-      <script type="text/javascript" src="/classpath/calendars/weekview/weekviewcalendars.js"></script>
-      <script type="text/javascript" src="/classpath/common/jquery.bgiframe.js"></script>
-      <script type="text/javascript" src="/classpath/common/jquery.tooltip.js"></script>
+      <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/calendars/weekview/style.css"} type="text/css"/>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.dimensions.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/calendars/weekview/weekviewcalendars.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.bgiframe.js"}></script>
+      <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/common/jquery.tooltip.js"}></script>
       <script type="text/javascript" charset="utf-8">{
         Unparsed("\nvar itemClick = " + (itemClick openOr JsRaw("function(param){}")).toJsCmd) ++
-        Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameWeek(c start, when))).toJsCmd) ++
+        Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => c.start.after(cal) && c.start.before(lastCal))).toJsCmd) ++
         Unparsed("""
          jQuery(document).ready(function() {
             buildWeekViewCalendars();
@@ -126,8 +145,9 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
             <td class="wkHour"><div>{Unparsed(meta.timeFormatter format(cal getTime))}</div></td>
            {
               <td id={Unparsed("wkhidx_" + startIndex + "_" + (i*2 toString))} class="wkCell borderDashed"></td> ++
-                (for (val day <- 1 to 6) yield
-                    <td id={Unparsed("wkhidx_" + (day + startIndex) + "_" + (i*2 toString))} class="wkCell borderDashed borderLeft"></td>
+                (for (val day <- 1 to 6) yield {
+                    <td id={Unparsed("wkhidx_" + (f(day, startIndex)) + "_" + (i*2 toString))} class="wkCell borderDashed borderLeft"></td>
+                 }
                 )
             }
           </tr>
@@ -136,7 +156,7 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
             {
               <td id={Unparsed("wkhidx_" + startIndex + "_" + ((i*2+1) toString))} class="wkCell borderSolid"></td> ++
                 (for (val day <- 1 to 6) yield
-                    <td id={Unparsed("wkhidx_" + (day + startIndex) + "_" + ((i*2+1) toString))} class="wkCell borderSolid borderLeft"></td>
+                    <td id={Unparsed("wkhidx_" + (f(day, startIndex)) + "_" + ((i*2+1) toString))} class="wkCell borderSolid borderLeft"></td>
                 )
             }
           </tr>

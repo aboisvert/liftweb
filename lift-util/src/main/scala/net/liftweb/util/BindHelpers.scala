@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,12 +21,100 @@ trait Bindable {
   def asHtml: NodeSeq
 }
 
-object BindHelpers extends BindHelpers
+trait AttrHelper[+Holder[X]] {
+  type Info
+
+  def apply(key: String): Holder[Info] = convert(findAttr(key))
+  def apply(prefix: String, key: String): Holder[Info] =
+  convert(findAttr(prefix, key))
+
+  def apply(key: String, default: => Info): Info =
+  findAttr(key) getOrElse default
+
+  def apply(prefix: String, key: String, default: => Info): Info =
+  findAttr(prefix, key) getOrElse default
+
+  def apply[T](key: String, f: Info => T): Holder[T] =
+  convert(findAttr(key).map(f))
+
+  def apply[T](prefix: String, key: String, f: Info => T): Holder[T] =
+  convert(findAttr(prefix, key).map(f))
+  def apply[T](key: String, f: Info => T, default: => T): T =
+  findAttr(key).map(f) getOrElse default
+
+  def apply[T](prefix: String, key: String, f: Info => T, default: => T): T =
+  findAttr(prefix, key).map(f) getOrElse default
+
+  protected def findAttr(key: String): Option[Info]
+  protected def findAttr(prefix: String, key: String): Option[Info]
+  protected def convert[T](in: Option[T]): Holder[T]
+}
+
+/**
+ * BindHelpers can be used to have access to additional information while bind function is executing.
+ * Such information refers to node attributes of the current bound node or the entire NodeSeq that is
+ * to be bound. Since the context is created during bind execution and destroyed when bind terminates,
+ * you can benefit of these helpers in the context of FuncBindParam or FuncAttrBindParam. You can of
+ * course use your own implementation of BindParam and your BindParam#calcValue function will be called
+ * in the appropriate context.
+ *
+ * <pre>
+ * Example:
+ *
+ * bind("hello", xml,
+ *   	"someNode" -> {node: NodeSeq => <function-body>})
+ *
+ * In <code>function-body</code> you can safely use the BindHelpers
+ * </pre>
+ *
+ */
+object BindHelpers extends BindHelpers {
+
+  private val _bindNodes = new ThreadGlobal[List[NodeSeq]]
+  private val _currentNode = new ThreadGlobal[Elem]
+
+  /**
+   * A list of NodeSeq that is behind bind.  The head of the list is the most
+   * recent NodeSeq. Empty and Full(Nil) have different semantics here. It returns
+   * empty if this function is called outside its context and Full(Nil) is returned if
+   * there are no child nodes but the function is called from the appropriate context.
+   */
+  def bindNodes: Box[List[NodeSeq]] = _bindNodes.box
+
+  /**
+   * The current Elem, the children of which are passed to the bindParam
+   */
+  def currentNode: Box[Elem] = _currentNode.box
+
+  /**
+   * Helpers to look up attributes on the currentNode
+   */
+  object attr extends AttrHelper[Option] {
+    type Info = NodeSeq
+
+    protected def findAttr(key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
+    yield at.value
+
+    protected def findAttr(prefix: String, key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find {
+        case at: PrefixedAttribute => at.key == key && at.pre == prefix
+        case _ => false
+      }}
+    yield at.value
+
+    protected def convert[T](in: Option[T]): Option[T] = in
+
+  }
+}
 
 /**
  * The helpers assocated with bindings
  */
 trait BindHelpers {
+
   /**
    * Takes attributes from the first node of 'in' (if any) and mixes
    * them into 'out'. Curried form can be used to produce a
@@ -176,7 +264,6 @@ trait BindHelpers {
     def ->[T <: SpecialNode](in: T with SpecialNode) = Tuple2[String, T](name, in)
 
     def ->(in: String) = TheStrBindParam(name, in)
-    // def ->[T](in: T)(implicit f: T => String) = TheStrBindParam(name, f(in))
     def ->(in: NodeSeq) = TheBindParam(name, in)
     def ->(in: Text) = TheBindParam(name, in)
     def ->(in: Node) = TheBindParam(name, in)
@@ -193,6 +280,7 @@ trait BindHelpers {
   }
 
   implicit def strToSuperArrowAssoc(in: String): SuperArrowAssoc = new SuperArrowAssoc(in)
+
 
   /**
    * This class creates a BindParam from an input value
@@ -229,13 +317,6 @@ trait BindHelpers {
   @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
 
-  /**
-   * Transforms a Tuple2[Symbol, _] to a BindParam
-   */
-  /*
-   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
-   pairToBindParam((p._1.name, p._2))
-   */
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.
@@ -280,25 +361,24 @@ trait BindHelpers {
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
            paramFailureXform: Box[PrefixedAttribute => MetaData],
            xml: NodeSeq, params: BindParam*): NodeSeq = {
-    val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
+    BindHelpers._bindNodes.doWith(xml :: (BindHelpers._bindNodes.box.openOr(Nil))) {
+      val map: _root_.scala.collection.immutable.Map[String, BindParam] = _root_.scala.collection.immutable.HashMap.empty ++ params.map(p => (p.name, p))
 
-    def attrBind(attr: MetaData): MetaData = attr match {
-      case Null => Null
-      case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
-      case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
-          case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
-          case Some(abp: BindWithAttr) => new UnprefixedAttribute(abp.newAttr, abp.calcValue(pa.value), attrBind(pa.next))
-          case Some(bp: BindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
-        }
-      case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
-    }
+      def attrBind(attr: MetaData): MetaData = attr match {
+        case Null => Null
+        case upa: UnprefixedAttribute => new UnprefixedAttribute(upa.key, upa.value, attrBind(upa.next))
+        case pa: PrefixedAttribute if pa.pre == namespace => map.get(pa.key) match {
+            case None => paramFailureXform.map(_(pa)) openOr new PrefixedAttribute(pa.pre, pa.key, Text("FIX"+"ME find to bind attribute"), attrBind(pa.next))
+            case Some(abp: BindWithAttr) => new UnprefixedAttribute(abp.newAttr, abp.calcValue(pa.value), attrBind(pa.next))
+            case Some(bp: BindParam) => new PrefixedAttribute(pa.pre, pa.key, bp.calcValue(pa.value), attrBind(pa.next))
+          }
+        case pa: PrefixedAttribute => new PrefixedAttribute(pa.pre, pa.key, pa.value, attrBind(pa.next))
+      }
 
-    def in_bind(xml: NodeSeq): NodeSeq = {
-      xml.flatMap {
-        node =>
-        node match {
-          case s : Elem if node.prefix == namespace => {
-              map.get(node.label) match {
+      def in_bind(xml: NodeSeq): NodeSeq = {
+        xml.flatMap {
+          case s : Elem if s.prefix == namespace => BindHelpers._currentNode.doWith(s) {
+              map.get(s.label) match {
                 case None =>
                   nodeFailureXform.map(_(s)) openOr s
 
@@ -308,12 +388,14 @@ trait BindHelpers {
               }
             }
           case Group(nodes) => Group(in_bind(nodes))
-          case s : Elem => Elem(node.prefix, node.label, attrBind(node.attributes), node.scope, in_bind(node.child) : _*)
-          case n => node
+          case s : Elem => Elem(s.prefix, s.label, attrBind(s.attributes), s.scope, in_bind(s.child) : _*)
+          case n => n
         }
       }
+
+
+      in_bind(xml)
     }
-    in_bind(xml)
   }
 
   private def setElemId(in: NodeSeq, attr: String, value: Seq[Node]): NodeSeq =

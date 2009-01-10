@@ -1,5 +1,3 @@
-package net.liftweb.http
-
 /*
  * Copyright 2006-2008 WorldWide Conferencing, LLC
  *
@@ -15,6 +13,7 @@ package net.liftweb.http
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
+package net.liftweb.http
 
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.scala.collection.mutable.{HashMap, ListBuffer}
@@ -22,7 +21,8 @@ import _root_.scala.xml.{NodeSeq, Elem, Text, UnprefixedAttribute, Null, MetaDat
                          PrefixedAttribute,
                          Group, Node, HasKeyValue}
 import _root_.scala.collection.immutable.{ListMap, TreeMap}
-import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Box, Empty, Full, Failure, Log, JSONParser, NamedPartialFunction, NamedPF}
+import _root_.net.liftweb.util.{Helpers, ThreadGlobal, LoanWrapper, Box, Empty, Full, Failure,
+                                Log, JSONParser, NamedPartialFunction, NamedPF, AttrHelper}
 import Helpers._
 import js._
 import _root_.java.io.InputStream
@@ -555,25 +555,39 @@ object S extends HasParams {
    * Similar with prefixedAttrsToMetaData(prefix: String, start: Map[String, String])
    * but there is no 'start' Map
    */
-  def prefixedAttrsToMetaData(prefix: String): MetaData =
-  prefixedAttrsToMetaData(prefix, Map.empty)
+  def prefixedAttrsToMetaData(prefix: String): MetaData = prefixedAttrsToMetaData(prefix, Map.empty)
 
   /**
    * Used to get an attribute by its name
    */
-  object attr {
-    def apply(what: String): Box[String] = Box(attrs.find{
-        case (Left(v), _) if v == what => true
+  object attr extends AttrHelper[Box] {
+    type Info = String
+
+    protected def findAttr(key: String): Option[Info] =
+     attrs.find {
+        case (Left(v), _) if v == key => true
         case _ => false
-      }).map(_._2)
+      }.map(_._2)
 
-    def apply(what: String, default: => String): String =
-    apply(what) openOr default
+  protected def findAttr(prefix: String, key: String): Option[Info] =
+  attrs.find {
+        case (Right((p, n)), _) if (p == prefix && n == key) => true
+        case _ => false
+      }.map(_._2)
 
-    def apply[T](what: String, f: String => T,
-                 default: => T): T =
-    apply(what).map(f) openOr default
+  protected def convert[T](in: Option[T]): Box[T] = Box(in)
 
+    /**
+     * Returns the unprefixed attribute value as an Option[NodeSeq]
+     * for easy addition to the attributes
+     */
+    def ~(key: String): Option[NodeSeq] = apply(key).toOption.map(Text)
+
+    /**
+     * Returns the prefixed attribute value as an Option[NodeSeq]
+     * for easy addition to the attributes
+     */
+    def ~(prefix: String, key: String): Option[NodeSeq] = apply(prefix, key).toOption.map(Text)
   }
 
   /**
@@ -670,8 +684,11 @@ object S extends HasParams {
    */
   def contextPath = session.map(_.contextPath).openOr("")
 
+  /**
+   * Finds a snippet by namae
+   */
   def locateSnippet(name: String): Box[NodeSeq => NodeSeq] = {
-    val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":") // name.split(":").toList.map(_.trim).filter(_.length > 0)
+    val snippet = if (name.indexOf(".") != -1) name.roboSplit("\\.") else name.roboSplit(":")
     NamedPF.applyBox(snippet, LiftRules.snippets.toList)
   }
 
