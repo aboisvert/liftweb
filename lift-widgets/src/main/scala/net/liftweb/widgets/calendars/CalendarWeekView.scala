@@ -106,7 +106,7 @@ class CalendarWeekView(val when: Calendar, val meta: WeekViewMeta) {
         Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => c.start.after(cal) && c.start.before(lastCal))).toJsCmd) ++
         Unparsed("""
          jQuery(document).ready(function() {
-            buildWeekViewCalendars();
+            CalendarWeekView.buildWeekViewCalendars();
           })
          """)
        }
