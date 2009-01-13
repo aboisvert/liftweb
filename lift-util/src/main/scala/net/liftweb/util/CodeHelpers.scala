@@ -19,12 +19,12 @@ package net.liftweb.util
 object MonadicConversions {
 
   implicit def bool2Monadic(cond: Boolean) = cond match {
-    case true => new True
+    case true => True
     case _ => False(Nil)
   }
 
   implicit def monadic2Bool(cond: MonadicCondition): Boolean = cond match {
-    case True() => true
+    case True => true
     case _ => false
   }
 
@@ -57,7 +57,7 @@ trait MonadicCondition {
   def ~ (msg: String): MonadicCondition
 }
 
-case class True() extends MonadicCondition {
+case object True extends MonadicCondition {
   def && (cond: MonadicCondition): MonadicCondition = cond match {
     case f @ False(m) => f
     case _ => this

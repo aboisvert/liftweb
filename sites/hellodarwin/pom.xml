@@ -14,7 +14,7 @@
   <url>http://liftweb.net/index.php/Hello_Darwin</url>
   <inceptionYear>2007</inceptionYear>
   <properties>
-    <scala.version>2.7.2</scala.version>
+    <scala.version>2.7.3.RC2</scala.version>
   </properties>
 
   <repositories>

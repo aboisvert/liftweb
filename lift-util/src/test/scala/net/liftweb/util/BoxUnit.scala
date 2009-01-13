@@ -51,8 +51,8 @@ object BoxUnit extends Specification with BoxGen with ScalaCheck {
 trait BoxGen {
 
   implicit def genThrowable: Arbitrary[Throwable] = Arbitrary[Throwable] {
-    case class UserException extends Throwable
-    value(UserException())
+    case object UserException extends Throwable
+    value(UserException)
   }
 
   implicit def genBox[T](implicit a: Arbitrary[T]): Arbitrary[Box[T]] = Arbitrary[Box[T]] {
