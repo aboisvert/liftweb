@@ -16,9 +16,10 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.10" date="2009-01-02" description="api refcator">
+    <release version="0.10" date="2009-01-14" description="api refactor">
       <action dev="Marius Danciu" type="update">Consolidate LiftRules</action>
       <action dev="Marius Danciu" type="update">Added HTTP authentication support</action>
+      <action dev="Jorge Ortiz" type="update">Upgrade to Scala 2.7.3</action>
       <action dev="Jorge Ortiz" type="update">Upgrade to Scalacheck 1.5</action>
       <action dev="Jorge Ortiz" type="update">Upgrade to Specs 1.4.0</action>
       <action dev="Marius Danciu" type="update">Added Record/Field generic support</action>
