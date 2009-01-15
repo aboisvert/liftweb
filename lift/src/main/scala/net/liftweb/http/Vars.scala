@@ -58,6 +58,17 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
    */
   def apply(what: T): Unit = setFunc(name, what)
 
+  /**
+   * Applies the given function to the contents of this
+   * variable and sets the variable to the resulting value.
+   *
+   * @param f -- the function to apply and set the result from.
+   */
+  def update(f: T => T): T = {
+    apply(f(is))
+    is
+  }
+
   def remove(): Unit = clearFunc(name)
 
   def cleanupFunc: Box[() => Unit] = Empty
