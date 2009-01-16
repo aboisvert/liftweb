@@ -346,8 +346,13 @@ object JE {
 
   trait AnonFunc extends JsExp {
     def applied: JsExp = new JsExp {
-      def toJsCmd = AnonFunc.this.toJsCmd + "()"
+      def toJsCmd = "("+AnonFunc.this.toJsCmd + ")" + "()"
     }
+    def applied(params: JsExp*): JsExp = new JsExp {
+      def toJsCmd = "("+AnonFunc.this.toJsCmd +")" +
+      params.map(_.toJsCmd).mkString("(", ",", ")")
+    }
+
   }
 
   object AnonFunc {
