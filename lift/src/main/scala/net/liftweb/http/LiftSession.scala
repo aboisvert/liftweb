@@ -337,6 +337,19 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     sessionRewriter = HashMap.empty
   }
 
+  private [http] def fixSessionTime(): Unit = synchronized {
+    lastServiceTime = millis // DO NOT REMOVE THIS LINE!!!!!
+    val diff = lastServiceTime - httpSession.getLastAccessedTime
+    val maxInactive = httpSession.getMaxInactiveInterval()
+    val togo: Int = maxInactive - (diff / 1000L).toInt
+    // if we're within 2 minutes of session timeout and
+    // the Servlet session doesn't seem to have been updated,
+    // extends the lifespan of the HttpSession
+    if (diff > 1000L && togo < 120) {
+      httpSession.setMaxInactiveInterval(maxInactive + 120)
+    }
+  }
+
   /**
    * Adds a cleanup function that will be executed when session is terminated
    */
@@ -409,34 +422,34 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                map(xml => processSurroundAndInclude(request.uri+" -> "+request.path, xml)) match {
                   case Full(rawXml: NodeSeq) => {
 
-                    val xml = HeadHelper.mergeToHtmlHead(rawXml)
-                    val cometXform: List[RewriteRule] =
-                    if (LiftRules.autoIncludeComet(this))
+                      val xml = HeadHelper.mergeToHtmlHead(rawXml)
+                      val cometXform: List[RewriteRule] =
+                      if (LiftRules.autoIncludeComet(this))
                       allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
                         case Nil => Nil
                         case xs =>
                           val comets: List[CometVersionPair] = xs.flatMap(x => idAndWhen(x))
                           new AddScriptToBody(comets) :: Nil
                       }
-                    else Nil
+                      else Nil
 
-                    val ajaxXform: List[RewriteRule] =
-                    if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
+                      val ajaxXform: List[RewriteRule] =
+                      if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
                       else cometXform
 
 
-                    val realXml = if (ajaxXform.isEmpty) xml
+                      val realXml = if (ajaxXform.isEmpty) xml
                       else (new RuleTransformer(ajaxXform :_*)).transform(xml)
 
-                    this.synchronized {
-                      S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+                      this.synchronized {
+                        S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
+                      }
+                      notices = Nil // S.getNotices
+                      Full(LiftRules.convertResponse((realXml,
+                                                      S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
+                                                      S.responseCookies,
+                                                      request)))
                     }
-                    notices = Nil // S.getNotices
-                    Full(LiftRules.convertResponse((realXml,
-                                                    S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
-                                                    S.responseCookies,
-                                                    request)))
-                  }
                   case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
                 })
             case Right(msg) => msg
@@ -462,7 +475,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   private def cleanUpBeforeRender {
     // Reset the mapping between ID and Style for Ajax notices.
-	MsgErrorMeta(new HashMap)
+    MsgErrorMeta(new HashMap)
     MsgWarningMeta(new HashMap)
     MsgNoticeMeta(new HashMap)
   }
@@ -564,7 +577,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
       case s => s
     }
 
-     findAnyTemplate("templates-hidden" :: splits) or findAnyTemplate(splits)
+    findAnyTemplate("templates-hidden" :: splits) or findAnyTemplate(splits)
   }
 
   private def findAndEmbed(templateName: Box[Seq[Node]], kids: NodeSeq): NodeSeq = {
@@ -645,26 +658,26 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                 (if (isForm) SHtml.hidden(() => inst.registerThisSnippet) else Text("")) ++
                 inst.dispatch(method)(kids)
                 else {LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                     LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
+                                                                                            LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
               case Full(inst: DispatchSnippet) =>
                 if (inst.dispatch.isDefinedAt(method)) inst.dispatch(method)(kids)
                 else {LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                     LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
+                                                                                            LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
               case Full(inst) => {
                   val ar: Array[Object] = List(Group(kids)).toArray
                   ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
                     case Full(md: NodeSeq) => md
                     case it => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                              LiftRules.SnippetFailures.MethodNotFound))); kids
+                                                                                                     LiftRules.SnippetFailures.MethodNotFound))); kids
                   }
                 }
               case _ => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                       LiftRules.SnippetFailures.ClassNotFound))); kids
+                                                                                              LiftRules.SnippetFailures.ClassNotFound))); kids
             }
           }))).openOr{
       LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                     LiftRules.SnippetFailures.NoNameSpecified)))
+                                                                            LiftRules.SnippetFailures.NoNameSpecified)))
       Comment("FIX"+"ME -- no type defined for snippet")
       kids
     }
@@ -980,11 +993,11 @@ object TemplateFinder {
   }
 
   private def checkForFunc(whole: List[String], what: ViewDispatchPF): Box[NodeSeq] =
-    if (what.isDefinedAt(whole)) what(whole) match {
-      case Left(func) => func()
-      case _ => Empty
-    }
-    else Empty
+  if (what.isDefinedAt(whole)) what(whole) match {
+    case Left(func) => func()
+    case _ => Empty
+  }
+  else Empty
 
   private def findInViews(whole: List[String], part: List[String],
                           last: String,
