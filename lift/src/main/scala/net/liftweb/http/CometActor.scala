@@ -39,11 +39,15 @@ object ActorWatcher extends Actor {
     react {
       case Exit(actor: Actor, why: Throwable) =>
         failureFuncs.foreach(f => tryo(f(actor, why)))
+ 
       case _ =>
     }
   }
 
-  private def startAgain(a: Actor, ignore: Throwable) {a.start}
+  private def startAgain(a: Actor, ignore: Throwable) {
+    a.start
+    a ! RelinkToActorWatcher
+  }
 
   private def logActorFailure(actor: Actor, why: Throwable) {
     Log.error("The ActorWatcher restarted "+actor+" because "+why, why)
@@ -59,6 +63,8 @@ object ActorWatcher extends Actor {
   this.start
   this.trapExit = true
 }
+
+case object RelinkToActorWatcher
 
 /**
  * Takes care of the plumbing for building Comet-based Web Apps
@@ -202,6 +208,9 @@ trait CometActor extends Actor with BindHelpers {
   }
 
   private def _mediumPriority : PartialFunction[Any, Unit] = {
+    case RelinkToActorWatcher =>
+      link(ActorWatcher)
+
     case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
 
     case l @ Listen(when, seqId, toDo) =>
@@ -227,7 +236,8 @@ trait CometActor extends Actor with BindHelpers {
       }
 
     case PerformSetupComet =>
-      link(ActorWatcher)
+      this ! RelinkToActorWatcher
+      
       localSetup
       performReRender(true)
 
