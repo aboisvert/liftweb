@@ -741,6 +741,10 @@ object LiftRules {
    */
   var renderAjaxScript: LiftSession => JsCmd = session => ScriptRenderer.ajaxScript
 
+var ajaxPostTimeout = 5000
+
+var cometGetTimeout = 140000
+
   /**
    * Returns the JavaScript that manages Comet requests.
    */
