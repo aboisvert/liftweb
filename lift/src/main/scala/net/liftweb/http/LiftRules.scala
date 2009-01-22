@@ -745,6 +745,8 @@ var ajaxPostTimeout = 5000
 
 var cometGetTimeout = 140000
 
+var supplimentalHeaders: HttpServletResponse => Unit = s => s.setHeader("X-Lift-Version", liftVersion)
+
   /**
    * Returns the JavaScript that manages Comet requests.
    */
@@ -766,6 +768,8 @@ var cometGetTimeout = 140000
     object when extends SessionVar[Long](millis)
     when.is
   }
+
+lazy val liftVersion = "0.11-SNAPSHOT"
 
   /**
    * Hods the last update time of the Comet request. Based on this server mayreturn HTTP 304 status

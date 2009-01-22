@@ -735,6 +735,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     case ("a", elm, metaData, kids, _) => Elem(null, "a", addAjaxHREF(metaData), elm.scope, kids :_*)
     case ("form", elm, metaData, kids, _) => Elem(null, "form", addAjaxForm(metaData), elm.scope, kids : _*)
     case ("loc", elm, metaData, kids, _) => metaData.get("locid") match {case Some(id) => S.loc(id.text, kids) case _ => S.loc(kids.text, kids)}
+    case ("with-param", _, _, _, _) => NodeSeq.Empty
     case (snippetInfo, elm, metaData, kids, page) => processSnippet(page, Full(snippetInfo) , metaData, kids)
   }
 
@@ -870,38 +871,19 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
-
-  /** Split seq into two seqs: first matches p, second matches !p */
-  private def filter2[A](c: Seq[A])(p: A => Boolean): (Seq[A], Seq[A]) = {
-    val bufs = (new ArrayBuffer[A], new ArrayBuffer[A])
-    val i = c.elements
-    while (i.hasNext) {
-      val x = i.next
-      if (p(x)) bufs._1 += x
-      else bufs._2 += x
-    }
-    bufs
-  }
-
-
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {
     val attr = in.attributes
     val kids = in.child
 
-    val (otherKids, paramElements) = filter2(kids) {
-      case Elem("lift", "with-param", _, _, _) => false
-      case _ => true
-    }
+    val paramElements: Seq[Node] = (kids \\ "with-param").filter(_.prefix == "lift")
 
-    val params = paramElements.flatMap {
-      case Elem("lift", "with-param", attr @ _, _, kids @ _*) =>
-        val valueOption: Option[Seq[Node]] = attr.get("name")
-        val option: Option[(String, NodeSeq)] = valueOption.map((v: Seq[Node]) => (v.text, processSurroundAndInclude(page, kids)))
-        option
-    }
+    val params: Seq[(String, NodeSeq)] =
+    for {e <- paramElements
+    name <- e.attributes.get("name")
+    } yield (name.text, processSurroundAndInclude(page, e.child))
 
-    val mainParam = (attr.get("at").map(_.text: String).getOrElse("main"),
-                     processSurroundAndInclude(page, otherKids))
+    val mainParam = (attr.get("at").map(_.text).getOrElse("main"),
+                     processSurroundAndInclude(page, kids))
     val paramsMap = collection.immutable.Map(params: _*) + mainParam
     findAndMerge(attr.get("with"), paramsMap)
   }

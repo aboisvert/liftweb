@@ -451,6 +451,8 @@ class LiftServlet extends HttpServlet {
 
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
+    LiftRules.supplimentalHeaders(response)
+    
     response setStatus resp.code
 
     resp match {
