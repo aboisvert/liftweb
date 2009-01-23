@@ -729,7 +729,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
       }
     case ("surround", elm, _, _, page) => processSurroundElement(page, elm)
     case ("embed", _, metaData, kids, page) => findAndEmbed(Box(metaData.get("what")), kids)
-    case ("ignore", _, _, _, _) => Text("")
+    case ("ignore", _, _, _, _) => NodeSeq.Empty
     case ("comet", _, metaData, kids, _) => executeComet(Box(metaData.get("type").map(_.text.trim)), Box(metaData.get("name").map(_.text.trim)), kids, metaData)
     case ("children", _, _, kids, _) => kids
     case ("a", elm, metaData, kids, _) => Elem(null, "a", addAjaxHREF(metaData), elm.scope, kids :_*)
@@ -852,7 +852,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax: JsExp = SHtml.makeAjaxCall(JE.Str(attr("key")+"=true"))
 
-    new UnprefixedAttribute("onclick", Text(ajax.toJsCmd), new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
+    new PrefixedAttribute("lift", "gc", attr("key"),
+                          new UnprefixedAttribute("onclick", Text(ajax.toJsCmd),
+                                                  new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href"))))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -868,7 +870,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
     // val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd, true)) + pre + " return false;"
 
-    new UnprefixedAttribute("id", Text(id), new UnprefixedAttribute("action", Text("#"), new UnprefixedAttribute("onsubmit", Text(ajax), attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
+    new PrefixedAttribute("lift", "gc", id,
+                          new UnprefixedAttribute("id", Text(id),
+                                                  new UnprefixedAttribute("action", Text("#"),
+                                                                          new UnprefixedAttribute("onsubmit", Text(ajax),
+                                                                                                  attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action")))))
   }
 
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {

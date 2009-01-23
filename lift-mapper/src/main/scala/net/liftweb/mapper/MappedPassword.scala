@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -39,7 +39,7 @@ extends MappedField[String, T] {
   override def dbColumnNames(in : String) = in.toLowerCase+"_pw" :: in.toLowerCase+"_slt" :: Nil
 
   override lazy val dbSelectString =
-    dbColumnNames(name).
+  dbColumnNames(name).
   map(cn => fieldOwner.getSingleton.dbTableName + "." + cn).
   mkString(", ")
 
@@ -63,10 +63,10 @@ extends MappedField[String, T] {
   }
 
   def setList(in: List[String]): Boolean =
-    in match {
+  in match {
     case x1 :: x2 :: Nil if x1 == x2 => this.set(x1) ; true
     case _ => invalidPw = true; invalidMsg = S.??("passwords.do.not.match"); false
-    }
+  }
 
 
   override def setFromAny(f: Any): String = {
@@ -107,8 +107,8 @@ extends MappedField[String, T] {
   protected def i_is_! = MappedPassword.blankPw
   protected def i_was_! = MappedPassword.blankPw
   /**
-    * Called after the field is saved to the database
-    */
+   * Called after the field is saved to the database
+   */
   override protected[mapper] def doneWithSave() {
   }
 
@@ -118,12 +118,13 @@ extends MappedField[String, T] {
    * Create an input field for the item
    */
   override def _toForm: Box[NodeSeq] = {
-    val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
-    Full(<span><input id={fieldId} type='password' name={funcName}
-	 value={is.toString}/>&nbsp;{S.??("repeat")}&nbsp;<input
-	 type='password' name={funcName}
-	 value={is.toString}/></span>)
+    S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
+      Full(<span><input id={fieldId} type='password' name={funcName}
+            value={is.toString}/>&nbsp;{S.??("repeat")}&nbsp;<input
+            type='password' name={funcName} lift:gc={funcName}
+            value={is.toString}/></span>)
     }
+  }
 
 
   def jdbcFriendly(columnName : String) = {
@@ -164,13 +165,13 @@ extends MappedField[String, T] {
   def buildSetActualValue(accessor : Method, inst : AnyRef, columnName : String) : (T, AnyRef) => Unit = {
     if (columnName.endsWith("_slt")) {
       inst match {
-	case null => {(inst : T, v : AnyRef) => {}}
-	case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
+        case null => {(inst : T, v : AnyRef) => {}}
+        case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.salt_i() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
     } else if (columnName.endsWith("_pw")) {
       inst match {
-	case null => {(inst : T, v : AnyRef) => {}}
-	case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
+        case null => {(inst : T, v : AnyRef) => {}}
+        case _ => {(inst : T, v : AnyRef) => {val tv = getField(inst, accessor).asInstanceOf[MappedPassword[T]]; tv.password() = (if (v == null) null else v.toString); tv.resetDirty}}
       }
 
     } else {

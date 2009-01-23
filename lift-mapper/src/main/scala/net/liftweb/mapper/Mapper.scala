@@ -1,10 +1,20 @@
 package net.liftweb.mapper
 
-/*                                                *\
- (c) 2006-2008 WorldWide Conferencing, LLC
- Distributed under an Apache License
- http://www.apache.org/licenses/LICENSE-2.0
- \*                                                 */
+/*
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions
+ * and limitations under the License.
+ */
 
 import _root_.scala.collection.mutable._
 import _root_.java.lang.reflect.Method
@@ -174,7 +184,10 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
    * @return the form
    */
   def toForm(button: Box[String], f: A => Any): NodeSeq =
-  getSingleton.toForm(this) ++ (<input type='hidden' name={S.mapFunc((ignore: List[String]) => f(this))} value="n/a" />) ++
+  getSingleton.toForm(this) ++
+  S.fmapFunc((ignore: List[String]) => f(this)){
+    (name: String) => 
+    (<input type='hidden' name={name} lift:gc={name} value="n/a" />)} ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
 
   def toForm(button: Box[String], redoSnippet: NodeSeq => NodeSeq, onSuccess: A => Unit): NodeSeq = {
@@ -188,7 +201,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
     }
 
     getSingleton.toForm(this) ++
-    (<input type='hidden' name={S.mapFunc((ignore: List[String]) => doSubmit())} value="n/a" />) ++
+    S.fmapFunc((ignore: List[String]) => doSubmit())(name => <input type='hidden' name={name} lift:gc={name} value="n/a" />) ++
     (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
   }
 

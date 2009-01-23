@@ -1,5 +1,5 @@
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -914,15 +914,35 @@ object S extends HasParams {
   /**
    * Maps a function with an random generated and name
    */
-  def mapFunc(in: AFuncHolder): String = mapFunc(Helpers.nextFuncName, in)
+  def fmapFunc[T](in: AFuncHolder)(f: String => T): T = //
+  {
+    val name = Helpers.nextFuncName
+    addFunctionMap(name, in)
+    f(name)
+  }
+
+
+ /**
+   * Similar with addFunctionMap but also returns the name.
+   *
+   * Use fmapFunc(AFuncHolder)(String => T)
+   */
+  @deprecated
+  def mapFunc(in: AFuncHolder): String = {
+    mapFunc(Helpers.nextFuncName, in)
+  }
 
   /**
    * Similar with addFunctionMap but also returns the name.
+   *
+   * Use fmapFunc(AFuncHolder)(String => T)
    */
+  @deprecated
   def mapFunc(name: String, inf: AFuncHolder): String = {
     addFunctionMap(name, inf)
     name
   }
+  
 
   /**
    * Returns all the HTTP parameters having 'n' name

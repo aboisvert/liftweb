@@ -63,31 +63,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     case xs => url + "&" + paramsToUrlParams(xs)
   }
 
-  /*
-   /**
-    * Set of all valid files extensions
-    * @return a mutable HashSet[String]
-    */
-   val validSuffixes = {
-   val ret = new HashSet[String]
-   ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
-   ret
-   }
-
-   /**
-    * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
-    */
-   def goodPath_?(path : String): Boolean = {
-   if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
-   else {
-   val lastPoint = path.lastIndexOf('.')
-   val lastSlash = path.lastIndexOf('/')
-   if (lastPoint <= lastSlash) false else {
-   validSuffixes.contains(path.substring(lastPoint + 1))
-   }
-   }
-   }
-   */
+ 
   /**
    * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"

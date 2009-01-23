@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -68,12 +68,17 @@ class Ajax {
     <textarea id="the_area" cols="50" rows="10"></textarea>
     <br />
 
-    <a href="javascript://" onclick={
-      ajaxCall(JE.JsRaw("document.getElementById('the_area').value"),
-         text => DisplayMessage("messages",
-              <pre>{text}</pre>,
-              4 seconds, 200)).toJsCmd
-    }>Enter text above and click me</a><br/>
+    {
+      val (name, je) = 
+	ajaxCall(JE.JsRaw("document.getElementById('the_area').value"),
+		 text => DisplayMessage("messages",
+					<pre>{text}</pre>,
+					4 seconds, 200))
+
+      <a href="javascript://" onclick={je.toJsCmd}
+      lift:gc={name}>Enter text above and click me</a>
+    }
+    <br/>
     <br/>
 
     <div id="some_stuff"></div>

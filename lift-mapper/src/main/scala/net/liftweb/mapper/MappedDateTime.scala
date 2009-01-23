@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,9 +74,11 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
    * Create an input field for the item
    */
   override def _toForm: Box[NodeSeq] =
+  S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
   Full(<input type='text' id={fieldId}
-      name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
+      name={funcName} lift:gc={funcName}
       value={is match {case null => "" case s => toInternetDate(s)}}/>)
+  }
 
   override def setFromAny(f : Any): Date = toDate(f).map(d => this.set(d)).openOr(this.is)
 
