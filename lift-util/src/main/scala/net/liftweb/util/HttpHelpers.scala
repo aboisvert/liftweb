@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -86,7 +86,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   /**
    * Return true if the xml doesn't contain an <html> tag
    */
-  def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
+  def noHtmlTag(in: NodeSeq): Boolean = findElems(in)(_.label == "html").length != 1
 
   /**
    * Transform a general Map to a nutable HashMap
@@ -160,6 +160,23 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
    * current session
    */
   def nextNum = serial.incrementAndGet
+
+  def findElems(nodes: NodeSeq)(f: Elem => Boolean): NodeSeq = {
+    val ret = new ListBuffer[Elem]
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          if (f(e)) ret += e
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+    find(nodes)
+
+    ret.toList
+  }
 
   /**
    * Get a guanateed unique field name

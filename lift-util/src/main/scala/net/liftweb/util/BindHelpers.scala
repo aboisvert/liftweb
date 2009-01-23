@@ -140,7 +140,8 @@ trait BindHelpers {
    *
    * @return the first matching node sequence
    */
-  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = 
+    Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child
   }
@@ -149,7 +150,7 @@ trait BindHelpers {
    * Choose one of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag: String): Box[NodeSeq] =
-  (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+  Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => Empty
     case x :: xs => Full(x.child)
   }

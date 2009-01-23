@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,30 +47,6 @@ object Flot
 
   def script(xml: NodeSeq): JsCmd =
     (xml \ "script").map(x => JsRaw(x.text).cmd).foldLeft(Noop)(_ & _)
-
-  /**
-   * render a Flot Graph
-   * <p>
-   * search extra javascript in xhtml templates
-   */
-  /*
-   def render(idPlaceholder: String,
-   datas: List[FlotSerie],
-   options: FlotOptions,
-   caps: FlotCapability*
-   ): (NodeSeq => NodeSeq) = {
-
-   def ret(in: NodeSeq): NodeSeq = {
-
-   // search for a script tag in the template
-   val tagScript = in \\ "script"
-   val jqueryScript = if (! tagScript.isEmpty) tagScript (0).child else Text ("")
-
-   render(idPlaceholder, datas, options, jqueryScript, caps :_*)
-   }
-
-   ret
-   }*/
 
   /**
    * render a flot graph
