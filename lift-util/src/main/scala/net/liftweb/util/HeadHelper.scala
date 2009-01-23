@@ -17,6 +17,8 @@ package net.liftweb.util
 import _root_.scala.xml._
 import _root_.scala.xml.transform._
 
+import Helpers._
+
 /**
  * This object provides functions to setup the head section of html documents.</p>
  * <code></code>
@@ -42,7 +44,7 @@ object HeadHelper {
 
     val headInBody: NodeSeq =
     (for (body <- xhtml \ "body";
-          head <- body \\ "head") yield trimText(head.child)).
+          head <- findElems(body)(_.label == "head")) yield trimText(head.child)).
     toList.removeDuplicates.flatMap(a => a)
 
     if (headInBody.isEmpty) xhtml

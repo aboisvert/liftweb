@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -875,7 +875,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     val attr = in.attributes
     val kids = in.child
 
-    val paramElements: Seq[Node] = (kids \\ "with-param").filter(_.prefix == "lift")
+    val paramElements: Seq[Node] = 
+      findElems(kids)(e => e.label == "with-param" && e.prefix == "lift")
 
     val params: Seq[(String, NodeSeq)] =
     for {e <- paramElements
