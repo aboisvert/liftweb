@@ -94,6 +94,12 @@ object SHtml {
    */
   def ajaxCall(jsCalcValue: JsExp, func: String => JsCmd): (String, JsExp) = ajaxCall_*(jsCalcValue, SFuncHolder(func))
 
+  def fajaxCall[T](jsCalcValue: JsExp, func: String => JsCmd)(f: (String, JsExp) => T): T =
+  {
+    val (name, js) = ajaxCall(jsCalcValue, func)
+    f(name, js)
+  }
+
   /**
    * Build a JavaScript function that will perform an AJAX call based on a value calculated in JavaScript
    * @param jsCalcValue -- the JavaScript to calculate the value to be sent to the server
