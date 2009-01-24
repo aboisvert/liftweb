@@ -461,7 +461,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                     }
                   case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
                 })
-            case Right(msg) => msg
+            case Right(Full(resp)) => Full(resp)
             case _ => if (LiftRules.passNotFoundToChain) Empty else Full(request.createNotFound)
           }
 
