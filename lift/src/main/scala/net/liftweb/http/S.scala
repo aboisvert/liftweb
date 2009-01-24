@@ -848,6 +848,8 @@ object S extends HasParams {
     def owner: Box[String]
     def apply(in: List[String]): Any
     def duplicate(newOwner: String): AFuncHolder
+    private[http] var lastSeen: Long = millis
+    private[http] var sessionLife = false
   }
 
   /**

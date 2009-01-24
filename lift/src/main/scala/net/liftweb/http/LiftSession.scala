@@ -213,6 +213,11 @@ object SessionMaster extends Actor {
 
 }
 
+object RenderVersion {
+  private object ver extends RequestVar(Helpers.nextFuncName)
+  def get: String = ver.is
+}
+
 /**
  * The LiftSession class containg the session state information
  */
@@ -425,17 +430,21 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       val xml = HeadHelper.mergeToHtmlHead(rawXml)
                       val cometXform: List[RewriteRule] =
                       if (LiftRules.autoIncludeComet(this))
-                      allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when") case _ => false}.toList.isEmpty) match {
+                      allElems(xml, !_.attributes.filter{case p: PrefixedAttribute => (p.pre == "lift" && p.key == "when")
+                          case _ => false}.toList.isEmpty) match {
                         case Nil => Nil
                         case xs =>
                           val comets: List[CometVersionPair] = xs.flatMap(x => idAndWhen(x))
-                          new AddScriptToBody(comets) :: Nil
+                          List(new AddScriptToBody(comets))
                       }
                       else Nil
 
+                    val liftGC: List[RewriteRule] = 
+                    (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
+
                       val ajaxXform: List[RewriteRule] =
-                      if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: cometXform
-                      else cometXform
+                      if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: liftGC
+                      else liftGC
 
 
                       val realXml = if (ajaxXform.isEmpty) xml
@@ -515,6 +524,12 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private [liftweb] def unset(name: String): Unit = synchronized {
     myVariables -= name
   }
+
+  private def findLiftGCNodes(in: NodeSeq): List[String] =
+  findInElems(in)(_.attributes.filter{
+      case p: PrefixedAttribute if p.pre == "lift" && p.key == "gc" => true
+      case _ => false}.
+                  map(_.value.text))
 
   private[http] def attachRedirectFunc(uri: String, f : Box[() => Unit]) = {
     f map { fnc =>
@@ -913,6 +928,25 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                LiftRules.ajaxPath +
                                "/" + LiftRules.ajaxScriptName())}
               type="text/javascript"/>) :_*)
+      case n => n
+    }
+  }
+
+  class AddLiftGCToBody(val pageName: String, val gcNames: List[String]) extends RewriteRule {
+    private var doneBody = false
+import js._
+      import JsCmds._
+      import JE._
+
+    override def transform(n: Node) = n match {
+
+
+      case e: Elem if e.label == "body" && !doneBody =>
+        doneBody = true
+        Elem(null, "body", e.attributes,  e.scope, (e.child ++
+                                                    JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
+            JsCrVar("lift_page", pageName))) :_*)
+						    
       case n => n
     }
   }

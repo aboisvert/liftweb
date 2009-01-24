@@ -178,6 +178,25 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     ret.toList
   }
 
+  def findInElems[T](nodes: NodeSeq)(f: Elem => Iterable[T]): List[T] = {
+    val ret = new ListBuffer[T]
+
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          ret ++= f(e)
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+
+    find(nodes)
+
+    ret.toList
+  }
+
   /**
    * Get a guanateed unique field name
    * (16 or 17 letters and numbers, starting with a letter)
