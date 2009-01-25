@@ -62,7 +62,7 @@ class BooleanField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field
     //var el = elem
     uniqueFieldId match {
       case Full(id) =>
-        <div id={id+"_holder"}><div><label 
+        <div id={id+"_holder"}><div><label
               for={id+"_field"}>{displayName}</label></div>{SHtml.checkbox(value, this.set _, "tabIndex" -> tabIndex.toString, "id" -> (id+"_field"))}<lift:msg id={id}/></div>
       case _ => <div>{elem}</div>
     }

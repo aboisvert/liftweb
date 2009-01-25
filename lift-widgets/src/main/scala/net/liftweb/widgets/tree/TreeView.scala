@@ -116,7 +116,7 @@ class TreeView {
        }
      }
 
-     fmapFunc(NFuncHolder(treeFunc)){key => 
+     fmapFunc(NFuncHolder(treeFunc)){key =>
 
      val url = encodeURL(contextPath +
 			 "/"+LiftRules.ajaxPath)+"?"+key+"=_"

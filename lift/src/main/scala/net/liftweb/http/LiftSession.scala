@@ -439,7 +439,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       }
                       else Nil
 
-                    val liftGC: List[RewriteRule] = 
+                    val liftGC: List[RewriteRule] =
                     (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
 
                       val ajaxXform: List[RewriteRule] =
@@ -896,7 +896,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     val attr = in.attributes
     val kids = in.child
 
-    val paramElements: Seq[Node] = 
+    val paramElements: Seq[Node] =
       findElems(kids)(e => e.label == "with-param" && e.prefix == "lift")
 
     val params: Seq[(String, NodeSeq)] =
@@ -946,7 +946,7 @@ import js._
         Elem(null, "body", e.attributes,  e.scope, (e.child ++
                                                     JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
             JsCrVar("lift_page", pageName))) :_*)
-						    
+
       case n => n
     }
   }

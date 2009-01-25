@@ -34,7 +34,7 @@ object SHtml {
    * @return a button to put on your page
    */
   def ajaxButton(text: NodeSeq, func: () => JsCmd, attrs: (String, String)*): Elem = {
-    attrs.foldLeft(fmapFunc(func)(name => 
+    attrs.foldLeft(fmapFunc(func)(name =>
         <button lift:gc={name} onclick={makeAjaxCall(Str(name+"=true")).toJsCmd+
                          "; return false;"}>{text}</button>))(_ % _)
   }
@@ -118,7 +118,7 @@ object SHtml {
 
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
-    val nh = head % 
+    val nh = head %
     ("onclick" -> (LiftRules.jsArtifacts.toggle(id).cmd & makeAjaxCall(JsRaw("'"+funcName+"=true'")).cmd)) %
     new PrefixedAttribute("lift", "gc", Text(funcName), Null)
 
@@ -195,7 +195,7 @@ object SHtml {
 
     (attrs.foldLeft(<select>{
             opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
-          }</select>)(_ % _)) % 
+          }</select>)(_ % _)) %
     (new PrefixedAttribute("lift", "gc", funcName, Null)) %
     ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
      }
@@ -411,7 +411,7 @@ object SHtml {
     }
   }
 
-  def fileUpload(func: FileParamHolder => Any): Elem = 
+  def fileUpload(func: FileParamHolder => Any): Elem =
   fmapFunc(BinFuncHolder(func))(name => <input type="file" name={name} lift:gc={name} />)
 
   case class ChoiceItem[T](key: T, xhtml: NodeSeq)

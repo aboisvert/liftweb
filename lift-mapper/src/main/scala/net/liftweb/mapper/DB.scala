@@ -118,7 +118,7 @@ object DB {
       case x :: xs => use(x)(ignore => doWith(xs, f))
     }
     private object DepthCnt extends RequestVar(0)
-    def apply[T](f: => T): T = 
+    def apply[T](f: => T): T =
     try {
       DepthCnt.update(_ + 1)
       doWith(in, f)

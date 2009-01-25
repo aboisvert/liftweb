@@ -217,7 +217,7 @@ object LiftRules {
   /**
    * The base name of the resource bundle
    */
-  var resourceName = "lift"
+  var resourceNames: List[String] = List("lift")
 
   /**
    * The base name of the resource bundle of the lift core code

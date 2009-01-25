@@ -140,7 +140,7 @@ trait BindHelpers {
    *
    * @return the first matching node sequence
    */
-  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = 
+  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq =
     Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child

@@ -63,7 +63,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     case xs => url + "&" + paramsToUrlParams(xs)
   }
 
- 
+
   /**
    * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"

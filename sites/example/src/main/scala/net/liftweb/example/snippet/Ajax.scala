@@ -69,7 +69,7 @@ class Ajax {
     <br />
 
     {
-      val (name, je) = 
+      val (name, je) =
 	ajaxCall(JE.JsRaw("document.getElementById('the_area').value"),
 		 text => DisplayMessage("messages",
 					<pre>{text}</pre>,

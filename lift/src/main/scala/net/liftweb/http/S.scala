@@ -74,7 +74,7 @@ object S extends HasParams {
   private val _attrs = new ThreadGlobal[List[(Either[String, (String, String)], String)]]
 
   private val _sessionInfo = new ThreadGlobal[LiftSession]
-  private val _resBundle = new ThreadGlobal[Box[ResourceBundle]]
+  private val _resBundle = new ThreadGlobal[List[ResourceBundle]]
   private val _liftCoreResBundle = new ThreadGlobal[Box[ResourceBundle]]
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
@@ -218,7 +218,7 @@ object S extends HasParams {
    * @return the localized XML or Empty if there's no way to do localization
    */
   def loc(str: String): Box[NodeSeq] =
-  resourceBundle.flatMap(r => tryo(r.getObject(str) match {
+    resourceBundles.flatMap(r => tryo(r.getObject(str) match {
         case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
         case s: String => Full(LiftRules.localizeStringToXml(s))
         case g: Group => Full(g)
@@ -226,15 +226,20 @@ object S extends HasParams {
         case n: Node => Full(n)
         case ns: NodeSeq => Full(ns)
         case x => Full(Text(x.toString))
-      }).flatMap(s => s))
+      }).flatMap(s => s)).find(e => true)
 
   /**
    * Get the resource bundle for the current locale
    */
-  def resourceBundle: Box[ResourceBundle] = Box.legacyNullTest(_resBundle.value).openOr {
-    val rb = tryo(ResourceBundle.getBundle(LiftRules.resourceName, locale))
-    _resBundle.set(rb)
-    rb
+  def resourceBundles: List[ResourceBundle] = {
+    _resBundle.value match {
+      case Nil => _resBundle.set(LiftRules.resourceNames.flatMap(name => tryo(
+          List(ResourceBundle.getBundle(name, locale))
+        ) openOr Nil))
+        _resBundle.value
+      case bundles => bundles
+
+    }
   }
 
   /**
@@ -254,7 +259,7 @@ object S extends HasParams {
    *
    * @return the localized version of the string
    */
-  def ?(str: String): String = ?!(str, resourceBundle)
+  def ?(str: String): String = ?!(str, resourceBundles)
 
   /**
    * Get a localized string or return the original string
@@ -276,15 +281,15 @@ object S extends HasParams {
    *
    * @return the localized version of the string
    */
-  def ??(str: String): String = ?!(str, liftCoreResourceBundle)
+  def ??(str: String): String = ?!(str, liftCoreResourceBundle.toList)
 
-  private def ?!(str: String, resBundle: Box[ResourceBundle]) = resBundle.flatMap(r => tryo(r.getObject(str) match {
-        case s: String => Full(s)
-        case _ => Empty
-      }).flatMap(s => s)).openOr {
-    LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
-    str
-  }
+  private def ?!(str: String, resBundle: List[ResourceBundle]): String = resBundle.flatMap(r => tryo(r.getObject(str) match {
+      case s: String => Full(s)
+      case _ => Empty
+    }).flatMap(s => s)).find(s => true) getOrElse {
+      LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
+      str
+    }
 
   /**
    * Localize the incoming string based on a resource bundle for the current locale
@@ -456,7 +461,7 @@ object S extends HasParams {
   private def _innerInit[B](f: () => B): B = {
     _attrs.doWith(Nil) {
       snippetMap.doWith(new HashMap) {
-        _resBundle.doWith(null) {
+        _resBundle.doWith(Nil) {
           _liftCoreResBundle.doWith(null){
             inS.doWith(true) {
               _stateSnip.doWith(new HashMap) {
@@ -944,7 +949,7 @@ object S extends HasParams {
     addFunctionMap(name, inf)
     name
   }
-  
+
 
   /**
    * Returns all the HTTP parameters having 'n' name
