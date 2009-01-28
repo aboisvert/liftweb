@@ -49,7 +49,7 @@ class AjaxForm {
 			      s => After(200, replace(s)))
     bind("select", xhtml,
         "state" -> select(AjaxForm.states.map(s => (s,s)), Full(state), state = _) %
-          ("onchange" -> js.toJsCmd) % 
+          ("onchange" -> js.toJsCmd) %
 	 (new PrefixedAttribute("lift", "gc", name, Null)),
         "city" -> cityChoice(state) % ("id" -> "city_select"),
         "submit" -> submit(?("Save"), () => {S.notice("City: "+city+" State: "+state); redirectTo("/")}))

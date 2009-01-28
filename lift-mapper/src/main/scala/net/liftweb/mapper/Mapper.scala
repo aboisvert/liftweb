@@ -186,7 +186,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   def toForm(button: Box[String], f: A => Any): NodeSeq =
   getSingleton.toForm(this) ++
   S.fmapFunc((ignore: List[String]) => f(this)){
-    (name: String) => 
+    (name: String) =>
     (<input type='hidden' name={name} lift:gc={name} value="n/a" />)} ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
 
