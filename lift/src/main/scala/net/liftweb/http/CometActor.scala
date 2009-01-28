@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -66,6 +66,72 @@ object ActorWatcher extends Actor {
 
 case object RelinkToActorWatcher
 
+trait DeltaTrait {
+  def toJs: JsCmd
+}
+
+trait CometState[DeltaType <: DeltaTrait,
+                 MyType <: CometState[DeltaType, MyType]] {
+  self: MyType =>
+  
+  def -(other: MyType): Seq[DeltaType]
+  def render: NodeSeq
+}
+
+trait CometStateWithUpdate[UpdateType, DeltaType <: DeltaTrait,
+                           MyType <: CometStateWithUpdate[UpdateType,
+                                                          DeltaType, MyType]]
+extends CometState[DeltaType, MyType]
+{
+  self: MyType =>
+  def process(in: UpdateType): MyType
+}
+
+trait StatefulComet extends CometActor {
+  type Delta <: DeltaTrait
+  type State <: CometState[Delta, State]
+
+  /**
+   * Test the parameter to see if it's an updated state object
+   */
+  def testState(in: Any): Box[State]
+
+  /**
+   * Return the empty state object
+   */
+  def emptyState: State
+
+  /**
+   * The current state objects
+   */
+  protected var state: State = emptyState
+
+  /**
+   * If there's some ThreadLocal variable that needs to be setup up
+   * before processing the state deltas, set it up here.
+   */
+  protected def setupLocalState[T](f: => T): T = f
+
+  private[http] override val _lowPriority = {
+    val pf: PartialFunction[Any, Unit] = {
+      case v if testState(v).isDefined =>
+        testState(v).foreach {
+          ns =>
+          val diff = ns - state
+          state = ns
+          partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
+        }
+    }
+
+    pf orElse super._lowPriority
+  }
+
+  /**
+   * The Render method
+   */
+  def render = state.render
+}
+
 /**
  * Takes care of the plumbing for building Comet-based Web Apps
  */
@@ -99,8 +165,8 @@ trait CometActor extends Actor with BindHelpers {
   def attributes = _attributes
 
   private[http] def initCometActor(theSession: LiftSession, name: Box[String],
-                     defaultXml: NodeSeq,
-                     attributes: Map[String, String]) {
+                                   defaultXml: NodeSeq,
+                                   attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
                               Empty, Empty, Empty, false)
     this._theSession = theSession
@@ -173,7 +239,7 @@ trait CometActor extends Actor with BindHelpers {
           pf.apply(in)
           if (S.functionMap.size > 0) {
             theSession.updateFunctionMap(S.functionMap,
-					 uniqueId, lastRenderTime)
+                                         uniqueId, lastRenderTime)
             S.clearFunctionMap
           }
         }
@@ -191,23 +257,17 @@ trait CometActor extends Actor with BindHelpers {
 
   def fixedRender: Box[NodeSeq] = Empty
 
-  def highPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def highPriority : PartialFunction[Any, Unit] = Map.empty
 
-  def lowPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def lowPriority : PartialFunction[Any, Unit] = Map.empty
 
-  def mediumPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def mediumPriority : PartialFunction[Any, Unit] = Map.empty
 
-  private def _lowPriority : PartialFunction[Any, Unit] = {
+  private[http] val _lowPriority : PartialFunction[Any, Unit] = {
     case s => Log.debug("CometActor "+this+" got unexpected message "+s)
   }
 
-  private def _mediumPriority : PartialFunction[Any, Unit] = {
+  private lazy val _mediumPriority : PartialFunction[Any, Unit] = {
     case RelinkToActorWatcher =>
       link(ActorWatcher)
 
@@ -366,7 +426,7 @@ trait CometActor extends Actor with BindHelpers {
 
   def composeFunction = composeFunction_i
 
-  def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
+  private def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
 
   def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, _defaultXml, vals :_*)
   def bind(vals: BindParam *): NodeSeq = bind(_defaultPrefix, vals :_*)
@@ -468,7 +528,7 @@ private [http] class XmlOrJsCmd(val id: String,
                                 notices: List[(NoticeType.Value, NodeSeq, Box[String])]) {
 
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) =
-    this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
+  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
 
   /**
    * Returns the JsCmd that will be sent to client
