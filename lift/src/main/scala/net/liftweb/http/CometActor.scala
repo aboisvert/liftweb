@@ -263,7 +263,7 @@ trait CometActor extends Actor with BindHelpers {
 
   def mediumPriority : PartialFunction[Any, Unit] = Map.empty
 
-  private[http] val _lowPriority : PartialFunction[Any, Unit] = {
+  private[http] def _lowPriority : PartialFunction[Any, Unit] = {
     case s => Log.debug("CometActor "+this+" got unexpected message "+s)
   }
 
