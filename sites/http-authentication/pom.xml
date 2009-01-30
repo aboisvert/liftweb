@@ -8,7 +8,7 @@
     <relativePath>../pom.xml</relativePath>    
   </parent>
 
-  <artifactId>lift-http-authentication</artifactId>
+  <artifactId>http-authentication</artifactId>
   <packaging>war</packaging>
   <name>HTTP Authentication example</name>
 </project>
