@@ -20,7 +20,7 @@ import _root_.scala.actors.{Actor, Exit}
 import _root_.scala.actors.Actor._
 import _root_.scala.collection.mutable.{ListBuffer}
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Helpers, Log, Box, Full, Empty, Failure, BindHelpers}
+import _root_.net.liftweb.util._
 import _root_.scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import _root_.scala.collection.immutable.TreeMap
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
@@ -117,9 +117,11 @@ trait StatefulComet extends CometActor {
       case v if testState(v).isDefined =>
         testState(v).foreach {
           ns =>
+          if (ns ne state) {
           val diff = ns - state
           state = ns
           partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
+          }
         }
     }
 
@@ -130,6 +132,10 @@ trait StatefulComet extends CometActor {
    * The Render method
    */
   def render = state.render
+}
+
+object CurrentCometActor extends ThreadGlobal[Box[CometActor]] {
+  this.set(Empty)
 }
 
 /**
@@ -161,14 +167,20 @@ trait CometActor extends Actor with BindHelpers {
   private var _name: Box[String] = Empty
   def name = _name
 
+  private var _theType: Box[String] = Empty
+  def theType = _theType
+
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
 
-  private[http] def initCometActor(theSession: LiftSession, name: Box[String],
+  private[http] def initCometActor(theSession: LiftSession, 
+                                   theType: Box[String],
+                                   name: Box[String],
                                    defaultXml: NodeSeq,
                                    attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
                               Empty, Empty, Empty, false)
+    this._theType = theType
     this._theSession = theSession
     this._defaultXml = defaultXml
     this._name = name
@@ -234,7 +246,8 @@ trait CometActor extends Actor with BindHelpers {
 
   override def react(pf: PartialFunction[Any, Unit]) = {
     val myPf: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
-      def apply(in: Any): Unit = {
+      def apply(in: Any): Unit =
+      CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
           pf.apply(in)
           if (S.functionMap.size > 0) {
@@ -245,7 +258,8 @@ trait CometActor extends Actor with BindHelpers {
         }
       }
 
-      def isDefinedAt(in: Any): Boolean = {
+      def isDefinedAt(in: Any): Boolean =
+      CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
           pf.isDefinedAt(in)
         }
@@ -432,7 +446,7 @@ trait CometActor extends Actor with BindHelpers {
   def bind(vals: BindParam *): NodeSeq = bind(_defaultPrefix, vals :_*)
 
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Unit) {
-    who.initCometActor(theSession, name, defaultXml, attributes)
+    who.initCometActor(theSession, Full(who.uniqueId), name, defaultXml, attributes)
     theSession.addCometActor(who)
     // who.link(this)
     who ! PerformSetupComet

@@ -802,8 +802,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     asyncComponents.elements.filter{case ((Full(name), _), _) => name == theType case _ => false}.toList.map{case (_, value) => value}
   }
 
-  private def findComet(theType: Box[String], name: Box[String], defaultXml: NodeSeq, attributes: Map[String, String]): Box[CometActor] = {
-    val what = (theType, name)
+  private def findComet(theType: Box[String], name: Box[String], defaultXml: NodeSeq, attributes: Map[String, String]): Box[CometActor] = synchronized {
+    val what = (theType -> name)
     Box(asyncComponents.get(what)).or( {
         theType.flatMap{
           tpe =>
@@ -826,17 +826,17 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   /**
    * Adds a new COmet actor to this session
    */
-  def addCometActor(act: CometActor): Unit = synchronized {
+  private[http] def addCometActor(act: CometActor): Unit = synchronized {
     asyncById(act.uniqueId) = act
   }
 
   /**
    * Remove a Comet actor
    */
-  def removeCometActor(act: CometActor): Unit = synchronized {
+  private [http] def removeCometActor(act: CometActor): Unit = synchronized {
     asyncById -= act.uniqueId
     messageCallback -= act.jsonCall.funcId
-
+    asyncComponents -= (act.theType -> act.name)
     // FIXME remove all the stuff from the function table related to this item
 
   }
@@ -848,7 +848,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
           case e => Log.info("Comet find by type Failed to instantiate "+cls.getName, e)}) {
         val constr = cls.getConstructor()
         val ret = constr.newInstance().asInstanceOf[CometActor]
-        ret.initCometActor(this, name, defaultXml, attributes)
+        ret.initCometActor(this, Full(contType), name, defaultXml, attributes)
 
         // ret.link(this)
         ret ! PerformSetupComet
