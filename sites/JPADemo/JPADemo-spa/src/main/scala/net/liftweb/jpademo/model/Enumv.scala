@@ -40,10 +40,4 @@ trait Enumv  {
 
   /* get name description pair list for forms */
   def getNameDescriptionList =  this.elements.toList.map(v => (v.toString, getDescriptionOrName(v) ) ).toList
-
-  /* get the enum given a string */
-  def valueOf(str: String) = this.elements.toList.filter(_.toString == str) match {
-    case Nil => null
-    case x => x.head
-  }
 }

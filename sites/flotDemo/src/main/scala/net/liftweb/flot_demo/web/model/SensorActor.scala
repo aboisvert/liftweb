@@ -89,11 +89,11 @@ class AcumSamplesActor (max : Int) extends Actor {
           notifyListeners (FlotNewData (series, newDatas))
         }
 
-        case AddListener(listener: Actor) => 
+        case AddListener(listener: Actor) =>
           listeners = listener :: listeners
           //
           reply (FlotInfo ("", series, options))
-        
+
 
         case RemoveListener(listener: Actor) =>
           listeners = listeners.remove(listener.eq)

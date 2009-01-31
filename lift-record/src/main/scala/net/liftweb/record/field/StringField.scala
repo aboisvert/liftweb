@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,7 +27,7 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
 
   def this(rec: OwnerType, maxLength: Int, value: String) = {
     this(rec, maxLength)
-     set(value)
+    set(value)
   }
 
   def this(rec: OwnerType, value: String) = {
@@ -52,86 +52,89 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
 
   def setFromString(s: String): Box[String] = Full(set(s))
 
-  private def elem = <input type="text" maxlength={maxLength.toString}
-      name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
+  private def elem =
+  S.fmapFunc(SFuncHolder(this.setFromAny(_))) {
+    funcName =>
+    <input type="text" maxlength={maxLength.toString}
+      name={funcName}
+      lift:gc={funcName}
       value={value match {case null => "" case s => s.toString}}
-      tabindex={tabIndex toString}/>;
+      tabindex={tabIndex toString}/>
+      }
 
-  def toForm = {
-    var el = elem
+      def toForm = {
+        uniqueFieldId match {
+          case Full(id) =>
+            <div id={id+"_holder"}><div><label for={id+"_field"}>{displayName}</label></div>{elem % ("id" -> (id+"_field"))}<lift:msg id={id}/></div>
+          case _ => <div>{elem}</div>
+        }
 
-    uniqueFieldId match {
-      case Full(id) =>
-        <div id={id+"_holder"}><div><label for={id+"_field"}>{displayName}</label></div>{el % ("id" -> (id+"_field"))}<lift:msg id={id}/></div>
-      case _ => <div>{el}</div>
-    }
+      }
 
-  }
+      def asXHtml: NodeSeq = {
+        var el = elem
 
-  def asXHtml: NodeSeq = {
-    var el = elem
-
-    uniqueFieldId match {
-      case Full(id) =>  el % ("id" -> (id+"_field"))
-      case _ => el
-    }
-  }
-
-
-  def defaultValue = ""
-
-  /**
-   * Make sure the field matches a regular expression
-   */
-  def valRegex(pat: Pattern, msg: => String)(value: String): Box[Node] = pat.matcher(value).matches match {
-    case true => Empty
-    case false => Full(Text(msg))
-  }
-
-  final def toUpper(in: String): String = in match {
-    case null => null
-    case s => s.toUpperCase
-  }
-
-  final def trim(in: String): String = in match {
-    case null => null
-    case s => s.trim
-  }
-
-  final def notNull(in: String): String = in match {
-    case null => ""
-    case s => s
-  }
+        uniqueFieldId match {
+          case Full(id) =>  el % ("id" -> (id+"_field"))
+          case _ => el
+        }
+      }
 
 
-}
+      def defaultValue = ""
+
+      /**
+       * Make sure the field matches a regular expression
+       */
+      def valRegex(pat: Pattern, msg: => String)(value: String): Box[Node] = pat.matcher(value).matches match {
+        case true => Empty
+        case false => Full(Text(msg))
+      }
+
+      final def toUpper(in: String): String = in match {
+        case null => null
+        case s => s.toUpperCase
+      }
+
+      final def trim(in: String): String = in match {
+        case null => null
+        case s => s.trim
+      }
+
+      final def notNull(in: String): String = in match {
+        case null => ""
+        case s => s
+      }
 
 
-import java.sql.{ResultSet, Types}
-import net.liftweb.mapper.{DriverType}
+      }
 
-/**
- * A string field holding DB related logic
- */
-class DBStringField[OwnerType <: DBRecord[OwnerType]](rec: OwnerType, maxLength: Int) extends
-  StringField[OwnerType](rec, maxLength) with JDBCFieldFlavor[String]{
 
-  def this(rec: OwnerType, maxLength: Int, value: String) = {
-    this(rec, maxLength)
-    set(value)
-  }
+      import java.sql.{ResultSet, Types}
+      import net.liftweb.mapper.{DriverType}
 
-  def this(rec: OwnerType, value: String) = {
-    this(rec, 100)
-    set(value)
-  }
+      /**
+       * A string field holding DB related logic
+       */
+      class DBStringField[OwnerType <: DBRecord[OwnerType]](rec: OwnerType, maxLength: Int) extends
+      StringField[OwnerType](rec, maxLength) with JDBCFieldFlavor[String]{
 
-  def targetSQLType = Types.VARCHAR
+        def this(rec: OwnerType, maxLength: Int, value: String) = {
+          this(rec, maxLength)
+          set(value)
+        }
 
-  /**
-   * Given the driver type, return the string required to create the column in the database
-   */
-  def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" VARCHAR("+maxLength+")"
+        def this(rec: OwnerType, value: String) = {
+          this(rec, 100)
+          set(value)
+        }
 
-  def jdbcFriendly(field : String) : String = value
-}
+        def targetSQLType = Types.VARCHAR
+
+        /**
+         * Given the driver type, return the string required to create the column in the database
+         */
+        def fieldCreatorString(dbType: DriverType, colName: String): String = colName+" VARCHAR("+maxLength+")"
+
+        def jdbcFriendly(field : String) : String = value
+      }

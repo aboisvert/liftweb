@@ -5,7 +5,7 @@
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.10-SNAPSHOT</version>
+  <version>0.11-SNAPSHOT</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
@@ -153,7 +153,7 @@ Lift is a scala web framework.
     <url>http://scala-tools.org/hudson/job/liftweb/</url>
   </ciManagement>
   <properties>
-    <scala.version>2.7.2</scala.version>
+    <scala.version>2.7.3</scala.version>
   </properties>
   <modules>
     <module>lift-util</module>
@@ -273,6 +273,11 @@ Lift is a scala web framework.
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0</version>
+      </plugin>
     </plugins>
   </build>
   <reporting>
@@ -297,6 +302,7 @@ Lift is a scala web framework.
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-changes-plugin</artifactId>
+        <version>2.0-beta-3</version>
         <reportSets>
           <reportSet>
             <reports>
@@ -305,7 +311,8 @@ Lift is a scala web framework.
           </reportSet>
         </reportSets>
         <configuration>
-          <issueLinkTemplate>%URL%/detail?id=%ISSUE%</issueLinkTemplate>
+          <!--issueLinkTemplate>%URL%/detail?id=%ISSUE%</issueLinkTemplate-->
+          <xmlPath>${basedir}/src/changes/changes.xml</xmlPath>
         </configuration>
       </plugin>
       <plugin>

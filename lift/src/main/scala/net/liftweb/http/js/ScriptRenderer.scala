@@ -139,7 +139,9 @@ function lift_blurIfReturn(e) {
 function lift_actualAjaxCall(data, onSuccess, onFailure) {
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
-                                                            "POST", 5000, false, "script",
+                                                            "POST",
+                                                            LiftRules.ajaxPostTimeout,
+                                                            false, "script",
                                                             Full("onSuccess"), Full("onFailure")))+
                         """
 }
@@ -157,7 +159,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
       function lift_cometEntry() {""" +
                         LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"),
                                                              "GET",
-                                                             140000,
+                                                             LiftRules.cometGetTimeout,
                                                              false,
                                                              "script",
                                                              Full("lift_handlerSuccessFunc"),

@@ -137,6 +137,6 @@ class CalendarDayViewDemo {
   import JsCmds._
 
 
-  def itemClick = Full(AnonFunc("elem, param", JsRaw("alert(param + ' - ' + elem.nodeName)")))
+  def itemClick = Full(AnonFunc("elem, param", JsRaw("alert(CalendarDayView.getItemById(calendars.items, param).subject  + ' - ' + elem.nodeName)")))
 
 }

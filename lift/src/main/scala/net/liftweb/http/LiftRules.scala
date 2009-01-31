@@ -217,7 +217,7 @@ object LiftRules {
   /**
    * The base name of the resource bundle
    */
-  var resourceName = "lift"
+  var resourceNames: List[String] = List("lift")
 
   /**
    * The base name of the resource bundle of the lift core code
@@ -741,6 +741,12 @@ object LiftRules {
    */
   var renderAjaxScript: LiftSession => JsCmd = session => ScriptRenderer.ajaxScript
 
+var ajaxPostTimeout = 5000
+
+var cometGetTimeout = 140000
+
+var supplimentalHeaders: HttpServletResponse => Unit = s => s.setHeader("X-Lift-Version", liftVersion)
+
   /**
    * Returns the JavaScript that manages Comet requests.
    */
@@ -762,6 +768,8 @@ object LiftRules {
     object when extends SessionVar[Long](millis)
     when.is
   }
+
+lazy val liftVersion = "0.11-SNAPSHOT"
 
   /**
    * Hods the last update time of the Comet request. Based on this server mayreturn HTTP 304 status

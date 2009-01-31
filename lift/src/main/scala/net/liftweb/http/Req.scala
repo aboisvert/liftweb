@@ -74,7 +74,7 @@ object Req {
     //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Box[Array[Byte]]) =
     val paramCalculator = () =>
     if ((reqType.post_? ||
-         reqType.put_?) && request.getContentType == "text/xml") {
+         reqType.put_?) && request.getContentType.startsWith("text/xml")) {
       (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {

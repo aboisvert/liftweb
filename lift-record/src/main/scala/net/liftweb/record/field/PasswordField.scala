@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -48,18 +48,17 @@ class PasswordField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Fiel
 
   def setFromString(s: String): Box[String] = Full(set(s))
 
-  private def elem = <input type="pasword"
-      name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
+  private def elem = S.fmapFunc(SFuncHolder(this.setFromAny(_))){
+    funcName => <input type="pasword"
+      name={funcName} lift:gc={funcName}
       value={value match {case null => "" case s => s.toString}}
-      tabindex={tabIndex toString}/>;
+      tabindex={tabIndex toString}/>}
 
   def toForm = {
-    var el = elem
-
     uniqueFieldId match {
       case Full(id) =>
-        <div id={id+"_holder"}><div><label for={id+"_field"}>{displayName}</label></div>{el % ("id" -> (id+"_field"))}<lift:msg id={id}/></div>
-      case _ => <div>{el}</div>
+        <div id={id+"_holder"}><div><label for={id+"_field"}>{displayName}</label></div>{elem % ("id" -> (id+"_field"))}<lift:msg id={id}/></div>
+      case _ => <div>{elem}</div>
     }
 
   }

@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -63,31 +63,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     case xs => url + "&" + paramsToUrlParams(xs)
   }
 
-  /*
-   /**
-    * Set of all valid files extensions
-    * @return a mutable HashSet[String]
-    */
-   val validSuffixes = {
-   val ret = new HashSet[String]
-   ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
-   ret
-   }
 
-   /**
-    * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
-    */
-   def goodPath_?(path : String): Boolean = {
-   if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
-   else {
-   val lastPoint = path.lastIndexOf('.')
-   val lastSlash = path.lastIndexOf('/')
-   if (lastPoint <= lastSlash) false else {
-   validSuffixes.contains(path.substring(lastPoint + 1))
-   }
-   }
-   }
-   */
   /**
    * get a map of HTTP properties and return true if the "Content-type"
    * is either "text/html" or "application/xhtml+xml"
@@ -110,7 +86,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   /**
    * Return true if the xml doesn't contain an <html> tag
    */
-  def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
+  def noHtmlTag(in: NodeSeq): Boolean = findElems(in)(_.label == "html").length != 1
 
   /**
    * Transform a general Map to a nutable HashMap
@@ -184,6 +160,42 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
    * current session
    */
   def nextNum = serial.incrementAndGet
+
+  def findElems(nodes: NodeSeq)(f: Elem => Boolean): NodeSeq = {
+    val ret = new ListBuffer[Elem]
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          if (f(e)) ret += e
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+    find(nodes)
+
+    ret.toList
+  }
+
+  def findInElems[T](nodes: NodeSeq)(f: Elem => Iterable[T]): List[T] = {
+    val ret = new ListBuffer[T]
+
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          ret ++= f(e)
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+
+    find(nodes)
+
+    ret.toList
+  }
 
   /**
    * Get a guanateed unique field name

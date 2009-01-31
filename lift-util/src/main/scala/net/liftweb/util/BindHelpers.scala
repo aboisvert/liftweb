@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,6 +19,35 @@ import _root_.scala.xml.{NodeSeq, Node, SpecialNode, Text, Elem,
 
 trait Bindable {
   def asHtml: NodeSeq
+}
+
+trait AttrHelper[+Holder[X]] {
+  type Info
+
+  def apply(key: String): Holder[Info] = convert(findAttr(key))
+  def apply(prefix: String, key: String): Holder[Info] =
+  convert(findAttr(prefix, key))
+
+  def apply(key: String, default: => Info): Info =
+  findAttr(key) getOrElse default
+
+  def apply(prefix: String, key: String, default: => Info): Info =
+  findAttr(prefix, key) getOrElse default
+
+  def apply[T](key: String, f: Info => T): Holder[T] =
+  convert(findAttr(key).map(f))
+
+  def apply[T](prefix: String, key: String, f: Info => T): Holder[T] =
+  convert(findAttr(prefix, key).map(f))
+  def apply[T](key: String, f: Info => T, default: => T): T =
+  findAttr(key).map(f) getOrElse default
+
+  def apply[T](prefix: String, key: String, f: Info => T, default: => T): T =
+  findAttr(prefix, key).map(f) getOrElse default
+
+  protected def findAttr(key: String): Option[Info]
+  protected def findAttr(prefix: String, key: String): Option[Info]
+  protected def convert[T](in: Option[T]): Holder[T]
 }
 
 /**
@@ -60,28 +89,24 @@ object BindHelpers extends BindHelpers {
   /**
    * Helpers to look up attributes on the currentNode
    */
-  object attr {
-    /**
-     * Look for an unprefixed attribute with a given name. The return value is
-     * Option[NodeSeq] for easy addition to the attributes
-     */
-    def apply(key: String): Option[NodeSeq] =
-      for {n <- _currentNode.box.toOption
-         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
-      yield at.value
+  object attr extends AttrHelper[Option] {
+    type Info = NodeSeq
 
-    /**
-     * Look for prefixed attributes with a given prefix and name. The return value is
-     * Option[NodeSeq] for easy addition to the attributes
-     */
-    def apply(prefix: String, key: String): Option[NodeSeq] =
-      for {n <- _currentNode.box.toOption
-           at <- n.attributes.find {
-             case at: PrefixedAttribute => at.key == key && at.pre == prefix
-             case _ => false
-           }
-      }
-      yield at.value
+    protected def findAttr(key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find(at => at.key == key && !at.isPrefixed)}
+    yield at.value
+
+    protected def findAttr(prefix: String, key: String): Option[Info] =
+    for {n  <- _currentNode.box.toOption
+         at <- n.attributes.find {
+        case at: PrefixedAttribute => at.key == key && at.pre == prefix
+        case _ => false
+      }}
+    yield at.value
+
+    protected def convert[T](in: Option[T]): Option[T] = in
+
   }
 }
 
@@ -115,7 +140,8 @@ trait BindHelpers {
    *
    * @return the first matching node sequence
    */
-  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq = (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+  def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq =
+    Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child
   }
@@ -124,7 +150,7 @@ trait BindHelpers {
    * Choose one of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag: String): Box[NodeSeq] =
-  (xhtml \\ tag).toList.filter(_.prefix == prefix) match {
+  Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => Empty
     case x :: xs => Full(x.child)
   }
@@ -239,7 +265,6 @@ trait BindHelpers {
     def ->[T <: SpecialNode](in: T with SpecialNode) = Tuple2[String, T](name, in)
 
     def ->(in: String) = TheStrBindParam(name, in)
-    // def ->[T](in: T)(implicit f: T => String) = TheStrBindParam(name, f(in))
     def ->(in: NodeSeq) = TheBindParam(name, in)
     def ->(in: Text) = TheBindParam(name, in)
     def ->(in: Node) = TheBindParam(name, in)
@@ -256,6 +281,7 @@ trait BindHelpers {
   }
 
   implicit def strToSuperArrowAssoc(in: String): SuperArrowAssoc = new SuperArrowAssoc(in)
+
 
   /**
    * This class creates a BindParam from an input value
@@ -292,13 +318,6 @@ trait BindHelpers {
   @deprecated
   implicit def symToBPAssoc(in: Symbol): BindParamAssoc = new BindParamAssoc(in.name)
 
-  /**
-   * Transforms a Tuple2[Symbol, _] to a BindParam
-   */
-  /*
-   implicit def symbolPairToBindParam[T](p: Tuple2[Symbol, T]): BindParam =
-   pairToBindParam((p._1.name, p._2))
-   */
   /**
    * Experimental extension to bind which passes in an additional "parameter" from the XHTML to the transform
    * function, which can be used to format the returned NodeSeq.

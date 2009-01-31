@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,30 +47,6 @@ object Flot
 
   def script(xml: NodeSeq): JsCmd =
     (xml \ "script").map(x => JsRaw(x.text).cmd).foldLeft(Noop)(_ & _)
- 
-  /**
-   * render a Flot Graph
-   * <p>
-   * search extra javascript in xhtml templates
-   */
-  /*
-   def render(idPlaceholder: String,
-   datas: List[FlotSerie],
-   options: FlotOptions,
-   caps: FlotCapability*
-   ): (NodeSeq => NodeSeq) = {
-
-   def ret(in: NodeSeq): NodeSeq = {
-
-   // search for a script tag in the template
-   val tagScript = in \\ "script"
-   val jqueryScript = if (! tagScript.isEmpty) tagScript (0).child else Text ("")
-
-   render(idPlaceholder, datas, options, jqueryScript, caps :_*)
-   }
-
-   ret
-   }*/
 
   /**
    * render a flot graph
@@ -103,7 +79,7 @@ object Flot
 
   def renderCapability (fRender: FlotCapability => JsCmd, caps: FlotCapability *): JsCmd =
   caps.foldLeft(Noop)((js, cap) => js & fRender(cap))
- 
+
 
   /*
    * can be used to generate AJAX response
@@ -124,10 +100,10 @@ object Flot
 
   //
 
-  def renderFlotHide (idPlaceholder: String, caps: FlotCapability *): JsCmd = 
+  def renderFlotHide (idPlaceholder: String, caps: FlotCapability *): JsCmd =
   JsHideId(idPlaceholder) &
   renderCapability (c => c.renderHide(), caps :_*)
-  
+
 
   // part that belongs to jQuery "document ready" function
 
@@ -166,7 +142,7 @@ object Flot
           case _ => renderFlotShow(idPlaceholder, datas, options, script,
                                    caps : _*)
         }))
-    
+
 
   }
 
@@ -195,7 +171,7 @@ object Flot
     case (_, Math.NaN_DOUBLE) => JsNull
     case (a, b) => JsArray(a, b)
   }
-  
+
 
   /**
    * render serie of data:<br/>
@@ -203,7 +179,7 @@ object Flot
    */
   def renderValues(values: List[(Double, Double)]): JsExp =
   JsArray(values.map(renderOneValue) :_*)
-  
+
 
   /**
    *
@@ -255,7 +231,7 @@ object Flot
         case Left(c) => ("color", c)
         case Right(c) => ("color", c)
       },
-         data.shadowSize.map(s => ("shadowSize", s)), 
+         data.shadowSize.map(s => ("shadowSize", s)),
          Full(("data", JsVar("data_"+idPlaceholder + "_" + idSerie))))
 
     JsObj(info.flatten(_.toList) :_*)
@@ -279,10 +255,10 @@ object Flot
   JsArray(datas.zipWithIndex.map{
       case (d, idx) => renderOneSerie(d, idPlaceholder, idx + 1)
     } :_*)
-  
+
 
   //
-  
+
 
   //
   // min: 0, max: 10, tickDecimals: 0
@@ -320,12 +296,12 @@ object Flot
   //
   //
 
- 
+
   //
   //
   //
 
- 
+
 
 
   //

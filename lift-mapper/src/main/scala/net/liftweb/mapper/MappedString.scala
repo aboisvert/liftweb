@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -94,9 +94,10 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   }
 
   override def _toForm: Box[NodeSeq] =
+  fmapFunc({s: List[String] => this.setFromAny(s)}){name =>
     Full(<input type='text' id={fieldId} maxlength={maxLen.toString}
-	 name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
-	 value={is match {case null => "" case s => s.toString}}/>)
+	 name={name} lift:gc={name}
+	 value={is match {case null => "" case s => s.toString}}/>)}
 
   protected def i_obscure_!(in : String) : String = {
     ""

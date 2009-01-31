@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@ package net.liftweb.record.field
 
 import _root_.scala.xml._
 import _root_.net.liftweb.util._
-import _root_.net.liftweb.http.{S, FieldError}
+import _root_.net.liftweb.http.{S, FieldError, SHtml}
 import Helpers._
 import S._
 
@@ -52,26 +52,30 @@ class BooleanField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field
     }
   }
 
-  private def elem = <input type="checkbox"
-      name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
-      value={value.toString}
-      tabindex={tabIndex toString}/>;
+  private def elem =  /*<input type="checkbox"
+                       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
+                       value={value.toString}
+                       tabindex={tabIndex toString}/>;
+                       */ SHtml.checkbox(value, this.set _, "tabIndex" -> tabIndex.toString)
 
   def toForm = {
-    var el = elem
+    //var el = elem
     uniqueFieldId match {
       case Full(id) =>
-        <div id={id+"_holder"}><div><label for={id+"_field"}>{displayName}</label></div>{el % ("id" -> (id+"_field"))}<lift:msg id={id}/></div>
-      case _ => <div>{el}</div>
+        <div id={id+"_holder"}><div><label
+              for={id+"_field"}>{displayName}</label></div>{SHtml.checkbox(value, this.set _, "tabIndex" -> tabIndex.toString, "id" -> (id+"_field"))}<lift:msg id={id}/></div>
+      case _ => <div>{elem}</div>
     }
 
   }
 
   def asXHtml: NodeSeq = {
-    var el = elem
+
     uniqueFieldId match {
-      case Full(id) =>  el % ("id" -> (id+"_field"))
-      case _ => el
+      case Full(id) => SHtml.checkbox(value, this.set _,
+                                      "tabIndex" -> tabIndex.toString,
+                                      "id" -> (id+"_field"))
+      case _ => elem
     }
   }
 

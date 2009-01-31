@@ -161,7 +161,7 @@ object TextileParser {
     /**
      * is it a blank line?  Start of line, some spaces, and an end of line
      */
-    lazy val blankLine: Parser[Textile] = beginlS ~ '\n' ^^^ BlankLine()
+    lazy val blankLine: Parser[Textile] = beginlS ~ '\n' ^^^ BlankLine
 
 
     /**
@@ -348,7 +348,7 @@ object TextileParser {
     /**
      * an EOL character
      */
-    lazy val endOfLine: Parser[Textile] = (('\r' ~ '\n') | '\n') ^^^ EOL()
+    lazy val endOfLine: Parser[Textile] = (('\r' ~ '\n') | '\n') ^^^ EOL
 
     // replaced by checking the position of the current input (not that beginl does not consume any input,
     // so repeatedly calling beginningOfLine is not a good idea -- that will either loop forever or fail immediately)
@@ -376,7 +376,7 @@ object TextileParser {
      * (c)
      */
     lazy val copyright: Parser[Textile] =
-    '(' ~ (accept('c') | 'C') ~ ')' ^^^ Copyright()  // accept necesary because of clash with | on char's
+    '(' ~ (accept('c') | 'C') ~ ')' ^^^ Copyright  // accept necesary because of clash with | on char's
 
 
     def validTagChar(c: Char) = Character.isDigit(c) || Character.isLetter(c) || c == '_'
@@ -441,21 +441,21 @@ object TextileParser {
     /**
      * A "dimension" pretty printer
      */
-    lazy val dimension: Parser[Textile] = accept(" x ") ^^^ Dimension()
+    lazy val dimension: Parser[Textile] = accept(" x ") ^^^ Dimension
 
     lazy val registered: Parser[Textile] =
-    '(' ~ (accept('r') | 'R') ~ ')' ^^^ Register()
+    '(' ~ (accept('r') | 'R') ~ ')' ^^^ Register
 
     lazy val trademark: Parser[Textile] =
-    '(' ~ (accept('t') | 'T') ~ (accept('m') | 'M') ~ ')' ^^^ Trademark()
+    '(' ~ (accept('t') | 'T') ~ (accept('m') | 'M') ~ ')' ^^^ Trademark
 
-    lazy val elipsis: Parser[Textile] = accept("...") ^^^ Elipsis()
+    lazy val elipsis: Parser[Textile] = accept("...") ^^^ Elipsis
 
-    lazy val emDash: Parser[Textile] = accept(" -- ") ^^^ EmDash()
+    lazy val emDash: Parser[Textile] = accept(" -- ") ^^^ EmDash
 
-    lazy val enDash: Parser[Textile] = accept(" - ") ^^^ EnDash()
+    lazy val enDash: Parser[Textile] = accept(" - ") ^^^ EnDash
 
-    lazy val single_quote: Parser[Textile] = '\'' ^^^ SingleQuote()
+    lazy val single_quote: Parser[Textile] = '\'' ^^^ SingleQuote
 
 
     def bullet(depth : Int, numbered : Boolean): Parser[Textile] = {
@@ -565,7 +565,7 @@ object TextileParser {
 
 
 
-    lazy val blankPara : Parser[Textile] = discard(rep1(blankLine)) ^^^ BlankLine()
+    lazy val blankPara : Parser[Textile] = discard(rep1(blankLine)) ^^^ BlankLine
 
     lazy val not_blank_line : Parser[Textile] = not(discard(blankLine)) ~> lineElem
 
@@ -749,7 +749,7 @@ object TextileParser {
 
   // drop the last EOL to prevent needless <br />
   // TODO: find a better solution.. it's not quite clear to me where newlines are meaningful
-  private def flattenAndDropLastEOL(elems : List[Textile]) = ((elems match {case Nil => Nil case x => (x.last match { case EOL() => elems.init case _ => elems})})).flatMap{e => e.toHtml.toList}
+  private def flattenAndDropLastEOL(elems : List[Textile]) = ((elems match {case Nil => Nil case x => (x.last match { case EOL => elems.init case _ => elems})})).flatMap{e => e.toHtml.toList}
 
   case class Paragraph(elems : List[Textile], attrs: List[Attribute]) extends ATextile(elems, attrs) {
     override def toHtml : NodeSeq = {
@@ -772,7 +772,7 @@ object TextileParser {
     }
   }
 
-  case class BlankLine extends Textile {
+  case object BlankLine extends Textile {
     def toHtml = Text("")
   }
 
@@ -788,7 +788,7 @@ object TextileParser {
     }
   }
 
-  case class EmDash extends Textile  {
+  case object EmDash extends Textile  {
     def toHtml : NodeSeq = <xml:group> &#8212; </xml:group>
   }
 
@@ -796,36 +796,36 @@ object TextileParser {
    def toHtml : NodeSeq = Text("")
    }*/
 
-  case class EOL extends Textile  {
+  case object EOL extends Textile  {
     // return the characters because Scala's XML library returns <br></br> in the
     // toString for the element and this causes 2 line breaks in some browsers
     // def toHtml :NodeSeq = XmlElem(null, "br", null, TopScope, Nil : _*) concat Text("\n")
     def toHtml :NodeSeq = <br/>
   }
 
-  case class EnDash extends Textile  {
+  case object EnDash extends Textile  {
     def toHtml : NodeSeq = <xml:group> &#8211; </xml:group>
   }
 
-  case class SingleQuote extends Textile  {
+  case object SingleQuote extends Textile  {
     def toHtml : NodeSeq = <xml:group>&#8217;</xml:group>
   }
 
-  case class Elipsis extends Textile  {
+  case object Elipsis extends Textile  {
     def toHtml : NodeSeq = <xml:group>&#8230;</xml:group>
   }
 
-  case class Dimension extends Textile   {
+  case object Dimension extends Textile   {
     def toHtml : NodeSeq = <xml:group>&#215;</xml:group>
   }
 
-  case class Trademark extends Textile  {
+  case object Trademark extends Textile  {
     def toHtml : NodeSeq = <xml:group>&#8482;</xml:group>
   }
-  case class Copyright extends Textile {
+  case object Copyright extends Textile {
     def toHtml : NodeSeq = <xml:group>&#169;</xml:group>
   }
-  case class Register extends Textile {
+  case object Register extends Textile {
     def toHtml : NodeSeq = <xml:group>&#174;</xml:group>
   }
 

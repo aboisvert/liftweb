@@ -16,7 +16,7 @@
 package bootstrap.liftweb
 
 import _root_.net.liftweb._
-import util.{Helpers, Box, Full, Empty, Failure, Log, NamedPF}
+import util.{Helpers, Box, Full, Empty, Failure, Log, NamedPF, Props}
 import http._
 import sitemap._
 import Helpers._
@@ -131,7 +131,7 @@ object RequestLogger {
   def endServicing(session: LiftSession, req: Req,
                    response: Box[LiftResponse]) {
     val delta = millis - startTime.is
-    Log.info("Serviced "+req.uri+" in "+(delta)+"ms "+(
+    Log.info("At "+(timeNow)+" Serviced "+req.uri+" in "+(delta)+"ms "+(
         response.map(r => " Headers: "+r.toResponse.headers) openOr ""
       ))
   }
@@ -200,17 +200,65 @@ object XmlServer {
 
 }
 
+/**
+ * Database connection calculation
+ */
 object DBVendor extends ConnectionManager {
-  def newConnection(name: ConnectionIdentifier): Box[Connection] = {
-    try {
-      Class.forName("org.h2.Driver")
-      val dm =  DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")
-      Full(dm)
-    } catch {
-      case e : Exception => e.printStackTrace; Empty
+  private var pool: List[Connection] = Nil
+  private var poolSize = 0
+  private val maxPoolSize = 4
+
+  private def createOne: Box[Connection] = try {
+    val driverName: String = Props.get("db.driver") openOr
+    "org.apache.derby.jdbc.EmbeddedDriver"
+
+    val dbUrl: String = Props.get("db.url") openOr
+    "jdbc:derby:lift_example;create=true"
+
+    Class.forName(driverName)
+
+    val dm = (Props.get("db.user"), Props.get("db.password")) match {
+      case (Full(user), Full(pwd)) =>
+        DriverManager.getConnection(dbUrl, user, pwd)
+
+      case _ => DriverManager.getConnection(dbUrl)
+    }
+
+    Full(dm)
+  } catch {
+    case e: Exception => e.printStackTrace; Empty
+  }
+
+  def newConnection(name: ConnectionIdentifier): Box[Connection] =
+  synchronized {
+    pool match {
+      case Nil if poolSize < maxPoolSize =>
+        val ret = createOne
+        poolSize = poolSize + 1
+        ret.foreach(c => pool = c :: pool)
+        ret
+
+      case Nil => wait(1000L); newConnection(name)
+      case x :: xs => try {
+          x.setAutoCommit(false)
+          Full(x)
+        } catch {
+          case e => try {
+              pool = xs
+              poolSize = poolSize - 1
+              x.close
+              newConnection(name)
+            } catch {
+              case e => newConnection(name)
+            }
+        }
     }
   }
-  def releaseConnection(conn: Connection) {conn.close}
+
+  def releaseConnection(conn: Connection): Unit = synchronized {
+    pool = conn :: pool
+    notify
+  }
 }
 
 object BrowserLogger {
@@ -236,13 +284,18 @@ object SessionInfoDumper extends Actor {
           if ((millis - tenMinutes) > lastTime) {
             lastTime = millis
             val rt = Runtime.getRuntime
-            Log.info("Number of open sessions: "+sessions.size)
-            Log.info("Free Memory: "+rt.freeMemory)
-            Log.info("Total Memory: "+rt.totalMemory)
+            val dateStr: String = timeNow.toString
+            Log.info("At "+dateStr+" Number of open sessions: "+sessions.size)
+            Log.info("Free Memory: "+pretty(rt.freeMemory))
+            Log.info("Total Memory: "+pretty(rt.totalMemory))
           }
       }
     }
   }
+
+  private def pretty(in: Long): String =
+  if (in > 1000L) pretty(in / 1000L)+","+(in % 1000L)
+  else in.toString
 
   this.start
 }

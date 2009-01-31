@@ -21,6 +21,7 @@ import _root_.javax.sql.{ DataSource}
 import _root_.javax.naming.{Context, InitialContext}
 import _root_.scala.collection.mutable._
 import _root_.net.liftweb.util._
+import _root_.net.liftweb.http._
 import Helpers._
 
 object DB {
@@ -116,8 +117,15 @@ object DB {
       case Nil => f
       case x :: xs => use(x)(ignore => doWith(xs, f))
     }
-
-    def apply[T](f: => T): T = try {doWith(in, f)} finally {clearThread}
+    private object DepthCnt extends RequestVar(0)
+    def apply[T](f: => T): T =
+    try {
+      DepthCnt.update(_ + 1)
+      doWith(in, f)
+    } finally {
+      DepthCnt.update(_ - 1)
+      if (DepthCnt.is == 0) clearThread
+    }
   }
 
   private def releaseConnection(conn : SuperConnection) : Unit = conn.close
@@ -135,7 +143,7 @@ object DB {
   }
 
   private def releaseConnectionNamed(name: ConnectionIdentifier) {
-    Log.trace("Requect to release connection: "+name+" on thread "+Thread.currentThread)
+    Log.trace("Request to release connection: "+name+" on thread "+Thread.currentThread)
     (info.get(name): @unchecked) match {
       case Some(ConnectionHolder(c, 1, post)) =>
         c.commit
@@ -147,6 +155,9 @@ object DB {
       case Some(ConnectionHolder(c, n, post)) =>
         Log.trace("Did not release connection: "+name+" on thread "+Thread.currentThread+" count "+(n - 1))
         info(name) = ConnectionHolder(c, n - 1, post)
+
+      case _ =>
+        // ignore
     }
   }
 
@@ -293,9 +304,10 @@ object DB {
     try {
       f(conn)
     } finally {
-      releaseConnectionNamed(name)
+        releaseConnectionNamed(name)
     }
   }
+
 
 
   val reservedWords = _root_.scala.collection.immutable.HashSet.empty ++

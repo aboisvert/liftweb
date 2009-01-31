@@ -16,7 +16,7 @@
 package net.liftweb.example.snippet
 
 import _root_.net.liftweb.example.model._
-import _root_.scala.xml.{NodeSeq, Text, Group, Elem}
+import _root_.scala.xml._
 import _root_.net.liftweb.http._
 import _root_.net.liftweb.mapper._
 import S._
@@ -44,13 +44,16 @@ class AjaxForm {
     ReplaceOptions("city_select", cities.map(s => (s,s)), Full(first))
   }
 
-  def show(xhtml: Group): NodeSeq =
+  def show(xhtml: Group): NodeSeq = {
+    val (name, js) = ajaxCall(JE.JsRaw("this.value"),
+			      s => After(200, replace(s)))
     bind("select", xhtml,
         "state" -> select(AjaxForm.states.map(s => (s,s)), Full(state), state = _) %
-          ("onchange" -> ajaxCall(JE.JsRaw("this.value"),
-				  s => After(200, replace(s))).toJsCmd),
+          ("onchange" -> js.toJsCmd) %
+	 (new PrefixedAttribute("lift", "gc", name, Null)),
         "city" -> cityChoice(state) % ("id" -> "city_select"),
         "submit" -> submit(?("Save"), () => {S.notice("City: "+city+" State: "+state); redirectTo("/")}))
+  }
 }
 
 object AjaxForm {

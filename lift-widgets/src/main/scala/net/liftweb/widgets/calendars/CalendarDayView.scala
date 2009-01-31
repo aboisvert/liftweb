@@ -82,7 +82,7 @@ class CalendarDayView(val when: Calendar, val meta: DayViewMeta) {
         Unparsed("\nvar calendars = " + CalendarUtils.toJSON(calendars filter (c => CalendarUtils.sameDay(c.start, when))).toJsCmd) ++
         Unparsed("""
          jQuery(document).ready(function() {
-            buildDayViewCalendars();
+            CalendarDayView.buildDayViewCalendars();
           })
          """)
        }

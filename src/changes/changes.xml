@@ -1,4 +1,3 @@
-
 <document>
   <properties>
     <title>Changes Of Lift</title>
@@ -16,9 +15,13 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.10" date="2009-01-02" description="api refcator">
+    <release version="0.11" date="" description="">
+      <action dev="Marius Danciu" type="add">Added support for multiple resource bundles</action>
+    </release>
+    <release version="0.10" date="2009-01-14" description="api refactor">
       <action dev="Marius Danciu" type="update">Consolidate LiftRules</action>
       <action dev="Marius Danciu" type="update">Added HTTP authentication support</action>
+      <action dev="Jorge Ortiz" type="update">Upgrade to Scala 2.7.3</action>
       <action dev="Jorge Ortiz" type="update">Upgrade to Scalacheck 1.5</action>
       <action dev="Jorge Ortiz" type="update">Upgrade to Specs 1.4.0</action>
       <action dev="Marius Danciu" type="update">Added Record/Field generic support</action>
@@ -62,7 +65,7 @@
       <action dev="Marius Danciu" type="update">
         - Separating html functions from S object to SHtml object
         - Putting LiftRules in its own file
-        - Adding support for associating messages with ID's to allow form fields validation messages. 
+        - Adding support for associating messages with ID's to allow form fields validation messages.
         - ValidationIssue renamed into FieldError and lives in http package
         - ErrorReport built in snippet was renamed to Msgs
         - Added Msg built in snippet used for form field messages (Renders only messages associated with this tag id)

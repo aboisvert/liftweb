@@ -79,12 +79,12 @@ class LiftServlet extends HttpServlet {
 
     val ret = SessionMaster.getSession(httpSession, cometSessionId) match {
       case Full(ret) =>
-        ret.lastServiceTime = millis // DO NOT REMOVE THIS LINE!!!!!
+        ret.fixSessionTime()
         ret
 
       case _ =>
         val ret = LiftSession(httpSession, request.contextPath, request.headers)
-        ret.lastServiceTime = millis
+        ret.fixSessionTime()
         SessionMaster.addSession(ret)
         ret
     }
@@ -451,6 +451,8 @@ class LiftServlet extends HttpServlet {
 
     // send the response
     header.elements.foreach {case (name, value) => response.setHeader(name, value)}
+    LiftRules.supplimentalHeaders(response)
+
     response setStatus resp.code
 
     resp match {

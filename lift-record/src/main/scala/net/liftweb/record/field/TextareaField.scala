@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,10 +21,12 @@ import Helpers._
 
 class TextareaField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int) extends StringField(rec, maxLength) {
 
-  private def elem = <textarea name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
+  private def elem = S.fmapFunc(SFuncHolder(this.setFromAny(_))){
+    funcName => <textarea name={funcName} lift:gc={funcName}
       rows={textareaRows.toString}
-	  cols={textareaCols.toString}
-      tabindex={tabIndex toString}>{value match {case null => "" case s => s.toString}}</textarea>;
+      cols={textareaCols.toString}
+      tabindex={tabIndex toString}>{value match {case null => "" case s => s.toString}}</textarea>
+  }
 
   override def toForm = {
     var el = elem
@@ -65,7 +67,7 @@ import net.liftweb.mapper.{DriverType}
  * A string field holding DB related logic
  */
 abstract class DBTextareaField[OwnerType <: DBRecord[OwnerType]](rec: OwnerType, maxLength: Int) extends
-  TextareaField[OwnerType](rec, maxLength) with JDBCFieldFlavor[String]{
+TextareaField[OwnerType](rec, maxLength) with JDBCFieldFlavor[String]{
 
   def targetSQLType = Types.VARCHAR
 

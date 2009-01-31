@@ -41,10 +41,38 @@ case class CreatedResponse(xml: Node, mime: String) extends NodeResponse {
 }
 
 /**
+ * 202 response but without body.
+ */
+case class AcceptedResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 202)
+}
+
+/**
+ * 204 response but without body.
+ */
+case class NoContentResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 204)
+}
+
+/**
+ * 205 response but without body.
+ */
+case class ResetContentResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 205)
+}
+
+/**
  * 301 Redirect.
  */
 case class PermRedirectResponse(uri: String, request: Req, cookies: Cookie*) extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 301)
+}
+
+/**
+ * 307 Redirect.
+ */
+case class TemporaryRedirectResponse(uri: String, request: Req, cookies: Cookie*) extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), List("Location" -> request.updateWithContextPath(uri)), cookies.toList, 307)
 }
 
 /**
@@ -81,9 +109,19 @@ case class UnauthorizedDigestResponse(override val realm: String, qop: Qop.Value
 }
 
 /**
+ * 403 Forbidden
+ *
+ * The server understood the request, but is refusing to fulfill it. 
+ * Authorization will not help and the request SHOULD NOT be repeated.
+ */
+case class ForbiddenResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 404)
+}
+
+/**
  * 404 Not Found
  *
- * The requested Resource does not exist.
+ * The server has not found anything matching the Request-URI.
  */
 case class NotFoundResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 404)
@@ -100,10 +138,73 @@ case class MethodNotAllowedResponse() extends LiftResponse {
 }
 
 /**
+ * 406 Not Acceptable
+ *
+ * This Resource does not allow this method. Use this when the resource can't
+ * understand the method no matter the circumstances.
+ */
+case class NotAcceptableResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 406)
+}
+
+/**
  * 410 Resource Gone
  *
  * The requested Resource used to exist but no longer does.
  */
 case class GoneResponse() extends LiftResponse {
   def toResponse = InMemoryResponse(Array(), Nil, Nil, 410)
+}
+
+/**
+ * 415 Resource Gone
+ *
+ * The requested Resource used to exist but no longer does.
+ */
+case class UnsupportedMediaTypeResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 415)
+}
+
+/**
+ * 500 Internal Server Error
+ *
+ * The server encountered an unexpected condition which prevented 
+ * it from fulfilling the request.
+ */
+case class InternalServerErrorResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 500)
+}
+
+/**
+ * 501 Not Implemented
+ *
+ * The server does not support the functionality required to 
+ * fulfill the request. This is the appropriate response when the 
+ * server does not recognize the request method and is not capable 
+ * of supporting it for any resource.
+ */
+case class NotImplementedResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 501)
+}
+
+/**
+ * 502 Bad Gateway
+ *
+ * The server, while acting as a gateway or proxy, received an invalid 
+ * response from the upstream server it accessed in attempting 
+ * to fulfill the request.
+ */
+case class BadGatewayResponse() extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), Nil, Nil, 502)
+}
+
+/**
+ * 503 Bad Gateway
+ *
+ * The server, while acting as a gateway or proxy, received an invalid 
+ * response from the upstream server it accessed in attempting 
+ * to fulfill the request.
+ */
+case class ServiceUnavailableResponse(retryAfter: Long) extends LiftResponse {
+  def toResponse = InMemoryResponse(Array(), List("Retry-After" -> retryAfter.toString), Nil, 503)
 }

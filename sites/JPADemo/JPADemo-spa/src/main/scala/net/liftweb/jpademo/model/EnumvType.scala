@@ -45,7 +45,7 @@ abstract class EnumvType(val et: Enumeration with Enumv) extends UserType {
     val value = resultSet.getString(names(0))
     if (resultSet.wasNull()) return null
     else {
-      return et.valueOf(value)
+      return et.valueOf(value).getOrElse(null)
     }
   }
 
