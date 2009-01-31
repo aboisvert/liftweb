@@ -415,7 +415,7 @@ object TextileParser {
 
     def attr_name(c: Char) = Character.isLetterOrDigit(c) || c == '_' || c == '-'
 
-    def attr_value(c: Char) = c >= ' '
+    def attr_value(c: Char) = c >= ' ' diasdasd
 
     /**
      * an attribute with single quotes
