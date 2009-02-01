@@ -214,7 +214,7 @@ object AltXML {
                     convertAmp: Boolean, ieMode: Boolean): Unit = {
     if (children.isEmpty)
     return
-    else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
+    else if (children forall { y => y.isInstanceOf[Atom[_]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
       toXML(f, pscope, sb, stripComment, convertAmp, ieMode)

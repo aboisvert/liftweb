@@ -217,10 +217,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param toMatch the list of classes to match against
    *
    * @return true if clz is assignable from any of the matching classes
-   *
-   * @deprecated use List.exists instead
    */
-  @deprecated
   def containsClass[C](clz: Class[C], toMatch: List[Class[_]]): Boolean =
     if (toMatch eq null) false
     else toMatch.exists(_.isAssignableFrom(clz))

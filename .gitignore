@@ -36,3 +36,7 @@ test-output
 #  ^\.pc/
 
 
+# IntelliJ
+*.iml
+*.ipr
+*.iws
