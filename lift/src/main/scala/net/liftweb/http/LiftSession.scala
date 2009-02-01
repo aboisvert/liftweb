@@ -32,8 +32,7 @@ import _root_.javax.servlet.http.{HttpSessionActivationListener, HttpSessionEven
 import _root_.scala.xml.transform._
 import _root_.java.util.concurrent.TimeUnit
 import js._
-import scala.reflect.{Manifest, Class}
-import _root_.java.lang._
+import scala.reflect.Manifest
 
 object LiftSession {
 
