@@ -208,12 +208,24 @@ object DBVendor extends ConnectionManager {
   private var poolSize = 0
   private val maxPoolSize = 4
 
-  private def createOne: Box[Connection] = try {
-    val driverName: String = Props.get("db.driver") openOr
-    "org.apache.derby.jdbc.EmbeddedDriver"
+  private lazy val chooseDriver = Props.mode match {
+    case Props.RunModes.Production => "org.apache.derby.jdbc.EmbeddedDriver"
+    case _ =>  "org.h2.Driver"
+  }
 
-    val dbUrl: String = Props.get("db.url") openOr
-    "jdbc:derby:lift_example;create=true"
+
+  private lazy val chooseURL = Props.mode match {
+    case Props.RunModes.Production => "jdbc:derby:lift_example;create=true"
+    case _ => "jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1"
+  }
+
+
+  private def createOne: Box[Connection] = try {
+    val driverName: String = Props.get("db.driver") openOr chooseDriver
+
+
+    val dbUrl: String = Props.get("db.url") openOr chooseURL
+
 
     Class.forName(driverName)
 

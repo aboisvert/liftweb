@@ -15,6 +15,7 @@ package net.liftweb.util
 
 import _root_.java.net.{URLDecoder, URLEncoder}
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
+import _root_.scala.reflect.Manifest
 import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
 import _root_.scala.collection.{Map}
 import _root_.scala.collection.mutable.HashMap
@@ -214,11 +215,11 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
   import Actor._
-  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Box[T] = {
+  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T])(implicit m: Manifest[T]): Box[T] = {
     ActorPing.schedule(Actor.self, BailOut(seq), timeout)
     receive(func orElse {case BailOut(seq) => null}) match {
       case null => Empty
-      case r: T => Full(r)
+      case r => Box.asA[T](r)(m)
     }
   }
 

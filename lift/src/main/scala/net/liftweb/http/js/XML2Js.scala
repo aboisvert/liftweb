@@ -82,7 +82,7 @@ trait JxBase {
     addAttrs(varName, e.attributes.toList) &
     JsRaw(parent+".appendChild("+varName+")") &
     addToDocFrag(varName, e.child.toList)
-    case ns: Seq[Node] =>
+    case ns: NodeSeq =>
     if (ns.length == 0) Noop
     else if (ns.length == 1) {
       Log.error("In addToDocFrag, got a "+ns+" of type "+ns.getClass.getName)
