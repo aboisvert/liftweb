@@ -439,12 +439,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       }
                       else Nil
 
-                    val liftGC: List[RewriteRule] =
-                    (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
+                      val liftGC: List[RewriteRule] = (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
 
-                      val ajaxXform: List[RewriteRule] =
-                      if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: liftGC
-                      else liftGC
+                      val ajaxXform: List[RewriteRule] = if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: liftGC
+                        else liftGC
 
 
                       val realXml = if (ajaxXform.isEmpty) xml
@@ -453,7 +451,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       this.synchronized {
                         S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
                       }
-                      notices = Nil // S.getNotices
+                      notices = Nil
                       Full(LiftRules.convertResponse((realXml,
                                                       S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
                                                       S.responseCookies,
@@ -934,9 +932,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
   class AddLiftGCToBody(val pageName: String, val gcNames: List[String]) extends RewriteRule {
     private var doneBody = false
-import js._
-      import JsCmds._
-      import JE._
+
+    import js._
+    import JsCmds._
+    import JE._
 
     override def transform(n: Node) = n match {
 
