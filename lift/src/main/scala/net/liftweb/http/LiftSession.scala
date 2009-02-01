@@ -17,7 +17,6 @@ package net.liftweb.http
 
 import _root_.scala.actors.Actor
 import _root_.scala.actors.Actor._
-import _root_.scala.reflect.Manifest
 import _root_.javax.servlet.http.{HttpSessionBindingListener, HttpSessionBindingEvent, HttpSession}
 import _root_.scala.collection.mutable.{HashMap, ArrayBuffer, ListBuffer}
 import _root_.scala.xml.{NodeSeq, Unparsed, Text}
@@ -33,6 +32,7 @@ import _root_.javax.servlet.http.{HttpSessionActivationListener, HttpSessionEven
 import _root_.scala.xml.transform._
 import _root_.java.util.concurrent.TimeUnit
 import js._
+import scala.reflect.Manifest
 
 object LiftSession {
 
@@ -678,7 +678,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                                                                             LiftRules.SnippetFailures.StatefulDispatchNotMatched))); kids}
 
               case Full(inst) => {
-                  val ar: Array[Object] = List(Group(kids)).toArray
+                  val ar: Array[AnyRef] = List(Group(kids)).toArray
                   ((invokeMethod(inst.getClass, inst, method, ar)) or invokeMethod(inst.getClass, inst, method)) match {
                     case Full(md: NodeSeq) => md
                     case it => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
