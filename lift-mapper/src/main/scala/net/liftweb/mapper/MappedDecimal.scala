@@ -44,11 +44,12 @@ import _root_.scala.xml.NodeSeq
  *
  * @param fieldOwner The Mapper that owns this field
  * @param context The MathContext that controls precision and rounding
+ * @param scale Controls the scale of the underlying BigDecimal
  */
 class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathContext, val scale : Int) extends MappedField[BigDecimal,T] {
 
   /**
-   * Constructs a MappedField with the specified initial value and context.
+   * Constructs a MappedDecimal with the specified initial value and context.
    * The scale is taken from the initial value.
    * 
    * @param fieldOwner The Mapper that owns this field
@@ -61,7 +62,7 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
   }
 
   /**
-   * Constructs a MappedField with the specified initial value. The context
+   * Constructs a MappedDecimal with the specified initial value. The context
    * is set to MathContext.UNLIMITED (see note above about default precision).
    * The scale is taken from the initial value.
    * 
