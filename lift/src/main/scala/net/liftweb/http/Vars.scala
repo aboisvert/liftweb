@@ -74,7 +74,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
 
   //def cleanupFunc: Box[() => Unit] = Empty
 
-  protected def registerCleanupFunc(in: CleanUpParam => Unit): Unit
+  def registerCleanupFunc(in: CleanUpParam => Unit): Unit
 
   override def toString = is.toString
 }
@@ -118,7 +118,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
     override protected def setFunc(name: String, value: T): Unit = RequestVarHandler.set(name, value)
     override protected def clearFunc(name: String): Unit = RequestVarHandler.clear(name)
 
-    override protected def registerCleanupFunc(in: Box[LiftSession] => Unit): Unit =
+    override def registerCleanupFunc(in: Box[LiftSession] => Unit): Unit =
     RequestVarHandler.addCleanupFunc(in)
   }
 
