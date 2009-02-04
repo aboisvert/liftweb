@@ -21,16 +21,3 @@ import _root_.net.liftweb.util._
 import js._
 import _root_.javax.servlet.http.Cookie
 
-object JavaScriptResponse {
-  def apply(js: JsCmd): LiftResponse = JavaScriptResponse(js, Nil, Nil, 200)
-}
-
-/**
- * Impersonates a HTTP response having Content-Type = text/javascript
- */
-case class JavaScriptResponse(js: JsCmd, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
-  def toResponse = {
-    val bytes = js.toJsCmd.getBytes("UTF-8")
-    InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/javascript") :: headers, cookies, code)
-  }
-}
