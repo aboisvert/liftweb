@@ -852,7 +852,7 @@ trait RulesSeq[T] {
     }
   }
 
-  private[http] def toList = rules
+  def toList = rules
 
   def prepend(r: T): RulesSeq[T] = {
     safe_? {
