@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -53,7 +53,9 @@ trait Loc[ParamType] {
     rw =>
     new AnyRef with NamedPartialFunction[RewriteRequest, RewriteResponse] {
       def functionName = rw match {
-        case rw: NamedPartialFunction[RewriteRequest, RewriteResponse] => rw.functionName
+        case rw: NamedPartialFunction[_, _] =>
+          // ugly code to avoid type erasure warning
+          rw.asInstanceOf[NamedPartialFunction[RewriteRequest, RewriteResponse]].functionName
           case _ => "Unnamed"
       }
       def isDefinedAt(in: RewriteRequest) = rw.isDefinedAt(in)
@@ -149,7 +151,9 @@ trait Loc[ParamType] {
 
   private def findTitle(lst: List[Loc.LocParam]): Box[Loc.Title[ParamType]] = lst match {
     case Nil => Empty
-    case (t : Loc.Title[ParamType]) :: xs => Full(t)
+    case (t: Loc.Title[_]) :: xs =>
+      // ugly code to avoid type erasure warning
+      Full(t.asInstanceOf[Loc.Title[ParamType]])
     case _ => findTitle(lst.tail)
   }
 
@@ -212,7 +216,9 @@ trait Loc[ParamType] {
         link.createLink(p).map(t =>
           MenuItem(text.text(p),t, kids, current, path,
                    params.flatMap {
-              case v: Loc.LocInfo[(T forSome {type T})] => v()
+              case v: Loc.LocInfo[_] =>
+                // ugly code to avoid type erasure warning
+                v.asInstanceOf[Loc.LocInfo[(T forSome {type T})]]()
               case _ =>  Empty
             }
           )))

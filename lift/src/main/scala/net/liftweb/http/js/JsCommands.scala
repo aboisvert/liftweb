@@ -72,6 +72,13 @@ case class JsonCall(funcId: String) {
 
 trait JsObj extends JsExp {
   def props: List[(String,JsExp)]
+  def toJsCmd = props.map{case (n, v) => n.encJs+": "+v.toJsCmd}.mkString("{", ", ", "}")
+  def +*(other: JsObj) = {
+    val np = props ::: other.props
+    new JsObj {
+      def props = np
+    }
+  }
 }
 
 trait JsExp extends SpecialNode with HtmlFixer with JxBase with ToJsCmd {
@@ -368,7 +375,6 @@ object JE {
   object JsObj {
     def apply(members: (String, JsExp)*): JsObj =
     new JsObj {
-      def toJsCmd = members.map{case (n, v) => n.encJs+": "+v.toJsCmd}.mkString("{", ", ", "}\n")
       def props = members.toList
     }
   }

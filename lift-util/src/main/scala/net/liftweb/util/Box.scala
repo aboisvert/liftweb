@@ -192,6 +192,8 @@ sealed abstract class Box[+A] extends Product {
    */
   def ?~(msg: String): Box[A] = this
 
+  def ~>[T](errorCode: T): Box[A] = this
+
   /**
    * Alias for ?~
    */
@@ -388,6 +390,8 @@ sealed case class Failure(msg: String, exception: Box[Throwable], chain: Box[Fai
     case (x, y: AnyRef) => x eq y
     case _ => false
   }
+
+  override def ~>[T](errorCode: T): ParamFailure[T] = ParamFailure(msg, exception, chain, errorCode)
 }
 
 /**

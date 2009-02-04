@@ -486,7 +486,7 @@ object S extends HasParams {
     this._request.doWith(request) {
       _sessionInfo.doWith(session) {
         _responseHeaders.doWith(new ResponseInfoHolder) {
-          RequestVarHandler(
+          RequestVarHandler(Full(session),
             _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
               _innerInit(f)
             }
@@ -757,7 +757,9 @@ object S extends HasParams {
     val key = Helpers.nextFuncName
 
     def checkCmd(in: Any) = in match {
-      case v: _root_.scala.collection.Map[String, Any] if v.isDefinedAt("command") =>
+      case v2: _root_.scala.collection.Map[Any, _] if v2.isDefinedAt("command") =>
+        // ugly code to avoid type erasure warning
+        val v = v2.asInstanceOf[_root_.scala.collection.Map[String, Any]]
         JsonCmd(v("command").toString, v.get("target").
                 map {
             case null => null

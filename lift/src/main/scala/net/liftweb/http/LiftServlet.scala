@@ -486,7 +486,7 @@ trait LiftFilterTrait {
    * Executes the Lift filter component.
    */
   def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain) = {
-    RequestVarHandler(
+    RequestVarHandler(Empty,
       (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
           tryo { LiftRules.early.toList.foreach(_(httpReq)) }
