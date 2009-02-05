@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
-* Copyright 2007 WorldWide Conferencing, LLC
+* Copyright 2007-2009 WorldWide Conferencing, LLC
 *
 * Licensed under the Apache License, Version 2.0 (the "License");
 * you may not use this file except in compliance with the License.
@@ -29,12 +29,13 @@ object ActorPing {
   /**
   * recreates the underlying <code>SingleThreadScheduledExecutor</code>
   */
-  def restart: Unit = { service = Executors.newSingleThreadScheduledExecutor(TF) }
+  def restart: Unit = synchronized { if ((service eq null) || service.isShutdown)
+                       service = Executors.newSingleThreadScheduledExecutor(TF) }
 
   /**
   * shutdown the underlying <code>SingleThreadScheduledExecutor</code>
   */
-  def shutdown: Unit = { service.shutdown }
+  def shutdown: Unit = synchronized { service.shutdown }
 
   /**
   * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor,

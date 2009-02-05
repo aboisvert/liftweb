@@ -299,7 +299,7 @@ class LiftServlet extends HttpServlet {
           ActorPing.schedule(this, BreakOut, TimeSpan(5))
 
         case BreakOut =>
-          actors.foreach{case (act, _) => act ! Unlisten}
+          actors.foreach{case (act, _) => act ! Unlisten(ListenerId(seqId))}
           LiftRules.resumeRequest(
             S.init(request, sessionActor)
             (LiftRules.performTransform(
@@ -392,7 +392,7 @@ class LiftServlet extends HttpServlet {
 
       val ret = drainTheSwamp(cometTimeout, Nil)
 
-      actors.foreach{case (act, _) => act ! Unlisten}
+      actors.foreach{case (act, _) => act ! Unlisten(ListenerId(seqId))}
 
       val ret2 = drainTheSwamp(5L, ret)
 

@@ -377,7 +377,8 @@ trait CometActor extends Actor with BindHelpers {
       val delta = JsDelta(time, cmd)
       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       S.clearFunctionMap
-      deltas = delta :: deltas
+      val m = millis
+      deltas = (delta :: deltas).filter(d => (m - d.timestamp) < 120000L )
       if (!listeners.isEmpty) {
         val rendered = AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                    Full(cmd), Empty, buildSpan, false, notices toList),
@@ -523,6 +524,7 @@ trait CometActor extends Actor with BindHelpers {
 
 abstract class Delta(val when: Long) {
   def js: JsCmd
+  val timestamp = millis
 }
 
 case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)

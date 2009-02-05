@@ -49,7 +49,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
 
   private def testInitialized: Unit = synchronized {
     if (!wasInitialized(name)) {
-      registerCleanupFunc(onShutdown _)
+      registerCleanupFunc(_onShutdown _)
     }
   }
 
@@ -96,7 +96,7 @@ abstract class AnyVar[T, MyType <: AnyVar[T, MyType]](dflt: => T) {
 
   private var cuf: List[CleanUpParam => Unit] = Nil
 
-  protected def _onShutdown(session: CleanUpParam): Unit = {
+  private def _onShutdown(session: CleanUpParam): Unit = {
     cuf.foreach(f => tryo(f(session)))
     onShutdown(session)
   }
