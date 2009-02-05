@@ -371,6 +371,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   }
 
   private def shutDown() = synchronized {
+    S.initIfUninitted(this) {
     onSessionEnd.foreach(_(this))
 
     LiftSession.onAboutToShutdownSession.foreach(_(this))
@@ -381,6 +382,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
     cleanUpSession()
     LiftSession.onShutdownSession.foreach(_(this))
+    }
   }
 
   /**

@@ -230,19 +230,85 @@ case class JavaScriptResponse(js: JsCmd, headers: List[(String, String)], cookie
   }
 }
 
-object JSONResponse {
-  def apply(js: JsExp): LiftResponse = JSONResponse(js, S.getHeaders(Nil), S.responseCookies, 200)
+trait LiftResponse {
+  def toResponse: BasicResponse
 }
 
+object JsonResponse extends HeaderStuff {
+  def apply(json: JsExp): LiftResponse = JsonResponse(json, headers, cookies, 200)
+}
+
+case class JsonResponse(json: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
+	def toResponse = {
+		val bytes = json.toJsCmd.getBytes("UTF-8")
+		InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "application/json") :: headers, cookies, code)
+	}
+}
+
+sealed trait BasicResponse extends LiftResponse {
+  def headers: List[(String, String)]
+  def cookies: List[Cookie]
+  def code: Int
+  def size: Long
+}
+
+final case class InMemoryResponse(data: Array[Byte], headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
+  def toResponse = this
+  def size = data.length
+
+  override def toString="InMemoryResponse("+(new String(data, "UTF-8"))+", "+headers+", "+cookies+", "+code+")"
+}
+
+final case class StreamingResponse(data: {def read(buf: Array[Byte]): Int}, onEnd: () => Unit, size: Long, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends BasicResponse {
+  def toResponse = this
+
+    override def toString="StreamingResponse( steaming_data , "+headers+", "+cookies+", "+code+")"
+}
+
+case class RedirectResponse(uri: String, cookies: Cookie*) extends LiftResponse {
+  // The Location URI is not resolved here, instead it is resolved with context path prior of sending the actual response
+  def toResponse = InMemoryResponse(Array(0), List("Location" -> uri), cookies toList, 302)
+}
+
+object DoRedirectResponse {
+  def apply(url: String): LiftResponse = RedirectResponse(url, Nil :_*)
+}
+
+case class RedirectWithState(override val uri: String, state : RedirectState, override val cookies: Cookie*) extends  RedirectResponse(uri, cookies:_*)
+
+object RedirectState {
+  def apply(f: () => Unit, msgs: (String, NoticeType.Value)*): RedirectState = new RedirectState(Full(f), msgs :_*)
+}
+case class RedirectState(func: Box[() => Unit], msgs : (String, NoticeType.Value)*)
+
+object MessageState {
+  implicit def tuple2MessageState(msg : (String, NoticeType.Value)) = MessageState(msg)
+}
+
+case class MessageState(override val msgs: (String, NoticeType.Value)*) extends RedirectState(Empty, msgs :_*)
+
 /**
- * Impersonates a HTTP response having Content-Type = text/json
+ * Stock XHTML doctypes available to the lift programmer.
  */
-case class JSONResponse(js: JsExp, headers: List[(String, String)], cookies: List[Cookie], code: Int) extends LiftResponse {
-  def toResponse = {
-    val bytes = js.toJsCmd.getBytes("UTF-8")
-    InMemoryResponse(bytes, ("Content-Length", bytes.length.toString) :: ("Content-Type", "text/json") :: headers, cookies, code)
+object DocType {
+  val xhtmlTransitional = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Transitional//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd\">"
+
+  val xhtmlStrict = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">"
+
+  val xhtmlFrameset = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Frameset//EN\" \"http://www.w3.org/TR/xhtml1/DTD/xhtml1-frameset.dtd\">"
+
+  val xhtml11 = "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.1//EN\" \"http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd\">"
+
+  val xhtmlMobile = "<!DOCTYPE html PUBLIC \"-//WAPFORUM//DTD XHTML Mobile 1.0//EN\" \"http://www.wapforum.org/DTD/xhtml-mobile10.dtd\">"
+}
+
+object ResponseInfo {
+  var docType: PartialFunction[Req, Box[String]] = {
+    case _ if S.getDocType._1 => S.getDocType._2
+    case _ => Full(DocType.xhtmlTransitional)
   }
 }
+
 
 object PlainTextResponse {
   def apply(text: String): PlainTextResponse = PlainTextResponse(text, Nil, 200)

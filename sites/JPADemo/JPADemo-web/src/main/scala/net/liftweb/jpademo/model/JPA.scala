@@ -43,7 +43,7 @@ abstract class ScalaEntityManager(val persistanceName: String) {
   protected def closeEM (em : EntityManager)
 
   private object emVar extends RequestVar(openEM()) {
-    registerCleanupFunc(ignore => closeEM(this.is))
+    registerGlobalCleanupFunc(ignore => closeEM(this.is))
   }
 
   // dont encourage use of the entity manager directly
