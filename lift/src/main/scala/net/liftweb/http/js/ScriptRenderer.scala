@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -76,6 +76,48 @@ function lift_testAndShowAjax() {
      lift_ajaxInProcess != null)) {
    lift_startAjax();
      }
+}
+
+function lift_traverseAndCall(node, func) {
+  if (node.nodeType == 1) func(node);
+  var i = 0;
+  var cn = node.childNodes;
+  
+  for (i = 0; i < cn.length; i++) {
+    lift_traverseAndCall(cn.item(i), func);
+  }
+}
+
+function lift_findGCNodes() {
+  var ret = [];
+  lift_traverseAndCall(document, function(e) {
+    if (e.attributes['lift:gc']) {
+      ret.push(e.attributes['lift:gc'].value);
+    }
+  });
+  return ret;
+}
+
+function lift_successRegisterGC() {
+  setTimeout("lift_registerGC()", 75000);
+}
+
+function lift_failRegisterGC() {
+  setTimeout("lift_registerGC()", 15000);
+}
+
+function lift_registerGC() {
+  var nodes = lift_findGCNodes();
+  var data = "__lift__GCNodes="+encodeURIComponent("""+
+   LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("nodes")).toJsCmd+
+  """);
+""" +
+                        LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
+                                                            "POST",
+                                                            LiftRules.ajaxPostTimeout,
+                                                            false, "script",
+                                                            Full("lift_successRegisterGC"), Full("lift_failRegisterGC")))+
+                        """  
 }
 
 function lift_doAjaxCycle() {

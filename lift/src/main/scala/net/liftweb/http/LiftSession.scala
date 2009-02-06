@@ -192,6 +192,8 @@ object SessionMaster extends Actor {
             if (now - session.lastServiceTime > session.inactivityLength) {
               Log.info(" Session "+id+" expired")
               this ! RemoveSession(id)
+            } else {
+              session.cleanupUnseenFuncs()
             }
           }
           sessionWatchers.foreach(_ ! SessionWatcherInfo(ses))
@@ -331,7 +333,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   /**
    * Called just before the session exits.  If there's clean-up work, override this method
    */
-  def cleanUpSession() {
+  private[http] def cleanUpSession() {
     messageCallback = HashMap.empty
     notices = Nil
     asyncComponents.clear
@@ -370,18 +372,38 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
+  private[http] def cleanupUnseenFuncs(): Unit = synchronized {
+    val now = millis
+    messageCallback.keys.toList.foreach{
+      k =>
+      val f = messageCallback(k)
+      if (!f.sessionLife && (now - f.lastSeen) > 600000) {
+        messageCallback -= k
+      }
+    }
+  }
+
+  private[http] def updateFunc(name: String, time: Long): Boolean = {
+    if (messageCallback.contains(name)) {
+      messageCallback(name).lastSeen = time
+      true
+    } else {
+      false
+    }
+  }
+
   private def shutDown() = synchronized {
     S.initIfUninitted(this) {
-    onSessionEnd.foreach(_(this))
+      onSessionEnd.foreach(_(this))
 
-    LiftSession.onAboutToShutdownSession.foreach(_(this))
-    SessionMaster ! RemoveSession(this.uniqueId)
+      LiftSession.onAboutToShutdownSession.foreach(_(this))
+      SessionMaster ! RemoveSession(this.uniqueId)
 
-    // Log.debug("Shutting down session")
-    running_? = false
-    asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
-    cleanUpSession()
-    LiftSession.onShutdownSession.foreach(_(this))
+      // Log.debug("Shutting down session")
+      running_? = false
+      asyncComponents.foreach{case (_, comp) => comp ! ShutDown}
+      cleanUpSession()
+      LiftSession.onShutdownSession.foreach(_(this))
     }
   }
 
@@ -444,7 +466,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       val liftGC: List[RewriteRule] = (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
 
                       val ajaxXform: List[RewriteRule] = if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: liftGC
-                        else liftGC
+                      else liftGC
 
 
                       val realXml = if (ajaxXform.isEmpty) xml
@@ -837,8 +859,14 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     asyncById -= act.uniqueId
     messageCallback -= act.jsonCall.funcId
     asyncComponents -= (act.theType -> act.name)
-    // FIXME remove all the stuff from the function table related to this item
-
+    val id = Full(act.uniqueId)
+    messageCallback.keys.toList.foreach{
+      k =>
+      val f = messageCallback(k)
+      if (f.owner == id) {
+        messageCallback -= k
+      }
+    }
   }
 
   private def findCometByType(contType: String, name: Box[String], defaultXml: NodeSeq, attributes: Map[String, String]): Box[CometActor] = {
@@ -897,11 +925,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     val kids = in.child
 
     val paramElements: Seq[Node] =
-      findElems(kids)(e => e.label == "with-param" && e.prefix == "lift")
+    findElems(kids)(e => e.label == "with-param" && e.prefix == "lift")
 
     val params: Seq[(String, NodeSeq)] =
     for {e <- paramElements
-    name <- e.attributes.get("name")
+         name <- e.attributes.get("name")
     } yield (name.text, processSurroundAndInclude(page, e.child))
 
     val mainParam = (attr.get("at").map(_.text).getOrElse("main"),
@@ -946,7 +974,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         doneBody = true
         Elem(null, "body", e.attributes,  e.scope, (e.child ++
                                                     JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
-            JsCrVar("lift_page", pageName))) :_*)
+                                                                  JsRaw("lift_successRegisterGC()") &
+                                                                  JsCrVar("lift_page", pageName))) :_*)
 
       case n => n
     }

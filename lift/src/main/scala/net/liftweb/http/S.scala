@@ -787,7 +787,9 @@ object S extends HasParams {
 
     val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
 
-    addFunctionMap(key, jsonCallback _)
+  val af: AFuncHolder = jsonCallback _
+  af.sessionLife = true
+    addFunctionMap(key, af)
 
     (JsonCall(key), JsCmds.Run(name.map(n => onErrorFunc +
                                         "/* JSON Func "+n+" $$ "+key+" */").openOr("") +

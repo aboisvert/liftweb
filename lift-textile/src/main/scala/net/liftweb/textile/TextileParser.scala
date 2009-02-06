@@ -85,7 +85,7 @@ object TextileParser {
 
       case _ :: rest => fixRefs(rest, refs)
 
-      case huh => // println(huh)
+      case huh => 
     }
 
     val parser = new TextileParsers(urlRewrite, disableLinks)
@@ -1236,7 +1236,6 @@ We use CSS(Cascading Style Sheets).
       res.toHtml
     }) getOrElse ""
 
-  // println(tryit)
 
   case class DefaultRewriter(base: String) extends RewriteFunc {
     def apply(in: WikiURLInfo) = in match {

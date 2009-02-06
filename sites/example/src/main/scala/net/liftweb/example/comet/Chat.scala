@@ -71,6 +71,11 @@ class Chat extends CometActor {
     super.localSetup
   }
 
+  override def localShutdown() {
+    ChatServer ! ChatServerRemove(this)
+    super.localShutdown()
+  }
+
   private def askForName {
     if (userName.length == 0) {
       ask(new AskName, "what's your username") {

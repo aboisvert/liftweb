@@ -285,7 +285,11 @@ trait CometActor extends Actor with BindHelpers {
     case RelinkToActorWatcher =>
       link(ActorWatcher)
 
-    case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
+    case l @ Unlisten(seq) =>
+      askingWho match {
+      case Full(who) => who forward l
+      case _ => listeners = listeners.filter(_._1 != seq)
+      }
 
     case l @ Listen(when, seqId, toDo) =>
       askingWho match {
@@ -366,9 +370,10 @@ trait CometActor extends Actor with BindHelpers {
 
     case ShutDown =>
       Log.info("The CometActor "+this+" Received Shutdown")
+      askingWho.foreach(_ ! ShutDown)
       theSession.removeCometActor(this)
       unlink(ActorWatcher)
-      localShutdown()
+      _localShutdown()
       self.exit("Politely Asked to Exit")
 
     case PartialUpdateMsg(cmdF) =>
@@ -432,11 +437,20 @@ trait CometActor extends Actor with BindHelpers {
    */
   protected def localSetup(): Unit = {}
 
+  private def _localShutdown() {
+    localShutdown()
+    clearNotices
+    listeners = Nil
+    askingWho = Empty
+    whosAsking = Empty
+    deltas = Nil
+    jsonHandlerChain = Map.empty
+  }
   /**
    * This method will be called as part of the shut-down of the actor.  Release any resources here.
    */
   protected def localShutdown(): Unit = {
-    clearNotices
+    
   }
 
   def composeFunction = composeFunction_i
