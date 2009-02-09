@@ -249,11 +249,13 @@ trait CometActor extends Actor with BindHelpers {
       def apply(in: Any): Unit =
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
+          S.functionLifespan(true) {
           pf.apply(in)
           if (S.functionMap.size > 0) {
             theSession.updateFunctionMap(S.functionMap,
                                          uniqueId, lastRenderTime)
             S.clearFunctionMap
+          }
           }
         }
       }
@@ -261,7 +263,9 @@ trait CometActor extends Actor with BindHelpers {
       def isDefinedAt(in: Any): Boolean =
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
+          S.functionLifespan(true) {
           pf.isDefinedAt(in)
+          }
         }
       }
     }
@@ -330,8 +334,10 @@ trait CometActor extends Actor with BindHelpers {
 
     case ActionMessageSet(msgs, req) =>
       S.init(req, theSession) {
+        S.functionLifespan(true) {
         val ret = msgs.map(_())
         reply(ret)
+        }
       }
 
     case AskQuestion(what, who, otherlisteners) =>
@@ -344,6 +350,7 @@ trait CometActor extends Actor with BindHelpers {
 
     case AnswerQuestion(what, otherListeners) =>
       S.initIfUninitted(theSession) {
+        S.functionLifespan(true) {
         askingWho.foreach {
           ah =>
           reply("A null message to release the actor from its send and await reply... do not delete this message")
@@ -355,6 +362,7 @@ trait CometActor extends Actor with BindHelpers {
           answerWith = Empty
           aw.foreach(_(what))
           performReRender(true)
+        }
         }
       }
 
