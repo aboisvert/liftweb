@@ -82,7 +82,7 @@ function lift_traverseAndCall(node, func) {
   if (node.nodeType == 1) func(node);
   var i = 0;
   var cn = node.childNodes;
-  
+
   for (i = 0; i < cn.length; i++) {
     lift_traverseAndCall(cn.item(i), func);
   }
@@ -99,25 +99,26 @@ function lift_findGCNodes() {
 }
 
 function lift_successRegisterGC() {
-  setTimeout("lift_registerGC()", 75000);
+  setTimeout("lift_registerGC()", """ + LiftRules.liftGCPollingInterval + """);
 }
 
 function lift_failRegisterGC() {
-  setTimeout("lift_registerGC()", 15000);
+  setTimeout("lift_registerGC()", """ + LiftRules.liftGCFailureRetryTimeout + """);
 }
 
 function lift_registerGC() {
   var nodes = lift_findGCNodes();
-  var data = "__lift__GCNodes="+encodeURIComponent("""+
-   LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("nodes")).toJsCmd+
-  """);
+  if (nodes.length > 0) {
+    var data = "__lift__GCNodes="+encodeURIComponent(""" +
+      LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("nodes")).toJsCmd +
+    """);
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
                                                             "POST",
                                                             LiftRules.ajaxPostTimeout,
                                                             false, "script",
-                                                            Full("lift_successRegisterGC"), Full("lift_failRegisterGC")))+
-                        """  
+                                                            Full("lift_successRegisterGC"), Full("lift_failRegisterGC"))) +
+"""  }
 }
 
 function lift_doAjaxCycle() {
@@ -197,7 +198,7 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
    */
   def cometScript = JsCmds.Run("""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
-      function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
+      function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",""" + LiftRules.cometFailureRetryTimeout + """);}
       function lift_cometEntry() {""" +
                         LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"),
                                                              "GET",

@@ -118,7 +118,7 @@ case class UnauthorizedDigestResponse(override val realm: String, qop: Qop.Value
 /**
  * 403 Forbidden
  *
- * The server understood the request, but is refusing to fulfill it. 
+ * The server understood the request, but is refusing to fulfill it.
  * Authorization will not help and the request SHOULD NOT be repeated.
  */
 case class ForbiddenResponse() extends LiftResponse with HeaderStuff {
@@ -175,7 +175,7 @@ case class UnsupportedMediaTypeResponse() extends LiftResponse with HeaderStuff 
 /**
  * 500 Internal Server Error
  *
- * The server encountered an unexpected condition which prevented 
+ * The server encountered an unexpected condition which prevented
  * it from fulfilling the request.
  */
 case class InternalServerErrorResponse() extends LiftResponse with HeaderStuff {
@@ -185,9 +185,9 @@ case class InternalServerErrorResponse() extends LiftResponse with HeaderStuff {
 /**
  * 501 Not Implemented
  *
- * The server does not support the functionality required to 
- * fulfill the request. This is the appropriate response when the 
- * server does not recognize the request method and is not capable 
+ * The server does not support the functionality required to
+ * fulfill the request. This is the appropriate response when the
+ * server does not recognize the request method and is not capable
  * of supporting it for any resource.
  */
 case class NotImplementedResponse() extends LiftResponse with HeaderStuff {
@@ -197,8 +197,8 @@ case class NotImplementedResponse() extends LiftResponse with HeaderStuff {
 /**
  * 502 Bad Gateway
  *
- * The server, while acting as a gateway or proxy, received an invalid 
- * response from the upstream server it accessed in attempting 
+ * The server, while acting as a gateway or proxy, received an invalid
+ * response from the upstream server it accessed in attempting
  * to fulfill the request.
  */
 case class BadGatewayResponse() extends LiftResponse with HeaderStuff {
@@ -208,8 +208,8 @@ case class BadGatewayResponse() extends LiftResponse with HeaderStuff {
 /**
  * 503 Bad Gateway
  *
- * The server, while acting as a gateway or proxy, received an invalid 
- * response from the upstream server it accessed in attempting 
+ * The server, while acting as a gateway or proxy, received an invalid
+ * response from the upstream server it accessed in attempting
  * to fulfill the request.
  */
 case class ServiceUnavailableResponse(retryAfter: Long) extends LiftResponse {

@@ -85,7 +85,7 @@ object TextileParser {
 
       case _ :: rest => fixRefs(rest, refs)
 
-      case huh => 
+      case huh =>
     }
 
     val parser = new TextileParsers(urlRewrite, disableLinks)
