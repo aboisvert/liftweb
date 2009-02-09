@@ -73,7 +73,7 @@ trait DeltaTrait {
 trait CometState[DeltaType <: DeltaTrait,
                  MyType <: CometState[DeltaType, MyType]] {
   self: MyType =>
-  
+
   def -(other: MyType): Seq[DeltaType]
   def render: NodeSeq
 }
@@ -173,7 +173,7 @@ trait CometActor extends Actor with BindHelpers {
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
 
-  private[http] def initCometActor(theSession: LiftSession, 
+  private[http] def initCometActor(theSession: LiftSession,
                                    theType: Box[String],
                                    name: Box[String],
                                    defaultXml: NodeSeq,
@@ -450,7 +450,7 @@ trait CometActor extends Actor with BindHelpers {
    * This method will be called as part of the shut-down of the actor.  Release any resources here.
    */
   protected def localShutdown(): Unit = {
-    
+
   }
 
   def composeFunction = composeFunction_i

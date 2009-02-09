@@ -373,12 +373,13 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   }
 
   private[http] def cleanupUnseenFuncs(): Unit = synchronized {
-    val now = millis
-    messageCallback.keys.toList.foreach{
-      k =>
-      val f = messageCallback(k)
-      if (!f.sessionLife && (now - f.lastSeen) > 600000) {
-        messageCallback -= k
+    if (LiftRules.enableLiftGC) {
+      val now = millis
+      messageCallback.keys.toList.foreach{k =>
+        val f = messageCallback(k)
+        if (!f.sessionLife && (now - f.lastSeen) > LiftRules.unusedFunctionsLifeTime) {
+          messageCallback -= k
+        }
       }
     }
   }
@@ -463,7 +464,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       }
                       else Nil
 
-                      val liftGC: List[RewriteRule] = (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
+                      val liftGC: List[RewriteRule] = LiftRules.enableLiftGC match {
+                        case true => (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
+                        case _ => cometXform
+                      }
 
                       val ajaxXform: List[RewriteRule] = if (LiftRules.autoIncludeAjax(this)) new AddAjaxToBody() :: liftGC
                       else liftGC

@@ -247,6 +247,11 @@ object LiftRules {
   var cometRequestTimeout: Box[Int] = Empty
 
   /**
+   * If a Comet request fails timeout for this period of time. Default value is 10 seconds
+   */
+  var cometFailureRetryTimeout: Long = 10 seconds
+
+  /**
    * The dispatcher that takes a Snippet and converts it to a
    * DispatchSnippet instance
    */
@@ -741,11 +746,36 @@ object LiftRules {
    */
   var renderAjaxScript: LiftSession => JsCmd = session => ScriptRenderer.ajaxScript
 
-var ajaxPostTimeout = 5000
+  var ajaxPostTimeout = 5000
 
-var cometGetTimeout = 140000
+  var cometGetTimeout = 140000
 
-var supplimentalHeaders: HttpServletResponse => Unit = s => s.setHeader("X-Lift-Version", liftVersion)
+  var supplimentalHeaders: HttpServletResponse => Unit = s => s.setHeader("X-Lift-Version", liftVersion)
+
+  /**
+   * By default lift uses a garbage-collection mechanism of removing unused bound functions from LiftSesssion
+   * Setting this to false will disbale this mechanims and there will be no Ajax polling mechanims attempted.
+   */
+  var enableLiftGC = true;
+
+  /**
+   * If Lift garbage collection is enabled, functions that are not seen in the page for this period of time
+   * (given in milliseonds) will be discarded hence eligibe for garbage collections.
+   * The default value is 10 minutes.
+   */
+  var unusedFunctionsLifeTime: Long = 10 minutes
+
+  /**
+   * The polling interval for background Ajax requests to keep functions to not be garbage collected.
+   * Default value is set to 75 seconds.
+   */
+  var liftGCPollingInterval: Long = 75 seconds
+
+  /**
+   * The polling interval for background Ajax requests to keep functions to not be garbage collected.
+   * This will be applied if the AJax request will fail. Default value is set to 15 seconds.
+   */
+  var liftGCFailureRetryTimeout: Long = 15 seconds
 
   /**
    * Returns the JavaScript that manages Comet requests.
