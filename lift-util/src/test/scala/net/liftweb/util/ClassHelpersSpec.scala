@@ -5,7 +5,6 @@ import _root_.java.lang.reflect.{Method}
 import _root_.org.scalacheck.Arbitrary
 import _root_.org.scalacheck.{Prop, Gen}
 import _root_.org.scalacheck.Gen._
-import _root_.org.scalacheck.Prop.{property}
 import _root_.org.specs.ScalaCheck
 
 class ClassHelpersSpecTest extends Runner(ClassHelpersSpec) with JUnit
@@ -80,8 +79,8 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       def correspondingIndexInCamelCase(name: String, i: Int) = i - underscoresNumber(name, i)
       def correspondingCharInCamelCase(name: String, i: Int): Char = camelCase(name).charAt(correspondingIndexInCamelCase(name, i))
 
-      val doesntContainUnderscores = forAll(underscoredStrings)((name: String) => !camelCase(name).contains('_'))
-      val isCamelCased = forAll(underscoredStrings) ((name: String) => {
+      val doesntContainUnderscores = forAllProp(underscoredStrings)((name: String) => !camelCase(name).contains('_'))
+      val isCamelCased = forAllProp(underscoredStrings) ((name: String) => {
         name.forall(_ == '_') && camelCase(name).isEmpty ||
         name.toList.zipWithIndex.forall { case (c, i) =>
           c == '_' ||
@@ -96,13 +95,13 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
       camelCase(null) must_== ""
     }
     "leave a CamelCased name untouched" in {
-      val camelCasedNameDoesntChange = forAll(camelCasedStrings){ (name: String) => camelCase(name) == name }
+      val camelCasedNameDoesntChange = forAllProp(camelCasedStrings){ (name: String) => camelCase(name) == name }
       camelCasedNameDoesntChange must pass
     }
   }
   "The camelCaseMethod function" should {
     "camelCase a name with the first letter being lower cased" in {
-      val camelCasedMethodIsCamelCaseWithLowerCase = forAll(underscoredStrings){
+      val camelCasedMethodIsCamelCaseWithLowerCase = forAllProp(underscoredStrings){
         (name: String) =>
         camelCase(name).isEmpty && camelCaseMethod(name).isEmpty ||
         camelCaseMethod(name).toList.head.isLowerCase && camelCase(name) == camelCaseMethod(name).capitalize
@@ -112,7 +111,7 @@ object ClassHelpersSpec extends Specification with ClassHelpers with ControlHelp
   }
   "The unCamelCase function" should {
     "Uncamel a name, replacing upper cases with underscores" in {
-      forAll(camelCasedStrings)((name: String) => camelCase(unCamelCase(name)) == name) must pass
+      forAllProp(camelCasedStrings)((name: String) => camelCase(unCamelCase(name)) == name) must pass
     }
   }
   "The classHasControllerMethod function" should {

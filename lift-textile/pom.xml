@@ -18,7 +18,7 @@
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.4.2</version>
+      <version>1.4.3-SNAPSHOT</version>
       <scope>test</scope>
     </dependency>
     <dependency>
