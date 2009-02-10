@@ -23,7 +23,10 @@ import _root_.java.sql.{Connection, DriverManager}
 import _root_.java.io.File
 
 object DBProviders {
-    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: Nil
+//    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: SqlServerProvider :: Nil
+//	def asList = SqlServerProvider :: Nil
+	def asList = OracleProvider :: Nil
+//    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: Nil
 
     trait Provider {
       def name: String
@@ -139,6 +142,20 @@ object DBProviders {
       def name = "H2 in memory"
       def vendor = new Vendor("org.h2.Driver") {
         def mkConn = DriverManager.getConnection("jdbc:h2:mem:lift;DB_CLOSE_DELAY=-1")
+      }
+    }
+
+    object SqlServerProvider extends Provider with DbSetup {
+      def name = "Microsoft SQL Server"
+      def vendor = new Vendor("net.sourceforge.jtds.jdbc.Driver") {
+        def mkConn = DriverManager.getConnection("jdbc:jtds:sqlserver://localhost/lift", "lift", "lift")
+      }
+    }
+
+    object OracleProvider extends Provider with DbSetup {
+      def name = "Oracle"
+      def vendor = new Vendor("oracle.jdbc.OracleDriver") {
+        def mkConn = DriverManager.getConnection("jdbc:oracle:thin:lift/lift@//localhost:1521/orcl")
       }
     }
 }
