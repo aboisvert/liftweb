@@ -32,7 +32,7 @@
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.4.2</version>
+      <version>1.4.0</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -92,6 +92,19 @@
       <version>8.2-507.jdbc3</version>
       <optional>true</optional>
     </dependency>
+    <dependency>
+      <groupId>net.sourceforge.jtds</groupId>
+      <artifactId>jtds</artifactId>
+      <version>1.2.2</version>
+      <optional>true</optional>
+    </dependency>
+    <dependency>
+      <groupId>com.oracle</groupId>
+      <artifactId>ojdbc14</artifactId>
+      <version>10.2.0.3.0</version>
+      <optional>true</optional>
+    </dependency>
+
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
