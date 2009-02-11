@@ -293,6 +293,9 @@ trait TimeHelpers { self: ControlHelpers =>
   /** @return a date formatted with the internet format (from a number of millis) */
   def toInternetDate(in: Long): String = internetDateFormatter.format(new Date(in))
 
+  /** @return the current time as an internet date */
+  def nowAsInternetDate: String = toInternetDate(millis)
+
   /** @return a Full(date) or a failure if the input couldn't be translated to date (or Empty if the input is null)*/
   def toDate(in: Any): Box[Date] = {
     try {

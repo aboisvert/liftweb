@@ -474,24 +474,29 @@ class LiftServlet extends HttpServlet {
 
     response setStatus resp.code
 
-    resp match {
-      case InMemoryResponse(bytes, _, _, _) =>
-        response.getOutputStream.write(bytes)
+    try {
+      resp match {
+        case InMemoryResponse(bytes, _, _, _) =>
+          response.getOutputStream.write(bytes)
+          response.getOutputStream.flush()
 
-      case StreamingResponse(stream, endFunc, _, _, _, _) =>
-        try {
-          var len = 0
-          val ba = new Array[Byte](8192)
-          val os = response.getOutputStream
-          len = stream.read(ba)
-          while (len >= 0) {
-            if (len > 0) os.write(ba, 0, len)
+        case StreamingResponse(stream, endFunc, _, _, _, _) =>
+          try {
+            var len = 0
+            val ba = new Array[Byte](8192)
+            val os = response.getOutputStream
             len = stream.read(ba)
+            while (len >= 0) {
+              if (len > 0) os.write(ba, 0, len)
+              len = stream.read(ba)
+            }
+            response.getOutputStream.flush()
+          } finally {
+            endFunc()
           }
-
-        } finally {
-          endFunc()
-        }
+      }
+    } catch {
+      case e: java.io.IOException => // ignore IO exceptions... they happen
     }
 
     LiftRules.afterSend.toList.foreach(f => tryo(f(resp, response, header, request)))

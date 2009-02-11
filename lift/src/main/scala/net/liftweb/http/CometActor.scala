@@ -118,9 +118,9 @@ trait StatefulComet extends CometActor {
         testState(v).foreach {
           ns =>
           if (ns ne state) {
-          val diff = ns - state
-          state = ns
-          partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
+            val diff = ns - state
+            state = ns
+            partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
           }
         }
     }
@@ -136,6 +136,56 @@ trait StatefulComet extends CometActor {
 
 object CurrentCometActor extends ThreadGlobal[Box[CometActor]] {
   this.set(Empty)
+}
+
+case class AddAListener(who: Actor)
+case class RemoveAListener(who: Actor)
+
+trait ListenerManager {
+  self: Actor =>
+  private var listeners: List[Actor] = Nil
+
+  def act = loop {
+    react {
+      highPriority orElse mediumPriority orElse
+      listenerService orElse lowPriority
+    }
+  }
+
+  protected def listenerService: PartialFunction[Any, Unit] =
+  {
+    case AddAListener(who) => listeners ::= who
+      who ! createUpdate
+
+    case RemoveAListener(who) =>
+      listeners = listeners.filter(_ ne who)
+  }
+
+  protected def updateListeners() {
+    val update = createUpdate
+    listeners.foreach(_ ! update)
+  }
+
+  protected def createUpdate: Any
+
+  protected def highPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def mediumPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def lowPriority: PartialFunction[Any, Unit] = Map.empty
+}
+
+trait CometListenee extends CometActor {
+
+  protected def registerWith: Actor
+
+  override protected def localSetup() {
+    registerWith ! AddAListener(this)
+    super.localSetup()
+  }
+
+  override protected def localShutdown() {
+    registerWith ! RemoveAListener(this)
+    super.localShutdown()
+  }
 }
 
 /**
@@ -250,12 +300,12 @@ trait CometActor extends Actor with BindHelpers {
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
           S.functionLifespan(true) {
-          pf.apply(in)
-          if (S.functionMap.size > 0) {
-            theSession.updateFunctionMap(S.functionMap,
-                                         uniqueId, lastRenderTime)
-            S.clearFunctionMap
-          }
+            pf.apply(in)
+            if (S.functionMap.size > 0) {
+              theSession.updateFunctionMap(S.functionMap,
+                                           uniqueId, lastRenderTime)
+              S.clearFunctionMap
+            }
           }
         }
       }
@@ -264,7 +314,7 @@ trait CometActor extends Actor with BindHelpers {
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
           S.functionLifespan(true) {
-          pf.isDefinedAt(in)
+            pf.isDefinedAt(in)
           }
         }
       }
@@ -291,8 +341,8 @@ trait CometActor extends Actor with BindHelpers {
 
     case l @ Unlisten(seq) =>
       askingWho match {
-      case Full(who) => who forward l
-      case _ => listeners = listeners.filter(_._1 != seq)
+        case Full(who) => who forward l
+        case _ => listeners = listeners.filter(_._1 != seq)
       }
 
     case l @ Listen(when, seqId, toDo) =>
@@ -335,8 +385,8 @@ trait CometActor extends Actor with BindHelpers {
     case ActionMessageSet(msgs, req) =>
       S.init(req, theSession) {
         S.functionLifespan(true) {
-        val ret = msgs.map(_())
-        reply(ret)
+          val ret = msgs.map(_())
+          reply(ret)
         }
       }
 
@@ -351,18 +401,18 @@ trait CometActor extends Actor with BindHelpers {
     case AnswerQuestion(what, otherListeners) =>
       S.initIfUninitted(theSession) {
         S.functionLifespan(true) {
-        askingWho.foreach {
-          ah =>
-          reply("A null message to release the actor from its send and await reply... do not delete this message")
-          // askingWho.unlink(self)
-          ah ! ShutDown
-          this.listeners  = this.listeners ::: otherListeners
-          this.askingWho = Empty
-          val aw = answerWith
-          answerWith = Empty
-          aw.foreach(_(what))
-          performReRender(true)
-        }
+          askingWho.foreach {
+            ah =>
+            reply("A null message to release the actor from its send and await reply... do not delete this message")
+            // askingWho.unlink(self)
+            ah ! ShutDown
+            this.listeners  = this.listeners ::: otherListeners
+            this.askingWho = Empty
+            val aw = answerWith
+            answerWith = Empty
+            aw.foreach(_(what))
+            performReRender(true)
+          }
         }
       }
 
