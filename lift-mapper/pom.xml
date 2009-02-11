@@ -100,12 +100,27 @@
     </dependency>
     <dependency>
       <groupId>com.oracle</groupId>
+      <artifactId>ojdbc6</artifactId>
+      <scope>runtime</scope>
+      <version>11.1.0.7.0</version>
+      <optional>true</optional>
+    </dependency>
+<!-- Oracle JDBC for jdk 1.5 and earlier
+    <dependency>
+      <groupId>com.oracle</groupId>
       <artifactId>ojdbc14</artifactId>
       <scope>runtime</scope>
       <version>10.2.0.3.0</version>
       <optional>true</optional>
     </dependency>
-
+-->
+    <dependency>
+      <groupId>com.sap</groupId>
+      <artifactId>sapdbc</artifactId>
+      <scope>runtime</scope>
+      <version>7.6.0.5</version>
+      <optional>true</optional>
+    </dependency>
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
