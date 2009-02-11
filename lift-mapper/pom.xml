@@ -101,6 +101,7 @@
     <dependency>
       <groupId>com.oracle</groupId>
       <artifactId>ojdbc14</artifactId>
+      <scope>runtime</scope>
       <version>10.2.0.3.0</version>
       <optional>true</optional>
     </dependency>
@@ -113,3 +114,4 @@
 
   </dependencies>
 </project>
+
