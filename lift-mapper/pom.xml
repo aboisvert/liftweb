@@ -98,6 +98,7 @@
       <version>1.2.2</version>
       <optional>true</optional>
     </dependency>
+    <!--
     <dependency>
       <groupId>com.oracle</groupId>
       <artifactId>ojdbc6</artifactId>
@@ -113,6 +114,7 @@
       <version>10.2.0.3.0</version>
       <optional>true</optional>
     </dependency>
+<<<<<<< HEAD:lift-mapper/pom.xml
 -->
     <dependency>
       <groupId>com.sap</groupId>
@@ -121,6 +123,10 @@
       <version>7.6.0.5</version>
       <optional>true</optional>
     </dependency>
+=======
+    -->
+
+>>>>>>> 9a373d419d4a5bccde1cdee62ae86c5542ef6066:lift-mapper/pom.xml
     <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>servlet-api</artifactId>
