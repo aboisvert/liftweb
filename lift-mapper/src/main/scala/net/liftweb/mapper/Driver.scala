@@ -186,3 +186,18 @@ object OracleDriver extends DriverType("Oracle") {
   def longColumnType = "NUMBER"
   def doubleColumnType = "NUMBER"
 }
+
+object MaxDbDriver extends DriverType("MaxDB") {
+  def binaryColumnType = "BLOB"
+  def booleanColumnType = "BOOLEAN"
+  def clobColumnType = "CLOB"
+  def dateTimeColumnType = "TIMESTAMP"
+  def integerColumnType = "INTEGER"
+  def integerIndexColumnType = "FIXED(10) DEFAULT SERIAL"
+  def enumColumnType = "FIXED(38)"
+  def longForeignKeyColumnType = "FIXED(38)"
+  def longIndexColumnType = "FIXED(38) DEFAULT SERIAL"
+  def enumListColumnType = "FIXED(38)"
+  def longColumnType = "FIXED(38)"
+  def doubleColumnType = "FLOAT(38)"
+}

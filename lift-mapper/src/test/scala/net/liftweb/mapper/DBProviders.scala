@@ -24,9 +24,7 @@ import _root_.java.io.File
 
 object DBProviders {
 //    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: SqlServerProvider :: Nil
-//	def asList = SqlServerProvider :: Nil
-	def asList = OracleProvider :: Nil
-//    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: Nil
+    def asList = MySqlProvider :: DerbyProvider :: PostgreSqlProvider :: H2Provider :: H2MemoryProvider :: Nil
 
     trait Provider {
       def name: String
@@ -155,7 +153,14 @@ object DBProviders {
     object OracleProvider extends Provider with DbSetup {
       def name = "Oracle"
       def vendor = new Vendor("oracle.jdbc.OracleDriver") {
-        def mkConn = DriverManager.getConnection("jdbc:oracle:thin:lift/lift@//localhost:1521/orcl")
+        def mkConn = DriverManager.getConnection("jdbc:oracle:thin:lift/lift@//localhost:1521/lift")
+      }
+    }
+
+    object MaxDbProvider extends Provider with DbSetup {
+      def name = "SAP MaxDB"
+      def vendor = new Vendor("com.sap.dbtech.jdbc.DriverSapDB") {
+        def mkConn = DriverManager.getConnection("jdbc:sapdb://localhost:7210/lift?user=lift&password=lift")
       }
     }
 }
