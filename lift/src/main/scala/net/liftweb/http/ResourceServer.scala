@@ -37,7 +37,6 @@ object ResourceServer {
      case "jquery.js" :: Nil => List("jquery-1.3.1-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
      case "json2.js" :: Nil => List( "json2-min.js")
-     case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
   }
 
