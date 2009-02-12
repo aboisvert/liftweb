@@ -135,7 +135,7 @@ case class PCData(_data: String) extends Atom[String](_data) {
 }
 
 object AltXML {
-  val ieBadTags: Set[String] = Set("br")
+  val ieBadTags: Set[String] = Set("br", "hr")
 
   def toXML(n: Node, stripComment: Boolean, convertAmp: Boolean,
             ieMode: Boolean): String = {

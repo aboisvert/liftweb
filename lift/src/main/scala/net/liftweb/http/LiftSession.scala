@@ -978,7 +978,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         doneBody = true
         Elem(null, "body", e.attributes,  e.scope, (e.child ++
                                                     JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
-                                                                  JsRaw("lift_successRegisterGC()") &
+                                                                  OnLoad(JsRaw("lift_successRegisterGC()")) &
                                                                   JsCrVar("lift_page", pageName))) :_*)
 
       case n => n
