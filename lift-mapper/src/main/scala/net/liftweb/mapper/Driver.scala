@@ -169,7 +169,7 @@ object SqlServerDriver extends DriverType("Microsoft SQL Server") {
   def longColumnType = "BIGINT"
   def doubleColumnType = "FLOAT"
 
-  //override def defaultSchemaName : Box[String] = Full("dbo")
+  override def defaultSchemaName : Box[String] = Full("dbo")
 }
 
 object OracleDriver extends DriverType("Oracle") {
