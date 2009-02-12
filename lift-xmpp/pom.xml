@@ -30,7 +30,7 @@
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smack</artifactId>
-      <version>3.0.4</version>
+      <version>3.1.0</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet</groupId>
@@ -41,7 +41,7 @@
     <dependency>
       <groupId>org.igniterealtime.smack</groupId>
       <artifactId>smackx</artifactId>
-      <version>3.0.4</version>
+      <version>3.1.0</version>
       <exclusions>
         <exclusion>
           <groupId>javax.servlet</groupId>
