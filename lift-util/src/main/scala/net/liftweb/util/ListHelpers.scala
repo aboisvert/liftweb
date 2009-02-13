@@ -73,6 +73,7 @@ trait ListHelpers {
       tGet(theList)
     }
   }
+
   /** adds the ciGet method to a List of Pairs of Strings */
   implicit def listToListMapish(in: Seq[(String, String)]): ListMapish = new ListMapish(in)
 
@@ -95,8 +96,7 @@ trait ListHelpers {
   /**
    * Return the first element of a List or a default value if the list is empty
    */
-  def head[T](l: Seq[T], deft: => T) =
-    l.firstOption.getOrElse(deft)
+  def head[T](l: Seq[T], deft: => T) = l.firstOption.getOrElse(deft)
 
   /**
    * Return a list containing the element f if the expression is true

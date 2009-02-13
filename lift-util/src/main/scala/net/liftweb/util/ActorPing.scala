@@ -23,35 +23,38 @@ import Helpers.TimeSpan
 */
 object ActorPing {
 
-  /** underlying <code>ScheduledExecutor</code> from the java concurrency library */
+  /** The underlying <code>java.util.concurrent.ScheduledExecutor</code> */
   private var service = Executors.newSingleThreadScheduledExecutor(TF)
 
   /**
-  * recreates the underlying <code>SingleThreadScheduledExecutor</code>
-  */
+   * Re-create the underlying <code>SingleThreadScheduledExecutor</code>
+   */
   def restart: Unit = synchronized { if ((service eq null) || service.isShutdown)
                        service = Executors.newSingleThreadScheduledExecutor(TF) }
 
   /**
-  * shutdown the underlying <code>SingleThreadScheduledExecutor</code>
-  */
+   * Shut down the underlying <code>SingleThreadScheduledExecutor</code>
+   */
   def shutdown: Unit = synchronized { service.shutdown }
 
   /**
-  * @return a <code>ScheduledFuture</code> sending the <code>msg</code> to the <code>to<code> Actor,
-  * every <code>delay</code> using <code>tu<code> as a TimeUnit
-  */
+   * Schedules the sending of a message to occur after the specified delay.
+   *
+   * @return a <code>ScheduledFuture</code> which sends the <code>msg</code> to 
+   * the <code>to<code> Actor after the specified TimeSpan <code>delay</code>.
+   */
   def schedule(to: Actor, msg: Any, delay: TimeSpan): ScheduledFuture[AnyRef] = {
     val r = new _root_.java.util.concurrent.Callable[AnyRef] { def call: AnyRef = { to ! msg; null } }
     try {
       service.schedule(r, delay.millis, TimeUnit.MILLISECONDS)
+    } catch { 
+      case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)
     }
-    catch { case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)}
   }
 
   /**
-  * Sends the <code>msg</code> to the <code>to<code> Actor,
-  * after <code>initialDelay</code> and hen subsequently every <code>delay</code> using <code>tu<code> as a TimeUnit
+  * Schedules the sending of the message <code>msg</code> to the <code>to<code> Actor,
+  * after <code>initialDelay</code> and then subsequently every <code>delay</code> TimeSpan.
   */
   def scheduleAtFixedRate(to: Actor, msg: Any, initialDelay: TimeSpan, delay: TimeSpan) {
     try {
@@ -78,16 +81,20 @@ object ActorPing {
   }
 
 }
+
 /**
-* Send by the scheduled actor to sign off from recurrent scheduling
-*/
+ * Send by the scheduled actor to sign off from recurrent scheduling
+ */
 case object UnSchedule
+
 /**
-* Send to the actor that we scheduled for recurrent ping
-*/
+ * Send to the actor that we scheduled for recurrent ping
+ */
 case object Scheduled
 
-/** ActorPing Exception thrown if the ping can't be scheduled */
+/** 
+ * Exception thrown if a ping can't be scheduled.
+ */
 case class ActorPingException(msg: String, e: Throwable) extends RuntimeException(msg, e)
 
 private object TF extends ThreadFactory {

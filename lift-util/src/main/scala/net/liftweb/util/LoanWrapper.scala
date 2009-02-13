@@ -13,6 +13,17 @@ package net.liftweb.util
  * limitations under the License.
  */
 
+/**
+ * This trait defines the principle contract for function objects that 
+ * wrap the processing of HTTP requests by Lift while utilizing the preestablished
+ * request-local scope.
+ */
 trait LoanWrapper {
+  /**
+   * Implementations of this method may either call f to continue processing
+   * the wrapped call as normal, or may ignore f to entirely replace the
+   * wrapped call with a custom implementation
+   * @param f the delegate which provides processing by the underlying framework
+   */
   def apply[T](f: => T): T
 }

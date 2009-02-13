@@ -55,7 +55,6 @@ import _root_.org.slf4j.{Logger, LoggerFactory}
  *
  */
 object Slf4jLogBoot {
-
   private def _loggerByClass(clz: Class[AnyRef]): LiftLogger = new Slf4jLogger(LoggerFactory.getLogger(clz))
   private def _loggerByName(name: String): LiftLogger = new Slf4jLogger(LoggerFactory.getLogger(name))
 
@@ -67,6 +66,7 @@ object Slf4jLogBoot {
     LogBoot.loggerByClass = _loggerByClass
   }
 }
+
 /**
  * Adapter use internaly by lift as Logger, if Slf4jLogBoot is enabled.
  * @see Slf4jLogBoot
