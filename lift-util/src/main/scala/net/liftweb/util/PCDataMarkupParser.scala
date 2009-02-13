@@ -137,6 +137,9 @@ case class PCData(_data: String) extends Atom[String](_data) {
 object AltXML {
   val ieBadTags: Set[String] = Set("br", "hr")
 
+  val inlineTags: Set[String] = Set("base", "meta", "link", "hr", "br",
+  "param", "img", "area", "input", "col" )
+
   def toXML(n: Node, stripComment: Boolean, convertAmp: Boolean,
             ieMode: Boolean): String = {
     val sb = new StringBuilder()
@@ -172,12 +175,13 @@ object AltXML {
       for (c <- g.nodes)
       toXML(c, x.scope, sb, stripComment, convertAmp, ieMode)
 
-    case e: Elem if !ieMode && ((e.child eq null) || e.child.isEmpty) =>
+    case e: Elem if !ieMode && ((e.child eq null) || e.child.isEmpty)
+      && inlineTags.contains(e.label) =>
       sb.append('<')
       e.nameToString(sb)
       if (e.attributes ne null) e.attributes.toString(sb)
       e.scope.toString(sb, pscope)
-      sb.append("/>")
+      sb.append(" />")
 
     case e: Elem if ieMode && ((e.child eq null) || e.child.isEmpty) &&
       ieBadTags.contains(e.label) =>
