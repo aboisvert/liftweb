@@ -306,12 +306,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         // if it's going to a CometActor, batch up the commands
         case Full(id) =>
           asyncById.get(id).toList.
-          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match
-                  {
+          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {
               case Some(li: List[_]) => li
               case li: List[_] => li
-              case other => Nil})
-
+              case other => Nil
+          })
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
