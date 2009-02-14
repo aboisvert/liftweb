@@ -73,7 +73,7 @@ trait DeltaTrait {
 trait CometState[DeltaType <: DeltaTrait,
                  MyType <: CometState[DeltaType, MyType]] {
   self: MyType =>
-  
+
   def -(other: MyType): Seq[DeltaType]
   def render: NodeSeq
 }
@@ -118,9 +118,9 @@ trait StatefulComet extends CometActor {
         testState(v).foreach {
           ns =>
           if (ns ne state) {
-          val diff = ns - state
-          state = ns
-          partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
+            val diff = ns - state
+            state = ns
+            partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
           }
         }
     }
@@ -136,6 +136,56 @@ trait StatefulComet extends CometActor {
 
 object CurrentCometActor extends ThreadGlobal[Box[CometActor]] {
   this.set(Empty)
+}
+
+case class AddAListener(who: Actor)
+case class RemoveAListener(who: Actor)
+
+trait ListenerManager {
+  self: Actor =>
+  private var listeners: List[Actor] = Nil
+
+  def act = loop {
+    react {
+      highPriority orElse mediumPriority orElse
+      listenerService orElse lowPriority
+    }
+  }
+
+  protected def listenerService: PartialFunction[Any, Unit] =
+  {
+    case AddAListener(who) => listeners ::= who
+      who ! createUpdate
+
+    case RemoveAListener(who) =>
+      listeners = listeners.filter(_ ne who)
+  }
+
+  protected def updateListeners() {
+    val update = createUpdate
+    listeners.foreach(_ ! update)
+  }
+
+  protected def createUpdate: Any
+
+  protected def highPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def mediumPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def lowPriority: PartialFunction[Any, Unit] = Map.empty
+}
+
+trait CometListenee extends CometActor {
+
+  protected def registerWith: Actor
+
+  override protected def localSetup() {
+    registerWith ! AddAListener(this)
+    super.localSetup()
+  }
+
+  override protected def localShutdown() {
+    registerWith ! RemoveAListener(this)
+    super.localShutdown()
+  }
 }
 
 /**
@@ -173,7 +223,7 @@ trait CometActor extends Actor with BindHelpers {
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
 
-  private[http] def initCometActor(theSession: LiftSession, 
+  private[http] def initCometActor(theSession: LiftSession,
                                    theType: Box[String],
                                    name: Box[String],
                                    defaultXml: NodeSeq,
@@ -249,11 +299,13 @@ trait CometActor extends Actor with BindHelpers {
       def apply(in: Any): Unit =
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
-          pf.apply(in)
-          if (S.functionMap.size > 0) {
-            theSession.updateFunctionMap(S.functionMap,
-                                         uniqueId, lastRenderTime)
-            S.clearFunctionMap
+          S.functionLifespan(true) {
+            pf.apply(in)
+            if (S.functionMap.size > 0) {
+              theSession.updateFunctionMap(S.functionMap,
+                                           uniqueId, lastRenderTime)
+              S.clearFunctionMap
+            }
           }
         }
       }
@@ -261,7 +313,9 @@ trait CometActor extends Actor with BindHelpers {
       def isDefinedAt(in: Any): Boolean =
       CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
-          pf.isDefinedAt(in)
+          S.functionLifespan(true) {
+            pf.isDefinedAt(in)
+          }
         }
       }
     }
@@ -285,7 +339,11 @@ trait CometActor extends Actor with BindHelpers {
     case RelinkToActorWatcher =>
       link(ActorWatcher)
 
-    case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
+    case l @ Unlisten(seq) =>
+      askingWho match {
+        case Full(who) => who forward l
+        case _ => listeners = listeners.filter(_._1 != seq)
+      }
 
     case l @ Listen(when, seqId, toDo) =>
       askingWho match {
@@ -326,8 +384,10 @@ trait CometActor extends Actor with BindHelpers {
 
     case ActionMessageSet(msgs, req) =>
       S.init(req, theSession) {
-        val ret = msgs.map(_())
-        reply(ret)
+        S.functionLifespan(true) {
+          val ret = msgs.map(_())
+          reply(ret)
+        }
       }
 
     case AskQuestion(what, who, otherlisteners) =>
@@ -340,17 +400,19 @@ trait CometActor extends Actor with BindHelpers {
 
     case AnswerQuestion(what, otherListeners) =>
       S.initIfUninitted(theSession) {
-        askingWho.foreach {
-          ah =>
-          reply("A null message to release the actor from its send and await reply... do not delete this message")
-          // askingWho.unlink(self)
-          ah ! ShutDown
-          this.listeners  = this.listeners ::: otherListeners
-          this.askingWho = Empty
-          val aw = answerWith
-          answerWith = Empty
-          aw.foreach(_(what))
-          performReRender(true)
+        S.functionLifespan(true) {
+          askingWho.foreach {
+            ah =>
+            reply("A null message to release the actor from its send and await reply... do not delete this message")
+            // askingWho.unlink(self)
+            ah ! ShutDown
+            this.listeners  = this.listeners ::: otherListeners
+            this.askingWho = Empty
+            val aw = answerWith
+            answerWith = Empty
+            aw.foreach(_(what))
+            performReRender(true)
+          }
         }
       }
 
@@ -366,9 +428,10 @@ trait CometActor extends Actor with BindHelpers {
 
     case ShutDown =>
       Log.info("The CometActor "+this+" Received Shutdown")
+      askingWho.foreach(_ ! ShutDown)
       theSession.removeCometActor(this)
       unlink(ActorWatcher)
-      localShutdown()
+      _localShutdown()
       self.exit("Politely Asked to Exit")
 
     case PartialUpdateMsg(cmdF) =>
@@ -377,7 +440,8 @@ trait CometActor extends Actor with BindHelpers {
       val delta = JsDelta(time, cmd)
       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       S.clearFunctionMap
-      deltas = delta :: deltas
+      val m = millis
+      deltas = (delta :: deltas).filter(d => (m - d.timestamp) < 120000L )
       if (!listeners.isEmpty) {
         val rendered = AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                    Full(cmd), Empty, buildSpan, false, notices toList),
@@ -431,11 +495,20 @@ trait CometActor extends Actor with BindHelpers {
    */
   protected def localSetup(): Unit = {}
 
+  private def _localShutdown() {
+    localShutdown()
+    clearNotices
+    listeners = Nil
+    askingWho = Empty
+    whosAsking = Empty
+    deltas = Nil
+    jsonHandlerChain = Map.empty
+  }
   /**
    * This method will be called as part of the shut-down of the actor.  Release any resources here.
    */
   protected def localShutdown(): Unit = {
-    clearNotices
+
   }
 
   def composeFunction = composeFunction_i
@@ -523,6 +596,7 @@ trait CometActor extends Actor with BindHelpers {
 
 abstract class Delta(val when: Long) {
   def js: JsCmd
+  val timestamp = millis
 }
 
 case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)

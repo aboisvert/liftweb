@@ -37,7 +37,7 @@ class Chat extends CometActor {
 
   private lazy val infoId = uniqueId + "_info"
 
-  private val server = {
+  private lazy val server = {
     val ret = ChatServer
     ret ! ChatServerAdd(this)
     ret
@@ -69,6 +69,11 @@ class Chat extends CometActor {
   override def localSetup {
     askForName
     super.localSetup
+  }
+
+  override def localShutdown() {
+    ChatServer ! ChatServerRemove(this)
+    super.localShutdown()
   }
 
   private def askForName {

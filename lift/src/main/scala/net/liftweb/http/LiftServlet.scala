@@ -133,13 +133,13 @@ class LiftServlet extends HttpServlet {
 
     val role = NamedPF.applyBox(req.path, LiftRules.httpAuthProtectedResource.toList)
     role.map(_ match {
-       case Full(r) =>
-         LiftRules.authentication.verified_?(req) match {
-          case true => checkRoles(r, userRoles.get)
-          case _ => false
-         }
-       case _ => true
-     }) openOr true
+        case Full(r) =>
+          LiftRules.authentication.verified_?(req) match {
+            case true => checkRoles(r, userRoles.get)
+            case _ => false
+          }
+        case _ => true
+      }) openOr true
   }
 
   /**
@@ -151,30 +151,30 @@ class LiftServlet extends HttpServlet {
     tryo { LiftRules.onBeginServicing.toList.foreach(_(requestState)) }
 
     val resp =
-      // if the servlet is shutting down, return a 404
-      if (LiftRules.ending) {
-        LiftRules.notFoundOrIgnore(requestState, Empty)
-      } else if (!authPassed_?(requestState)) {
-        Full(LiftRules.authentication.unauthorizedResponse)
-      } else
-      // if the request is matched is defined in the stateless table, dispatch
-      if ({tmpStatelessHolder = NamedPF.applyBox(requestState,
-                                                 LiftRules.statelessDispatchTable.toList);
-        tmpStatelessHolder.isDefined})
-      {
-        val f = tmpStatelessHolder.open_!
-        f() match {
-          case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
-          case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
-          case f: Failure => Full(requestState.createNotFound(f))
-        }
-      } else {
-	    // otherwise do a stateful response
-        val liftSession = getLiftSession(requestState, request.getSession)
-        S.init(requestState, liftSession) {
-          dispatchStatefulRequest(request, liftSession, requestState)
-        }
+    // if the servlet is shutting down, return a 404
+    if (LiftRules.ending) {
+      LiftRules.notFoundOrIgnore(requestState, Empty)
+    } else if (!authPassed_?(requestState)) {
+      Full(LiftRules.authentication.unauthorizedResponse)
+    } else
+    // if the request is matched is defined in the stateless table, dispatch
+    if ({tmpStatelessHolder = NamedPF.applyBox(requestState,
+                                               LiftRules.statelessDispatchTable.toList);
+         tmpStatelessHolder.isDefined})
+    {
+      val f = tmpStatelessHolder.open_!
+      f() match {
+        case Full(v) => Full(LiftRules.convertResponse( (v, Nil, S.responseCookies, requestState) ))
+        case Empty => LiftRules.notFoundOrIgnore(requestState, Empty)
+        case f: Failure => Full(requestState.createNotFound(f))
       }
+    } else {
+	    // otherwise do a stateful response
+      val liftSession = getLiftSession(requestState, request.getSession)
+      S.init(requestState, liftSession) {
+        dispatchStatefulRequest(request, liftSession, requestState)
+      }
+    }
 
     tryo { LiftRules.onEndServicing.toList.foreach(_(requestState, resp)) }
 
@@ -250,30 +250,49 @@ class LiftServlet extends HttpServlet {
   {
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
     tryo{LiftSession.onBeginServicing.foreach(_(liftSession, requestState))}
-    val ret = try {
-      val what = flatten(liftSession.runParams(requestState))
+    val ret = requestState.param("__lift__GCNodes") match {
+      case Full(json) =>
+        val now = millis
+        val found: List[Boolean] = liftSession.synchronized {
+          for {strList <- JSONParser.parse(json).asA[List[String]].toList
+               str <- strList} yield {
+            liftSession.updateFunc(str, now)
+          }
+        }
 
-      val what2 = what.flatMap{
-        case js: JsCmd => List(js)
-        case n: NodeSeq => List(n)
-        case js: JsCommands => List(js)
-        case r: LiftResponse => List(r)
-        case s => Nil
-      }
+        val len = found.length
+        val sum = found.foldLeft(0)((a, b) => a + (if (b) 1 else 0))
+        import js.JsCmds._
 
-      val ret: LiftResponse = what2 match {
-        case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
-        case (n: Node) :: _ => XmlResponse(n)
-        case (ns: NodeSeq) :: _ => XmlResponse(Group(ns))
-        case (r: LiftResponse) :: _ => r
-        case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
-      }
+        if (len > 0 && sum == 0) Full(JavaScriptResponse(RedirectTo("/")))
+        else Full(JavaScriptResponse(js.JsCmds.Noop))
 
-      LiftRules.cometLogger.debug("AJAX Response: "+liftSession.uniqueId+" "+ret)
+      case _ =>
+        try {
+          val what = flatten(liftSession.runParams(requestState))
 
-      Full(ret)
-    } finally {
-      liftSession.updateFunctionMap(S.functionMap)
+          val what2 = what.flatMap{
+            case js: JsCmd => List(js)
+            case n: NodeSeq => List(n)
+            case js: JsCommands => List(js)
+            case r: LiftResponse => List(r)
+            case s => Nil
+          }
+
+          val ret: LiftResponse = what2 match {
+            case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
+            case (n: Node) :: _ => XmlResponse(n)
+            case (ns: NodeSeq) :: _ => XmlResponse(Group(ns))
+            case (r: LiftResponse) :: _ => r
+            case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
+          }
+
+          LiftRules.cometLogger.debug("AJAX Response: "+liftSession.uniqueId+" "+ret)
+
+          Full(ret)
+        } finally {
+          liftSession.updateFunctionMap(S.functionMap)
+        }
     }
     tryo{LiftSession.onEndServicing.foreach(_(liftSession, requestState, ret))}
     ret
@@ -299,7 +318,7 @@ class LiftServlet extends HttpServlet {
           ActorPing.schedule(this, BreakOut, TimeSpan(5))
 
         case BreakOut =>
-          actors.foreach{case (act, _) => act ! Unlisten}
+          actors.foreach{case (act, _) => act ! Unlisten(ListenerId(seqId))}
           LiftRules.resumeRequest(
             S.init(request, sessionActor)
             (LiftRules.performTransform(
@@ -392,7 +411,7 @@ class LiftServlet extends HttpServlet {
 
       val ret = drainTheSwamp(cometTimeout, Nil)
 
-      actors.foreach{case (act, _) => act ! Unlisten}
+      actors.foreach{case (act, _) => act ! Unlisten(ListenerId(seqId))}
 
       val ret2 = drainTheSwamp(5L, ret)
 
@@ -455,24 +474,29 @@ class LiftServlet extends HttpServlet {
 
     response setStatus resp.code
 
-    resp match {
-      case InMemoryResponse(bytes, _, _, _) =>
-        response.getOutputStream.write(bytes)
+    try {
+      resp match {
+        case InMemoryResponse(bytes, _, _, _) =>
+          response.getOutputStream.write(bytes)
+          response.getOutputStream.flush()
 
-      case StreamingResponse(stream, endFunc, _, _, _, _) =>
-        try {
-          var len = 0
-          val ba = new Array[Byte](8192)
-          val os = response.getOutputStream
-          len = stream.read(ba)
-          while (len >= 0) {
-            if (len > 0) os.write(ba, 0, len)
+        case StreamingResponse(stream, endFunc, _, _, _, _) =>
+          try {
+            var len = 0
+            val ba = new Array[Byte](8192)
+            val os = response.getOutputStream
             len = stream.read(ba)
+            while (len >= 0) {
+              if (len > 0) os.write(ba, 0, len)
+              len = stream.read(ba)
+            }
+            response.getOutputStream.flush()
+          } finally {
+            endFunc()
           }
-
-        } finally {
-          endFunc()
-        }
+      }
+    } catch {
+      case e: java.io.IOException => // ignore IO exceptions... they happen
     }
 
     LiftRules.afterSend.toList.foreach(f => tryo(f(resp, response, header, request)))
@@ -487,7 +511,7 @@ trait LiftFilterTrait {
    */
   def doFilter(req: ServletRequest, res: ServletResponse, chain: FilterChain) = {
     RequestVarHandler(Empty,
-      (req, res) match {
+                      (req, res) match {
         case (httpReq: HttpServletRequest, httpRes: HttpServletResponse) =>
           tryo { LiftRules.early.toList.foreach(_(httpReq)) }
 
@@ -495,9 +519,9 @@ trait LiftFilterTrait {
 
           URLRewriter.doWith(url => NamedPF.applyBox(httpRes.encodeURL(url), LiftRules.urlDecorate.toList) openOr httpRes.encodeURL(url)) {
             if (!(isLiftRequest_?(session) && actualServlet.service(httpReq, httpRes, session))) {
-	          chain.doFilter(req, res)
-	        }
-	      }
+              chain.doFilter(req, res)
+            }
+          }
         case _ => chain.doFilter(req, res)
       })
   }
@@ -551,10 +575,10 @@ class LiftFilter extends Filter with LiftFilterTrait
 
   private def preBoot() {
     LiftRules.dispatch.prepend(NamedPF("Classpath service") {
-      case r @ Req(mainPath :: subPath, suffx, _)
-        if mainPath == LiftRules.resourceServerPath =>
+        case r @ Req(mainPath :: subPath, suffx, _)
+          if mainPath == LiftRules.resourceServerPath =>
           ResourceServer.findResourceInClasspath(r, r.path.wholePath.drop(1))
-    })
+      })
   }
 
   private def postBoot {

@@ -29,7 +29,6 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
 
   def spaces = rep(whitespace)
 
-
   def jsonObject: Parser[Map[String, Any]] = ( spaces ~ '{' ~ spaces ~> members <~ spaces ~ '}' ~ spaces ^^ {case xs =>
     Map(xs :_*)
     } )  |

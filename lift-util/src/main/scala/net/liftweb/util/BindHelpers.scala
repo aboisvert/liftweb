@@ -17,6 +17,9 @@ import _root_.scala.xml.{NodeSeq, Node, SpecialNode, Text, Elem,
                          Group, MetaData, Null, UnprefixedAttribute,
                          PrefixedAttribute}
 
+/**
+ * This trait is used to identify an object that is representable as a {@link NodeSeq}.
+ */
 trait Bindable {
   def asHtml: NodeSeq
 }
@@ -51,22 +54,20 @@ trait AttrHelper[+Holder[X]] {
 }
 
 /**
- * BindHelpers can be used to have access to additional information while bind function is executing.
- * Such information refers to node attributes of the current bound node or the entire NodeSeq that is
+ * BindHelpers can be used to obtain additional information while a {@link bind} call is executing.
+ * This informaiton includes node attributes of the current bound node or the entire NodeSeq that is
  * to be bound. Since the context is created during bind execution and destroyed when bind terminates,
- * you can benefit of these helpers in the context of FuncBindParam or FuncAttrBindParam. You can of
- * course use your own implementation of BindParam and your BindParam#calcValue function will be called
+ * you can benefit of these helpers in the context of FuncBindParam or FuncAttrBindParam. You can
+ * also provide your own implementation of BindParam and your BindParam#calcValue function will be called
  * in the appropriate context.
  *
- * <pre>
  * Example:
- *
- * bind("hello", xml,
- *   	"someNode" -> {node: NodeSeq => <function-body>})
- *
- * In <code>function-body</code> you can safely use the BindHelpers
+ * <pre>
+ * bind("hello", xml,	
+ *      "someNode" -> {node: NodeSeq => <function-body>})
  * </pre>
  *
+ * In <code>function-body</code> you can safely use BindHelpers methods to obtain correctly-scoped information.
  */
 object BindHelpers extends BindHelpers {
 
@@ -74,20 +75,20 @@ object BindHelpers extends BindHelpers {
   private val _currentNode = new ThreadGlobal[Elem]
 
   /**
-   * A list of NodeSeq that is behind bind.  The head of the list is the most
-   * recent NodeSeq. Empty and Full(Nil) have different semantics here. It returns
-   * empty if this function is called outside its context and Full(Nil) is returned if
-   * there are no child nodes but the function is called from the appropriate context.
+   * A list of NodeSeq that preceeds the NodeSeq passed to bind. The head of the list 
+   * is the most recent NodeSeq. This returns Empty if it is called outside its context, 
+   * or Full(Nil) if there are no child nodes but the function is called within the 
+   * appropriate context.
    */
   def bindNodes: Box[List[NodeSeq]] = _bindNodes.box
 
   /**
-   * The current Elem, the children of which are passed to the bindParam
+   * A Box containing the current Elem, the children of which are passed to the bindParam
    */
   def currentNode: Box[Elem] = _currentNode.box
 
   /**
-   * Helpers to look up attributes on the currentNode
+   * Helpers for obtaining attributes of the current Elem
    */
   object attr extends AttrHelper[Option] {
     type Info = NodeSeq
@@ -111,7 +112,7 @@ object BindHelpers extends BindHelpers {
 }
 
 /**
- * The helpers assocated with bindings
+ * Helpers assocated with bindings
  */
 trait BindHelpers {
 
@@ -131,23 +132,27 @@ trait BindHelpers {
   }
 
   /**
-   * Choose one of many templates from the children.  Looking for the
-   * tag &lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;
+   * Finds and returns one of many templates from the children based
+   * upon the namespace and tag name: for example, for prefix "choose"
+   * and tag name "stuff" this would return the contents of the
+   * first tag <code>&lt;choose:stuff&gt; ... &lt;/choose:stuff&gt;</code>
+   * in the specified NodeSeq.
    *
    * @param prefix the prefix (e.g., "choose")
    * @param tag the tag to choose (e.g., "stuff")
-   * @param xhtml the incoming node sequence
+   * @param xhtml the node sequence to search for the specified element
    *
    * @return the first matching node sequence
    */
   def chooseTemplate(prefix: String, tag: String, xhtml: NodeSeq): NodeSeq =
-    Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
+  Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
     case Nil => NodeSeq.Empty
     case x :: xs => x.child
   }
 
   /**
-   * Choose one of many templates from the children
+   * Similar to chooseTemplate, this returns the contents of the element in a Full Box if 
+   * found or an Empty Box otherwise.
    */
   def template(xhtml: NodeSeq, prefix: String, tag: String): Box[NodeSeq] =
   Helpers.findElems(xhtml)(e => e.label == tag && e.prefix == prefix).toList match {
@@ -156,7 +161,7 @@ trait BindHelpers {
   }
 
   /**
-   * Choose two of many templates from the children
+   * Find two of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag1: String,
                tag2: String): Box[(NodeSeq, NodeSeq)] =
@@ -164,7 +169,7 @@ trait BindHelpers {
        x2 <- template(xhtml, prefix, tag2)) yield (x1, x2)
 
   /**
-   * Choose three of many templates from the children
+   * Find three of many templates from the children
    */
   def template(xhtml: NodeSeq, prefix: String, tag1: String,
                tag2: String, tag3: String): Box[(NodeSeq, NodeSeq, NodeSeq)] =
@@ -212,6 +217,7 @@ trait BindHelpers {
   case class FuncBindParam(name: String, value: NodeSeq => NodeSeq) extends Tuple2(name, value) with BindParam {
     def calcValue(in: NodeSeq): NodeSeq = value(in)
   }
+
   /**
    * BindParam using a function to calculate its value
    */
@@ -346,18 +352,44 @@ trait BindHelpers {
 
   /**
    * Bind a set of values to parameters and attributes in a block of XML.<p/>
-   * Usage:<pre>
-   *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
+   *
+   * For example: <pre>
+   *   bind("user", <user:hello>replace this</user:hello>, "hello" -> <h1/>)
    * </pre>
+   * will return <pre><h1></h1></pre>
+
+   * @param namespace the namespace of tags to bind
+   * @param xml the NodeSeq in which to find elements to be bound.
+   * @param params the list of BindParam bindings to be applied
+   * 
+   * @return the NodeSeq that results from the specified transforms
    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq =
   bind(namespace, Empty, Empty , xml, params :_*)
 
   /**
-   * Bind a set of values to parameters and attributes in a block of XML.<p/>
-   * Usage:<pre>
-   *   bind("user", <user:hello>replace this</user:hello>, "hello" --> <h1/>) must ==/(<h1></h1>)
+   * Bind a set of values to parameters and attributes in a block of XML
+   * with defined transforms for unbound elements within the specified
+   * namespace.<p/>
+   *
+   * For example:<pre>
+   *   bind("user", 
+   *        Full(xhtml: NodeSeq => Text("Default Value")),
+   *        Empty,
+   *        <user:hello>replace this</user:hello><user:dflt>replace with default</user:dflt>, 
+   *        "hello" -> <h1/>)
    * </pre>
+   * will return <pre><h1></h1>Default Value</pre>
+   * 
+   * @param namespace the namespace of tags to bind
+   * @param nodeFailureXform a box containing the function to use as the default transform
+   *        for tags in the specified namespace that do not have bindings specified.
+   * @param paramFailureXform a box containing the function to use as the default transform
+   *        for unrecognized attributes in bound elements.
+   * @param xml the NodeSeq in which to find elements to be bound.
+   * @param params the list of BindParam bindings to be applied
+   * 
+   * @return the NodeSeq that results from the specified transforms
    */
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
            paramFailureXform: Box[PrefixedAttribute => MetaData],
@@ -394,7 +426,6 @@ trait BindHelpers {
         }
       }
 
-
       in_bind(xml)
     }
   }
@@ -416,13 +447,13 @@ trait BindHelpers {
    * Replace the content of lift:bind nodes with the corresponding nodes found in a map,
    * according to the value of the "name" attribute.<p/>
    * Usage: <pre>
-   * bind(Map("a" -> <h1/>), <b><lift:bind name="a">change this</lift:bind></b>) must ==/(<b><h1></h1></b>)
+   *   bind(Map("a" -> <h1/>), <b><lift:bind name="a">change this</lift:bind></b>) must ==/(<b><h1></h1></b>)
    * </pre>
    *
    * @param vals map of name/nodes to replace
    * @param xml nodes containing lift:bind nodes
    *
-   * @return the replaced xml nodes
+   * @return the NodeSeq that results from the specified transforms
    */
   def bind(vals: Map[String, NodeSeq], xml: NodeSeq): NodeSeq = {
     xml.flatMap {
@@ -446,7 +477,8 @@ trait BindHelpers {
   }
 
   /**
-   * Bind a list of maps name/xml to a block of XML containing lift:bind nodes (see the bind(Map, NodeSeq) function)
+   * Bind a list of name/xml maps to a block of XML containing lift:bind nodes (see the bind(Map, NodeSeq) function)
+   * @return the NodeSeq that results from the specified transforms
    */
   def bindlist(listvals: List[Map[String, NodeSeq]], xml: NodeSeq): Box[NodeSeq] = {
     def build (listvals: List[Map[String, NodeSeq]], ret: NodeSeq): NodeSeq = listvals match {
@@ -459,10 +491,12 @@ trait BindHelpers {
 
   /**
    * Bind parameters to XML.
+   *
    * @param around XML with lift:bind elements
    * @param atWhat data to bind
    * @deprecated use the bind function instead
    */
+  @deprecated
   def processBind(around: NodeSeq, atWhat: Map[String, NodeSeq]) : NodeSeq = {
 
     /** Find element matched predicate f(x).isDefined, and return f(x) if found or None otherwise. */
@@ -485,18 +519,25 @@ trait BindHelpers {
 
     }
   }
+
   /**
-   * Looks for a named parameter in the XML element and return it if found
+   * Finds the named attribute in specified XML element and returns
+   * a Full Box containing the value of the attribute if found.
+   * Empty otherwise.
    *
-   * @return a Full can containing the value of the found attribute if it is not empty
+   * @return a Full Box containing the value of the attribute if found; Empty otherwise
    */
   def xmlParam(in: NodeSeq, param: String): Box[String] = {
     val tmp = (in \ ("@" + param))
     if (tmp.length == 0) Empty else Full(tmp.text)
   }
 
+  /**
+   * Finds and returns the first node in the specified NodeSeq and its children 
+   * with the same label and prefix as the specified element.
+   */
   def findNode(in: Elem, nodes: NodeSeq): Box[Elem] = nodes match {
-    case seq if seq.isEmpty => None
+    case seq if seq.isEmpty => Empty
     case Seq(x: Elem, xs @_*)
       if x.label == in.label && x.prefix == in.prefix => Full(x)
     case Seq(x, xs @_*) => findNode(in, x.child) or findNode(in, xs)

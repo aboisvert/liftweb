@@ -34,14 +34,14 @@
     <dependency>
       <groupId>mysql</groupId>
       <artifactId>mysql-connector-java</artifactId>
-      <version>5.0.4</version>
+      <version>5.1.6</version>
       <optional>true</optional>
     </dependency>
 
     <dependency>
       <groupId>org.specs</groupId>
       <artifactId>specs</artifactId>
-      <version>1.4.0</version>
+      <version>1.4.3</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -53,13 +53,13 @@
     <dependency>
       <groupId>org.scalatest</groupId>
       <artifactId>scalatest</artifactId>
-      <version>0.9.3</version>
+      <version>0.9.4</version>
       <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.4</version>
+      <version>4.5</version>
       <scope>test</scope>
     </dependency>
 
@@ -86,19 +86,19 @@
     <dependency>
       <groupId>org.apache.derby</groupId>
       <artifactId>derby</artifactId>
-      <version>10.2.2.0</version>
+      <version>10.4.2.0</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>com.h2database</groupId>
       <artifactId>h2</artifactId>
-      <version>1.0.63</version>
+      <version>1.0.79</version>
       <optional>true</optional>
     </dependency>
     <dependency>
       <groupId>postgresql</groupId>
       <artifactId>postgresql</artifactId>
-      <version>8.2-507.jdbc3</version>
+      <version>8.3-603.jdbc3</version>
       <optional>true</optional>
     </dependency>
     <dependency>

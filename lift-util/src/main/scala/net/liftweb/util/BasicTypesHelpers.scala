@@ -17,54 +17,78 @@ import _root_.java.io.{InputStream, ByteArrayOutputStream, ByteArrayInputStream,
 import _root_.scala.xml._
 
 /**
- * This object adds functionalities to Scala standard types
+ * This object adds functionality to Scala standard types.
  */
 object BasicTypesHelpers extends BasicTypesHelpers with StringHelpers with ControlHelpers
 
 /**
- * This trait adds functionalities to Scala standard types
+ * This trait adds functionality to Scala standard types
  */
 trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
 
   /**
-   * transforms a Boolean to a Boolean2, allowing expressions such as:
+   * Allows an implicit transform from a Boolean to a Boolean2, allowing expressions such as:
    * <code>(1 == 2) ? "a" | "b"</code> (This expression will return "b")
+   * @param b the predicate to be tested by the ternary operator.
    */
-  implicit def boolean2(b: Boolean) = new Boolean2(b)
+  implicit def boolean2(b: => Boolean) = new Boolean2(b)
 
   /**
-   * This class adds a ternary operator to Boolean expressions
+   * This decorator class adds a ternary operator to a Boolean value
+   * @param b the predicate to be tested by the ternary operator.
    */
-  class Boolean2(b: Boolean) {
-    /* ternary operator for the Boolean b */
+  class Boolean2(b: => Boolean) {
+    /** 
+     * Ternary operator.
+     * @returns a BooleanSome containing the specified value
+     * if the decorated boolean is true, or a BooleanNone otherwise.
+     */
     def ? [A](first: A): BooleanOption[A] = {
       if (b) BooleanSome(first)
       else BooleanNone
     }
-    /* This case class has a | operator returning a default value depending if the Option is Some or None */
+
+    /** 
+     * Class for return values from the Boolean2 ternary operator. 
+     * This class provides the "|" operator that can be used to
+     * specify a default value (i.e. the RHS of the "or")
+     */
     sealed abstract class BooleanOption[+A] {
       def |[B >: A](default: => B): B
     }
+
+    /**
+     * The value returned by the ternary operator if the predicate is true.
+     */
     case class BooleanSome[+A](x: A) extends BooleanOption[A] {
       def |[B >: A](default: => B): B  = x
     }
+
+    /**
+     * The value returned by the ternary operator if the predicate is false.
+     */
     case object BooleanNone extends BooleanOption[Nothing] {
       def |[B](default: => B): B  = default
     }
   }
 
   /**
-   * Optional cons that implements the expression: expr ?> value ::: List
+   * Optional cons that implements the expression: <code>expr ?> value ::: List</code>
+   * @param expr the predicate to evaluate 
    */
-  class OptionalCons(expr: Boolean) {
+  class OptionalCons(expr: => Boolean) {
+    /**
+     * Return the specified value in a single-element list if the predicate
+     * evaluates to true.
+     */
     def ?>[T](f: => T): List[T] = if (expr) List(f) else Nil
   }
 
   /**
-   * transforms a Boolean expression in in an OptionalCons object so that an element can
-   * be added to a list if the expression is true
+   * Implicit transformation from a Boolean expression to an OptionalCons object so 
+   * that an element can be added to a list if the expression is true
    */
-  implicit def toOptiCons(expr: Boolean): OptionalCons = new OptionalCons(expr)
+  implicit def toOptiCons(expr: => Boolean): OptionalCons = new OptionalCons(expr)
 
   /**
    * Convert any object to an "equivalent" Boolean depending on its value
@@ -94,8 +118,14 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
     }
   }
 
+  /**
+   * Safely convert the specified String to an Int.
+   */
   def asInt(in: String): Box[Int] = tryo{in.toInt}
 
+  /**
+   * Safely convert the specified String to a Long.
+   */
   def asLong(in: String): Box[Long] = tryo(in.toLong)
 
   /**
@@ -155,11 +185,13 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
   }
 
   /**
+   * Compare two arrays of Byte for byte equality.
    * @return true if two Byte arrays don't contain the same bytes
    */
   def notEq(a: Array[Byte], b: Array[Byte]) = !isEq(a,b)
 
   /**
+   * Compare two arrays of Byte for byte equality.
    * @return true if two Byte arrays contain the same bytes
    */
   def isEq(a: Array[Byte], b: Array[Byte]) = {

@@ -20,6 +20,10 @@ import ControlHelpers._
 object IoHelpers extends IoHelpers
 
 trait IoHelpers {
+  /**
+   * Execute the specified OS command and return the output of that command
+   * in a Full Box if the command succeeds, or a Failure if an error occurs.
+   */
   def exec(cmds: String*): Box[String] = {
     try {
       class ReadItAll(in: InputStream, done: String => Unit) extends Runnable {
@@ -50,7 +54,12 @@ trait IoHelpers {
       case e => Failure(e.getMessage, Full(e), Empty)
     }
   }
-    def readWholeThing(in: Reader): String = {
+
+  /**
+   * Read all data to the end of the specified Reader and concatenate
+   * the resulting data into a string. 
+   */
+  def readWholeThing(in: Reader): String = {
     val bos = new StringBuilder
     val ba = new Array[Char](4096)
 
@@ -66,8 +75,14 @@ trait IoHelpers {
     bos.toString
   }
 
+  /**
+   * Read an entire file into an Array[Byte]
+   */
   def readWholeFile(file: File): Array[Byte] = readWholeStream(new FileInputStream(file))
 
+  /**
+   * Read all data from a stream into an Array[Byte]
+   */
   def readWholeStream(in: InputStream): Array[Byte] = {
     val bos = new ByteArrayOutputStream
     val ba = new Array[Byte](4096)

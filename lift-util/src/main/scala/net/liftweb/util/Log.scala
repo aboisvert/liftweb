@@ -20,8 +20,8 @@ import _root_.org.apache.log4j._
 import _root_.org.apache.log4j.xml._
 
 /**
-* A thin wrapper around log4j
-*/
+ * A thin wrapper around log4j. 
+ */
 object Log extends LiftLogger {
   lazy val rootLogger: LiftLogger = LogBoot.loggerByName("lift")
 
@@ -70,6 +70,26 @@ object Log extends LiftLogger {
   override def isTraceEnabled = rootLogger.isTraceEnabled
 }
 
+/**
+ * This object provides logging setup utilities.
+ * 
+ * To provide your own log4j configuration,add either a log4j.props file or log4j.xml 
+ * file to your classpath.
+ *
+ * If you want to provide a configuration file for a subset of your application
+ * or for a specifig environment, Lift expects configuration files to be named 
+ * in a manner relating to the context in which they are being used. The standard 
+ * name format is:
+ * 
+ * <pre>
+ *   modeName.hostName.userName.filename.extension
+ * </pre>
+ * 
+ * with hostName and userName being optional, and modeName being one of 
+ * 'test', 'staging', 'production', 'pilot', 'profile', or 'default. 
+ * Thus, if you name your log4j config file 'default.log4j.xml' or 
+ * 'default.log4j.props' it will be picked up correctly. 
+ */
 object LogBoot {
   lazy val checkConfig: Boolean = loggerSetup()
 
@@ -153,7 +173,6 @@ trait LiftLogger {
   def isInfoEnabled: Boolean = false
   def info(msg: => AnyRef): Unit = ()
   def info(msg: => AnyRef, t: => Throwable): Unit = ()
-
 
   def isEnabledFor(level: LiftLogLevels.Value): Boolean = false
 

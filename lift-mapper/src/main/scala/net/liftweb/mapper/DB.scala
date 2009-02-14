@@ -684,6 +684,9 @@ class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
       case MySqlDriver.name => MySqlDriver
       case PostgreSqlDriver.name => PostgreSqlDriver
       case H2Driver.name => H2Driver
+      case SqlServerDriver.name => SqlServerDriver
+      case OracleDriver.name => OracleDriver
+      case MaxDbDriver.name => MaxDbDriver
     }
   }
 }

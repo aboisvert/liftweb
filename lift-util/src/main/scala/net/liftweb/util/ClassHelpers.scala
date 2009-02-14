@@ -28,11 +28,10 @@ trait ClassHelpers { self: ControlHelpers =>
   private val nameModifiers = List[String => String](camelCase _, n => n)
 
   /**
-   * utility function returning varargs as a List
+   * This operator transforms its arguments into a List
    * @return the list of arguments passed as varargs
    */
   def ^ [T](i: T*): List[T] = i.toList
-
 
   /**
    * General method to in find a class according to its name, a list of possible packages,

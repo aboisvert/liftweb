@@ -15,12 +15,11 @@ import _root_.java.util.{TimeZone, Calendar, Date, Locale}
  * limitations under the License.
  */
 
-
-
 /**
  * The TimeHelpers object extends the TimeHelpers. It can be imported to access all of the trait functions.
  */
 object TimeHelpers extends TimeHelpers with ControlHelpers with ClassHelpers
+
 /**
  * The TimeHelpers trait provide functions to create TimeSpans (an object representing an amount of time), to manage date formats
  * or general utility functions (get the date for today, get year/month/day number,...)
@@ -292,6 +291,9 @@ trait TimeHelpers { self: ControlHelpers =>
 
   /** @return a date formatted with the internet format (from a number of millis) */
   def toInternetDate(in: Long): String = internetDateFormatter.format(new Date(in))
+
+  /** @return the current time as an internet date */
+  def nowAsInternetDate: String = toInternetDate(millis)
 
   /** @return a Full(date) or a failure if the input couldn't be translated to date (or Empty if the input is null)*/
   def toDate(in: Any): Box[Date] = {

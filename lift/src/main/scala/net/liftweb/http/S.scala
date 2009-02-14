@@ -79,6 +79,7 @@ object S extends HasParams {
   private val _stateSnip = new ThreadGlobal[HashMap[String, StatefulSnippet]]
   private val _responseHeaders = new ThreadGlobal[ResponseInfoHolder]
   private val _responseCookies = new ThreadGlobal[CookieHolder]
+  private val _lifeTime = new ThreadGlobal[Boolean]
 
   private object postFuncs extends RequestVar(new ListBuffer[() => Unit])
   private object p_queryLog extends RequestVar(new ListBuffer[(String, Long)])
@@ -218,7 +219,7 @@ object S extends HasParams {
    * @return the localized XML or Empty if there's no way to do localization
    */
   def loc(str: String): Box[NodeSeq] =
-    resourceBundles.flatMap(r => tryo(r.getObject(str) match {
+  resourceBundles.flatMap(r => tryo(r.getObject(str) match {
         case null => LiftRules.localizationLookupFailureNotice.foreach(_(str, locale)); Empty
         case s: String => Full(LiftRules.localizeStringToXml(s))
         case g: Group => Full(g)
@@ -234,8 +235,8 @@ object S extends HasParams {
   def resourceBundles: List[ResourceBundle] = {
     _resBundle.value match {
       case Nil => _resBundle.set(LiftRules.resourceNames.flatMap(name => tryo(
-          List(ResourceBundle.getBundle(name, locale))
-        ) openOr Nil))
+              List(ResourceBundle.getBundle(name, locale))
+            ) openOr Nil))
         _resBundle.value
       case bundles => bundles
 
@@ -246,11 +247,11 @@ object S extends HasParams {
    * Get the lift core resource bundle for the current locale
    */
   def liftCoreResourceBundle: Box[ResourceBundle] =
-    Box.legacyNullTest(_liftCoreResBundle.value).openOr {
-      val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
-      _liftCoreResBundle.set(rb)
-      rb
-    }
+  Box.legacyNullTest(_liftCoreResBundle.value).openOr {
+    val rb = tryo(ResourceBundle.getBundle(LiftRules.liftCoreResourceName, locale))
+    _liftCoreResBundle.set(rb)
+    rb
+  }
 
   /**
    * Get a localized string or return the original string
@@ -269,7 +270,8 @@ object S extends HasParams {
    *
    * @return the localized version of the string
    */
-  def ?(str: String, params: Any *): String = if (params.length == 0)
+  def ?(str: String, params: Any *): String =
+  if (params.length == 0)
   ?(str)
   else
   String.format(locale, ?(str), params.flatMap{case s: AnyRef => List(s) case _ => Nil}.toArray :_*)
@@ -284,12 +286,12 @@ object S extends HasParams {
   def ??(str: String): String = ?!(str, liftCoreResourceBundle.toList)
 
   private def ?!(str: String, resBundle: List[ResourceBundle]): String = resBundle.flatMap(r => tryo(r.getObject(str) match {
-      case s: String => Full(s)
-      case _ => Empty
-    }).flatMap(s => s)).find(s => true) getOrElse {
-      LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
-      str
-    }
+        case s: String => Full(s)
+        case _ => Empty
+      }).flatMap(s => s)).find(s => true) getOrElse {
+    LiftRules.localizationLookupFailureNotice.foreach(_(str, locale));
+    str
+  }
 
   /**
    * Localize the incoming string based on a resource bundle for the current locale
@@ -459,13 +461,15 @@ object S extends HasParams {
   }
 
   private def _innerInit[B](f: () => B): B = {
-    _attrs.doWith(Nil) {
-      snippetMap.doWith(new HashMap) {
-        _resBundle.doWith(Nil) {
-          _liftCoreResBundle.doWith(null){
-            inS.doWith(true) {
-              _stateSnip.doWith(new HashMap) {
-                _nest2InnerInit(f)
+    _lifeTime.doWith(false) {
+      _attrs.doWith(Nil) {
+        snippetMap.doWith(new HashMap) {
+          _resBundle.doWith(Nil) {
+            _liftCoreResBundle.doWith(null){
+              inS.doWith(true) {
+                _stateSnip.doWith(new HashMap) {
+                  _nest2InnerInit(f)
+                }
               }
             }
           }
@@ -482,24 +486,39 @@ object S extends HasParams {
        ca <- Box.legacyNullTest(r.getCookies).toList;
        c <- ca) yield c
 
-  private def _init[B](request: Req, session: LiftSession)(f: () => B): B = {
-    this._request.doWith(request) {
-      _sessionInfo.doWith(session) {
-        _responseHeaders.doWith(new ResponseInfoHolder) {
-          RequestVarHandler(Full(session),
-            _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
-              _innerInit(f)
-            }
-          )
-        }
+  private def _init[B](request: Req, session: LiftSession)(f: () => B): B =
+  this._request.doWith(request) {
+    _sessionInfo.doWith(session) {
+      _responseHeaders.doWith(new ResponseInfoHolder) {
+        RequestVarHandler(Full(session),
+                          _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
+            _innerInit(f)
+          }
+        )
       }
     }
   }
+
+  
 
   /**
    * Returns the 'Referer' HTTP header attribute
    */
   def referer: Box[String] = request.flatMap(r => Box.legacyNullTest(r.request.getHeader("Referer")))
+
+  /**
+   * Functions that are mapped to HTML elements are, but default
+   * garbage collected if they are not seen in the browser in the last 10 minutes
+   * In some cases (e.g., JSON handlers), you may want to extend the
+   * lifespan of the functions to the lifespan of the session.
+   */
+  def functionLifespan[T](span: Boolean)(f: => T): T =
+  _lifeTime.doWith(span)(f)
+
+  /**
+   * What's the current lifespan of functions?
+   */
+  def functionLifespan_? : Boolean = _lifeTime.box openOr false
 
   /**
    * Get a list of current attributes
@@ -569,18 +588,18 @@ object S extends HasParams {
     type Info = String
 
     protected def findAttr(key: String): Option[Info] =
-     attrs.find {
-        case (Left(v), _) if v == key => true
-        case _ => false
-      }.map(_._2)
+    attrs.find {
+      case (Left(v), _) if v == key => true
+      case _ => false
+    }.map(_._2)
 
-  protected def findAttr(prefix: String, key: String): Option[Info] =
-  attrs.find {
-        case (Right((p, n)), _) if (p == prefix && n == key) => true
-        case _ => false
-      }.map(_._2)
+    protected def findAttr(prefix: String, key: String): Option[Info] =
+    attrs.find {
+      case (Right((p, n)), _) if (p == prefix && n == key) => true
+      case _ => false
+    }.map(_._2)
 
-  protected def convert[T](in: Option[T]): Box[T] = Box(in)
+    protected def convert[T](in: Option[T]): Box[T] = Box(in)
 
     /**
      * Returns the unprefixed attribute value as an Option[NodeSeq]
@@ -754,48 +773,51 @@ object S extends HasParams {
    * @return (JsonCall, JsCmd)
    */
   def buildJsonFunc(name: Box[String], onError: Box[JsCmd], f: Any => JsCmd): (JsonCall, JsCmd) = {
-    val key = Helpers.nextFuncName
+    functionLifespan(true){
+      val key = Helpers.nextFuncName
 
-    def checkCmd(in: Any) = in match {
-      case v2: _root_.scala.collection.Map[Any, _] if v2.isDefinedAt("command") =>
-        // ugly code to avoid type erasure warning
-        val v = v2.asInstanceOf[_root_.scala.collection.Map[String, Any]]
-        JsonCmd(v("command").toString, v.get("target").
-                map {
-            case null => null
-            case x => x.toString
-          } getOrElse(null),v.get("params").getOrElse(None), v)
+      def checkCmd(in: Any) = in match {
+        case v2: _root_.scala.collection.Map[Any, _] if v2.isDefinedAt("command") =>
+          // ugly code to avoid type erasure warning
+          val v = v2.asInstanceOf[_root_.scala.collection.Map[String, Any]]
+          JsonCmd(v("command").toString, v.get("target").
+                  map {
+              case null => null
+              case x => x.toString
+            } getOrElse(null),v.get("params").getOrElse(None), v)
 
-      case v => v
-    }
+        case v => v
+      }
 
-    def jsonCallback(in: List[String]): JsCmd = {
-      in.flatMap{
-        s =>
-        val parsed = JSONParser.parse(s.trim).toList
-        val cmds = parsed.map(checkCmd)
-        val ret = cmds.map(f)
-        ret
-      }.foldLeft(JsCmds.Noop)(_ & _)
-    }
+      def jsonCallback(in: List[String]): JsCmd = {
+        in.flatMap{
+          s =>
+          val parsed = JSONParser.parse(s.trim).toList
+          val cmds = parsed.map(checkCmd)
+          val ret = cmds.map(f)
+          ret
+        }.foldLeft(JsCmds.Noop)(_ & _)
+      }
 
-    val onErrorFunc: String =
-    onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
+      val onErrorFunc: String =
+      onError.map(f => JsCmds.Run("function onError_"+key+"() {"+f.toJsCmd+"""
 }
 
  """).toJsCmd) openOr ""
 
-    val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
+      val onErrorParam = onError.map(f => "onError_"+key) openOr "null"
 
-    addFunctionMap(key, jsonCallback _)
+      val af: AFuncHolder = jsonCallback _
+      addFunctionMap(key, af)
 
-    (JsonCall(key), JsCmds.Run(name.map(n => onErrorFunc +
-                                        "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
-                               "function "+key+"(obj) {lift_ajaxHandler(" +
-                               "'" + key + "='+ encodeURIComponent(" +
-                               LiftRules.jsArtifacts.
-                               jsonStringify(JE.JsRaw("obj")).
-                               toJsCmd +"), null,"+onErrorParam+");}"))
+      (JsonCall(key), JsCmds.Run(name.map(n => onErrorFunc +
+                                          "/* JSON Func "+n+" $$ "+key+" */").openOr("") +
+                                 "function "+key+"(obj) {lift_ajaxHandler(" +
+                                 "'" + key + "='+ encodeURIComponent(" +
+                                 LiftRules.jsArtifacts.
+                                 jsonStringify(JE.JsRaw("obj")).
+                                 toJsCmd +"), null,"+onErrorParam+");}"))
+    }
   }
 
   /**
@@ -831,7 +853,7 @@ object S extends HasParams {
         case (meta, m) => m.foldLeft(car)((left, r) =>
             left & LiftRules.jsArtifacts.setHtml(r._1, <span>{r._2 flatMap(node => node)}</span> %
                                                  (Box(meta.get(r._1)).map(new UnprefixedAttribute("class", _, Null)) openOr Null)))
-        })
+      })
   }
 
   implicit def toLFunc(in: List[String] => Any): AFuncHolder = LFuncHolder(in, Empty)
@@ -856,7 +878,7 @@ object S extends HasParams {
     def apply(in: List[String]): Any
     def duplicate(newOwner: String): AFuncHolder
     private[http] var lastSeen: Long = millis
-    private[http] var sessionLife = false
+    val sessionLife = functionLifespan_?
   }
 
   /**
@@ -931,7 +953,7 @@ object S extends HasParams {
   }
 
 
- /**
+  /**
    * Similar with addFunctionMap but also returns the name.
    *
    * Use fmapFunc(AFuncHolder)(String => T)
