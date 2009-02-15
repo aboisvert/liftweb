@@ -326,7 +326,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
    * Updates the internal functions mapping
    */
   def updateFunctionMap(funcs: Map[String, S.AFuncHolder], uniqueId: String, when: Long): Unit = synchronized {
-    funcs.foreach{case (name, func) => messageCallback(name) = func.duplicate(uniqueId)}
+    funcs.foreach{case (name, func) =>
+      val f = func.duplicate(uniqueId)
+      f.lastSeen = when
+      messageCallback(name) = f
+    }
   }
 
   /**
