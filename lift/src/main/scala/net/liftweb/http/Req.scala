@@ -119,11 +119,14 @@ object Req {
 
           (names, hereParams, Nil, Empty)
       }
-    } else {
+    } else if (reqType.get_? || request.getContentType.toLowerCase.
+               startsWith("application/x-www-form-urlencoded")) {
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
       // val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
       val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
       (paramNames, params, Nil, Empty)
+    } else {
+      (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     }
 
     new Req(rewritten.path, contextPath, reqType,
