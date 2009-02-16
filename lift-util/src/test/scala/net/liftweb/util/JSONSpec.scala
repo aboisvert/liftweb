@@ -26,5 +26,13 @@ object JSONSpec extends Specification {
         case _ => ("", "", "")
       }) must be_== ("test", "", "no-reply@innovationgames.com")
     }
+
+    "Parse long arrays" in {
+
+      val longArray = "[" + (1 to 100000).map(i => '"'+i.toString+'"').mkString(", ") + "]"
+
+      val p2 = JSONParser.parse(longArray)
+      p2.isDefined must be(true)
+    }
   }
 }
