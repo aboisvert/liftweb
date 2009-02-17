@@ -306,12 +306,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         // if it's going to a CometActor, batch up the commands
         case Full(id) =>
           asyncById.get(id).toList.
-          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match
-                  {
+          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {
               case Some(li: List[_]) => li
               case li: List[_] => li
-              case other => Nil})
-
+              case other => Nil
+          })
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
@@ -978,7 +977,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
         doneBody = true
         Elem(null, "body", e.attributes,  e.scope, (e.child ++
                                                     JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
-                                                                  JsRaw("lift_successRegisterGC()") &
+                                                                  OnLoad(JsRaw("lift_successRegisterGC()")) &
                                                                   JsCrVar("lift_page", pageName))) :_*)
 
       case n => n

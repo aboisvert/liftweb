@@ -66,8 +66,8 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
 
   /**
-   * get a map of HTTP properties and return true if the "Content-type"
-   * is either "text/html" or "application/xhtml+xml"
+   * Given a map of HTTP properties, return true if the "Content-type"
+   * value in the map is either "text/html" or "application/xhtml+xml"
    * @param in Map which may contain a key named Content-Type
    * @return true if there is a pair ("Content-Type", "text/html") or
    *                                 ("Content-Type", "application/xhtml+xml")
@@ -85,7 +85,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /**
-   * Return true if the xml doesn't contain an <html> tag
+   * Return true if the xml doesn't contain an &lt;html&gt; tag
    */
   def noHtmlTag(in: NodeSeq): Boolean = findElems(in)(_.label == "html").length != 1
 
@@ -99,7 +99,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /**
-   * Insure all the appropriate fields are in the header
+   * Ensure that all the appropriate fields are in the header.
    */
   def insureField(toInsure: List[(String, String)], headers: List[(String, String)]): List[(String, String)] = {
     def insureField_inner(toInsure : List[(String, String)], field : (String, String)): List[(String, String)] =
@@ -114,11 +114,9 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     }
   }
 
-
   /**
    * Transform a pair (name: String, value: Any) to an unprefixed XML attribute name="value"
    */
-
   implicit def pairToUnprefixed(in: (String, Any)): MetaData = {
     val value: Option[NodeSeq] = in._2 match {
       case null => None
@@ -139,11 +137,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
 
   /**
-   * If the incoming Elem has an 'id', return it, otherwise
-   * construct a new Elem with a randomly generated id and return the pair
+   * If the specified Elem has an attribute named 'id', return it, otherwise
+   * construct a new Elem with a randomly generated id attribute and return the pair
    *
-   * @param in the element to test & add 'id' to
-   *
+   * @param in the element to test &amp; add 'id' to
    * @return the new element and the id
    */
   def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
@@ -162,6 +159,15 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
    */
   def nextNum = serial.incrementAndGet
 
+  /**
+   * Find the elements of the specified NodeSeq that match
+   * the specified predicate and concatenate them into 
+   * a resulting NodeSeq.
+   *
+   * @param nodes - the NodeSeq to search for elements matching the predicate
+   * @param f - the predicate to match elements with
+   * @return the NodeSeq resulting from concatenation of the matched elements.
+   */
   def findElems(nodes: NodeSeq)(f: Elem => Boolean): NodeSeq = {
     val ret = new ListBuffer[Elem]
     def find(what: NodeSeq) {
@@ -179,6 +185,11 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     ret.toList
   }
 
+  /**
+   * Map the specified function over the elements of the
+   * specified NodeSeq and return the concatenated result.
+   * This is essentially a container-type-transforming flatMap operation.
+   */
   def findInElems[T](nodes: NodeSeq)(f: Elem => Iterable[T]): List[T] = {
     val ret = new ListBuffer[T]
 
@@ -199,7 +210,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /**
-   * Get a guanateed unique field name
+   * Get a guaranteed unique field name
    * (16 or 17 letters and numbers, starting with a letter)
    */
   def nextFuncName = {
@@ -211,7 +222,9 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     sb.toString
   }
 
-
+  /**
+   * This appears to be unused. TODO: Remove?
+   */
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
   import Actor._
@@ -222,11 +235,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
       case r => Box.asA[T](r)(m)
     }
   }
-
 }
 
 /**
- * Is this something that can be converted to a JavaScript Command
+ * TODO: Is this something that can be converted to a JavaScript Command
  */
 trait ToJsCmd {
   def toJsCmd: String

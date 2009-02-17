@@ -46,7 +46,7 @@ object RE {
   implicit def strToRe(in: String): REDoer[Nothing] = new REDoer(in, Empty)
 }
 
-class REDoer[T](val pattern: String,val func: Box[PartialFunction[(T, List[String]), T]]) extends Function2[T, String, Box[T]] {
+class REDoer[T](val pattern: String, val func: Box[PartialFunction[(T, List[String]), T]]) extends Function2[T, String, Box[T]] {
   val compiled = Pattern.compile(pattern)
 
   def =~(other: String) = {
@@ -62,26 +62,47 @@ class REDoer[T](val pattern: String,val func: Box[PartialFunction[(T, List[Strin
     if (!ma.matches) Empty
     else func.flatMap(f => if (f.isDefinedAt((obj, ma.capture))) Full(f((obj, ma.capture))) else Empty)
   }
-
 }
 
 object REMatcher {
   def unapply(in: REMatcher): Option[List[String]] = Some(in.capture)
 }
 
-class REMatcher(val str: String,val compiled: Pattern) {
+/**
+ * This class adds higher-order functions and lazy evaluation
+ * for pattern matching on top of the standard Java regular expressions
+ * library.
+ *
+ * @param str the String in which to perform pattern matching
+ * @param compiled the java.util.regex.Pattern to use to perform matches
+ */
+class REMatcher(val str: String, val compiled: Pattern) {
   private val matcher = compiled.matcher(str)
 
+  /**
+   * Matches for the pattern in the specified string.
+   */
   lazy val matches = matcher.find
 
+  /**
+   * A Full Box containing the substring of this REMatcher's string containing the matches
+   * for the specified pattern, or Empty if no match exists.
+   */
   lazy val matchStr: Box[String] =
     if (matches) Full(str.substring(matcher.start, matcher.end))
     else Empty
 
+  /**
+   * Cached version of the matched groups in this matcher's string.
+   */
   lazy val capture = map(s => s)
 
-  def foreach(func: (String, List[String]) => Unit): Unit =
-  {
+  /**
+   * Call the specified function for each match with each match
+   * and the list of all matched groups, then with any remaining data
+   * to the end of the string.
+   */
+  def foreach(func: (String, List[String]) => Unit): Unit = {
      var pos = 0
      matcher.reset
      val m = matcher
@@ -89,9 +110,13 @@ class REMatcher(val str: String,val compiled: Pattern) {
        func(str.substring(pos, m.start), (0 to m.groupCount).toList.map(i => m.group(i)))
        pos = matcher.end
      }
+
      func(str.substring(pos), Nil)
   }
 
+  /**
+   * Map the specified function over the matches.
+   */
   def map[T](f : (String) => T): List[T] = synchronized {
     val ab = new ListBuffer[T]
     matcher.reset
@@ -112,6 +137,9 @@ class REMatcher(val str: String,val compiled: Pattern) {
     ab.toList
   }
 
+  /**
+   * Return the list of lists of subgroups of matches.
+   */
   def eachFound: List[List[String]] = {
     val ret = new ListBuffer[List[String]]
     matcher.reset
@@ -122,7 +150,4 @@ class REMatcher(val str: String,val compiled: Pattern) {
 
     ret.toList
   }
-
 }
-
-

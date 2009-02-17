@@ -16,7 +16,7 @@ package net.liftweb.util
 object ControlHelpers extends ControlHelpers with ClassHelpers
 
 /**
- * Control helpers are providing alternate ways to catch exceptions and ignore them as necessary
+ * Control helpers provide alternate ways to catch exceptions and ignore them as necessary
  */
 trait ControlHelpers extends ClassHelpers {
 
@@ -25,10 +25,10 @@ trait ControlHelpers extends ClassHelpers {
    * an exception with its class in the 'ignore' list or if 'ignore' is
    * null or an empty list, ignore the exception and return None.
    *
-   * @param ignore list of exception classes to ignore. A thrown exception will be ignored if it is assignable from one of
-   * the exception class in the list
-   * @param onError optional callback function that will use the thrown exception as a parameter
-   * @param f block of code to evaluate
+   * @param ignore - a list of exception classes to ignore. A thrown exception will be ignored if it is assignable from one of
+   * the exception classes in the list
+   * @param onError - an optional callback function that will use the thrown exception as a parameter
+   * @param f - the block of code to evaluate
    * @return <ul>
    *   <li>Full(result of the evaluation of f) if f doesn't throw any exception
    *   <li>a Failure if f throws an exception
@@ -46,6 +46,7 @@ trait ControlHelpers extends ClassHelpers {
 
   /**
    * Wraps a "try" block around the function f
+   * @param f - the block of code to evaluate
    * @return <ul>
    *   <li>Full(result of the evaluation of f) if f doesn't throw any exception
    *   <li>a Failure if f throws an exception
@@ -56,6 +57,8 @@ trait ControlHelpers extends ClassHelpers {
 
   /**
    * Wraps a "try" block around the function f and trigger a callback function if an exception is thrown
+   * @param onError - an optional callback function that will use the thrown exception as a parameter
+   * @param f - the block of code to evaluate
    * @return <ul>
    *   <li>Full(result of the evaluation of f) if f doesn't throw any exception
    *   <li>a Failure if f throws an exception
@@ -65,6 +68,9 @@ trait ControlHelpers extends ClassHelpers {
 
   /**
    * Wraps a "try" block around the function f
+   * @param ignore - a list of exception classes to ignore. A thrown exception will be ignored if it is assignable from one of
+   * the exception classes in the list
+   * @param f - the block of code to evaluate
    * @return <ul>
    *   <li>Full(result of the evaluation of f) if f doesn't throw any exception
    *   <li>a Failure if f throws an exception
@@ -75,6 +81,8 @@ trait ControlHelpers extends ClassHelpers {
 
   /**
    * Wraps a "try" block around the function f. Takes only one Class of exception to ignore
+   * @param ignore - a single exception classes to ignore. A thrown exception will be ignored if it is assignable from this class.
+   * @param f - the block of code to evaluate
    * @return <ul>
    *   <li>Full(result of the evaluation of f) if f doesn't throw any exception
    *   <li>a Failure if f throws an exception

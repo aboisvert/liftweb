@@ -15,12 +15,11 @@ import _root_.java.util.{TimeZone, Calendar, Date, Locale}
  * limitations under the License.
  */
 
-
-
 /**
  * The TimeHelpers object extends the TimeHelpers. It can be imported to access all of the trait functions.
  */
 object TimeHelpers extends TimeHelpers with ControlHelpers with ClassHelpers
+
 /**
  * The TimeHelpers trait provide functions to create TimeSpans (an object representing an amount of time), to manage date formats
  * or general utility functions (get the date for today, get year/month/day number,...)
