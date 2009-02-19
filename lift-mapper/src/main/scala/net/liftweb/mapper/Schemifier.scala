@@ -229,8 +229,13 @@ object Schemifier {
     val q = using(md.getIndexInfo(null, getDefaultSchemaName(connection), actualTableNames(table.dbTableName), false, false)) {rs =>
     def quad(rs: ResultSet): List[(String, String, Int)] = {
       if (!rs.next) Nil else {
-	if (rs.getString(3).toLowerCase == table.dbTableName.toLowerCase)
-          (rs.getString(6).toLowerCase, rs.getString(9).toLowerCase, rs.getInt(8)) :: quad(rs)
+	if (rs.getString(3).equalsIgnoreCase(table.dbTableName)) {
+	  // Skip index statistics
+	  if (rs.getShort(7) != DatabaseMetaData.tableIndexStatistic) {
+	    (rs.getString(6).toLowerCase, rs.getString(9).toLowerCase, rs.getInt(8)) :: quad(rs)
+	  }
+	  else quad(rs)
+	}
 	else Nil
       }
     }
