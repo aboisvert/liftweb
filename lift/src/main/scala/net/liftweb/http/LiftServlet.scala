@@ -274,7 +274,6 @@ class LiftServlet extends HttpServlet {
       case _ =>
         try {
           val what = flatten(liftSession.runParams(requestState))
-          println("what = " + what)
 
           val what2 = what.flatMap{
             case js: JsCmd => List(js)
@@ -284,8 +283,6 @@ class LiftServlet extends HttpServlet {
             case s => Nil
           }
 
-          println("what2 = " + what2)
-
           val ret: LiftResponse = what2 match {
             case (js: JsCmd) :: xs  => (JsCommands(S.noticesToJsCmd::Nil) & ((js :: xs).flatMap{case js: JsCmd => List(js) case _ => Nil}.reverse)).toResponse
             case (n: Node) :: _ => XmlResponse(n)
@@ -294,7 +291,6 @@ class LiftServlet extends HttpServlet {
             case _ => JsCommands(S.noticesToJsCmd :: JsCmds.Noop :: Nil).toResponse
           }
 
-          println("ret = " + ret)
           LiftRules.cometLogger.debug("AJAX Response: "+liftSession.uniqueId+" "+ret)
 
           Full(ret)

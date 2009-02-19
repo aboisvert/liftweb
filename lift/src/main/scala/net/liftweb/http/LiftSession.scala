@@ -282,9 +282,6 @@ class LiftSession(val contextPath: String, val uniqueId: String,
    */
   def runParams(state: Req): List[Any] = {
 
-    println("Params " + state.paramNames)
-    println("callback " + messageCallback);
-
     val toRun = synchronized {
       // get all the commands, sorted by owner,
       (state.uploadedFiles.map(_.name) ::: state.paramNames).filter(n => messageCallback.contains(n)).
