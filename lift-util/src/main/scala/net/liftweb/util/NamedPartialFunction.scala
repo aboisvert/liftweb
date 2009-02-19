@@ -80,7 +80,7 @@ object NamedPF {
   /**
    * Find the first PartialFunction in the specified sequence that is defined
    * at the specified value, apply it to that value and return the result
-   * in a Full Box if found; return Empty otherwise 
+   * in a Full Box if found; return Empty otherwise
    *
    * @param value the value to use to test each PartialFunction
    * @param lst the sequence to search for a PartialFunction defined at <code>value</code>

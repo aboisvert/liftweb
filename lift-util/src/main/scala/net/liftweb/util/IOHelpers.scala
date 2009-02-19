@@ -57,7 +57,7 @@ trait IoHelpers {
 
   /**
    * Read all data to the end of the specified Reader and concatenate
-   * the resulting data into a string. 
+   * the resulting data into a string.
    */
   def readWholeThing(in: Reader): String = {
     val bos = new StringBuilder

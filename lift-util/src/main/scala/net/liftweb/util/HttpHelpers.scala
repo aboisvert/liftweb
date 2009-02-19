@@ -161,7 +161,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
   /**
    * Find the elements of the specified NodeSeq that match
-   * the specified predicate and concatenate them into 
+   * the specified predicate and concatenate them into
    * a resulting NodeSeq.
    *
    * @param nodes - the NodeSeq to search for elements matching the predicate

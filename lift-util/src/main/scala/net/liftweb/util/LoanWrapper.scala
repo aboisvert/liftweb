@@ -14,7 +14,7 @@ package net.liftweb.util
  */
 
 /**
- * This trait defines the principle contract for function objects that 
+ * This trait defines the principle contract for function objects that
  * wrap the processing of HTTP requests by Lift while utilizing the preestablished
  * request-local scope.
  */

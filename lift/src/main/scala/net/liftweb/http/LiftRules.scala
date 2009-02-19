@@ -292,7 +292,7 @@ object LiftRules {
    * The function that calculates if the response should be rendered in
    * IE6/7 compatibility mode
    */
-  var calcIEMode: () => Boolean = 
+  var calcIEMode: () => Boolean =
   () => (for (r <- S.request) yield r.isIE6 || r.isIE7 ||
   r.isIE8) openOr true
 
