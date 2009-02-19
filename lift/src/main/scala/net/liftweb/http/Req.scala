@@ -54,11 +54,11 @@ object Req {
     val tmpPath = parsePath(tmpUri)
 
     def processRewrite(path: ParsePath, params: Map[String, String]): RewriteResponse =
-      NamedPF.applyBox(RewriteRequest(path, reqType, request), rewrite) match {
-        case Full(resp @ RewriteResponse(_, _, true)) => resp
-        case _: EmptyBox[_] => RewriteResponse(path, params)
-        case Full(resp) => processRewrite(resp.path, resp.params)
-      }
+    NamedPF.applyBox(RewriteRequest(path, reqType, request), rewrite) match {
+      case Full(resp @ RewriteResponse(_, _, true)) => resp
+      case _: EmptyBox[_] => RewriteResponse(path, params)
+      case Full(resp) => processRewrite(resp.path, resp.params)
+    }
 
 
 
@@ -71,10 +71,16 @@ object Req {
     //  val body = ()
     val eMap = Map.empty[String, List[String]]
 
+  
+    val contentType = request.getContentType match {
+      case null => ""
+      case s => s
+    }
+
     //    val (paramNames: List[String], params: Map[String, List[String]], files: List[FileParamHolder], body: Box[Array[Byte]]) =
     val paramCalculator = () =>
     if ((reqType.post_? ||
-         reqType.put_?) && request.getContentType.startsWith("text/xml")) {
+         reqType.put_?) && contentType.startsWith("text/xml")) {
       (Nil,localParams, Nil, tryo(readWholeStream(request.getInputStream)))
     } else if (ServletFileUpload.isMultipartContent(request)) {
       val allInfo = (new Iterator[ParamHolder] {
@@ -119,8 +125,7 @@ object Req {
 
           (names, hereParams, Nil, Empty)
       }
-    } else if (reqType.get_? || request.getContentType.toLowerCase.
-               startsWith("application/x-www-form-urlencoded")) {
+    } else if (contentType.toLowerCase.startsWith("application/x-www-form-urlencoded")) {
       val paramNames =  enumToStringList(request.getParameterNames).sort{(s1, s2) => s1 < s2}
       // val tmp = paramNames.map{n => (n, xlateIfGet(request.getParameterValues(n).toList))}
       val params = localParams ++ paramNames.map{n => (n, request.getParameterValues(n).toList)}
@@ -130,7 +135,7 @@ object Req {
     }
 
     new Req(rewritten.path, contextPath, reqType,
-            request.getContentType, request, nanoStart,
+            contentType, request, nanoStart,
             System.nanoTime, paramCalculator)
   }
 
