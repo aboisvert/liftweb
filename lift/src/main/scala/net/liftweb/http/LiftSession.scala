@@ -953,8 +953,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private def findAndMerge(templateName: Box[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
     val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
 
-    findTemplate(name).map(s => processBind(s, atWhat)).
-    openOr(atWhat.values.flatMap(_.elements).toList)
+    findTemplate(name).map(s => bind(atWhat, s)).openOr(atWhat.values.flatMap(_.elements).toList)
   }
 
   class AddAjaxToBody() extends RewriteRule {

@@ -97,9 +97,7 @@ function lift_failRegisterGC() {
 }
 
 function lift_registerGC() {
-    var data = "__lift__GC="+encodeURIComponent(""" +
-      LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("lift_page")).toJsCmd +
-    """);
+    var data = "__lift__GC=_"
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
                                                             "POST",

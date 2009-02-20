@@ -261,10 +261,10 @@ class LiftServlet extends HttpServlet {
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
     tryo{LiftSession.onBeginServicing.foreach(_(liftSession, requestState))}
     val ret = requestState.param("__lift__GC") match {
-      case Full(json) =>
+      case Full(_) =>
         val now = millis
         val found: Int = liftSession.synchronized {
-          JSONParser.parse(json).asA[String].map(liftSession.updateFuncByOwner(_, now)).getOrElse(0)
+          liftSession.updateFuncByOwner(RenderVersion.get, now)
         }
 
         import js.JsCmds._
