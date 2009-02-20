@@ -83,10 +83,9 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
   private var data : BigDecimal = defaultValue
   private var orgData : BigDecimal = defaultValue
 
-  override def set (in : BigDecimal) = {
+  private def st (in : BigDecimal) = {
     data = in
     orgData = in
-    in
   }
 
   protected def i_is_! = data
