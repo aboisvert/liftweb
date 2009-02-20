@@ -66,8 +66,8 @@ object YUIArtifacts extends JSArtifacts {
 
   def ajax(data: AjaxInfo): String = {
     val url = S.encodeURL(S.contextPath + "/" + LiftRules.ajaxPath + "/")
-    
-    "url = YAHOO.lift.buildURI(" + url.encJs + "+lift_page , " + data.data.toJsCmd + ");" +
+
+    "url = YAHOO.lift.buildURI(addPageName(" + url.encJs + ") , " + data.data.toJsCmd + ");" +
     "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");"
   }
 

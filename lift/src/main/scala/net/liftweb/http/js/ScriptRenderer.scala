@@ -167,6 +167,10 @@ function lift_blurIfReturn(e) {
   if (code == 13) {targ.blur(); return false;} else {return true;};
 }
 
+function addPageName(url) {
+  return url.replace('""" + LiftRules.ajaxPath + """', '""" + LiftRules.ajaxPath + """/'+lift_page);
+}
+
 function lift_actualAjaxCall(data, onSuccess, onFailure) {
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),

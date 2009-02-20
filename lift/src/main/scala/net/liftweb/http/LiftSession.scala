@@ -391,16 +391,6 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-  /*
-   private[http] def updateFunc(name: String, time: Long): Boolean = {
-   if (messageCallback.contains(name)) {
-   messageCallback(name).lastSeen = time
-   true
-   } else {
-   false
-   }
-   }
-   */
   /**
    * Return the number if updated functions
    */
