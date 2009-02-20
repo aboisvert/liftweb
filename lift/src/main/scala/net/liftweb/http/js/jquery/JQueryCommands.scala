@@ -275,7 +275,9 @@ object JqJsCmds {
   }
 
   case class SetValueAndFocus(id: String, value: String) extends JsCmd {
-    def toJsCmd = "jQuery('#"+id+"').attr('value', "+value.encJs+"); document.getElementById("+id.encJs+").focus();"
+    def toJsCmd = "document.getElementById("+id.encJs+").value = "+
+    value.encJs+
+    "; document.getElementById("+id.encJs+").focus();"
   }
 
 }

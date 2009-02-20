@@ -216,7 +216,11 @@ object SessionMaster extends Actor {
 }
 
 object RenderVersion {
-  private object ver extends RequestVar(Helpers.nextFuncName)
+  private object ver extends RequestVar({
+      val ret =  Helpers.nextFuncName
+      S.addFunctionMap(ret, S.SFuncHolder(ignore => {}))
+      ret
+    })
   def get: String = ver.is
   def set(value: String) {
     ver(value)
@@ -284,8 +288,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
 
     val toRun = synchronized {
       // get all the commands, sorted by owner,
-      (state.uploadedFiles.map(_.name) ::: state.paramNames).filter(n => messageCallback.contains(n)).
-      map{n => val mcb = messageCallback(n);  RunnerHolder(n, mcb, mcb.owner)}.
+      (state.uploadedFiles.map(_.name) ::: state.paramNames).
+      flatMap{n => messageCallback.get(n).map(mcb => RunnerHolder(n, mcb, mcb.owner))}.
       sort{
         case ( RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a < b => true
         case (RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a > b => false
@@ -305,16 +309,16 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
 
     val ret = toRun.map(_.owner).removeDuplicates.flatMap{w =>
-      val f = toRun.filter(_.owner == w);
+      val f = toRun.filter(_.owner == w)
       w match {
         // if it's going to a CometActor, batch up the commands
-        case Full(id) =>
+        case Full(id) if asyncById.contains(id) =>
           asyncById.get(id).toList.
-          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {
+          flatMap(a => a !? (5000, ActionMessageSet(f.map(i => buildFunc(i)), state)) match {
               case Some(li: List[_]) => li
               case li: List[_] => li
               case other => Nil
-          })
+            })
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
@@ -387,23 +391,24 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-  private[http] def updateFunc(name: String, time: Long): Boolean = {
-    if (messageCallback.contains(name)) {
-      messageCallback(name).lastSeen = time
-      true
-    } else {
-      false
-    }
-  }
-
+  /*
+   private[http] def updateFunc(name: String, time: Long): Boolean = {
+   if (messageCallback.contains(name)) {
+   messageCallback(name).lastSeen = time
+   true
+   } else {
+   false
+   }
+   }
+   */
   /**
    * Return the number if updated functions
    */
   private[http] def updateFuncByOwner(ownerName: String, time: Long): Int = {
     (0 /: messageCallback)((l, v) => l + (v._2.owner match {
-      case Full(owner) if (owner == ownerName) => v._2.lastSeen = time; 1
-      case _ => 0
-    }))
+          case Full(owner) if (owner == ownerName) => v._2.lastSeen = time; 1
+          case _ => 0
+        }))
   }
 
   private def shutDown() = synchronized {
@@ -449,6 +454,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
           }
 
         case _ =>
+          RenderVersion.get // touch this early
+
           runParams(request)
 
           def idAndWhen(in: Node): Box[CometVersionPair] =
@@ -929,10 +936,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     val ajax: String = SHtml.makeAjaxCall(LiftRules.jsArtifacts.serialize(id)).toJsCmd + ";" + pre + "return false;"
 
 
-	new UnprefixedAttribute("id", Text(id),
-                         new UnprefixedAttribute("action", Text("#"),
-                            new UnprefixedAttribute("onsubmit", Text(ajax),
-                                                    attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
+    new UnprefixedAttribute("id", Text(id),
+                            new UnprefixedAttribute("action", Text("javascript://"),
+                                                    new UnprefixedAttribute("onsubmit", Text(ajax),
+                                                                            attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {
