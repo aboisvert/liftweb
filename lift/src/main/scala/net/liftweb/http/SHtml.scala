@@ -35,7 +35,7 @@ object SHtml {
    */
   def ajaxButton(text: NodeSeq, func: () => JsCmd, attrs: (String, String)*): Elem = {
     attrs.foldLeft(fmapFunc(func)(name =>
-        <button lift:gc={name} onclick={makeAjaxCall(Str(name+"=true")).toJsCmd+
+        <button onclick={makeAjaxCall(Str(name+"=true")).toJsCmd+
                          "; return false;"}>{text}</button>))(_ % _)
   }
 
@@ -119,9 +119,7 @@ object SHtml {
     val (nk, id) = findOrAddId(kids)
     val rnk = if (visible) nk else nk % ("style" -> "display: none")
     val nh = head %
-    ("onclick" -> (LiftRules.jsArtifacts.toggle(id).cmd & makeAjaxCall(JsRaw("'"+funcName+"=true'")).cmd)) %
-    new PrefixedAttribute("lift", "gc", Text(funcName), Null)
-
+    ("onclick" -> (LiftRules.jsArtifacts.toggle(id).cmd & makeAjaxCall(JsRaw("'"+funcName+"=true'")).cmd))
     nh ++ rnk
     }
   }
@@ -163,7 +161,6 @@ object SHtml {
       funcName =>
     (attrs.foldLeft(<input type="text" value={value}/>)(_ % _)) %
     ("onkeypress" -> """lift_blurIfReturn(event)""") %
-    (new PrefixedAttribute("lift", "gc", funcName, Null)) %
     ("onblur" -> makeAjaxCall(JsRaw("'" +funcName + "=' + encodeURIComponent(this.value)")))
     }
   }
@@ -176,7 +173,6 @@ object SHtml {
       funcName =>
     (attrs.foldLeft(<input type="checkbox"/>)(_ % _)) %
     checked(value) %
-    (new PrefixedAttribute("lift", "gc", funcName, Null)) %
     ("onclick" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.checked")))
     }
   }
@@ -196,8 +192,7 @@ object SHtml {
     (attrs.foldLeft(<select>{
             opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
           }</select>)(_ % _)) %
-    (new PrefixedAttribute("lift", "gc", funcName, Null)) %
-    ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
+          ("onchange" -> makeAjaxCall(JsRaw("'" + funcName+"='+this.options[this.selectedIndex].value")))
      }
   }
 
@@ -246,13 +241,13 @@ object SHtml {
   def link(to: String, func: () => Any, body: NodeSeq,
            attrs: (String, String)*): Elem = {
     fmapFunc((a: List[String]) => {func(); true})(key =>
-    attrs.foldLeft(<a lift:gc={key} href={to+"?"+key+"=_"}>{body}</a>)(_ % _))
+    attrs.foldLeft(<a href={to+"?"+key+"=_"}>{body}</a>)(_ % _))
   }
 
   private def makeFormElement(name: String, func: AFuncHolder,
                               attrs: (String, String)*): Elem =
   fmapFunc(func)(funcName =>
-  attrs.foldLeft(<input type={name} lift:gc={funcName} name={funcName}/>)(_ % _))
+  attrs.foldLeft(<input type={name} name={funcName}/>)(_ % _))
 
   def text_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
   makeFormElement("text", func, attrs :_*) % new UnprefixedAttribute("value", Text(value), Null)
@@ -340,7 +335,7 @@ object SHtml {
     val vals = opts.map(_._1)
     val testFunc = LFuncHolder(in => in.filter(v => vals.contains(v)) match {case Nil => false case xs => func(xs)}, func.owner)
 
-    attrs.foldLeft(fmapFunc(testFunc)(fn => <select lift:gc={fn} name={fn}>{
+    attrs.foldLeft(fmapFunc(testFunc)(fn => <select name={fn}>{
           opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
         }</select>))(_ % _)
   }
@@ -370,7 +365,7 @@ object SHtml {
   def untrustedSelect_*(opts: Seq[(String, String)],deflt: Box[String],
                         func: AFuncHolder, attrs: (String, String)*): Elem =
   fmapFunc(func)(funcName =>
-    attrs.foldLeft(<select lift:gc={funcName} name={funcName}>{
+    attrs.foldLeft(<select name={funcName}>{
           opts.flatMap{case (value, text) => (<option value={value}>{text}</option>) % selected(deflt.exists(_ == value))}
         }</select>)(_ % _))
 
@@ -385,7 +380,7 @@ object SHtml {
                     deflt: Seq[String],
                     func: AFuncHolder, attrs: (String, String)*): Elem =
   fmapFunc(func)(funcName =>
-  attrs.foldLeft(<select multiple="true" lift:gc={funcName} name={funcName}>{
+  attrs.foldLeft(<select multiple="true" name={funcName}>{
         opts.flatMap(o => (<option value={o._1}>{o._2}</option>) % selected(deflt.contains(o._1)))
       }</select>)(_ % _))
 
@@ -395,7 +390,7 @@ object SHtml {
 
   def textarea_*(value: String, func: AFuncHolder, attrs: (String, String)*): Elem =
   fmapFunc(func)(funcName =>
-  attrs.foldLeft(<textarea lift:gc={funcName} name={funcName}>{value}</textarea>)(_ % _))
+  attrs.foldLeft(<textarea name={funcName}>{value}</textarea>)(_ % _))
 
   def radio(opts: Seq[String], deflt: Box[String], func: String => Any,
             attrs: (String, String)*): ChoiceHolder[String] =
@@ -405,14 +400,14 @@ object SHtml {
               func: AFuncHolder, attrs: (String, String)*): ChoiceHolder[String] = {
     fmapFunc(func){name =>
     val itemList = opts.map(v => ChoiceItem(v,
-                                            attrs.foldLeft(<input lift:gc={name} type="radio" name={name} value={v}/>)(_ % _) %
+                                            attrs.foldLeft(<input type="radio" name={name} value={v}/>)(_ % _) %
                                             checked(deflt.filter((s: String) => s == v).isDefined)))
     ChoiceHolder(itemList)
     }
   }
 
   def fileUpload(func: FileParamHolder => Any): Elem =
-  fmapFunc(BinFuncHolder(func))(name => <input type="file" name={name} lift:gc={name} />)
+  fmapFunc(BinFuncHolder(func))(name => <input type="file" name={name} />)
 
   case class ChoiceItem[T](key: T, xhtml: NodeSeq)
 
@@ -436,7 +431,7 @@ object SHtml {
 
     ChoiceHolder(possible.toList.zipWithIndex.map(p =>
         ChoiceItem(p._1,
-                   attrs.foldLeft(<input type="checkbox" lift:gc={name} name={name} value={p._2.toString}/>)(_ % _) %
+                   attrs.foldLeft(<input type="checkbox" name={name} value={p._2.toString}/>)(_ % _) %
                    checked(actual.contains(p._1)) ++ (if (p._2 == 0) (<input type="hidden" name={name} value="-1"/>) else Nil))))
     }
   }
@@ -466,7 +461,7 @@ object SHtml {
                  attrs: (String, String)*): NodeSeq = {
     fmapFunc(func)(name =>
     (<input type="hidden" name={name} value="false"/>) ++
-    (attrs.foldLeft(<input type="checkbox" lift:gc={name} name={name} value="true" />)(_ % _) % checked(value) % setId(id))
+    (attrs.foldLeft(<input type="checkbox" name={name} value="true" />)(_ % _) % checked(value) % setId(id))
     )
   }
 

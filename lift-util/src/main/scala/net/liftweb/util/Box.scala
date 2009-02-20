@@ -93,7 +93,7 @@ object Box {
   }
 
   /**
-   * Alias for legacyNullTest. 
+   * Alias for legacyNullTest.
    * This method allows one to encapsulate any object in a Box in a null-safe manner,
    * returning Empty if the specified value is null.
    * @return Full(in) if <code>in</code> is not null Empty otherwise
@@ -108,7 +108,7 @@ object Box {
   (Box !! in).isA(clz)
 
   /**
-   * Create a Full box containing the specified value if <code>in</code> is of 
+   * Create a Full box containing the specified value if <code>in</code> is of
    * type <code>B</code>; Empty otherwise.
    */
   def asA[B](in: T forSome {type T})(implicit m: Manifest[B]): Box[B] =
@@ -184,7 +184,7 @@ sealed abstract class Box[+A] extends Product {
   def foreach(f: A => Any): Unit = {}
 
   /**
-   * Return a Full[B] if the contents of this Box is an instance of the specified class, 
+   * Return a Full[B] if the contents of this Box is an instance of the specified class,
    * otherwise return Empty
    */
   def isA[B](cls: Class[B]): Box[B] = Empty
@@ -227,7 +227,7 @@ sealed abstract class Box[+A] extends Product {
    * parameter.
    * @param errorCode a value indicating the error
    * @return a ParamFailure with the specified value
-   */ 
+   */
   def ~>[T](errorCode: T): Box[A] = this
 
   /**
@@ -236,7 +236,7 @@ sealed abstract class Box[+A] extends Product {
   def failMsg(msg: String): Box[A] = ?~(msg)
 
   /**
-   * Transform an Empty to a Failure with the specified message and chain 
+   * Transform an Empty to a Failure with the specified message and chain
    * the new Failure to any previous Failure represented by this Box.
    * @param msg the failure message
    * @return a Failure with the message if this Box is an Empty Box. Chain the messages if it is already a Failure
@@ -264,7 +264,7 @@ sealed abstract class Box[+A] extends Product {
   def run[T](in: T)(f: (T, A) => T) = in
 
   /**
-   * Perform a side effect by passing this Box to the specified function 
+   * Perform a side effect by passing this Box to the specified function
    * and return this Box unmodified.
    * @return this Box
    */

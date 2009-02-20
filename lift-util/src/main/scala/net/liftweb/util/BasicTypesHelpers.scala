@@ -38,7 +38,7 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
    * @param b the predicate to be tested by the ternary operator.
    */
   class Boolean2(b: => Boolean) {
-    /** 
+    /**
      * Ternary operator.
      * @returns a BooleanSome containing the specified value
      * if the decorated boolean is true, or a BooleanNone otherwise.
@@ -48,8 +48,8 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
       else BooleanNone
     }
 
-    /** 
-     * Class for return values from the Boolean2 ternary operator. 
+    /**
+     * Class for return values from the Boolean2 ternary operator.
      * This class provides the "|" operator that can be used to
      * specify a default value (i.e. the RHS of the "or")
      */
@@ -74,7 +74,7 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
 
   /**
    * Optional cons that implements the expression: <code>expr ?> value ::: List</code>
-   * @param expr the predicate to evaluate 
+   * @param expr the predicate to evaluate
    */
   class OptionalCons(expr: => Boolean) {
     /**
@@ -85,7 +85,7 @@ trait BasicTypesHelpers { self: StringHelpers with ControlHelpers =>
   }
 
   /**
-   * Implicit transformation from a Boolean expression to an OptionalCons object so 
+   * Implicit transformation from a Boolean expression to an OptionalCons object so
    * that an element can be added to a list if the expression is true
    */
   implicit def toOptiCons(expr: => Boolean): OptionalCons = new OptionalCons(expr)

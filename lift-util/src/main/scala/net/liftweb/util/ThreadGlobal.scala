@@ -49,7 +49,7 @@ class ThreadGlobal[T]
   def apply(v: T) = set(v)
 
   /**
-   * Sets this ThreadGlobal's contents to the specified value, 
+   * Sets this ThreadGlobal's contents to the specified value,
    * executes the specified function, and then restores the ThreadGlobal
    * to its earlier value. This effectively creates a scope within
    * the execution of the current thread for the execution of the specified

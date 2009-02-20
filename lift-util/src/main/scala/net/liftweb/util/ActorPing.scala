@@ -40,14 +40,14 @@ object ActorPing {
   /**
    * Schedules the sending of a message to occur after the specified delay.
    *
-   * @return a <code>ScheduledFuture</code> which sends the <code>msg</code> to 
+   * @return a <code>ScheduledFuture</code> which sends the <code>msg</code> to
    * the <code>to<code> Actor after the specified TimeSpan <code>delay</code>.
    */
   def schedule(to: Actor, msg: Any, delay: TimeSpan): ScheduledFuture[AnyRef] = {
     val r = new _root_.java.util.concurrent.Callable[AnyRef] { def call: AnyRef = { to ! msg; null } }
     try {
       service.schedule(r, delay.millis, TimeUnit.MILLISECONDS)
-    } catch { 
+    } catch {
       case e => throw ActorPingException(msg + " could not be scheduled on " + to, e)
     }
   }
@@ -92,7 +92,7 @@ case object UnSchedule
  */
 case object Scheduled
 
-/** 
+/**
  * Exception thrown if a ping can't be scheduled.
  */
 case class ActorPingException(msg: String, e: Throwable) extends RuntimeException(msg, e)

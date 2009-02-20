@@ -385,8 +385,7 @@ trait CometActor extends Actor with BindHelpers {
     case ActionMessageSet(msgs, req) =>
       S.init(req, theSession) {
         S.functionLifespan(true) {
-          val ret = msgs.map(_())
-          reply(ret)
+          reply(msgs.map(_()))
         }
       }
 

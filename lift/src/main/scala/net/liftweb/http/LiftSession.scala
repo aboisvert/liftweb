@@ -216,8 +216,15 @@ object SessionMaster extends Actor {
 }
 
 object RenderVersion {
-  private object ver extends RequestVar(Helpers.nextFuncName)
+  private object ver extends RequestVar({
+      val ret =  Helpers.nextFuncName
+      S.addFunctionMap(ret, S.SFuncHolder(ignore => {}))
+      ret
+    })
   def get: String = ver.is
+  def set(value: String) {
+    ver(value)
+  }
 }
 
 /**
@@ -278,10 +285,11 @@ class LiftSession(val contextPath: String, val uniqueId: String,
    * Executes the user's functions based on the query parameters
    */
   def runParams(state: Req): List[Any] = {
+
     val toRun = synchronized {
       // get all the commands, sorted by owner,
-      (state.uploadedFiles.map(_.name) ::: state.paramNames).filter(n => messageCallback.contains(n)).
-      map{n => val mcb = messageCallback(n);  RunnerHolder(n, mcb, mcb.owner)}.
+      (state.uploadedFiles.map(_.name) ::: state.paramNames).
+      flatMap{n => messageCallback.get(n).map(mcb => RunnerHolder(n, mcb, mcb.owner))}.
       sort{
         case ( RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a < b => true
         case (RunnerHolder(_, _, Full(a)), RunnerHolder(_, _, Full(b))) if a > b => false
@@ -301,16 +309,16 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
 
     val ret = toRun.map(_.owner).removeDuplicates.flatMap{w =>
-      val f = toRun.filter(_.owner == w);
+      val f = toRun.filter(_.owner == w)
       w match {
         // if it's going to a CometActor, batch up the commands
-        case Full(id) =>
+        case Full(id) if asyncById.contains(id) =>
           asyncById.get(id).toList.
-          flatMap(a => a !? ActionMessageSet(f.map(i => buildFunc(i)), state) match {
+          flatMap(a => a !? (5000, ActionMessageSet(f.map(i => buildFunc(i)), state)) match {
               case Some(li: List[_]) => li
               case li: List[_] => li
               case other => Nil
-          })
+            })
         case _ => f.map(i => buildFunc(i).apply())
       }
     }
@@ -383,13 +391,14 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-  private[http] def updateFunc(name: String, time: Long): Boolean = {
-    if (messageCallback.contains(name)) {
-      messageCallback(name).lastSeen = time
-      true
-    } else {
-      false
-    }
+  /**
+   * Return the number if updated functions
+   */
+  private[http] def updateFuncByOwner(ownerName: String, time: Long): Int = {
+    (0 /: messageCallback)((l, v) => l + (v._2.owner match {
+          case Full(owner) if (owner == ownerName) => v._2.lastSeen = time; 1
+          case _ => 0
+        }))
   }
 
   private def shutDown() = synchronized {
@@ -435,6 +444,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
           }
 
         case _ =>
+          RenderVersion.get // touch this early
+
           runParams(request)
 
           def idAndWhen(in: Node): Box[CometVersionPair] =
@@ -463,8 +474,19 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       }
                       else Nil
 
+
+                      this.synchronized {
+                        S.functionMap.foreach {mi =>
+                          // ensure the right owner
+                          messageCallback(mi._1) = mi._2.owner match {
+                            case Empty => mi._2.duplicate(RenderVersion.get)
+                            case _ => mi._2
+                          }
+                        }
+                      }
+
                       val liftGC: List[RewriteRule] = LiftRules.enableLiftGC match {
-                        case true => (new AddLiftGCToBody(RenderVersion.get, findLiftGCNodes(xml))) :: cometXform
+                        case true => (new AddLiftGCToBody(RenderVersion.get)) :: cometXform
                         case _ => cometXform
                       }
 
@@ -475,9 +497,6 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                       val realXml = if (ajaxXform.isEmpty) xml
                       else (new RuleTransformer(ajaxXform :_*)).transform(xml)
 
-                      this.synchronized {
-                        S.functionMap.foreach(mi => messageCallback(mi._1) = mi._2)
-                      }
                       notices = Nil
                       Full(LiftRules.convertResponse((realXml,
                                                       S.getHeaders(LiftRules.defaultHeaders((realXml, request))),
@@ -550,11 +569,6 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     myVariables -= name
   }
 
-  private def findLiftGCNodes(in: NodeSeq): List[String] =
-  findInElems(in)(_.attributes.filter{
-      case p: PrefixedAttribute if p.pre == "lift" && p.key == "gc" => true
-      case _ => false}.
-                  map(_.value.text))
 
   private[http] def attachRedirectFunc(uri: String, f : Box[() => Unit]) = {
     f map { fnc =>
@@ -898,9 +912,8 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private def addAjaxHREF(attr: MetaData): MetaData = {
     val ajax: JsExp = SHtml.makeAjaxCall(JE.Str(attr("key")+"=true"))
 
-    new PrefixedAttribute("lift", "gc", attr("key"),
-                          new UnprefixedAttribute("onclick", Text(ajax.toJsCmd),
-                                                  new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href"))))
+    new UnprefixedAttribute("onclick", Text(ajax.toJsCmd),
+                            new UnprefixedAttribute("href", Text("javascript://"), attr.filter(a => a.key != "onclick" && a.key != "href")))
   }
 
   private def addAjaxForm(attr: MetaData): MetaData = {
@@ -910,17 +923,13 @@ class LiftSession(val contextPath: String, val uniqueId: String,
       case x :: xs => x.value.text +";"
     }
 
-    val ajax: String =
-    SHtml.makeAjaxCall(LiftRules.jsArtifacts.serialize(id)).toJsCmd + ";" +
-    pre + "return false;"
+    val ajax: String = SHtml.makeAjaxCall(LiftRules.jsArtifacts.serialize(id)).toJsCmd + ";" + pre + "return false;"
 
-    // val ajax = LiftRules.jsArtifacts.ajax(AjaxInfo(LiftRules.jsArtifacts.serialize(id).toJsCmd, true)) + pre + " return false;"
 
-    new PrefixedAttribute("lift", "gc", id,
-                          new UnprefixedAttribute("id", Text(id),
-                                                  new UnprefixedAttribute("action", Text("#"),
-                                                                          new UnprefixedAttribute("onsubmit", Text(ajax),
-                                                                                                  attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action")))))
+    new UnprefixedAttribute("id", Text(id),
+                            new UnprefixedAttribute("action", Text("javascript://"),
+                                                    new UnprefixedAttribute("onsubmit", Text(ajax),
+                                                                            attr.filter(a => a.key != "id" && a.key != "onsubmit" && a.key != "action"))))
   }
 
   private def processSurroundElement(page: String, in: Elem): NodeSeq = {
@@ -944,8 +953,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
   private def findAndMerge(templateName: Box[Seq[Node]], atWhat: Map[String, NodeSeq]): NodeSeq = {
     val name = templateName.map(s => if (s.text.startsWith("/")) s.text else "/"+ s.text).openOr("/templates-hidden/default")
 
-    findTemplate(name).map(s => processBind(s, atWhat)).
-    openOr(atWhat.values.flatMap(_.elements).toList)
+    findTemplate(name).map(s => bind(atWhat, s)).openOr(atWhat.values.flatMap(_.elements).toList)
   }
 
   class AddAjaxToBody() extends RewriteRule {
@@ -963,7 +971,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-  class AddLiftGCToBody(val pageName: String, val gcNames: List[String]) extends RewriteRule {
+  class AddLiftGCToBody(val pageName: String) extends RewriteRule {
     private var doneBody = false
 
     import js._
@@ -976,8 +984,7 @@ class LiftSession(val contextPath: String, val uniqueId: String,
       case e: Elem if e.label == "body" && !doneBody =>
         doneBody = true
         Elem(null, "body", e.attributes,  e.scope, (e.child ++
-                                                    JsCmds.Script(JsCrVar("lift_gc", JsArray(gcNames.map(Str) :_*)) &
-                                                                  OnLoad(JsRaw("lift_successRegisterGC()")) &
+                                                    JsCmds.Script(OnLoad(JsRaw("lift_successRegisterGC()")) &
                                                                   JsCrVar("lift_page", pageName))) :_*)
 
       case n => n

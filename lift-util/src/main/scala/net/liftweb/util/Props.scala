@@ -21,19 +21,19 @@ import _root_.java.util.Properties
 import Helpers._
 
 /**
- * Configuration management utilities. 
- * 
+ * Configuration management utilities.
+ *
  * If you want to provide a configuration file for a subset of your application
- * or for a specifig environment, Lift expects configuration files to be named 
- * in a manner relating to the context in which they are being used. The standard 
+ * or for a specifig environment, Lift expects configuration files to be named
+ * in a manner relating to the context in which they are being used. The standard
  * name format is:
- * 
+ *
  * <pre>
  *   modeName.hostName.userName.filename.extension
  * </pre>
- * 
- * with hostName and userName being optional, and modeName being one of 
- * "test", "staging", "production", "pilot", "profile", or "default. 
+ *
+ * with hostName and userName being optional, and modeName being one of
+ * "test", "staging", "production", "pilot", "profile", or "default.
  * The standard Lift properties file extension is "props".
  */
 object Props {

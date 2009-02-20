@@ -292,7 +292,7 @@ object LiftRules {
    * The function that calculates if the response should be rendered in
    * IE6/7 compatibility mode
    */
-  var calcIEMode: () => Boolean = 
+  var calcIEMode: () => Boolean =
   () => (for (r <- S.request) yield r.isIE6 || r.isIE7 ||
   r.isIE8) openOr true
 
@@ -831,7 +831,8 @@ lazy val liftVersion = "0.11-SNAPSHOT"
 
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderCometScript(liftSession),
-                            List("Last-Modified" -> toInternetDate(modTime)),
+                            List("Last-Modified" -> toInternetDate(modTime),
+                            "Expires" -> toInternetDate(modTime + 10.minutes)),
                             Nil, 200))
   }
 
@@ -844,7 +845,8 @@ lazy val liftVersion = "0.11-SNAPSHOT"
 
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderAjaxScript(liftSession),
-                            List("Last-Modified" -> toInternetDate(modTime)),
+                            List("Last-Modified" -> toInternetDate(modTime),
+                            "Expires" -> toInternetDate(modTime + 10.minutes)),
                             Nil, 200))
   }
 

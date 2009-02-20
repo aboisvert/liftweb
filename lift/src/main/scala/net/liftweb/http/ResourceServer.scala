@@ -60,6 +60,7 @@ object ResourceServer {
         val stream = url.openStream
         StreamingResponse(stream, () => stream.close, uc.getContentLength,
           List(("Last-Modified", toInternetDate(uc.getLastModified)),
+               ("Expires", toInternetDate(millis + 12.hours)),
               ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
       }
       }

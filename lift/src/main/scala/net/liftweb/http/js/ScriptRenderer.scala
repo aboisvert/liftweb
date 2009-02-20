@@ -88,16 +88,6 @@ function lift_traverseAndCall(node, func) {
   }
 }
 
-function lift_findGCNodes() {
-  var ret = [];
-  lift_traverseAndCall(document, function(e) {
-    if (e.attributes['lift:gc']) {
-      ret.push(e.attributes['lift:gc'].value);
-    }
-  });
-  return ret;
-}
-
 function lift_successRegisterGC() {
   setTimeout("lift_registerGC()", """ + LiftRules.liftGCPollingInterval + """);
 }
@@ -107,18 +97,14 @@ function lift_failRegisterGC() {
 }
 
 function lift_registerGC() {
-  var nodes = lift_findGCNodes();
-  if (nodes.length > 0) {
-    var data = "__lift__GCNodes="+encodeURIComponent(""" +
-      LiftRules.jsArtifacts.jsonStringify(JE.JsRaw("nodes")).toJsCmd +
-    """);
+    var data = "__lift__GC=_"
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
                                                             "POST",
                                                             LiftRules.ajaxPostTimeout,
                                                             false, "script",
                                                             Full("lift_successRegisterGC"), Full("lift_failRegisterGC"))) +
-"""  }
+"""
 }
 
 function lift_doAjaxCycle() {
@@ -177,6 +163,10 @@ function lift_blurIfReturn(e) {
 		targ = targ.parentNode;
 
   if (code == 13) {targ.blur(); return false;} else {return true;};
+}
+
+function addPageName(url) {
+  return url.replace('""" + LiftRules.ajaxPath + """', '""" + LiftRules.ajaxPath + """/'+lift_page);
 }
 
 function lift_actualAjaxCall(data, onSuccess, onFailure) {

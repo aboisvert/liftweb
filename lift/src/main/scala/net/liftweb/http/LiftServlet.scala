@@ -19,6 +19,7 @@ import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletR
 import _root_.javax.servlet.{ServletContext}
 import _root_.java.net.URLDecoder
 import _root_.scala.xml.{Node, NodeSeq,Group, Elem, MetaData, Null, XML, Comment, Text}
+import _root_.scala.collection.immutable.HashMap
 import _root_.scala.xml.transform._
 import _root_.scala.actors._
 import _root_.scala.actors.Actor._
@@ -235,36 +236,39 @@ class LiftServlet extends HttpServlet {
     LiftRules.serveCometScript(liftSession, requestState)
     else if ((wp.length >= 1) && wp.head == LiftRules.cometPath)
     handleComet(requestState, liftSession)
-    else if (wp.length == 1 && wp.head == LiftRules.ajaxPath)
-    handleAjax(liftSession, requestState)
     else if (wp.length == 2 && wp.head == LiftRules.ajaxPath &&
              wp(1) == LiftRules.ajaxScriptName())
     LiftRules.serveAjaxScript(liftSession, requestState)
+    else if (wp.length >= 1 && wp.head == LiftRules.ajaxPath)
+    handleAjax(liftSession, requestState)
     else liftSession.processRequest(requestState)
 
     toTransform.map(LiftRules.performTransform)
   }
 
+  private def extractVersion(path : List[String]) {
+    path match {
+      case first :: second :: _ => RenderVersion.set(second)
+      case _ =>
+    }
+  }
+
   private def handleAjax(liftSession: LiftSession,
                          requestState: Req): Box[LiftResponse] =
   {
+    extractVersion(requestState.path.partPath)
+
     LiftRules.cometLogger.debug("AJAX Request: "+liftSession.uniqueId+" "+requestState.params)
     tryo{LiftSession.onBeginServicing.foreach(_(liftSession, requestState))}
-    val ret = requestState.param("__lift__GCNodes") match {
-      case Full(json) =>
+    val ret = requestState.param("__lift__GC") match {
+      case Full(_) =>
         val now = millis
-        val found: List[Boolean] = liftSession.synchronized {
-          for {strList <- JSONParser.parse(json).asA[List[String]].toList
-               str <- strList} yield {
-            liftSession.updateFunc(str, now)
-          }
+        val found: Int = liftSession.synchronized {
+          liftSession.updateFuncByOwner(RenderVersion.get, now)
         }
 
-        val len = found.length
-        val sum = found.foldLeft(0)((a, b) => a + (if (b) 1 else 0))
         import js.JsCmds._
-
-        if (len > 0 && sum == 0) Full(JavaScriptResponse(RedirectTo("/")))
+        if (found == 0) Full(JavaScriptResponse(RedirectTo("/")))
         else Full(JavaScriptResponse(js.JsCmds.Noop))
 
       case _ =>
@@ -354,7 +358,7 @@ class LiftServlet extends HttpServlet {
   }
 
   private def handleComet(requestState: Req, sessionActor: LiftSession): Box[LiftResponse] = {
-    val actors: List[(CometActor, Long)] =
+   val actors: List[(CometActor, Long)] =
     requestState.params.toList.flatMap{case (name, when) =>
         sessionActor.getAsyncComponent(name).toList.map(c => (c, toLong(when)))}
 
@@ -582,11 +586,12 @@ class LiftFilter extends Filter with LiftFilterTrait
   }
 
   private def postBoot {
-    LiftRules.doneBoot = true;
     try {
       ResourceBundle getBundle (LiftRules.liftCoreResourceName)
     } catch {
       case _ => Log.error("LiftWeb core resource bundle for locale " + Locale.getDefault() + ", was not found ! ")
+    } finally {
+      LiftRules.doneBoot = true;
     }
   }
 

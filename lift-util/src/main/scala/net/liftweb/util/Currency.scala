@@ -25,7 +25,7 @@ class Currency(val amount: Long, val symbol: String, val decimals: Int) {
       val d = amount.toDouble
       val pow = Math.pow(10, decimals)
       symbol+(d / pow)
-    } 
+    }
   }
 
   /**
@@ -35,7 +35,7 @@ class Currency(val amount: Long, val symbol: String, val decimals: Int) {
   def forDB: String = Helpers.urlEncode(symbol)+"&"+amount+"&"+decimals
 
   /**
-   * Determines whether two currencies are equal with respect to 
+   * Determines whether two currencies are equal with respect to
    * symbol, amount, and decimal value.
    */
   override def equals(other: Any) = other match {

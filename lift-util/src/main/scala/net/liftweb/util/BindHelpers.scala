@@ -63,7 +63,7 @@ trait AttrHelper[+Holder[X]] {
  *
  * Example:
  * <pre>
- * bind("hello", xml,	
+ * bind("hello", xml,
  *      "someNode" -> {node: NodeSeq => <function-body>})
  * </pre>
  *
@@ -75,9 +75,9 @@ object BindHelpers extends BindHelpers {
   private val _currentNode = new ThreadGlobal[Elem]
 
   /**
-   * A list of NodeSeq that preceeds the NodeSeq passed to bind. The head of the list 
-   * is the most recent NodeSeq. This returns Empty if it is called outside its context, 
-   * or Full(Nil) if there are no child nodes but the function is called within the 
+   * A list of NodeSeq that preceeds the NodeSeq passed to bind. The head of the list
+   * is the most recent NodeSeq. This returns Empty if it is called outside its context,
+   * or Full(Nil) if there are no child nodes but the function is called within the
    * appropriate context.
    */
   def bindNodes: Box[List[NodeSeq]] = _bindNodes.box
@@ -151,7 +151,7 @@ trait BindHelpers {
   }
 
   /**
-   * Similar to chooseTemplate, this returns the contents of the element in a Full Box if 
+   * Similar to chooseTemplate, this returns the contents of the element in a Full Box if
    * found or an Empty Box otherwise.
    */
   def template(xhtml: NodeSeq, prefix: String, tag: String): Box[NodeSeq] =
@@ -361,7 +361,7 @@ trait BindHelpers {
    * @param namespace the namespace of tags to bind
    * @param xml the NodeSeq in which to find elements to be bound.
    * @param params the list of BindParam bindings to be applied
-   * 
+   *
    * @return the NodeSeq that results from the specified transforms
    */
   def bind(namespace: String, xml: NodeSeq, params: BindParam*): NodeSeq =
@@ -373,14 +373,14 @@ trait BindHelpers {
    * namespace.<p/>
    *
    * For example:<pre>
-   *   bind("user", 
+   *   bind("user",
    *        Full(xhtml: NodeSeq => Text("Default Value")),
    *        Empty,
-   *        <user:hello>replace this</user:hello><user:dflt>replace with default</user:dflt>, 
+   *        <user:hello>replace this</user:hello><user:dflt>replace with default</user:dflt>,
    *        "hello" -> <h1/>)
    * </pre>
    * will return <pre><h1></h1>Default Value</pre>
-   * 
+   *
    * @param namespace the namespace of tags to bind
    * @param nodeFailureXform a box containing the function to use as the default transform
    *        for tags in the specified namespace that do not have bindings specified.
@@ -388,7 +388,7 @@ trait BindHelpers {
    *        for unrecognized attributes in bound elements.
    * @param xml the NodeSeq in which to find elements to be bound.
    * @param params the list of BindParam bindings to be applied
-   * 
+   *
    * @return the NodeSeq that results from the specified transforms
    */
   def bind(namespace: String, nodeFailureXform: Box[NodeSeq => NodeSeq],
@@ -533,7 +533,7 @@ trait BindHelpers {
   }
 
   /**
-   * Finds and returns the first node in the specified NodeSeq and its children 
+   * Finds and returns the first node in the specified NodeSeq and its children
    * with the same label and prefix as the specified element.
    */
   def findNode(in: Elem, nodes: NodeSeq): Box[Elem] = nodes match {
