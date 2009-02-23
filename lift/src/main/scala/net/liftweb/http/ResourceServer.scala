@@ -34,7 +34,7 @@ object ResourceServer {
   }
 
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
-     case "jquery.js" :: Nil => List("jquery-1.3.1-min.js")
+     case "jquery.js" :: Nil => List("jquery-1.3.2-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
      case "json2.js" :: Nil => List( "json2-min.js")
      case xs => xs
