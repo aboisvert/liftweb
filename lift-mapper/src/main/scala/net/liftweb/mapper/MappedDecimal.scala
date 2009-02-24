@@ -16,7 +16,7 @@ package net.liftweb.mapper
  * and limitations under the License.
  */
 
-import _root_.java.math.{BigDecimal => JBigDecimal,MathContext,RoundingMode}
+import _root_.java.math.{MathContext,RoundingMode}
 import _root_.java.sql.{ResultSet, Types}
 import _root_.java.lang.reflect.Method
 import _root_.net.liftweb.util.Helpers._
@@ -123,29 +123,32 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
     this.setAll(BigDecimal(in))
     data
   }
-  
-  /** Set the value along with proper scale, precision, and rounding */
-  protected def setAll (in : BigDecimal) = this.set(new BigDecimal(in.bigDecimal.round(context).setScale(scale)))
 
+  /** Set the value along with proper scale, precision, and rounding */
+  protected def setAll (in : BigDecimal) = this.set(coerce(in))
+
+  // Set the scale on the given input
+  protected def coerce (in : BigDecimal) = new BigDecimal(in.bigDecimal.setScale(scale, context.getRoundingMode))
+  
   def targetSQLType = Types.DECIMAL
 
-  def jdbcFriendly(field : String) = i_is_!
+  def jdbcFriendly(field : String) = i_is_!.bigDecimal
 
   def real_convertToJDBCFriendly(value: BigDecimal): Object = value.bigDecimal
 
   def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit = null  
 
   def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =  
-    (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (v == null) defaultValue else (BigDecimal(v.getTime).setScale(scale)))})  
+    (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (v == null) defaultValue else (coerce(BigDecimal(v.getTime))))})
   
   def buildSetStringValue(accessor: Method, columnName: String): (T, String) =>  
-    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(BigDecimal(v).setScale(scale))})  
+    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v)))})  
   
   def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) =>  
-    Unit = (inst, v, isNull) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (isNull) defaultValue else (BigDecimal(v).setScale(scale)))})  
+    Unit = (inst, v, isNull) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (isNull) defaultValue else coerce(BigDecimal(v)))})  
   
   def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) =>  
-    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(BigDecimal(v.toString).setScale(scale))})  
+    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v.toString)))})  
   
   /**
    * Returns the SQL creation string for this field. See the note at the

@@ -92,7 +92,7 @@ class DecimalField[OwnerType <: Record[OwnerType]](rec: OwnerType, val context :
   }
 
   /** Set the value along with proper scale, precision, and rounding */
-  protected def setAll (in : BigDecimal) = this.set(new BigDecimal(in.bigDecimal.round(context).setScale(scale)))
+  protected def setAll (in : BigDecimal) = this.set(new BigDecimal(in.bigDecimal.setScale(scale, context.getRoundingMode)))
 }
 
 import java.sql.{ResultSet, Types}
