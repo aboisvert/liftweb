@@ -15,7 +15,7 @@
     </action>
     see http://maven.apache.org/plugins/maven-changes-plugin/usage.html for full guide
   -->
-    <release version="0.11" date="" description="">
+    <release version="1.0" date="2009-02-26" description="First Major">
       <action dev="Marius Danciu" type="add">Added support for multiple resource bundles</action>
     </release>
     <release version="0.10" date="2009-01-14" description="api refactor">

@@ -3,7 +3,7 @@
   <parent>
     <artifactId>lift</artifactId>
     <groupId>net.liftweb</groupId>
-    <version>0.11-SNAPSHOT</version>
+    <version>1.0</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>lift-util</artifactId>
