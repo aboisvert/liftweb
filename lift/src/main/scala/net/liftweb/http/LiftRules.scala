@@ -23,7 +23,7 @@ import _root_.net.liftweb.http.js.JSArtifacts
 import _root_.net.liftweb.http.js.jquery._
 import _root_.scala.xml._
 import _root_.scala.collection.mutable.{ListBuffer}
-import _root_.java.util.{Locale, TimeZone}
+import _root_.java.util.{Locale, TimeZone, ResourceBundle}
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.javax.servlet.{ServletContext}
 import _root_.java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
@@ -44,8 +44,8 @@ object LiftRules {
   type ViewDispatchPF = PartialFunction[List[String], Either[() => Box[NodeSeq], LiftView]]
   type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Box[Role]]
   type ExceptionHandlerPF = PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse]
-
-
+  type ResourceBundleFactoryPF = PartialFunction[(String,Locale), ResourceBundle]
+  
   /**
    * A partial function that allows the application to define requests that should be
    * handled by lift rather than the default servlet handler
@@ -312,9 +312,11 @@ object LiftRules {
    * A function that takes the current HTTP request and returns the current
    */
   var localeCalculator: Box[HttpServletRequest] => Locale = defaultLocaleCalculator _
-
+  
   def defaultLocaleCalculator(request: Box[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
-
+  
+  var resourceBundleFactories = RulesSeq[ResourceBundleFactoryPF] 
+  
   private val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
       val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")

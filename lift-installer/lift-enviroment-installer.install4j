@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<install4j version="4.1.3" transformSequenceNumber="2">
-  <directoryPresets config="./src/java-rebel-1.1.1/Notice.txt" />
-  <application name="Lift Framework" distributionSourceDir="" applicationId="5718-3659-1334-6595" mediaDir="./target" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="true" excludeSignedFromPacking="true" keepModificationTimes="false" shortName="liftweb" publisher="The Lift Open Source Comunity" publisherWeb="http://www.liftweb.net/" version="0.8" allPathsRelative="true" backupOnSave="false" autoSave="true" convertDotsToUnderscores="true" macSignature="????" javaMinVersion="1.5" javaMaxVersion="" allowBetaVM="true" jdkMode="jdk" jdkName="JRE 1.5">
+<install4j version="4.1.5" transformSequenceNumber="2">
+  <directoryPresets config="./src/javarebel-1.2.2/Install.html" />
+  <application name="Lift Framework" distributionSourceDir="" applicationId="5718-3659-1334-6595" mediaDir="./target" mediaFilePattern="${compiler:sys.shortName}_${compiler:sys.platform}_${compiler:sys.version}" compression="6" lzmaCompression="false" pack200Compression="true" excludeSignedFromPacking="true" keepModificationTimes="false" shortName="liftweb" publisher="The Lift Open Source Comunity" publisherWeb="http://www.liftweb.net/" version="0.11" allPathsRelative="true" backupOnSave="false" autoSave="true" convertDotsToUnderscores="true" macSignature="????" installerName="" javaMinVersion="1.5" javaMaxVersion="" allowBetaVM="true" jdkMode="runtimeJre" jdkName="">
     <languages skipLanguageSelection="false">
       <principalLanguage id="en" customLocalizationFile="" />
       <additionalLanguages />
@@ -18,18 +18,18 @@
     <mountPoints>
       <mountPoint id="171" root="" location="apache-maven" mode="755" />
       <mountPoint id="172" root="" location="java-rebel" mode="755" />
-      <mountPoint id="120" root="" location="bin" mode="755" />
     </mountPoints>
     <entries>
-      <dirEntry mountPoint="171" file="./src/apache-maven-2.0.8" overwrite="0" shared="false" mode="755" uninstallMode="2" excludeSuffixes="" dirMode="755">
+      <dirEntry mountPoint="171" file="./src/apache-maven-2.0.9" overwrite="0" shared="false" mode="755" uninstallMode="2" excludeSuffixes="" dirMode="755">
         <exclude>
           <entry location=".DS_Store" fileType="regular" />
         </exclude>
       </dirEntry>
-      <fileEntry mountPoint="172" file="./src/java-rebel-1.1.1/javarebel.jar" overwrite="1" shared="false" mode="755" uninstallMode="2" />
-      <fileEntry mountPoint="172" file="./src/java-rebel-1.1.1/javarebel.lic" overwrite="1" shared="false" mode="755" uninstallMode="2" />
-      <fileEntry mountPoint="172" file="./src/java-rebel-1.1.1/License.txt" overwrite="1" shared="false" mode="755" uninstallMode="2" />
-      <fileEntry mountPoint="172" file="./src/java-rebel-1.1.1/Notice.txt" overwrite="1" shared="false" mode="755" uninstallMode="2" />
+      <fileEntry mountPoint="172" file="./src/javarebel-1.2.2/javarebel.jar" overwrite="1" shared="false" mode="755" uninstallMode="2" />
+      <fileEntry mountPoint="172" file="./src/javarebel-1.2.2/javarebel.lic" overwrite="1" shared="false" mode="755" uninstallMode="2" />
+      <fileEntry mountPoint="172" file="./src/javarebel-1.2.2/License.txt" overwrite="1" shared="false" mode="755" uninstallMode="2" />
+      <fileEntry mountPoint="172" file="./src/javarebel-1.2.2/Notice.txt" overwrite="1" shared="false" mode="755" uninstallMode="2" />
+      <fileEntry mountPoint="172" file="./src/javarebel-1.2.2/Install.html" overwrite="1" shared="false" mode="755" uninstallMode="2" />
     </entries>
     <components>
       <component name="Apache Maven 2.0.8" id="123" displayDescription="false" selected="true" mandatory="false" downloadable="false">
@@ -541,7 +541,7 @@ if(WinEnvVars.getenv("JAVA_HOME") == null){
       <exclude />
       <variables />
     </macosFolder>
-    <win32 name="Windows" id="57" mediaFileName="" installDir="${compiler:sys.shortName}-${compiler:sys.version}" overridePrincipalLanguage="false" requires64bit="false" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" includedJRE="windows-x86-1.6.0_06" manualJREEntry="false" bundleType="1" jreURL="http://scala-tools.org/windows-x86-1.6.0_06.tar.gz" jreFtpURL="" jreShared="false" customInstallBaseDir="" createUninstallIcon="true" contentFilesType="1" downloadURL="" runAsAdmin="true">
+    <win32 name="Windows" id="57" mediaFileName="" installDir="${compiler:sys.shortName}-${compiler:sys.version}" overridePrincipalLanguage="false" requires64bit="false" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" includedJRE="windows-x86-1.6.0_12" manualJREEntry="false" bundleType="2" jreURL="http://scala-tools.org/windows-x86-1.6.0_12.tar.gz" jreFtpURL="" jreShared="true" customInstallBaseDir="" createUninstallIcon="true" contentFilesType="1" downloadURL="" runAsAdmin="true">
       <excludedLaunchers />
       <excludedComponents />
       <excludedBeans />
@@ -562,6 +562,7 @@ if(WinEnvVars.getenv("JAVA_HOME") == null){
     </unixInstaller>
   </mediaSets>
   <buildIds buildAll="false">
+    <mediaSet refId="54" />
     <mediaSet refId="57" />
   </buildIds>
 </install4j>
