@@ -229,6 +229,7 @@ Lift is a scala web framework.
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
         <executions>
           <execution>
             <goals>
@@ -293,6 +294,7 @@ Lift is a scala web framework.
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
         <configuration>
           <jvmArgs>
             <jvmArg>-Xmx1024m</jvmArg>
