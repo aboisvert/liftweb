@@ -393,6 +393,10 @@ object Failure {
 sealed case class Failure(msg: String, exception: Box[Throwable], chain: Box[Failure]) extends EmptyBox[Nothing] {
   type A = Nothing
 
+  override def open_! = throw new NullPointerException("Trying to open a Failure Box: " + msg) {
+    override def getCause() = exception openOr null
+  }
+
   override def ?~(msg: String) = this
 
   override def ?~!(msg: String) = Failure(msg, Empty, Full(this))
