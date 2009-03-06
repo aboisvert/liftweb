@@ -675,13 +675,13 @@ class LiftSession(val contextPath: String, val uniqueId: String,
     }
   }
 
-
   private def findSnippetInstance(cls: String): Box[AnyRef] =
   S.snippetForClass(cls) or
   (findSnippetClass(cls).flatMap(c => instantiate(c)) match {
       case Full(inst: StatefulSnippet) =>
         inst.snippetName = cls; S.setSnippetForClass(cls, inst); Full(inst)
       case Full(ret) => Full(ret)
+      case fail : Failure => fail
       case _ => Empty
     })
 
@@ -726,6 +726,10 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                                                                                      LiftRules.SnippetFailures.MethodNotFound))); kids
                   }
                 }
+              case Failure(_, exception, _) => Log.warn("Snippet creation error: " + exception)
+                  LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
+                                                                                        LiftRules.SnippetFailures.CreateException))); kids
+                  
               case _ => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                               LiftRules.SnippetFailures.ClassNotFound))); kids
             }

@@ -629,6 +629,7 @@ object LiftRules {
     val StatefulDispatchNotMatched = Value(3, "Stateful Snippet: Dispatch Not Matched")
     val MethodNotFound = Value(4, "Method Not Found")
     val NoNameSpecified = Value(5, "No Snippet Name Specified")
+    val CreateException = Value(6, "Exception During Snippet Creation")
   }
 
   /**
