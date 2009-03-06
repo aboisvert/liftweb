@@ -726,9 +726,9 @@ class LiftSession(val contextPath: String, val uniqueId: String,
                                                                                                      LiftRules.SnippetFailures.MethodNotFound))); kids
                   }
                 }
-              case Failure(_, exception, _) => Log.warn("Snippet creation error: " + exception)
+              case Failure(_, Full(exception), _) => Log.warn("Snippet instantiation error", exception)
                   LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
-                                                                                        LiftRules.SnippetFailures.CreateException))); kids
+                                                                                        LiftRules.SnippetFailures.InstantiationException))); kids
                   
               case _ => LiftRules.snippetFailedFunc.toList.foreach(_(LiftRules.SnippetFailure(page, snippetName,
                                                                                               LiftRules.SnippetFailures.ClassNotFound))); kids
