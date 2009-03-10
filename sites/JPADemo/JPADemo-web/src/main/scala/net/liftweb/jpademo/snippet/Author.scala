@@ -18,12 +18,14 @@ package net.liftweb.jpademo.snippet
 import scala.xml.{NodeSeq,Text}
 
 import net.liftweb.http.{RequestVar,S,SHtml}
-import net.liftweb.util.Helpers
+import net.liftweb.util.{Helpers,Log}
 import S._
 import Helpers._
 
 import net.liftweb.jpademo.model._
 import Model._
+
+import javax.persistence.{EntityExistsException,PersistenceException}
 
 class AuthorOps {
   def list (xhtml : NodeSeq) : NodeSeq = {
@@ -47,8 +49,13 @@ class AuthorOps {
       if (author.name.length == 0) {
 	error("emptyAuthor", "The author's name cannot be blank")
       } else {
-	Model.merge(author)
-	redirectTo("list.html")
+	try {
+	  Model.mergeAndFlush(author)
+	  redirectTo("list.html")
+	} catch {
+	  case ee : EntityExistsException => error("That author already exists.")
+	  case pe : PersistenceException => error("Error adding author"); Log.error("Author add failed", pe)
+	}
       }
     }
 
