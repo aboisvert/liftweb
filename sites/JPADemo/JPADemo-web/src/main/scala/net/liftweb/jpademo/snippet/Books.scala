@@ -18,12 +18,14 @@ package net.liftweb.jpademo.snippet
 import scala.xml.{NodeSeq,Text}
 
 import net.liftweb.http.{RequestVar,S,SHtml}
-import net.liftweb.util.{Box,Empty,Full,Helpers}
+import net.liftweb.util.{Box,Empty,Full,Helpers,Log}
 import S._
 import Helpers._
 
 import net.liftweb.jpademo.model._
 import Model._
+
+import javax.persistence.{EntityExistsException,PersistenceException}
 
 // Make an object so that other pages can access (ie Authors)
 object BookOps {
@@ -51,10 +53,14 @@ class BookOps {
   def book = bookVar.is
 
   def add (xhtml : NodeSeq) : NodeSeq = {
-    def doAdd () = {
-      Model.merge(book)
+    def doAdd () = try {
+      Model.mergeAndFlush(book)
       redirectTo("list.html")
+    } catch {
+      case ee : EntityExistsException => error("That book already exists.")
+      case pe : PersistenceException => error("Error adding book"); Log.error("Book add failed", pe)
     }
+
 
     // Hold a val here so that the "id" closure holds it when we re-enter this method
     val currentId = book.id
