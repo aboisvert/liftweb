@@ -17,13 +17,23 @@ package net.liftweb.util
 import _root_.scala.xml._
 import _root_.scala.xml.transform._
 
+import Helpers._
+
 /**
  * This object provides functions to setup the head section of html documents.</p>
- * <code></code>
  */
 object HeadHelper {
+  /**
+   * This method returns its parameter unmodified.
+   */
   def identity(xml: NodeSeq) : NodeSeq = xml
 
+  /**
+   * This method finds all &lt;head&gt; tags that are descendants of
+   * &lt;body&gt; tags in the specified NodeSequence and merges
+   * the contents of those tags into the &lt;head&gt; tag closest
+   * to the root of the XML tree.
+   */
   def mergeToHtmlHead(xhtml: NodeSeq) : NodeSeq = {
     def trimText(in: NodeSeq): NodeSeq = in flatMap {
       case e: Elem =>
@@ -42,7 +52,7 @@ object HeadHelper {
 
     val headInBody: NodeSeq =
     (for (body <- xhtml \ "body";
-          head <- body \\ "head") yield trimText(head.child)).
+          head <- findElems(body)(_.label == "head")) yield trimText(head.child)).
     toList.removeDuplicates.flatMap(a => a)
 
     if (headInBody.isEmpty) xhtml
@@ -69,7 +79,4 @@ object HeadHelper {
       xform(xhtml, false)
     }
   }
-
-
 }
-

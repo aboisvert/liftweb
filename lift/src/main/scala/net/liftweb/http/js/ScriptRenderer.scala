@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -78,6 +78,35 @@ function lift_testAndShowAjax() {
      }
 }
 
+function lift_traverseAndCall(node, func) {
+  if (node.nodeType == 1) func(node);
+  var i = 0;
+  var cn = node.childNodes;
+
+  for (i = 0; i < cn.length; i++) {
+    lift_traverseAndCall(cn.item(i), func);
+  }
+}
+
+function lift_successRegisterGC() {
+  setTimeout("lift_registerGC()", """ + LiftRules.liftGCPollingInterval + """);
+}
+
+function lift_failRegisterGC() {
+  setTimeout("lift_registerGC()", """ + LiftRules.liftGCFailureRetryTimeout + """);
+}
+
+function lift_registerGC() {
+    var data = "__lift__GC=_"
+""" +
+                        LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
+                                                            "POST",
+                                                            LiftRules.ajaxPostTimeout,
+                                                            false, "script",
+                                                            Full("lift_successRegisterGC"), Full("lift_failRegisterGC"))) +
+"""
+}
+
 function lift_doAjaxCycle() {
   var queue = lift_ajaxQueue;
   if (queue.length > 0) {
@@ -136,10 +165,16 @@ function lift_blurIfReturn(e) {
   if (code == 13) {targ.blur(); return false;} else {return true;};
 }
 
+function addPageName(url) {
+  return url.replace('""" + LiftRules.ajaxPath + """', '""" + LiftRules.ajaxPath + """/'+lift_page);
+}
+
 function lift_actualAjaxCall(data, onSuccess, onFailure) {
 """ +
                         LiftRules.jsArtifacts.ajax(AjaxInfo(JE.JsRaw("data"),
-                                                            "POST", 5000, false, "script",
+                                                            "POST",
+                                                            LiftRules.ajaxPostTimeout,
+                                                            false, "script",
                                                             Full("onSuccess"), Full("onFailure")))+
                         """
 }
@@ -153,11 +188,11 @@ function lift_actualAjaxCall(data, onSuccess, onFailure) {
    */
   def cometScript = JsCmds.Run("""
       function lift_handlerSuccessFunc() {setTimeout("lift_cometEntry();",100);}
-      function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",10000);}
+      function lift_handlerFailureFunc() {setTimeout("lift_cometEntry();",""" + LiftRules.cometFailureRetryTimeout + """);}
       function lift_cometEntry() {""" +
                         LiftRules.jsArtifacts.comet(AjaxInfo(JE.JsRaw("lift_toWatch"),
                                                              "GET",
-                                                             140000,
+                                                             LiftRules.cometGetTimeout,
                                                              false,
                                                              "script",
                                                              Full("lift_handlerSuccessFunc"),

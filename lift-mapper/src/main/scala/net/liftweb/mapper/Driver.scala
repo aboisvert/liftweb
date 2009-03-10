@@ -154,3 +154,50 @@ object PostgreSqlDriver extends DriverType("PostgreSQL") {
    */
   override def defaultSchemaName : Box[String] = Full("public")
 }
+
+object SqlServerDriver extends DriverType("Microsoft SQL Server") {
+  def binaryColumnType = "VARBINARY(MAX)"
+  def booleanColumnType = "BIT"
+  def clobColumnType = "VARCHAR(MAX)"
+  def dateTimeColumnType = "TIMESTAMP"
+  def integerColumnType = "INT"
+  def integerIndexColumnType = "INT IDENTITY NOT NULL"
+  def enumColumnType = "BIGINT"
+  def longForeignKeyColumnType = "BIGINT"
+  def longIndexColumnType = "BIGINT IDENTITY NOT NULL"
+  def enumListColumnType = "BIGINT"
+  def longColumnType = "BIGINT"
+  def doubleColumnType = "FLOAT"
+
+  override def defaultSchemaName : Box[String] = Full("dbo")
+}
+
+object OracleDriver extends DriverType("Oracle") {
+  def binaryColumnType = "LONG RAW"
+  def booleanColumnType = "NUMBER"
+  def clobColumnType = "CLOB"
+  def dateTimeColumnType = "TIMESTAMP"
+  def integerColumnType = "NUMBER"
+  def integerIndexColumnType = "ROWID"
+  def enumColumnType = "NUMBER"
+  def longForeignKeyColumnType = "NUMBER"
+  def longIndexColumnType = "ROWID"
+  def enumListColumnType = "NUMBER"
+  def longColumnType = "NUMBER"
+  def doubleColumnType = "NUMBER"
+}
+
+object MaxDbDriver extends DriverType("MaxDB") {
+  def binaryColumnType = "BLOB"
+  def booleanColumnType = "BOOLEAN"
+  def clobColumnType = "CLOB"
+  def dateTimeColumnType = "TIMESTAMP"
+  def integerColumnType = "INTEGER"
+  def integerIndexColumnType = "FIXED(10) DEFAULT SERIAL"
+  def enumColumnType = "FIXED(38)"
+  def longForeignKeyColumnType = "FIXED(38)"
+  def longIndexColumnType = "FIXED(38) DEFAULT SERIAL"
+  def enumListColumnType = "FIXED(38)"
+  def longColumnType = "FIXED(38)"
+  def doubleColumnType = "FLOAT(38)"
+}

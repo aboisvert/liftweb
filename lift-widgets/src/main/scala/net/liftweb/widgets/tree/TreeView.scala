@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -80,14 +80,16 @@ class TreeView {
    *
    */
   def onLoadAsync(id: String, jsObj: JsObj, loadTree : () => List[Tree], loadNode: (String) => List[Tree]): NodeSeq = {
+    val (gc, js) = makeTreeView(id, jsObj, loadTree, loadNode)
+
      <head>
        <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.css"} type="text/css"/>
        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.js"}/>
        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.async.js"}/>
-       <script type="text/javascript" charset="utf-8">{
-         OnLoad(makeTreeView(id, jsObj, loadTree, loadNode)) toJsCmd
-       }
-       </script>
+    <span lift:gc={gc}/>
+    {
+      Script(OnLoad(js.cmd))
+    }
      </head>
 
   }
@@ -102,7 +104,7 @@ class TreeView {
    * @return JsExp - the Java Script expression that calls the treeview function on the element denominated by the id
    *
    */
-  def makeTreeView(id: String, jsObj: JsObj, loadTree : () => List[Tree], loadNode: (String) => List[Tree]): JsExp = {
+  def makeTreeView(id: String, jsObj: JsObj, loadTree : () => List[Tree], loadNode: (String) => List[Tree]): (String, JsExp) = {
      val treeFunc : () => LiftResponse = {
      case _ => request match {
        case Full(req) => req.params.get("root") match {
@@ -114,16 +116,17 @@ class TreeView {
        }
      }
 
-     val key = mapFunc(NFuncHolder(treeFunc))
+     fmapFunc(NFuncHolder(treeFunc)){key =>
 
      val url = encodeURL(contextPath +
 			 "/"+LiftRules.ajaxPath)+"?"+key+"=_"
 
      val obj: JsObj = JsObj(("url" -> Str(url)) :: jsObj.props:_*)
 
-     JqId(id) >> new JsExp with JQueryRight {
+     (key, JqId(id) >> new JsExp with JQueryRight {
        def toJsCmd = "treeview(" + obj.toJsCmd + ")"
-     }
+     })
+				  }
   }
 
 }

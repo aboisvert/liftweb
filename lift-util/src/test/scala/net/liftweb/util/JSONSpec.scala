@@ -14,10 +14,10 @@ object JSONSpec extends Specification {
       parsed.isDefined must be(true)
 
       // "reply-to"
-      (parsed match {
-        case Full(m: Map[String, Any]) =>
-        (m.get("command"), m.get("params")) match {
-          case (Some(c: String), Some(m2: Map[String, String])) =>
+      (parsed.asA[Map[String, Any]] match {
+        case Full(m) =>
+        (m.get("command"), Box(m.get("params")).asA[Map[String, String]]) match {
+          case (Some(c: String), Full(m2)) =>
           (c, m2("participants"), m2("reply-to"))
 
           case _ => ("", "", "")
@@ -25,6 +25,14 @@ object JSONSpec extends Specification {
 
         case _ => ("", "", "")
       }) must be_== ("test", "", "no-reply@innovationgames.com")
+    }
+
+    "Parse long arrays" in {
+
+      val longArray = "[" + (1 to 100000).map(i => '"'+i.toString+'"').mkString(", ") + "]"
+
+      val p2 = JSONParser.parse(longArray)
+      p2.isDefined must be(true)
     }
   }
 }

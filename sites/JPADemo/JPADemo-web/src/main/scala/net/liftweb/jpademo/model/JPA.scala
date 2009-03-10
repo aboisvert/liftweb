@@ -28,8 +28,8 @@ object JPA {
   def findToBox[A](f: => A): Box[A] =
     try {
       f match {
-        case found: A => Full(found)
         case null => Empty
+        case found => Full(found.asInstanceOf[A]) // ugly type erasure work-around
       }
     } catch {
       case e: NoResultException => Empty
@@ -43,7 +43,7 @@ abstract class ScalaEntityManager(val persistanceName: String) {
   protected def closeEM (em : EntityManager)
 
   private object emVar extends RequestVar(openEM()) {
-    override def cleanupFunc : Box[() => Unit]= Full(() => closeEM(this.is))
+    registerGlobalCleanupFunc(ignore => closeEM(this.is))
   }
 
   // dont encourage use of the entity manager directly

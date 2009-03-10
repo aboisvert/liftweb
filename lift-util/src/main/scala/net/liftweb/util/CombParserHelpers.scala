@@ -22,8 +22,8 @@ import _root_.scala.util.parsing.input.Reader
 trait CombParserHelpers {
   self: Parsers =>
 
-    /** the type of input elements defined in the Parsers trait is <code>Char</code>  */
-    type Elem = Char
+  /** the type of input elements defined in the Parsers trait is <code>Char</code>  */
+  type Elem = Char
 
   /** @return a CharArray input build from a String  */
   implicit def strToInput(in: String): Input = new _root_.scala.util.parsing.input.CharArrayReader(in.toCharArray)
@@ -99,8 +99,8 @@ trait CombParserHelpers {
   /**
    * @return a parser discarding end of lines
    */
-   def EOL: Parser[Unit] = (accept("\n\r") | accept("\r\n") | '\r' |
-			    '\n' | '\032' ) ^^^ ()
+  def EOL: Parser[Unit] = (accept("\n\r") | accept("\r\n") | '\r' |
+                           '\n' | '\032' ) ^^^ ()
 
   def notEOL: Parser[Elem] = (not(EOL) ~> anyChar)
 
@@ -128,19 +128,19 @@ trait CombParserHelpers {
    * @return a parser which tries the permutations of a list of parsers, given a permutation function
    */
   def permute[T](func: List[Parser[T]] => List[List[Parser[T]]], p: (Parser[T])*): Parser[List[T]] =
-    if (p.isEmpty)
-      success(Nil);
-    else {
-      val right: Parser[List[T]] = success(Nil)
+  if (p.isEmpty)
+  success(Nil);
+  else {
+    val right: Parser[List[T]] = success(Nil)
 
-      p.toList match {
-        case Nil => right
-        case x :: Nil => x ~ right ^^ {case ~(x, xs) => x :: xs}
-        case xs => func(xs).map(_.foldRight(right)(
-          _ ~ _ ^^ {case ~(x, xs) => x :: xs})).
+    p.toList match {
+      case Nil => right
+      case x :: Nil => x ~ right ^^ {case ~(x, xs) => x :: xs}
+      case xs => func(xs).map(_.foldRight(right)(
+            _ ~ _ ^^ {case ~(x, xs) => x :: xs})).
         reduceLeft((a: Parser[List[T]], b: Parser[List[T]]) => a | b)
-      }
     }
+  }
 
   /**
    * @return a parser which parses the input using p a number of times
@@ -179,4 +179,40 @@ trait SafeSeqParser extends Parsers {
     }
   }
 
+  /** A parser generator for non-empty repetitions.
+   *
+   *  <p>rep1sep(first, p, q) starts by using `first', followed by repeatedly uses of `p' interleaved with `q'
+   *                to parse the input, until `p' fails. `first' must succeed (the result is a `List' of the
+   *                consecutive results of `first' and `p')</p>
+   *
+   * @param first a `Parser' that is to be applied to the first element of input
+   * @param p a `Parser' that is to be applied successively to the input
+   * @param q a `Parser' that parses the elements that separate the elements parsed by `p'
+   *          (interleaved with `q')
+   * @return A parser that returns a list of results produced by repeatedly applying `p' to the input
+   *         (and that only succeeds if `p' matches at least once).
+   *         The results of `p' are collected in a list. The results of `q' are discarded.
+   */
+  override def rep1sep[T](p: => Parser[T], q: => Parser[Any]): Parser[List[T]] =
+  new Parser[List[T]] {
+    def apply(in0: Input) = {
+      val xs = new _root_.scala.collection.mutable.ListBuffer[T]
+      var in = in0
+      var gotQ = true
+      var res = p(in)
+      while (res.successful && gotQ) {
+        xs += res.get
+        in = res.next
+        val r2 = q(in)
+        gotQ = r2.successful
+        if (gotQ) {
+          in = r2.next
+          res = p(in)
+        }
+      }
+      if (!xs.isEmpty) Success(xs.toList, res.next)
+      else Failure("TODO", in0)
+
+    }
+  }
 }

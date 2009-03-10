@@ -25,6 +25,7 @@ import _root_.org.scalacheck._
 import _root_.org.scalacheck.Arbitrary._
 import _root_.org.scalacheck.Prop.{property, forAll}
 
+
 class BoxUnitTest extends Runner(BoxUnit) with JUnit
 object BoxUnit extends Specification with BoxGen with ScalaCheck {
   "A Box equals method" should {
@@ -35,7 +36,7 @@ object BoxUnit extends Specification with BoxGen with ScalaCheck {
         case (Failure(m1, e1, l1), Failure(m2, e2, l2)) => (c1 == c2) == ((m1, e1, l1) == (m2, e2, l2))
         case _ => c1 != c2
       }
-      property(equality) must pass
+      forAll(equality) must pass
     }
     "return false with comparing one Full and another object" in {
       Full(1) must_!= "hello"

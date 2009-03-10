@@ -118,7 +118,7 @@ object DB {
       case x :: xs => use(x)(ignore => doWith(xs, f))
     }
     private object DepthCnt extends RequestVar(0)
-    def apply[T](f: => T): T = 
+    def apply[T](f: => T): T =
     try {
       DepthCnt.update(_ + 1)
       doWith(in, f)
@@ -684,6 +684,9 @@ class SuperConnection(val connection: Connection,val releaseFunc: () => Any) {
       case MySqlDriver.name => MySqlDriver
       case PostgreSqlDriver.name => PostgreSqlDriver
       case H2Driver.name => H2Driver
+      case SqlServerDriver.name => SqlServerDriver
+      case OracleDriver.name => OracleDriver
+      case MaxDbDriver.name => MaxDbDriver
     }
   }
 }

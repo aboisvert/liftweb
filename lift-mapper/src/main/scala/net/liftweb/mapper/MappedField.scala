@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -409,9 +409,11 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
    * Create an input field for the item
    */
   override def _toForm: Box[NodeSeq] =
+  S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
   Full(<input type='text' id={fieldId}
-      name={S.mapFunc({s: List[String] => this.setFromAny(s)})}
+      name={funcName} lift:gc={funcName}
       value={is match {case null => "" case s => s.toString}}/>)
+  }
 
   /**
    * Set the field to the value

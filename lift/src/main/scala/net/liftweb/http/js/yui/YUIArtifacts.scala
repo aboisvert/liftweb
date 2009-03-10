@@ -65,13 +65,14 @@ object YUIArtifacts extends JSArtifacts {
   }
 
   def ajax(data: AjaxInfo): String = {
-    val url = S.encodeURL(S.contextPath+"/"+LiftRules.ajaxPath);
-    "url = YAHOO.lift.buildURI(" + url.encJs + ", " + data.data.toJsCmd + ");" +
-    "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");";
+    val url = S.encodeURL(S.contextPath + "/" + LiftRules.ajaxPath + "/")
+
+    "url = YAHOO.lift.buildURI(addPageName(" + url.encJs + ") , " + data.data.toJsCmd + ");" +
+    "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");"
   }
 
   def comet(data: AjaxInfo): String = {
-    val url = LiftRules.calcCometPath(LiftRules.cometServer()) // S.encodeURL(LiftRules.cometServer()+"/"+LiftRules.calcCometPath());
+    val url = LiftRules.calcCometPath(LiftRules.cometServer())
     "url = YAHOO.lift.buildURI(" + url.toJsCmd + ", YAHOO.lift.simpleJsonToQS(" + data.data.toJsCmd + "));" +
     "YAHOO.util.Connect.asyncRequest(" + data.action.encJs + ", url, " + toJson(data) + ");";
   }

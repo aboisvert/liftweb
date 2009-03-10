@@ -23,7 +23,7 @@ import _root_.net.liftweb.http.js.JSArtifacts
 import _root_.net.liftweb.http.js.jquery._
 import _root_.scala.xml._
 import _root_.scala.collection.mutable.{ListBuffer}
-import _root_.java.util.{Locale, TimeZone}
+import _root_.java.util.{Locale, TimeZone, ResourceBundle}
 import _root_.javax.servlet.http.{HttpServlet, HttpServletRequest , HttpServletResponse, HttpSession, Cookie}
 import _root_.javax.servlet.{ServletContext}
 import _root_.java.io.{InputStream, ByteArrayOutputStream, BufferedReader, StringReader}
@@ -44,8 +44,8 @@ object LiftRules {
   type ViewDispatchPF = PartialFunction[List[String], Either[() => Box[NodeSeq], LiftView]]
   type HttpAuthProtectedResourcePF = PartialFunction[ParsePath, Box[Role]]
   type ExceptionHandlerPF = PartialFunction[(Props.RunModes.Value, Req, Throwable), LiftResponse]
-
-
+  type ResourceBundleFactoryPF = PartialFunction[(String,Locale), ResourceBundle]
+  
   /**
    * A partial function that allows the application to define requests that should be
    * handled by lift rather than the default servlet handler
@@ -217,7 +217,7 @@ object LiftRules {
   /**
    * The base name of the resource bundle
    */
-  var resourceName = "lift"
+  var resourceNames: List[String] = List("lift")
 
   /**
    * The base name of the resource bundle of the lift core code
@@ -245,6 +245,11 @@ object LiftRules {
    * If you want the AJAX request timeout to be something other than 120 seconds, put the value here
    */
   var cometRequestTimeout: Box[Int] = Empty
+
+  /**
+   * If a Comet request fails timeout for this period of time. Default value is 10 seconds
+   */
+  var cometFailureRetryTimeout: Long = 10 seconds
 
   /**
    * The dispatcher that takes a Snippet and converts it to a
@@ -287,7 +292,9 @@ object LiftRules {
    * The function that calculates if the response should be rendered in
    * IE6/7 compatibility mode
    */
-  var calcIEMode: () => Boolean = () => (for (r <- S.request) yield r.isIE6 || r.isIE7) openOr true
+  var calcIEMode: () => Boolean =
+  () => (for (r <- S.request) yield r.isIE6 || r.isIE7 ||
+  r.isIE8) openOr true
 
   /**
    * The JavaScript to execute at the end of an
@@ -305,9 +312,11 @@ object LiftRules {
    * A function that takes the current HTTP request and returns the current
    */
   var localeCalculator: Box[HttpServletRequest] => Locale = defaultLocaleCalculator _
-
+  
   def defaultLocaleCalculator(request: Box[HttpServletRequest]) = request.flatMap(_.getLocale() match {case null => Empty case l: Locale => Full(l)}).openOr(Locale.getDefault())
-
+  
+  var resourceBundleFactories = RulesSeq[ResourceBundleFactoryPF] 
+  
   private val (hasContinuations_?, contSupport, getContinuation, getObject, setObject, suspend, resume) = {
     try {
       val cc = Class.forName("org.mortbay.util.ajax.ContinuationSupport")
@@ -564,7 +573,7 @@ object LiftRules {
 			       S.ieMode), headers, cookies, session))
 
   var defaultHeaders: PartialFunction[(NodeSeq, Req), List[(String, String)]] = {
-    case _ => List("Expires" -> "Mon, 26 Jul 1997 05:00:00 GMT",
+    case _ => List("Expires" -> Helpers.nowAsInternetDate,
                    "Cache-Control" ->
                    "no-cache; private; no-store; must-revalidate; max-stale=0; post-check=0; pre-check=0; max-age=0",
                    "Pragma" -> "no-cache" /*,
@@ -620,6 +629,7 @@ object LiftRules {
     val StatefulDispatchNotMatched = Value(3, "Stateful Snippet: Dispatch Not Matched")
     val MethodNotFound = Value(4, "Method Not Found")
     val NoNameSpecified = Value(5, "No Snippet Name Specified")
+    val InstantiationException = Value(6, "Exception During Snippet Instantiation")
   }
 
   /**
@@ -741,6 +751,37 @@ object LiftRules {
    */
   var renderAjaxScript: LiftSession => JsCmd = session => ScriptRenderer.ajaxScript
 
+  var ajaxPostTimeout = 5000
+
+  var cometGetTimeout = 140000
+
+  var supplimentalHeaders: HttpServletResponse => Unit = s => s.setHeader("X-Lift-Version", liftVersion)
+
+  /**
+   * By default lift uses a garbage-collection mechanism of removing unused bound functions from LiftSesssion.
+   * Setting this to false will disable this mechanims and there will be no Ajax polling requests attempted.
+   */
+  var enableLiftGC = true;
+
+  /**
+   * If Lift garbage collection is enabled, functions that are not seen in the page for this period of time
+   * (given in milliseonds) will be discarded, hence eligibe for garbage collection.
+   * The default value is 10 minutes.
+   */
+  var unusedFunctionsLifeTime: Long = 10 minutes
+
+  /**
+   * The polling interval for background Ajax requests to prevent functions of being garbage collected.
+   * Default value is set to 75 seconds.
+   */
+  var liftGCPollingInterval: Long = 75 seconds
+
+  /**
+   * The polling interval for background Ajax requests to keep functions to not be garbage collected.
+   * This will be applied if the Ajax request will fail. Default value is set to 15 seconds.
+   */
+  var liftGCFailureRetryTimeout: Long = 15 seconds
+
   /**
    * Returns the JavaScript that manages Comet requests.
    */
@@ -762,6 +803,8 @@ object LiftRules {
     object when extends SessionVar[Long](millis)
     when.is
   }
+
+lazy val liftVersion = "0.11-SNAPSHOT"
 
   /**
    * Hods the last update time of the Comet request. Based on this server mayreturn HTTP 304 status
@@ -791,7 +834,8 @@ object LiftRules {
 
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderCometScript(liftSession),
-                            List("Last-Modified" -> toInternetDate(modTime)),
+                            List("Last-Modified" -> toInternetDate(modTime),
+                            "Expires" -> toInternetDate(modTime + 10.minutes)),
                             Nil, 200))
   }
 
@@ -804,7 +848,8 @@ object LiftRules {
 
     testFor304(requestState, modTime) or
     Full(JavaScriptResponse(renderAjaxScript(liftSession),
-                            List("Last-Modified" -> toInternetDate(modTime)),
+                            List("Last-Modified" -> toInternetDate(modTime),
+                            "Expires" -> toInternetDate(modTime + 10.minutes)),
                             Nil, 200))
   }
 
@@ -844,7 +889,7 @@ trait RulesSeq[T] {
     }
   }
 
-  private[http] def toList = rules
+  def toList = rules
 
   def prepend(r: T): RulesSeq[T] = {
     safe_? {

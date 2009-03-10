@@ -1,7 +1,7 @@
 package net.liftweb.util
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,6 +15,7 @@ package net.liftweb.util
 
 import _root_.java.net.{URLDecoder, URLEncoder}
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
+import _root_.scala.reflect.Manifest
 import _root_.scala.xml.{NodeSeq, Elem, Node, Text, Group, UnprefixedAttribute, Null, Unparsed, MetaData, PrefixedAttribute}
 import _root_.scala.collection.{Map}
 import _root_.scala.collection.mutable.HashMap
@@ -63,34 +64,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     case xs => url + "&" + paramsToUrlParams(xs)
   }
 
-  /*
-   /**
-    * Set of all valid files extensions
-    * @return a mutable HashSet[String]
-    */
-   val validSuffixes = {
-   val ret = new HashSet[String]
-   ret += ("png", "js", "css", "jpg", "ico", "gif", "tiff", "jpeg")
-   ret
-   }
 
-   /**
-    * Test if a path starts with "/", doesn't contain "/." and contains a valid suffix
-    */
-   def goodPath_?(path : String): Boolean = {
-   if (path == null || path.length == 0 || !path.startsWith("/") || path.indexOf("/.") != -1) false
-   else {
-   val lastPoint = path.lastIndexOf('.')
-   val lastSlash = path.lastIndexOf('/')
-   if (lastPoint <= lastSlash) false else {
-   validSuffixes.contains(path.substring(lastPoint + 1))
-   }
-   }
-   }
-   */
   /**
-   * get a map of HTTP properties and return true if the "Content-type"
-   * is either "text/html" or "application/xhtml+xml"
+   * Given a map of HTTP properties, return true if the "Content-type"
+   * value in the map is either "text/html" or "application/xhtml+xml"
    * @param in Map which may contain a key named Content-Type
    * @return true if there is a pair ("Content-Type", "text/html") or
    *                                 ("Content-Type", "application/xhtml+xml")
@@ -108,9 +85,9 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /**
-   * Return true if the xml doesn't contain an <html> tag
+   * Return true if the xml doesn't contain an &lt;html&gt; tag
    */
-  def noHtmlTag(in: NodeSeq): Boolean = (in \\ "html").length != 1
+  def noHtmlTag(in: NodeSeq): Boolean = findElems(in)(_.label == "html").length != 1
 
   /**
    * Transform a general Map to a nutable HashMap
@@ -122,7 +99,7 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   }
 
   /**
-   * Insure all the appropriate fields are in the header
+   * Ensure that all the appropriate fields are in the header.
    */
   def insureField(toInsure: List[(String, String)], headers: List[(String, String)]): List[(String, String)] = {
     def insureField_inner(toInsure : List[(String, String)], field : (String, String)): List[(String, String)] =
@@ -137,11 +114,9 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     }
   }
 
-
   /**
    * Transform a pair (name: String, value: Any) to an unprefixed XML attribute name="value"
    */
-
   implicit def pairToUnprefixed(in: (String, Any)): MetaData = {
     val value: Option[NodeSeq] = in._2 match {
       case null => None
@@ -162,11 +137,10 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
 
 
   /**
-   * If the incoming Elem has an 'id', return it, otherwise
-   * construct a new Elem with a randomly generated id and return the pair
+   * If the specified Elem has an attribute named 'id', return it, otherwise
+   * construct a new Elem with a randomly generated id attribute and return the pair
    *
-   * @param in the element to test & add 'id' to
-   *
+   * @param in the element to test &amp; add 'id' to
    * @return the new element and the id
    */
   def findOrAddId(in: Elem): (Elem, String) = (in \ "@id").toList match {
@@ -186,7 +160,57 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
   def nextNum = serial.incrementAndGet
 
   /**
-   * Get a guanateed unique field name
+   * Find the elements of the specified NodeSeq that match
+   * the specified predicate and concatenate them into
+   * a resulting NodeSeq.
+   *
+   * @param nodes - the NodeSeq to search for elements matching the predicate
+   * @param f - the predicate to match elements with
+   * @return the NodeSeq resulting from concatenation of the matched elements.
+   */
+  def findElems(nodes: NodeSeq)(f: Elem => Boolean): NodeSeq = {
+    val ret = new ListBuffer[Elem]
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          if (f(e)) ret += e
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+    find(nodes)
+
+    ret.toList
+  }
+
+  /**
+   * Map the specified function over the elements of the
+   * specified NodeSeq and return the concatenated result.
+   * This is essentially a container-type-transforming flatMap operation.
+   */
+  def findInElems[T](nodes: NodeSeq)(f: Elem => Iterable[T]): List[T] = {
+    val ret = new ListBuffer[T]
+
+    def find(what: NodeSeq) {
+      what.foreach {
+        case Group(g) => find(g)
+        case e: Elem =>
+          ret ++= f(e)
+          find(e.child)
+
+        case n => find(n.child)
+      }
+    }
+
+    find(nodes)
+
+    ret.toList
+  }
+
+  /**
+   * Get a guaranteed unique field name
    * (16 or 17 letters and numbers, starting with a letter)
    */
   def nextFuncName = {
@@ -198,22 +222,23 @@ trait HttpHelpers { self: ListHelpers with StringHelpers  =>
     sb.toString
   }
 
-
+  /**
+   * This appears to be unused. TODO: Remove?
+   */
   private case class BailOut(seq: Long)
   import _root_.scala.actors._
   import Actor._
-  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T]): Box[T] = {
+  def longPoll[T](seq: Long, timeout: Helpers.TimeSpan, func: PartialFunction[Any, T])(implicit m: Manifest[T]): Box[T] = {
     ActorPing.schedule(Actor.self, BailOut(seq), timeout)
     receive(func orElse {case BailOut(seq) => null}) match {
       case null => Empty
-      case r: T => Full(r)
+      case r => Box.asA[T](r)(m)
     }
   }
-
 }
 
 /**
- * Is this something that can be converted to a JavaScript Command
+ * TODO: Is this something that can be converted to a JavaScript Command
  */
 trait ToJsCmd {
   def toJsCmd: String

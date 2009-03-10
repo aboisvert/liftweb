@@ -20,7 +20,13 @@ import _root_.scala.xml.{Unparsed, NodeSeq, Atom, Elem, Comment, Group, Namespac
 import _root_.scala.io.{Source}
 import _root_.java.io.{InputStream}
 
+/**
+ * Utilities for simplifying use of named HTML symbols.
+ */
 object HtmlEntities {
+  /**
+   * A list of tuples which match named HTML symbols to their character codes.
+   */
   val entList = List(("quot",34), ("amp",38), ("lt",60), ("gt",62), ("nbsp",160), ("iexcl",161), ("cent",162), ("pound",163), ("curren",164), ("yen",165),
                      ("euro",8364), ("brvbar",166), ("sect",167), ("uml",168), ("copy",169), ("ordf",170), ("laquo",171), ("shy",173), ("reg",174), ("trade",8482),
                      ("macr",175), ("deg",176), ("plusmn",177), ("sup2",178), ("sup3",179), ("acute",180), ("micro",181), ("para",182), ("middot",183), ("cedil",184),
@@ -51,8 +57,8 @@ object HtmlEntities {
 
   val entMap: Map[String, Char] = Map.empty ++ entList.map{ case (name, value) => (name, value.toChar)}
 
-  val entities = entList.
-  map{case (name, value) => (name, new ParsedEntityDecl(name, new IntDef(value.toChar.toString)))}
+  val entities = entList.map{case (name, value) => (name, new ParsedEntityDecl(name, new IntDef(value.toChar.toString)))}
+
   def apply() = entities
 }
 
@@ -135,7 +141,10 @@ case class PCData(_data: String) extends Atom[String](_data) {
 }
 
 object AltXML {
-  val ieBadTags: Set[String] = Set("br")
+  val ieBadTags: Set[String] = Set("br", "hr")
+
+  val inlineTags: Set[String] = Set("base", "meta", "link", "hr", "br",
+  "param", "img", "area", "input", "col" )
 
   def toXML(n: Node, stripComment: Boolean, convertAmp: Boolean,
             ieMode: Boolean): String = {
@@ -172,12 +181,13 @@ object AltXML {
       for (c <- g.nodes)
       toXML(c, x.scope, sb, stripComment, convertAmp, ieMode)
 
-    case e: Elem if !ieMode && ((e.child eq null) || e.child.isEmpty) =>
+    case e: Elem if !ieMode && ((e.child eq null) || e.child.isEmpty)
+      && inlineTags.contains(e.label) =>
       sb.append('<')
       e.nameToString(sb)
       if (e.attributes ne null) e.attributes.toString(sb)
       e.scope.toString(sb, pscope)
-      sb.append("/>")
+      sb.append(" />")
 
     case e: Elem if ieMode && ((e.child eq null) || e.child.isEmpty) &&
       ieBadTags.contains(e.label) =>
@@ -214,7 +224,7 @@ object AltXML {
                     convertAmp: Boolean, ieMode: Boolean): Unit = {
     if (children.isEmpty)
     return
-    else if (children forall { y => y.isInstanceOf[Atom[Any]] && !y.isInstanceOf[Text] }) { // add space
+    else if (children forall { y => y.isInstanceOf[Atom[_]] && !y.isInstanceOf[Text] }) { // add space
       val it = children.elements
       val f = it.next
       toXML(f, pscope, sb, stripComment, convertAmp, ieMode)

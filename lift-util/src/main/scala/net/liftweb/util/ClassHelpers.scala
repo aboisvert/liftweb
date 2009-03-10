@@ -28,11 +28,10 @@ trait ClassHelpers { self: ControlHelpers =>
   private val nameModifiers = List[String => String](camelCase _, n => n)
 
   /**
-   * utility function returning varargs as a List
+   * This operator transforms its arguments into a List
    * @return the list of arguments passed as varargs
    */
   def ^ [T](i: T*): List[T] = i.toList
-
 
   /**
    * General method to in find a class according to its name, a list of possible packages,
@@ -217,10 +216,7 @@ trait ClassHelpers { self: ControlHelpers =>
    * @param toMatch the list of classes to match against
    *
    * @return true if clz is assignable from any of the matching classes
-   *
-   * @deprecated use List.exists instead
    */
-  @deprecated
   def containsClass[C](clz: Class[C], toMatch: List[Class[_]]): Boolean =
     if (toMatch eq null) false
     else toMatch.exists(_.isAssignableFrom(clz))

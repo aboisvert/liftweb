@@ -13,7 +13,6 @@ package net.liftweb.util
  * limitations under the License.
  */
 
-
 import _root_.scala.xml.{NodeSeq}
 import _root_.scala.actors._
 import Actor._
@@ -21,8 +20,8 @@ import _root_.javax.mail._
 import _root_.javax.mail.internet._
 
 /**
-* Send email
-*/
+ * Utilities for sending email.
+ */
 object Mailer {
   sealed abstract class MailTypes
   sealed abstract class MailBodyType extends MailTypes
@@ -49,25 +48,22 @@ object Mailer {
   implicit def addressToAddress(in: AddressType): Address = new InternetAddress(in.adr)
   implicit def adListToAdArray(in: List[AddressType]): Array[Address] = in.map(a => new InternetAddress(a.adr)).toArray
 
-
   /**
    * Passwords cannot be accessed via System.getProperty.  Instead, we
-   provide a means of explicitly
-   * setting the authenticator.
+   * provide a means of explicitlysetting the authenticator.
    */
   //def authenticator = authenticatorFunc
   var authenticator: Box[Authenticator] = Empty
 
-
   /**
-  * What host should be used to send mail
-  */
+   * The host that should be used to send mail.
+   */
   def host = hostFunc()
 
   /**
-  * To change the way the host is calculated, set this to the function that calcualtes the host name.
-  * By default: System.getProperty("mail.smtp.host")
-  */
+   * To change the way the host is calculated, set this to the function that calcualtes the host name.
+   * By default: System.getProperty("mail.smtp.host")
+   */
   var hostFunc: () => String = _host _
 
   private def _host = System.getProperty("mail.smtp.host") match {
@@ -82,12 +78,11 @@ object Mailer {
         react {
           case MessageInfo(from, subject, info) =>
           try {
-	    val session =
-	      authenticator match {
-		case Full(a) => Session.getInstance(System.getProperties, a)
+            val session = authenticator match {
+              case Full(a) => Session.getInstance(System.getProperties, a)
+              case _ => Session.getInstance(System.getProperties)
+            }
 
-		case _ => Session.getInstance(System.getProperties)
-	      }
             val message = new MimeMessage(session)
             message.setFrom(from)
             message.setRecipients(Message.RecipientType.TO, info.flatMap{case x: To => Some[To](x) case _ => None})
@@ -108,8 +103,7 @@ object Mailer {
                 val bp2 = new MimeBodyPart
                 bp2.setContent(html.toString, "text/html")
                 html_mp.addBodyPart(bp2)
-                img.foreach {
-                  i =>
+                img.foreach { i =>
                   val rel_bpi = new MimeBodyPart
                   rel_bpi.setFileName(i.name)
                   rel_bpi.setContentID(i.name)
@@ -139,16 +133,17 @@ object Mailer {
     }
   }
 
-
   private val msgSender = {
     val ret = new MsgSender
     ret.start
     ret
   }
 
+  /**
+   * Asynchronously send an email.
+   */
   def sendMail(from: From, subject: Subject, rest: MailTypes*) {
     // forward it to an actor so there's no time on this thread spent sending the message
     msgSender ! MessageInfo(from, subject, rest.toList)
   }
-
 }

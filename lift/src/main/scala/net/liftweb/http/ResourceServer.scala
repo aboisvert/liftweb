@@ -34,10 +34,9 @@ object ResourceServer {
   }
 
   private var pathRewriter: PartialFunction[List[String], List[String]] = {
-     case "jquery.js" :: Nil => List("jquery-1.2.6-min.js")
+     case "jquery.js" :: Nil => List("jquery-1.3.2-min.js")
      case "json.js" :: Nil => List( "json2-min.js")
      case "json2.js" :: Nil => List( "json2-min.js")
-     case "blueprint" :: css :: Nil if css.endsWith(".css") => List( "blueprint", "compressed", css)
      case xs => xs
   }
 
@@ -61,6 +60,7 @@ object ResourceServer {
         val stream = url.openStream
         StreamingResponse(stream, () => stream.close, uc.getContentLength,
           List(("Last-Modified", toInternetDate(uc.getLastModified)),
+               ("Expires", toInternetDate(millis + 12.hours)),
               ("Content-Type", detectContentType(rw.last))), Nil, HttpServletResponse.SC_OK)
       }
       }

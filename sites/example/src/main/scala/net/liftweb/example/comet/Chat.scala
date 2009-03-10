@@ -27,6 +27,7 @@ import _root_.net.liftweb.util._
 import _root_.net.liftweb.http.js._
 import _root_.net.liftweb.http.js.jquery._
 import JsCmds._
+import JE._
 import JqJsCmds._
 
 
@@ -37,7 +38,7 @@ class Chat extends CometActor {
 
   private lazy val infoId = uniqueId + "_info"
 
-  private val server = {
+  private lazy val server = {
     val ret = ChatServer
     ret ! ChatServerAdd(this)
     ret
@@ -45,42 +46,49 @@ class Chat extends CometActor {
 
   override def lowPriority = {
     case ChatServerUpdate(value) =>
-    (value -- currentData) match {
-      case Nil =>
-      case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a & AppendHtml(infoId, line(b))))
-    }
+      (value -- currentData) match {
+        case Nil =>
+        case diff => partialUpdate(diff.reverse.foldLeft(Noop)((a,b) => a &
+                                                               AppendHtml(infoId, line(b))))
+      }
 
-    currentData = value
+      currentData = value
   }
 
   override lazy val fixedRender: Box[NodeSeq] = {
     val n = Helpers.nextFuncName
 
     ajaxForm(After(100, SetValueAndFocus(n, "")),
-    (text("", sendMessage _) % ("id" -> n)) ++ <input type="submit" value="Chat"/> )
+             (text("", sendMessage _) %
+              ("id" -> n)) ++ <input type="submit" value="Chat"/> )
   }
 
   def line(cl: ChatLine) = (<li>{hourFormat(cl.when)} {cl.user}: {cl.msg}</li>)
 
   override def render = (<span>Hello "{userName}"
-  <ul id={infoId}>{currentData.reverse.flatMap(line)}</ul>
-  </span>)
+      <ul id={infoId}>{currentData.reverse.flatMap(line)}</ul>
+                         </span>)
 
   override def localSetup {
     askForName
     super.localSetup
   }
 
+  override def localShutdown() {
+    ChatServer ! ChatServerRemove(this)
+    super.localShutdown()
+  }
+
   private def askForName {
     if (userName.length == 0) {
       ask(new AskName, "what's your username") {
         case s: String if (s.trim.length > 2) =>
-	  userName = s.trim
-	reRender(true)
+          userName = s.trim
+          reRender(true)
 
         case s =>
           askForName
-	reRender(false)
+          reRender(false)
       }
     }
   }

@@ -17,8 +17,11 @@ import _root_.scala.xml.NodeSeq
  */
 
 
-
 object StringHelpers extends StringHelpers
+
+/**
+ * Utility methods for manipulating strings.
+ */
 trait StringHelpers {
 
   /** random numbers generator */
@@ -35,7 +38,7 @@ trait StringHelpers {
   }
 
   /**
-   * Splits a string of the form <name1=value1, name2=value2, ... > and unquotes the quoted values.
+   * Splits a string of the form &lt;name1=value1, name2=value2, ... &gt; and unquotes the quoted values.
    * The result is a Map[String, String]
    */
   def splitNameValuePairs(props: String): Map[String, String] = {
@@ -49,7 +52,7 @@ trait StringHelpers {
   }
 
   /**
-   * Replaces the value found in a string surrounded by <%= ... %> by a replacement according to the value found in the subst Map.<p/>
+   * Replaces the value found in a string surrounded by &lt;%= ... %&gt; by a replacement according to the value found in the subst Map.<p/>
    * Throws an exception if no correspondance can be found.
    *
    * @param msg string where replacements should be done
@@ -189,7 +192,7 @@ trait StringHelpers {
     /**
      * Split a string according to a separator
      * @param sep a regexp to use with the String::split method
-     * @return a list of trimmed parts whose length is > 0
+     * @return a list of trimmed parts whose length is &gt; 0
      */
     def roboSplit(sep: String): List[String] = what match {case null => Nil case s => s.split(sep).toList.map(_.trim).filter(_.length > 0)}
 
@@ -230,6 +233,7 @@ trait StringHelpers {
         sb.toString
       }
     }
+
     /**
      * Add commas before the last 3 characters
      * @return the string with commas

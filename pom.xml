@@ -5,7 +5,7 @@
   <artifactId>lift</artifactId>
   <packaging>pom</packaging>
   <name>Lift</name>
-  <version>0.11-SNAPSHOT</version>
+  <version>1.1-SNAPSHOT</version>
   <url>http://liftweb.net</url>
   <inceptionYear>2007</inceptionYear>
   <description>
@@ -205,8 +205,13 @@ Lift is a scala web framework.
       <dependency>
         <groupId>javax.servlet</groupId>
         <artifactId>servlet-api</artifactId>
-        <version>2.4</version>
+        <version>2.5</version>
         <scope>provided</scope>
+      </dependency>
+      <dependency>
+        <groupId>com.ibm.icu</groupId>
+        <artifactId>icu4j</artifactId>
+        <version>3.4.4</version>
       </dependency>
     </dependencies>
   </dependencyManagement>
@@ -224,6 +229,7 @@ Lift is a scala web framework.
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
         <executions>
           <execution>
             <goals>
@@ -237,7 +243,7 @@ Lift is a scala web framework.
             <jvmArg>-Xmx1024m</jvmArg>
           </jvmArgs>
           <args>
-            <!--arg>-unchecked</arg-->
+            <!-- arg>-unchecked</arg -->
             <arg>-deprecation</arg>
             <arg>-Xno-varargs-conversion</arg>
           </args>
@@ -288,13 +294,14 @@ Lift is a scala web framework.
       <plugin>
         <groupId>org.scala-tools</groupId>
         <artifactId>maven-scala-plugin</artifactId>
+        <version>2.9</version>
         <configuration>
           <jvmArgs>
             <jvmArg>-Xmx1024m</jvmArg>
             <jvmArg>-DpackageLinkDefs=file://${basedir}/../vscaladocs-packageLinkDefs.properties</jvmArg>
           </jvmArgs>
           <args>
-            <!--arg>-unchecked</arg--></args>
+            <arg>-unchecked</arg></args>
           <vscaladocVersion>1.2-SNAPSHOT</vscaladocVersion>
           <scalaVersion>${scala.version}</scalaVersion>
         </configuration>

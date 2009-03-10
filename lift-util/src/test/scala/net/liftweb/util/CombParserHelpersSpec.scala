@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,7 +49,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
     "provide a whitespace parser: white. Alias: wsc" in {
       import whiteStringGen._
       val whiteParse = (s: String) => wsc(s) must beLike { case Success(_, _) => true }
-      property(whiteParse) must pass
+      forAll(whiteParse) must pass
     }
     "provide a whiteSpace parser always succeeding and discarding its result" in {
       import stringWithWhiteGen._
@@ -57,7 +57,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
         case Success(x, y) => x.toString == "()"
         case _ => false
       }
-      property(whiteSpaceParse) must pass
+      forAll(whiteSpaceParse) must pass
     }
     "provide an acceptCI parser to parse whatever string matching another string ignoring case" in {
       import abcdStringGen._
@@ -66,7 +66,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
           case Success(x, y) => s2.toUpperCase must startWith(s.toUpperCase)
           case _ => true
         }
-      property(ignoreCaseStringParse) must pass
+      forAll(ignoreCaseStringParse) must pass
     }
     "provide a digit parser - returning a String" in {
       val isDigit: String => Boolean =
@@ -74,7 +74,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
           case Success(x, y) => s mustMatch("\\d")
           case _ => true
         }
-      property(isDigit) must pass
+      forAll(isDigit) must pass
     }
     "provide an aNumber parser - returning an Int if succeeding" in {
       val number: String => Boolean =
@@ -83,7 +83,7 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
              case Success(x, y) => strToLst(s).dropWhile(_ == '0')(0) must_==(x.toString.head)
              case _ => true
          }
-      property(number) must pass
+      forAll(number) must pass
     }
     "provide a slash parser" in {
       slash("/").get must_== '/'
@@ -116,12 +116,12 @@ object CombParserHelpersSpec extends Specification with ScalaCheck {
     "provide a permuteAll parser succeeding if any permutation of the list given parsers, or a sublist of the given parsers succeeds" in {
       def permuteAllParsers(s: String) = shouldSucceed(permuteAll(parserA, parserB, parserC, parserD)(s))
       implicit def pick3Letters = abcdStringGen.pickN(3, List("a", "b", "c"))
-      property((s: String) => (!stringWrapper(s).isEmpty) ==> permuteAllParsers(s)) must pass
+      forAll((s: String) => (!stringWrapper(s).isEmpty) ==> permuteAllParsers(s)) must pass
     }
     "provide a repNN parser succeeding if an input can be parsed n times with a parser" in {
       def repNNParser(s: String) = shouldSucceed(repNN(3, parserA)(s))
       implicit def pick3Letters = abcdStringGen.pickN(3, List("a", "a", "a"))
-      property((s: String) => (!stringWrapper(s).isEmpty) ==> repNNParser(s)) must pass
+      forAll((s: String) => (!stringWrapper(s).isEmpty) ==> repNNParser(s)) must pass
     }
   }
 }

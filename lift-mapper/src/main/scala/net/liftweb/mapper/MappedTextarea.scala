@@ -1,7 +1,7 @@
 package net.liftweb.mapper
 
 /*
- * Copyright 2006-2008 WorldWide Conferencing, LLC
+ * Copyright 2006-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,10 +26,10 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[
    * Create an input field for the item
    */
   override def _toForm: Box[NodeSeq] = {
-    val funcName = S.mapFunc({s: List[String] => this.setFromAny(s)})
-    Full(<textarea name={funcName}
+    S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
+    Full(<textarea name={funcName} lift:gc={funcName}
 	 rows={textareaRows.toString}
-	 cols={textareaCols.toString} id={fieldId}>{is.toString}</textarea>)
+	 cols={textareaCols.toString} id={fieldId}>{is.toString}</textarea>)}
   }
 
   override def toString = {

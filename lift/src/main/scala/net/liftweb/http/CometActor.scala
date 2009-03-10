@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,7 +20,7 @@ import _root_.scala.actors.{Actor, Exit}
 import _root_.scala.actors.Actor._
 import _root_.scala.collection.mutable.{ListBuffer}
 import _root_.net.liftweb.util.Helpers._
-import _root_.net.liftweb.util.{Helpers, Log, Box, Full, Empty, Failure, BindHelpers}
+import _root_.net.liftweb.util._
 import _root_.scala.xml.{NodeSeq, Text, Elem, Unparsed, Node, Group, Null, PrefixedAttribute, UnprefixedAttribute}
 import _root_.scala.collection.immutable.TreeMap
 import _root_.scala.collection.mutable.{HashSet, ListBuffer}
@@ -39,7 +39,7 @@ object ActorWatcher extends Actor {
     react {
       case Exit(actor: Actor, why: Throwable) =>
         failureFuncs.foreach(f => tryo(f(actor, why)))
- 
+
       case _ =>
     }
   }
@@ -65,6 +65,128 @@ object ActorWatcher extends Actor {
 }
 
 case object RelinkToActorWatcher
+
+trait DeltaTrait {
+  def toJs: JsCmd
+}
+
+trait CometState[DeltaType <: DeltaTrait,
+                 MyType <: CometState[DeltaType, MyType]] {
+  self: MyType =>
+
+  def -(other: MyType): Seq[DeltaType]
+  def render: NodeSeq
+}
+
+trait CometStateWithUpdate[UpdateType, DeltaType <: DeltaTrait,
+                           MyType <: CometStateWithUpdate[UpdateType,
+                                                          DeltaType, MyType]]
+extends CometState[DeltaType, MyType]
+{
+  self: MyType =>
+  def process(in: UpdateType): MyType
+}
+
+trait StatefulComet extends CometActor {
+  type Delta <: DeltaTrait
+  type State <: CometState[Delta, State]
+
+  /**
+   * Test the parameter to see if it's an updated state object
+   */
+  def testState(in: Any): Box[State]
+
+  /**
+   * Return the empty state object
+   */
+  def emptyState: State
+
+  /**
+   * The current state objects
+   */
+  protected var state: State = emptyState
+
+  /**
+   * If there's some ThreadLocal variable that needs to be setup up
+   * before processing the state deltas, set it up here.
+   */
+  protected def setupLocalState[T](f: => T): T = f
+
+  private[http] override val _lowPriority = {
+    val pf: PartialFunction[Any, Unit] = {
+      case v if testState(v).isDefined =>
+        testState(v).foreach {
+          ns =>
+          if (ns ne state) {
+            val diff = ns - state
+            state = ns
+            partialUpdate(setupLocalState {diff.map(_.toJs).foldLeft(Noop)(_ & _)})
+          }
+        }
+    }
+
+    pf orElse super._lowPriority
+  }
+
+  /**
+   * The Render method
+   */
+  def render = state.render
+}
+
+object CurrentCometActor extends ThreadGlobal[Box[CometActor]] {
+  this.set(Empty)
+}
+
+case class AddAListener(who: Actor)
+case class RemoveAListener(who: Actor)
+
+trait ListenerManager {
+  self: Actor =>
+  private var listeners: List[Actor] = Nil
+
+  def act = loop {
+    react {
+      highPriority orElse mediumPriority orElse
+      listenerService orElse lowPriority
+    }
+  }
+
+  protected def listenerService: PartialFunction[Any, Unit] =
+  {
+    case AddAListener(who) => listeners ::= who
+      who ! createUpdate
+
+    case RemoveAListener(who) =>
+      listeners = listeners.filter(_ ne who)
+  }
+
+  protected def updateListeners() {
+    val update = createUpdate
+    listeners.foreach(_ ! update)
+  }
+
+  protected def createUpdate: Any
+
+  protected def highPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def mediumPriority: PartialFunction[Any, Unit] = Map.empty
+  protected def lowPriority: PartialFunction[Any, Unit] = Map.empty
+}
+
+trait CometListenee extends CometActor {
+
+  protected def registerWith: Actor
+
+  override protected def localSetup() {
+    registerWith ! AddAListener(this)
+    super.localSetup()
+  }
+
+  override protected def localShutdown() {
+    registerWith ! RemoveAListener(this)
+    super.localShutdown()
+  }
+}
 
 /**
  * Takes care of the plumbing for building Comet-based Web Apps
@@ -95,14 +217,20 @@ trait CometActor extends Actor with BindHelpers {
   private var _name: Box[String] = Empty
   def name = _name
 
+  private var _theType: Box[String] = Empty
+  def theType = _theType
+
   private var _attributes: Map[String, String] = Map.empty
   def attributes = _attributes
 
-  private[http] def initCometActor(theSession: LiftSession, name: Box[String],
-                     defaultXml: NodeSeq,
-                     attributes: Map[String, String]) {
+  private[http] def initCometActor(theSession: LiftSession,
+                                   theType: Box[String],
+                                   name: Box[String],
+                                   defaultXml: NodeSeq,
+                                   attributes: Map[String, String]) {
     lastRendering = RenderOut(Full(defaultXml),
                               Empty, Empty, Empty, false)
+    this._theType = theType
     this._theSession = theSession
     this._defaultXml = defaultXml
     this._name = name
@@ -168,20 +296,26 @@ trait CometActor extends Actor with BindHelpers {
 
   override def react(pf: PartialFunction[Any, Unit]) = {
     val myPf: PartialFunction[Any, Unit] = new PartialFunction[Any, Unit] {
-      def apply(in: Any): Unit = {
+      def apply(in: Any): Unit =
+      CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
-          pf.apply(in)
-          if (S.functionMap.size > 0) {
-            theSession.updateFunctionMap(S.functionMap,
-					 uniqueId, lastRenderTime)
-            S.clearFunctionMap
+          S.functionLifespan(true) {
+            pf.apply(in)
+            if (S.functionMap.size > 0) {
+              theSession.updateFunctionMap(S.functionMap,
+                                           uniqueId, lastRenderTime)
+              S.clearFunctionMap
+            }
           }
         }
       }
 
-      def isDefinedAt(in: Any): Boolean = {
+      def isDefinedAt(in: Any): Boolean =
+      CurrentCometActor.doWith(Full(CometActor.this)) {
         S.initIfUninitted(theSession) {
-          pf.isDefinedAt(in)
+          S.functionLifespan(true) {
+            pf.isDefinedAt(in)
+          }
         }
       }
     }
@@ -191,27 +325,25 @@ trait CometActor extends Actor with BindHelpers {
 
   def fixedRender: Box[NodeSeq] = Empty
 
-  def highPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def highPriority : PartialFunction[Any, Unit] = Map.empty
 
-  def lowPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def lowPriority : PartialFunction[Any, Unit] = Map.empty
 
-  def mediumPriority : PartialFunction[Any, Unit] = {
-    case Never =>
-  }
+  def mediumPriority : PartialFunction[Any, Unit] = Map.empty
 
-  private def _lowPriority : PartialFunction[Any, Unit] = {
+  private[http] def _lowPriority : PartialFunction[Any, Unit] = {
     case s => Log.debug("CometActor "+this+" got unexpected message "+s)
   }
 
-  private def _mediumPriority : PartialFunction[Any, Unit] = {
+  private lazy val _mediumPriority : PartialFunction[Any, Unit] = {
     case RelinkToActorWatcher =>
       link(ActorWatcher)
 
-    case Unlisten(seq) => listeners = listeners.filter(_._1 != seq)
+    case l @ Unlisten(seq) =>
+      askingWho match {
+        case Full(who) => who forward l
+        case _ => listeners = listeners.filter(_._1 != seq)
+      }
 
     case l @ Listen(when, seqId, toDo) =>
       askingWho match {
@@ -237,7 +369,7 @@ trait CometActor extends Actor with BindHelpers {
 
     case PerformSetupComet =>
       this ! RelinkToActorWatcher
-      
+
       localSetup
       performReRender(true)
 
@@ -252,8 +384,9 @@ trait CometActor extends Actor with BindHelpers {
 
     case ActionMessageSet(msgs, req) =>
       S.init(req, theSession) {
-        val ret = msgs.map(_())
-        reply(ret)
+        S.functionLifespan(true) {
+          reply(msgs.map(_()))
+        }
       }
 
     case AskQuestion(what, who, otherlisteners) =>
@@ -266,17 +399,19 @@ trait CometActor extends Actor with BindHelpers {
 
     case AnswerQuestion(what, otherListeners) =>
       S.initIfUninitted(theSession) {
-        askingWho.foreach {
-          ah =>
-          reply("A null message to release the actor from its send and await reply... do not delete this message")
-          // askingWho.unlink(self)
-          ah ! ShutDown
-          this.listeners  = this.listeners ::: otherListeners
-          this.askingWho = Empty
-          val aw = answerWith
-          answerWith = Empty
-          aw.foreach(_(what))
-          performReRender(true)
+        S.functionLifespan(true) {
+          askingWho.foreach {
+            ah =>
+            reply("A null message to release the actor from its send and await reply... do not delete this message")
+            // askingWho.unlink(self)
+            ah ! ShutDown
+            this.listeners  = this.listeners ::: otherListeners
+            this.askingWho = Empty
+            val aw = answerWith
+            answerWith = Empty
+            aw.foreach(_(what))
+            performReRender(true)
+          }
         }
       }
 
@@ -292,9 +427,10 @@ trait CometActor extends Actor with BindHelpers {
 
     case ShutDown =>
       Log.info("The CometActor "+this+" Received Shutdown")
+      askingWho.foreach(_ ! ShutDown)
       theSession.removeCometActor(this)
       unlink(ActorWatcher)
-      localShutdown()
+      _localShutdown()
       self.exit("Politely Asked to Exit")
 
     case PartialUpdateMsg(cmdF) =>
@@ -303,7 +439,8 @@ trait CometActor extends Actor with BindHelpers {
       val delta = JsDelta(time, cmd)
       theSession.updateFunctionMap(S.functionMap, uniqueId, time)
       S.clearFunctionMap
-      deltas = delta :: deltas
+      val m = millis
+      deltas = (delta :: deltas).filter(d => (m - d.timestamp) < 120000L )
       if (!listeners.isEmpty) {
         val rendered = AnswerRender(new XmlOrJsCmd(spanId, Empty, Empty,
                                                    Full(cmd), Empty, buildSpan, false, notices toList),
@@ -357,22 +494,31 @@ trait CometActor extends Actor with BindHelpers {
    */
   protected def localSetup(): Unit = {}
 
+  private def _localShutdown() {
+    localShutdown()
+    clearNotices
+    listeners = Nil
+    askingWho = Empty
+    whosAsking = Empty
+    deltas = Nil
+    jsonHandlerChain = Map.empty
+  }
   /**
    * This method will be called as part of the shut-down of the actor.  Release any resources here.
    */
   protected def localShutdown(): Unit = {
-    clearNotices
+
   }
 
   def composeFunction = composeFunction_i
 
-  def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
+  private def composeFunction_i = highPriority orElse mediumPriority orElse _mediumPriority orElse lowPriority orElse _lowPriority
 
   def bind(prefix: String, vals: BindParam *): NodeSeq = bind(prefix, _defaultXml, vals :_*)
   def bind(vals: BindParam *): NodeSeq = bind(_defaultPrefix, vals :_*)
 
   protected def ask(who: CometActor, what: Any)(answerWith: Any => Unit) {
-    who.initCometActor(theSession, name, defaultXml, attributes)
+    who.initCometActor(theSession, Full(who.uniqueId), name, defaultXml, attributes)
     theSession.addCometActor(who)
     // who.link(this)
     who ! PerformSetupComet
@@ -449,6 +595,7 @@ trait CometActor extends Actor with BindHelpers {
 
 abstract class Delta(val when: Long) {
   def js: JsCmd
+  val timestamp = millis
 }
 
 case class JsDelta(override val when: Long, js: JsCmd) extends Delta(when)
@@ -468,7 +615,7 @@ private [http] class XmlOrJsCmd(val id: String,
                                 notices: List[(NoticeType.Value, NodeSeq, Box[String])]) {
 
   def this(id: String, ro: RenderOut, spanFunc: (Long, NodeSeq) => NodeSeq, notices: List[(NoticeType.Value, NodeSeq, Box[String])]) =
-    this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
+  this(id, ro.xhtml,ro.fixedXhtml, ro.script, ro.destroyScript, spanFunc, ro.ignoreHtmlOnJs, notices)
 
   /**
    * Returns the JsCmd that will be sent to client

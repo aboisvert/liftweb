@@ -1,5 +1,5 @@
 /*
- * Copyright 2007-2008 WorldWide Conferencing, LLC
+ * Copyright 2007-2009 WorldWide Conferencing, LLC
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -43,15 +43,15 @@ object JqSHtml {
   def autocomplete_*(options: Seq[(String, String)], default: Box[String],
                      defaultNonce: Box[String], onSubmit: AFuncHolder): Elem = {
     val id = Helpers.nextFuncName
-    val hidden = mapFunc(onSubmit)
-    val data = JsArray(options.map { case (nonce, name) =>
-          JsObj("name" -> name, "nonce" -> nonce)} :_*)
-    val autocompleteOptions = JsRaw("""{
+    fmapFunc(onSubmit){hidden =>
+      val data = JsArray(options.map { case (nonce, name) =>
+            JsObj("name" -> name, "nonce" -> nonce)} :_*)
+      val autocompleteOptions = JsRaw("""{
       minChars: 0,
       matchContains: true,
       formatItem: function(row, i, max) { return row.name; },
     }""")
-    val onLoad = JsRaw("""
+      val onLoad = JsRaw("""
       jQuery(document).ready(function(){
         var data = """+data.toJsCmd+""";
         jQuery("#"""+id+"""").autocomplete(data, """+autocompleteOptions.toJsCmd+""").result(function(event, dt, formatted) {
@@ -59,7 +59,7 @@ object JqSHtml {
         });
       });""")
 
-    (<span>
+      <span>
         <head>
           <link rel="stylesheet" href="/classpath/jquery-autocomplete/jquery.autocomplete.css" type="text/css" />
           <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
@@ -67,7 +67,8 @@ object JqSHtml {
         </head>
         <input type="text" id={id} value={default.openOr("")} />
         <input type="hidden" name={hidden} id={hidden} value={defaultNonce.openOr("")} />
-     </span>)
+      </span>
+    }
   }
 
   def autocomplete(start: String, options: (String, Int) => Seq[String],
@@ -78,11 +79,13 @@ object JqSHtml {
       val limit = S.param("limit").flatMap(asInt).openOr(10)
       PlainTextResponse(options(q, limit).map(s => s+"|"+s).mkString("\n"))
     }
-    val func = mapFunc(SFuncHolder(f))
+
+
+    fmapFunc(SFuncHolder(f)){ func =>
     val what: String = S.contextPath + "/" + LiftRules.ajaxPath+"?"+func+"=foo"
 
     val id = Helpers.nextFuncName
-    val hidden = mapFunc(SFuncHolder(onSubmit))
+    fmapFunc(SFuncHolder(onSubmit)){hidden =>
 
     val autocompleteOptions = JsRaw("""{
       minChars: 0,
@@ -102,10 +105,12 @@ object JqSHtml {
         <script type="text/javascript" src="/classpath/jquery-autocomplete/jquery.autocomplete.js" />
         <script type="text/javascript">{Unparsed(onLoad.toJsCmd)}</script>
       </head>
-    {
-      attrs.foldLeft(<input type="text" id={id} value={start} />)(_ % _)
-    }
+      {
+        attrs.foldLeft(<input type="text" id={id} value={start} />)(_ % _)
+      }
       <input type="hidden" name={hidden} id={hidden} value={start} />
     </span>
+    }
+  }
   }
 }
