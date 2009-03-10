@@ -2,15 +2,15 @@
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
-    <groupId>net.liftweb</groupId>
-    <artifactId>JPADemo-Master</artifactId>
-    <version>0.11-SNAPSHOT</version>
+    <groupId>${groupId}</groupId>
+    <artifactId>${artifactId}</artifactId>
+    <version>${version}</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
 
-  <artifactId>JPADemo-web</artifactId>
+  <artifactId>web</artifactId>
   <packaging>war</packaging>
-  <name>JPADemo-web</name>
+  <name>${artifactId}-web</name>
 
   <dependencies>
     <dependency>
@@ -28,8 +28,23 @@
     </dependency>
     <dependency>
       <groupId>${pom.groupId}</groupId>
-      <artifactId>JPADemo-spa</artifactId>
+      <artifactId>spa</artifactId>
       <version>${pom.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-webkit</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>net.liftweb</groupId>
+      <artifactId>lift-util</artifactId>
+      <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.scala_libs</groupId>
+      <artifactId>scalajpa</artifactId>
+      <version>1.0</version>
     </dependency>
   </dependencies>
 

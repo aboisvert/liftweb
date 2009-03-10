@@ -9,9 +9,13 @@
   <packaging>pom</packaging>
   
   <modules>
-    <module>${artifactId}-web</module>
-    <module>${artifactId}-spa</module>
+    <module>web</module>
+    <module>spa</module>
   </modules>
+
+  <properties>
+    <scala.version>2.7.3</scala.version>
+  </properties>
 
   <!-- Master properties (inherited by modules) -->
   <dependencies>
