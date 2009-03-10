@@ -232,17 +232,20 @@ object S extends HasParams {
   /**
    * Get the resource bundle for the current locale
    */
-  def resourceBundles: List[ResourceBundle] = {
-    _resBundle.value match {
-      case Nil => _resBundle.set(LiftRules.resourceNames.flatMap(name => tryo(
-              List(ResourceBundle.getBundle(name, locale))
-            ) openOr Nil))
-        _resBundle.value
-      case bundles => bundles
-
-    }
-  }
-
+   def resourceBundles: List[ResourceBundle] = {
+     _resBundle.value match {
+       case Nil => {
+         _resBundle.set(LiftRules.resourceNames.flatMap(name => tryo(
+           List(ResourceBundle.getBundle(name, locale))
+         ).openOr(
+           NamedPF.applyBox((name, locale), LiftRules.resourceBundleFactories.toList).map(List(_)) openOr Nil
+         )))
+         _resBundle.value
+       }
+       case bundles => bundles
+     }
+   }
+   
   /**
    * Get the lift core resource bundle for the current locale
    */

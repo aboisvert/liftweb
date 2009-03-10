@@ -33,6 +33,10 @@
 #       set MAVEN_OPTS=-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000
 # ----------------------------------------------------------------------------
 
+INT_MAVEN_OPTS="$MAVEN_OPTS -Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=8000"
+
+echo Preparing to Execute Maven in Debug Mode
+
 QUOTED_ARGS=""
 while [ "$1" != "" ] ; do
 
@@ -155,9 +159,10 @@ if $cygwin; then
 fi
 
 exec "$JAVACMD" \
-  $MAVEN_OPTS \
+  $INT_MAVEN_OPTS \
   -classpath "${M2_HOME}"/boot/classworlds-*.jar \
   "-Dclassworlds.conf=${M2_HOME}/bin/m2.conf" \
   "-Dmaven.home=${M2_HOME}"  \
   ${CLASSWORLDS_LAUNCHER} $QUOTED_ARGS
+
 

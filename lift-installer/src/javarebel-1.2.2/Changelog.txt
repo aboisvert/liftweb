@@ -2,6 +2,89 @@
   JavaRebel Changelog                    
 ********************************************
 
+1.2.2 (2nd December 2008)
+* Fixed a NPE in Method.getParameterTypes()
+* Fixed Class.getMethods() not showing some of the added methods
+* Fixed a classloader deadlock
+* Added support for JBoss 5 
+
+1.2.1 (24th September 2008)
+* Missing dependencies are no longer logged to console to avoid confusion
+* Fixed an issue with IBM J9 JVM that resulted in a StackOverflowException on some setups (mainly with IBM WebSphere)
+* Fixed a regression on Java 1.4 that resulted in an ExceptionInInitializerError
+* Fixed an issue with JAR relative paths
+* Fixed an issue with OC4J system classloader 
+* Fixed an issue with -Drebel.packages loading JARs as (corrupted) classes, could cause ArrayIndexOutOfBoundsException
+* SpringSource Application Platform is now supported (see instructions in the installation manual)
+
+1.2 GA (25th August 2008)
+* General availability release
+
+1.2-RC1 (15th August 2008)
+
+* Fixed regression in accessing super methods
+* Fixed broken setPrimitive() method behavior in java.lang.reflect.Field
+* Fixed "native" methods causing a ClassFormatError
+* Fixed a error occurring when super classes have a static and non-static field with the same name.
+* Added support for time-limited licenses
+
+1.2-M2 (30th July 2008)
+
+* Spring dependency reloading is now available via an external plugin.
+* Fixed Reloader.isReloadEnabled() returning true if agent wasn't enabled, but JavaRebel was in classpath
+* Fixed a Java 1.4 incompatibility in javarebel-bootstrap.jar generation logic
+* Fixed an infinite recursion on some super calls (http://www.zeroturnaround.com/forum/topic.php?id=87).
+* Fixed several possible MethodNotFoundErrors
+* Fixed Method.getGenericParameterTypes() returning wrong signature (needed for Spring integration)
+* Fixed wrong modifiers returned by Method.getModifier() causing problems with AspectJ (http://www.zeroturnaround.com/forum/topic.php?id=91)
+* Fixed a race condition in core logics that could manifest as a NPE.
+* Fixed CgLib proxies throwing exceptions on initialization. To enable CgLib proxy bypass "-Drebel.allow_bytecode_proxy=true" should be now added to the JVM command line.
+* Fixed some JavaRebel messages (like monitored dirs) not showing up properly.
+* Improved reflection correctness and performance.
+
+1.2-M1 (9th June 2008)
+
+* JavaRebel SDK. The SDK has been refactored with added functionality for processing class bytecode and managing JavaRebel configuration.
+* JavaRebel Plugins. It is now possible to register JavaRebel plugins that can make use of the SDK APIs to integrate with custom containers or frameworks.
+* JavaRebel Integration Project. To test the new SDK APIs and plugins we created an open-source integration project and moved almost all of the custom container/framework integration processors there.
+* Full support for Eclipse plugins (and OSGi bundles generally)
+* Initial support for IBM WebSphere, please check the installation manual included in the distribution.
+* Integration with Commons-EL, to update metadata when classes change.
+
+1.1.4 (15th August 2008)
+
+* Fixed regression in accessing super methods
+* Fixed broken setPrimitive() method behavior in java.lang.reflect.Field
+* Fixed "native" methods causing a ClassFormatError
+* Fixed a error occurring when super classes have a static and non-static field with the same name.
+* Added support for time-limited licenses
+
+1.1.3 (12th August 2008)
+
+* Fixed wrong modifiers returned by Method.getModifier() causing problems with AspectJ (http://www.zeroturnaround.com/forum/topic.php?id=91)
+* Fixed update notifier choking when update.zeroturnaround.com is unavailable, forbidden or replaced.
+
+1.1.2 (22nd July 2008)
+
+* Fixed a race condition in core logics that could manifest as a NPE.
+* Fixed method modifiers not being updated in reflection.
+* Fixed an NPE when getting updated method data via reflection.
+* Fixed CgLib proxies throwing exceptions on initialization. To enable CgLib proxy bypass "-Drebel.allow_bytecode_proxy=true" should be now added to the JVM command line.
+* Improved reflection correctness and performance.
+* Backported full support for Equinox OSGi/Eclipse plugins. 
+
+1.1.1 (26th May 2008)
+
+* Fixed package visibility constructors sometimes causing a NullPointerException (http://www.zeroturnaround.com/forum/topic.php?id=63).
+* Fixed a NullPointerException sometimes occuring on class reload (http://www.zeroturnaround.com/forum/topic.php?id=78).
+* Fixed an IllegalAccessException occuring when calling a super protected method via reflection (http://www.zeroturnaround.com/forum/topic.php?id=65). 
+* Fixed Class.getMethods() not returning methods for indirectly implemented interfaces when JavaRebel was enabled.
+* Fixed changes to method return type or field type not propagating to reflection (http://www.zeroturnaround.com/forum/topic.php?id=68). 
+* Fixed site licenses being displayed as personal licenses.
+* Improved compatibility with proxies when "-Drebel.forbid_bypass=true" is enabled.
+* Added an experimental hook for receiving class loading notification to the SDK. To enable it add "-Drebel.class_load_notify=true" to the command line.
+* Added support for licenses that work only on Scala classes.
+
 1.1 (30th April 2008)
 
 * Changed -Drebel.dirs semantics to always override classes in classpath.
