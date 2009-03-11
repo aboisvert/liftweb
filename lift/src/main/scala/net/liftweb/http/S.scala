@@ -95,7 +95,7 @@ object S extends HasParams {
    *
    * @return the current Req
    */
-  def request: Box[Req] = _request.value match {case null => Empty case r => Full(r)}
+  def request: Box[Req] = Box !! _request.value
 
   /**
    * @return a List of any Cookies that have been set for this Response.
@@ -167,13 +167,13 @@ object S extends HasParams {
    * that's installed on this JVM then return it, otherwise return the
    * default Locale for this JVM.
    */
-  def locale: Locale = LiftRules.localeCalculator(request.map(_.request))
+  def locale: Locale = LiftRules.localeCalculator(servletRequest)
 
   /**
    * Return the current timezone
    */
   def timeZone: TimeZone =
-  LiftRules.timeZoneCalculator(request.map(_.request))
+  LiftRules.timeZoneCalculator(servletRequest)
 
   /**
    * Should the output be rendered in IE6&7 compatible mode?
@@ -210,7 +210,7 @@ object S extends HasParams {
   /**
    * Test the current request to see if it's a POST
    */
-  def post_? = request.map(_.post_?).openOr(false);
+  def post_? = request.map(_.post_?).openOr(false)
 
   /**
    * Localize the incoming string based on a resource bundle for the current locale
@@ -484,8 +484,8 @@ object S extends HasParams {
   /**
    * @return a List[Cookie] even if the underlying request's Cookies are null.
    */
-  private def getCookies(request: HttpServletRequest): List[Cookie] =
-  for (r <- Box.legacyNullTest(request).toList;
+  private def getCookies(request: Box[HttpServletRequest]): List[Cookie] =
+  for (r <- (request).toList;
        ca <- Box.legacyNullTest(r.getCookies).toList;
        c <- ca) yield c
 
@@ -494,7 +494,7 @@ object S extends HasParams {
     _sessionInfo.doWith(session) {
       _responseHeaders.doWith(new ResponseInfoHolder) {
         RequestVarHandler(Full(session),
-                          _responseCookies.doWith(CookieHolder(getCookies(request.request), Nil)) {
+                          _responseCookies.doWith(CookieHolder(getCookies(servletRequest), Nil)) {
             _innerInit(f)
           }
         )
@@ -507,7 +507,7 @@ object S extends HasParams {
   /**
    * Returns the 'Referer' HTTP header attribute
    */
-  def referer: Box[String] = request.flatMap(r => Box.legacyNullTest(r.request.getHeader("Referer")))
+  def referer: Box[String] = servletRequest.flatMap(r => Box.legacyNullTest(r.getHeader("Referer")))
 
   /**
    * Functions that are mapped to HTML elements are, but default
@@ -677,7 +677,8 @@ object S extends HasParams {
   /**
    * The current servlet request
    */
-  def servletRequest: Box[HttpServletRequest] = Box.legacyNullTest(_request.value).map(_.request)
+  def servletRequest: Box[HttpServletRequest] = 
+  request.flatMap(r => Box !! r.request)
 
   /**
    * The host that the request was made on
