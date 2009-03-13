@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
 import java.util.Currency;
 import java.util.Locale;

@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.snippet
+package ${package}.snippet
 
 import scala.xml.{NodeSeq,Text}
 
-import net.liftweb.http.{RequestVar,S,SHtml}
-import net.liftweb.util.Helpers
+import _root_.net.liftweb._
+import http._
 import S._
+import util._
 import Helpers._
 
-import net.liftweb.jpademo.model._
+import javax.persistence.{EntityExistsException,PersistenceException}
+
+import ${package}.model._
 import Model._
 
 class AuthorOps {
@@ -47,8 +50,13 @@ class AuthorOps {
       if (author.name.length == 0) {
 	error("emptyAuthor", "The author's name cannot be blank")
       } else {
-	Model.merge(author)
-	redirectTo("list.html")
+	try {
+	  Model.mergeAndFlush(author)
+	  redirectTo("list.html")
+	} catch {
+	  case ee : EntityExistsException => error("Author already exists")
+	  case pe : PersistenceException => error("Error adding author"); Log.error("Error adding author", pe)
+	}
       }
     }
 

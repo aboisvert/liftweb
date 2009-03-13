@@ -13,16 +13,33 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
-object Genre extends Enumeration with Enumv {
-  val Mystery = Value("Mystery", "Mystery")
-  val SciFi = Value("SciFi", "SciFi")
-  val Classic = Value("Classic", "Classic")
-  val Childrens = Value("Childrens", "Childrens")
-  val Horror = Value("Horror", "Horror")
-  val Poetry = Value("Poetry", "Poetry")
-  val unknown = Value("Unknown", "Unknown genre")
+import java.util.Date
+
+import javax.persistence._
+import org.hibernate.annotations.Type
+
+
+/**
+ This class represents a book that we might want to read.
+*/
+@Entity
+class Book {
+  @Id
+  @GeneratedValue(){val strategy = GenerationType.AUTO}
+  var id : Long = _
+
+  @Column{val unique = true, val nullable = false}
+  var title : String = ""
+
+  @Temporal(TemporalType.DATE)
+  @Column{val nullable = true}
+  var published : Date = new Date()
+
+  @Type{val `type` = "${package}.model.GenreType"}
+  var genre : Genre.Value = Genre.unknown
+
+  @ManyToOne
+  var author : Author = _
 }
-
-class GenreType extends EnumvType(Genre) {}

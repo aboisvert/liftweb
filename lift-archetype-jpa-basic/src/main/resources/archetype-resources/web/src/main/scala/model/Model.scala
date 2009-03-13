@@ -13,8 +13,9 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
-/* Australian Money Hibernate Mapper */
-class AUDUserType extends CurrencyUserType[AU.type](AU)
+import org.scala_libs.jpa._
+
+object Model extends LocalEMF("jpaweb") with RequestVarEM
 

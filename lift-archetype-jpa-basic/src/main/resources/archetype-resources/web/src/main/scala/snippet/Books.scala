@@ -13,16 +13,19 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.snippet
+package ${package}.snippet
 
 import scala.xml.{NodeSeq,Text}
 
-import net.liftweb.http.{RequestVar,S,SHtml}
-import net.liftweb.util.{Box,Empty,Full,Helpers}
+import _root_.net.liftweb._
+import http._
 import S._
+import util._
 import Helpers._
 
-import net.liftweb.jpademo.model._
+import javax.persistence.{EntityExistsException,PersistenceException}
+
+import ${package}.model._
 import Model._
 
 // Make an object so that other pages can access (ie Authors)
@@ -51,9 +54,12 @@ class BookOps {
   def book = bookVar.is
 
   def add (xhtml : NodeSeq) : NodeSeq = {
-    def doAdd () = {
-      Model.merge(book)
+    def doAdd () = try {
+      Model.mergeAndFlush(book)
       redirectTo("list.html")
+    } catch {
+      case ee : EntityExistsException => error("Book already exists")
+      case pe : PersistenceException => error("Error adding book"); Log.error("Error adding book", pe)
     }
 
     // Hold a val here so that the "id" closure holds it when we re-enter this method

@@ -13,9 +13,16 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
-import org.scala_libs.jpa._
+object Genre extends Enumeration with Enumv {
+  val Mystery = Value("Mystery", "Mystery")
+  val SciFi = Value("SciFi", "SciFi")
+  val Classic = Value("Classic", "Classic")
+  val Childrens = Value("Childrens", "Childrens")
+  val Horror = Value("Horror", "Horror")
+  val Poetry = Value("Poetry", "Poetry")
+  val unknown = Value("Unknown", "Unknown genre")
+}
 
-object Model extends LocalEMF("jpaweb") with RequestVarEM
-
+class GenreType extends EnumvType(Genre) {}

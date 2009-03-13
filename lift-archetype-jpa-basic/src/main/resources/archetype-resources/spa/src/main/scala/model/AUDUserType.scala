@@ -13,22 +13,8 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
-import javax.persistence._
+/* Australian Money Hibernate Mapper */
+class AUDUserType extends CurrencyUserType[AU.type](AU)
 
-/**
-  An author is someone who writes books.
-*/
-@Entity
-class Author {
-  @Id
-  @GeneratedValue(){val strategy = GenerationType.AUTO}
-  var id : Long = _
-
-  @Column{val unique = true, val nullable = false}
-  var name : String = ""
-
-  @OneToMany(){val mappedBy = "author", val targetEntity = classOf[Book]}
-  var books : java.util.Set[Book] = new java.util.HashSet[Book]()
-}

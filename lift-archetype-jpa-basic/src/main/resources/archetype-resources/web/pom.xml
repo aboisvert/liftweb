@@ -10,7 +10,7 @@
 
   <artifactId>web</artifactId>
   <packaging>war</packaging>
-  <name>${artifactId}-web</name>
+  <name>${parent.artifactId}-web</name>
 
   <dependencies>
     <dependency>
@@ -20,12 +20,6 @@
       <scope>test</scope>
     </dependency>
     <!-- for LiftConsole -->
-    <dependency>
-      <groupId>org.scala-lang</groupId>
-      <artifactId>scala-compiler</artifactId>
-      <version>${scala.version}</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>${pom.groupId}</groupId>
       <artifactId>spa</artifactId>
@@ -42,9 +36,15 @@
       <version>1.0</version>
     </dependency>
     <dependency>
-      <groupId>org.scala_libs</groupId>
+      <groupId>org.scala-libs</groupId>
       <artifactId>scalajpa</artifactId>
       <version>1.0</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>servlet-api</artifactId>
+      <version>2.5</version>
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

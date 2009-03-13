@@ -1,0 +1,86 @@
+<archetype-descriptor name="lift-archetype-jpa-basic">
+  <!-- place the master POM into the root dir -->
+  <fileSets>
+    <fileSet filtered="true">
+      <directory></directory>
+      <includes>
+	<include>pom.xml</include>
+	<include>README</include>
+      </includes>
+    </fileSet>
+  </fileSets>
+  <modules>
+    <!-- web module -->
+    <module name="web" id="web" dir="web">
+      <fileSets>
+	<!-- store the module pom -->
+	<fileSet filtered="true" packaged="false">
+          <directory></directory>
+	  <includes>
+	    <include>web/pom.xml</include>
+	  </includes>
+	</fileSet>
+	<!-- properly place Boot.scala -->
+	<fileSet filtered="true" packaged="false">
+          <directory>src/main/scala/bootstrap/liftweb</directory>
+	  <includes>
+	    <include>Boot.scala</include>
+	  </includes>
+	</fileSet>
+	<!-- place main sources -->
+	<fileSet filtered="true" packaged="true">
+          <directory>src/main/scala/</directory>
+	  <includes>
+	    <include>**/*.scala</include>
+	  </includes>
+	  <excludes>
+	    <exclude>**/Boot.scala</exclude>
+	  </excludes>
+	</fileSet>
+	<!-- place templates -->
+	<fileSet filtered="false" packaged="false">
+          <directory>src/main/webapp</directory>
+	  <includes>
+	    <include>**/*</include>
+	  </includes>
+	</fileSet>
+	<!-- place resources -->
+	<fileSet filtered="false" packaged="false">
+          <directory>src/main/resources</directory>
+	  <includes>
+	    <include>**/*</include>
+	  </includes>
+	</fileSet>
+      </fileSets>
+    </module>
+    <!-- persistence module -->
+    <module name="spa" id="spa" dir="spa">
+      <fileSets>
+	<fileSet filtered="true" packaged="false">
+          <directory></directory>
+	  <includes>
+	    <include>spa/pom.xml</include>
+	  </includes>
+	</fileSet>
+	<fileSet filtered="true" packaged="true">
+          <directory>src/main/scala/</directory>
+	  <includes>
+	    <include>**/*.scala</include>
+	  </includes>
+	</fileSet>
+	<fileSet filtered="true" packaged="true">
+          <directory>src/test/scala/</directory>
+	  <includes>
+	    <include>**/*.scala</include>
+	  </includes>
+	</fileSet>
+	<fileSet filtered="true" packaged="false">
+          <directory>src/main/resources</directory>
+	  <includes>
+	    <include>**/*</include>
+	  </includes>
+	</fileSet>
+      </fileSets>
+    </module>
+  </modules>
+</archetype-descriptor>

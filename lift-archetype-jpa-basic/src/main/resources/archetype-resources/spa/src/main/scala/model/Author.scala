@@ -13,33 +13,22 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
-
-import java.util.Date
+package ${package}.model
 
 import javax.persistence._
-import org.hibernate.annotations.Type
-
 
 /**
- This class represents a book that we might want to read.
+  An author is someone who writes books.
 */
 @Entity
-class Book {
+class Author {
   @Id
   @GeneratedValue(){val strategy = GenerationType.AUTO}
   var id : Long = _
 
   @Column{val unique = true, val nullable = false}
-  var title : String = ""
+  var name : String = ""
 
-  @Temporal(TemporalType.DATE)
-  @Column{val nullable = true}
-  var published : Date = new Date()
-
-  @Type{val `type` = "net.liftweb.jpademo.model.GenreType"}
-  var genre : Genre.Value = Genre.unknown
-
-  @ManyToOne
-  var author : Author = _
+  @OneToMany(){val mappedBy = "author", val targetEntity = classOf[Book]}
+  var books : java.util.Set[Book] = new java.util.HashSet[Book]()
 }

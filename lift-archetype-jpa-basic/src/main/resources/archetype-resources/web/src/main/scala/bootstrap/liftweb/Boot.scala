@@ -23,7 +23,7 @@ import net.liftweb.util.{Box,Empty,Full,LoanWrapper,LogBoot}
 import net.liftweb.http._
 import net.liftweb.sitemap._
 import net.liftweb.sitemap.Loc._
-import net.liftweb.jpademo.model._
+import ${package}.model._
 import S.?
 
 /**
@@ -47,7 +47,7 @@ class Boot {
       """
 
     // where to search snippet
-    LiftRules.addToPackages("net.liftweb.jpademo")
+    LiftRules.addToPackages("${package}")
 
     // Set up a site map
     val entries = SiteMap(Menu(Loc("Home", "index" :: Nil , ?("Home"))),

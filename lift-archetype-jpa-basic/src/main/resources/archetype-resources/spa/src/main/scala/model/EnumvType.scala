@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions
  * and limitations under the License.
  */
-package net.liftweb.jpademo.model
+package ${package}.model
 
 import java.io.Serializable
 import java.sql.PreparedStatement
@@ -25,37 +25,36 @@ import org.hibernate.HibernateException
 import org.hibernate.usertype.UserType
 
 /**
- * Helper class to translate money amount for hibernate
+ * Helper class to translate enum for hibernate
  */
-abstract class CurrencyUserType[CZ <: CurrencyZone](cz: CZ) extends UserType {
+abstract class EnumvType(val et: Enumeration with Enumv) extends UserType {
 
-  type MyCurrency = CZ#Currency
-
-  val SQL_TYPES = Array(Types.NUMERIC.asInstanceOf[Int])
+  val SQL_TYPES = Array({Types.VARCHAR})
 
   override def sqlTypes() = SQL_TYPES
 
-  override def returnedClass = cz.CurrencyUnit.getClass
+  override def returnedClass = classOf[et.Value]
 
   override def equals(x: Object, y: Object): Boolean = {
-    if (x == null || y == null) return false
-    else return x == y
+    return x == y
   }
 
   override def hashCode(x: Object) = x.hashCode
 
   override def nullSafeGet(resultSet: ResultSet, names: Array[String], owner: Object): Object = {
-    val dollarVal = resultSet.getBigDecimal(names(0))
-    if (resultSet.wasNull()) return cz.make(0)
-    else return cz.make(new BigDecimal(dollarVal))
+    val value = resultSet.getString(names(0))
+    if (resultSet.wasNull()) return null
+    else {
+      return et.valueOf(value).getOrElse(null)
+    }
   }
 
   override def nullSafeSet(statement: PreparedStatement, value: Object, index: Int): Unit = {
     if (value == null) {
-      statement.setNull(index, Types.NUMERIC)
+      statement.setNull(index, Types.VARCHAR)
     } else {
-      val dollarVal = value.asInstanceOf[MyCurrency]
-      statement.setBigDecimal(index, dollarVal.amount.bigDecimal)
+      val en = value.toString
+      statement.setString(index, en)
     }
   }
 
@@ -70,4 +69,5 @@ abstract class CurrencyUserType[CZ <: CurrencyZone](cz: CZ) extends UserType {
   override def replace(original: Object, target: Object, owner: Object) = original
 
 }
+
 
