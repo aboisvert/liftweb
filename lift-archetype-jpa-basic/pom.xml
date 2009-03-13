@@ -7,6 +7,7 @@
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>lift-archetype-jpa-basic</artifactId>
+  <packaging>maven-archetype</packaging>
   <name>${project.artifactId}</name>
   <description>Archetype - blank JPA project for Lift</description>
   <properties>
@@ -14,10 +15,18 @@
     <maven.test.skip>true</maven.test.skip>
   </properties>
   <build>
+    <extensions>
+      <extension>
+        <groupId>org.apache.maven.archetype</groupId>
+        <artifactId>archetype-packaging</artifactId>
+        <version>2.0-alpha-4</version>
+      </extension>
+    </extensions>
     <plugins>
       <plugin>
         <artifactId>maven-archetype-plugin</artifactId>
         <version>2.0-alpha-4</version>
+        <extensions>true</extensions>
         <configuration>
           <archetypeArtifactId>${project.artifactId}</archetypeArtifactId>
           <archetypeGroupId>${project.groupId}</archetypeGroupId>
