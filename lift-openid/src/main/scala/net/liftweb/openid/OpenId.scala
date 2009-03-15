@@ -230,9 +230,7 @@ trait OpenIdConsumer[UserType]
       // Option 1: GET HTTP-redirect to the OpenID Provider endpoint
       // The only method supported in OpenID 1.x
       // redirect-URL usually limited ~2048 bytes
-      val redirect = RedirectResponse(authReq.getDestinationUrl(true))
-      redirect
-      //                httpResp.sendRedirect(authReq.getDestinationUrl(true));
+      RedirectResponse(authReq.getDestinationUrl(true))
     }
     else
     {
