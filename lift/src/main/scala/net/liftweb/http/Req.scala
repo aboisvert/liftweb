@@ -71,7 +71,7 @@ object Req {
     //  val body = ()
     val eMap = Map.empty[String, List[String]]
 
-  
+
     val contentType = request.getContentType match {
       case null => ""
       case s => s

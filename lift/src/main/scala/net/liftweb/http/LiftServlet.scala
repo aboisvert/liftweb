@@ -449,7 +449,11 @@ class LiftServlet extends HttpServlet {
    */
   def sendResponse(resp: BasicResponse, response: HttpServletResponse, request: Box[Req]) {
     def fixHeaders(headers : List[(String, String)]) = headers map ((v) => v match {
-        case ("Location", uri) => (v._1, response.encodeURL(request map (_ updateWithContextPath(uri)) openOr uri))
+        case ("Location", uri) => (v._1, (
+          (for(u <- request;
+               updated <- Full(u.contextPath + uri) if (uri.startsWith("/"));
+               f <- URLRewriter.rewriteFunc map (_(updated))) yield f) openOr uri
+        ))
         case _ => v
       })
 

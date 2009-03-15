@@ -40,7 +40,7 @@ import _root_.scala.xml.{NodeSeq, Text}
 trait OpenIdVendor {
   type UserType
 
-  type ConsumerType <: OpenIDConsumer[UserType]
+  type ConsumerType <: OpenIdConsumer[UserType]
 
   private object RedirectBackTo extends SessionVar[Box[String]](Empty)
   val PathRoot = "openid"
@@ -116,13 +116,13 @@ trait OpenIdVendor {
   }
 
   def dispatchPF: LiftRules.DispatchPF = NamedPF("Login default") {
-    case Req(PathRoot :: LogOutPath :: Nil, "", _) =>
+    case Req(PathRoot :: LogOutPath :: _, "", _) =>
       () => {
         logUserOut()
         Full(RedirectResponse(S.referer openOr "/", S responseCookies :_*))
       }
 
-    case r @ Req(PathRoot :: LoginPath :: Nil, "", PostRequest)
+    case r @ Req(PathRoot :: LoginPath :: _, "", PostRequest)
       if r.param(PostParamName).isDefined =>
       () => {
         try {
@@ -135,7 +135,7 @@ trait OpenIdVendor {
         }
       }
 
-    case r @ Req(PathRoot :: ResponsePath :: Nil, "", _) =>
+    case r @ Req(PathRoot :: ResponsePath :: _, "", _) =>
       () => {
         for (req <- S.request;
              ret <- {
@@ -157,7 +157,7 @@ trait OpenIdVendor {
 
 trait SimpleOpenIdVendor extends OpenIdVendor {
   type UserType = Identifier
-  type ConsumerType = OpenIDConsumer[UserType]
+  type ConsumerType = OpenIdConsumer[UserType]
 
   def currentUser = OpenIdUser.is
 
@@ -177,7 +177,7 @@ trait SimpleOpenIdVendor extends OpenIdVendor {
 
   def displayUser(in: UserType): NodeSeq = Text("Welcome "+in)
 
-  def createAConsumer = new AnyRef with OpenIDConsumer[UserType]
+  def createAConsumer = new AnyRef with OpenIdConsumer[UserType]
 }
 
 object SimpleOpenIdVendor extends SimpleOpenIdVendor
@@ -187,7 +187,7 @@ object SimpleOpenIdVendor extends SimpleOpenIdVendor
 object OpenIdUser extends SessionVar[Box[Identifier]](Empty)
 
 /** * Sample Consumer (Relying Party) implementation.  */
-trait OpenIDConsumer[UserType]
+trait OpenIdConsumer[UserType]
 {
   val manager = new ConsumerManager
 
@@ -198,7 +198,7 @@ trait OpenIDConsumer[UserType]
   {
     // configure the return_to URL where your application will receive
     // the authentication responses from the OpenID provider
-    val returnToUrl = S.hostAndPath + targetUrl
+    val returnToUrl = S.encodeURL(S.hostAndPath + targetUrl)
 
     Log.info("Creating openId auth request.  returnToUrl: "+returnToUrl)
 
@@ -230,7 +230,8 @@ trait OpenIDConsumer[UserType]
       // Option 1: GET HTTP-redirect to the OpenID Provider endpoint
       // The only method supported in OpenID 1.x
       // redirect-URL usually limited ~2048 bytes
-      RedirectResponse(authReq.getDestinationUrl(true))
+      val redirect = RedirectResponse(authReq.getDestinationUrl(true))
+      redirect
       //                httpResp.sendRedirect(authReq.getDestinationUrl(true));
     }
     else
@@ -278,6 +279,7 @@ trait OpenIDConsumer[UserType]
     if (queryString != null && queryString.length() > 0)
     receivingURL.append("?").append(httpReq.getQueryString());
 
+
     // verify the response; ConsumerManager needs to be the same
     // (static) instance used to place the authentication request
     val verification = manager.verify(receivingURL.toString(),
@@ -290,5 +292,3 @@ trait OpenIDConsumer[UserType]
     (Box.legacyNullTest(verified), verification)
   }
 }
-
-

@@ -245,7 +245,7 @@ object S extends HasParams {
        case bundles => bundles
      }
    }
-   
+
   /**
    * Get the lift core resource bundle for the current locale
    */
@@ -677,7 +677,7 @@ object S extends HasParams {
   /**
    * The current servlet request
    */
-  def servletRequest: Box[HttpServletRequest] = 
+  def servletRequest: Box[HttpServletRequest] =
   request.flatMap(r => Box !! r.request)
 
   /**

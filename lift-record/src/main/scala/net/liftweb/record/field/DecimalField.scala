@@ -45,7 +45,7 @@ class DecimalField[OwnerType <: Record[OwnerType]](rec: OwnerType, val context :
   /**
    * Constructs a DecimalField with the specified initial value and context.
    * The scale is taken from the initial value.
-   * 
+   *
    * @param rec The Record that owns this field
    * @param value The initial value
    * @param context The MathContext that controls precision and rounding
@@ -59,7 +59,7 @@ class DecimalField[OwnerType <: Record[OwnerType]](rec: OwnerType, val context :
    * Constructs a DecimalField with the specified initial value. The context
    * is set to MathContext.UNLIMITED (see note above about default precision).
    * The scale is taken from the initial value.
-   * 
+   *
    * @param rec The Record that owns this field
    * @param value The initial value
    */
@@ -74,7 +74,7 @@ class DecimalField[OwnerType <: Record[OwnerType]](rec: OwnerType, val context :
 
   def owner = rec
 
-  def setFromAny (in : Any) : Box[BigDecimal] = 
+  def setFromAny (in : Any) : Box[BigDecimal] =
     in match {
       case n :: _ => setFromString(n.toString)
       case Some(n) => setFromString(n.toString)
@@ -116,7 +116,7 @@ abstract class DBDecimalField[OwnerType <: DBRecord[OwnerType]](rec: OwnerType, 
     } else {
       "(" + context.getPrecision + "," + scale + ")"
     }
-      
+
     colName + " DECIMAL" + suffix
   }
 

@@ -51,7 +51,7 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
   /**
    * Constructs a MappedDecimal with the specified initial value and context.
    * The scale is taken from the initial value.
-   * 
+   *
    * @param fieldOwner The Mapper that owns this field
    * @param value The initial value
    * @param context The MathContext that controls precision and rounding
@@ -65,7 +65,7 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
    * Constructs a MappedDecimal with the specified initial value. The context
    * is set to MathContext.UNLIMITED (see note above about default precision).
    * The scale is taken from the initial value.
-   * 
+   *
    * @param fieldOwner The Mapper that owns this field
    * @param value The initial value
    */
@@ -77,7 +77,7 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
   private val zero = BigDecimal("0")
 
   def defaultValue = zero.setScale(scale)
-  
+
   def dbFieldClass = classOf[BigDecimal]
 
   private var data : BigDecimal = defaultValue
@@ -95,22 +95,22 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
     orgData = data
   }
 
-  override def readPermission_? = true  
-  override def writePermission_? = true  
-   
-  protected def i_obscure_!(in : BigDecimal) = defaultValue  
-   
-  protected def real_i_set_!(value : BigDecimal): BigDecimal = {  
-    if (value != data) {  
-      data = value  
-      dirty_?(true)  
-    }  
-    data  
-  }  
-  
+  override def readPermission_? = true
+  override def writePermission_? = true
+
+  protected def i_obscure_!(in : BigDecimal) = defaultValue
+
+  protected def real_i_set_!(value : BigDecimal): BigDecimal = {
+    if (value != data) {
+      data = value
+      dirty_?(true)
+    }
+    data
+  }
+
   def asJsExp = JE.Num(is)
 
-  def setFromAny (in : Any) : BigDecimal = 
+  def setFromAny (in : Any) : BigDecimal =
     in match {
       case n :: _ => setFromString(n.toString)
       case Some(n) => setFromString(n.toString)
@@ -129,27 +129,27 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
 
   // Set the scale on the given input
   protected def coerce (in : BigDecimal) = new BigDecimal(in.bigDecimal.setScale(scale, context.getRoundingMode))
-  
+
   def targetSQLType = Types.DECIMAL
 
   def jdbcFriendly(field : String) = i_is_!.bigDecimal
 
   def real_convertToJDBCFriendly(value: BigDecimal): Object = value.bigDecimal
 
-  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit = null  
+  def buildSetBooleanValue(accessor : Method, columnName : String) : (T, Boolean, Boolean) => Unit = null
 
-  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =  
+  def buildSetDateValue(accessor : Method, columnName : String) : (T, Date) => Unit =
     (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (v == null) defaultValue else (coerce(BigDecimal(v.getTime))))})
-  
-  def buildSetStringValue(accessor: Method, columnName: String): (T, String) =>  
-    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v)))})  
-  
-  def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) =>  
-    Unit = (inst, v, isNull) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (isNull) defaultValue else coerce(BigDecimal(v)))})  
-  
-  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) =>  
-    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v.toString)))})  
-  
+
+  def buildSetStringValue(accessor: Method, columnName: String): (T, String) =>
+    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v)))})
+
+  def buildSetLongValue(accessor: Method, columnName : String) : (T, Long, Boolean) =>
+    Unit = (inst, v, isNull) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(if (isNull) defaultValue else coerce(BigDecimal(v)))})
+
+  def buildSetActualValue(accessor: Method, data: AnyRef, columnName: String) : (T, AnyRef) =>
+    Unit = (inst, v) => doField(inst, accessor, {case f: MappedDecimal[T] => f.set(coerce(BigDecimal(v.toString)))})
+
   /**
    * Returns the SQL creation string for this field. See the note at the
    * top of the page concerning default precision.
@@ -160,9 +160,9 @@ class MappedDecimal[T <: Mapper[T]] (val fieldOwner : T, val context : MathConte
     } else {
       "(" + context.getPrecision + "," + scale + ")"
     }
-      
+
     colName + " DECIMAL" + suffix
   }
 }
-  
-  
+
+
