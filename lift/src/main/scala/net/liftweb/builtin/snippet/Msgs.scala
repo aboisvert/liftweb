@@ -48,7 +48,7 @@ class Msgs {
 		    (f(S.warnings),
 		     (styles \\ "warning_msg"), S.??("msg.warning"),
 		     ((styles \\ "warning_class")++
-		      (styles \\ "warning_class" \\ "@class")), 1),
+		      (styles \\ "warning_msg" \\ "@class")), 1),
 		    (f(S.notices),
 		     (styles \\ "notice_msg"), S.??("msg.notice"),
 		     ((styles \\ "notice_class")) ++
