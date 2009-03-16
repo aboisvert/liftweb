@@ -42,6 +42,7 @@
           <directory>src/main/webapp</directory>
 	  <includes>
 	    <include>**/*</include>
+	    <include>templates-hidden/*</include>
 	  </includes>
 	</fileSet>
 	<!-- place resources -->
