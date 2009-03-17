@@ -159,7 +159,7 @@ object SqlServerDriver extends DriverType("Microsoft SQL Server") {
   def binaryColumnType = "VARBINARY(MAX)"
   def booleanColumnType = "BIT"
   def clobColumnType = "VARCHAR(MAX)"
-  def dateTimeColumnType = "TIMESTAMP"
+  def dateTimeColumnType = "DATETIME"
   def integerColumnType = "INT"
   def integerIndexColumnType = "INT IDENTITY NOT NULL"
   def enumColumnType = "BIGINT"
