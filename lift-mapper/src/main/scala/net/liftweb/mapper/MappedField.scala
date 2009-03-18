@@ -169,7 +169,7 @@ trait DBIndexed extends BaseMappedField {
  */
 trait MappedForeignKey[KeyType, MyOwner <: Mapper[MyOwner], Other <: KeyedMapper[KeyType, Other]] extends MappedField[KeyType, MyOwner] {
   type FieldType <: KeyType
-  type ForeignType <: KeyedMapper[KeyType, Other]
+  // type ForeignType <: KeyedMapper[KeyType, Other]
 
   override def equals(other: Any) = other match {
     case km: KeyedMapper[KeyType, Other] => this.is == km.primaryKeyField.is
