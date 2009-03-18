@@ -27,7 +27,18 @@ object Mailer {
   sealed abstract class MailBodyType extends MailTypes
   case class PlusImageHolder(name: String, mimeType: String, bytes: Array[Byte])
 
+  /**
+   * Represents a text/plain mail body. The given text will
+   * be encoded as UTF-8 when sent.
+   */
   case class PlainMailBodyType(text: String) extends MailBodyType
+
+  /**
+   * Represents a text/plain mail body that is encoded with the
+   * specified charset
+   */
+  case class PlainPlusBodyType(text: String, charset: String) extends MailBodyType
+
   case class XHTMLMailBodyType(text: NodeSeq) extends MailBodyType
   case class XHTMLPlusImages(text: NodeSeq, items: PlusImageHolder*) extends MailBodyType
 
@@ -96,7 +107,8 @@ object Mailer {
               tab =>
               val bp = new MimeBodyPart
               tab match {
-                case PlainMailBodyType(txt) => bp.setContent(txt, "text/plain")
+                case PlainMailBodyType(txt) => bp.setText(txt, "UTF-8")
+		case PlainPlusBodyType(txt,charset) => bp.setText(txt, charset)
                 case XHTMLMailBodyType(html) => bp.setContent(html.toString, "text/html")
                 case XHTMLPlusImages(html, img @ _*) =>
                 val html_mp = new MimeMultipart("related")
