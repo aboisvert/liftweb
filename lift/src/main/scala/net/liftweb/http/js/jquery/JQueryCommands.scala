@@ -113,6 +113,13 @@ object JqJE {
     override def toJsCmd = "prependTo("+fixHtml("inline", content)+")"
   }
 
+object JqCss {
+  def apply(name: JsExp, value: JsExp): JsExp with JQueryRight with JQueryLeft =
+  new JsExp with JQueryRight with JQueryLeft {
+    override def toJsCmd = "css("+name.toJsCmd+","+value.toJsCmd+")"
+  }
+}
+
   /**
    * EmptyAfter will empty the node at the given uid and stick the given content behind it. Like
    * a cleaner innerHTML.
