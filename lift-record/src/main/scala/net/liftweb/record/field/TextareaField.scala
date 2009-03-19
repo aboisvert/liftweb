@@ -22,7 +22,7 @@ import Helpers._
 class TextareaField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int) extends StringField(rec, maxLength) {
 
   private def elem = S.fmapFunc(SFuncHolder(this.setFromAny(_))){
-    funcName => <textarea name={funcName} lift:gc={funcName}
+    funcName => <textarea name={funcName}
       rows={textareaRows.toString}
       cols={textareaCols.toString}
       tabindex={tabIndex toString}>{value match {case null => "" case s => s.toString}}</textarea>

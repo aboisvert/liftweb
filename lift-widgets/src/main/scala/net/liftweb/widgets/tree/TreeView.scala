@@ -86,10 +86,9 @@ class TreeView {
        <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.css"} type="text/css"/>
        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.js"}/>
        <script type="text/javascript" src={"/" + LiftRules.resourceServerPath + "/tree/jquery.treeview.async.js"}/>
-    <span lift:gc={gc}/>
-    {
-      Script(OnLoad(js.cmd))
-    }
+	    {
+	      Script(OnLoad(js.cmd))
+	    }
      </head>
 
   }

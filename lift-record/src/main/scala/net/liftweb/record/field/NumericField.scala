@@ -26,7 +26,7 @@ trait NumericField[MyType, OwnerType <: Record[OwnerType]] extends Field[MyType,
       this.setFromAny(s) match {
         case Empty => valueCouldNotBeSet = true
         case _ =>
-      }}}{funcName => <input type="text" name={funcName} lift:gc={funcName} value={value.toString}
+      }}}{funcName => <input type="text" name={funcName} value={value.toString}
       tabindex={tabIndex toString}/>}
 
   /**

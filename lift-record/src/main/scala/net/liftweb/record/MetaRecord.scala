@@ -19,7 +19,6 @@ import scala.collection.mutable.{ListBuffer}
 import scala.xml._
 import net.liftweb.http.js.{JsExp, JE}
 import net.liftweb.http.{FieldError, SHtml}
-// import net.liftweb.mapper.{Safe, KeyObfuscator}
 import java.lang.reflect.Method
 import field._
 
@@ -220,13 +219,20 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
    */
   def toForm(inst: BaseRecord): NodeSeq = {
     formTemplate match {
-      case Full(template) => _toForm(inst, template)
-      case Empty => fieldList.flatMap(holder => fieldByName(holder.name, inst).
+      case Full(template) => toForm(inst, template)
+      case _ => fieldList.flatMap(holder => fieldByName(holder.name, inst).
                                       map(_.toForm).openOr(NodeSeq.Empty) ++ Text("\n"))
     }
   }
 
-  private def _toForm(inst: BaseRecord, template: NodeSeq): NodeSeq = {
+  /**
+   * Returns the XHTML representation of inst Record. You must provide the Node template
+   * to represent this record in the proprietary layout.
+   *
+   * @param inst - the record to be rendered
+   * @return the XHTML content as a NodeSeq
+   */
+  def toForm(inst: BaseRecord, template: NodeSeq): NodeSeq = {
     template match {
       case e @ <lift:field_label>{_*}</lift:field_label> => e.attribute("name") match{
           case Some(name) => fieldByName(name.toString, inst).map(_.label).openOr(NodeSeq.Empty)
@@ -247,11 +253,11 @@ trait MetaRecord[BaseRecord <: Record[BaseRecord]] {
         }
 
       case Elem(namespace, label, attrs, scp, ns @ _*) =>
-        Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
+        Elem(namespace, label, attrs, scp, toForm(inst, ns.flatMap(n => toForm(inst, n))):_* )
 
       case s : Seq[_] => s.flatMap(e => e match {
             case Elem(namespace, label, attrs, scp, ns @ _*) =>
-              Elem(namespace, label, attrs, scp, _toForm(inst, ns.flatMap(n => _toForm(inst, n))):_* )
+              Elem(namespace, label, attrs, scp, toForm(inst, ns.flatMap(n => toForm(inst, n))):_* )
             case x => x
           })
 

@@ -52,11 +52,7 @@ class BooleanField[OwnerType <: Record[OwnerType]](rec: OwnerType) extends Field
     }
   }
 
-  private def elem =  /*<input type="checkbox"
-                       name={S.mapFunc(SFuncHolder(this.setFromAny(_)))}
-                       value={value.toString}
-                       tabindex={tabIndex toString}/>;
-                       */ SHtml.checkbox(value, this.set _, "tabIndex" -> tabIndex.toString)
+  private def elem = SHtml.checkbox(value, this.set _, "tabIndex" -> tabIndex.toString)
 
   def toForm = {
     //var el = elem

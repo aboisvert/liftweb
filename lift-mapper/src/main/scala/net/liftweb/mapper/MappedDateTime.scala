@@ -76,7 +76,7 @@ class MappedDateTime[T<:Mapper[T]](val fieldOwner: T) extends MappedField[Date, 
   override def _toForm: Box[NodeSeq] =
   S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
   Full(<input type='text' id={fieldId}
-      name={funcName} lift:gc={funcName}
+      name={funcName}
       value={is match {case null => "" case s => toInternetDate(s)}}/>)
   }
 

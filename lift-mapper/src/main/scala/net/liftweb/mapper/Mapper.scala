@@ -187,7 +187,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
   getSingleton.toForm(this) ++
   S.fmapFunc((ignore: List[String]) => f(this)){
     (name: String) =>
-    (<input type='hidden' name={name} lift:gc={name} value="n/a" />)} ++
+    (<input type='hidden' name={name} value="n/a" />)} ++
   (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
 
   def toForm(button: Box[String], redoSnippet: NodeSeq => NodeSeq, onSuccess: A => Unit): NodeSeq = {
@@ -201,7 +201,7 @@ trait Mapper[A<:Mapper[A]] extends BaseMapper {
     }
 
     getSingleton.toForm(this) ++
-    S.fmapFunc((ignore: List[String]) => doSubmit())(name => <input type='hidden' name={name} lift:gc={name} value="n/a" />) ++
+    S.fmapFunc((ignore: List[String]) => doSubmit())(name => <input type='hidden' name={name} value="n/a" />) ++
     (button.map(b => getSingleton.formatFormElement( <xml:group>&nbsp;</xml:group> , <input type="submit" value={b}/> )) openOr _root_.scala.xml.Text(""))
   }
 

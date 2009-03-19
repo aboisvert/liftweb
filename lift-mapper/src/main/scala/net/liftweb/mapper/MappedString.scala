@@ -96,7 +96,7 @@ class MappedString[T<:Mapper[T]](val fieldOwner: T,val maxLen: Int) extends Mapp
   override def _toForm: Box[NodeSeq] =
   fmapFunc({s: List[String] => this.setFromAny(s)}){name =>
     Full(<input type='text' id={fieldId} maxlength={maxLen.toString}
-	 name={name} lift:gc={name}
+	 name={name}
 	 value={is match {case null => "" case s => s.toString}}/>)}
 
   protected def i_obscure_!(in : String) : String = {

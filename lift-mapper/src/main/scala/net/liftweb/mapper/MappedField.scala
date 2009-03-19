@@ -411,7 +411,7 @@ trait MappedField[FieldType <: Any,OwnerType <: Mapper[OwnerType]] extends Typed
   override def _toForm: Box[NodeSeq] =
   S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
   Full(<input type='text' id={fieldId}
-      name={funcName} lift:gc={funcName}
+      name={funcName}
       value={is match {case null => "" case s => s.toString}}/>)
   }
 

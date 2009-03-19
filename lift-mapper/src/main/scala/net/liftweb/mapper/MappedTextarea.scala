@@ -27,7 +27,7 @@ class MappedTextarea[T<:Mapper[T]](owner : T, maxLen: Int) extends MappedString[
    */
   override def _toForm: Box[NodeSeq] = {
     S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
-    Full(<textarea name={funcName} lift:gc={funcName}
+    Full(<textarea name={funcName}
 	 rows={textareaRows.toString}
 	 cols={textareaCols.toString} id={fieldId}>{is.toString}</textarea>)}
   }

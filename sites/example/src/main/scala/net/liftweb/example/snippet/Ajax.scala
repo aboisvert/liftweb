@@ -75,8 +75,7 @@ class Ajax {
 					<pre>{text}</pre>,
 					4 seconds, 200))
 
-      <a href="javascript://" onclick={je.toJsCmd}
-      lift:gc={name}>Enter text above and click me</a>
+      <a href="javascript://" onclick={je.toJsCmd}>Enter text above and click me</a>
     }
     <br/>
     <br/>

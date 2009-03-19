@@ -57,7 +57,6 @@ class StringField[OwnerType <: Record[OwnerType]](rec: OwnerType, maxLength: Int
     funcName =>
     <input type="text" maxlength={maxLength.toString}
       name={funcName}
-      lift:gc={funcName}
       value={value match {case null => "" case s => s.toString}}
       tabindex={tabIndex toString}/>
       }

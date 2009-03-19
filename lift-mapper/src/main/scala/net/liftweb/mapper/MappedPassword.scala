@@ -121,7 +121,7 @@ extends MappedField[String, T] {
     S.fmapFunc({s: List[String] => this.setFromAny(s)}){funcName =>
       Full(<span><input id={fieldId} type='password' name={funcName}
             value={is.toString}/>&nbsp;{S.??("repeat")}&nbsp;<input
-            type='password' name={funcName} lift:gc={funcName}
+            type='password' name={funcName}
             value={is.toString}/></span>)
     }
   }
