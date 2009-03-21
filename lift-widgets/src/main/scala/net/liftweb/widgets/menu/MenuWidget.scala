@@ -15,13 +15,22 @@ object MenuStyle extends Enumeration("sf-menu", "sf-menu sf-vertical", "sf-menu 
 
 object MenuWidget {
 
-  def apply() = new MenuWidget(LiftRules.siteMap open_!, MenuStyle.HORIZONTAL) render
+  def apply() = new MenuWidget(LiftRules.siteMap open_!, MenuStyle.HORIZONTAL, JsObj()) render
 
-  def apply(style: MenuStyle.Value) = new MenuWidget(LiftRules.siteMap open_!, style) render
+  def apply(style: MenuStyle.Value) = new MenuWidget(LiftRules.siteMap open_!, style, JsObj()) render
 
-  def apply(siteMap: SiteMap) = new MenuWidget(siteMap, MenuStyle.HORIZONTAL) render
+  def apply(siteMap: SiteMap) = new MenuWidget(siteMap, MenuStyle.HORIZONTAL, JsObj()) render
 
-  def apply(siteMap: SiteMap, style: MenuStyle.Value) = new MenuWidget(siteMap, style) render
+  def apply(siteMap: SiteMap, style: MenuStyle.Value) = new MenuWidget(siteMap, style, JsObj()) render
+
+  def apply(jsObj: JsObj) = new MenuWidget(LiftRules.siteMap open_!, MenuStyle.HORIZONTAL, jsObj) render
+
+  def apply(style: MenuStyle.Value, jsObj: JsObj) = new MenuWidget(LiftRules.siteMap open_!, style, jsObj) render
+
+  def apply(siteMap: SiteMap, jsObj: JsObj) = new MenuWidget(siteMap, MenuStyle.HORIZONTAL, jsObj) render
+
+  def apply(siteMap: SiteMap, style: MenuStyle.Value, jsObj: JsObj) = new MenuWidget(siteMap, style, jsObj) render
+
 
    /**
     * register the resources with lift (typically in boot)
@@ -39,7 +48,7 @@ object MenuWidget {
 /**
  * Builds a Menu widget based on a give SiteMap
  */
-class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value) {
+class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value, jsObj: JsObj) {
   private def buildMenu(kids: Seq[MenuItem]): Elem = {
     <ul>{
       for (m <- kids) yield {
@@ -66,7 +75,7 @@ class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value) {
       <script type="text/javascript" charset="utf-8">{
         Unparsed("""
          jQuery(document).ready(function() {
-            jQuery('ul.sf-menu').superfish();
+            jQuery('ul.sf-menu').superfish(""" + jsObj.toJsCmd + """);
           })
          """)
        }
