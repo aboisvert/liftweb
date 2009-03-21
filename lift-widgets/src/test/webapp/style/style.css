@@ -7,21 +7,9 @@ h1 {
 	font-family: arial;
 	font-size: 16pt;
 }
+
 ul {
-
-	width: 500px;
-}
-
-ul li a {
-	color: green;
-	text-decoration: none;
-	display: block;
-}
-
-ul li a:hover {
-	text-decoration: none;
-	background-color: #dddddd;
-	display: block;
+	width: 100%;
 }
 
 #current {
