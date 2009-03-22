@@ -111,8 +111,8 @@
 			newItems = jQuery.grep(items, function(item) {
 				return item.id != id;
 			});
-			removeAllItems(items);
-			buildWeekViewCalendars(newItems);
+			this.removeAllItems(items);
+			this.buildWeekViewCalendars(newItems);
 		},
 
 		removeAllItems : function(items) {

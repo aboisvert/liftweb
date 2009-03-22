@@ -84,10 +84,8 @@ class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value, jsObj: JsObj) {
 
 
   def render : NodeSeq = {
-    val completeMenu = for {sm <- LiftRules.siteMap
-                            req <- S.request} yield sm.buildMenu(req.location)
-
-    head ++ (completeMenu.map(cm => buildMenu(cm.lines) % ("class" -> style)) openOr NodeSeq.Empty)
+    head ++ (for (sm <- LiftRules.siteMap;
+                  req <- S.request) yield buildMenu(sm.buildMenu(req.location).lines) % ("class" -> style))
   }
 
 }
