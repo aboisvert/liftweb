@@ -106,8 +106,8 @@
 			newItems = jQuery.grep(items, function(item) {
 				return item.id != id;
 			})
-			removeAllItems(items);
-			buildDayViewCalendars(newItems);
+			this.removeAllItems(items);
+			this.buildDayViewCalendars(newItems);
 		},
 
 		removeAllItems : function(items) {
