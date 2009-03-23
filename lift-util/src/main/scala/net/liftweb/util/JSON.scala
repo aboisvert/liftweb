@@ -20,6 +20,18 @@ object JSONParser extends SafeSeqParser with ImplicitConversions {
   implicit def strToInput(in: String): Input = new _root_.scala.util.parsing.input.CharArrayReader(in.toCharArray)
   type Elem = Char
 
+    /**
+     * Parse a JSON structure.  A JSON structure is a JSON array or JSON object
+     * (which may contain other arrays or objects).  See http://json.org for
+     * details about the JSON format.
+     *
+     * In the parsed results, each JSON object is returned as a
+     * <code>Map[String,Any]</code> that maps JSON object names to JSON 
+     * values.  Each JSON array is returned as and a <code>List[Any]</code>
+     * that contains JSON objects and/or JSON arrays.
+     *
+     * @return a <code>Box</code> containig the root JSON object or JSON array.
+     */
   def parse(in: String): Box[Any] = theValue(in) match {
     case Success(v, _) => Full(v)
     case x => Empty
