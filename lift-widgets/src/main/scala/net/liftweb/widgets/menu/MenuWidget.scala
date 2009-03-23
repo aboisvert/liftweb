@@ -49,19 +49,6 @@ object MenuWidget {
  * Builds a Menu widget based on a give SiteMap
  */
 class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value, jsObj: JsObj) {
-  private def buildMenu(kids: Seq[MenuItem]): Elem = {
-    <ul>{
-      for (m <- kids) yield {
-        <li>{
-          <a href={m.uri}>{m.text}</a> ++ (m.kids.isEmpty match {
-            case true => NodeSeq.Empty
-            case _ => buildMenu(m.kids)
-          })
-        }</li>
-      }
-    }</ul>
-  }
-
   def head: NodeSeq = <head>
       <link rel="stylesheet" href={"/" + LiftRules.resourceServerPath + "/menu/superfish.css"} type="text/css"/>{
         style match {
@@ -84,10 +71,7 @@ class MenuWidget(siteMap: SiteMap, style: MenuStyle.Value, jsObj: JsObj) {
 
 
   def render : NodeSeq = {
-    val completeMenu = for {sm <- LiftRules.siteMap
-                            req <- S.request} yield sm.buildMenu(req.location)
-
-    head ++ (completeMenu.map(cm => buildMenu(cm.lines) % ("class" -> style)) openOr NodeSeq.Empty)
+    head ++ <lift:Menu.builder expandAll="true" top:class={style.toString} />
   }
 
 }
