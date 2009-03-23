@@ -17,6 +17,18 @@
     <scala.version>2.7.3</scala.version>
   </properties>
 
+  <!-- Set up repo for ScalaJPA -->
+  <repositories>
+    <repository>
+      <id>scala-tools</id>
+      <url>http://scala-tools.org/repo-snapshots</url>
+    </repository>
+    <repository>
+      <id>scala-tools</id>
+      <url>http://scala-tools.org/repo-releases</url>
+    </repository>
+  </repositories>
+
   <!-- Master properties (inherited by modules) -->
   <dependencies>
     <dependency>
