@@ -116,8 +116,8 @@ trait TimeHelpers { self: ControlHelpers =>
      */
     def format(millis: Long): String = {
       def divideInUnits(millis: Long) = scales.foldLeft[(Long, List[(Long, String)])]((millis, Nil)){ (total, div) =>
-          (total._1 / div._1, (total._1 % div._1, div._2) :: total._2)
-        }._2
+        (total._1 / div._1, (total._1 % div._1, div._2) :: total._2)
+      }._2
       def formatAmount(amountUnit: (Long, String)) = amountUnit match {
         case (amount, unit) if (amount == 1) => amount + " " + unit
         case (amount, unit) => amount + " " + unit + "s"
@@ -279,6 +279,11 @@ trait TimeHelpers { self: ControlHelpers =>
     val ret = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss z", Locale.US)
     ret.setTimeZone(utc)
     ret
+  }
+
+  /** @return a date from a string using the internet format. Return the Epoch date if the parse is unsuccesfull */
+  def boxParseInternetDate(dateString: String): Box[Date] = tryo {
+    internetDateFormatter.parse(dateString)
   }
 
   /** @return a date from a string using the internet format. Return the Epoch date if the parse is unsuccesfull */

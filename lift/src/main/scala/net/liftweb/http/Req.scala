@@ -323,6 +323,19 @@ class Req(val path: ParsePath,
   def remoteAddr: String = request.getRemoteAddr()
 
   /**
+  * Parse the if-modified-since header and return the milliseconds since epoch
+  * of the parsed date.
+  */
+  lazy val ifModifiedSince: Box[java.util.Date] =
+    for {req <- Box !! request
+    ims <- Box !! req.getHeader("if-modified-since")
+    id <- boxParseInternetDate(ims)
+    } yield id
+
+  def testIfModifiedSince(when: Long): Boolean =
+    (when / 1000L) > ((ifModifiedSince.map(_.getTime) openOr 0L) / 1000L)
+
+  /**
    * The user agent of the browser that sent the request
    */
   lazy val userAgent: Box[String] =
