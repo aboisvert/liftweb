@@ -1193,20 +1193,19 @@ object In {
   def apply[InnerMapper <: Mapper[InnerMapper], JoinTypeA,
             Zoom <% QueryParam[InnerMapper],
             OuterMapper <: Mapper[OuterMapper]]
-  (outerField: MappedField[JoinTypeA, OuterMapper],
-   innerField: MappedField[JoinTypeA, InnerMapper],
+  (_outerField: MappedField[JoinTypeA, OuterMapper],
+   _innerField: MappedField[JoinTypeA, InnerMapper],
    qp: Zoom*): InThing[OuterMapper]
   = {
     new InThing[OuterMapper] {
       type JoinType = JoinTypeA
       type InnerType = InnerMapper
 
-      val outerField: MappedField[JoinType, OuterMapper] = outerField
-      val innerField: MappedField[JoinType, InnerMapper] = innerField
+      val outerField: MappedField[JoinType, OuterMapper] = _outerField
+      val innerField: MappedField[JoinType, InnerMapper] = _innerField
       val innerMeta: MetaMapper[InnerMapper] = innerField.fieldOwner.getSingleton
 
       val queryParams: List[QueryParam[InnerMapper]] = {
-
         qp.map{v => val r: QueryParam[InnerMapper] = v; r}.toList
       }
     }
