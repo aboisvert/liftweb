@@ -32,7 +32,8 @@ object JettyTestServer {
     val context = new WebAppContext()
     context.setServer(server)
     context.setContextPath("/")
-    context.setWar("src/test/webapp")
+    val dir = System.getProperties().getProperty("net.liftweb.webapptest.src.test.webapp", "src/test/webapp")
+    context.setWar(dir)
     //val context = new Context(_server, "/", Context.SESSIONS)
     //context.addFilter(new FilterHolder(new LiftFilter()), "/");
     server.addHandler(context)
